@@ -17,7 +17,6 @@ package kernel
 import (
 	"fmt"
 	"math/rand"
-
 	"gvisor.dev/gvisor/pkg/sync"
 )
 
@@ -110,7 +109,7 @@ func (s *syslog) Log() []byte {
 	s.msg = append(s.msg, []byte(fmt.Sprintf(format, time, "Setting up FUSE..."))...)
 
 	time += rand.Float64() / 2
-	s.msg = append(s.msg, []byte(fmt.Sprintf(format, time, "Ready!"))...)
+	s.msg = append(s.msg, []byte(fmt.Sprintf(format, time, "Ready for IZUMI!"))...)
 
 	// Return a copy.
 	o := make([]byte, len(s.msg))

@@ -104,6 +104,27 @@ func Main() {
 			util.Fatalf("error opening log file %q: %v", conf.LogFilename, err)
 		}
 	}
+
+	// IZUMI Addition
+	// Check if izumi-config flag is properly registered
+	fmt.Println("\n=== Izumi Config Check ===")
+	fmt.Printf("Izumi config path: %s\n", conf.IzumiConfig)
+
+	if conf.IzumiConfig != "" {
+        if _, err := os.Stat(conf.IzumiConfig); err != nil {
+            fmt.Printf("Warning: Cannot access izumi config file: %v\n", err)
+        } else {
+			fmt.Printf("Here is the contents of the file: \n")
+			content, err := os.ReadFile(conf.IzumiConfig)
+			if err != nil {
+				fmt.Println("Error opening config file.")
+			} else {
+				fmt.Println(string(content))
+			}
+		}
+    }
+	
+
 	util.ErrorLogger = errorLogger
 
 	if _, err := platform.Lookup(conf.Platform); err != nil {

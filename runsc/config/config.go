@@ -384,6 +384,11 @@ type Config struct {
 
 	// TestOnlySaveRestoreNetstack indicates netstack should be saved and restored.
 	TestOnlySaveRestoreNetstack bool `flag:"TESTONLY-save-restore-netstack"`
+
+
+	// IZUMI Addition
+	// Set IZUMI Config file
+	IzumiConfig string `flag:"izumi-config"`
 }
 
 func (c *Config) validate() error {
@@ -431,6 +436,12 @@ func (c *Config) validate() error {
 			log.Warningf("nvproxy-allowed-driver-capabilities contains unsupported capability %q", cap)
 		}
 	}
+
+	// IZUMI Addition
+	if c.IzumiConfig != "" && !strings.HasSuffix(c.IzumiConfig, ".yaml") {
+        return fmt.Errorf("izumi-config flag requires a .yaml file path, got: %s", c.IzumiConfig)
+    }
+
 	return nil
 }
 

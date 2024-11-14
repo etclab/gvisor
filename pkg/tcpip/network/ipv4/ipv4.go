@@ -1215,6 +1215,16 @@ func (e *endpoint) deliverPacketLocally(h header.IPv4, pkt *stack.PacketBuffer, 
 	stats := e.stats
 	// iptables filtering. All packets that reach here are intended for
 	// this machine and will not be forwarded.
+
+	// IZUMI Addition: Dropping packets from 192.168.0.4
+	net := pkt.Network()
+	srcAddr := net.SourceAddress()
+	if srcAddr == tcpip.AddrFrom4Slice([]byte{192, 168, 0, 4}) {
+		log.Infof("IZUMI: pkg/tcpip/network/ipv4/ipv4.go Packet received from srcAddr: %v. Dropping it!\n", srcAddr)
+		stats.ip.IPTablesInputDropped.Increment()
+		return
+	}
+
 	if ok := e.protocol.stack.IPTables().CheckInput(pkt, inNICName); !ok {
 		// iptables is telling us to drop the packet.
 		stats.ip.IPTablesInputDropped.Increment()

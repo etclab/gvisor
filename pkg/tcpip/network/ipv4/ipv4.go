@@ -1118,6 +1118,8 @@ func (e *endpoint) handleValidatedPacket(h header.IPv4, pkt *stack.PacketBuffer,
 	srcAddr := h.SourceAddress()
 	dstAddr := h.DestinationAddress()
 
+	log.Infof("IZUMI: tcpip/network/ipv4/ipv4.go handleValidatedPacket() triggered. SRC Addr: %v DST Addr: %v", srcAddr, dstAddr)
+
 	// As per RFC 1122 section 3.2.1.3:
 	//   When a host sends any datagram, the IP source address MUST
 	//   be one of its own IP addresses (but not a broadcast or
@@ -1217,8 +1219,7 @@ func (e *endpoint) deliverPacketLocally(h header.IPv4, pkt *stack.PacketBuffer, 
 	// this machine and will not be forwarded.
 
 	// IZUMI Addition: Dropping packets from 192.168.0.4
-	net := pkt.Network()
-	srcAddr := net.SourceAddress()
+	srcAddr := h.SourceAddress()
 	if srcAddr == tcpip.AddrFrom4Slice([]byte{192, 168, 0, 4}) {
 		log.Infof("IZUMI: pkg/tcpip/network/ipv4/ipv4.go Packet received from srcAddr: %v. Dropping it!\n", srcAddr)
 		stats.ip.IPTablesInputDropped.Increment()

@@ -4407,10 +4407,3 @@ new_local_repository(
     build_file = "tools/plugin-stack/plugin-stack.BUILD",
     path = "external/tools/plugin-stack",
 )
-
-go_repository(
-    name = "com_github_go_faker_faker_v4",
-    importpath = "github.com/go-faker/faker/v4",
-    sum = "h1:UXOW7kn/Mwd0u6MR30JjUKVzguT20EB/hBOddAAO+DY=",
-    version = "v4.3.0",
-)

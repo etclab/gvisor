@@ -93,6 +93,9 @@ import (
 	_ "gvisor.dev/gvisor/pkg/sentry/socket/netlink/route"
 	_ "gvisor.dev/gvisor/pkg/sentry/socket/netlink/uevent"
 	_ "gvisor.dev/gvisor/pkg/sentry/socket/unix"
+
+	// IZUMI addition
+	"gopkg.in/yaml.v3"
 )
 
 // ContainerRuntimeState is the runtime state of a container.
@@ -166,6 +169,21 @@ const (
 	// containers. It will change to started after restore is completed.
 	restoring
 )
+
+type IPFilters struct {
+	IP    string `yaml:"ip"`
+	Ports []int  `yaml:ports"`
+}
+
+type IzumiRules struct {
+	Version       string      `yaml:"version"`
+	DefaultPolicy string      `yaml:"default_policy"`
+	IpFilters     []IPFilters `yaml:"ip_filters"`
+}
+
+type IzumiConfig struct {
+	IzumiConfig IzumiRules `yaml:"izumi_rules"`
+}
 
 // Loader keeps state needed to start the kernel and run the container.
 type Loader struct {
@@ -254,6 +272,9 @@ type Loader struct {
 	// saveRestoreNet indicates if the saved network stack should be used
 	// during restore.
 	saveRestoreNet bool
+
+	// IZUMI Addition: Store Izumi related firewall configs
+	izumiConfig IzumiConfig
 }
 
 // execID uniquely identifies a sentry process that is executed in a container.
@@ -876,6 +897,12 @@ func (l *Loader) Run() error {
 }
 
 func (l *Loader) run() error {
+	log.Warningf("IZUMI: Loader run() intercepted")
+
+	if err := l.loadIzumiConfig(); err != nil {
+		return err
+	}
+
 	if l.root.conf.Network == config.NetworkHost {
 		// Delay host network configuration to this point because network namespace
 		// is configured after the loader is created and before Run() is called.
@@ -973,6 +1000,48 @@ func (l *Loader) run() error {
 		return err
 	}
 	l.state = started
+	return nil
+}
+
+func (l *Loader) loadIzumiConfig() error {
+	log.Warningf("IZUMI: Attempting to load izumi network config.")
+
+	fmt.Println("IzumiConfig file is: ", l.root.conf.IzumiConfig)
+
+	// Read YAML File
+	yamlContents, err := os.ReadFile(l.root.conf.IzumiConfig)
+	if err != nil {
+		fmt.Errorf("Couldn't open the config yaml file.")
+	}
+
+	var izumiConfig IzumiConfig
+	if string(yamlContents) == "" {
+		fmt.Println("Could not load from actual yaml")
+
+		yamlContents = []byte(`
+izumi_rules:
+  version: '1.0'
+
+  # Default deny all network access
+  default_policy: deny
+
+  ip_filters:
+    - ip: "192.168.1.0/24"
+      ports: [22]
+
+
+    - ip: "127.0.0.1"
+      ports: [1024,65535]
+`)
+	}
+	err = yaml.Unmarshal(yamlContents, &izumiConfig)
+	if err != nil {
+		fmt.Println("cannot unmarshal data: %v", err)
+	}
+
+	fmt.Println("Version: =", izumiConfig.IzumiConfig.Version)
+	fmt.Println("Default Policy: =", izumiConfig.IzumiConfig.DefaultPolicy)
+
 	return nil
 }
 

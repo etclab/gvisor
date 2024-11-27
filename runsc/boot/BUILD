@@ -137,6 +137,7 @@ go_library(
         "@com_github_syndtr_gocapability//capability:go_default_library",
         "@org_golang_google_protobuf//proto:go_default_library",
         "@org_golang_x_sys//unix:go_default_library",
+        "@in_gopkg_yaml_v3//:yaml_v3",
     ],
 )
 

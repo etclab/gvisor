@@ -29,7 +29,6 @@ import (
 	"gvisor.dev/gvisor/pkg/tcpip/transport"
 	"gvisor.dev/gvisor/pkg/tcpip/transport/internal/network"
 	"gvisor.dev/gvisor/pkg/waiter"
-	"gvisor.dev/gvisor/pkg/log"
 )
 
 // +stateify savable
@@ -691,9 +690,6 @@ func (e *endpoint) Readiness(mask waiter.EventMask) waiter.EventMask {
 // HandlePacket is called by the stack when new packets arrive to this transport
 // endpoint.
 func (e *endpoint) HandlePacket(id stack.TransportEndpointID, pkt *stack.PacketBuffer) {
-	nett := pkt.Network()
-	srcAddr := nett.SourceAddress()
-	log.Infof(fmt.Sprintf("IZUMI: pkg/tcpip/transport/icmp/endpoint.go: Packet received from srcAddr: %v\n", srcAddr))
 
 	// Only accept echo replies.
 	switch e.net.NetProto() {

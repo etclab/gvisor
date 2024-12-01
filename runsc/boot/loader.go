@@ -620,6 +620,7 @@ func New(args Args) (*Loader, error) {
 		PIDNamespace:         kernel.NewRootPIDNamespace(creds.UserNamespace),
 		MaxFDLimit:           maxFDLimit,
 		UnixSocketOpts:       unixSocketOpts,
+		EnableIzumi:          args.Conf.EnableIzumi,
 	}); err != nil {
 		return nil, fmt.Errorf("initializing kernel: %w", err)
 	}

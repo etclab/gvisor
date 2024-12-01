@@ -33,6 +33,7 @@
 package kernel
 
 import (
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
@@ -379,6 +380,12 @@ type Kernel struct {
 
 	// UnixSocketOpts stores configuration options for management of unix sockets.
 	UnixSocketOpts transport.UnixSocketOpts
+
+	// izumiEnabled controls whether secure container networking is enabled
+	izumiEnabled bool
+
+	// izumiTLSConfig is the TLS configuration for secure container communication
+	izumiTLSConfig *tls.Config
 }
 
 // InitKernelArgs holds arguments to Init.
@@ -434,6 +441,9 @@ type InitKernelArgs struct {
 
 	// UnixSocketOpts contains configuration options for unix sockets.
 	UnixSocketOpts transport.UnixSocketOpts
+
+	// EnableIzumi enables secure container-to-container communication
+	EnableIzumi bool
 }
 
 // Init initialize the Kernel with no tasks.
@@ -557,7 +567,34 @@ func (k *Kernel) Init(args InitKernelArgs) error {
 
 	k.cgroupRegistry = newCgroupRegistry()
 	k.UnixSocketOpts = args.UnixSocketOpts
+
+	// Initialize Izumi secure networking if enabled
+	if args.EnableIzumi {
+		k.izumiEnabled = true
+
+		// Generate self-signed certificate for PoC
+		cert, err := generateSelfSignedCert()
+		if err != nil {
+			return fmt.Errorf("failed to initialize Izumi: %w", err)
+		}
+
+		k.izumiTLSConfig = &tls.Config{
+			Certificates: []tls.Certificate{cert},
+			// IZUMI TODO: Implement proper cert verification
+			InsecureSkipVerify: true,
+		}
+
+		log.Infof("IZUMI: Izumi secure container networking enabled")
+	}
+
 	return nil
+}
+
+// Helper function to generate a temporary certificate
+func generateSelfSignedCert() (tls.Certificate, error) {
+	// Implementation omitted - would generate a basic self-signed cert
+	// This is just for PoC, real implementation would use DICE chain
+	return tls.Certificate{}, nil
 }
 
 // +stateify savable
@@ -908,6 +945,22 @@ func (k *Kernel) loadMemoryFiles(ctx context.Context, r, pagesMetadata io.Reader
 	return nil
 }
 
+// Izumi Verification
+func (k *Kernel) VerifyIzumiInitialization() bool {
+	if !k.izumiEnabled {
+		log.Debugf("IZUMI: Izumi Communications is not enabled")
+		return false
+	}
+
+	if k.izumiTLSConfig == nil {
+		log.Debugf("IZUMI: Izumi TLS config is not initialized")
+		return false
+	}
+
+	log.Infof("IZUMI: Izumi initialization verified: enabled=%v, TLS config present", k.izumiEnabled)
+	return true
+}
+
 // UniqueID returns a unique identifier.
 func (k *Kernel) UniqueID() uint64 {
 	id := k.uniqueID.Add(1)
@@ -1085,6 +1138,7 @@ func (ctx *createProcessContext) getMemoryCgroupID() uint32 {
 // CreateProcess has no analogue in Linux; it is used to create the initial
 // application task, as well as processes started by the control server.
 func (k *Kernel) CreateProcess(args CreateProcessArgs) (*ThreadGroup, ThreadID, error) {
+	log.Infof("IZUMI: Creating process with Izumi status: %v", k.VerifyIzumiInitialization())
 	k.extMu.Lock()
 	defer k.extMu.Unlock()
 	log.Infof("EXEC: %v", args.Argv)

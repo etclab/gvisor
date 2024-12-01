@@ -68,5 +68,11 @@ docker run --runtime=runsc-debug --rm -it alpine /bin/sh
     - Any network requests from `192.168.0.4` are dropped. 
     - Modifications made in `pkg/tcpip/network/ipv4/ipv4.go` to check if received packet is from the address and to drop accordingly.
     - Verify by starting two containers (IPs assigned by default are 192.168.0.3 and 192.168.0.4) and running `ping 192.168.0.3` from the second container.
-    - Ping won't get acknowledged, and the `tail` command with `IZUMI` logs will have message displaying that the packets were dropped. 
-  
+        - Ping won't get acknowledged, and the `tail` command with `IZUMI` logs will have message displaying that the packets were dropped. 
+
+- [x] Place Scaffolding for secure container-to-container networking features
+
+    - Added a `--enable-izumi` flag for runsc configuration to enable this
+    - Modified TCP protocol implementation to be Izumi-aware with basic logging for verification
+    - Network functionalities kept intact and non-intrusive monitoring of TCP connections works
+

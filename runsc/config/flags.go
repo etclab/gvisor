@@ -149,7 +149,8 @@ func RegisterFlags(flagSet *flag.FlagSet) {
 	flagSet.Bool("TESTONLY-save-restore-netstack", false, "TEST ONLY; enable save/restore for netstack.")
 
 	// IZUMI Addition
-	flagSet.String("izumi-config", "", "YAML config file path")
+	flagSet.String("izumi-config", "", "IZUMI; YAML config file path")
+	flagSet.Bool("enable-izumi", false, "IZUMI; enable izumi secure communication between containers.")
 
 }
 

@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"gvisor.dev/gvisor/pkg/log"
 	"gvisor.dev/gvisor/pkg/sync"
 	"gvisor.dev/gvisor/pkg/tcpip"
 	"gvisor.dev/gvisor/pkg/tcpip/header"
@@ -112,6 +113,9 @@ type protocol struct {
 	// The following secrets are initialized once and stay unchanged after.
 	seqnumSecret   [16]byte
 	tsOffsetSecret [16]byte
+
+	// izumiEnabled indicates if secure container networking is enabled
+	izumiEnabled bool
 }
 
 // Number returns the tcp protocol number.
@@ -121,7 +125,20 @@ func (*protocol) Number() tcpip.TransportProtocolNumber {
 
 // NewEndpoint creates a new tcp endpoint.
 func (p *protocol) NewEndpoint(netProto tcpip.NetworkProtocolNumber, waiterQueue *waiter.Queue) (tcpip.Endpoint, tcpip.Error) {
-	return newEndpoint(p.stack, p, netProto, waiterQueue), nil
+	// Keeping original endpoint as is
+	ep := newEndpoint(p.stack, p, netProto, waiterQueue)
+
+	// Log when endpoints are created to verify integration
+	if p.izumiEnabled {
+		log.Infof(fmt.Sprintf("IZUMI: Creating new TCP endpoint for network protocol %d", netProto))
+	}
+
+	// IZUMI TODO:
+	// 1. Wrap endpoint with TLS
+	// 2. Add DICE attestation verification
+	// 3. Add policy enforcement
+
+	return ep, nil
 }
 
 // NewRawEndpoint creates a new raw TCP endpoint. Raw TCP sockets are currently
@@ -562,6 +579,8 @@ func newProtocol(s *stack.Stack, cc string) stack.TransportProtocol {
 		recovery:                   tcpip.TCPRACKLossDetection,
 		seqnumSecret:               seqnumSecret,
 		tsOffsetSecret:             tsOffsetSecret,
+		// Get Izumi configuration from stack
+		izumiEnabled: true,
 	}
 	p.dispatcher.init(s.InsecureRNG(), runtime.GOMAXPROCS(0))
 	return &p

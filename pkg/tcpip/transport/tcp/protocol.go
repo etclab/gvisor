@@ -127,18 +127,20 @@ func (*protocol) Number() tcpip.TransportProtocolNumber {
 func (p *protocol) NewEndpoint(netProto tcpip.NetworkProtocolNumber, waiterQueue *waiter.Queue) (tcpip.Endpoint, tcpip.Error) {
 	// Keeping original endpoint as is
 	ep := newEndpoint(p.stack, p, netProto, waiterQueue)
-
-	// Log when endpoints are created to verify integration
-	if p.izumiEnabled {
-		log.Infof(fmt.Sprintf("IZUMI: Creating new TCP endpoint for network protocol %d", netProto))
-	}
-
+    
+    if p.izumiEnabled {
+        tunnel, err := NewSecureTunnel(ep, p.stack)
+        if err != nil {
+            return nil, err
+        }
+		log.Infof(fmt.Sprintf("IZUMI: Creating new TLS Tunnel for network protocol %d", netProto))
+        return tunnel, nil
+    }
+    
 	// IZUMI TODO:
-	// 1. Wrap endpoint with TLS
-	// 2. Add DICE attestation verification
-	// 3. Add policy enforcement
-
-	return ep, nil
+	// 1. Add DICE attestation verification
+	// 2. Add policy enforcement
+    return ep, nil
 }
 
 // NewRawEndpoint creates a new raw TCP endpoint. Raw TCP sockets are currently

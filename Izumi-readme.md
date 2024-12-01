@@ -76,3 +76,8 @@ docker run --runtime=runsc-debug --rm -it alpine /bin/sh
     - Modified TCP protocol implementation to be Izumi-aware with basic logging for verification
     - Network functionalities kept intact and non-intrusive monitoring of TCP connections works
 
+- [x] Implement TLS Tunnel Scaffolding
+
+    - Currently passes through all traffic unmodified
+    - `izumi-tunnel.go` inside `pkg/tcpip/transport/tcp` 
+

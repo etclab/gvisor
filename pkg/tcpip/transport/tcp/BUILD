@@ -52,6 +52,7 @@ go_library(
         "endpoint.go",
         "endpoint_state.go",
         "forwarder.go",
+        "izumi_tunnel.go",
         "protocol.go",
         "rack.go",
         "rcv.go",

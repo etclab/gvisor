@@ -396,6 +396,7 @@ func (n *Network) CreateLinksAndRoutes(args *CreateLinksAndRoutesArgs, _ *struct
 			}
 
 			log.Infof("Enabling interface %q with id %d on addresses %+v (%v) w/ %d channels", link.Name, nicID, link.Addresses, mac, link.NumChannels)
+			log.Infof("IZUMI: IP address up - %+v", link.Addresses)
 			opts := stack.NICOptions{
 				Name:               link.Name,
 				QDisc:              qDisc,

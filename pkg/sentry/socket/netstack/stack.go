@@ -15,9 +15,10 @@
 package netstack
 
 import (
+	"crypto/tls"
 	"fmt"
-    "crypto/tls"
-    "sync"
+	"sync"
+
 	"gvisor.dev/gvisor/pkg/abi/linux"
 	"gvisor.dev/gvisor/pkg/context"
 	"gvisor.dev/gvisor/pkg/errors/linuxerr"
@@ -45,20 +46,20 @@ type Stack struct {
 	shouldSaveRestoreStack bool
 
 	// Add Izumi extension
-    izumi *IzumiStackExtension
+	izumi *IzumiStackExtension
 }
 
 // IzumiConnection tracks a secure container-to-container connection
 type IzumiConnection struct {
-    authenticated bool
-    peerID       string
+	authenticated bool
+	peerID        string
 }
 
 // IzumiStackExtension adds secure container-to-container communication
 type IzumiStackExtension struct {
-    connections map[string]*IzumiConnection
-    tlsConfig  *tls.Config
-    mu         sync.Mutex
+	connections map[string]*IzumiConnection
+	tlsConfig   *tls.Config
+	mu          sync.Mutex
 }
 
 // EnableSaveRestore enables netstack s/r.
@@ -66,34 +67,6 @@ func (s *Stack) EnableSaveRestore() error {
 	s.shouldSaveRestoreStack = true
 	return nil
 }
-
-// EnableIzumi initializes secure container-to-container communication
-func (s *Stack) EnableIzumi() error {
-    // Just for PoC: Using self-signed cert
-    cert, err := generateSelfSignedCert()
-    if err != nil {
-        return fmt.Errorf("failed to generate cert: %w", err)
-    }
-
-    s.izumi = &IzumiStackExtension{
-        connections: make(map[string]*IzumiConnection),
-        tlsConfig: &tls.Config{
-            Certificates:       []tls.Certificate{cert},
-            InsecureSkipVerify: true, // For PoC only
-        },
-    }
-    
-    // Hook into the network stack to intercept new connections
-    // IZUMI: TODO modify the TCP/IP stack handlers
-    return nil
-}
-
-// Helper function for generating temporary cert
-func generateSelfSignedCert() (tls.Certificate, error) {
-    // TODO: Implementation to generate a basic self-signed cert 
-    return tls.Certificate{}, nil
-}
-
 
 // Destroy implements inet.Stack.Destroy.
 func (s *Stack) Destroy() {

@@ -92,6 +92,7 @@ go_library(
         "//pkg/tcpip/stack",
         "//pkg/tcpip/transport/raw",
         "//pkg/waiter",
+        "//pkg/izumi",
         "@com_github_google_btree//:go_default_library",
     ],
 )

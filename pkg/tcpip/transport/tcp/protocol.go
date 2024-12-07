@@ -23,7 +23,6 @@ import (
 	"strings"
 	"time"
 
-	"gvisor.dev/gvisor/pkg/log"
 	"gvisor.dev/gvisor/pkg/sync"
 	"gvisor.dev/gvisor/pkg/tcpip"
 	"gvisor.dev/gvisor/pkg/tcpip/header"
@@ -127,20 +126,19 @@ func (*protocol) Number() tcpip.TransportProtocolNumber {
 func (p *protocol) NewEndpoint(netProto tcpip.NetworkProtocolNumber, waiterQueue *waiter.Queue) (tcpip.Endpoint, tcpip.Error) {
 	// Keeping original endpoint as is
 	ep := newEndpoint(p.stack, p, netProto, waiterQueue)
-    
-    if p.izumiEnabled {
-        tunnel, err := NewSecureTunnel(ep, p.stack)
-        if err != nil {
-            return nil, err
-        }
-		log.Infof(fmt.Sprintf("IZUMI: Creating new TLS Tunnel for network protocol %d", netProto))
-        return tunnel, nil
-    }
-    
+
+	if p.izumiEnabled {
+		tunnel, err := NewSecureTunnel(ep, p.stack)
+		if err != nil {
+			return nil, err
+		}
+		return tunnel, nil
+	}
+
 	// IZUMI TODO:
 	// 1. Add DICE attestation verification
 	// 2. Add policy enforcement
-    return ep, nil
+	return ep, nil
 }
 
 // NewRawEndpoint creates a new raw TCP endpoint. Raw TCP sockets are currently

@@ -58,6 +58,7 @@ go_library(
         "//pkg/tcpip/stack",
         "//pkg/tcpip/transport",
         "//pkg/tcpip/transport/tcp",
+        "//pkg/tcpip/transport/tlstcp",
         "//pkg/tcpip/transport/udp",
         "//pkg/usermem",
         "//pkg/waiter",

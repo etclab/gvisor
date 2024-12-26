@@ -30,7 +30,7 @@ import (
 	"gvisor.dev/gvisor/pkg/tcpip/header"
 	"gvisor.dev/gvisor/pkg/tcpip/network/ipv4"
 	"gvisor.dev/gvisor/pkg/tcpip/network/ipv6"
-	"gvisor.dev/gvisor/pkg/tcpip/transport/tcp"
+	"gvisor.dev/gvisor/pkg/tcpip/transport/tlstcp"
 	"gvisor.dev/gvisor/pkg/tcpip/transport/udp"
 	"gvisor.dev/gvisor/pkg/waiter"
 )
@@ -53,7 +53,7 @@ func getTransportProtocol(ctx context.Context, stype linux.SockType, protocol in
 		if protocol != 0 && protocol != unix.IPPROTO_TCP {
 			return 0, true, syserr.ErrInvalidArgument
 		}
-		return tcp.ProtocolNumber, true, nil
+		return tlstcp.TLSTCP, true, nil
 
 	case linux.SOCK_DGRAM:
 		switch protocol {

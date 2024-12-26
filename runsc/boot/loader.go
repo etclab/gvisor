@@ -75,6 +75,7 @@ import (
 	"gvisor.dev/gvisor/pkg/tcpip/transport/icmp"
 	"gvisor.dev/gvisor/pkg/tcpip/transport/raw"
 	"gvisor.dev/gvisor/pkg/tcpip/transport/tcp"
+	"gvisor.dev/gvisor/pkg/tcpip/transport/tlstcp"
 	"gvisor.dev/gvisor/pkg/tcpip/transport/udp"
 	"gvisor.dev/gvisor/runsc/boot/filter"
 	pf "gvisor.dev/gvisor/runsc/boot/portforward"
@@ -1514,6 +1515,7 @@ func newEmptySandboxNetworkStack(clock tcpip.Clock, allowPacketEndpointWrite boo
 	netProtos := []stack.NetworkProtocolFactory{ipv4.NewProtocol, ipv6.NewProtocol, arp.NewProtocol}
 	transProtos := []stack.TransportProtocolFactory{
 		tcp.NewProtocol,
+		tlstcp.NewProtocol,
 		udp.NewProtocol,
 		icmp.NewProtocol4,
 		icmp.NewProtocol6,

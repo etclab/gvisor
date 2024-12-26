@@ -123,6 +123,7 @@ go_library(
         "//pkg/tcpip/transport/icmp",
         "//pkg/tcpip/transport/raw",
         "//pkg/tcpip/transport/tcp",
+        "//pkg/tcpip/transport/tlstcp",
         "//pkg/tcpip/transport/udp",
         "//pkg/urpc",
         "//runsc/boot/filter",

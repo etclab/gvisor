@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	TLSTCP tcpip.TransportProtocolNumber = 201
+	TLSTCP tcpip.TransportProtocolNumber = 253
 )
 
 type protocol struct {
@@ -70,12 +70,24 @@ func (p *protocol) SetOption(option tcpip.SettableTransportProtocolOption) tcpip
 }
 
 func (p *protocol) NewEndpoint(netProto tcpip.NetworkProtocolNumber, waiterQueue *waiter.Queue) (tcpip.Endpoint, tcpip.Error) {
-	log.Infof("IZUMI: new TLSTCP Endpoint created")
-	tcpEP, _ := p.stack.NewEndpoint(tcp.ProtocolNumber, netProto, waiterQueue)
+	log.Infof("IZUMI: TLSTCP NewEndpoint triggered")
+	// Get the TCP protocol handler directly
+	tcpHandler := tcp.NewProtocol(p.stack)
+
+	// Create TCP endpoint using the handler
+	tcpEP, err := tcpHandler.NewEndpoint(netProto, waiterQueue)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Infof("IZUMI: new TCP Endpoint created")
+
 	tlstcpEP := &endpoint{
 		tcpEP:     tcpEP,
 		tlsConfig: &tls.Config{},
 	}
+	log.Infof("IZUMI: TLSTCP NewEndpoint created")
+
 	return tlstcpEP, nil
 
 }

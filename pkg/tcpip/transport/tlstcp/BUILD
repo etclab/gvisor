@@ -18,5 +18,6 @@ go_library(
         "//pkg/tcpip/stack",
 	    "//pkg/waiter",
         "//pkg/log", 
+        "//pkg/tcpip/adapters/gonet",
     ],
 )

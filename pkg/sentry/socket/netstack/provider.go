@@ -30,7 +30,7 @@ import (
 	"gvisor.dev/gvisor/pkg/tcpip/header"
 	"gvisor.dev/gvisor/pkg/tcpip/network/ipv4"
 	"gvisor.dev/gvisor/pkg/tcpip/network/ipv6"
-	"gvisor.dev/gvisor/pkg/tcpip/transport/tlstcp"
+	// "gvisor.dev/gvisor/pkg/tcpip/transport/tlstcp"
 	"gvisor.dev/gvisor/pkg/tcpip/transport/udp"
 	"gvisor.dev/gvisor/pkg/waiter"
 )
@@ -50,10 +50,12 @@ var rawMissingLogger = log.BasicRateLimitedLogger(time.Minute)
 func getTransportProtocol(ctx context.Context, stype linux.SockType, protocol int) (tcpip.TransportProtocolNumber, bool, *syserr.Error) {
 	switch stype {
 	case linux.SOCK_STREAM:
-		if protocol != 0 && protocol != unix.IPPROTO_TCP {
+		if protocol != 0 && protocol != unix.IPPROTO_TCP && protocol != 253 {
 			return 0, true, syserr.ErrInvalidArgument
 		}
-		return tlstcp.TLSTCP, true, nil
+		// return tlstcp.TLSTCP, true, nil
+		return 253, true, nil
+
 
 	case linux.SOCK_DGRAM:
 		switch protocol {

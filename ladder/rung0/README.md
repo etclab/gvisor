@@ -72,9 +72,26 @@ flags a container author may change through an OCI annotation *without* the oper
 enabling `--allow-flag-override`. That is why the demo needs no root and no
 `daemon.json` edit.
 
-**The egress filter is outside the runtime, because runsc has nowhere to put it.**
-`--network` accepts only `sandbox|host|none|plugin` (`runsc/config/config.go:735-745`);
-there is no host or CIDR allowlist anywhere in the runsc flag set. See "Report back".
+**The egress filter is outside the runtime because runsc exposes no knob for it — not
+because the runtime cannot filter.** `--network` accepts only `sandbox|host|none|plugin`
+(`runsc/config/config.go:734-746`), and no runsc flag takes a host, address, or CIDR.
+But netstack contains a full iptables implementation whose OUTPUT hook runs on every
+locally-generated packet (`pkg/tcpip/network/ipv4/ipv4.go:581`, IPv6 twin at
+`pkg/tcpip/network/ipv6/ipv6.go:828`) and which matches on destination prefix
+(`IPHeaderFilter.Dst`/`DstMask`, `pkg/tcpip/stack/iptables_types.go:199-204`). It simply
+defaults to ACCEPT. runsc even installs rules into that stack at boot, before the
+container's first process exists: `--reproduce-nat` scrapes a table from the container's
+netns and ships it over an FD (`runsc/sandbox/network.go:679-696` →
+`runsc/boot/network.go:576`). It scrapes only the `nat` table
+(`runsc/sandbox/network_unsafe.go:69-70`), so it can express redirection but not a
+deny-by-default allowlist.
+
+Upstream's own guidance is to enforce exactly where rung 0 does: "Network policy
+controls should be applied at the container level to ensure appropriate network policy
+enforcement. Note that the sandbox itself is not capable of altering or configuring
+these mechanisms" (`g3doc/architecture_guide/security.md:173-176`). Rung 0 follows that;
+rung 2 revisits it, and inherits more machinery than this rung first assumed — see
+"Open questions".
 
 ## Threat model delta
 
@@ -129,10 +146,15 @@ routing or firewall rather than from docker's network topology.
 Where `rung-0-ambient-authority.md` and `00-conventions.md` were wrong about this tree
 or this box:
 
-1. **`runsc` offers no built-in host/CIDR filtering** — the spec said "assume it does
-   not until you confirm otherwise". Confirmed: `--network` takes only
-   `sandbox|host|none|plugin` (`runsc/config/config.go:735-745`), and no other flag
-   filters by host or CIDR. The negative result stands.
+1. **`runsc` offers no *flag* for host/CIDR filtering — but netstack can filter.** The
+   spec said "assume it does not until you confirm otherwise", and the flag surface
+   confirms it: `--network` takes only `sandbox|host|none|plugin`
+   (`runsc/config/config.go:734-746`) and nothing in the flag set takes an address or
+   prefix. That is *not* the same as "the runtime cannot filter", which an earlier draft
+   of this README claimed on the strength of the flag surface alone. netstack's iptables
+   is always live on the egress path and already matches on destination prefix; what is
+   absent is a way to configure it. Corrected after a documentation audit — the original
+   reading was taken from flag definitions without opening `g3doc/` or the packet path.
 2. **The broker socket needs `--host-uds=open`**, which the spec did not mention.
    Default `none` makes a bind-mounted unix socket unusable from inside the sandbox and
    the failure reads as `ECONNREFUSED`, which looks like a dead broker rather than a
@@ -178,6 +200,24 @@ That is rung 1's problem. Do not fix it here.
 - The proxy allowlists by hostname, so an agent that connects to `wiki.corp`'s IP
   directly would bypass the name check — topology is what stops it today. If rung 2
   moves the filter inside the runtime, is the enforcement point an address or a name?
+- **Rung 2 inherits most of an in-runtime egress filter.** A documentation audit of this
+  claim turned up more than rung 0 assumed. The interception point exists
+  (`CheckOutput`, `pkg/tcpip/network/ipv4/ipv4.go:581`); destination-prefix matching
+  exists and is tested (`test/iptables/filter_output.go:30`); the boot-time delivery
+  channel exists (`NATBlob` over an FD, `runsc/boot/network.go:194-196`); and the
+  consumer already dispatches on the `filter` table as well as `nat`
+  (`pkg/sentry/socket/netfilter/netfilter.go:195-197`), so it needs no change. The one
+  blocker is on the runsc side: `writeNATBlob()` hardcodes the table name `"nat\x00"`
+  (`runsc/sandbox/network_unsafe.go:69-70`). Two properties would make an in-runtime
+  filter stronger than this rung's proxy: rules land before the container's PID 1 exists,
+  and with the default `--net-raw=false` the workload cannot reach the setsockopt that
+  would remove them (CAP_NET_RAW is stripped from the bounding set,
+  `runsc/specutils/specutils.go:387`). Two cautions: do not build on
+  `pkg/tcpip/nftables` in this revision — it is behind `--TESTONLY-nftables` and
+  self-declared not thread-safe (`pkg/tcpip/nftables/nftables_types.go:59-60`) — and give
+  any new flag added to `overrideAllowlist` a `check` func so a container author can only
+  tighten it, the way `checkQDiscTBFRate` does (`runsc/config/flags.go:270-280`).
+  `flagReproduceNFTables` is currently on that list with no check (`flags.go:215`).
 - The proxy refuses `CONNECT`, so the demo is plaintext HTTP end to end. A real
   deployment needs TLS through this door, and then the allowlist either terminates TLS
   or degrades to SNI matching. Neither is a rung-0 question, but rung 3's attested

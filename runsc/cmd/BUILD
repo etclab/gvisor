@@ -23,6 +23,7 @@ go_library(
         "install.go",
         "install_sidecars.go",
         "kill.go",
+        "ladder.go",
         "list.go",
         "metric_export.go",
         "metric_metadata.go",

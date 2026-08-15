@@ -28,6 +28,7 @@ import (
 	"gvisor.dev/gvisor/pkg/sentry/kernel"
 	"gvisor.dev/gvisor/pkg/sentry/socket/netfilter"
 	"gvisor.dev/gvisor/pkg/sentry/socket/plugin"
+	"gvisor.dev/gvisor/pkg/sync"
 	"gvisor.dev/gvisor/pkg/tcpip"
 	"gvisor.dev/gvisor/pkg/tcpip/link/ethernet"
 	"gvisor.dev/gvisor/pkg/tcpip/link/fdbased"
@@ -75,6 +76,18 @@ type Network struct {
 	// PluginStack is a third-party network stack to use in place of
 	// netstack when non-nil.
 	PluginStack plugin.PluginStack
+
+	// LadderTaskScope mirrors config.Config.LadderTaskScope. It gates
+	// LadderNarrow; when false, LadderNarrow is a no-op that returns an error.
+	LadderTaskScope bool
+
+	// ladderMu protects ladderScope.
+	ladderMu sync.Mutex
+
+	// ladderScope is the egress allowlist installed by the most recent
+	// successful LadderNarrow call, or nil if there has been none. It is
+	// protected by ladderMu.
+	ladderScope []*net.IPNet
 }
 
 // Route represents a route in the network stack.
@@ -631,4 +644,159 @@ func ipToAddress(ip net.IP) tcpip.Address {
 func ipMaskToAddressMask(ipMask net.IPMask) tcpip.AddressMask {
 	addr := ipToAddress(net.IP(ipMask))
 	return tcpip.MaskFromBytes(addr.AsSlice())
+}
+
+// ladderLoopbackCIDR is implicitly added to every ladder scope so that the
+// sandbox's own internal traffic keeps working.
+const ladderLoopbackCIDR = "127.0.0.0/8"
+
+// LadderNarrowArgs are arguments to LadderNarrow.
+type LadderNarrowArgs struct {
+	// AllowedCIDRs is the set of IPv4 destination prefixes that the sandbox is
+	// allowed to send to, e.g. []string{"169.254.0.10/32"}. Loopback is always
+	// allowed and need not be listed.
+	AllowedCIDRs []string
+}
+
+// LadderNarrowResult is returned by LadderNarrow.
+type LadderNarrowResult struct {
+	// Scope is the egress allowlist in effect after the call, including the
+	// implicitly-allowed loopback prefix.
+	Scope []string
+}
+
+// LadderNarrow narrows the sandbox's egress allowlist by replacing netstack's
+// IPv4 filter table with one whose OUTPUT chain accepts only the given
+// destination prefixes and drops everything else. INPUT and FORWARD are left
+// permissive: this attenuates egress only.
+//
+// The operation is monotonic. The first call establishes the scope; every
+// later call must request a scope contained within the one currently
+// installed, otherwise the call fails and nothing is changed. This makes the
+// control channel an attenuation-only interface: it can never hand the sandbox
+// back reachability that it has already given up.
+//
+// This is a research prototype gated on --ladder-task-scope. Note that it
+// installs only the IPv4 filter table; IPv6 egress is not attenuated.
+func (n *Network) LadderNarrow(args *LadderNarrowArgs, result *LadderNarrowResult) error {
+	if !n.LadderTaskScope {
+		return fmt.Errorf("ladder: disabled: sandbox was not started with --ladder-task-scope")
+	}
+	if n.Stack == nil {
+		return fmt.Errorf("ladder: unsupported: netstack is not in use by this sandbox")
+	}
+	if len(args.AllowedCIDRs) == 0 {
+		return fmt.Errorf("ladder: at least one allowed CIDR is required")
+	}
+
+	// Loopback is always allowed, and is listed first so that it is part of the
+	// recorded scope and therefore survives later narrowing.
+	_, loopback, err := net.ParseCIDR(ladderLoopbackCIDR)
+	if err != nil {
+		return fmt.Errorf("ladder: parsing loopback CIDR %q: %w", ladderLoopbackCIDR, err)
+	}
+	want := []*net.IPNet{loopback}
+	wantStr := []string{loopback.String()}
+	for _, cidr := range args.AllowedCIDRs {
+		_, prefix, err := net.ParseCIDR(cidr)
+		if err != nil {
+			return fmt.Errorf("ladder: invalid CIDR %q: %w", cidr, err)
+		}
+		if prefix.IP.To4() == nil {
+			return fmt.Errorf("ladder: only IPv4 CIDRs are supported, got %q", cidr)
+		}
+		want = append(want, prefix)
+		wantStr = append(wantStr, prefix.String())
+	}
+
+	n.ladderMu.Lock()
+	defer n.ladderMu.Unlock()
+
+	// Attenuation only: every requested prefix must already be reachable under
+	// the installed scope. The first call has no installed scope and so is
+	// unconstrained.
+	if n.ladderScope != nil {
+		for _, prefix := range want {
+			if !ladderWithinScope(n.ladderScope, prefix) {
+				return fmt.Errorf("ladder: widening rejected: %s not in current scope", prefix)
+			}
+		}
+	}
+
+	n.Stack.IPTables().ReplaceTable(stack.FilterID, ladderFilterTable(want), false /* ipv6 */)
+	n.ladderScope = want
+	result.Scope = wantStr
+	log.Infof("ladder: egress scope narrowed to %v", wantStr)
+	return nil
+}
+
+// ladderWithinScope reports whether prefix is fully contained in one of the
+// prefixes making up scope.
+func ladderWithinScope(scope []*net.IPNet, prefix *net.IPNet) bool {
+	ones, bits := prefix.Mask.Size()
+	for _, allowed := range scope {
+		allowedOnes, allowedBits := allowed.Mask.Size()
+		// A prefix is contained in allowed only if it is at least as specific.
+		if allowedBits != bits || allowedOnes > ones {
+			continue
+		}
+		if allowed.Contains(prefix.IP) {
+			return true
+		}
+	}
+	return false
+}
+
+// ladderFilterTable builds the IPv4 filter table implementing the egress
+// allowlist. The OUTPUT chain accepts packets destined for one of allowed and
+// drops everything else; INPUT and FORWARD accept unconditionally.
+func ladderFilterTable(allowed []*net.IPNet) stack.Table {
+	accept := func() stack.Target {
+		return &stack.AcceptTarget{NetworkProtocol: ipv4.ProtocolNumber}
+	}
+
+	// Rules 0 and 1 are the whole of the INPUT and FORWARD chains.
+	rules := []stack.Rule{
+		{Filter: stack.EmptyFilter4(), Target: accept()},
+		{Filter: stack.EmptyFilter4(), Target: accept()},
+	}
+
+	// The OUTPUT chain starts here: one accept rule per allowed prefix...
+	outputIdx := len(rules)
+	for _, prefix := range allowed {
+		filter := stack.EmptyFilter4()
+		filter.Dst = ipToAddress(prefix.IP)
+		filter.DstMask = ipToAddress(net.IP(prefix.Mask))
+		rules = append(rules, stack.Rule{Filter: filter, Target: accept()})
+	}
+	// ...followed by an unconditional drop, which is both the chain's final
+	// rule and its underflow.
+	dropIdx := len(rules)
+	rules = append(rules, stack.Rule{
+		Filter: stack.EmptyFilter4(),
+		Target: &stack.DropTarget{NetworkProtocol: ipv4.ProtocolNumber},
+	})
+	// Trailing error rule, matching the layout of the default tables.
+	rules = append(rules, stack.Rule{
+		Filter: stack.EmptyFilter4(),
+		Target: &stack.ErrorTarget{NetworkProtocol: ipv4.ProtocolNumber},
+	})
+
+	return stack.Table{
+		Rules: rules,
+		BuiltinChains: [stack.NumHooks]int{
+			stack.Prerouting:  stack.HookUnset,
+			stack.Input:       0,
+			stack.Forward:     1,
+			stack.Output:      outputIdx,
+			stack.Postrouting: stack.HookUnset,
+		},
+		Underflows: [stack.NumHooks]int{
+			stack.Prerouting:  stack.HookUnset,
+			stack.Input:       0,
+			stack.Forward:     1,
+			stack.Output:      dropIdx,
+			stack.Postrouting: stack.HookUnset,
+		},
+	}
 }

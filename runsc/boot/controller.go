@@ -156,6 +156,10 @@ const (
 	// NetworkInitPluginStack initializes third-party network stack.
 	NetworkInitPluginStack = "Network.InitPluginStack"
 
+	// NetworkLadderNarrow narrows the sandbox's egress allowlist. Requires
+	// --ladder-task-scope.
+	NetworkLadderNarrow = "Network.LadderNarrow"
+
 	// DebugStacks collects sandbox stacks for debugging.
 	DebugStacks = "debug.Stacks"
 )
@@ -249,8 +253,9 @@ func (c *controller) registerHandlers() {
 
 	if eps, ok := l.k.RootNetworkNamespace().Stack().(*netstack.Stack); ok {
 		c.srv.Register(&Network{
-			Stack:  eps.Stack,
-			Kernel: l.k,
+			Stack:           eps.Stack,
+			Kernel:          l.k,
+			LadderTaskScope: l.root.conf.LadderTaskScope,
 		})
 	}
 

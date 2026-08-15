@@ -2238,6 +2238,20 @@ func (s *Sandbox) Trace(f *os.File, duration time.Duration) error {
 	return s.call(boot.ProfileTrace, &opts, nil)
 }
 
+// LadderNarrow narrows the sandbox's egress allowlist to the given IPv4 CIDRs
+// and returns the scope in effect afterwards. The operation is monotonic: the
+// sandbox rejects any request that is not contained in the scope already
+// installed. See boot.Network.LadderNarrow.
+func (s *Sandbox) LadderNarrow(cidrs []string) ([]string, error) {
+	log.Debugf("Ladder narrow %q: %v", s.ID, cidrs)
+	args := boot.LadderNarrowArgs{AllowedCIDRs: cidrs}
+	var result boot.LadderNarrowResult
+	if err := s.call(boot.NetworkLadderNarrow, &args, &result); err != nil {
+		return nil, fmt.Errorf("narrowing sandbox %q egress scope: %w", s.ID, err)
+	}
+	return result.Scope, nil
+}
+
 // ChangeLogging changes logging options.
 func (s *Sandbox) ChangeLogging(args control.LoggingArgs) error {
 	log.Debugf("Change logging start %q", s.ID)

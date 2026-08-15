@@ -177,6 +177,7 @@ func RegisterFlags(flagSet *flag.FlagSet) {
 	flagSet.Bool(flagNetDisconnectOK, true, "Indicates whether open network connections and open unix domain sockets should be disconnected upon save.")
 	flagSet.Bool(flagPauseExternalNetworking, false, "Start the sandbox with external networking disabled. Only supported when using the sandbox network type. The network can be unpaused manually after the sandbox is running.")
 	flagSet.Bool(flagAllowConnectedOnSave, false, "Allow network connections to stay established on save.")
+	flagSet.Bool("ladder-task-scope", false, "EXPERIMENTAL. Enable ladder rung-1 per-task egress attenuation via the control channel (research prototype). When enabled, `runsc ladder-narrow` may monotonically narrow the sandbox's egress allowlist. When disabled, that control call is rejected and the sandbox's filter table is left untouched.")
 
 	// Flags that control sandbox runtime behavior: accelerator related.
 	flagSet.Bool("nvproxy", false, "LEGACY: enable support for Nvidia GPUs. GPU support gets automatically enabled if Nvidia devices are present in the OCI spec.")

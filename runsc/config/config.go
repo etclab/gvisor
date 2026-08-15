@@ -459,6 +459,12 @@ type Config struct {
 	// AllowConnectedOnSave allows network connections to stay established on save.
 	AllowConnectedOnSave bool `flag:"allow-connected-on-save"`
 
+	// LadderTaskScope enables the ladder rung-1 egress attenuation control
+	// call (see boot.Network.LadderNarrow and `runsc ladder-narrow`). This is a
+	// research prototype. When false, the control call is rejected and the
+	// sandbox's netstack filter table is never touched.
+	LadderTaskScope bool `flag:"ladder-task-scope"`
+
 	// AllowRootfsTarAnnotation indicates whether the rootfs tar annotation
 	// should be allowed.
 	AllowRootfsTarAnnotation bool `flag:"allow-rootfs-tar-annotation"`

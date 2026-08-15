@@ -1,0 +1,23 @@
+# The five canonical rung-0 probes, one per ambient-authority channel.
+#
+# This exact file runs under BOTH configs. Nothing in it is config-aware: if a probe
+# behaves differently between BASELINE and ENFORCED, the difference came from the
+# sandbox configuration and nowhere else. That is the whole argument of rung 0, so
+# keep it that way -- no conditionals, no environment sniffing.
+#
+# Each line is a fake_agent action. Comments and blank lines are skipped.
+
+# 1. credentials: ambient secrets in the environment and in mounted config files
+probe-env-creds
+
+# 2a. network: the cloud metadata endpoint, the classic credential-minting channel
+probe-metadata
+
+# 2b. network: egress to a host that is not on any allowlist
+probe-egress evil.example.com
+
+# 3. filesystem: a write outside the designated scratch path
+probe-fs-write /etc/ladder_pwn
+
+# 4. exec: a binary whose entire purpose is to reopen channels 1 and 2
+probe-exec /usr/local/bin/awsctl

@@ -1,0 +1,3 @@
+# byte-compiled harness sources
+__pycache__/
+*.pyc

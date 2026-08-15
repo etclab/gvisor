@@ -1,0 +1,13 @@
+# Runs under the ENFORCED config only, and deliberately so.
+#
+# The other probe files are config-agnostic on purpose. This one is not: it reaches a
+# non-allowlisted host *through the proxy*, which only exists on the enforced agent's
+# network. Under the baseline config the proxy is not reachable at all, so running it
+# there would report a denial that means nothing.
+#
+# Why it matters: without this line, the only enforced egress evidence is ENETUNREACH,
+# which shows deny-by-default from network topology. That would leave "reachable" and
+# "allowed" as the same set, and the allowlist would be a property of the wiring
+# rather than a policy. This proves the second layer: the proxy is willing to talk to
+# the agent and still refuses the destination.
+probe-egress evil.example.com --via-proxy ${LADDER_PROXY}

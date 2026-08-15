@@ -1,0 +1,6 @@
+# The egress allowlist, enforced by the proxy outside the sandbox.
+#
+# One host per line. This is the entire set of names the rung-0 agent can reach, and
+# it is fixed at deploy time -- which is precisely the crack rung 1 opens. A task that
+# only needs metrics still gets the wiki, because the agent's *role* might need it.
+wiki.corp

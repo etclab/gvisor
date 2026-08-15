@@ -1,0 +1,17 @@
+# BASELINE agent image: a deliberately ordinary agent container.
+#
+# Nothing here is careless on purpose beyond what a normal deployment looks like: a
+# full base image with an interpreter, a shell, and a cloud CLI someone once needed.
+# The point of rung 0 is that this is the default, not a mistake.
+#
+# Build context: ladder/common/
+FROM python:3.12-slim
+
+COPY fake_agent/fake_agent.py /ladder/fake_agent.py
+COPY probes/ /ladder/probes/
+COPY images/awsctl /usr/local/bin/awsctl
+# COPY preserves the host file mode, and a 077 umask on the build host would otherwise
+# leave the agent unreadable to any uid but root.
+RUN chmod +x /usr/local/bin/awsctl && chmod -R a+rX /ladder
+
+ENTRYPOINT ["python3", "/ladder/fake_agent.py"]

@@ -1,0 +1,21 @@
+#!/usr/bin/env python3
+"""awsctl - stand-in for a cloud CLI that happens to be lying around in the image.
+
+Present in the BASELINE image, absent from the ENFORCED one. It exists so the exec
+channel has something to exec whose whole purpose is to reopen channels 1 and 2: it
+reads ambient credentials and talks to the metadata endpoint. A demo that only probed
+`exec /bin/sh` would be arguing about shells; this argues about reachable authority.
+"""
+
+import os
+import sys
+import urllib.request
+
+creds = os.environ.get("AWS_ACCESS_KEY_ID", "")
+print("awsctl: ambient credential %s" % (creds[:6] + "..." if creds else "<none in env>"))
+try:
+    token = urllib.request.urlopen("http://169.254.169.254/latest/api/token", timeout=3).read()
+    print("awsctl: metadata endpoint answered %s" % token.decode()[:40])
+except Exception as e:
+    print("awsctl: metadata endpoint unreachable (%s)" % e)
+    sys.exit(1)

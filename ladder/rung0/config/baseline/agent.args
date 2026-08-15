@@ -1,0 +1,42 @@
+# BASELINE: how an agent gets deployed when nobody has thought about it yet.
+#
+# Nothing here is a strawman. Every line is a thing a real deployment does for a real
+# reason: credentials in the environment because the SDK reads them there, a mounted
+# credentials file because someone's tooling wanted one, the workspace bind-mounted
+# because the agent edits code, a writable root because the base image expects it, and
+# a network the agent shares with everything else it might need to reach.
+#
+# The result is that the agent's *possible* actions are the deployment's permissions,
+# which have nothing to do with the agent's *needed* actions. That gap is P0.
+#
+# One argument per line. ${VAR} is expanded by demo.sh.
+
+--runtime=${BASELINE_RUNTIME}
+
+# The agent sits directly on the network where every service lives, which is what
+# "just put it on the VPC" produces.
+--network=ladder-world
+--add-host=wiki.corp:169.254.0.10
+--add-host=evil.example.com:169.254.0.20
+
+# Ambient credentials, the ordinary way: environment variables the SDK picks up.
+# Obvious fakes -- no real secret is ever committed to this repo.
+--env=AWS_ACCESS_KEY_ID=AKIAFAKEBASELINE0001
+--env=AWS_SECRET_ACCESS_KEY=wJalrFAKEsecretKEYbaselineDEMO
+--env=LADDER_DEMO_SECRET=hunter2-not-a-real-secret
+--env=LADDER_PROXY=http://${LADDER_PROXY_IP}:3128
+
+# ...and the other ordinary way: a credentials file mounted in.
+--volume=${LADDER_DIR}/rung0/config/baseline/dot-aws:/root/.aws:ro
+
+# The workspace, writable, because the agent works on a checkout.
+--volume=${LADDER_RUNTIME_DIR}/workspace:/host-workspace
+
+# Same scratch and broker socket the enforced config gets, so that neither is what
+# makes the difference between the two columns.
+--volume=${LADDER_RUNTIME_DIR}/scratch:/scratch
+--volume=${LADDER_RUNTIME_DIR}/sock:/broker
+--annotation=dev.gvisor.flag.host-uds=open
+
+# Note what is absent: no --read-only, no --cap-drop, no --user. The root filesystem is
+# writable and the process is root inside the container.

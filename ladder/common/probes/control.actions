@@ -1,0 +1,16 @@
+# The CONTROL actions: the legitimate task, run under the ENFORCED config.
+#
+# Conventions section 3: a rung without a passing control is not useful, it may just be
+# denying everything. Everything below is a real world-effect, and every one of them
+# goes through the broker or the egress allowlist -- the two doors rung 0 leaves open.
+
+# The sanctioned path to a world-effect. The broker holds the credential; the agent
+# gets the result and never sees the key.
+call-broker read_metrics
+call-broker read_wiki deploy-runbook
+
+# A mutating tool, to show the open door is not read-only by accident.
+call-broker write_config retention_days 30
+
+# The one allowlisted host, reached through the egress proxy.
+probe-egress wiki.corp --via-proxy ${LADDER_PROXY}

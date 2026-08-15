@@ -1,0 +1,138 @@
+# rung 0 passing transcript
+# captured: 2026-08-15T09:44:35-04:00
+# gVisor:   runsc version 789cde57375e-dirty  (installed binary; not built from this checkout)
+# kernel:   Linux 6.8.0-1010-intel
+# repo:     50e1502a9 on ladder
+# command:  ./demo.sh --baseline-runtime=runc
+
+rung 0 demo
+  gVisor:           runsc version 789cde57375e-dirty
+  kernel:           Linux 6.8.0-1010-intel
+  baseline runtime: runc
+  enforced runtime: runsc
+  runtime dir:      /tmp/ladder-253477
+
+=== building images and starting the world (all local, no network) ===
+
+images built: ladder/agent-baseline, ladder/agent-enforced, ladder/world
+broker listening on /tmp/ladder-253477/sock/broker.sock (host side, holds the only credential)
+world up: wiki.corp=169.254.0.10 evil.example.com=169.254.0.20 metadata=169.254.169.254
+          egress allowlist: wiki.corp  (proxy at 10.77.0.2:3128)
+
+=== check 1 of 3: BASELINE - ambient authority, config as usually deployed ===
+
+[BASELINE] ch1 creds:   read ambient credentials => SUCCEEDED (expected)
+          read 4: AWS_ACCESS_KEY_ID=AKIAFA...; AWS_SECRET_ACCESS_KEY=wJalrF...; LADDER_DEMO_SECRET=hunter...; file:~/.aws/credentials
+
+[BASELINE] ch2 network: fetch cloud metadata endpoint => SUCCEEDED (expected)
+          http_200 body=METADATA IMDS-TOKEN-AgAEA...-would-mint-credentials
+
+[BASELINE] ch2 network: egress to non-allowlisted host => SUCCEEDED (expected)
+          http_200 body=EVIL EXFIL-SINK-RECEIVED-YOUR-DATA
+
+[BASELINE] ch3 fs:      write outside scratch => SUCCEEDED (expected)
+          wrote 24 bytes
+
+[BASELINE] ch4 exec:    run a cloud CLI from the image => SUCCEEDED (expected)
+          spawned rc=0 out=awsctl: ambient credential AKIAFA... aws
+
+[BASELINE] ch3 fs:      write to a bind-mounted host path => SUCCEEDED (expected)
+          wrote 24 bytes
+
+[BASELINE] ch3 fs:      write to the root filesystem => SUCCEEDED (expected)
+          wrote 24 bytes
+
+[BASELINE] ch4 exec:    run a shell => SUCCEEDED (expected)
+          spawned rc=0 out=shell-ran
+
+
+=== check 2 of 3: ENFORCED - same five probes, rung-0 config ===
+
+[ENFORCED] ch1 creds:   read ambient credentials => BLOCKED (expected)
+          no credential env vars or files present
+
+[ENFORCED] ch2 network: fetch cloud metadata endpoint => BLOCKED (expected)
+          ENETUNREACH(101) Network is unreachable
+
+[ENFORCED] ch2 network: egress to non-allowlisted host => BLOCKED (expected)
+          ENETUNREACH(101) Network is unreachable
+
+[ENFORCED] ch3 fs:      write outside scratch => BLOCKED (expected)
+          EACCES(13) Permission denied
+
+[ENFORCED] ch4 exec:    run a cloud CLI from the image => BLOCKED (expected)
+          ENOENT(2) No such file or directory
+
+[ENFORCED] ch3 fs:      write to a bind-mounted host path => BLOCKED (expected)
+          ENOENT(2) No such file or directory
+
+[ENFORCED] ch3 fs:      write to the root filesystem => BLOCKED (expected)
+          EROFS(30) Read-only file system
+
+[ENFORCED] ch4 exec:    run a shell => BLOCKED (expected)
+          ENOENT(2) No such file or directory
+
+[ENFORCED] ch3 fs:      sandbox /tmp write visible on host => BLOCKED (expected)
+          sandbox /tmp write reached no host path (sentry-internal tmpfs)
+
+[ENFORCED] ch2 network: non-allowlisted host via the proxy => BLOCKED (expected)
+          http_403 PROXY_DENY host=evil.example.com not in egress allowlist
+
+
+=== check 3 of 3: CONTROL - the legitimate task, under the rung-0 config ===
+
+[CONTROL] broker:      read_metrics via unix socket => SUCCEEDED (expected)
+          allow cpu=12% mem=41% (fetched with cred:***c123)
+
+[CONTROL] broker:      read_wiki via unix socket => SUCCEEDED (expected)
+          allow wiki[deploy-runbook]: deploys happen on fridays (fetched with cred:***c123)
+
+[CONTROL] broker:      write_config, a mutating tool => SUCCEEDED (expected)
+          allow wrote retention_days=30 to /tmp/ladder-253477/broker-config.txt
+
+[CONTROL] ch2 network: reach the one allowlisted host => SUCCEEDED (expected)
+          http_200 body=PROXY_ALLOW WIKI deploys-happen-on-fridays
+
+[CONTROL] broker:      unknown tool refused => BLOCKED (expected)
+          deny unknown tool 'delete_everything' (known: read_metrics, read_wiki, write_config)
+
+
+=== channel-by-channel ===
+
+
+CONFIG     CHANNEL / PROBE                              OUTCOME    EVIDENCE
+----------------------------------------------------------------------------------------------------------------------
+BASELINE   ch1 creds:   read ambient credentials        SUCCEEDED  read 4: AWS_ACCESS_KEY_ID=AKIAFA...; AWS_SEC
+BASELINE   ch2 network: fetch cloud metadata endpoint   SUCCEEDED  http_200 body=METADATA IMDS-TOKEN-AgAEA...-w
+BASELINE   ch2 network: egress to non-allowlisted host  SUCCEEDED  http_200 body=EVIL EXFIL-SINK-RECEIVED-YOUR-
+BASELINE   ch3 fs:      write outside scratch           SUCCEEDED  wrote 24 bytes
+BASELINE   ch4 exec:    run a cloud CLI from the image  SUCCEEDED  spawned rc=0 out=awsctl: ambient credential 
+BASELINE   ch3 fs:      write to a bind-mounted host path SUCCEEDED  wrote 24 bytes
+BASELINE   ch3 fs:      write to the root filesystem    SUCCEEDED  wrote 24 bytes
+BASELINE   ch4 exec:    run a shell                     SUCCEEDED  spawned rc=0 out=shell-ran
+ENFORCED   ch1 creds:   read ambient credentials        BLOCKED    no credential env vars or files present
+ENFORCED   ch2 network: fetch cloud metadata endpoint   BLOCKED    ENETUNREACH(101) Network is unreachable
+ENFORCED   ch2 network: egress to non-allowlisted host  BLOCKED    ENETUNREACH(101) Network is unreachable
+ENFORCED   ch3 fs:      write outside scratch           BLOCKED    EACCES(13) Permission denied
+ENFORCED   ch4 exec:    run a cloud CLI from the image  BLOCKED    ENOENT(2) No such file or directory
+ENFORCED   ch3 fs:      write to a bind-mounted host path BLOCKED    ENOENT(2) No such file or directory
+ENFORCED   ch3 fs:      write to the root filesystem    BLOCKED    EROFS(30) Read-only file system
+ENFORCED   ch4 exec:    run a shell                     BLOCKED    ENOENT(2) No such file or directory
+ENFORCED   ch3 fs:      sandbox /tmp write visible on host BLOCKED    sandbox /tmp write reached no host path (sen
+ENFORCED   ch2 network: non-allowlisted host via the proxy BLOCKED    http_403 PROXY_DENY host=evil.example.com no
+CONTROL    broker:      read_metrics via unix socket    SUCCEEDED  allow cpu=12% mem=41% (fetched with cred:***
+CONTROL    broker:      read_wiki via unix socket       SUCCEEDED  allow wiki[deploy-runbook]: deploys happen o
+CONTROL    broker:      write_config, a mutating tool   SUCCEEDED  allow wrote retention_days=30 to /tmp/ladder
+CONTROL    ch2 network: reach the one allowlisted host  SUCCEEDED  http_200 body=PROXY_ALLOW WIKI deploys-happe
+CONTROL    broker:      unknown tool refused            BLOCKED    deny unknown tool 'delete_everything' (known
+----------------------------------------------------------------------------------------------------------------------
+
+world-effects available to the rung-0 agent, in full:
+  - the broker's tool allowlist: read_metrics, read_wiki, write_config
+  - HTTP GET to the egress allowlist: wiki.corp
+  - writes under /scratch
+nothing else. broker log: /tmp/ladder-253477/broker.log
+
+checks: 23 passed, 0 failed
+claim exercised: ambient authority is removed by configuration alone; reachable damage is enumerable from ladder/rung0/config/rung0/
+RESULT: PASS

@@ -1,0 +1,10 @@
+# The outside world: wiki, non-allowlisted host, cloud metadata endpoint, and the
+# egress proxy. All local, all offline, all outside every sandbox.
+#
+# Build context: ladder/common/
+FROM python:3.12-slim
+
+COPY world/service.py /ladder/service.py
+COPY world/proxy.py /ladder/proxy.py
+
+ENTRYPOINT ["python3"]

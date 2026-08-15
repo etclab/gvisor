@@ -1,0 +1,46 @@
+# ENFORCED (rung 0): the same agent, in a sandbox whose reachable damage is
+# enumerable from this file.
+#
+# Config only. There is no gVisor patch in rung 0 -- if this file needed one, either
+# the config approach was not exhausted or we found a real limitation, and the README
+# says which.
+#
+# One argument per line. ${VAR} is expanded by demo.sh.
+
+--runtime=runsc
+
+# gVisor refuses host unix sockets by default (--host-uds=none). host-uds is on
+# runsc's overrideAllowlist (runsc/config/flags.go:213), so a container author can ask
+# for it per-container without the operator enabling --allow-flag-override. This is
+# the one door rung 0 opens deliberately: it is how the agent reaches the broker.
+--annotation=dev.gvisor.flag.host-uds=open
+
+# CHANNEL 2, deny-by-default half. An internal docker network whose only other
+# occupant is the egress proxy. Every other address is ENETUNREACH from here; the
+# allowlist half is enforced by the proxy, outside the sandbox. runsc itself offers no
+# host or CIDR filtering (--network takes only sandbox|host|none|plugin), which is the
+# negative result rung 2 needs.
+--network=ladder-agent
+--env=LADDER_PROXY=http://${LADDER_PROXY_IP}:3128
+
+# Identical name resolution to the baseline, so the two columns differ in
+# reachability and not in whether a name resolves at all.
+--add-host=wiki.corp:169.254.0.10
+--add-host=evil.example.com:169.254.0.20
+
+# CHANNEL 3. Read-only root plus exactly two host paths: somewhere to work, and the
+# broker socket. Caveat, stated because the demo will show it: /tmp remains writable
+# under runsc. It is a sentry-internal tmpfs, so those bytes never reach the host --
+# demo.sh proves that rather than asserting it.
+--read-only
+--volume=${LADDER_RUNTIME_DIR}/scratch:/scratch
+--volume=${LADDER_RUNTIME_DIR}/sock:/broker
+
+# CHANNEL 1 is enforced by absence: no credential env vars, no mounted credentials
+# file. There is nothing to list here, which is the point.
+
+# Ordinary container hygiene. Not load-bearing for any rung-0 claim, but leaving it
+# out would invite the question.
+--cap-drop=ALL
+--security-opt=no-new-privileges
+--user=65534:65534

@@ -1,0 +1,7 @@
+# Look for the file task A left in its scratch, from a different task's sandbox.
+#
+# Claim 3: the sandbox is destroyed at task end and no state carries to the next task.
+# The interesting half is that the bytes still exist on the HOST under task A's
+# directory when this runs -- demo.sh checks that separately -- so a failure here is
+# scoping and not a write that never happened.
+read-source /scratch/task-a-was-here

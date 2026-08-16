@@ -7,7 +7,7 @@
 
 SHELL := /bin/bash
 RUNG ?= 0
-IMPLEMENTED_RUNGS := 0
+IMPLEMENTED_RUNGS := 0 1
 COMMON := common
 RUNTIME_DIR := /tmp/ladder-$(shell id -u)
 
@@ -33,10 +33,13 @@ build:
 	docker build -q -t ladder/agent-baseline:rung0 -f $(COMMON)/images/Dockerfile.agent-baseline $(COMMON)
 	docker build -q -t ladder/agent-enforced:rung0 -f $(COMMON)/images/Dockerfile.agent-enforced $(COMMON)
 	docker build -q -t ladder/world:rung0 -f $(COMMON)/images/Dockerfile.world $(COMMON)
+	docker build -q -t ladder/agent-enforced:rung1 -f $(COMMON)/images/Dockerfile.agent-enforced $(COMMON)
+	docker build -q -t ladder/world:rung1 -f $(COMMON)/images/Dockerfile.world $(COMMON)
 
 clean:
 	-docker rm -f $$(docker ps -aq --filter 'label=ladder=1') 2>/dev/null
 	-for n in $$(docker network ls --filter 'label=ladder=1' --format '{{.Name}}'); do docker network rm $$n; done
 	-docker rmi ladder/agent-baseline:rung0 ladder/agent-enforced:rung0 ladder/world:rung0 2>/dev/null
+	-docker rmi ladder/agent-enforced:rung1 ladder/world:rung1 2>/dev/null
 	-rm -rf $(RUNTIME_DIR)
 	@echo "cleaned"

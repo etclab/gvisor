@@ -1,0 +1,30 @@
+# The BASELINE: rung 0's sandbox, written as a manifest.
+#
+# This is not a strawman and it is not rung 1's design failing. It is rung 0 working
+# exactly as claimed -- the sandbox is minimal relative to the agent's ROLE, and the
+# role is the union of everything any of its tasks might need. Read the two task
+# manifests next to this one: each uses a fraction of what this grants, and gets the
+# whole thing anyway because the grant was fixed at deploy time.
+#
+# Running it through the same generator is deliberate. The BASELINE and the ENFORCED
+# sandboxes come from the same code path, so the demo's difference is the manifest and
+# not two hand-written configs that happen to differ.
+
+task_id: role-union
+agent_image: ladder/agent-enforced:rung1
+
+# Everything any task might reach.
+network_allow:
+  - metrics.local:9101
+  - wiki.corp
+
+mounts:
+  scratch: rw
+
+# Everything any task might call.
+broker_tools:
+  - read_metrics
+  - read_wiki
+  - write_config
+
+ttl_seconds: 120

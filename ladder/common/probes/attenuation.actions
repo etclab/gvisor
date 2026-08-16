@@ -1,0 +1,16 @@
+# Mid-task attenuation, from inside one running sandbox.
+#
+# Claim 4: a grant can be narrowed while the task is running, and the narrowing takes
+# effect on subsequent syscalls in the same sandbox. All three actions happen in one
+# container: the host narrows the scope between the first probe and the second, and
+# the marker file is how the two sides agree on the ordering without a sleep race.
+#
+# Both probes name the same host on purpose. demo.sh splits this transcript at the
+# wait-for line, so the before and after halves are asserted against opposite
+# expectations.
+
+probe-egress metrics.local:9101 --via-proxy ${LADDER_PROXY}
+
+wait-for /scratch/narrowed --timeout 30
+
+probe-egress metrics.local:9101 --via-proxy ${LADDER_PROXY}

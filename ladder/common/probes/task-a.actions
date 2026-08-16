@@ -1,0 +1,18 @@
+# Task A's own work: read the metrics for a service.
+#
+# Rung 1 runs this file in two different sandboxes and expects opposite outcomes from
+# neither of them -- it succeeds in task A's sandbox (CONTROL) and it is the *other*
+# file, task-b.actions, that must be blocked there. Keeping each task's work in its own
+# file is what lets the demo run the same bytes under two scopes.
+
+# In scope for task A: the broker tool its manifest names.
+call-broker read_metrics
+
+# In scope for task A: the one host:port its manifest allowlists. Task A's allowlist
+# entry names a port, task B's does not -- both forms are exercised on purpose.
+probe-egress metrics.local:9101 --via-proxy ${LADDER_PROXY}
+
+# A scratch write, so that a later task can try to find it and fail. The claim is not
+# that the write is denied -- task A is entitled to its own scratch -- but that the
+# bytes are unreachable from task B's sandbox.
+probe-fs-write /scratch/task-a-was-here

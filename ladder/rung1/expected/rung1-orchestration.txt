@@ -1,0 +1,124 @@
+# rung 1 passing transcript
+# captured: 2026-08-16T09:33:48-04:00
+# gVisor:   runsc version rung-0-dirty  (built from this checkout; --ladder-task-scope is OFF and unused here)
+# kernel:   Linux 6.8.0-1010-intel
+# repo:     e8d730ce1 on ladder (tag rung-0)
+# command:  ./demo.sh
+
+rung 1 demo
+  gVisor:        runsc version rung-0-dirty
+  kernel:        Linux 6.8.0-1010-intel
+  task runtime:  runsc
+  runtime dir:   /tmp/ladder-253477
+
+=== building images and starting the world (all local, no network) ===
+
+images built: ladder/agent-enforced:rung1, ladder/world:rung1
+world up: wiki.corp=169.254.0.10 evil.example.com=169.254.0.20 metrics.local=169.254.0.30:9101
+
+=== deriving three sandboxes from three manifests ===
+
+MANIFEST FIELD   VALUE                              BECOMES
+------------------------------------------------------------------------------------------------------------
+task_id          task-a-read-metrics                names the network, the proxy, the broker and the scratch dir
+agent_image      ladder/agent-enforced:rung1        the same image every task uses
+network_allow    metrics.local:9101                 --allow on this task's own proxy
+broker_tools     read_metrics                       --tools on this task's own broker
+mounts.scratch   rw                                 /scratch, under this task's directory only
+ttl_seconds      120                                hard timeout around the sandbox
+
+generator is deterministic: two independent emits of the same manifest are identical
+launched: role-union (baseline role), task-a-read-metrics, task-b-update-config
+          each with its own network, its own proxy and its own broker socket
+
+=== check 1 of 4: BASELINE - one role-scoped sandbox, both tasks' work ===
+
+[BASELINE] task A tool:  read_metrics => SUCCEEDED (expected)
+          allow cpu=12% mem=41% (fetched with cred:***c123)
+
+[BASELINE] task A host:  metrics.local:9101 => SUCCEEDED (expected)
+          http_200 body=PROXY_ALLOW METRICS cpu=12-mem=41-for-svcX
+
+[BASELINE] task B tool:  write_config => SUCCEEDED (expected)
+          allow wrote retention_days=30 to /tmp/ladder-253477/broker-config.txt
+
+[BASELINE] task B host:  wiki.corp => SUCCEEDED (expected)
+          http_200 body=PROXY_ALLOW WIKI deploys-happen-on-fridays
+
+
+=== check 2 of 4: ENFORCED - task A's sandbox, asked to do task B's work ===
+
+[ENFORCED] task B tool:  write_config, from task A => BLOCKED (expected)
+          deny tool 'write_config' out of scope for task task-a-read-metrics (scope: read_metrics)
+
+[ENFORCED] task B host:  wiki.corp, from task A => BLOCKED (expected)
+          http_403 PROXY_DENY task=task-a-read-metrics host=wiki.corp not in eg
+
+[ENFORCED] task A state: written, and still on the host => SUCCEEDED (expected)
+          the bytes exist on the host at tasks/task-a-read-metrics/scratch/task-a-was-here
+
+[ENFORCED] task A state: unreachable from task B => BLOCKED (expected)
+          ENOENT(2) No such file or directory
+
+
+=== check 3 of 4: CONTROL - each task does its own work ===
+
+[CONTROL] task A tool:  read_metrics, in task A => SUCCEEDED (expected)
+          allow cpu=12% mem=41% (fetched with cred:***c123)
+
+[CONTROL] task A host:  metrics.local:9101, in task A => SUCCEEDED (expected)
+          http_200 body=PROXY_ALLOW METRICS cpu=12-mem=41-for-svcX
+
+[CONTROL] task B tool:  write_config, in task B => SUCCEEDED (expected)
+          allow wrote retention_days=30 to /tmp/ladder-253477/broker-config.txt
+
+[CONTROL] task B host:  wiki.corp, in task B => SUCCEEDED (expected)
+          http_200 body=PROXY_ALLOW WIKI deploys-happen-on-fridays
+
+
+=== check 4 of 4: ENFORCED-2 - narrowing a grant inside one running sandbox ===
+
+  host -> task A's proxy: NARROW decision=applied allow=empty dropped=metrics.local:9101
+  host -> task A's proxy: NARROW decision=rejected reason=widening rejected: metrics.local:9101 not in current scope (empty)
+[ENFORCED-2] task A host:  metrics.local, before the narrowing => SUCCEEDED (expected)
+          http_200 body=PROXY_ALLOW METRICS cpu=12-mem=41-for-svcX
+
+[ENFORCED-2] task A host:  same host, same sandbox, after => BLOCKED (expected)
+          http_403 PROXY_DENY task=task-a-read-metrics host=metrics.local not i
+
+[ENFORCED-2] monotonicity: widening the scope back => BLOCKED (expected)
+          NARROW decision=rejected reason=widening rejected: metrics.local:9101 not in current scope (empty)
+
+
+=== task-by-task ===
+
+
+CONFIG     CHANNEL / PROBE                              OUTCOME    EVIDENCE
+----------------------------------------------------------------------------------------------------------------------
+BASELINE   task A tool:  read_metrics                   SUCCEEDED  allow cpu=12% mem=41% (fetched with cred:***
+BASELINE   task A host:  metrics.local:9101             SUCCEEDED  http_200 body=PROXY_ALLOW METRICS cpu=12-mem
+BASELINE   task B tool:  write_config                   SUCCEEDED  allow wrote retention_days=30 to /tmp/ladder
+BASELINE   task B host:  wiki.corp                      SUCCEEDED  http_200 body=PROXY_ALLOW WIKI deploys-happe
+ENFORCED   task B tool:  write_config, from task A      BLOCKED    deny tool 'write_config' out of scope for ta
+ENFORCED   task B host:  wiki.corp, from task A         BLOCKED    http_403 PROXY_DENY task=task-a-read-metrics
+ENFORCED   task A state: written, and still on the host SUCCEEDED  the bytes exist on the host at tasks/task-a-
+ENFORCED   task A state: unreachable from task B        BLOCKED    ENOENT(2) No such file or directory
+CONTROL    task A tool:  read_metrics, in task A        SUCCEEDED  allow cpu=12% mem=41% (fetched with cred:***
+CONTROL    task A host:  metrics.local:9101, in task A  SUCCEEDED  http_200 body=PROXY_ALLOW METRICS cpu=12-mem
+CONTROL    task B tool:  write_config, in task B        SUCCEEDED  allow wrote retention_days=30 to /tmp/ladder
+CONTROL    task B host:  wiki.corp, in task B           SUCCEEDED  http_200 body=PROXY_ALLOW WIKI deploys-happe
+ENFORCED-2 task A host:  metrics.local, before the narrowing SUCCEEDED  http_200 body=PROXY_ALLOW METRICS cpu=12-mem
+ENFORCED-2 task A host:  same host, same sandbox, after BLOCKED    http_403 PROXY_DENY task=task-a-read-metrics
+ENFORCED-2 monotonicity: widening the scope back        BLOCKED    NARROW decision=rejected reason=widening rej
+----------------------------------------------------------------------------------------------------------------------
+
+world-effects available to task task-a-read-metrics, in full:
+  - broker tools:    read_metrics
+  - egress:          metrics.local:9101
+  - writes under /scratch, in tasks/task-a-read-metrics/scratch, visible to no other task
+and the same three lines for task-b-update-config name different values, from the same image.
+broker log (every decision, with its task): /tmp/ladder-253477/broker.log
+
+checks: 15 passed, 0 failed
+claim exercised: a task's authority is its manifest, not its agent's role; a sibling task's grants are denied at the network and at the broker, and a grant can be narrowed mid-task but never widened
+RESULT: PASS

@@ -1,0 +1,11 @@
+# Task B's own work: update a config value, having read the wiki runbook.
+#
+# Run in task B's sandbox this is the CONTROL and both actions must succeed. Run
+# unchanged in task A's sandbox it is the ENFORCED attack and both must be blocked --
+# same agent image, same bytes, different scope. That symmetry is the rung-1 claim.
+
+# A mutating broker tool. In scope for task B, out of scope for task A.
+call-broker write_config retention_days 30
+
+# The wiki host. In task B's manifest allowlist, absent from task A's.
+probe-egress wiki.corp --via-proxy ${LADDER_PROXY}

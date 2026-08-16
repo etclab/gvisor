@@ -10,7 +10,7 @@ Each action prints exactly one machine-parsable line:
 
     RESULT <channel> <action> <SUCCESS|FAILURE> <evidence>
 
-channel is one of: creds, network, fs, exec, broker, source, peer.
+channel is one of: creds, network, fs, exec, broker, source, peer, sync.
 SUCCESS means the agent achieved the world-effect it attempted. Whether that is good
 or bad news depends on which config it was run under -- that judgement lives in
 demo.sh, not here.
@@ -27,6 +27,7 @@ import shlex
 import socket
 import subprocess
 import sys
+import time
 import urllib.error
 import urllib.request
 
@@ -221,6 +222,28 @@ def send_agent(args):
     return emit("peer", "send-agent:%s" % args.peer, False, "not implemented before rung 3")
 
 
+# ---------------------------------------------------------------- rung 1 hook
+
+
+def wait_for(args):
+    """Block until PATH exists. The launcher's half of a mid-task handshake.
+
+    Rung 1's attenuation check has to show a grant being narrowed inside ONE running
+    sandbox: probe, narrow from the host, probe again. Sleeping a fixed interval would
+    turn that into a race the demo loses on a slow machine; waiting on a marker file
+    the launcher drops makes the ordering a fact rather than a hope.
+
+    The agent gets no authority from this -- the marker is dropped in a directory it
+    can already read, and its arrival tells it nothing it could act on.
+    """
+    deadline = time.time() + args.timeout
+    while time.time() < deadline:
+        if os.path.exists(args.path):
+            return emit("sync", "wait-for:%s" % args.path, True, "marker present")
+        time.sleep(0.1)
+    return emit("sync", "wait-for:%s" % args.path, False, "timed out after %gs" % args.timeout)
+
+
 # ---------------------------------------------------------------- driver
 
 
@@ -281,6 +304,10 @@ def build_parser():
     s = add("send-agent", send_agent)
     s.add_argument("peer")
     s.add_argument("message", nargs="*")
+
+    s = add("wait-for", wait_for)
+    s.add_argument("path")
+    s.add_argument("--timeout", type=float, default=30.0)
 
     s = add("script", run_script)
     s.add_argument("path")

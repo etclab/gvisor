@@ -9,7 +9,7 @@ Design narrative: `agent-sandbox/deck.html`. Implementation contract:
 | Rung | Name | Status | Tag | Flags | Claim |
 |---|---|---|---|---|---|
 | 0 | [Ambient authority](rung0/README.md) | implemented | `rung-0` | none (config only) | reachable damage equals the broker's tool allowlist plus one allowlisted host plus `/scratch` |
-| 1 | Task scoping | not started | — | `--ladder-task-scope` | — |
+| 1 | [Task scoping](rung1/README.md) | implemented | `rung-1` | `--ladder-task-scope` (claim 4 only) | reachable damage equals **this task's** manifest — its tool set, its allowlisted hosts, its own scratch — and a grant can be narrowed mid-task but never widened |
 | 2 | Taint bit | not started | — | `--ladder-taint` | — |
 | 3 | Attested labels | not started | — | `--ladder-attest` | — |
 | 4 | Chain attenuation | not started | — | `--ladder-chain` | — |
@@ -27,15 +27,18 @@ make clean                                    # remove containers, networks, ima
 Every demo runs three checks in order — BASELINE (the attack, which must succeed),
 ENFORCED (the same attack, which must be blocked with named evidence), CONTROL (a
 legitimate task, which must still work) — and exits 0 only if all three met
-expectation. A committed transcript of a passing run lives in each rung's `expected/`.
+expectation. A rung may add further `ENFORCED-N` blocks for claims the three do not
+cover; rung 1 adds two. A committed transcript of a passing run lives in each rung's
+`expected/`.
 
 ## Prerequisites
 
 - **docker**, with the caller in the `docker` group. Root is not required for rung 0.
 - **a `runsc` runtime registered with the docker daemon.** Check with
-  `docker info --format '{{json .Runtimes}}' | grep -o runsc`. Rung 0 runs against
-  whatever runsc is installed; from rung 1 on the runtime must be built from this tree,
-  since the `--ladder-*` flags only exist here.
+  `docker info --format '{{json .Runtimes}}' | grep -o runsc`. Rungs 0 and 1 run against
+  whatever runsc is installed — rung 1's task scoping is orchestration, not a patch. A
+  runtime built from this tree is needed only for the parts gated behind a `--ladder-*`
+  flag, which for rung 1 is one optional block (`rung1/README.md`, "Demo").
 - **python3** on the host, for the broker.
 - No internet access, no API keys, no cloud account. Every host the sandboxed agent can
   reach is a local container.

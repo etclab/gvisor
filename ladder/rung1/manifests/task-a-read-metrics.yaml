@@ -1,0 +1,24 @@
+# Task A: read the metrics for one service.
+#
+# This file is the whole sandbox. gen_spec.py turns it into a docker run argument list,
+# an egress allowlist for a proxy that serves only this task, and a tool scope for a
+# broker that serves only this task. Nothing else grants this task anything.
+#
+# Compare with task-b-update-config.yaml: the two differ only in their grants, and they
+# name the same agent_image. Same agent, same bytes, two different sandboxes.
+
+task_id: task-a-read-metrics
+agent_image: ladder/agent-enforced:rung1
+
+# The metrics endpoint, and nothing else. An entry may name a port (this one does) or
+# be a bare host, in which case any port on it is allowed.
+network_allow:
+  - metrics.local:9101
+
+mounts:
+  scratch: rw
+
+broker_tools:
+  - read_metrics
+
+ttl_seconds: 120

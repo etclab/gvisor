@@ -1,0 +1,22 @@
+# Task B: update a config value, having consulted the runbook on the wiki.
+#
+# Differs from task-a-read-metrics.yaml in exactly three lines: a different host, a
+# different tool, a different task id. Everything else -- the image, the mount shape,
+# the ttl -- is identical, so the demo's outcomes cannot be explained by anything but
+# the grants.
+
+task_id: task-b-update-config
+agent_image: ladder/agent-enforced:rung1
+
+# A bare host: any port on wiki.corp. Task A's entry names a port instead; both forms
+# are exercised so the matching rule is visible in the transcript rather than assumed.
+network_allow:
+  - wiki.corp
+
+mounts:
+  scratch: rw
+
+broker_tools:
+  - write_config
+
+ttl_seconds: 120

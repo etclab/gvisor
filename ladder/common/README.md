@@ -60,12 +60,18 @@ probe-exec BINARY [ARGS...]            a spawn, reported with its errno
 call-broker TOOL [ARGS...]             the sanctioned path to a world-effect
 read-source SRC [--obey-instructions]  rung 2+; the deterministic injection stand-in
 send-agent PEER MESSAGE                rung 3+; peer messaging
+wait-for PATH [--timeout SECS]         rung 1+; block until the launcher drops a marker
 script FILE                            run a list of actions; ${VAR} expands from env
 ```
 
 `read-source` and `send-agent` exist because conventions §4 requires them in the shared
 harness. Rung 0's demo calls neither: it has no notion of a source label and no
-injection story.
+injection story. Rung 1 uses `read-source` on a plain path to check that one task's
+scratch is unreachable from another's sandbox.
+
+`wait-for` is a handshake, not an authority: rung 1 has to narrow a grant *while* a
+sandbox runs, and a fixed sleep would make the demo a race. The marker file arrives in a
+directory the agent can already read and tells it nothing it could act on.
 
 ## The broker
 
@@ -78,9 +84,16 @@ object per connection:
 <- {"decision": "allow", "result": "..."}      or  {"decision": "deny", "reason": "..."}
 ```
 
-Rung 0's authorization is deliberately trivial — "is this a known tool name" and
-nothing else — so that the rung-1 diff, which narrows the tool set per task, is legible
-as a diff. Every request is logged with its decision and reason.
+Rung 0's authorization was deliberately trivial — "is this a known tool name" and
+nothing else. Rung 1 added the second question, `--tools`: is this tool in the scope of
+the task this socket belongs to. With no `--tools` the broker allows every known tool,
+which is exactly rung 0's behaviour and is what rung 0's demo still runs against. Every
+request is logged with its task, decision and reason.
+
+The task binding is established outside the sandbox and cannot be named from inside it:
+the launcher starts one broker per task and bind-mounts only that broker's socket into
+that task's sandbox, so the socket the agent can reach *is* its identity and there is
+nothing for it to forge.
 
 Note for anyone extending it: gVisor refuses host unix sockets by default
 (`--host-uds=none`), and a sandbox without `--annotation dev.gvisor.flag.host-uds=open`
@@ -97,3 +110,9 @@ cannot fetch a token proves nothing about the enforced one.
 Docker's embedded DNS does not work under runsc (netstack does not inherit the
 namespace's NAT rules), so names come from `--add-host` entries applied identically to
 both configs.
+
+`proxy.py` gained two things in rung 1. An allowlist entry may be a bare host (any port)
+or `host:port`. And the allowlist can be **narrowed** at runtime through a control
+socket — attenuation only, checked in the proxy's own handler, so a caller cannot widen
+a scope no matter what it sends. That socket is a unix socket in a directory bind-mounted
+into the proxy container and into no sandbox; it is not a port the proxy serves.

@@ -62,7 +62,8 @@ the agent could lie about which task it is. Taking a task id from inside the san
 would have made the whole rung decorative. This is the first appearance of the
 unforgeability idea rung 3 generalizes.
 
-**The patch (claim 4, in-runtime half).** 198 lines across 7 files plus one new file:
+**The patch (claim 4, in-runtime half).** 286 added lines across 8 files, one of them
+new (`git diff --stat rung-0..rung-1 -- runsc/`):
 
 - `runsc/config/config.go:466` — `LadderTaskScope bool \`flag:"ladder-task-scope"\``,
   registered at `runsc/config/flags.go:180`. Default off. Config reaches the boot

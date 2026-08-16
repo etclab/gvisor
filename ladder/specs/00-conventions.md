@@ -84,10 +84,26 @@ default **off**:
 
 | Rung | Flag | Effect when off |
 |---|---|---|
-| 1 | `--ladder-task-scope` | no per-task narrowing |
+| 1 | `--ladder-task-scope` | no mid-task attenuation *inside the runtime*; per-task scoping is unaffected |
 | 2 | `--ladder-taint` | no taint tracking |
 | 3 | `--ladder-attest` | no label stamping on outbound messages |
 | 4 | `--ladder-chain` | no chain/capability verification |
+
+Rung 1's row is the corrected one: it landed with less behind its flag than this table
+first assumed. Per-task scoping turned out to be orchestration that holds on stock
+upstream runsc, and only mid-task attenuation needed a patch. Expect that question at
+every rung — put in the runtime only what cannot be enforced outside it, and correct this
+table rather than moving working enforcement into the runtime to match it.
+
+Rung 2's row held as written: the taint bit genuinely cannot be enforced outside the
+runtime, and it landed behind `--ladder-taint`. Two caveats for the table's own framing.
+A **gate** flag is not the same as the rung's **configuration** — rung 2 needed two more
+flags to say which paths are labeled and which are sinks, both inert without the gate, and
+later rungs should expect the same shape rather than contorting to fit one flag. And rung
+2's companion read/act split buys much of the same property with no patch at all, which is
+the "only what cannot be enforced outside it" test applied honestly: what the runtime adds
+is the case where one sandbox must both read and act, plus the fact that "did untrusted
+data enter?" becomes observable rather than assumed.
 
 Rationale: one HEAD binary can then demo *every* level live. A presentation runs the
 same attack with the flag off (succeeds) and on (blocked) in the same session, with no
@@ -130,6 +146,14 @@ Requirements:
   state that at the top of `demo.sh` and in the README.
 - Commit a captured passing transcript to `ladder/rungN/expected/`. Team presentations
   must not depend on live infra. Note the revision and date in the transcript header.
+- If a check's evidence is a line the **sentry** logs, the runtime has to be registered
+  with `--debug-log`. runsc discards sentry logs otherwise — stderr belongs to the
+  application — so `docker logs` shows nothing. From rung 2 on this is a setup step, not
+  an optional nicety; rung 2's README carries the registration command.
+- Verify through `make demo RUNG=n` and `make demo-all`, not by running `demo.sh`
+  directly. §6 is written in terms of the make targets, and a rung that is not in
+  `IMPLEMENTED_RUNGS` passes its own demo while silently sitting outside the regression
+  sweep.
 
 ---
 

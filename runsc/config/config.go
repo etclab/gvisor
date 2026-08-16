@@ -465,6 +465,22 @@ type Config struct {
 	// sandbox's netstack filter table is never touched.
 	LadderTaskScope bool `flag:"ladder-task-scope"`
 
+	// LadderTaint enables the ladder rung-2 taint bit (see pkg/sentry/ladder).
+	// This is a research prototype. When false, no source is labeled, no bit is
+	// ever set, and every hook in the read and write paths is a single
+	// predictable branch.
+	LadderTaint bool `flag:"ladder-taint"`
+
+	// LadderUntrustedPaths is a comma-separated list of absolute in-sandbox
+	// path prefixes whose contents are labeled untrusted: reading from one of
+	// them taints the sandbox. Ignored unless LadderTaint is set.
+	LadderUntrustedPaths string `flag:"ladder-untrusted-paths"`
+
+	// LadderPrivilegedSinks is a comma-separated list of absolute in-sandbox
+	// path prefixes naming privileged sinks: unix sockets that a tainted
+	// sandbox may not write to. Ignored unless LadderTaint is set.
+	LadderPrivilegedSinks string `flag:"ladder-privileged-sinks"`
+
 	// AllowRootfsTarAnnotation indicates whether the rootfs tar annotation
 	// should be allowed.
 	AllowRootfsTarAnnotation bool `flag:"allow-rootfs-tar-annotation"`

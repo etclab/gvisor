@@ -160,6 +160,10 @@ const (
 	// --ladder-task-scope.
 	NetworkLadderNarrow = "Network.LadderNarrow"
 
+	// LadderStatus reports the sandbox's rung-2 taint state. Always available;
+	// it reports Enabled=false when --ladder-taint is off.
+	LadderStatus = "Ladder.Status"
+
 	// DebugStacks collects sandbox stacks for debugging.
 	DebugStacks = "debug.Stacks"
 )
@@ -250,6 +254,10 @@ func (c *controller) registerHandlers() {
 	c.srv.Register(&control.Usage{Kernel: l.k})
 	c.srv.Register(&control.Metrics{})
 	c.srv.Register(&debug{})
+	// Registered unconditionally: with --ladder-taint off, Status answers
+	// "Enabled: false", which is a more useful answer to an operator than a
+	// missing method.
+	c.srv.Register(&Ladder{})
 
 	if eps, ok := l.k.RootNetworkNamespace().Stack().(*netstack.Stack); ok {
 		c.srv.Register(&Network{

@@ -2252,6 +2252,18 @@ func (s *Sandbox) LadderNarrow(cidrs []string) ([]string, error) {
 	return result.Scope, nil
 }
 
+// LadderStatus reports the sandbox's rung-2 taint state. The control socket is
+// host-only, so this is a fact about the sandbox that the sandbox cannot
+// observe or influence. See boot.Ladder.
+func (s *Sandbox) LadderStatus() (*boot.LadderStatusResult, error) {
+	log.Debugf("Ladder status %q", s.ID)
+	var result boot.LadderStatusResult
+	if err := s.call(boot.LadderStatus, &boot.LadderStatusArgs{}, &result); err != nil {
+		return nil, fmt.Errorf("getting sandbox %q ladder status: %w", s.ID, err)
+	}
+	return &result, nil
+}
+
 // ChangeLogging changes logging options.
 func (s *Sandbox) ChangeLogging(args control.LoggingArgs) error {
 	log.Debugf("Change logging start %q", s.ID)

@@ -82,6 +82,16 @@ type FileDescription struct {
 
 	usedLockBSD atomicbitops.Uint32
 
+	// ladderUntrusted is the resolved pathname at which this FileDescription
+	// was opened, if that path was labeled untrusted by --ladder-untrusted-paths,
+	// and "" otherwise. Reading from an fd with a non-empty ladderUntrusted
+	// taints the sandbox; see pkg/sentry/ladder.
+	//
+	// It is set by VirtualFilesystem.ladderLabelFD during open, before the
+	// FileDescription is visible to any other goroutine, and is immutable
+	// afterwards. It is always "" when --ladder-taint is off.
+	ladderUntrusted string
+
 	// impl is the FileDescriptionImpl associated with this Filesystem. impl is
 	// immutable. This should be the last field in FileDescription.
 	impl FileDescriptionImpl
@@ -681,6 +691,7 @@ func (fd *FileDescription) PRead(ctx context.Context, dst usermem.IOSequence, of
 	start := fsmetric.StartReadWait()
 	n, err := fd.impl.PRead(ctx, dst, offset, opts)
 	if n > 0 {
+		fd.ladderTaint("pread")
 		fd.Dentry().InotifyWithParent(ctx, linux.IN_ACCESS, 0, PathEvent)
 	}
 	fsmetric.Reads.Increment()
@@ -696,6 +707,7 @@ func (fd *FileDescription) Read(ctx context.Context, dst usermem.IOSequence, opt
 	start := fsmetric.StartReadWait()
 	n, err := fd.impl.Read(ctx, dst, opts)
 	if n > 0 {
+		fd.ladderTaint("read")
 		fd.Dentry().InotifyWithParent(ctx, linux.IN_ACCESS, 0, PathEvent)
 	}
 	fsmetric.Reads.Increment()
@@ -758,6 +770,10 @@ func (fd *FileDescription) SyncData(ctx context.Context) error {
 // ConfigureMMap mutates opts to implement mmap(2) for the file represented by
 // fd.
 func (fd *FileDescription) ConfigureMMap(ctx context.Context, opts *memmap.MMapOpts) error {
+	// A mapping of a labeled file never calls Read, so the taint is taken at
+	// map time. This is conservative -- a mapping that is never faulted in
+	// still taints -- which is the right direction for a sound bit.
+	fd.ladderTaint("mmap")
 	return fd.impl.ConfigureMMap(ctx, opts)
 }
 

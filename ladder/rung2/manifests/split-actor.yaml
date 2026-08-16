@@ -1,0 +1,27 @@
+# The actor half of the read/act split: hold the tools, ingest nothing untrusted.
+#
+# The mirror image of split-reader.yaml. It has the mutating tool and the egress, and
+# mounts.untrusted: none means the fetched page is not in its filesystem at all -- so
+# the denial a reader sees on /untrusted here is ENOENT, from the mount table, and
+# needs no runtime support whatsoever.
+#
+# The cost, and the reason rung 2 exists: this only works when a task can be cut in
+# two. "Read the page, then apply what it says" cannot be, and that is exactly the
+# task an agent is asked to do.
+
+task_id: split-actor
+agent_image: ladder/agent-enforced:rung2
+
+network_allow:
+  - wiki.corp
+
+mounts:
+  scratch: rw
+  broker: rw
+  untrusted: none
+
+broker_tools:
+  - read_wiki
+  - write_config
+
+ttl_seconds: 60

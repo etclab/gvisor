@@ -69,6 +69,7 @@ func commands() (map[util.SubCommand]string, []subcommands.Command) {
 		// Non-OCI user-facing runsc commands.
 		new(cmd.Do):           userGroup,
 		new(cmd.LadderNarrow): userGroup,
+		new(cmd.LadderStatus): userGroup,
 		new(cmd.FSCheckpoint): userGroup,
 		new(cmd.PortForward):  userGroup,
 		new(cmd.Read):         userGroup,

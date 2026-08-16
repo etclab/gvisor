@@ -65,6 +65,12 @@ type Socket struct {
 	// bound, they cannot be modified.
 	abstractName  string
 	abstractBound bool
+
+	// ladderSink is the resolved pathname of the privileged sink this socket
+	// is connected to, or "" if it is not connected to one. Set by
+	// ladderMarkSink after a successful connect(2); always "" when
+	// --ladder-taint is off. See ladder.go.
+	ladderSink string
 }
 
 var _ = socket.Socket(&Socket{})
@@ -336,6 +342,12 @@ func (s *Socket) Write(ctx context.Context, src usermem.IOSequence, opts vfs.Wri
 	// TODO(gvisor.dev/issue/2601): Support RWF_NOWAIT.
 	if opts.Flags != 0 {
 		return 0, linuxerr.EOPNOTSUPP
+	}
+
+	// Ladder rung 2: the same gate as SendMsg, for write(2)/writev(2) and for
+	// anything that splices into the socket.
+	if s.ladderDenied() {
+		return 0, ladderErr.ToError()
 	}
 
 	t := kernel.TaskFromContext(ctx)
@@ -640,12 +652,27 @@ func (s *Socket) Connect(t *kernel.Task, sockaddr []byte, blocking bool) *syserr
 		}
 	}
 
+	// Ladder rung 2. Connecting to a privileged sink is always allowed; it is
+	// writing to one from a tainted sandbox that is not. Label the socket here
+	// so that the write path has something cheap to check.
+	if err == nil {
+		s.ladderMarkSink(t, sockaddr)
+	}
+
 	return err
 }
 
 // SendMsg implements the linux syscall sendmsg(2) for unix sockets backed by
 // a transport.Endpoint.
 func (s *Socket) SendMsg(t *kernel.Task, src usermem.IOSequence, to []byte, flags int, haveDeadline bool, deadline ktime.Time, controlMessages socket.ControlMessages) (int, *syserr.Error) {
+	// Ladder rung 2: the gate. Checked before any bytes are copied out of the
+	// application, so the sink never sees the request.
+	if s.ladderDenied() {
+		return 0, ladderErr
+	}
+	if len(to) > 0 && ladderDeniedTo(t, to) {
+		return 0, ladderErr
+	}
 	w := EndpointWriter{
 		Ctx:      t,
 		Endpoint: s.ep,

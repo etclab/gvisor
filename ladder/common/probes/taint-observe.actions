@@ -1,0 +1,15 @@
+# Read the page, then hold the sandbox open while the host looks at it.
+#
+# The taint bit is only observable from outside while the sandbox exists, so this file
+# exists to keep one alive across the control call. The marker file is how the two
+# sides agree on the ordering without a sleep race -- the same trick rung 1 uses for
+# mid-task attenuation, and it grants the agent nothing: the marker arrives in a
+# directory it can already read and tells it nothing it could act on.
+
+read-source /untrusted/injected-page.txt --obey-instructions
+
+wait-for /scratch/observed --timeout 60
+
+# After the host has read the bit. Still refused -- observing a sandbox does not
+# change it, and there is no control call that would.
+call-broker --tag after-observe read_wiki deploy-runbook

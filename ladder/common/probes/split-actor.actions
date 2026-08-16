@@ -1,0 +1,10 @@
+# The actor half of the read/act split. No flag, no patch: this runs on stock runsc.
+#
+# The actor holds the mutating tool and does the legitimate config change. It has no
+# untrusted mount, so the page that steered the reader is not in its filesystem at
+# all: the read below fails with ENOENT before any label could matter.
+
+read-source /untrusted/injected-page.txt --obey-instructions
+
+call-broker write_config retention_days 30
+probe-egress wiki.corp --via-proxy ${LADDER_PROXY}

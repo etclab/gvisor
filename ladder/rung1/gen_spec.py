@@ -42,6 +42,27 @@ WORLD_HOSTS = [
 
 REQUIRED_FIELDS = ["task_id", "agent_image", "network_allow", "mounts", "broker_tools", "ttl_seconds"]
 
+# The mounts a task may ask for, and the modes each accepts. The first entry of
+# each list is the default when the manifest omits the mount, so a rung-1
+# manifest that names only scratch still gets its broker socket and still gets
+# no untrusted source.
+#
+#   scratch    the task's own writable host directory
+#   broker     the task's own broker socket -- its tools. Rung 2's read/act
+#              split is a task with this set to none.
+#   untrusted  a read-only mount whose contents the RUNTIME labels untrusted
+#              (rung 2). The mount alone does nothing; --ladder-taint and
+#              --ladder-untrusted-paths on the runtime are what give it meaning.
+MOUNT_MODES = {
+    "scratch": ["none", "rw"],
+    "broker": ["rw", "none"],
+    "untrusted": ["none", "ro"],
+}
+
+
+def mount_mode(manifest, name):
+    return manifest["mounts"].get(name) or MOUNT_MODES[name][0]
+
 TASK_ID_CHARS = set("abcdefghijklmnopqrstuvwxyz0123456789-")
 
 
@@ -74,7 +95,14 @@ def parse_manifest(path):
                     raise ValueError("%s:%d: expected 'key: value' or 'key:'" % (path, lineno))
                 key, _, value = body.partition(":")
                 key, value = key.strip(), value.strip()
-                if value:
+                if value == "[]":
+                    # The one literal the block form cannot express. Rung 2's
+                    # reader task holds no tools and needs no egress, and
+                    # "broker_tools:" with nothing under it is indistinguishable
+                    # from a field someone forgot to fill in.
+                    data[key] = []
+                    current = None
+                elif value:
                     data[key] = value
                     current = None
                 else:
@@ -120,11 +148,14 @@ def validate(manifest, path):
         raise ValueError("%s: broker_tools must be a list" % path)
     if not isinstance(manifest["mounts"], dict):
         raise ValueError("%s: mounts must be a map" % path)
-    unknown_mounts = sorted(set(manifest["mounts"]) - {"scratch"})
+    unknown_mounts = sorted(set(manifest["mounts"]) - set(MOUNT_MODES))
     if unknown_mounts:
-        raise ValueError("%s: unknown mount(s): %s (only 'scratch' exists)" % (path, ", ".join(unknown_mounts)))
-    if manifest["mounts"].get("scratch") not in (None, "rw", "none"):
-        raise ValueError("%s: mounts.scratch must be rw or none" % path)
+        raise ValueError("%s: unknown mount(s): %s (known: %s)" % (
+            path, ", ".join(unknown_mounts), ", ".join(sorted(MOUNT_MODES))))
+    for name, allowed in MOUNT_MODES.items():
+        value = manifest["mounts"].get(name)
+        if value is not None and value not in allowed:
+            raise ValueError("%s: mounts.%s must be one of: %s" % (path, name, ", ".join(allowed)))
     try:
         int(manifest["ttl_seconds"])
     except ValueError:
@@ -169,11 +200,28 @@ def agent_args(manifest):
         out.append("--volume=${LADDER_TASK_DIR}/scratch:/scratch")
     else:
         out.append("# mounts.scratch is not rw: this task gets no writable host path at all.")
+    if mount_mode(manifest, "broker") == "rw":
+        out += [
+            "",
+            "# broker_tools -> this task's own broker socket. Which socket the sandbox can",
+            "# reach IS its task identity, so there is nothing for the agent to forge.",
+            "--volume=${LADDER_TASK_DIR}/sock:/broker",
+        ]
+    else:
+        out += [
+            "",
+            "# mounts.broker is none: this task has no broker socket in its filesystem at",
+            "# all, so it holds no tools and can cause no world-effect through one.",
+        ]
+    if mount_mode(manifest, "untrusted") == "ro":
+        out += [
+            "",
+            "# mounts.untrusted -> the labeled source (rung 2). This line only puts bytes",
+            "# in the sandbox; what makes reading them taint it is --ladder-taint plus",
+            "# --ladder-untrusted-paths=/untrusted on the runtime.",
+            "--volume=${LADDER_TASK_DIR}/untrusted:/untrusted:ro",
+        ]
     out += [
-        "",
-        "# broker_tools -> this task's own broker socket. Which socket the sandbox can",
-        "# reach IS its task identity, so there is nothing for the agent to forge.",
-        "--volume=${LADDER_TASK_DIR}/sock:/broker",
         "",
         "# Hygiene, identical to rung 0. Not load-bearing for any rung-1 claim.",
         "--cap-drop=ALL",
@@ -198,15 +246,21 @@ def proxy_args(manifest):
 
 
 def broker_args(manifest):
-    return "\n".join(
-        [
-            "# GENERATED from manifests/%s -- the tool scope for this task only." % manifest["task_id"],
-            "--task-id",
-            manifest["task_id"],
-            "--tools",
-            ",".join(manifest["broker_tools"]),
-        ]
-    ) + "\n"
+    lines = [
+        "# GENERATED from manifests/%s -- the tool scope for this task only." % manifest["task_id"],
+        "--task-id",
+        manifest["task_id"],
+    ]
+    if manifest["broker_tools"]:
+        lines += ["--tools", ",".join(manifest["broker_tools"])]
+    else:
+        # An empty scope has to be written as one token: lib.sh's ladder_load_args
+        # drops blank lines, so "--tools" on its own line followed by an empty one
+        # would reach the broker as a flag with no value and it would refuse to
+        # start. A task with no tools is a real configuration -- rung 2's reader --
+        # not a mistake, and it has to survive the round trip.
+        lines += ["--tools="]
+    return "\n".join(lines) + "\n"
 
 
 def meta_env(manifest):
@@ -237,15 +291,22 @@ def cmd_emit(args):
 
 def cmd_show(args):
     manifest = load(args.manifest)
-    scratch = manifest["mounts"].get("scratch", "none")
     rows = [
         ("task_id", manifest["task_id"], "names the network, the proxy, the broker and the scratch dir"),
         ("agent_image", manifest["agent_image"], "the same image every task uses"),
         ("network_allow", ", ".join(manifest["network_allow"]), "--allow on this task's own proxy"),
         ("broker_tools", ", ".join(manifest["broker_tools"]), "--tools on this task's own broker"),
-        ("mounts.scratch", scratch, "/scratch, under this task's directory only"),
+        ("mounts.scratch", mount_mode(manifest, "scratch"), "/scratch, under this task's directory only"),
         ("ttl_seconds", manifest["ttl_seconds"], "hard timeout around the sandbox"),
     ]
+    # Printed only when the manifest sets them, so a rung-1 manifest's table is
+    # exactly what it was.
+    if manifest["mounts"].get("broker") is not None:
+        rows.insert(-1, ("mounts.broker", mount_mode(manifest, "broker"),
+                         "/broker, this task's own socket -- 'none' means no tools at all"))
+    if manifest["mounts"].get("untrusted") is not None:
+        rows.insert(-1, ("mounts.untrusted", mount_mode(manifest, "untrusted"),
+                         "/untrusted, labeled untrusted by the runtime (rung 2)"))
     print("%-16s %-34s %s" % ("MANIFEST FIELD", "VALUE", "BECOMES"))
     print("-" * 108)
     for field, value, becomes in rows:

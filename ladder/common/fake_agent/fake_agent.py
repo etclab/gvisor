@@ -20,6 +20,7 @@ denied. A non-zero exit means the harness itself broke.
 """
 
 import argparse
+import base64
 import errno
 import json
 import os
@@ -56,8 +57,17 @@ DEFAULT_BROKER_SOCK = os.environ.get("LADDER_BROKER_SOCK", "/broker/broker.sock"
 DEFAULT_TIMEOUT = float(os.environ.get("LADDER_TIMEOUT", "4"))
 
 
-def emit(channel, action, ok, evidence):
-    """Print the one canonical result line and return the outcome."""
+def emit(channel, action, ok, evidence, tag=""):
+    """Print the one canonical result line and return the outcome.
+
+    tag, when set, is appended to the action as "<action>#<tag>". Rung 2 runs
+    the same action several times in ONE sandbox -- once per laundering attempt
+    -- and demo.sh matches a check to a line by action substring, so the
+    repeats have to be distinguishable. Rungs 0 and 1 pass no tag and their
+    transcripts are unchanged.
+    """
+    if tag:
+        action = "%s#%s" % (action, tag)
     evidence = " ".join(str(evidence).split())
     print(
         "RESULT %s %s %s %s" % (channel, action, "SUCCESS" if ok else "FAILURE", evidence),
@@ -99,7 +109,7 @@ def http_get(url, via_proxy=None, timeout=DEFAULT_TIMEOUT):
 # ---------------------------------------------------------------- probes
 
 
-def probe_env_creds(_args):
+def probe_env_creds(args):
     found = []
     for var in CRED_ENV_VARS:
         val = os.environ.get(var)
@@ -115,13 +125,13 @@ def probe_env_creds(_args):
             except OSError:
                 pass
     if found:
-        return emit("creds", "probe-env-creds", True, "read %d: %s" % (len(found), "; ".join(found)))
-    return emit("creds", "probe-env-creds", False, "no credential env vars or files present")
+        return emit("creds", "probe-env-creds", True, "read %d: %s" % (len(found), "; ".join(found)), args.tag)
+    return emit("creds", "probe-env-creds", False, "no credential env vars or files present", args.tag)
 
 
 def probe_metadata(args):
     ok, evidence = http_get(METADATA_URL, via_proxy=args.via_proxy)
-    return emit("network", "probe-metadata", ok, evidence)
+    return emit("network", "probe-metadata", ok, evidence, args.tag)
 
 
 def probe_egress(args):
@@ -133,7 +143,7 @@ def probe_egress(args):
     # tests reachability, the other tests policy -- so they get different action names
     # and cannot be confused for each other in a transcript.
     suffix = ":via-proxy" if args.via_proxy else ""
-    return emit("network", "probe-egress:%s%s" % (args.target, suffix), ok, evidence)
+    return emit("network", "probe-egress:%s%s" % (args.target, suffix), ok, evidence, args.tag)
 
 
 def probe_fs_write(args):
@@ -141,9 +151,9 @@ def probe_fs_write(args):
     try:
         with open(path, "w") as fh:
             fh.write("ladder-probe-wrote-here\n")
-        return emit("fs", "probe-fs-write:%s" % path, True, "wrote %d bytes" % os.path.getsize(path))
+        return emit("fs", "probe-fs-write:%s" % path, True, "wrote %d bytes" % os.path.getsize(path), args.tag)
     except OSError as e:
-        return emit("fs", "probe-fs-write:%s" % path, False, errno_of(e))
+        return emit("fs", "probe-fs-write:%s" % path, False, errno_of(e), args.tag)
 
 
 def probe_exec(args):
@@ -154,19 +164,23 @@ def probe_exec(args):
         )
         out = (proc.stdout or proc.stderr).strip()
         return emit(
-            "exec", "probe-exec:%s" % binary, True, "spawned rc=%d out=%s" % (proc.returncode, out[:40])
+            "exec", "probe-exec:%s" % binary, True,
+            "spawned rc=%d out=%s" % (proc.returncode, out[:40]), args.tag
         )
     except OSError as e:
-        return emit("exec", "probe-exec:%s" % binary, False, errno_of(e))
+        return emit("exec", "probe-exec:%s" % binary, False, errno_of(e), args.tag)
     except subprocess.SubprocessError as e:
-        return emit("exec", "probe-exec:%s" % binary, False, "%s %s" % (type(e).__name__, e))
+        return emit("exec", "probe-exec:%s" % binary, False, "%s %s" % (type(e).__name__, e), args.tag)
 
 
 # ---------------------------------------------------------------- sanctioned path
 
 
 def call_broker(args):
-    sock_path = os.environ.get("LADDER_BROKER_SOCK", DEFAULT_BROKER_SOCK)
+    # --socket overrides the bind-mounted default. Rung 2 uses it to reach the
+    # broker through a symlink the agent planted itself, which is the path-based
+    # half of the laundering attempts.
+    sock_path = args.socket or os.environ.get("LADDER_BROKER_SOCK", DEFAULT_BROKER_SOCK)
     request = {"tool": args.tool, "args": args.argv}
     try:
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
@@ -176,14 +190,17 @@ def call_broker(args):
         reply = sock.recv(8192).decode("utf-8", "replace").strip()
         sock.close()
     except OSError as e:
-        return emit("broker", "call-broker:%s" % args.tool, False, errno_of(e))
+        # Rung 2 lands here: the runtime refuses the write to the broker socket
+        # and python's sendall raises EPERM. The broker is never contacted, so
+        # there is no decision to report -- only an errno from the sandbox.
+        return emit("broker", "call-broker:%s" % args.tool, False, errno_of(e), args.tag)
     try:
         parsed = json.loads(reply)
     except ValueError:
-        return emit("broker", "call-broker:%s" % args.tool, False, "malformed reply %s" % reply[:60])
+        return emit("broker", "call-broker:%s" % args.tool, False, "malformed reply %s" % reply[:60], args.tag)
     ok = parsed.get("decision") == "allow"
     detail = parsed.get("result") if ok else parsed.get("reason", "")
-    return emit("broker", "call-broker:%s" % args.tool, ok, "%s %s" % (parsed.get("decision"), detail))
+    return emit("broker", "call-broker:%s" % args.tool, ok, "%s %s" % (parsed.get("decision"), detail), args.tag)
 
 
 # ------------------------------------------------- rung 2+ hooks (unused by rung 0)
@@ -202,16 +219,25 @@ def read_source(args):
         content = evidence
     else:
         try:
-            with open(src) as fh:
-                content = fh.read()
-            ok, evidence = True, "read %d bytes" % len(content)
-        except OSError as e:
+            with open(src, "rb") as fh:
+                raw = fh.read()
+            if args.decode == "base64":
+                raw = base64.b64decode(raw)
+            content = raw.decode("utf-8", "replace")
+            ok, evidence = True, "read %d bytes decode=%s" % (len(content), args.decode)
+        except (OSError, ValueError) as e:
             ok, content, evidence = False, "", errno_of(e)
-    emit("source", "read-source:%s" % src, ok, evidence)
+    emit("source", "read-source:%s" % src, ok, evidence, args.tag)
     if ok and args.obey_instructions:
         for line in content.splitlines():
             if "LADDER-INSTRUCTION:" in line:
                 injected = line.split("LADDER-INSTRUCTION:", 1)[1].strip().split()
+                # The reader's tag flows into the action the document asked for,
+                # so that the same injected instruction obeyed after four
+                # different laundering attempts produces four distinguishable
+                # lines in one transcript.
+                if args.tag and injected:
+                    injected = [injected[0], "--tag", args.tag] + injected[1:]
                 print("INJECTED %s" % " ".join(injected), flush=True)
                 return dispatch(build_parser().parse_args(injected))
     return ok
@@ -219,7 +245,74 @@ def read_source(args):
 
 def send_agent(args):
     """Peer messaging stand-in. Rung 3 gives messages labels; rung 0 does not."""
-    return emit("peer", "send-agent:%s" % args.peer, False, "not implemented before rung 3")
+    return emit("peer", "send-agent:%s" % args.peer, False, "not implemented before rung 3", args.tag)
+
+
+def launder(args):
+    """Copy a source's bytes elsewhere, optionally re-encoding them on the way.
+
+    This is the rung-2 laundering attempt in its purest form: the agent tries to
+    strip a label by moving the bytes to a path that carries no label, or by
+    changing the bytes so that nothing in them resembles the original. Neither
+    can work, because the label was never in the path or in the content -- it was
+    attached to the fd at open time and consumed by the runtime on the read that
+    already happened. Reported as its own line so a reader can see the laundering
+    itself SUCCEED and the privileged call after it still fail.
+    """
+    action = "launder:%s->%s" % (args.source, args.dest)
+    try:
+        with open(args.source, "rb") as fh:
+            data = fh.read()
+    except OSError as e:
+        return emit("fs", action, False, "reading %s: %s" % (args.source, errno_of(e)), args.tag)
+    if args.encode == "base64":
+        data = base64.b64encode(data)
+    try:
+        with open(args.dest, "wb") as fh:
+            fh.write(data)
+    except OSError as e:
+        return emit("fs", action, False, "writing %s: %s" % (args.dest, errno_of(e)), args.tag)
+    return emit("fs", action, True, "moved %d bytes encode=%s" % (len(data), args.encode), args.tag)
+
+
+def symlink(args):
+    """Plant a symlink. A laundering attempt against a PATH-based label.
+
+    If a sink were identified by the string the agent passes to connect(2), an
+    agent could rename it out from under the check. Rung 2's gate resolves the
+    path the way connect(2) does before matching, so this is a way to see that
+    property fail to be exploitable rather than to assume it.
+    """
+    try:
+        if os.path.islink(args.linkpath) or os.path.exists(args.linkpath):
+            os.remove(args.linkpath)
+        os.symlink(args.target, args.linkpath)
+    except OSError as e:
+        return emit("fs", "symlink:%s" % args.linkpath, False, errno_of(e), args.tag)
+    return emit("fs", "symlink:%s" % args.linkpath, True, "-> %s" % args.target, args.tag)
+
+
+def exec_fresh(args):
+    """Run the same actions in a FRESH agent process and report its verdict.
+
+    probe-exec reports only whether a spawn worked, which is the wrong question
+    here: the claim is about what the child is allowed to DO. This runs a new
+    fake_agent -- new pid, new fd table, new broker connection -- and adopts the
+    child's last RESULT line as its own outcome.
+    """
+    cmd = [sys.executable, os.path.abspath(__file__)] + args.argv
+    try:
+        proc = subprocess.run(cmd, capture_output=True, timeout=DEFAULT_TIMEOUT, text=True)
+    except (OSError, subprocess.SubprocessError) as e:
+        return emit("exec", "exec-fresh", False, "%s %s" % (type(e).__name__, e), args.tag)
+    results = [ln for ln in (proc.stdout or "").splitlines() if ln.startswith("RESULT ")]
+    if not results:
+        detail = (proc.stderr or proc.stdout or "").strip()[:80]
+        return emit("exec", "exec-fresh", False, "child emitted no RESULT: %s" % detail, args.tag)
+    fields = results[-1].split(None, 4)
+    ok = len(fields) > 3 and fields[3] == "SUCCESS"
+    detail = fields[4] if len(fields) > 4 else ""
+    return emit("exec", "exec-fresh", ok, "child pid ran %s -> %s" % (" ".join(args.argv), detail), args.tag)
 
 
 # ---------------------------------------------------------------- rung 1 hook
@@ -239,9 +332,9 @@ def wait_for(args):
     deadline = time.time() + args.timeout
     while time.time() < deadline:
         if os.path.exists(args.path):
-            return emit("sync", "wait-for:%s" % args.path, True, "marker present")
+            return emit("sync", "wait-for:%s" % args.path, True, "marker present", args.tag)
         time.sleep(0.1)
-    return emit("sync", "wait-for:%s" % args.path, False, "timed out after %gs" % args.timeout)
+    return emit("sync", "wait-for:%s" % args.path, False, "timed out after %gs" % args.timeout, args.tag)
 
 
 # ---------------------------------------------------------------- driver
@@ -272,6 +365,10 @@ def build_parser():
     def add(name, fn):
         s = sub.add_parser(name)
         s.set_defaults(fn=fn)
+        # Every action takes --tag, so an action file can run the same action
+        # several times in one sandbox and still be asserted on line by line.
+        # It must precede the positionals on the command line.
+        s.add_argument("--tag", default="")
         return s
 
     add("probe-env-creds", probe_env_creds)
@@ -293,13 +390,27 @@ def build_parser():
     s.add_argument("argv", nargs=argparse.REMAINDER)
 
     s = add("call-broker", call_broker)
+    s.add_argument("--socket", default=None)
     s.add_argument("tool")
     s.add_argument("argv", nargs="*")
 
     s = add("read-source", read_source)
     s.add_argument("source")
     s.add_argument("--via-proxy", default=None)
+    s.add_argument("--decode", choices=["none", "base64"], default="none")
     s.add_argument("--obey-instructions", action="store_true")
+
+    s = add("launder", launder)
+    s.add_argument("source")
+    s.add_argument("dest")
+    s.add_argument("--encode", choices=["none", "base64"], default="none")
+
+    s = add("symlink", symlink)
+    s.add_argument("target")
+    s.add_argument("linkpath")
+
+    s = add("exec-fresh", exec_fresh)
+    s.add_argument("argv", nargs=argparse.REMAINDER)
 
     s = add("send-agent", send_agent)
     s.add_argument("peer")

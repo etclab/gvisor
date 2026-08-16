@@ -1,0 +1,17 @@
+# CONTROL, first half: the same task, the same sandbox, the same flag -- and no read
+# from a labeled source. Every action here must SUCCEED under --ladder-taint.
+#
+# The gate is the taint, not the action. The broker calls below are byte-for-byte the
+# ones rung 2 refuses in the ENFORCED block; what differs is that no untrusted source
+# was read first.
+#
+# The page read here is the SAME FILE the enforced run reads, delivered to an
+# unlabeled path. Reading it changes nothing, which is what makes the label a property
+# of the source rather than of the bytes.
+
+read-source /scratch/benign-page.txt --obey-instructions
+
+# The task's own work, in full.
+call-broker read_wiki deploy-runbook
+call-broker write_config retention_days 30
+probe-egress wiki.corp --via-proxy ${LADDER_PROXY}

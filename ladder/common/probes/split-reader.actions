@@ -1,0 +1,10 @@
+# The reader half of the read/act split. No flag, no patch: this runs on stock runsc.
+#
+# The reader ingests the injected page freely and is fully steered by it. It then
+# cannot act, because there is no broker socket in its filesystem to act through --
+# the denial is ENOENT from the mount table, decided when the sandbox was built.
+
+read-source /untrusted/injected-page.txt --obey-instructions
+
+# ...and not through any other tool either. It holds none.
+call-broker --tag reader read_wiki deploy-runbook

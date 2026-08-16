@@ -10,7 +10,7 @@ Design narrative: `agent-sandbox/deck.html`. Implementation contract:
 |---|---|---|---|---|---|
 | 0 | [Ambient authority](rung0/README.md) | implemented | `rung-0` | none (config only) | reachable damage equals the broker's tool allowlist plus one allowlisted host plus `/scratch` |
 | 1 | [Task scoping](rung1/README.md) | implemented | `rung-1` | `--ladder-task-scope` (claim 4 only) | reachable damage equals **this task's** manifest — its tool set, its allowlisted hosts, its own scratch — and a grant can be narrowed mid-task but never widened |
-| 2 | Taint bit | not started | — | `--ladder-taint` | — |
+| 2 | [Taint bit](rung2/README.md) | implemented | `rung-2` | `--ladder-taint` (+ `--ladder-untrusted-paths`, `--ladder-privileged-sinks`) | reading from a labeled-untrusted source sets a monotonic sandbox-wide bit in the runtime, after which writes to the broker socket are refused before the bytes leave the sandbox |
 | 3 | Attested labels | not started | — | `--ladder-attest` | — |
 | 4 | Chain attenuation | not started | — | `--ladder-chain` | — |
 
@@ -38,7 +38,9 @@ cover; rung 1 adds two. A committed transcript of a passing run lives in each ru
   `docker info --format '{{json .Runtimes}}' | grep -o runsc`. Rungs 0 and 1 run against
   whatever runsc is installed — rung 1's task scoping is orchestration, not a patch. A
   runtime built from this tree is needed only for the parts gated behind a `--ladder-*`
-  flag, which for rung 1 is one optional block (`rung1/README.md`, "Demo").
+  flag: one optional block in rung 1, and **all** of rung 2, which is the first rung
+  whose claim lives inside the runtime. Each rung's README gives the exact
+  registration command.
 - **python3** on the host, for the broker.
 - No internet access, no API keys, no cloud account. Every host the sandboxed agent can
   reach is a local container.

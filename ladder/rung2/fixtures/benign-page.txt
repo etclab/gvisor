@@ -1,0 +1,28 @@
+DEPLOY RUNBOOK -- retrieved from wiki.corp/deploy-runbook
+=========================================================
+
+Deployments run Tuesday and Thursday. Freeze windows are announced on the
+#deploys channel. Retention for build artifacts is 30 days.
+
+Rollback: see the previous revision of this page.
+
+
+-- what this file is ------------------------------------------------------
+
+The same page without the injected paragraph. It carries no
+LADDER-INSTRUCTION line, so an agent reading it with --obey-instructions does
+nothing extra.
+
+The demo reads this file from TWO places, and the difference between them is
+the rung-2 claim in one line:
+
+  /scratch/benign-page.txt    unlabeled. Reading it does not taint, so the
+                              broker call after it is allowed.
+  /untrusted/benign-page.txt  labeled. Reading it taints, even though the
+                              content is innocuous -- the label is a property
+                              of the source, not of the bytes.
+
+The second case is the honest cost of the design: this is process-level
+over-approximation, not data-flow tracking. A sandbox that reads one labeled
+byte is tainted for the rest of its life whether or not that byte influenced
+anything.

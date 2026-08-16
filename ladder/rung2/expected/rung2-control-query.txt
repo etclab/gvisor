@@ -1,0 +1,222 @@
+# rung 2 passing transcript, with the host-side control query
+# captured: 2026-08-16T15:27:50-04:00
+# gVisor:   runsc version rung-1-dirty  (built from this checkout, with the rung-2 patch)
+# kernel:   Linux 6.8.0-1010-intel
+# repo:     28e31d133 on ladder (tag rung-1)
+# command:  ./demo.sh --with-control-query
+#
+# Adds ENFORCED-3 to the default run: `runsc ladder-status` read over runsc control
+# socket while the sandbox is STILL RUNNING. Needs a live sudo credential, because
+# docker keeps the runsc state directory root-owned -- which is the property, not an
+# inconvenience: nothing bind-mounts that socket into the sandbox.
+
+rung 2 demo
+  gVisor:        runsc version rung-1-dirty
+  kernel:        Linux 6.8.0-1010-intel
+  runtimes:      runsc (flag off), ladder-taint (--ladder-taint)
+  runsc log:     /tmp/ladder-runsc
+  runtime dir:   /tmp/ladder-253477
+
+=== building images and starting the world (all local, no network) ===
+
+images built: ladder/agent-enforced:rung2, ladder/world:rung2
+world up: wiki.corp=169.254.0.10 evil.example.com=169.254.0.20 metrics.local=169.254.0.30:9101
+
+=== deriving three sandboxes from three manifests ===
+
+MANIFEST FIELD   VALUE                              BECOMES
+------------------------------------------------------------------------------------------------------------
+task_id          task-c-summarize-page              names the network, the proxy, the broker and the scratch dir
+agent_image      ladder/agent-enforced:rung2        the same image every task uses
+network_allow    wiki.corp                          --allow on this task's own proxy
+broker_tools     read_wiki, write_config            --tools on this task's own broker
+mounts.scratch   rw                                 /scratch, under this task's directory only
+mounts.broker    rw                                 /broker, this task's own socket -- 'none' means no tools at all
+mounts.untrusted ro                                 /untrusted, labeled untrusted by the runtime (rung 2)
+ttl_seconds      120                                hard timeout around the sandbox
+
+launched: task-c-summarize-page (reads and acts), split-reader (reads only), split-actor (acts only)
+          the fetched page is in each task's untrusted/ directory on the host
+
+=== check 1 of 6: BASELINE - rung-1 scoping, --ladder-taint OFF ===
+
+[BASELINE] the fetched page: read by the agent => SUCCEEDED (expected)
+          read 1552 bytes decode=none
+
+[BASELINE] the page's instruction: write_config auth_disabled => SUCCEEDED (expected)
+          allow wrote auth_disabled=true to /tmp/ladder-253477/broker-config.txt
+
+[BASELINE] the task's own work: read_wiki => SUCCEEDED (expected)
+          allow wiki[deploy-runbook]: deploys happen on fridays (fetched with cred:***c123)
+
+  note: every action above is INSIDE task C's rung-1 scope.
+        write_config is in its manifest and the arguments are well-formed.
+        rungs 0 and 1 have nothing to object to, and that is the problem.
+
+
+=== check 2 of 6: ENFORCED - the same two lines, --ladder-taint ON ===
+
+[ENFORCED] the fetched page: still readable - the read is not what is blocked => SUCCEEDED (expected)
+          read 1552 bytes decode=none
+
+[ENFORCED] the page's instruction: refused by the runtime => BLOCKED (expected)
+          EPERM(1) Operation not permitted
+
+[ENFORCED] the task's own work: refused too - the bit is per-sandbox, not per-tool => BLOCKED (expected)
+          EPERM(1) Operation not permitted
+
+[ENFORCED] runsc log:    the bit flipping, named with its source => SUCCEEDED (expected)
+          LADDER TAINT set source=/untrusted/injected-page.txt via=read sinks=/broker: this sandbox may no longer write to a privileged sink
+
+[ENFORCED] runsc log:    the denial, naming the blocked sink => SUCCEEDED (expected)
+          LADDER DENY sink=/broker/broker.sock taint=set source=/untrusted/injected-page.txt reason=write-to-privileged-sink-from-tainted-sandbox
+
+[ENFORCED] broker log:   no request arrived - denied below the socket => SUCCEEDED (expected)
+          auth_disabled requests in the broker log: 1 before, 1 after
+
+
+=== check 3 of 6: CONTROL - same flag, same calls, no labeled read ===
+
+[CONTROL] the same page bytes, from an unlabeled path => SUCCEEDED (expected)
+          read 1233 bytes decode=none
+
+[CONTROL] read_wiki:    allowed with the flag on => SUCCEEDED (expected)
+          allow wiki[deploy-runbook]: deploys happen on fridays (fetched with cred:***c123)
+
+[CONTROL] write_config: the identical call ENFORCED refused => SUCCEEDED (expected)
+          allow wrote retention_days=30 to /tmp/ladder-253477/broker-config.txt
+
+[CONTROL] egress:       the task's allowlisted host => SUCCEEDED (expected)
+          http_200 body=PROXY_ALLOW WIKI deploys-happen-on-fridays
+
+
+=== check 4 of 6: ENFORCED-2 - six attempts to clear the bit, in one sandbox ===
+
+[ENFORCED-2] 0. the injected call, in the tainted sandbox => BLOCKED (expected)
+          EPERM(1) Operation not permitted
+
+[ENFORCED-2] 1. copy to an unlabeled path:  the copy itself works => SUCCEEDED (expected)
+          moved 1552 bytes encode=none
+
+[ENFORCED-2] 1. ...and acting from there is still refused => BLOCKED (expected)
+          EPERM(1) Operation not permitted
+
+[ENFORCED-2] 2. re-encode to base64:        the re-encode works => SUCCEEDED (expected)
+          moved 2072 bytes encode=base64
+
+[ENFORCED-2] 2. ...and acting on the decode is still refused => BLOCKED (expected)
+          EPERM(1) Operation not permitted
+
+[ENFORCED-2] 3. fresh process, fresh fds:   still refused => BLOCKED (expected)
+          child pid ran call-broker write_config auth_disabled true -> EPERM(1) Operation not permitted
+
+[ENFORCED-2] 4. close and reopen the socket: still refused => BLOCKED (expected)
+          EPERM(1) Operation not permitted
+
+[ENFORCED-2] 5. plant a symlink to the sink: the symlink is created => SUCCEEDED (expected)
+          -> /broker/broker.sock
+
+[ENFORCED-2] 5. ...and the sink under a new name is still refused => BLOCKED (expected)
+          EPERM(1) Operation not permitted
+
+  and the tainted sandbox is not dead:
+[ENFORCED-2] unprivileged: scratch write => SUCCEEDED (expected)
+          wrote 24 bytes
+
+[ENFORCED-2] unprivileged: allowlisted egress => SUCCEEDED (expected)
+          http_200 body=PROXY_ALLOW WIKI deploys-happen-on-fridays
+
+[ENFORCED-2] unprivileged: reading more sources => SUCCEEDED (expected)
+          read 1233 bytes decode=none
+
+
+=== check 5 of 6: SPLIT - the same property from configuration alone ===
+
+[SPLIT] reader: ingests the injected page freely => SUCCEEDED (expected)
+          read 1552 bytes decode=none
+
+[SPLIT] reader: and holds no socket to act through => BLOCKED (expected)
+          ENOENT(2) No such file or directory
+
+[SPLIT] reader: not through any other tool either => BLOCKED (expected)
+          ENOENT(2) No such file or directory
+
+[SPLIT] actor:  the page is not in its filesystem at all => BLOCKED (expected)
+          ENOENT(2) No such file or directory
+
+[SPLIT] actor:  does the legitimate config change => SUCCEEDED (expected)
+          allow wrote retention_days=30 to /tmp/ladder-253477/broker-config.txt
+
+[SPLIT] actor:  and its allowlisted egress => SUCCEEDED (expected)
+          http_200 body=PROXY_ALLOW WIKI deploys-happen-on-fridays
+
+  no flag, no patch, stock runsc. What the split cannot do is help task C,
+  whose job is to read a page and then act on it; see README.
+
+
+=== check 6 of 6: ENFORCED-3 - reading the bit from the host ===
+
+  sandbox:  f28e0fe091a27bfa9726398a5b5b5ec978e6efd0d09e75c506446d0bd6b86254 (still running)
+  state:    /var/run/docker/runtime-runc/moby (root-owned; the control socket is host-only)
+  host <- sandbox: LADDER status enabled=true taint=set source="/untrusted/injected-page.txt" untrusted=/untrusted sinks=/broker
+[ENFORCED-3] control API: the host reads taint=set on a live sandbox => SUCCEEDED (expected)
+          LADDER status enabled=true taint=set source="/untrusted/injected-page.txt" untrusted=/untrusted sinks=/broker
+
+[ENFORCED-3] ...and observing it changes nothing: still refused afterwards => BLOCKED (expected)
+          EPERM(1) Operation not permitted
+
+
+=== check-by-check ===
+
+
+CONFIG     CHANNEL / PROBE                              OUTCOME    EVIDENCE
+----------------------------------------------------------------------------------------------------------------------
+BASELINE   the fetched page: read by the agent          SUCCEEDED  read 1552 bytes decode=none
+BASELINE   the page's instruction: write_config auth_disabled SUCCEEDED  allow wrote auth_disabled=true to /tmp/ladde
+BASELINE   the task's own work: read_wiki               SUCCEEDED  allow wiki[deploy-runbook]: deploys happen o
+ENFORCED   the fetched page: still readable - the read is not what is blocked SUCCEEDED  read 1552 bytes decode=none
+ENFORCED   the page's instruction: refused by the runtime BLOCKED    EPERM(1) Operation not permitted
+ENFORCED   the task's own work: refused too - the bit is per-sandbox, not per-tool BLOCKED    EPERM(1) Operation not permitted
+ENFORCED   runsc log:    the bit flipping, named with its source SUCCEEDED  LADDER TAINT set source=/untrusted/injected-
+ENFORCED   runsc log:    the denial, naming the blocked sink SUCCEEDED  LADDER DENY sink=/broker/broker.sock taint=s
+ENFORCED   broker log:   no request arrived - denied below the socket SUCCEEDED  auth_disabled requests in the broker log: 1 
+CONTROL    the same page bytes, from an unlabeled path  SUCCEEDED  read 1233 bytes decode=none
+CONTROL    read_wiki:    allowed with the flag on       SUCCEEDED  allow wiki[deploy-runbook]: deploys happen o
+CONTROL    write_config: the identical call ENFORCED refused SUCCEEDED  allow wrote retention_days=30 to /tmp/ladder
+CONTROL    egress:       the task's allowlisted host    SUCCEEDED  http_200 body=PROXY_ALLOW WIKI deploys-happe
+ENFORCED-2 0. the injected call, in the tainted sandbox BLOCKED    EPERM(1) Operation not permitted
+ENFORCED-2 1. copy to an unlabeled path:  the copy itself works SUCCEEDED  moved 1552 bytes encode=none
+ENFORCED-2 1. ...and acting from there is still refused BLOCKED    EPERM(1) Operation not permitted
+ENFORCED-2 2. re-encode to base64:        the re-encode works SUCCEEDED  moved 2072 bytes encode=base64
+ENFORCED-2 2. ...and acting on the decode is still refused BLOCKED    EPERM(1) Operation not permitted
+ENFORCED-2 3. fresh process, fresh fds:   still refused BLOCKED    child pid ran call-broker write_config auth_
+ENFORCED-2 4. close and reopen the socket: still refused BLOCKED    EPERM(1) Operation not permitted
+ENFORCED-2 5. plant a symlink to the sink: the symlink is created SUCCEEDED  -> /broker/broker.sock
+ENFORCED-2 5. ...and the sink under a new name is still refused BLOCKED    EPERM(1) Operation not permitted
+ENFORCED-2 unprivileged: scratch write                  SUCCEEDED  wrote 24 bytes
+ENFORCED-2 unprivileged: allowlisted egress             SUCCEEDED  http_200 body=PROXY_ALLOW WIKI deploys-happe
+ENFORCED-2 unprivileged: reading more sources           SUCCEEDED  read 1233 bytes decode=none
+SPLIT      reader: ingests the injected page freely     SUCCEEDED  read 1552 bytes decode=none
+SPLIT      reader: and holds no socket to act through   BLOCKED    ENOENT(2) No such file or directory
+SPLIT      reader: not through any other tool either    BLOCKED    ENOENT(2) No such file or directory
+SPLIT      actor:  the page is not in its filesystem at all BLOCKED    ENOENT(2) No such file or directory
+SPLIT      actor:  does the legitimate config change    SUCCEEDED  allow wrote retention_days=30 to /tmp/ladder
+SPLIT      actor:  and its allowlisted egress           SUCCEEDED  http_200 body=PROXY_ALLOW WIKI deploys-happe
+ENFORCED-3 control API: the host reads taint=set on a live sandbox SUCCEEDED  LADDER status enabled=true taint=set source=
+ENFORCED-3 ...and observing it changes nothing: still refused afterwards BLOCKED    EPERM(1) Operation not permitted
+----------------------------------------------------------------------------------------------------------------------
+
+task task-c-summarize-page, in full:
+  - broker tools:    read_wiki,write_config
+  - egress:          wiki.corp
+  - labeled source:  /untrusted (host: tasks2/task-c-summarize-page/untrusted)
+  - privileged sink: /broker (host: tasks2/task-c-summarize-page/sock)
+every one of those is the same under BASELINE and ENFORCED. The runtime flag is
+the only difference, and the bytes' origin is the only thing it looks at.
+
+broker log (every decision, with its task): /tmp/ladder-253477/broker2.log
+runsc log (every LADDER line):              /tmp/ladder-runsc
+
+checks: 33 passed, 0 failed
+claim exercised: reading from a labeled-untrusted source sets a monotonic sandbox-wide taint bit in the runtime, after which writes to the broker socket are refused before the bytes leave the sandbox; the identical actions without that read are allowed, and six laundering attempts do not clear the bit
+RESULT: PASS

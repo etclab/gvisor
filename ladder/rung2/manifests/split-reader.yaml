@@ -1,0 +1,25 @@
+# The reader half of the read/act split: ingest untrusted content, hold nothing.
+#
+# Config only. No flag, no patch, no runtime change -- this is the architectural
+# alternative to the taint bit, and it buys much of the same property by making the
+# sandbox that touches attacker-controlled bytes a sandbox with no world-effect to
+# offer. What it cannot do is help a task that must both read and act; see
+# rung2/README.md, "What the bit adds over the split".
+#
+# mounts.broker: none is the whole mechanism. There is no socket in this sandbox's
+# filesystem, so there is no tool to abuse and nothing for an injected instruction to
+# reach for.
+
+task_id: split-reader
+agent_image: ladder/agent-enforced:rung2
+
+network_allow: []
+
+mounts:
+  scratch: rw
+  broker: none
+  untrusted: ro
+
+broker_tools: []
+
+ttl_seconds: 60

@@ -21,6 +21,7 @@ go_library(
     name = "unix",
     srcs = [
         "io.go",
+        "ladder.go",
         "socket_refs.go",
         "unix.go",
     ],
@@ -44,6 +45,7 @@ go_library(
         "//pkg/sentry/kernel",
         "//pkg/sentry/kernel/auth",
         "//pkg/sentry/ktime",
+        "//pkg/sentry/ladder",
         "//pkg/sentry/socket",
         "//pkg/sentry/socket/control",
         "//pkg/sentry/socket/netstack",

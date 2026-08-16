@@ -500,6 +500,12 @@ func (vfs *VirtualFilesystem) OpenAt(ctx context.Context, creds *auth.Credential
 			if opts.Flags&linux.O_TRUNC != 0 && !fd.IsCreated() {
 				fd.Dentry().InotifyWithParent(ctx, linux.IN_MODIFY, 0, PathEvent)
 			}
+			// Ladder rung 2. The source label is attached here, once per open,
+			// and read on every subsequent read of this fd. It is computed from
+			// the *resolved* location rather than from pop.Path so that a
+			// symlink or a "/.." cannot present a labeled file under an
+			// unlabeled name. Costs nothing when --ladder-taint is off.
+			vfs.ladderLabelFD(ctx, pop, fd)
 			return fd, nil
 		}
 		if !rp.handleError(ctx, err) {

@@ -178,6 +178,9 @@ func RegisterFlags(flagSet *flag.FlagSet) {
 	flagSet.Bool(flagPauseExternalNetworking, false, "Start the sandbox with external networking disabled. Only supported when using the sandbox network type. The network can be unpaused manually after the sandbox is running.")
 	flagSet.Bool(flagAllowConnectedOnSave, false, "Allow network connections to stay established on save.")
 	flagSet.Bool("ladder-task-scope", false, "EXPERIMENTAL. Enable ladder rung-1 per-task egress attenuation via the control channel (research prototype). When enabled, `runsc ladder-narrow` may monotonically narrow the sandbox's egress allowlist. When disabled, that control call is rejected and the sandbox's filter table is left untouched.")
+	flagSet.Bool("ladder-taint", false, "EXPERIMENTAL. Enable the ladder rung-2 taint bit (research prototype). When enabled, reading from a path under --ladder-untrusted-paths sets a monotonic sandbox-wide taint bit, after which writes to a unix socket under --ladder-privileged-sinks are refused with EPERM. When disabled, no source is labeled and no bit is ever set.")
+	flagSet.String("ladder-untrusted-paths", "", "EXPERIMENTAL. Comma-separated absolute in-sandbox path prefixes whose contents are labeled untrusted, e.g. \"/untrusted\". Requires --ladder-taint.")
+	flagSet.String("ladder-privileged-sinks", "", "EXPERIMENTAL. Comma-separated absolute in-sandbox path prefixes naming privileged sinks -- unix sockets a tainted sandbox may not write to, e.g. \"/broker\". Requires --ladder-taint.")
 
 	// Flags that control sandbox runtime behavior: accelerator related.
 	flagSet.Bool("nvproxy", false, "LEGACY: enable support for Nvidia GPUs. GPU support gets automatically enabled if Nvidia devices are present in the OCI spec.")

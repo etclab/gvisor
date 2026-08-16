@@ -54,6 +54,7 @@ import (
 	"gvisor.dev/gvisor/pkg/sentry/inet"
 	"gvisor.dev/gvisor/pkg/sentry/kernel"
 	"gvisor.dev/gvisor/pkg/sentry/kernel/auth"
+	"gvisor.dev/gvisor/pkg/sentry/ladder"
 	"gvisor.dev/gvisor/pkg/sentry/loader"
 	"gvisor.dev/gvisor/pkg/sentry/pgalloc"
 	"gvisor.dev/gvisor/pkg/sentry/platform"
@@ -579,6 +580,13 @@ func New(args Args) (*Loader, error) {
 		genericproxy.Init()
 		args.StartupTimer.Reached("RDMA proxy initialized")
 	}
+
+	// Ladder rung 2. The sandbox's source labels are installed here, before any
+	// application task exists, and are immutable for the life of the sandbox:
+	// there is no point at which a running task could influence them.
+	ladder.Configure(args.Conf.LadderTaint,
+		strings.Split(args.Conf.LadderUntrustedPaths, ","),
+		strings.Split(args.Conf.LadderPrivilegedSinks, ","))
 
 	// Publish the RDMA sysfs snapshot to the NETLINK_RDMA nldev shim before
 	// any application socket can exist. rdma-core discovers devices and binds

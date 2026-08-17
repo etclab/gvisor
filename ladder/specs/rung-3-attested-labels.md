@@ -58,6 +58,13 @@ placement.
   `Write`/`SendMsg` against sandbox state, with a per-socket field already on the
   `Socket` struct. Sentry-side stamping is the same shape with a different verb, so the
   "highest cost" label on that option is probably overstated.
+
+  > **Confirmed (rung 3).** Right, and the "probably" can be dropped. The two
+  > enforcement hooks are 20 lines in `pkg/sentry/socket/unix/io.go` —
+  > `EndpointWriter.WriteFromBlocks` prepends the stamp to the iovec it already
+  > builds, and `EndpointReader.ReadToBlocks` reads it back out of the buffers
+  > `RecvMsg` just filled. `transport.Endpoint.SendMsg` takes a `[][]byte`, so
+  > stamping is a vector prepend and the application's bytes are never copied.
 - **Taint state reaches the host over the control API** — `Ladder.Status` /
   `runsc ladder-status`, added by rung 2 in rung 1's `LadderNarrow` shape. Two caveats
   that bear on the *recommended* host-side proxy: the call needs **root**, because
@@ -70,6 +77,14 @@ placement.
   made for `LadderNarrow`. Adding a *clearing* one retracts rung 2's claim 3; if this
   rung finds it needs one, that is a design finding to report, not an implementation
   detail.
+
+  > **Confirmed wrong (rung 3).** No control method was needed, and the question this
+  > paragraph is preparing to ask does not arise. Taint inheritance happens **inside
+  > the receiving sentry**, on the read that delivers the message, calling rung 2's
+  > existing `ladder.Taint`. No host round-trip, no root, no new urpc method — and
+  > monotonicity is inherited rather than re-argued, because nothing new can clear
+  > anything. A host-side setter would have been the wrong shape anyway: it would put
+  > the receiver's taint decision in a process that cannot see the message.
 - **Checkpoint/restore clears the taint bit.** It is a package-level global and not part
   of saved state. Rung 1's `ladderScope` has the identical problem. If rung 3's labels
   are to survive a restore, the ladder's state has to become savable — one job covering
@@ -105,6 +120,17 @@ interception point. What matters is that the sandbox has **no other route to the
 (rung 0's egress deny-by-default) and that the stamping happens on the outside of the
 agent's control.
 
+> **Implementation note (rung 3, done).** A host relay
+> (`common/postbox/postbox.py`), one listening socket per sandbox, each bind-mounted
+> at the same in-sandbox path so no sandbox can name another's. It does not stamp —
+> the sentry does. **`SOCK_SEQPACKET`, and that is load-bearing.** The stamp is a
+> fixed prefix per message, so "one send is one message" has to be a kernel fact: on
+> a stream an agent puts a delimiter in its payload and hands the receiver a second,
+> wholly fabricated, stamped line. SEQPACKET also forces `connect(2)`, which is what
+> rung 2's labeling hooks — an unconnected `SOCK_DGRAM` `sendto` would have none.
+> Host-UDS SEQPACKET works through the gofer (`runsc/fsgofer/lisafs.go:809`);
+> verified end-to-end before anything was built on it.
+
 **Stamp placement — pick one, justify it:**
 
 - *In the Sentry, on the write path* — same hook family as rung 2's gate; strongest claim
@@ -119,10 +145,24 @@ learn it from the runtime (control API or log/event channel), not from the messa
 that data path explicit in the README — if the proxy learns taint from the message, the
 whole rung is circular and proves nothing.
 
+> **Implementation note (rung 3, done).** The Sentry, not the recommended proxy. The
+> cost comparison inverts once you look: the proxy would need `runsc ladder-status`
+> per message — which needs root, only answers while the sandbox runs, and puts a
+> second component in the trust path for the one field only the runtime knows.
+> Sentry-side, the stamper *is* the runtime and reads `ladder.Tainted()` directly.
+> The taint bit is read at **send** time, not connect time; a connect-time stamp
+> would say `taint=0` for a sandbox that connected, then read the page, then sent.
+
 **Acceptance policy** — keep it a two-line rule, not a language: a tainted message may
 inform the receiver, but a privileged tool call whose *parameters derive from* a tainted
 message is denied unless the parameter is on the task's allowlist. Rung 3 can approximate
 "derive from" as "the receiver is tainted", which is exactly claim 4.
+
+> **Result (rung 3).** It never wanted to become a language, and not out of restraint
+> — rung 3 has no vocabulary to write one in. The runtime holds one bit and one name.
+> The policy is this paragraph's own approximation, unmodified: an accepted tainted
+> message taints the receiver, and rung 2's gate refuses what follows. Rung 3 adds no
+> denial of its own.
 
 ---
 
@@ -156,6 +196,14 @@ Add a fourth block if cheap: Ops, having accepted a tainted message, is now itse
 - Forged headers demonstrably overridden, shown as a side-by-side diff in the output.
 - The proxy/Sentry obtains taint state from the **runtime**, not from message content —
   state the path explicitly in the README.
+
+  > **Result (rung 3).** All five met. The taint path is the shortest one available:
+  > same package global, same sentry process, at send time. One correction to claim
+  > 1's premise — "the sender's capability set (its rung-1 task grants)" assumes the
+  > runtime knows the grants. It does not. `boot.Network.ladderScope` is
+  > `[]*net.IPNet`, egress CIDRs only, and is populated solely by `LadderNarrow`; the
+  > tools half of a rung-1 manifest never enters the runtime at all. Grants had to be
+  > introduced, as a per-container OCI annotation derived from the manifest.
 - Direct peer contact bypassing the mediated channel is impossible, and the demo shows the
   attempt failing.
 - Rungs 0–2 demos still pass.

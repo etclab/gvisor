@@ -219,10 +219,16 @@ it is the *parameter* that is out of scope.
 | delegation checked at the relay | `ladder/common/postbox/postbox.py:228` |
 | the sink authorized against the chain | `ladder/common/broker/broker.py:130` |
 
-**Patch size:** `git diff --stat rung-3..rung-4 -- pkg/ runsc/` is 8 files, 87
-insertions, 12 deletions. The harness moved more than the runtime did: 230 insertions
-across four shared files plus 452 lines of new `chaind.py`. That ratio is the rung's main
-finding, not an accident of style — see "Spec corrections".
+**Patch size:** `git diff --stat rung-3..rung-4 -- pkg/ runsc/` is 9 files, 299
+insertions, 12 deletions — of which **212 are the new `chain.go`**, and 95 of those 212 are
+comment or blank. The changes threaded through files that already existed come to 87
+insertions across 8 files: a call inserted into `Ingest`, a string concatenated in
+`Stamp`, a flag, a status field.
+
+The harness moved further than the runtime did: `git diff --stat rung-3..rung-4 --
+ladder/common/` is 12 files and 876 insertions, including 452 lines of new capability
+authority. That ratio is the rung's main finding, not an accident of style — see "Spec
+corrections" and the verdict in `ladder/README.md`.
 
 ---
 
@@ -423,8 +429,9 @@ Where the rung-4 spec and conventions §2 were wrong about this tree, and what i
 3. **"Where verification lives" was right, and it is the answer to the framing question
    rather than a detail.** The spec puts `granted ⊆ caller's` and the sink authorization
    in the broker and the unforgeable binding in the runtime. That split is exactly what
-   the implementation wanted, and the sizes say why: 87 lines of runtime against 452 lines
-   of capability authority. The full verdict is in `ladder/README.md`.
+   the implementation wanted, and the sizes say why: 299 lines of runtime, a third of it
+   comment, against 876 lines of host-side harness. The full verdict is in
+   `ladder/README.md`.
 4. **The `granted ⊆ caller's` check did not want a capability library.** `chaind.subset`
    is twelve lines and one subtlety (an omitted constraint is a widening). This is
    evidence *against* adopting Biscuit or Macaroons for the arithmetic and *for* adopting
@@ -450,7 +457,8 @@ Where the rung-4 spec and conventions §2 were wrong about this tree, and what i
 
 ### Was this hard?
 
-The runtime patch was the easiest of the three: 87 lines, one new file, no new
+The runtime patch was the easiest of the three: 299 lines, one new file and 87 lines
+threaded through files that already existed, no new
 interception point, no new syscall path. Everything rung 4 needed on the send and receive
 paths was already there because rung 3 built it — `Extend` is a call inserted into
 `Ingest`, and `chainFields` is a string concatenated in `Stamp`.

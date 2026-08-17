@@ -196,10 +196,11 @@ Full detail in `ladder/rung4/README.md`; the ladder-wide verdict is in `ladder/R
   unreachable in this tree whenever the tainted bytes came through a labeled path**, and a
   correct, in-scope, goal-authorized change is lost. The demo prints both verdicts on the
   same call rather than resolving the disagreement.
-- **Patch size:** 87 added lines across 8 files in `pkg/` and `runsc/`, one of them new.
-  The host side moved more: 230 lines across four shared harness files plus 452 lines of
-  new capability authority. The smallest runtime patch of any rung that has one, and the
-  ratio is the rung's main finding.
+- **Patch size:** 299 added lines across 9 files in `pkg/` and `runsc/`, of which 212 are
+  the one new file (95 of those comment or blank); the changes threaded through existing
+  files come to 87 lines. The host side moved further: 876 lines across 12 files in
+  `ladder/common/`, including 452 lines of new capability authority. The smallest runtime
+  patch of any rung that has one, and the ratio is the rung's main finding.
 - **Not done, and now four rungs old:** ladder state is still package globals and still not
   part of saved state, so checkpoint/restore launders the chain as well as the taint bit.
   Rung 3 predicted rung 4 would have to fix this "anyway". It did not — nothing in the demo

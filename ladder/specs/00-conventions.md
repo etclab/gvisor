@@ -116,6 +116,20 @@ it cannot make the sandbox less secure. Rung 3's identity and grants qualify bec
 neither is a privilege — nothing in the sandbox consults them to decide what it may do
 — and the gate itself deliberately does not.
 
+Rung 4's row is the second one this table got wrong, and it is wrong in the opposite
+direction to rung 1's. It reads "no chain/capability verification" with the flag off;
+measured, with `--ladder-chain` off the taint bit still crosses three hops (rung 3 already
+did that), a widening is still refused, and an out-of-scope parameter is still refused —
+because both denials are broker logic and never lived in the runtime. **Only the origin is
+lost**, and it is lost because the origin is the path the first hop actually read, which no
+host-side component can reconstruct. The corrected row: *with `--ladder-chain` off,
+provenance detail is lost; capability verification is unaffected.* Rung 4 also broke the
+configuration-flag trend rungs 2 and 3 set — it ships **one** flag, the gate, and no
+per-container configuration at all, because the chain is assembled from the identity rung 3
+already stamps. The lesson for the next mechanism is the test in `ladder/README.md`'s
+verdict section: a fact about a sandbox belongs in the runtime, a decision about an action
+belongs at the enforcement point that holds the credential.
+
 Rationale: one HEAD binary can then demo *every* level live. A presentation runs the
 same attack with the flag off (succeeds) and on (blocked) in the same session, with no
 rebuild and no checkout — Bazel builds are too slow to rebuild mid-demo. Flags compose:

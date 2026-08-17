@@ -1,14 +1,38 @@
 # Running the agent use case against this runsc fork
 
-This directory drives
-[`boundclaw-agent-usecase`](../../boundclaw-agent-usecase) (the sibling repo — a
-three-agent confused-deputy demo) against the `runsc` built from **this** tree,
-in one command per pass. Nothing in the use-case repo is modified: the passes
-differ only by which container runtime each agent runs under, which is exactly
-how that repo was designed to be swept.
+This directory drives `boundclaw-agent-usecase` (a separate repo — a three-agent
+confused-deputy demo) against the `runsc` built from **this** tree, in one
+command per pass. Nothing in the use-case repo is modified: the passes differ
+only by which container runtime each agent runs under, which is exactly how that
+repo was designed to be swept.
 
 The `ladder/` demos elsewhere in this tree are a separate, self-contained
 exhibit. This directory is only about the use case.
+
+## From a clean clone
+
+A fresh clone lands on `master`, which has neither this directory nor `ladder/`.
+The work is on the `usecase` branch:
+
+```bash
+git clone git@github.com:etclab/gvisor.git
+cd gvisor
+git checkout usecase
+
+cd usecase
+make register     # build runsc from this tree + register boundclaw-runsc.  needs sudo
+make sweep        # all three passes, then one comparison table
+```
+
+That is the whole setup — two commands after the checkout. Everything else is
+fetched or built on demand: `make register` builds runsc with bazel **inside a
+container** (`tools/bazel.mk`), so docker is the only build dependency — no host
+bazel, Go, or Python toolchain — and the use case itself is cloned automatically
+if it is not already on disk (see [below](#where-the-use-case-comes-from)).
+
+Budget 10-20 minutes for the first `make register` on a cold bazel cache; it is
+seconds afterwards. `make pass1` alone needs no `register` and no sudo, and is
+the fastest way to confirm the plumbing works before building anything.
 
 ## What each pass is
 
@@ -62,14 +86,20 @@ pass-2 connection failure.
 
 ## Prerequisites
 
-- **docker** with compose v2, caller in the `docker` group.
-- **curl** and **jq** on the host (both present here).
+- **docker** with compose v2, caller in the `docker` group. This is also the
+  build dependency: bazel runs in a container, so no host bazel or Go is needed.
+- **curl** and **jq** on the host.
+- **git access to the use-case repo**, unless you already have a checkout to
+  point at — the auto-clone uses an SSH URL. `USECASE_DIR` avoids needing it.
+- **sudo**, for pass 2/3 only: registering a runtime edits
+  `/etc/docker/daemon.json` and reloads docker. Pass 1 needs none of this.
 - No host `uv` / `httpx` needed — the attack harness runs *inside* a throwaway
-  container on the compose network (`docker compose run`), reusing the built
-  image. (If you'd rather run it on the host, `uv run python -m attack.run …`
-  from the use-case repo still works once `uv` is installed; the container path
-  is the zero-dependency default.)
-- For pass 2/3 only: the `boundclaw-runsc` runtime, registered once with sudo.
+  container on the compose network, reusing the built image. (If you'd rather run
+  it on the host, `uv run python -m attack.run …` from the use-case repo still
+  works once `uv` is installed; the container path is the zero-dependency
+  default.)
+- The agents are pinned to `172.31.77.0/24` (see `net-static.yml`). If that
+  collides with an existing docker network, change the subnet there.
 
 ## Where the use case comes from
 

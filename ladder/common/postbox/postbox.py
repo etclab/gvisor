@@ -36,32 +36,61 @@ sendto would have no connect to hook).
 
 Wire format, one message per connection:
 
-    <128-byte stamp><verb and body>
+    <256-byte stamp><verb and body>
 
     stamp:  "LADDER-STAMP v=1 sender=<id> taint=<0|1> grants=<a,b>" space-padded
+            "LADDER-STAMP v=2 sender=<id> taint=<0|1> grants=<a,b> chain=<a>b> origin=<path>"
     verb:   "SEND to=<peer> <body>"   ->  queue <stamp><body> for <peer>
             "RECV"                    ->  reply with one queued <stamp><body>
+
+v=2 is rung 4: the stamp additionally names every hop the message has passed through
+and the first untrusted source anywhere upstream. Both fields are written by the
+sending sentry, which is why this file only reads them.
 
 With --ladder-attest off there is no stamp, the message is just "<verb and body>",
 and the postbox relays it unstamped. That is rung 3's BASELINE and it is the whole
 attack: the message crosses the boundary carrying nothing about where it came from.
 
+Rung 4 adds one job, and only one: a relay is where a DELEGATION physically happens,
+so with --chaind set the postbox asks the capability authority whether the delegation
+carried in the message body is contained in what the sender itself holds. It makes no
+decision of its own -- it forwards two facts it is uniquely placed to know (which
+socket the message arrived on, and what the runtime stamped on it) and relays or drops
+according to the answer. The capability arithmetic is in common/chaind/chaind.py.
+
+    body:   "LADDER-CAP <compact json> LADDER-CAP-END <payload>"
+
+The delegation is in the part of the message the AGENT controls, and that is correct:
+a delegation is a claim, and a claim is only ever checked against the delegator's own
+set. An agent that writes itself a wider capability has written a request that will be
+refused. Rung 4's ENFORCED block does exactly that.
+
 Usage:
     postbox.py --peer reader=/path/to/reader/peer/peer.sock \\
                --peer ops=/path/to/ops/peer/peer.sock \\
-               [--require-stamp] [--log PATH]
+               [--require-stamp] [--chaind SOCKET] [--log PATH]
 """
 
 import argparse
+import json
 import os
 import socket
 import sys
 import threading
 import time
 
-# Must match pkg/sentry/socket/unix/ladder.go and common/fake_agent/fake_agent.py.
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, "chaind"))
+import chaind  # noqa: E402  (for its client half; the daemon runs as its own process)
+
+# Must match pkg/sentry/ladder/attest.go (StampLen) and
+# common/fake_agent/fake_agent.py (STAMP_LEN). Widened from 128 by rung 4; nothing
+# detects a disagreement at runtime, so all three move together or none do.
 STAMP_PREFIX = b"LADDER-STAMP "
-STAMP_LEN = 128
+STAMP_LEN = 256
+
+# Rung 4's delegation markers, inside the message body. See the module docstring.
+CAP_OPEN = "LADDER-CAP "
+CAP_CLOSE = " LADDER-CAP-END"
 
 MAX_MESSAGE = 65536
 
@@ -69,6 +98,7 @@ LOG_LOCK = threading.Lock()
 STATE = {
     "log_path": None,
     "require_stamp": False,
+    "chaind": None,
     "peers": set(),
     # peer -> list of pending raw messages (stamp bytes + body bytes)
     "queues": {},
@@ -104,6 +134,42 @@ def stamp_field(stamp, name):
         if key == name:
             return value
     return ""
+
+
+def stamp_dict(stamp):
+    """The stamp as the fields chaind is given. Rung 4.
+
+    Everything here was written by the SENDING sentry below the syscall boundary. The
+    postbox passes it through verbatim and adds nothing: if it invented a field the
+    whole chain would be circular.
+    """
+    chain = stamp_field(stamp, "chain")
+    return {
+        "sender": stamp_field(stamp, "sender"),
+        "taint": stamp_field(stamp, "taint"),
+        "chain": [h for h in chain.split(">") if h] if chain else [],
+        "origin": stamp_field(stamp, "origin"),
+    }
+
+
+def split_delegation(body):
+    """Pull rung 4's delegation out of a message body. Returns (cap_or_None, shown).
+
+    The delegation is left IN the body when the message is relayed, deliberately: the
+    receiving agent should be able to see what it was granted, and its transcript is
+    where a reader looks for that.
+    """
+    if CAP_OPEN not in body or CAP_CLOSE not in body:
+        return None, ""
+    blob = body.split(CAP_OPEN, 1)[1].split(CAP_CLOSE, 1)[0].strip()
+    try:
+        return json.loads(blob), blob
+    except ValueError:
+        # A malformed delegation is not a free pass. chaind is never asked, so the
+        # relay falls through to "no delegation" and the receiver inherits nothing
+        # wider than the sender held.
+        log("warn reason=malformed-delegation blob=%r" % blob[:80])
+        return None, blob
 
 
 def handle_message(sock_peer, raw):
@@ -152,6 +218,31 @@ def handle_message(sock_peer, raw):
         if dest not in STATE["peers"]:
             log("drop from=%s to=%s reason=unknown-peer" % (sock_peer, dest))
             return b'{"delivered": false, "reason": "unknown peer"}'
+
+        # Rung 4. Before anything is queued, ask the capability authority whether this
+        # hop may hand the next hop what it is trying to hand it. A widening is refused
+        # HERE, at the relay, because that is where the delegation happens -- and the
+        # message is not relayed at all, so the widened capability never exists.
+        if STATE["chaind"]:
+            cap, shown_cap = split_delegation(message_body)
+            request = {"op": "delegate", "from": sock_peer, "to": dest,
+                       "stamp": stamp_dict(stamp)}
+            if cap is not None:
+                request["cap"] = cap
+            try:
+                verdict = chaind.call(STATE["chaind"], request)
+            except (OSError, ValueError) as e:
+                log("drop from=%s to=%s reason=chaind-unreachable %s" % (sock_peer, dest, e))
+                return b'{"delivered": false, "reason": "capability authority unreachable"}'
+            if verdict.get("decision") != "allow":
+                log("drop from=%s to=%s reason=%s cap=%r" % (
+                    sock_peer, dest, verdict.get("code") or "delegation-denied", shown_cap[:120]))
+                return json.dumps({"delivered": False,
+                                   "reason": verdict.get("reason", "delegation denied"),
+                                   "code": verdict.get("code", "delegation-denied")}).encode()
+            log("delegate from=%s to=%s decision=allow cap=%r" % (
+                sock_peer, dest, shown_cap[:120] or "(inherited unchanged)"))
+
         # The stamp travels verbatim. The postbox neither writes nor rewrites it; if
         # there is none, none is delivered, and the receiver's runtime has nothing to
         # inherit. That is the BASELINE.
@@ -203,6 +294,9 @@ def main():
     ap.add_argument("--require-stamp", action="store_true",
                     help="drop messages with no runtime stamp, or whose stamp disagrees "
                          "with the socket they arrived on")
+    ap.add_argument("--chaind", default=None, metavar="SOCKET",
+                    help="rung 4: verify every delegation against the capability "
+                         "authority on this socket before relaying")
     ap.add_argument("--log", default=None)
     args = ap.parse_args()
 
@@ -218,6 +312,7 @@ def main():
 
     STATE["log_path"] = args.log
     STATE["require_stamp"] = args.require_stamp
+    STATE["chaind"] = args.chaind
     STATE["peers"] = {name for name, _ in wiring}
 
     paths = []
@@ -238,8 +333,9 @@ def main():
                 break
             time.sleep(0.02)
 
-    log("listening peers=%s require_stamp=%s" % (
-        ",".join("%s@%s" % (n, p) for n, p in wiring), args.require_stamp))
+    log("listening peers=%s require_stamp=%s chaind=%s" % (
+        ",".join("%s@%s" % (n, p) for n, p in wiring), args.require_stamp,
+        args.chaind or "none"))
     try:
         while True:
             time.sleep(3600)

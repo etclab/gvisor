@@ -52,7 +52,18 @@ import (
 // prepends exactly this many bytes, and the receiver reads exactly this many. A
 // delimiter would need the receiver to buffer across a partial read, and a partial
 // read is precisely where a parser gets confused.
-const StampLen = 128
+//
+// THIS CONSTANT IS A WIRE CONTRACT. Three implementations must agree on it, and
+// nothing at runtime detects a disagreement -- a receiver reading the wrong width
+// silently sees a stamp as body or a body as stamp:
+//
+//	pkg/sentry/ladder/attest.go             StampLen  (this file, the writer)
+//	ladder/common/postbox/postbox.py        STAMP_LEN (the relay)
+//	ladder/common/fake_agent/fake_agent.py  STAMP_LEN (the reader, and the forger)
+//
+// Widened from 128 to 256 by rung 4: the chain and origin fields do not fit in
+// 128 bytes once a chain is three hops long and an origin is an absolute path.
+const StampLen = 256
 
 // stampPrefix begins every stamp. A message that does not start with it carries no
 // stamp; a message that does may still be a forgery written by an application, and
@@ -141,12 +152,20 @@ func Stamp(channel string) []byte {
 	if Tainted() {
 		bit = 1
 	}
-	text := stampPrefix + "v=1 sender=" + policy.identity +
-		" taint=" + itoa(bit) + " grants=" + policy.grants
+	// v=2 when rung 4 is on, and the two extra fields come last. A rung-3 stamp is
+	// then byte-for-byte what it was, and a receiver that only knows v=1 reads the
+	// fields it knows and ignores the rest -- parseStamp is keyed on field names,
+	// not positions.
+	version := "v=1"
+	if policy.chain {
+		version = "v=2"
+	}
+	text := stampPrefix + version + " sender=" + policy.identity +
+		" taint=" + itoa(bit) + " grants=" + policy.grants + chainFields()
 	if len(text) > StampLen {
-		// Truncation loses grant names, never the sender or the taint bit, because
-		// those come first. A truncated grant list is a label that under-claims,
-		// which is the safe direction.
+		// Truncation loses rung 4's chain and origin first, then grant names, and
+		// never the sender or the taint bit, because those come first. Every one of
+		// those losses is a label that under-claims, which is the safe direction.
 		text = text[:StampLen]
 	}
 	out := make([]byte, StampLen)
@@ -154,8 +173,8 @@ func Stamp(channel string) []byte {
 		out[i] = ' '
 	}
 	copy(out, text)
-	log.Warningf("LADDER STAMP channel=%s sender=%s taint=%d grants=%s",
-		channel, policy.identity, bit, policy.grants)
+	log.Warningf("LADDER STAMP channel=%s sender=%s taint=%d grants=%s%s",
+		channel, policy.identity, bit, policy.grants, chainFields())
 	return out
 }
 
@@ -204,7 +223,12 @@ func Ingest(bufs [][]byte, n int64, channel string) {
 		// rung 0's topology, not by this hook. See rung3/README.md, claim 5.
 		return
 	}
-	sender, taint := parseStamp(string(head))
+	sender, taint, chain, origin := parseStamp(string(head))
+	// Rung 4, and it happens before the taint check on purpose: a message extends
+	// the chain whether or not it is tainted. A clean hop is still a hop, and a
+	// receiver that only recorded the tainted ones would report a chain with holes
+	// in it.
+	Extend(chain, origin, sender)
 	if taint != "1" {
 		return
 	}
@@ -213,8 +237,11 @@ func Ingest(bufs [][]byte, n int64, channel string) {
 	Taint("peer:"+sender, "recv")
 }
 
-// parseStamp pulls the sender and taint fields out of a stamp.
-func parseStamp(stamp string) (sender, taint string) {
+// parseStamp pulls the fields this sandbox acts on out of a stamp: rung 3's
+// sender and taint, and rung 4's chain and origin. Keyed on field names rather
+// than positions, so a v=1 stamp from a peer whose runtime does not have rung 4
+// parses fine and simply yields no chain.
+func parseStamp(stamp string) (sender, taint string, chain []string, origin string) {
 	for _, token := range strings.Fields(stamp) {
 		key, value, ok := strings.Cut(token, "=")
 		if !ok {
@@ -225,12 +252,16 @@ func parseStamp(stamp string) (sender, taint string) {
 			sender = value
 		case "taint":
 			taint = value
+		case "chain":
+			chain = strings.Split(value, chainSep)
+		case "origin":
+			origin = value
 		}
 	}
 	if sender == "" {
 		sender = "unnamed"
 	}
-	return sender, taint
+	return sender, taint, chain, origin
 }
 
 // AttestStatus describes the sandbox's rung-3 labeling state for the host-side

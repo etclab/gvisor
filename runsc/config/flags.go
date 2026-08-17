@@ -188,6 +188,7 @@ func RegisterFlags(flagSet *flag.FlagSet) {
 	flagSet.String("ladder-peer-channels", "", "EXPERIMENTAL. Comma-separated absolute in-sandbox path prefixes naming mediated agent-to-agent channels, e.g. \"/peer\". Requires --ladder-attest.")
 	flagSet.String(flagLadderIdentity, "", "EXPERIMENTAL. The name this sandbox stamps on messages it sends, e.g. \"reader\". Per-container: normally set with the OCI annotation dev.gvisor.flag.ladder-identity. Requires --ladder-attest.")
 	flagSet.String(flagLadderGrants, "", "EXPERIMENTAL. Comma-separated capability set this sandbox stamps on messages it sends -- its rung-1 tool scope. A label, not a privilege. Per-container, like --ladder-identity. Requires --ladder-attest.")
+	flagSet.Bool("ladder-chain", false, "EXPERIMENTAL. Enable the ladder rung-4 chain label (research prototype). When enabled, the stamp on an outbound message additionally names every hop the message has passed through and the first untrusted source anywhere upstream, and an inbound stamp's chain is accumulated into this sandbox's own. When disabled, stamps carry only the immediate sender's local state. Requires --ladder-attest.")
 
 	// Flags that control sandbox runtime behavior: accelerator related.
 	flagSet.Bool("nvproxy", false, "LEGACY: enable support for Nvidia GPUs. GPU support gets automatically enabled if Nvidia devices are present in the OCI spec.")
@@ -242,6 +243,10 @@ var overrideAllowlist = map[string]struct {
 	// --ladder-attest itself, nor --ladder-peer-channels: whether messages are
 	// labeled at all, and which sockets are channels, stay administrator
 	// decisions that a container spec cannot switch off.
+	//
+	// Rung 4 adds no entry. --ladder-chain is a gate, like --ladder-attest, and it
+	// needs no per-container configuration of its own: the chain is assembled from
+	// the identity rung 3 already stamps.
 	flagLadderIdentity: {},
 	flagLadderGrants:   {},
 }

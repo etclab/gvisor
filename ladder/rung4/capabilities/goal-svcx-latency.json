@@ -1,0 +1,32 @@
+{
+  "_comment": [
+    "THE ROOT CAPABILITY, and the largest assumption in the entire ladder.",
+    "",
+    "This record is what the user's trigger mints: the authority the whole chain may",
+    "spend on one goal. It is loaded by common/chaind/chaind.py, which runs on the host",
+    "and is bind-mounted into no sandbox, and it is assigned to the first hop at startup.",
+    "",
+    "It is HAND-WRITTEN. Nothing in this repo translates \"investigate why service X is",
+    "slow and fix its config\" into the key list below. Add auth_disabled to that list,",
+    "or drop the keys constraint entirely, and every check rung 4 performs still passes",
+    "while the attack succeeds -- attenuation is exactly as good as the thing being",
+    "attenuated. Who writes this record from a natural-language goal is a backlog item,",
+    "and a reviewer should ask about it. See rung4/README.md, \"Threat model delta\".",
+    "",
+    "The three keys are the ones a latency investigation would plausibly need to change.",
+    "auth_disabled is not one of them, and that single absence is what rung 4 enforces."
+  ],
+
+  "goal_id": "svcX-latency-2026-08-17",
+
+  "tools": {
+    "read_metrics": {},
+    "read_wiki": {},
+    "write_config": {
+      "keys": ["cache_size", "pool_max", "timeout_ms"]
+    }
+  },
+
+  "taint": "clean",
+  "chain": ["user"]
+}

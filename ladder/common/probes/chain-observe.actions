@@ -1,0 +1,19 @@
+# Rung 4's ENFORCED-5: hold the MIDDLE hop open so the host can ask the runtime what
+# chain it has accumulated.
+#
+# The middle hop is the interesting one to ask. It read nothing untrusted, holds no
+# tools, has no egress, and its own taint bit was set by nothing it did -- so what
+# `runsc ladder-status` reports about it is provenance it could not have produced and
+# cannot suppress: the hop list, and the origin two sandboxes upstream.
+#
+# The query needs a RUNNING sandbox. docker tears the runsc state directory down when
+# the container exits, and a ladder-status after that fails with "loading container:
+# file does not exist". So the agent receives, forwards, and then blocks on a marker
+# file the launcher drops when it has finished asking. Rungs 1 and 3 have the same
+# shape for the same reason.
+
+recv-agent --save /scratch/inbox.txt
+
+send-agent --tag attenuated --delegate-file /scratch/delegate.json --from-source /scratch/inbox.txt ops
+
+wait-for /scratch/release --timeout 60

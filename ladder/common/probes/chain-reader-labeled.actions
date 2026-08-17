@@ -1,0 +1,18 @@
+# Rung 4, hop 1 of 3: the same reader, reading the same page from the LABELED path.
+#
+# Identical to chain-reader-web.actions except for the source. That single difference is
+# how the demo tells rung 4's two problems apart:
+#
+#   web     nothing labels a socket, so no taint anywhere. The chain is clean and the
+#           attack is stopped by the capability check, at the broker.
+#   labeled rung 2's bit flips here, travels through a middle hop that reads nothing
+#           untrusted, and rung 2's gate stops the write inside the runtime.
+#
+# Both are stopped, for different reasons, at different layers, with different evidence.
+# Running the same actions against both sources is the only honest way to show which
+# mechanism is doing the work -- and, in ENFORCED-3, which one still works when rung 4's
+# flag is off.
+
+read-source /untrusted/injected-page.txt --save /scratch/page.txt --obey-instructions
+
+send-agent --delegate-file /scratch/delegate.json --from-source /scratch/page.txt orchestrator

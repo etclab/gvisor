@@ -1,0 +1,33 @@
+# Reader: fetch the incident page, forward what it found to the orchestrator.
+#
+# Rung 3's reader with one field changed: network_allow now names wiki.corp, because
+# rung 4's untrusted source is a web PAGE rather than a mounted file. That is the
+# deck's actual scenario -- "an injected web page shapes Reader's findings" -- and it
+# is also the case rung 2's label does not cover: rung 2 labels MOUNTS, per its
+# Mechanism decision (a), so bytes that arrive over a socket taint nothing.
+#
+# mounts.untrusted is still ro, and the demo still uses it: ENFORCED-2 and ENFORCED-3
+# run the identical chain against the identical page read from the labeled path
+# instead, which is how the two halves of the problem -- taint provenance and
+# authority provenance -- are told apart.
+#
+# broker_tools is empty, exactly as in rung 3. This sandbox holds no tools at all,
+# and it is the sandbox that ends up holding the goal's root capability. Those are
+# different things, and rung 4 is where the difference starts to matter: a capability
+# is what the CHAIN may cause, a manifest scope is what one sandbox may reach.
+
+task_id: reader
+agent_image: ladder/agent-enforced:rung4
+
+network_allow:
+  - wiki.corp
+
+mounts:
+  scratch: rw
+  broker: none
+  untrusted: ro
+  peer: rw
+
+broker_tools: []
+
+ttl_seconds: 60

@@ -504,6 +504,13 @@ type Config struct {
 	// LadderAttest is set.
 	LadderGrants string `flag:"ladder-grants"`
 
+	// LadderChain enables the ladder rung-4 chain label (see
+	// pkg/sentry/ladder/chain.go). This is a research prototype. When false,
+	// stamps carry only rung 3's local fields and no chain is accumulated on the
+	// receive path. Requires LadderAttest to do anything at all: the chain
+	// travels in rung 3's stamp.
+	LadderChain bool `flag:"ladder-chain"`
+
 	// AllowRootfsTarAnnotation indicates whether the rootfs tar annotation
 	// should be allowed.
 	AllowRootfsTarAnnotation bool `flag:"allow-rootfs-tar-annotation"`

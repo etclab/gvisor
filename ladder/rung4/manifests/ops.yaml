@@ -1,0 +1,37 @@
+# Ops: hold the production tools, act on what the orchestrator asks for.
+#
+# Rung 3's ops with read_metrics in place of read_wiki, because rung 4's goal is
+# "investigate why service X is slow and fix its config" and metrics are what an ops
+# agent reads to do that.
+#
+# The field to look at is broker_tools, and specifically what is NOT in it: any notion
+# of WHICH CONFIG KEYS write_config may set. Rung 1's scope is per-tool. So is rung 3's
+# grants field. So is the credential the broker holds, which would happily set any key
+# at all. Every layer the ladder has built so far answers "may this task call
+# write_config" with yes, and nothing anywhere answers "is auth_disabled inside what
+# the user asked for".
+#
+# That question needs a different kind of object -- one minted for the GOAL rather than
+# for the task -- and rung 4 is where it appears. See capabilities/goal-svcx-latency.json.
+#
+# broker_tools is deliberately unchanged from what rungs 1-3 would have written. Rung 4
+# takes nothing away from what ops may do; it changes what the chain may spend ops's
+# authority on.
+
+task_id: ops
+agent_image: ladder/agent-enforced:rung4
+
+network_allow:
+  - wiki.corp
+
+mounts:
+  scratch: rw
+  broker: rw
+  untrusted: none
+  peer: rw
+
+broker_tools:
+  - read_metrics
+  - write_config
+
+ttl_seconds: 60

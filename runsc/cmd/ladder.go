@@ -155,5 +155,9 @@ func (l *LadderStatus) Execute(_ context.Context, f *flag.FlagSet, args ...any) 
 	// for, is byte-identical to what it was.
 	util.Infof("LADDER attest attest=%t identity=%q grants=%q peers=%s",
 		st.Attest, st.Identity, st.Grants, strings.Join(st.PeerChannels, ","))
+	// Rung 4, on its own line for the same reason: rungs 2 and 3 both have demos
+	// that grep their line, and neither should have to change.
+	util.Infof("LADDER chain chain=%t hops=%s origin=%q",
+		st.Chain, strings.Join(st.ChainHops, ">"), st.Origin)
 	return subcommands.ExitSuccess
 }

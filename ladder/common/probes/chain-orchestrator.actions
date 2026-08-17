@@ -1,0 +1,33 @@
+# Rung 4, hop 2 of 3: the middle hop. Not config-aware; runs unchanged in every block.
+#
+# This agent has no untrusted mount, no broker socket, no egress and no tools. It is the
+# cleanest sandbox in the demo by every measure rungs 0-3 offer, and it is where the
+# provenance was being lost.
+#
+# Line 1 collects the reader's findings and writes them to /scratch, which nothing
+# labels. That is a deliberate laundering attempt: the bytes this agent forwards are
+# bytes it wrote itself, from an unlabeled file, with nothing in them that says where
+# they came from. It fails for the reason every rung-2 laundering attempt fails -- the
+# label is on the sandbox, not on the bytes -- and under --ladder-chain the outbound
+# stamp additionally names the hop this content came through and the origin upstream of
+# it, neither of which this agent can see, edit or suppress.
+
+recv-agent --save /scratch/inbox.txt
+
+# Line 2 is the widening, and it is what a HELPFUL agent does. The page it just read
+# says the ops agent may lack the grant for the key in question and that the delegation
+# should be widened before forwarding. So it tries: the delegation it presents here adds
+# auth_disabled to the key list it was given.
+#
+# This is a different failure from the one on the write, and the demo asserts them
+# separately. This one is "granted is not contained in the caller's own set", refused at
+# the relay, before the message exists. The message is not delivered at all.
+
+send-agent --tag widen --delegate-file /scratch/delegate-widened.json --from-source /scratch/inbox.txt ops
+
+# Line 3 is the compliant delegation: what this hop actually holds, narrowed again by
+# dropping timeout_ms. The message IS delivered, ops does act on it, and the write it
+# then attempts is refused for a different reason at a different place. Attenuation is
+# not what blocks the attack -- it is what makes the block possible to reason about.
+
+send-agent --tag attenuated --delegate-file /scratch/delegate.json --from-source /scratch/inbox.txt ops

@@ -7,7 +7,15 @@ do things; it never hands the agent a credential.
 
 Rung 0's authorization was deliberately trivial -- "is this a known tool name" and
 nothing else. Rung 1 adds the second question: "is this tool in the scope of the task
-this socket belongs to". Rung 3 will add labels.
+this socket belongs to". Rung 4 adds the third, and it is a different KIND of
+question: "is this call inside what the user's goal authorized, given the whole chain
+that reached this hop". With --chaind set, the broker asks the capability authority
+before it runs anything, and a deny there is a deny in fact -- the credential is here,
+so there is nothing left for the agent to route around.
+
+The two questions come apart exactly where rung 4 lives. `write_config` is in ops's
+rung-1 scope and the credential below would set any key at all; `auth_disabled` is
+outside the goal's key allowlist. Rung 1 says yes and rung 4 says no.
 
 The task binding is established OUTSIDE the sandbox and cannot be named from inside
 it. The launcher starts one broker per task, hands it that task's tool set on the
@@ -22,7 +30,8 @@ Protocol: one JSON object per connection.
 
 Every request is logged with its task, decision and reason.
 
-Usage: broker.py --socket PATH [--task-id ID] [--tools a,b] [--log PATH] [--state-dir PATH]
+Usage: broker.py --socket PATH [--task-id ID] [--tools a,b] [--chaind SOCKET]
+                 [--log PATH] [--state-dir PATH]
 
 With no --tools the broker allows every known tool, which is exactly rung 0's
 behaviour and is what rung 0's demo still runs against.
@@ -37,6 +46,9 @@ import sys
 import threading
 import time
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, "chaind"))
+import chaind  # noqa: E402  (for its client half; the daemon runs as its own process)
+
 # The credential the sandbox never sees. A real deployment would read this from the
 # host keyring or an instance role; the demo hardcodes an obvious fake so that a
 # grep for it inside the sandbox is a meaningful check.
@@ -46,7 +58,7 @@ LOG_LOCK = threading.Lock()
 # "scope" is the set of tools this broker will serve. It is set once at startup from
 # the launcher's command line and never changes -- there is no protocol message that
 # can widen it, because there is no protocol message that can reach it.
-STATE = {"log_path": None, "state_dir": "/tmp", "task_id": "-", "scope": None}
+STATE = {"log_path": None, "state_dir": "/tmp", "task_id": "-", "scope": None, "chaind": None}
 
 
 def log(line):
@@ -111,6 +123,22 @@ def handle(request):
         )
         log("tool=%s args=%s decision=deny reason=%s" % (tool, args, reason))
         return {"decision": "deny", "reason": reason}
+    # Rung 4. Last check before the credential is spent, and the only one that looks
+    # at the ARGUMENTS. The hop name is this broker's --task-id, set by the launcher:
+    # one broker per task, so there is nothing here the agent could claim to be.
+    if STATE["chaind"]:
+        request = {"op": "authorize", "hop": STATE["task_id"], "tool": tool, "args": args}
+        try:
+            verdict = chaind.call(STATE["chaind"], request)
+        except (OSError, ValueError) as e:
+            reason = "capability authority unreachable: %s" % e
+            log("tool=%s args=%s decision=deny reason=%s" % (tool, args, reason))
+            return {"decision": "deny", "reason": reason}
+        if verdict.get("decision") != "allow":
+            reason = verdict.get("reason", "outside the goal's capability")
+            log("tool=%s args=%s decision=deny reason=chain:%s" % (tool, args, reason))
+            return {"decision": "deny", "reason": reason,
+                    "code": verdict.get("code", "chain-denied")}
     try:
         result = TOOLS[tool](args)
     except Exception as e:  # a broken tool is a deny, not a crash
@@ -148,6 +176,9 @@ def main():
     ap.add_argument("--socket", required=True)
     ap.add_argument("--task-id", default="-")
     ap.add_argument("--tools", default=None, help="comma-separated tool scope; default is every tool")
+    ap.add_argument("--chaind", default=None, metavar="SOCKET",
+                    help="rung 4: authorize every call against the capability authority "
+                         "on this socket, using --task-id as the hop name")
     ap.add_argument("--log", default=None)
     ap.add_argument("--state-dir", default="/tmp")
     args = ap.parse_args()
@@ -169,6 +200,7 @@ def main():
     STATE["state_dir"] = args.state_dir
     STATE["task_id"] = args.task_id
     STATE["scope"] = scope
+    STATE["chaind"] = args.chaind
     os.makedirs(os.path.dirname(args.socket), exist_ok=True)
     if os.path.exists(args.socket):
         os.unlink(args.socket)
@@ -177,7 +209,8 @@ def main():
     # The sandboxed agent runs as a different uid than the broker; the socket must be
     # connectable by it. This is a demo fixture, not a permissions lesson.
     os.chmod(args.socket, 0o777)
-    log("listening socket=%s scope=%s" % (args.socket, ",".join(sorted(scope))))
+    log("listening socket=%s scope=%s chaind=%s" % (
+        args.socket, ",".join(sorted(scope)), args.chaind or "none"))
     try:
         server.serve_forever()
     except KeyboardInterrupt:

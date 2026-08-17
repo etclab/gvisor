@@ -17,7 +17,8 @@ in an optional capstone demo after rung 4.
 |---|---|
 | `fake_agent/fake_agent.py` | the agent stand-in; every action prints one `RESULT` line |
 | `broker/broker.py` | the tool broker; runs on the **host**, holds the only credential |
-| `postbox/postbox.py` | the mediated agent-to-agent channel (rung 3); runs on the **host**, one listening socket per sandbox, relays and never labels |
+| `postbox/postbox.py` | the mediated agent-to-agent channel (rung 3); runs on the **host**, one listening socket per sandbox, relays and never labels. From rung 4 it also asks the capability authority whether a delegation may be relayed |
+| `chaind/chaind.py` | the capability authority (rung 4); runs on the **host**, bind-mounted into nothing, owns the goal's capability record and every per-hop attenuation |
 | `probes/*.actions` | lists of agent actions, one per line — the probes themselves |
 | `world/service.py` | one stand-in host (the wiki, the exfil sink, the metadata endpoint) |
 | `world/proxy.py` | the egress allowlist, enforced outside the sandbox |
@@ -60,7 +61,16 @@ probe-fs-write PATH                    a write, reported with its errno
 probe-exec BINARY [ARGS...]            a spawn, reported with its errno
 call-broker TOOL [ARGS...]             the sanctioned path to a world-effect
 read-source SRC [--obey-instructions]  rung 2+; the deterministic injection stand-in
+                [--save PATH]          rung 4+; keep what was read, to forward it
+launder SRC DST [--encode base64]      rung 2+; move bytes to an unlabeled path
+symlink TARGET LINK                    rung 2+; a laundering attempt against a path label
+exec-fresh ACTION...                   rung 2+; run an action in a new process
 send-agent PEER MESSAGE                rung 3+; peer messaging
+                [--from-source PATH]   send a file's contents, whitespace-collapsed
+                [--forge-header SENDER] rung 3+; try to fabricate a stamp in the body
+                [--delegate-file PATH] rung 4+; the capability to hand the peer
+recv-agent [--obey-instructions]       rung 3+; collect one message and act on it
+                [--save PATH]          rung 4+; re-emit it from an unlabeled path
 wait-for PATH [--timeout SECS]         rung 1+; block until the launcher drops a marker
 script FILE                            run a list of actions; ${VAR} expands from env
 ```
@@ -96,9 +106,52 @@ the launcher starts one broker per task and bind-mounts only that broker's socke
 that task's sandbox, so the socket the agent can reach *is* its identity and there is
 nothing for it to forge.
 
+Rung 4 added the third question, `--chaind`: is this call inside what the user's *goal*
+authorized, given the whole chain that reached this hop. It is asked last, immediately
+before the credential is spent, and it is the only check that looks at the arguments.
+
 Note for anyone extending it: gVisor refuses host unix sockets by default
 (`--host-uds=none`), and a sandbox without `--annotation dev.gvisor.flag.host-uds=open`
 sees `ECONNREFUSED`, which looks like a dead broker rather than a policy denial.
+
+## The capability authority (rung 4)
+
+`chaind/chaind.py` holds the goal's capability record and the per-hop attenuations
+delegation produces. Unlike the broker it is bind-mounted into **nothing**, so no agent
+can mint, delegate or authorize — an agent can only ask its own broker for a tool and be
+told no.
+
+```
+-> {"op": "mint",      "goal": {...}, "to": "reader"}          the user's trigger
+-> {"op": "delegate",  "from": ..., "to": ..., "cap": {...}, "stamp": {...}}
+-> {"op": "authorize", "hop": ..., "tool": ..., "args": [...]}
+-> {"op": "view",      "hop": ...}
+<- {"decision": "allow"|"deny", "reason": "...", "code": "...", "view": {...}}
+```
+
+`delegate` is called by the postbox on relay, because that is where a delegation
+physically happens; `authorize` is called by the broker before it spends the credential,
+because that is the enforcement point. Both learn who is asking from something the agent
+cannot name — the relay from which socket the connection landed on, the broker from its
+own `--task-id`.
+
+It is deliberately not Macaroons, Biscuit or SPIFFE. The unforgeability comes from
+centralization plus the runtime's stamp, not from cryptography; see rung4/README.md.
+
+## The stamp is a wire contract
+
+The label the sentry prepends to every peer-channel message is a fixed width, and three
+implementations must agree on it:
+
+| Where | Constant |
+|---|---|
+| `pkg/sentry/ladder/attest.go` | `StampLen` — the writer |
+| `common/postbox/postbox.py` | `STAMP_LEN` — the relay |
+| `common/fake_agent/fake_agent.py` | `STAMP_LEN` — the reader, and the forger |
+
+256 bytes from rung 4, 128 before it. Nothing detects a disagreement at runtime: a
+receiver reading the wrong width silently sees a stamp as body or a body as stamp. Move
+all three or none.
 
 ## The world
 

@@ -10,7 +10,13 @@ listening" look identical from inside the sandbox, so the BASELINE check has to 
 the probe genuinely succeeding against a listener bound at 169.254.169.254 before the
 ENFORCED failure means anything.
 
+From rung 4 the body may come from a file instead. Rung 4's untrusted source is a web
+PAGE -- the deck's actual scenario -- so it is a multi-line fixture with an injected
+paragraph in the middle of it, and passing that on a command line would make the
+fixture unreadable and unreviewable.
+
 Usage: service.py --name wiki --body 'content' [--port 80]
+       service.py --name wiki --body-file /ladder/pages/injected-page.txt
 """
 
 import argparse
@@ -21,16 +27,26 @@ import socketserver
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--name", required=True)
-    ap.add_argument("--body", required=True)
+    ap.add_argument("--body", default=None)
+    ap.add_argument("--body-file", default=None,
+                    help="serve this file's contents instead of --body (rung 4)")
     ap.add_argument("--port", type=int, default=80)
     args = ap.parse_args()
+
+    if args.body_file:
+        with open(args.body_file) as fh:
+            body = fh.read()
+    elif args.body is not None:
+        body = args.body
+    else:
+        ap.error("one of --body or --body-file is required")
 
     class Handler(http.server.BaseHTTPRequestHandler):
         def do_GET(self):
             self.send_response(200)
             self.send_header("Content-Type", "text/plain")
             self.end_headers()
-            self.wfile.write(("%s %s" % (args.name.upper(), args.body)).encode())
+            self.wfile.write(("%s %s" % (args.name.upper(), body)).encode())
 
         def do_POST(self):
             length = int(self.headers.get("Content-Length", 0))

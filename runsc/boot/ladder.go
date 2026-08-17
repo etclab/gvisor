@@ -58,12 +58,27 @@ type LadderStatusResult struct {
 
 	// PeerChannels are the mediated channels the sandbox booted with.
 	PeerChannels []string
+
+	// Chain reports whether the sandbox was started with --ladder-chain.
+	Chain bool
+
+	// ChainHops is what this sandbox would stamp as the chain on its next
+	// outbound message: every hop upstream of it, in arrival order, followed by
+	// its own identity. Reported so that an operator can read a sandbox's
+	// accumulated provenance from the host without asking any agent in the
+	// chain, and without the relay's cooperation.
+	ChainHops []string
+
+	// Origin is the first untrusted source anywhere upstream of this sandbox,
+	// or "-" if there is none.
+	Origin string
 }
 
 // Status reports the sandbox's rung-2 taint state.
 func (*Ladder) Status(_ *LadderStatusArgs, result *LadderStatusResult) error {
 	s := ladder.CurrentStatus()
 	a := ladder.CurrentAttestStatus()
+	c := ladder.CurrentChainStatus()
 	*result = LadderStatusResult{
 		Enabled:         s.Enabled,
 		Tainted:         s.Tainted,
@@ -74,6 +89,9 @@ func (*Ladder) Status(_ *LadderStatusArgs, result *LadderStatusResult) error {
 		Identity:        a.Identity,
 		Grants:          a.Grants,
 		PeerChannels:    a.PeerChannels,
+		Chain:           c.Enabled,
+		ChainHops:       c.Hops,
+		Origin:          c.Origin,
 	}
 	return nil
 }

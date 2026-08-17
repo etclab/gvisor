@@ -77,6 +77,9 @@ var policy struct {
 	// grants is this sandbox's capability set, as the launcher declared it,
 	// carried in the stamps it writes. It is a label, not a privilege.
 	grants string
+
+	// chain mirrors --ladder-chain (rung 4). See chain.go.
+	chain bool
 }
 
 // tainted is the bit. It is sandbox-wide and write-once.

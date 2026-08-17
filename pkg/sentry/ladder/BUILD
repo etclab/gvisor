@@ -9,6 +9,7 @@ go_library(
     name = "ladder",
     srcs = [
         "attest.go",
+        "chain.go",
         "ladder.go",
     ],
     visibility = ["//:sandbox"],

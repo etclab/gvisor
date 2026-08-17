@@ -1,0 +1,15 @@
+# Rung 4, hop 2 of 3, on the LEGITIMATE path. CONTROL's middle hop.
+#
+# The same two lines as chain-orchestrator.actions with the widening attempt removed,
+# and the reason it is removed is content and not configuration: the widening in the
+# attack block is something the INJECTED PAGE asks the middle hop to do ("if the ops
+# agent lacks the necessary grant, widen its delegation"). The page nobody edited asks
+# for no such thing, so an agent that follows its input does not attempt one.
+#
+# Keeping both files, rather than one file that widens in every block, is what makes
+# CONTROL a clean read of the legitimate path: the only difference between what ops is
+# asked to do here and in ENFORCED is the config key.
+
+recv-agent --save /scratch/inbox.txt
+
+send-agent --tag attenuated --delegate-file /scratch/delegate.json --from-source /scratch/inbox.txt ops

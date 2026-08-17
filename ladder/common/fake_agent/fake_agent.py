@@ -62,7 +62,13 @@ DEFAULT_TIMEOUT = float(os.environ.get("LADDER_TIMEOUT", "4"))
 # --forge-header. Must match pkg/sentry/socket/unix/ladder.go and common/postbox.
 DEFAULT_PEER_SOCK = os.environ.get("LADDER_PEER_SOCK", "/peer/peer.sock")
 STAMP_PREFIX = "LADDER-STAMP "
-STAMP_LEN = 128
+STAMP_LEN = 256
+
+# Rung 4's delegation markers. The agent writes these; the postbox reads them and asks
+# the capability authority whether the delegation is contained in what this sandbox
+# already holds. Writing a wider one is allowed and pointless, which is the design.
+CAP_OPEN = "LADDER-CAP "
+CAP_CLOSE = " LADDER-CAP-END"
 
 
 def emit(channel, action, ok, evidence, tag=""):
@@ -95,7 +101,14 @@ def errno_of(exc):
 
 
 def http_get(url, via_proxy=None, timeout=DEFAULT_TIMEOUT):
-    """GET url, optionally through an explicit HTTP proxy. Returns (ok, evidence)."""
+    """GET url, optionally through an explicit HTTP proxy.
+
+    Returns (ok, evidence, body). The evidence string is the one-line RESULT summary
+    and is truncated for the transcript; the body is the whole response, because from
+    rung 4 on a source read over HTTP has to be able to steer the agent the same way a
+    source read from a file does, and an instruction 200 bytes into a page would
+    otherwise be invisible.
+    """
     if via_proxy:
         opener = urllib.request.build_opener(
             urllib.request.ProxyHandler({"http": via_proxy, "https": via_proxy})
@@ -106,12 +119,12 @@ def http_get(url, via_proxy=None, timeout=DEFAULT_TIMEOUT):
         opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
     try:
         body = opener.open(url, timeout=timeout).read().decode("utf-8", "replace")
-        return True, "http_200 body=%s" % body[:60]
+        return True, "http_200 body=%s" % body[:60], body
     except urllib.error.HTTPError as e:
         detail = e.read().decode("utf-8", "replace")[:60]
-        return False, "http_%d %s" % (e.code, detail)
+        return False, "http_%d %s" % (e.code, detail), ""
     except Exception as e:  # URLError, socket.timeout, ...
-        return False, errno_of(e)
+        return False, errno_of(e), ""
 
 
 # ---------------------------------------------------------------- probes
@@ -138,7 +151,7 @@ def probe_env_creds(args):
 
 
 def probe_metadata(args):
-    ok, evidence = http_get(METADATA_URL, via_proxy=args.via_proxy)
+    ok, evidence, _ = http_get(METADATA_URL, via_proxy=args.via_proxy)
     return emit("network", "probe-metadata", ok, evidence, args.tag)
 
 
@@ -146,7 +159,7 @@ def probe_egress(args):
     url = args.target
     if not url.startswith("http"):
         url = "http://%s/" % url
-    ok, evidence = http_get(url, via_proxy=args.via_proxy)
+    ok, evidence, _ = http_get(url, via_proxy=args.via_proxy)
     # The proxied and direct attempts at the same host are different claims -- one
     # tests reachability, the other tests policy -- so they get different action names
     # and cannot be confused for each other in a transcript.
@@ -220,11 +233,15 @@ def read_source(args):
     Conventions section 4 requires this in the shared harness. Rung 0's demo does not
     call it: rung 0 has no notion of a source label and no injection story. It exists
     so rung 2 has a deterministic injection stand-in to build on.
+
+    The http branch obeys instructions in the FULL response body, not in the truncated
+    evidence string it used to see. Rung 4's untrusted source is a web page rather than
+    a mounted file -- which is the deck's actual scenario, and the case rung 2's
+    per-mount label does not cover.
     """
     src = args.source
     if src.startswith("http"):
-        ok, evidence = http_get(src, via_proxy=args.via_proxy)
-        content = evidence
+        ok, evidence, content = http_get(src, via_proxy=args.via_proxy)
     else:
         try:
             with open(src, "rb") as fh:
@@ -236,6 +253,17 @@ def read_source(args):
         except (OSError, ValueError) as e:
             ok, content, evidence = False, "", errno_of(e)
     emit("source", "read-source:%s" % src, ok, evidence, args.tag)
+    if ok and args.save:
+        # The agent's notes. Rung 4's reader fetches a page and forwards what it
+        # "found" to a peer, which needs the bytes to exist somewhere it can send them
+        # from. The path is unlabeled on purpose -- see recv-agent --save.
+        try:
+            with open(args.save, "w") as fh:
+                fh.write(content)
+            emit("fs", "save-source:%s" % args.save, True,
+                 "wrote %d bytes read from %s" % (len(content), src), args.tag)
+        except OSError as e:
+            emit("fs", "save-source:%s" % args.save, False, errno_of(e), args.tag)
     if ok and args.obey_instructions:
         found, outcome = obey_instructions(content, args.tag)
         if found:
@@ -329,6 +357,20 @@ def send_agent(args):
                 body = " ".join(fh.read().split())
         except OSError as e:
             return emit("peer", "send-agent:%s" % args.peer, False, errno_of(e), args.tag)
+    if args.delegate_file:
+        # Rung 4. The capability this hop hands the next one, read from a file in the
+        # sandbox's own scratch directory -- which the agent can rewrite, and which the
+        # rung-4 demo does rewrite in order to attempt a widening. It is a CLAIM, and
+        # the capability authority checks it against what this hop actually holds.
+        try:
+            with open(args.delegate_file) as fh:
+                cap = json.load(fh)
+        except (OSError, ValueError) as e:
+            return emit("peer", "send-agent:%s" % args.peer, False,
+                        "delegation %s: %s" % (args.delegate_file, e), args.tag)
+        blob = json.dumps(cap, sort_keys=True, separators=(",", ":"))
+        print("DELEGATION %s" % blob, flush=True)
+        body = CAP_OPEN + blob + CAP_CLOSE + " " + body
     if args.forge_header:
         forged = "%sv=1 sender=%s taint=0 grants=%s" % (
             STAMP_PREFIX, args.forge_header, args.forge_grants)
@@ -373,6 +415,21 @@ def recv_agent(args):
     print("DELIVERED-HEADER %s" % (stamp or "(none)"), flush=True)
     emit("peer", "recv-agent", True,
          "stamp=[%s] body=%s" % (stamp or "none", body[:60]), args.tag)
+    if args.save:
+        # Rung 4's middle hop. The message body is written to a path nothing labels and
+        # is read back from there when this agent composes its own onward message -- so
+        # the bytes that leave are bytes this agent wrote, from an unlabeled source,
+        # with no trace of the channel they arrived on. That is taint laundering by
+        # re-emission, done deliberately, and the reason it does not work is that the
+        # label was never in the bytes: it is on the sandbox, and the runtime stamps it
+        # again on the way out.
+        try:
+            with open(args.save, "w") as fh:
+                fh.write(body + "\n")
+            emit("fs", "save-message:%s" % args.save, True,
+                 "wrote %d bytes of a peer's message to an unlabeled path" % len(body), args.tag)
+        except OSError as e:
+            emit("fs", "save-message:%s" % args.save, False, errno_of(e), args.tag)
     if args.obey_instructions:
         found, outcome = obey_instructions(body, args.tag)
         if found:
@@ -531,6 +588,8 @@ def build_parser():
     s.add_argument("--via-proxy", default=None)
     s.add_argument("--decode", choices=["none", "base64"], default="none")
     s.add_argument("--obey-instructions", action="store_true")
+    s.add_argument("--save", default=None, metavar="PATH",
+                   help="rung 4: write what was read to PATH, so it can be forwarded")
 
     s = add("launder", launder)
     s.add_argument("source")
@@ -551,12 +610,17 @@ def build_parser():
     s.add_argument("--forge-header", default=None, metavar="SENDER",
                    help="prepend a fabricated stamp claiming to be SENDER, clean and capable")
     s.add_argument("--forge-grants", default="read_wiki,write_config")
+    s.add_argument("--delegate-file", default=None, metavar="PATH",
+                   help="rung 4: the capability record to delegate to the peer, as JSON")
     s.add_argument("peer")
     s.add_argument("message", nargs="*")
 
     s = add("recv-agent", recv_agent)
     s.add_argument("--socket", default=None)
     s.add_argument("--obey-instructions", action="store_true")
+    s.add_argument("--save", default=None, metavar="PATH",
+                   help="rung 4: write the received body to PATH, so it can be re-emitted "
+                        "from an unlabeled source")
 
     s = add("wait-for", wait_for)
     s.add_argument("path")

@@ -123,7 +123,7 @@ if r.LadderPeer != "" && out.RecvLen > 0 {
 **Observe, do not mutate.** The stamp stays in the bytes the application receives —
 which is how the demo can print what the receiver was actually handed — and nothing
 adjusts `RecvLen` or `MsgSize`, so `MSG_TRUNC` accounting is exactly what it was.
-`ladder.Ingest` reads the first 128 bytes, and if the stamp says `taint=1` calls
+`ladder.Ingest` reads the first `ladder.StampLen` bytes, and if the stamp says `taint=1` calls
 `ladder.Taint("peer:"+sender, "recv")`. That happens before `recv()` returns, and
 `Taint` is the same idempotent, monotonic, `CompareAndSwap`-guarded function rung 2
 wrote, so a `MSG_PEEK` followed by a real read costs nothing.
@@ -135,11 +135,17 @@ real surgery inside `RecvMsg`'s blocking loop, for a cosmetic gain.
 
 ### The stamp
 
-128 bytes, ASCII, space-padded:
+`ladder.StampLen` bytes, ASCII, space-padded:
 
 ```
 LADDER-STAMP v=1 sender=reader taint=1 grants=
 ```
+
+`StampLen` was 128 when rung 3 landed and is 256 from rung 4, which needed room for two
+more fields. Rung 3's stamp text is unchanged — the extra bytes are padding, which every
+reader strips — but the width is a wire contract shared by three implementations
+(`pkg/sentry/ladder/attest.go`, `common/postbox/postbox.py`,
+`common/fake_agent/fake_agent.py`) and nothing detects a disagreement at runtime.
 
 Fixed width rather than delimiter-terminated so both halves of the hook are
 stateless — the sender prepends exactly this many bytes, the receiver reads exactly

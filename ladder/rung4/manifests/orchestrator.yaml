@@ -1,0 +1,34 @@
+# Orchestrator: read the reader's findings, task the ops agent.
+#
+# The middle hop, and the whole reason rung 4 exists. Look at what it has:
+#
+#   no untrusted mount   -- the injected page is not in its filesystem
+#   no broker socket     -- it holds no tools and can cause no world-effect itself
+#   no egress            -- it cannot reach any host in the world
+#   a mailbox            -- it can talk to both peers
+#
+# By every measure rungs 0 through 3 offer, this is the cleanest sandbox in the demo.
+# It is also the hop at which provenance was being lost: it receives an instruction
+# from a peer, treats it as analysis, and re-emits it as a task for an agent that
+# holds production tools. Nothing it does exceeds its permissions. It has almost none.
+#
+# Note that it has scratch: rw. That is not an oversight -- it is the laundering
+# channel. The orchestrator writes the message it received to an unlabeled file and
+# composes its onward message from THAT, so the bytes leaving it are bytes it wrote
+# itself from a source nothing labels. The reason this does not launder anything is
+# that the label was never in the bytes.
+
+task_id: orchestrator
+agent_image: ladder/agent-enforced:rung4
+
+network_allow: []
+
+mounts:
+  scratch: rw
+  broker: none
+  untrusted: none
+  peer: rw
+
+broker_tools: []
+
+ttl_seconds: 60

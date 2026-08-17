@@ -597,6 +597,12 @@ func New(args Args) (*Loader, error) {
 		args.Conf.LadderIdentity,
 		args.Conf.LadderGrants)
 
+	// Ladder rung 4. A gate and nothing else: the chain is assembled from the
+	// identity rung 3 already stamps and from the stamps that arrive, so there is
+	// no rung-4 configuration to install here. Called after ConfigureAttest
+	// because it warns when it is on without it.
+	ladder.ConfigureChain(args.Conf.LadderChain)
+
 	// Publish the RDMA sysfs snapshot to the NETLINK_RDMA nldev shim before
 	// any application socket can exist. rdma-core discovers devices and binds
 	// userspace providers through nldev (RDMA_NLDEV_ATTR_UVERBS_DRIVER_ID);

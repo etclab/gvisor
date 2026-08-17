@@ -1,0 +1,44 @@
+# Static addressing for the three agents, applied to EVERY pass.
+#
+# Why this exists: under gVisor, Docker's embedded DNS resolver (127.0.0.11)
+# is unreachable — the netstack does not inherit the host-side iptables DNAT
+# that publishes it — so `financial-verification` does not resolve and the
+# workflow dies with "Temporary failure in name resolution". Raw IP
+# connectivity through the sandbox is fine; it is only name resolution that
+# breaks. Pinning addresses and writing them into /etc/hosts sidesteps the
+# resolver without touching the use-case code or its compose file.
+#
+# Applied to all three passes on purpose: the premise of the sweep is that the
+# ONLY difference between passes is the container runtime. If passes 2 and 3
+# got static addressing and pass 1 kept DNS, the passes would differ in two
+# ways instead of one.
+services:
+  health-assistant:
+    networks:
+      agent-net:
+        ipv4_address: 172.31.77.11
+    extra_hosts:
+      - "insurer-orchestrator:172.31.77.12"
+      - "financial-verification:172.31.77.13"
+
+  insurer-orchestrator:
+    networks:
+      agent-net:
+        ipv4_address: 172.31.77.12
+    extra_hosts:
+      - "health-assistant:172.31.77.11"
+      - "financial-verification:172.31.77.13"
+
+  financial-verification:
+    networks:
+      agent-net:
+        ipv4_address: 172.31.77.13
+    extra_hosts:
+      - "health-assistant:172.31.77.11"
+      - "insurer-orchestrator:172.31.77.12"
+
+networks:
+  agent-net:
+    ipam:
+      config:
+        - subnet: 172.31.77.0/24

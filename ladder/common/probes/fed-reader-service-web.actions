@@ -1,0 +1,18 @@
+# Rung 5a, host A: the reader as a STANDING SERVICE, fed over HTTP.
+#
+# Not config-aware. This file runs unchanged in BASELINE, ENFORCED and CONTROL; what
+# changes between blocks is which page the wiki serves and whether the transport
+# underneath the peer channel is authenticated.
+#
+# One line, because the shape is the point. Rungs 3 and 4 ran an agent as a task: a
+# script, top to bottom, exit, taint dies with the process. This is the A2A/MCP shape
+# instead -- the sandbox comes up, waits, and handles whatever is addressed to it. The
+# caller does not create it; the caller finds it already running.
+#
+# --max-exchanges is the recycle policy's handle on this process, and it is why the
+# bound is small. Rung 2's taint bit is monotonic and nothing clears it in place, so the
+# only way a standing service ever becomes clean again is to be destroyed and started
+# from its image. A service with no bound would be a service that, once tainted, is
+# tainted for as long as the deployment lives.
+
+serve-agent --max-exchanges 3 --idle-timeout 40 --on-message /ladder/probes/fed-reader-turn-web.actions

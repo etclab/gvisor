@@ -1,0 +1,19 @@
+# Rung 5a: the user's trigger. Host A. Not config-aware.
+#
+# Three requests to a service that is ALREADY RUNNING. That is the whole of the 5a
+# model in two lines of shell: the caller does not create the agent, does not choose its
+# image, does not pick its scope and cannot end it. It addresses a mailbox and something
+# on the other side handles it.
+#
+# The delegation is the goal's root capability, narrowed by dropping read_wiki on the way
+# past. The reader service never sees the goal record; it sees what this hop handed it,
+# and host A's capability authority checked that against what this hop actually holds
+# before the message was queued.
+#
+# Three requests rather than one, because a standing service that handles exactly one
+# message is a task with extra steps. The recycle policy's residual window is measured in
+# exchanges, so there have to be several.
+
+send-agent --tag req1 --delegate-file /scratch/delegate.json reader investigate incident 4471
+send-agent --tag req2 --delegate-file /scratch/delegate.json reader investigate incident 4471
+send-agent --tag req3 --delegate-file /scratch/delegate.json reader investigate incident 4471

@@ -1,0 +1,17 @@
+# Rung 5a: one exchange handled by the standing reader service. LABELED source.
+#
+# The same two lines as fed-reader-turn-web.actions with one path changed, which is the
+# only honest way to compare the two worlds: rung 2 labels mounts and not connections,
+# so reading the identical bytes from /untrusted taints this sandbox and reading them
+# over HTTP does not.
+#
+# What the demo is watching after line 1 is not this sandbox -- rung 2 already showed
+# that -- it is host B. The taint bit set here has to survive being wrapped in a
+# federation envelope, signed, carried over QUIC, verified by a proxy that never
+# observed the read, imported by a capability authority that holds no copy of the goal,
+# and handed to a sentry on another machine. Nothing on host B can reconstruct it and
+# nothing on host B is asked to trust the agent for it.
+
+read-source /untrusted/incident-page.txt --save /scratch/page.txt --obey-instructions
+
+send-agent --delegate-file /scratch/delegate.json --from-source /scratch/page.txt ops@hostb

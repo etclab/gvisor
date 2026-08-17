@@ -1,0 +1,8 @@
+# Rung 5a: one request to the standing reader service. Host A. Not config-aware.
+#
+# The single-exchange form of fed-trigger.actions, used by the blocks that need exactly
+# one hop through the federation -- the recycle block, where the point is which exchange
+# the taint bit appeared on, and the post-rebirth check, where a second exchange would
+# make "the reborn service is clean" ambiguous.
+
+send-agent --tag req1 --delegate-file /scratch/delegate.json reader investigate incident 4471

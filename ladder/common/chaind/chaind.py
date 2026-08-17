@@ -43,7 +43,16 @@ Protocol: one JSON object per connection, one JSON object back.
     -> {"op": "delegate", "from": "reader", "to": "orch", "cap": {...}, "stamp": {...}}
     -> {"op": "authorize", "hop": "ops", "tool": "write_config", "args": ["k", "v"]}
     -> {"op": "view", "hop": "ops"}
+    -> {"op": "import", "hop": "ops", "from": "reader@hosta", "claim": {...},
+        "stamp": {...}, "attested_by": {"host": "hosta", "key": "..."}}      rung 5a
     <- {"decision": "allow"|"deny", "reason": "...", "view": {...}}
+
+Rung 5a adds "import", and it is the only op that records a capability this daemon did
+not derive itself. It exists because a chain can now cross a host boundary: the sending
+host's chaind ran the attenuation check against the delegator's own set, and what
+arrives is that check's RESULT, carried in an envelope the receiving proxy authenticated
+against the enrollment registry. The trust is in the ceremony, not in an attestation --
+see op_import, which says so in its log line on every call.
 
 Usage:
     chaind.py serve --socket PATH --goal FILE --assign HOP [--log PATH]
@@ -301,13 +310,106 @@ def op_authorize(request):
     return {"decision": "allow", "reason": reason, "view": view_of(hop)}
 
 
+def qualify(hops, host):
+    """Tag hops that carry no host with the host the message came from. Rung 5a.
+
+    A stamp names a sandbox, not a host: the sending sentry knows its own identity and
+    nothing about federation. On the receiving side "reader" is ambiguous and
+    "reader@hosta" is not, so the chain is qualified at the point where the host is
+    known -- which is the import, because the proxy verified it there.
+    """
+    out = []
+    for hop in hops or []:
+        hop = (hop or "").strip()
+        if not hop:
+            continue
+        out.append(hop if "@" in hop else "%s@%s" % (hop, host))
+    return out
+
+
+def op_import(request):
+    """Take another host's word for a capability, because that host is ENROLLED. Rung 5a.
+
+    This is the one operation in the ladder where an authority accepts a record it did
+    not derive, and it is worth being blunt about what backs it. The sending host ran
+    rung 4's attenuation check against the delegator's own set, on its own chaind, and
+    what crosses the network is the RESULT of that check -- already narrowed, and never
+    touched by any agent. The receiving proxy verified, before this ran, that the bytes
+    came over a channel authenticated by a key in the enrollment registry, and that the
+    claim is within the local service's deploy-time role scope.
+
+    What nothing here proves is that the peer RUNS the enforcement. An enrolled host
+    that has been compromised can assert any capability that fits the local role scope,
+    and this daemon will record it. That is rung 5a's crack -- keys are trusted by
+    ceremony, not by attestation -- and it is logged on every import rather than being
+    left to the README.
+
+    Note what is NOT imported: taint is merged, never lowered. A claim asserting
+    taint=0 over a stamp that says taint=1 loses, because the stamp was written by the
+    sending sentry below the syscall boundary and the claim was written by a host-side
+    daemon. Between the runtime's word and a peer's word about the same sandbox, the
+    runtime's wins.
+    """
+    hop = request.get("hop")
+    frm = request.get("from") or ""
+    claim = request.get("claim") or {}
+    stamp = request.get("stamp") or {}
+    attested_by = request.get("attested_by") or {}
+    host = attested_by.get("host") or (frm.partition("@")[2])
+
+    if not hop:
+        return {"decision": "deny", "reason": "import needs a hop to assign to"}
+    if not claim.get("known", True) or not tools_of(claim):
+        reason = ("peer %r asserted no capability for %r, so there is nothing to import"
+                  % (frm, hop))
+        log("import hop=%s from=%s decision=deny reason=%s" % (hop, frm, reason))
+        return {"decision": "deny", "reason": reason, "code": "empty-claim"}
+
+    # The claim's chain ends with the destination as the SENDING host named it --
+    # "ops@hostb", which is this host's "ops". Dropping that tail before appending the
+    # local name is what keeps the record from reading `...>ops@hostb>ops`.
+    claimed_chain = list(claim.get("chain") or [])
+    if claimed_chain and claimed_chain[-1].partition("@")[0] == hop:
+        claimed_chain = claimed_chain[:-1]
+    chain = qualify(claimed_chain, host)
+    chain = merge_chain(chain, qualify(stamp.get("chain"), host))
+    chain = merge_chain(chain, [frm])
+    chain = merge_chain(chain, [hop])
+    taint = max(int(claim.get("taint") or 0), 1 if str(stamp.get("taint")) == "1" else 0)
+    origin = claim.get("origin") or "-"
+    if origin in ("", "-", "unknown"):
+        origin = stamp.get("origin") or "-"
+    if origin in ("", "-") and taint:
+        origin = "unknown"
+
+    record = {
+        "goal_id": claim.get("goal_id") or "imported",
+        "cap": {"tools": tools_of(claim)},
+        "chain": chain,
+        "taint": taint,
+        "origin": origin,
+        "chain_attested": bool(stamp.get("chain")),
+        # Kept on the record, not just in the log: everything this hop is later
+        # authorized to do rests on one host's say-so, and an operator reading a view
+        # should see whose.
+        "imported_from": {"hop": frm, "host": host, "key": attested_by.get("key", "")},
+    }
+    with STATE["lock"]:
+        STATE["hops"][hop] = record
+    log("import hop=%s from=%s host=%s key=%s tools=%s chain=%s taint=%d origin=%s "
+        "basis=enrollment-not-attestation" % (
+            hop, frm, host or "-", (attested_by.get("key") or "-")[:24],
+            json.dumps(tools_of(claim), sort_keys=True), ">".join(chain), taint, origin))
+    return {"decision": "allow", "reason": "imported from %s" % frm, "view": view_of(hop)}
+
+
 def view_of(hop):
     """What the sink knows about the chain that reached it. Acceptance criterion 2."""
     with STATE["lock"]:
         record = STATE["hops"].get(hop)
     if record is None:
         return {"hop": hop, "known": False}
-    return {
+    view = {
         "hop": hop,
         "known": True,
         "goal_id": record["goal_id"],
@@ -317,6 +419,9 @@ def view_of(hop):
         "tools": tools_of(record["cap"]),
         "chain_attested": record["chain_attested"],
     }
+    if record.get("imported_from"):
+        view["imported_from"] = record["imported_from"]
+    return view
 
 
 def op_view(request):
@@ -325,7 +430,8 @@ def op_view(request):
             "reason": "chain view", "view": v}
 
 
-OPS = {"mint": op_mint, "delegate": op_delegate, "authorize": op_authorize, "view": op_view}
+OPS = {"mint": op_mint, "delegate": op_delegate, "authorize": op_authorize,
+       "view": op_view, "import": op_import}
 
 
 def handle(request):
@@ -357,6 +463,11 @@ class Handler(socketserver.StreamRequestHandler):
 class Server(socketserver.ThreadingUnixStreamServer):
     daemon_threads = True
     allow_reuse_address = True
+    # Rung 5a. socketserver's default backlog is 5, which is fine for one agent making
+    # one tool call at a time and is not fine for a 32-way burst across a federation:
+    # the excess connections are refused by the kernel and surface as "capability
+    # authority unreachable", which reads like a policy denial and is a listen queue.
+    request_queue_size = 128
 
 
 # ---------------------------------------------------------------- client

@@ -169,6 +169,11 @@ class Handler(socketserver.StreamRequestHandler):
 class Server(socketserver.ThreadingUnixStreamServer):
     daemon_threads = True
     allow_reuse_address = True
+    # Rung 5a. socketserver's default backlog is 5, which is fine for one agent making
+    # one tool call at a time and is not fine for a 32-way burst across a federation:
+    # the excess connections are refused by the kernel and surface as "capability
+    # authority unreachable", which reads like a policy denial and is a listen queue.
+    request_queue_size = 128
 
 
 def main():

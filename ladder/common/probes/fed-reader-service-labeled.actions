@@ -1,0 +1,15 @@
+# Rung 5a, host A: the standing reader service, fed from the LABELED path.
+#
+# Identical to fed-reader-service-web.actions except for the turn script, which reads
+# the same page from /untrusted instead of over HTTP. Rung 2's --ladder-untrusted-paths
+# is what gives that mount meaning, so this is the run where the reader's sentry sets
+# the taint bit and every later stamp this service writes carries taint=1.
+#
+# --max-exchanges is 2 here rather than 3, and the difference is the whole recycle
+# demonstration. The service takes the untrusted read on its first exchange and is
+# tainted from that moment; the second exchange is served by a tainted service, and the
+# federation proxy -- which sees taint=1 in the stamp on the way past, and does not have
+# to ask anyone -- requests the recycle. Two exchanges is the residual window, stated as
+# a number the demo prints rather than as a caveat in prose.
+
+serve-agent --max-exchanges 2 --idle-timeout 40 --on-message /ladder/probes/fed-reader-turn-labeled.actions

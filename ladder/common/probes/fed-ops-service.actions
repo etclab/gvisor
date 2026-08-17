@@ -1,0 +1,21 @@
+# Rung 5a, host B: ops as a STANDING SERVICE. Not config-aware.
+#
+# This service holds the production tools and has never touched an untrusted byte. Its
+# caller is on a machine it has no other route to, that it did not start, and whose
+# runtime it cannot inspect. Everything it will ever know about that caller arrives in
+# a stamp its own kernel reads and an envelope its own host's proxy verified.
+#
+# --obey-instructions is rung 3's injection stand-in, unchanged: whatever the message
+# asks for is attempted. That is what makes the demo's outcome a fact about the
+# enforcement rather than about the agent's judgement -- this service has none, by
+# construction, and the sandbox could not tell a hijacked model from this script anyway.
+#
+# --max-exchanges is 6: enough for BASELINE's two attacks, ENFORCED's legitimate hop and
+# the substrate's rejected ones, without the service outliving the block it belongs to.
+# Note what serving six exchanges means for taint. Every message this service accepts
+# that carries taint=1 taints it permanently, and there is no per-message isolation
+# anywhere in the standing model: a caller that reaches this instance reaches every
+# later caller's instance too. That is the warm, stateful target rung 5a's section 8
+# names, and rung 5b is the variant that does not have one.
+
+serve-agent --max-exchanges 6 --idle-timeout 40 --obey-instructions --save /scratch/inbox.txt

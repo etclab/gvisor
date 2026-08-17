@@ -437,6 +437,85 @@ def recv_agent(args):
     return True
 
 
+def serve_agent(args):
+    """Stay up and handle exchanges as they arrive. Rung 5a.
+
+    Rungs 3 and 4 model an agent as a task: it runs a script, it exits, its taint dies
+    with it. Rung 5a models the shape the A2A/MCP ecosystem actually has -- a long-lived
+    addressable service that callers reach an existing instance of. This action is that
+    shape and nothing more: poll the mailbox, handle what arrives, stop on a bound.
+
+    The bounds are deliberate. A standing service that never stops is a standing service
+    whose taint bit never clears (rung 2's bit is monotonic and nothing anywhere clears
+    it in place), so the recycle policy has to be able to end this loop and start a new
+    sandbox. --max-exchanges and --idle-timeout are what make that terminate; the actual
+    destroy-and-restart is the launcher's, outside the sandbox, because a sandbox that
+    could recycle itself could also decline to.
+
+    --on-message runs an action file per exchange, with the message body available to it
+    as ${LADDER_MESSAGE_FILE}. That keeps the per-turn behaviour in the same action-file
+    format every other probe uses instead of growing a second scripting language here.
+    """
+    sock_path = args.socket or os.environ.get("LADDER_PEER_SOCK", DEFAULT_PEER_SOCK)
+    parser = build_parser() if args.on_message else None
+    deadline = time.time() + args.idle_timeout
+    handled = 0
+
+    while handled < args.max_exchanges and time.time() < deadline:
+        try:
+            reply = peer_roundtrip(sock_path, "RECV")
+        except OSError as e:
+            emit("peer", "serve-agent", False, errno_of(e), args.tag)
+            return False
+        stamp, body = split_stamp(reply)
+        body = body.strip()
+        if not stamp and body.startswith("LADDER-POSTBOX empty"):
+            time.sleep(args.poll_interval)
+            continue
+
+        handled += 1
+        deadline = time.time() + args.idle_timeout
+        tag = "%s%d" % (args.tag or "exchange", handled)
+        print("DELIVERED-HEADER %s" % (stamp or "(none)"), flush=True)
+        emit("peer", "serve-agent", True,
+             "stamp=[%s] body=%s" % (stamp or "none", body[:60]), tag)
+
+        if args.save:
+            try:
+                with open(args.save, "w") as fh:
+                    fh.write(body + "\n")
+            except OSError as e:
+                emit("fs", "save-message:%s" % args.save, False, errno_of(e), tag)
+        if args.on_message:
+            # The body reaches the turn script through a file rather than through the
+            # command line: it is attacker-controlled text and the action files are
+            # shlex-split, so putting it in argv would make quoting part of the
+            # security story for no reason.
+            os.environ["LADDER_MESSAGE_FILE"] = args.save or "/scratch/exchange.txt"
+            if not args.save:
+                try:
+                    with open(os.environ["LADDER_MESSAGE_FILE"], "w") as fh:
+                        fh.write(body + "\n")
+                except OSError as e:
+                    emit("fs", "save-message", False, errno_of(e), tag)
+            os.environ["LADDER_EXCHANGE"] = str(handled)
+            for line in open(args.on_message):
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                turn = parser.parse_args(shlex.split(os.path.expandvars(line)))
+                turn.tag = tag
+                dispatch(turn)
+        if args.obey_instructions:
+            obey_instructions(body, tag)
+
+    emit("peer", "serve-agent:retired", True,
+         "handled %d exchange(s) before %s" % (
+             handled, "its exchange bound" if handled >= args.max_exchanges else "going idle"),
+         args.tag)
+    return True
+
+
 def launder(args):
     """Copy a source's bytes elsewhere, optionally re-encoding them on the way.
 
@@ -621,6 +700,19 @@ def build_parser():
     s.add_argument("--save", default=None, metavar="PATH",
                    help="rung 4: write the received body to PATH, so it can be re-emitted "
                         "from an unlabeled source")
+
+    s = add("serve-agent", serve_agent)
+    s.add_argument("--socket", default=None)
+    s.add_argument("--max-exchanges", type=int, default=4,
+                   help="rung 5a: stop after this many exchanges, so the recycle "
+                        "policy has something to recycle")
+    s.add_argument("--idle-timeout", type=float, default=45.0)
+    s.add_argument("--poll-interval", type=float, default=0.2)
+    s.add_argument("--on-message", default=None, metavar="PATH",
+                   help="rung 5a: an action file to run per exchange; the body is at "
+                        "${LADDER_MESSAGE_FILE}")
+    s.add_argument("--obey-instructions", action="store_true")
+    s.add_argument("--save", default=None, metavar="PATH")
 
     s = add("wait-for", wait_for)
     s.add_argument("path")

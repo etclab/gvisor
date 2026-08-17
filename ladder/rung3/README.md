@@ -3,7 +3,7 @@
 Status: implemented
 Deck: agent-sandbox/deck.html, slides 11–12
 Tag: `rung-3`   Flags: `--ladder-attest` (+ `--ladder-peer-channels`, `--ladder-identity`, `--ladder-grants`), composes with `--ladder-taint`
-Verified on: gVisor `0ef32ffa3` + this rung's patch, Linux 6.8.0-1010-intel, 2026-08-16
+Verified on: gVisor `0ef32ffa3` (rung-2 plus one) + this rung's patch, Linux 6.8.0-1010-intel, 2026-08-16
 
 ## Enforcement claim
 

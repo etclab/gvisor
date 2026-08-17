@@ -3,7 +3,7 @@
 Status: implemented
 Deck: agent-sandbox/deck.html, slide 8
 Tag: `rung-1`   Flags: `--ladder-task-scope` (gates claim 4's in-runtime half only)
-Verified on: gVisor `e8d730ce1` + this rung's patch, Linux 6.8.0-1010-intel, 2026-08-16
+Verified on: gVisor `e8d730ce1` (tag rung-0) + this rung's patch, Linux 6.8.0-1010-intel, 2026-08-16
 
 ## Enforcement claim
 

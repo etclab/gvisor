@@ -3,7 +3,7 @@
 Status: implemented
 Deck: agent-sandbox/deck.html, slides 9–10
 Tag: `rung-2`   Flags: `--ladder-taint`, `--ladder-untrusted-paths`, `--ladder-privileged-sinks`
-Verified on: gVisor `28e31d133` + this rung's patch, Linux 6.8.0-1010-intel, 2026-08-16
+Verified on: gVisor `28e31d133` (tag rung-1) + this rung's patch, Linux 6.8.0-1010-intel, 2026-08-16
 
 ## Enforcement claim
 

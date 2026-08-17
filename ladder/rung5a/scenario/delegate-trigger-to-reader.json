@@ -1,0 +1,12 @@
+{
+  "tools": {
+    "read_metrics": {},
+    "write_config": {
+      "keys": [
+        "cache_size",
+        "pool_max",
+        "timeout_ms"
+      ]
+    }
+  }
+}

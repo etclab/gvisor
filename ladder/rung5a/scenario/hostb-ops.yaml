@@ -1,0 +1,38 @@
+# Ops: a STANDING SERVICE on host B. Rung 5a.
+#
+# The far end of the federation. This sandbox holds the production tools and it is on a
+# different host from everything that will task it -- which is the scenario's premise
+# and the thing rungs 0-4 could not model at all. Rung 4's threat-model section says so
+# in as many words: "Two hosts running this patch would believe each other's stamps for
+# no reason at all."
+#
+# broker_tools is the field to look at, and it is unchanged from rung 4. It is this
+# service's DEPLOY-TIME ROLE: what the instance may do, fixed before any caller exists,
+# with no notion of which caller or which goal. Rung 1 replaced exactly this kind of
+# scope with a per-task one, and the standing model brings it back on the receiving
+# side. Nothing here is a regression introduced by mistake; it is the cost of the model,
+# and rung 5b is the variant that does not pay it.
+#
+# The receiving proxy enforces a second, narrower thing against this role: a capability
+# arriving from another host is refused before delivery if it is not contained in
+# scenario/roles/ops-role.json, which is this file's broker_tools with the argument
+# constraint the manifest format cannot express. That file and this one must agree; the
+# demo checks that they do.
+
+task_id: ops
+agent_image: ladder/agent-enforced:rung5a
+
+network_allow:
+  - wiki.corp
+
+mounts:
+  scratch: rw
+  broker: rw
+  untrusted: none
+  peer: rw
+
+broker_tools:
+  - read_metrics
+  - write_config
+
+ttl_seconds: 150

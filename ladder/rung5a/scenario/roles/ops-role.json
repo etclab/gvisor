@@ -1,0 +1,32 @@
+{
+  "_comment": [
+    "The ops SERVICE's deploy-time role scope, held by HOST B's federation proxy.",
+    "",
+    "This is the ceiling on anything that arrives from another host. The receiving proxy",
+    "checks the incoming capability claim against it -- same subset arithmetic as",
+    "chaind.subset, reimplemented in Go because the check has to happen in the proxy,",
+    "before any agent sees bytes (rung-5a spec, section 4.4). The duplication is real",
+    "and rung5a/README.md names it as a cost rather than hiding it.",
+    "",
+    "Read it next to scenario/hostb-ops.yaml. The manifest says which TOOLS the service",
+    "may call; this file adds the argument constraint the manifest format cannot express,",
+    "and it is deliberately WIDER than any single goal: it is a role, fixed at deploy",
+    "time, with no idea which goal or which caller is on the other end. A caller",
+    "asserting write_config over auth_disabled is refused here even before the capability",
+    "authority is asked, because no goal this service will ever serve is allowed to touch",
+    "that key.",
+    "",
+    "That the ceiling is a ROLE and not a TASK is the regression rung 5a accepts and rung",
+    "5b avoids. A hostile-but-enrolled host cannot exceed this list -- and can do",
+    "anything inside it, for any goal it cares to name."
+  ],
+
+  "service": "ops",
+
+  "tools": {
+    "read_metrics": {},
+    "write_config": {
+      "keys": ["cache_size", "pool_max", "timeout_ms"]
+    }
+  }
+}

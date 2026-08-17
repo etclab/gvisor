@@ -1,0 +1,34 @@
+# The user's trigger, sandboxed. Host A. Rung 5a.
+#
+# Rung 4's demo.sh minted the goal and called it "standing in for the user's trigger",
+# which was fine when the trigger and the relay were the same shell script. Rung 5a
+# cannot do that: the trigger has to ADDRESS a standing service, and a message that
+# arrives at host A's relay from the host itself carries no runtime stamp, so the relay
+# would have to be told to accept unstamped messages from one privileged sender.
+#
+# That would be weakening rung 3 to make rung 5a work, which conventions section 0
+# forbids outright. So the trigger is a sandbox like everything else: its messages are
+# stamped by its own kernel, its identity is which mailbox it can reach, and
+# --require-stamp stays on with no exceptions anywhere in the system.
+#
+# It holds nothing. No egress, no untrusted mount, no broker socket, no tools. It is the
+# hop the goal's root capability is minted to, and the only thing it can do with that
+# capability is delegate it to the reader service -- narrowed or not at all, never wider.
+# A sandbox holding a capability and holding no tools is exactly the distinction rung 4
+# introduced: a capability is what the CHAIN may cause, a manifest scope is what one
+# sandbox may reach.
+
+task_id: trigger
+agent_image: ladder/agent-enforced:rung5a
+
+network_allow: []
+
+mounts:
+  scratch: rw
+  broker: none
+  untrusted: none
+  peer: rw
+
+broker_tools: []
+
+ttl_seconds: 90

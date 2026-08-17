@@ -1,0 +1,69 @@
+# rung 5a latency table -- the three planes, and why the split is the design
+#
+# captured: 2026-08-17T12:44:59-04:00
+# host:     Linux 6.8.0-1010-intel, loopback (127.0.0.1 <-> 127.0.0.2), unloaded box, no root
+# command:  ladder-fed bench --handshakes 5 --serial 20 --burst 32
+#
+# Acceptance criterion 7 asks for this file. It is committed rather than only printed
+# because the rung's central design argument is a RATIO, and a ratio is the kind of
+# claim a reader should be able to check without running anything.
+
+THE THREE PLANES
+
+  plane      recurs                   cost                 what sits on this path
+  ---------  -----------------------  -------------------  ---------------------------
+  Enroll     once per HOST, ever      285 ms for two       a human, typing a 3-word code
+                                      ceremonies
+  Connect    once per HOST PAIR       ~4 ms                nothing; cached and lazily
+             (amortized, re-dialled)                       re-dialled
+  Converse   once per EXCHANGE        ~0.3 ms              nothing
+
+  The gap that matters is the last column, not the numbers: there is no row below the
+  first where a human appears. That is the spec's design forcer -- "no human ceremony
+  may sit on the per-exchange path" -- and CONTROL runs it rather than asserting it, by
+  firing 32 exchanges concurrently with nobody watching.
+
+  The numbers make the same point quantitatively. Machine time alone puts the ceremony
+  ~3 orders of magnitude above a stream-open; counted honestly, with the seconds a human
+  spends transcribing a code, it is ~5. Amortize that over a host's lifetime and the
+  per-exchange cost of the trust root is zero.
+
+  This is also why 0-RTT could be left off. What 0-RTT buys back is a round trip on the
+  Connect plane, and the Connect plane already happens once per host pair. Trading
+  replay resistance -- the exact threat this substrate exists to stop -- for a saving on
+  a path nothing agent-paced touches would be a bad deal at any price.
+
+MEASURED
+
+  MEASUREMENT                LOOPBACK, UNLOADED BOX -- TREAT AS A FLOOR
+  cold handshake (Connect)   n=5    min=  4.24ms  median=  4.38ms  max=  5.29ms
+  stream-open (Converse)     n=20   min=   127us  median=   307us  max=   644us
+  exchange, end to end       n=20   min=  3.01ms  median=  4.09ms  max=  4.64ms
+  burst of 32, concurrent    32/32 completed in 25.15ms (786us each, amortized)
+
+READING THESE NUMBERS
+
+  Loopback on an unloaded box. Every figure is a FLOOR: a real deployment adds a
+  network to Connect and to Converse, and adds nothing to Enroll. Treat the ratios as
+  the result and the absolute numbers as the best case. Across runs the medians moved
+  by roughly a factor of two in both directions; nothing here is a benchmark.
+
+  "stream-open" is one stream plus one round trip on an already-established connection,
+  with no envelope built and nothing delivered. It is the number spec section 2's claim
+  is about ("stream-open on a warm connection costs no round trip").
+
+  "exchange, end to end" additionally builds and signs the envelope, runs all ten
+  receive-side checks, and hands the message to the receiving postbox over a unix
+  socket -- which then consults its capability authority. Most of the difference between
+  the two rows is the postbox and chaind, not the transport. They are reported
+  separately so neither can be blamed for the other's cost.
+
+  The burst is 32 exchanges fired concurrently on ONE warm connection. It completes in
+  well under 32 times a serial exchange, which is what QUIC's lack of cross-stream
+  head-of-line blocking is for: a slow exchange delays itself and nothing else.
+
+  What is NOT measured here: the cost of a sandbox reading a page, calling a broker, or
+  being stamped by its own kernel. None of that changed since rung 0, and including it
+  would obscure the delta rung 5a actually introduces. There is also no sandbox behind
+  the bench: it drives the same QUIC connection, the same signed envelope and the same
+  receiving proxy, with no agent at either end.

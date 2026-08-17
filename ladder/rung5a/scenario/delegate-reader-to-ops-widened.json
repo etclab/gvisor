@@ -1,0 +1,24 @@
+{
+  "_comment": [
+    "The widening the injected page asks for, aimed across a host boundary.",
+    "",
+    "auth_disabled is not in the goal, so it is not in what the reader holds, so this",
+    "delegation is wider than the delegator's own set and host A's capability authority",
+    "refuses to make it. The message is never handed to the federation proxy at all --",
+    "the widened capability does not reach the network, let alone the other host.",
+    "",
+    "Rung 5a runs the same record a second way, from an ENROLLED but misbehaving sender",
+    "that skips host A's relay entirely and puts this claim straight into a federation",
+    "envelope. That path is refused on host B instead, by the receiving proxy, because",
+    "auth_disabled is outside the ops SERVICE's deploy-time role. Two independent",
+    "ceilings, one on each side of the network, and the demo asserts them separately",
+    "because they fail for different reasons in different places."
+  ],
+
+  "tools": {
+    "read_metrics": {},
+    "write_config": {
+      "keys": ["cache_size", "pool_max", "auth_disabled"]
+    }
+  }
+}

@@ -88,6 +88,7 @@ default **off**:
 | 2 | `--ladder-taint` | no taint tracking |
 | 3 | `--ladder-attest` | no label stamping on outbound messages, and none read on inbound |
 | 4 | `--ladder-chain` | no chain/capability verification |
+| 5a | `--ladder-fed` | plain TCP between hosts: no registry, no signature, no channel binding, no replay window, no role check |
 
 Rung 1's row is the corrected one: it landed with less behind its flag than this table
 first assumed. Per-task scoping turned out to be orchestration that holds on stock
@@ -129,6 +130,17 @@ per-container configuration at all, because the chain is assembled from the iden
 already stamps. The lesson for the next mechanism is the test in `ladder/README.md`'s
 verdict section: a fact about a sandbox belongs in the runtime, a decision about an action
 belongs at the enforcement point that holds the credential.
+
+Rung 5a is the row that breaks the table's own frame, and it is worth keeping the row
+anyway. `--ladder-fed` is **not a runsc flag**: it gates a host-side federation proxy, and
+`git diff rung-4..rung-5a -- pkg/ runsc/` is empty. The rung with the best excuse to need
+a patch -- a new transport, a new identity, a new trust root -- needed none, because every
+mechanism it adds is either a decision about an action or a property of a channel, and
+neither is a fact about a sandbox. The table's real subject turns out to be *what is
+gated*, not *what is in the runtime*; those coincided for rungs 1-4 and stop coinciding
+here. Rung 5a also returns to rung 4's shape of a single gate flag plus no per-container
+configuration, for the same reason: everything per-container it needs, rung 3 already
+stamps.
 
 Rationale: one HEAD binary can then demo *every* level live. A presentation runs the
 same attack with the flag off (succeeds) and on (blocked) in the same session, with no

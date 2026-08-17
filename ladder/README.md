@@ -1,7 +1,9 @@
 # The ladder
 
-Five rungs, each removing one kind of authority an agent gets for free, each with a
-demo that shows the previous rung's attack succeeding and this rung's blocking it.
+Six rungs, each removing one kind of authority an agent gets for free, each with a
+demo that shows the previous rung's attack succeeding and this rung's blocking it. The
+first five are single-host; rung 5a is where the scenario's actual premise -- hops in
+different environments -- finally arrives.
 
 Design narrative: `agent-sandbox/deck.html`. Implementation contract:
 [`specs/00-conventions.md`](specs/00-conventions.md) — read it before any rung.
@@ -13,11 +15,13 @@ Design narrative: `agent-sandbox/deck.html`. Implementation contract:
 | 2 | [Taint bit](rung2/README.md) | implemented | `rung-2` | `--ladder-taint` (+ `--ladder-untrusted-paths`, `--ladder-privileged-sinks`) | reading from a labeled-untrusted source sets a monotonic sandbox-wide bit in the runtime, after which writes to the broker socket are refused before the bytes leave the sandbox |
 | 3 | [Two agents, confused deputy](rung3/README.md) | implemented | `rung-3` | `--ladder-attest` (+ `--ladder-peer-channels`, `--ladder-identity`, `--ladder-grants`) | a message leaving a sandbox for a peer is stamped by the runtime with the sender's identity, taint bit and grants, which the sending agent cannot forge or suppress; the receiver inherits an accepted tainted message's taint, so rung 2's gate refuses the call the message asked for |
 | 4 | [Chain attenuation](rung4/README.md) | implemented | `rung-4` | `--ladder-chain` (+ rung 3's four) | a privileged call is authorized against the **chain** that produced it — the capability the user's goal minted, narrowed at every hop and never widened, plus the taint and origin the runtime accumulates — so an out-of-scope parameter is refused at the broker and a middle hop's attempt to widen what it passes on is refused at the relay |
+| 5a | [Federated runtimes, standing services](rung5a/README.md) | implemented | `rung-5a` | `--ladder-fed` (on the federation proxy; **no runsc flag**) | cross-host agent traffic flows only through enrolled runtime proxies over a mutually authenticated, replay-resistant, channel-bound substrate, so an unenrolled host is refused at the handshake and a man in the middle can neither read nor rewrite what an enrolled one sends -- while the sentry's taint and origin cross the network intact and the far side's runtime still refuses on them |
 
 ## Running a demo
 
 ```
 make demo RUNG=0                              # the three-check demo for one rung
+make demo RUNG=5a                             # the federation rung
 make demo RUNG=0 ARGS=--baseline-runtime=runc # baseline under plain runc
 make demo-all                                 # every implemented rung, for regressions
 make build                                    # just build the images
@@ -81,6 +85,7 @@ nothing outside the sandbox could observe or fake:
 | 2 | did untrusted bytes enter this sandbox | the read happens below the agent; no host process sees it |
 | 3 | who this sandbox is, and its taint bit, on every outbound message | the stamp is prepended below the syscall boundary, so the agent's bytes never touch it |
 | 4 | the first untrusted source anywhere upstream | only the sentry that performed the read ever knew the path |
+| 5a | *nothing new* | and that is the result — see below |
 
 Every rung that tried to decide *whether an action is allowed* ended up outside the
 runtime, and rung 1 and rung 4 got there from opposite directions. Rung 1 discovered that
@@ -97,6 +102,24 @@ happened to this sandbox", it belongs in the runtime, and the runtime is the onl
 can be answered truthfully. If the question is "may this action happen", it belongs at the
 enforcement point that holds the credential, and putting it in the runtime means teaching
 the kernel your application protocol.**
+
+### Rung 5a applied that test and the answer was zero
+
+Rung 5a is the sharpest check the verdict has had, because it is the rung that had every
+excuse to need a patch: a new transport, a new identity, a new trust root, a new kind of
+message. `git diff rung-4..rung-5a -- pkg/ runsc/` is **empty**. Not "small" -- empty.
+Every mechanism it adds is either a decision about an action (may this host connect, may
+this capability be imported, may this service be recycled) or a property of a channel
+(is this envelope bound to it, is this sequence fresh), and none of those is a fact about
+a sandbox. So none of them belonged in the runtime, and none of them went there.
+
+What the runtime contributes to a federation is exactly what it contributed to one host:
+the 256-byte stamp, carried across the network without being parsed, rewritten or
+invented. The rung's whole design constraint is stated in its spec as "do not move
+stamping out of the Sentry to simplify the proxy" -- and the reason is the same one that
+put it there in rung 3. A host-side process that could write a taint bit would make every
+claim above rung 2 circular, and a federation gives you *two* host-side processes that
+would like to.
 
 Two consequences worth carrying forward:
 

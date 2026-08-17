@@ -1,0 +1,35 @@
+# Reader: a STANDING SERVICE on host A. Rung 5a.
+#
+# Rung 4's reader manifest, unchanged in every field that describes the sandbox. What
+# changes is not the manifest, it is the lifetime: this sandbox is started once and
+# left up, and callers reach the instance that is already running. That is the A2A/MCP
+# shape the rung-5a spec is written against ("agent cards, standing MCP servers"), and
+# it is the whole of the difference between 5a and 5b.
+#
+# The manifest cannot express that difference, and that is worth noticing rather than
+# fixing. A manifest is what rung 1 introduced: the authority of ONE TASK. A standing
+# service has no task -- it has a deploy-time role, and it serves whatever arrives. So
+# the fields below are the role, the ttl is the recycle bound rather than a task
+# deadline, and the far side of rung 1 is regressed exactly as the spec's section 8
+# says it must be. See rung5a/README.md, "What the standing model costs".
+#
+# ttl_seconds is deliberately long. The sandbox is meant to outlive several exchanges,
+# because bounding taint by RECYCLING it is rung 5a's only answer to a monotonic bit in
+# a process that never exits -- and a service that exited after one message would have
+# nothing to recycle.
+
+task_id: reader
+agent_image: ladder/agent-enforced:rung5a
+
+network_allow:
+  - wiki.corp
+
+mounts:
+  scratch: rw
+  broker: none
+  untrusted: ro
+  peer: rw
+
+broker_tools: []
+
+ttl_seconds: 150

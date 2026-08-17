@@ -1,0 +1,32 @@
+{
+  "_comment": [
+    "The root capability, minted on HOST A only. Rung 4's record, unchanged.",
+    "",
+    "It is unchanged deliberately. Rung 5a does not add authority and does not take any",
+    "away; it moves the second hop to another machine and asks what survives the trip.",
+    "The answer the demo produces is that the capability survives because host A's",
+    "capability authority attenuates it before it leaves and host B's refuses to import",
+    "anything wider than the receiving service's role -- and that the ORIGIN survives",
+    "because the sending sentry stamped it, exactly as it does single-host.",
+    "",
+    "Host B has no copy of this record and never sees it. It sees the narrowed result",
+    "of one delegation, asserted by a host it enrolled. See common/chaind/chaind.py,",
+    "op \"import\", which logs that basis on every call.",
+    "",
+    "Still hand-written, and still the largest assumption in the ladder. Rung 5a does",
+    "not improve on that; it multiplies it by the number of hosts."
+  ],
+
+  "goal_id": "svcX-latency-2026-08-17",
+
+  "tools": {
+    "read_metrics": {},
+    "read_wiki": {},
+    "write_config": {
+      "keys": ["cache_size", "pool_max", "timeout_ms"]
+    }
+  },
+
+  "taint": "clean",
+  "chain": ["user"]
+}

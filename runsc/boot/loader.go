@@ -588,6 +588,15 @@ func New(args Args) (*Loader, error) {
 		strings.Split(args.Conf.LadderUntrustedPaths, ","),
 		strings.Split(args.Conf.LadderPrivilegedSinks, ","))
 
+	// Ladder rung 3, installed the same way and for the same reason. Identity and
+	// grants reach here from the container's OCI annotations, which are fixed
+	// before this process starts; there is no path by which a task could reach
+	// back and change what its own messages claim.
+	ladder.ConfigureAttest(args.Conf.LadderAttest,
+		strings.Split(args.Conf.LadderPeerChannels, ","),
+		args.Conf.LadderIdentity,
+		args.Conf.LadderGrants)
+
 	// Publish the RDMA sysfs snapshot to the NETLINK_RDMA nldev shim before
 	// any application socket can exist. rdma-core discovers devices and binds
 	// userspace providers through nldev (RDMA_NLDEV_ATTR_UVERBS_DRIVER_ID);

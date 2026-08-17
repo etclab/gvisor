@@ -44,7 +44,10 @@ import (
 // the label set does not cover. O_PATH is used so that nothing is read and no
 // source label is attached by the open itself.
 func ladderSinkPathname(t *kernel.Task, sockaddr []byte) string {
-	if !ladder.Enabled() {
+	// ladder.Active(), not ladder.Enabled(): rung 3 resolves peer-channel paths
+	// through this same function, and --ladder-attest alone must be enough to run
+	// it. With every ladder flag off this is still one branch and no work.
+	if !ladder.Active() {
 		return ""
 	}
 	raw, err := extractPath(sockaddr)
@@ -116,3 +119,34 @@ func ladderDeniedTo(t *kernel.Task, to []byte) bool {
 // refusing an operation the caller is not permitted to perform -- not EACCES,
 // which would read as a filesystem permission on the socket.
 var ladderErr = syserr.ErrNotPermitted
+
+// ---------------------------------------------------------------- rung 3
+
+// ladderMarkPeer records that this socket is connected to a mediated peer
+// channel, so that the send path knows to stamp and the receive path knows to
+// read a stamp. Called after a successful connect(2), alongside ladderMarkSink.
+//
+// Labeled at connect and not at send for the same reason rung 2 labels the sink
+// there: the path is resolved once, by the same resolver, so a relative path or a
+// planted symlink cannot present the channel under a name the label set misses.
+// What is deliberately NOT decided at connect time is the stamp's contents; see
+// ladder.Stamp.
+func (s *Socket) ladderMarkPeer(t *kernel.Task, sockaddr []byte) {
+	if !ladder.AttestEnabled() {
+		return
+	}
+	name := ladderSinkPathname(t, sockaddr)
+	if name == "" || !ladder.PeerChannel(name) {
+		return
+	}
+	s.ladderPeer = name
+}
+
+// ladderStamp returns the label to prepend to the next message on this socket, or
+// nil if this socket is not a peer channel.
+func (s *Socket) ladderStamp() []byte {
+	if s.ladderPeer == "" {
+		return nil
+	}
+	return ladder.Stamp(s.ladderPeer)
+}

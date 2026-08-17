@@ -7,7 +7,10 @@ package(
 
 go_library(
     name = "ladder",
-    srcs = ["ladder.go"],
+    srcs = [
+        "attest.go",
+        "ladder.go",
+    ],
     visibility = ["//:sandbox"],
     deps = [
         "//pkg/atomicbitops",

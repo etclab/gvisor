@@ -11,7 +11,7 @@ Design narrative: `agent-sandbox/deck.html`. Implementation contract:
 | 0 | [Ambient authority](rung0/README.md) | implemented | `rung-0` | none (config only) | reachable damage equals the broker's tool allowlist plus one allowlisted host plus `/scratch` |
 | 1 | [Task scoping](rung1/README.md) | implemented | `rung-1` | `--ladder-task-scope` (claim 4 only) | reachable damage equals **this task's** manifest — its tool set, its allowlisted hosts, its own scratch — and a grant can be narrowed mid-task but never widened |
 | 2 | [Taint bit](rung2/README.md) | implemented | `rung-2` | `--ladder-taint` (+ `--ladder-untrusted-paths`, `--ladder-privileged-sinks`) | reading from a labeled-untrusted source sets a monotonic sandbox-wide bit in the runtime, after which writes to the broker socket are refused before the bytes leave the sandbox |
-| 3 | Attested labels | not started | — | `--ladder-attest` | — |
+| 3 | [Two agents, confused deputy](rung3/README.md) | implemented | `rung-3` | `--ladder-attest` (+ `--ladder-peer-channels`, `--ladder-identity`, `--ladder-grants`) | a message leaving a sandbox for a peer is stamped by the runtime with the sender's identity, taint bit and grants, which the sending agent cannot forge or suppress; the receiver inherits an accepted tainted message's taint, so rung 2's gate refuses the call the message asked for |
 | 4 | Chain attenuation | not started | — | `--ladder-chain` | — |
 
 ## Running a demo
@@ -38,9 +38,10 @@ cover; rung 1 adds two. A committed transcript of a passing run lives in each ru
   `docker info --format '{{json .Runtimes}}' | grep -o runsc`. Rungs 0 and 1 run against
   whatever runsc is installed — rung 1's task scoping is orchestration, not a patch. A
   runtime built from this tree is needed only for the parts gated behind a `--ladder-*`
-  flag: one optional block in rung 1, and **all** of rung 2, which is the first rung
-  whose claim lives inside the runtime. Each rung's README gives the exact
-  registration command.
+  flag: one optional block in rung 1, and **all** of rungs 2 and 3, whose claims live
+  inside the runtime. Each rung's README gives the exact registration command. Rung 3
+  needs rung 2's `ladder-taint` runtime still registered — its BASELINE runs against
+  it, because rung 2's configuration *is* rung 3's baseline.
 - **python3** on the host, for the broker.
 - No internet access, no API keys, no cloud account. Every host the sandboxed agent can
   reach is a local container.

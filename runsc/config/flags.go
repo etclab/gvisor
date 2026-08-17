@@ -48,6 +48,9 @@ const (
 	flagQDiscTBFRate            = "qdisc-tbf-rate"
 	flagQDiscTBFBurst           = "qdisc-tbf-burst"
 	flagMountCgroupV2           = "mount-cgroup-v2"
+	flagLadderAttest            = "ladder-attest"
+	flagLadderIdentity          = "ladder-identity"
+	flagLadderGrants            = "ladder-grants"
 
 	maxQDiscTBFBurst     = uint64(1<<32 - 1)
 	defaultQDiscTBFRate  = uint64(0)
@@ -181,6 +184,10 @@ func RegisterFlags(flagSet *flag.FlagSet) {
 	flagSet.Bool("ladder-taint", false, "EXPERIMENTAL. Enable the ladder rung-2 taint bit (research prototype). When enabled, reading from a path under --ladder-untrusted-paths sets a monotonic sandbox-wide taint bit, after which writes to a unix socket under --ladder-privileged-sinks are refused with EPERM. When disabled, no source is labeled and no bit is ever set.")
 	flagSet.String("ladder-untrusted-paths", "", "EXPERIMENTAL. Comma-separated absolute in-sandbox path prefixes whose contents are labeled untrusted, e.g. \"/untrusted\". Requires --ladder-taint.")
 	flagSet.String("ladder-privileged-sinks", "", "EXPERIMENTAL. Comma-separated absolute in-sandbox path prefixes naming privileged sinks -- unix sockets a tainted sandbox may not write to, e.g. \"/broker\". Requires --ladder-taint.")
+	flagSet.Bool(flagLadderAttest, false, "EXPERIMENTAL. Enable the ladder rung-3 attested message label (research prototype). When enabled, every message sent on a unix socket under --ladder-peer-channels is prepended with a runtime-written label naming this sandbox, its taint bit and its declared grants, and every message received on one that is labeled tainted taints this sandbox. When disabled, nothing is stamped and nothing is read.")
+	flagSet.String("ladder-peer-channels", "", "EXPERIMENTAL. Comma-separated absolute in-sandbox path prefixes naming mediated agent-to-agent channels, e.g. \"/peer\". Requires --ladder-attest.")
+	flagSet.String(flagLadderIdentity, "", "EXPERIMENTAL. The name this sandbox stamps on messages it sends, e.g. \"reader\". Per-container: normally set with the OCI annotation dev.gvisor.flag.ladder-identity. Requires --ladder-attest.")
+	flagSet.String(flagLadderGrants, "", "EXPERIMENTAL. Comma-separated capability set this sandbox stamps on messages it sends -- its rung-1 tool scope. A label, not a privilege. Per-container, like --ladder-identity. Requires --ladder-attest.")
 
 	// Flags that control sandbox runtime behavior: accelerator related.
 	flagSet.Bool("nvproxy", false, "LEGACY: enable support for Nvidia GPUs. GPU support gets automatically enabled if Nvidia devices are present in the OCI spec.")
@@ -225,6 +232,18 @@ var overrideAllowlist = map[string]struct {
 	flagQDiscTBFRate:            {check: checkQDiscTBFRate},
 	flagQDiscTBFBurst:           {check: checkQDiscTBFBurst},
 	flagMountCgroupV2:           {},
+	// Ladder rung 3. Identity and grants are per-container by nature -- two
+	// sandboxes under one runtime registration must stamp different names -- so
+	// they arrive as OCI annotations rather than in daemon.json. They meet this
+	// list's bar ("should not make the sandbox less secure") because neither is a
+	// privilege: nothing in the sandbox consults them to decide what it may do.
+	// They are claims that travel with its messages, and a receiver can only ever
+	// refuse more on account of them. What is deliberately NOT here is
+	// --ladder-attest itself, nor --ladder-peer-channels: whether messages are
+	// labeled at all, and which sockets are channels, stay administrator
+	// decisions that a container spec cannot switch off.
+	flagLadderIdentity: {},
+	flagLadderGrants:   {},
 }
 
 // checkOverlay2 ensures that overlay2 can only be enabled using "memory" or

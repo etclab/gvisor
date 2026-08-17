@@ -151,5 +151,9 @@ func (l *LadderStatus) Execute(_ context.Context, f *flag.FlagSet, args ...any) 
 	util.Infof("LADDER status enabled=%t taint=%s source=%q untrusted=%s sinks=%s",
 		st.Enabled, taint, st.Source,
 		strings.Join(st.UntrustedPaths, ","), strings.Join(st.PrivilegedSinks, ","))
+	// Rung 3. Printed as its own line so that rung 2's line, which its demo greps
+	// for, is byte-identical to what it was.
+	util.Infof("LADDER attest attest=%t identity=%q grants=%q peers=%s",
+		st.Attest, st.Identity, st.Grants, strings.Join(st.PeerChannels, ","))
 	return subcommands.ExitSuccess
 }

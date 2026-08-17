@@ -17,6 +17,7 @@ package unix
 import (
 	"gvisor.dev/gvisor/pkg/context"
 	"gvisor.dev/gvisor/pkg/safemem"
+	"gvisor.dev/gvisor/pkg/sentry/ladder"
 	"gvisor.dev/gvisor/pkg/sentry/socket/unix/transport"
 )
 
@@ -39,13 +40,40 @@ type EndpointWriter struct {
 	// by WriteFromBlocks and should be called without mm.activeMu held
 	// (i.e. after CopyOut completes).
 	Notify func()
+
+	// LadderStamp is the ladder rung-3 label to prepend to this message, or nil.
+	// It is cleared once the endpoint has accepted it, so one sendmsg(2) carries
+	// exactly one stamp however many times WriteFromBlocks runs. See
+	// pkg/sentry/ladder.
+	LadderStamp []byte
 }
 
 // WriteFromBlocks implements safemem.Writer.WriteFromBlocks.
 func (w *EndpointWriter) WriteFromBlocks(srcs safemem.BlockSeq) (uint64, error) {
 	return safemem.FromVecWriterFunc{func(bufs [][]byte) (int64, error) {
+		// Ladder rung 3. The stamp is prepended to the iovec, not copied into the
+		// payload: the application's bytes are never touched, and the label reaches
+		// the endpoint in the same message as the bytes it describes. This is the
+		// lowest point in the sentry at which "the message" still exists as a unit,
+		// and it is below anything the application can reach.
+		stamp := w.LadderStamp
+		if stamp != nil {
+			bufs = append([][]byte{stamp}, bufs...)
+		}
 		n, notify, err := w.Endpoint.SendMsg(w.Ctx, bufs, w.Control, w.To)
 		w.Notify = notify
+		if stamp != nil {
+			if n >= int64(len(stamp)) {
+				// The endpoint took the stamp. Do not count it as the
+				// application's bytes -- write(2) must not report more than it was
+				// asked to send -- and do not stamp again if this message is
+				// resumed after a short write.
+				n -= int64(len(stamp))
+				w.LadderStamp = nil
+			} else {
+				n = 0
+			}
+		}
 		if err != nil {
 			return int64(n), err.ToError()
 		}
@@ -95,6 +123,12 @@ type EndpointReader struct {
 	// ReadToBlocks and should be called without mm.activeMu held (i.e.
 	// after CopyIn completes).
 	Notify func()
+
+	// LadderPeer is the resolved pathname of the mediated peer channel this
+	// read is on, or "" if it is not one. When set, the first bytes of each
+	// received message are examined for a ladder rung-3 stamp. See
+	// pkg/sentry/ladder.
+	LadderPeer string
 }
 
 // Truncate calls RecvMsg on the endpoint without writing to a destination.
@@ -134,6 +168,14 @@ func (r *EndpointReader) ReadToBlocks(dsts safemem.BlockSeq) (uint64, error) {
 		r.UnusedRights = out.UnusedRights
 		r.From = out.Source
 		r.Notify = notify
+		// Ladder rung 3. Observe, do not mutate: the stamp stays in the bytes the
+		// application receives, and nothing here adjusts RecvLen or MsgSize, so
+		// MSG_TRUNC accounting is exactly what it was. The security effect -- the
+		// receiver inheriting the sender's taint -- lands before recv() returns.
+		// Idempotent, so a MSG_PEEK followed by a real read costs nothing.
+		if r.LadderPeer != "" && out.RecvLen > 0 {
+			ladder.Ingest(bufs, out.RecvLen, r.LadderPeer)
+		}
 		if err != nil {
 			return int64(out.RecvLen), err.ToError()
 		}

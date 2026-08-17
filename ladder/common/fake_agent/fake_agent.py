@@ -56,6 +56,14 @@ METADATA_URL = "http://169.254.169.254/latest/api/token"
 DEFAULT_BROKER_SOCK = os.environ.get("LADDER_BROKER_SOCK", "/broker/broker.sock")
 DEFAULT_TIMEOUT = float(os.environ.get("LADDER_TIMEOUT", "4"))
 
+# Rung 3. The mediated peer channel, and the shape of the label the RUNTIME writes on
+# every message that leaves through it. The agent knows this format only so that it can
+# print what it was handed -- and so that it can try to forge one, which is the point of
+# --forge-header. Must match pkg/sentry/socket/unix/ladder.go and common/postbox.
+DEFAULT_PEER_SOCK = os.environ.get("LADDER_PEER_SOCK", "/peer/peer.sock")
+STAMP_PREFIX = "LADDER-STAMP "
+STAMP_LEN = 128
+
 
 def emit(channel, action, ok, evidence, tag=""):
     """Print the one canonical result line and return the outcome.
@@ -229,23 +237,147 @@ def read_source(args):
             ok, content, evidence = False, "", errno_of(e)
     emit("source", "read-source:%s" % src, ok, evidence, args.tag)
     if ok and args.obey_instructions:
-        for line in content.splitlines():
-            if "LADDER-INSTRUCTION:" in line:
-                injected = line.split("LADDER-INSTRUCTION:", 1)[1].strip().split()
-                # The reader's tag flows into the action the document asked for,
-                # so that the same injected instruction obeyed after four
-                # different laundering attempts produces four distinguishable
-                # lines in one transcript.
-                if args.tag and injected:
-                    injected = [injected[0], "--tag", args.tag] + injected[1:]
-                print("INJECTED %s" % " ".join(injected), flush=True)
-                return dispatch(build_parser().parse_args(injected))
+        found, outcome = obey_instructions(content, args.tag)
+        if found:
+            return outcome
     return ok
 
 
+def obey_instructions(content, tag):
+    """Find an embedded instruction and execute it. Returns (found, outcome).
+
+    The injection stand-in, shared by read-source (rung 2, a document steers the
+    agent that read it) and recv-agent (rung 3, a document steers an agent that
+    never read it).
+
+    LADDER-END terminates the instruction. Rung 2's pages end it at a newline and
+    carry no terminator, so they are unaffected; rung 3 needs one because a message
+    arrives as a single whitespace-collapsed line and everything after the
+    instruction would otherwise be parsed as more arguments to it.
+    """
+    for line in content.splitlines():
+        if "LADDER-INSTRUCTION:" not in line:
+            continue
+        injected = line.split("LADDER-INSTRUCTION:", 1)[1].strip().split()
+        if "LADDER-END" in injected:
+            injected = injected[: injected.index("LADDER-END")]
+        if not injected:
+            continue
+        # The reader's tag flows into the action the document asked for, so that the
+        # same injected instruction obeyed after four different laundering attempts
+        # produces four distinguishable lines in one transcript.
+        if tag:
+            injected = [injected[0], "--tag", tag] + injected[1:]
+        print("INJECTED %s" % " ".join(injected), flush=True)
+        return True, dispatch(build_parser().parse_args(injected))
+    return False, False
+
+
+# ------------------------------------------------- rung 3: the mediated peer channel
+
+
+def split_stamp(raw):
+    """Split a received frame into (stamp, body). stamp is '' when there is none.
+
+    Fixed width rather than delimiter-scanned, because the sentry has to write this
+    on a send path and read it on a receive path: "exactly 128 bytes" is a rule that
+    cannot be half-applied across a partial read.
+    """
+    if raw.startswith(STAMP_PREFIX) and len(raw) >= STAMP_LEN:
+        return raw[:STAMP_LEN].rstrip(), raw[STAMP_LEN:]
+    return "", raw
+
+
+def peer_roundtrip(sock_path, message):
+    """One request, one reply, one connection. Returns the reply as text.
+
+    SOCK_SEQPACKET: the channel is message-oriented, so "one send is one message" is
+    enforced by the kernel rather than by a convention this agent could break. An
+    agent that wants to hand the receiver a second, fabricated, stamped message
+    cannot do it by putting a delimiter in its payload -- there is no delimiter.
+    """
+    sock = socket.socket(socket.AF_UNIX, socket.SOCK_SEQPACKET)
+    sock.settimeout(DEFAULT_TIMEOUT)
+    sock.connect(sock_path)
+    sock.send(message.encode())
+    reply = sock.recv(65536).decode("utf-8", "replace")
+    sock.close()
+    return reply
+
+
 def send_agent(args):
-    """Peer messaging stand-in. Rung 3 gives messages labels; rung 0 does not."""
-    return emit("peer", "send-agent:%s" % args.peer, False, "not implemented before rung 3", args.tag)
+    """Send one message to a peer through the mediated channel. Rung 3.
+
+    The agent writes the message. It does NOT write the label: with --ladder-attest
+    on, the sentry prepends the stamp to these bytes before they leave the sandbox,
+    and there is no argument to this function that can suppress it.
+
+    --forge-header is the attempt to. It puts a byte-identical, fully padded, entirely
+    fabricated stamp INSIDE the message body -- claiming a different sender, a clean
+    taint bit and a wider grant set -- which is the most an agent can do, since the
+    body is the only part it controls. The demo prints this line next to the one the
+    receiver was actually handed.
+    """
+    sock_path = args.socket or os.environ.get("LADDER_PEER_SOCK", DEFAULT_PEER_SOCK)
+    body = " ".join(args.message)
+    if args.from_source:
+        try:
+            with open(args.from_source) as fh:
+                # Whitespace-collapsed into one line: this is the reader summarizing
+                # a page for a peer, and it keeps the message readable in the
+                # postbox log and in the transcript.
+                body = " ".join(fh.read().split())
+        except OSError as e:
+            return emit("peer", "send-agent:%s" % args.peer, False, errno_of(e), args.tag)
+    if args.forge_header:
+        forged = "%sv=1 sender=%s taint=0 grants=%s" % (
+            STAMP_PREFIX, args.forge_header, args.forge_grants)
+        print("FORGED-HEADER %s" % forged, flush=True)
+        body = forged.ljust(STAMP_LEN) + body
+    try:
+        reply = peer_roundtrip(sock_path, "SEND to=%s %s" % (args.peer, body))
+    except OSError as e:
+        return emit("peer", "send-agent:%s" % args.peer, False, errno_of(e), args.tag)
+    try:
+        parsed = json.loads(reply.strip())
+    except ValueError:
+        return emit("peer", "send-agent:%s" % args.peer, False,
+                    "malformed reply %s" % reply.strip()[:60], args.tag)
+    ok = bool(parsed.get("delivered"))
+    detail = "to=%s" % parsed.get("to") if ok else parsed.get("reason", "")
+    return emit("peer", "send-agent:%s" % args.peer, ok,
+                "%s %s" % ("delivered" if ok else "not-delivered", detail), args.tag)
+
+
+def recv_agent(args):
+    """Collect one message from the mediated channel, and optionally obey it.
+
+    The receiving half of the confused deputy. This agent never opened the untrusted
+    page and never will; it acts on what a peer told it. --obey-instructions makes
+    that mechanical, exactly as it does for read-source.
+
+    Reading these bytes is what the receiving sentry hooks: if the stamp says the
+    sender was tainted, this sandbox is tainted from here on, before recv() returns.
+    """
+    sock_path = args.socket or os.environ.get("LADDER_PEER_SOCK", DEFAULT_PEER_SOCK)
+    try:
+        reply = peer_roundtrip(sock_path, "RECV")
+    except OSError as e:
+        return emit("peer", "recv-agent", False, errno_of(e), args.tag)
+    stamp, body = split_stamp(reply)
+    body = body.strip()
+    if not stamp and body.startswith("LADDER-POSTBOX empty"):
+        return emit("peer", "recv-agent", False, "no message queued", args.tag)
+    # Printed on its own line so the demo can show it beside FORGED-HEADER. This is
+    # what the receiver was handed, not what the sender claimed.
+    print("DELIVERED-HEADER %s" % (stamp or "(none)"), flush=True)
+    emit("peer", "recv-agent", True,
+         "stamp=[%s] body=%s" % (stamp or "none", body[:60]), args.tag)
+    if args.obey_instructions:
+        found, outcome = obey_instructions(body, args.tag)
+        if found:
+            return outcome
+    return True
 
 
 def launder(args):
@@ -413,8 +545,18 @@ def build_parser():
     s.add_argument("argv", nargs=argparse.REMAINDER)
 
     s = add("send-agent", send_agent)
+    s.add_argument("--socket", default=None)
+    s.add_argument("--from-source", default=None,
+                   help="send this file's contents as the message, whitespace-collapsed")
+    s.add_argument("--forge-header", default=None, metavar="SENDER",
+                   help="prepend a fabricated stamp claiming to be SENDER, clean and capable")
+    s.add_argument("--forge-grants", default="read_wiki,write_config")
     s.add_argument("peer")
     s.add_argument("message", nargs="*")
+
+    s = add("recv-agent", recv_agent)
+    s.add_argument("--socket", default=None)
+    s.add_argument("--obey-instructions", action="store_true")
 
     s = add("wait-for", wait_for)
     s.add_argument("path")

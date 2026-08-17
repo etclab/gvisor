@@ -71,6 +71,13 @@ type Socket struct {
 	// ladderMarkSink after a successful connect(2); always "" when
 	// --ladder-taint is off. See ladder.go.
 	ladderSink string
+
+	// ladderPeer is the resolved pathname of the mediated peer channel this
+	// socket is connected to, or "" if it is not connected to one. Set by
+	// ladderMarkPeer after a successful connect(2); always "" when
+	// --ladder-attest is off. Messages sent on such a socket are stamped and
+	// messages received on it carry a stamp that is applied. See ladder.go.
+	ladderPeer string
 }
 
 var _ = socket.Socket(&Socket{})
@@ -313,10 +320,11 @@ func (s *Socket) Read(ctx context.Context, dst usermem.IOSequence, opts vfs.Read
 		return 0, nil
 	}
 	r := &EndpointReader{
-		Ctx:       ctx,
-		Endpoint:  s.ep,
-		NumRights: 0,
-		Peek:      false,
+		Ctx:        ctx,
+		Endpoint:   s.ep,
+		NumRights:  0,
+		Peek:       false,
+		LadderPeer: s.ladderPeer,
 	}
 	n, err := dst.CopyOutFrom(ctx, r)
 	if r.Notify != nil {
@@ -354,18 +362,32 @@ func (s *Socket) Write(ctx context.Context, src usermem.IOSequence, opts vfs.Wri
 	ctrl := control.New(t, s.ep)
 
 	if src.NumBytes() == 0 {
-		nInt, notify, err := s.ep.SendMsg(ctx, [][]byte{}, ctrl, nil)
+		// Ladder rung 3: a zero-length write is still a message on a SEQPACKET
+		// peer channel, and an unstamped one would be a message that left the
+		// sandbox carrying no label. Stamp it too.
+		bufs := [][]byte{}
+		stamp := s.ladderStamp()
+		if stamp != nil {
+			bufs = [][]byte{stamp}
+		}
+		nInt, notify, err := s.ep.SendMsg(ctx, bufs, ctrl, nil)
 		if notify != nil {
 			notify()
+		}
+		if stamp != nil {
+			// The stamp is not the application's; write(2) reported zero bytes
+			// before rung 3 and must keep reporting zero.
+			return 0, err.ToError()
 		}
 		return int64(nInt), err.ToError()
 	}
 
 	w := &EndpointWriter{
-		Ctx:      ctx,
-		Endpoint: s.ep,
-		Control:  ctrl,
-		To:       nil,
+		Ctx:         ctx,
+		Endpoint:    s.ep,
+		Control:     ctrl,
+		To:          nil,
+		LadderStamp: s.ladderStamp(),
 	}
 
 	n, err := src.CopyInTo(ctx, w)
@@ -657,6 +679,10 @@ func (s *Socket) Connect(t *kernel.Task, sockaddr []byte, blocking bool) *syserr
 	// so that the write path has something cheap to check.
 	if err == nil {
 		s.ladderMarkSink(t, sockaddr)
+		// Ladder rung 3. Same resolver, different label: a peer channel is not a
+		// privileged sink, and must not be one -- CONTROL requires cross-sandbox
+		// collaboration to keep working when nothing untrusted entered.
+		s.ladderMarkPeer(t, sockaddr)
 	}
 
 	return err
@@ -678,6 +704,9 @@ func (s *Socket) SendMsg(t *kernel.Task, src usermem.IOSequence, to []byte, flag
 		Endpoint: s.ep,
 		Control:  controlMessages.Unix,
 		To:       nil,
+		// Ladder rung 3. One stamp per sendmsg(2), consumed by the first chunk the
+		// endpoint accepts, so the blocking retry loop below cannot emit a second.
+		LadderStamp: s.ladderStamp(),
 	}
 	if len(to) > 0 {
 		switch s.stype {
@@ -815,6 +844,9 @@ func (s *Socket) RecvMsg(t *kernel.Task, dst usermem.IOSequence, flags int, have
 		Creds:     wantCreds,
 		NumRights: numRights,
 		Peek:      peek,
+		// Ladder rung 3: the receive half. Nothing is stripped from what the
+		// application gets; the stamp is read on the way past and acted on.
+		LadderPeer: s.ladderPeer,
 	}
 
 	doRead := func() (int64, error) {

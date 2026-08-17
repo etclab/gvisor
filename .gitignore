@@ -12,4 +12,4 @@
 # clangd compilation database
 /.cache/clangd
 /compile_commands.json
-*/bin/*
+/bin/

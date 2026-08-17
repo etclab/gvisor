@@ -86,7 +86,7 @@ default **off**:
 |---|---|---|
 | 1 | `--ladder-task-scope` | no mid-task attenuation *inside the runtime*; per-task scoping is unaffected |
 | 2 | `--ladder-taint` | no taint tracking |
-| 3 | `--ladder-attest` | no label stamping on outbound messages |
+| 3 | `--ladder-attest` | no label stamping on outbound messages, and none read on inbound |
 | 4 | `--ladder-chain` | no chain/capability verification |
 
 Rung 1's row is the corrected one: it landed with less behind its flag than this table
@@ -104,6 +104,17 @@ later rungs should expect the same shape rather than contorting to fit one flag.
 the "only what cannot be enforced outside it" test applied honestly: what the runtime adds
 is the case where one sandbox must both read and act, plus the fact that "did untrusted
 data enter?" becomes observable rather than assumed.
+
+Rung 3 held as written too, and sharpened the caveat rung 2 added. It shipped **four**
+flags — the gate, plus which sockets are peer channels, plus the sandbox's identity,
+plus its grants — and two of them are per-**container** rather than per-runtime, which
+is new. Two sandboxes under one runtime registration must stamp different names, so
+identity and grants arrive as OCI annotations (`dev.gvisor.flag.<name>`), which means a
+rung may also have to touch `runsc/config/flags.go`'s `overrideAllowlist`. The test to
+apply there is that list's own: a flag belongs on it only if a container author setting
+it cannot make the sandbox less secure. Rung 3's identity and grants qualify because
+neither is a privilege — nothing in the sandbox consults them to decide what it may do
+— and the gate itself deliberately does not.
 
 Rationale: one HEAD binary can then demo *every* level live. A presentation runs the
 same attack with the flag off (succeeds) and on (blocked) in the same session, with no

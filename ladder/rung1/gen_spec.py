@@ -53,10 +53,16 @@ REQUIRED_FIELDS = ["task_id", "agent_image", "network_allow", "mounts", "broker_
 #   untrusted  a read-only mount whose contents the RUNTIME labels untrusted
 #              (rung 2). The mount alone does nothing; --ladder-taint and
 #              --ladder-untrusted-paths on the runtime are what give it meaning.
+#   peer       the task's own mailbox socket on the mediated agent-to-agent
+#              channel (rung 3). Same shape as broker: one socket per task, its
+#              own, bind-mounted at a path every task shares, so which mailbox a
+#              sandbox can reach is again its identity. Asking for this mount is
+#              what makes a task able to talk to another agent at all.
 MOUNT_MODES = {
     "scratch": ["none", "rw"],
     "broker": ["rw", "none"],
     "untrusted": ["none", "ro"],
+    "peer": ["none", "rw"],
 }
 
 
@@ -221,6 +227,33 @@ def agent_args(manifest):
             "# --ladder-untrusted-paths=/untrusted on the runtime.",
             "--volume=${LADDER_TASK_DIR}/untrusted:/untrusted:ro",
         ]
+    if mount_mode(manifest, "peer") == "rw":
+        out += [
+            "",
+            "# mounts.peer -> this task's own mailbox on the mediated channel (rung 3).",
+            "# The postbox listens on the host side; the sandbox sees only its own socket,",
+            "# at the same path every peer sees its own, so it cannot name another's.",
+            "--volume=${LADDER_TASK_DIR}/peer:/peer",
+            "",
+            "# task_id and broker_tools -> the two fields the RUNTIME stamps on every",
+            "# message this sandbox sends. They are per-container, so they arrive as OCI",
+            "# annotations rather than as runtime flags in daemon.json. The agent cannot",
+            "# alter them: annotations are fixed in the container spec before the sandbox",
+            "# exists, and nothing inside it can rewrite its own spec.",
+            "#",
+            "# Neither is a privilege. The grant set that decides what this task may",
+            "# actually do is still its broker's --tools (rung 1); this is the label that",
+            "# travels with its messages, and a receiver may only ever refuse more on",
+            "# account of it.",
+            "--annotation=dev.gvisor.flag.ladder-identity=%s" % task_id,
+            "--annotation=dev.gvisor.flag.ladder-grants=%s" % ",".join(manifest["broker_tools"]),
+            "",
+            "# The address of a live listener inside the PEER's network, for the probe that",
+            "# shows there is no route to it. Deliberately not a name: rung 0's --add-host",
+            "# set is fixture, and a peer that cannot be resolved would prove nothing about",
+            "# routing.",
+            "--env=LADDER_PEER_NET_ADDR=${LADDER_PEER_NET_ADDR}",
+        ]
     out += [
         "",
         "# Hygiene, identical to rung 0. Not load-bearing for any rung-1 claim.",
@@ -307,6 +340,9 @@ def cmd_show(args):
     if manifest["mounts"].get("untrusted") is not None:
         rows.insert(-1, ("mounts.untrusted", mount_mode(manifest, "untrusted"),
                          "/untrusted, labeled untrusted by the runtime (rung 2)"))
+    if manifest["mounts"].get("peer") is not None:
+        rows.insert(-1, ("mounts.peer", mount_mode(manifest, "peer"),
+                         "/peer, this task's mailbox -- and its stamped identity (rung 3)"))
     print("%-16s %-34s %s" % ("MANIFEST FIELD", "VALUE", "BECOMES"))
     print("-" * 108)
     for field, value, becomes in rows:

@@ -17,6 +17,7 @@ in an optional capstone demo after rung 4.
 |---|---|
 | `fake_agent/fake_agent.py` | the agent stand-in; every action prints one `RESULT` line |
 | `broker/broker.py` | the tool broker; runs on the **host**, holds the only credential |
+| `postbox/postbox.py` | the mediated agent-to-agent channel (rung 3); runs on the **host**, one listening socket per sandbox, relays and never labels |
 | `probes/*.actions` | lists of agent actions, one per line — the probes themselves |
 | `world/service.py` | one stand-in host (the wiki, the exfil sink, the metadata endpoint) |
 | `world/proxy.py` | the egress allowlist, enforced outside the sandbox |

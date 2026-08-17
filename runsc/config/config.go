@@ -481,6 +481,29 @@ type Config struct {
 	// sandbox may not write to. Ignored unless LadderTaint is set.
 	LadderPrivilegedSinks string `flag:"ladder-privileged-sinks"`
 
+	// LadderAttest enables the ladder rung-3 attested message label (see
+	// pkg/sentry/ladder/attest.go). This is a research prototype. When false,
+	// no message is stamped, no stamp is read, and both hooks are one branch.
+	LadderAttest bool `flag:"ladder-attest"`
+
+	// LadderPeerChannels is a comma-separated list of absolute in-sandbox path
+	// prefixes naming mediated agent-to-agent channels: unix sockets whose
+	// outbound messages are stamped by the runtime and whose inbound messages
+	// carry a stamp the runtime applies. Ignored unless LadderAttest is set.
+	LadderPeerChannels string `flag:"ladder-peer-channels"`
+
+	// LadderIdentity is the name this sandbox stamps on the messages it sends.
+	// Per-container, so it is normally set by an OCI annotation rather than on
+	// the runtime. Ignored unless LadderAttest is set.
+	LadderIdentity string `flag:"ladder-identity"`
+
+	// LadderGrants is the capability set this sandbox stamps on the messages it
+	// sends -- the task's rung-1 tool scope, as the launcher declared it. It is
+	// a label and not a privilege: nothing in the sandbox consults it to decide
+	// what this task may do. Per-container, like LadderIdentity. Ignored unless
+	// LadderAttest is set.
+	LadderGrants string `flag:"ladder-grants"`
+
 	// AllowRootfsTarAnnotation indicates whether the rootfs tar annotation
 	// should be allowed.
 	AllowRootfsTarAnnotation bool `flag:"allow-rootfs-tar-annotation"`

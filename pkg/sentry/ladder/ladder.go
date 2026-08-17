@@ -62,6 +62,21 @@ var policy struct {
 	// sinks holds the absolute in-sandbox path prefixes of privileged sinks:
 	// unix sockets that a tainted sandbox may not write to.
 	sinks []string
+
+	// attest mirrors --ladder-attest (rung 3). See attest.go.
+	attest bool
+
+	// peers holds the absolute in-sandbox path prefixes of peer channels:
+	// unix sockets on which every outbound message is stamped and every
+	// inbound message's stamp is applied.
+	peers []string
+
+	// identity is this sandbox's name in the stamps it writes.
+	identity string
+
+	// grants is this sandbox's capability set, as the launcher declared it,
+	// carried in the stamps it writes. It is a label, not a privilege.
+	grants string
 }
 
 // tainted is the bit. It is sandbox-wide and write-once.

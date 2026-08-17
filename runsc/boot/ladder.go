@@ -46,17 +46,34 @@ type LadderStatusResult struct {
 	// with.
 	UntrustedPaths  []string
 	PrivilegedSinks []string
+
+	// Attest reports whether the sandbox was started with --ladder-attest.
+	Attest bool
+
+	// Identity and Grants are what this sandbox stamps on the messages it
+	// sends. Reported so that an operator can confirm from the host what a
+	// receiver will have been told, without asking either sandbox.
+	Identity string
+	Grants   string
+
+	// PeerChannels are the mediated channels the sandbox booted with.
+	PeerChannels []string
 }
 
 // Status reports the sandbox's rung-2 taint state.
 func (*Ladder) Status(_ *LadderStatusArgs, result *LadderStatusResult) error {
 	s := ladder.CurrentStatus()
+	a := ladder.CurrentAttestStatus()
 	*result = LadderStatusResult{
 		Enabled:         s.Enabled,
 		Tainted:         s.Tainted,
 		Source:          s.Source,
 		UntrustedPaths:  s.UntrustedPaths,
 		PrivilegedSinks: s.PrivilegedSinks,
+		Attest:          a.Enabled,
+		Identity:        a.Identity,
+		Grants:          a.Grants,
+		PeerChannels:    a.PeerChannels,
 	}
 	return nil
 }

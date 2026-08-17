@@ -1,0 +1,31 @@
+# Ops: hold the production tools, ingest nothing untrusted, act on what peers report.
+#
+# Rung 2's split-actor plus mounts.peer. It is the sandbox every rung so far would
+# call clean: no untrusted mount, so the injected report is not in its filesystem;
+# no labeled read, so rung 2's taint bit never flips on anything it does itself.
+#
+# It is also the sandbox that holds write_config. Rung 3 exists because those two
+# facts used to be enough, and the moment mounts.peer appears they are not: the
+# authority that decides its actions is its OWN scope and its OWN taint state, so any
+# caller that can reach its mailbox is spending ops's authority rather than its own.
+#
+# broker_tools is unchanged from split-actor on purpose. Rung 3 takes nothing away
+# from what ops may do; it changes what ops may be TALKED INTO doing.
+
+task_id: ops
+agent_image: ladder/agent-enforced:rung3
+
+network_allow:
+  - wiki.corp
+
+mounts:
+  scratch: rw
+  broker: rw
+  untrusted: none
+  peer: rw
+
+broker_tools:
+  - read_wiki
+  - write_config
+
+ttl_seconds: 60

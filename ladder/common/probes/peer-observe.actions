@@ -1,0 +1,18 @@
+# Rung 3's ENFORCED-3: hold the sandbox open so the HOST can ask the runtime what
+# this sandbox stamps and whether it is tainted.
+#
+# The query needs a running sandbox. docker tears the runsc state directory down
+# when the container exits, and a `runsc ladder-status` after that fails with
+# "loading container: file does not exist". So the agent reads its labeled source,
+# sends one message, and then blocks on a marker file the launcher drops when it has
+# finished asking. Rung 1's attenuation check has the same shape and for the same
+# reason.
+#
+# The agent gets no authority from the marker: it lands in a directory it can
+# already read, and its arrival tells it nothing it could act on.
+
+read-source /untrusted/injected-report.txt
+
+send-agent --from-source /untrusted/injected-report.txt ops
+
+wait-for /scratch/release --timeout 60

@@ -458,10 +458,15 @@ func (w wireTCB) tcb() (TCB, error) {
 	}, nil
 }
 
-// repeatedField is the one thing the token walk below is looking for.
+// repeatedField and foldedField are the two things the token walk below is
+// looking for.
 type repeatedField struct{ where string }
 
 func (e *repeatedField) Error() string { return "repeated field " + e.where }
+
+type foldedField struct{ where string }
+
+func (e *foldedField) Error() string { return "field name outside the format's alphabet " + e.where }
 
 // rejectRepeatedFields refuses a document in which any JSON object names the
 // same field twice.
@@ -481,6 +486,10 @@ func rejectRepeatedFields(document []byte) error {
 	var repeat *repeatedField
 	if errors.As(err, &repeat) {
 		return refuseSet("the document names %s twice; a reviewer reads the first occurrence and a parser takes the last", repeat.where)
+	}
+	var folded *foldedField
+	if errors.As(err, &folded) {
+		return refuseSet("the field name %s is not lowercase ASCII; the parser matches names case-insensitively, so a reviewer and a parser could read it as different fields", folded.where)
 	}
 	// Any other error means the document is not well-formed JSON. The strict
 	// decode that follows reports that with far better context than a token
@@ -513,6 +522,16 @@ func walkForRepeats(dec *json.Decoder, path string) error {
 			if path != "" {
 				at = path + "." + key
 			}
+			// encoding/json matches field names case-insensitively, and
+			// folds U+212A and U+017F as well, so "Microcode" and
+			// "microcode" are one field to the parser and two to a reviewer
+			// — and the exact-match check just below would not see the
+			// repeat. Every field this format defines is lowercase ASCII
+			// with underscores; anything else is refused before it can
+			// alias one.
+			if !isFormatFieldName(key) {
+				return &foldedField{where: at}
+			}
 			if seen[key] {
 				return &repeatedField{where: at}
 			}
@@ -533,6 +552,21 @@ func walkForRepeats(dec *json.Decoder, path string) error {
 	// The closing delimiter.
 	_, err = dec.Token()
 	return err
+}
+
+// isFormatFieldName reports whether key is drawn from the only alphabet the
+// format's field names use: lowercase ASCII letters and underscore.
+func isFormatFieldName(key string) bool {
+	if key == "" {
+		return false
+	}
+	for i := 0; i < len(key); i++ {
+		c := key[i]
+		if c != '_' && (c < 'a' || c > 'z') {
+			return false
+		}
+	}
+	return true
 }
 
 func ptr[T any](v T) *T { return &v }

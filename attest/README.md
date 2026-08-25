@@ -97,7 +97,10 @@ Four things about it are decided rather than incidental:
 - **Unknown fields are refused, and so are repeated ones.** An unknown field is a constraint the
   loader cannot see; a field named twice is a constraint the reviewer cannot see, since a person
   reads the first occurrence and a JSON parser takes the last. Both end with a value weaker than
-  its author intended.
+  its author intended. Because Go's parser matches names case-insensitively (and folds U+212A and
+  U+017F), `"Microcode"` would be a repeat of `"microcode"` to the parser and a different field to
+  a reviewer; field names are therefore restricted to lowercase ASCII and underscore, and any other
+  name is refused before it can alias one.
 
 A launch measurement's width is deliberately checked nowhere: it belongs to the hardware vendor,
 and one of them baked in here would sit above the seam that makes a second vendor tractable. A

@@ -459,6 +459,13 @@ func TestAnUnknownFieldIsRefused(t *testing.T) {
 			`"allow_smt": true,
         "allow_everything_else": true,`,
 		},
+		// A known field in the wrong case is, to the parser, the known
+		// field; to a reviewer it is a field the format does not define.
+		{
+			"a known field in the wrong case",
+			`"microcode": 72`,
+			`"MICROCODE": 72`,
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			modified := strings.Replace(document, tc.from, tc.to, 1)
@@ -503,6 +510,26 @@ func TestAFieldNamedTwiceIsRefused(t *testing.T) {
 			`"reference_values": [`,
 			`"reference_values": [],
   "reference_values": [`,
+		},
+		// encoding/json matches field names case-insensitively, so these
+		// are repeats to the parser and distinct fields to a reviewer.
+		{
+			"a policy bit differing only in case",
+			`"allow_debug": false,`,
+			`"allow_debug": false,
+        "ALLOW_DEBUG": true,`,
+		},
+		{
+			"a TCB component differing only in case",
+			`"microcode": 72`,
+			`"microcode": 72,
+        "Microcode": 0`,
+		},
+		{
+			"a TCB component under Unicode folding",
+			`"snp": 23,`,
+			`"snp": 23,
+        "\u017fnp": 0,`,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

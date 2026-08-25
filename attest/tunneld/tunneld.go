@@ -182,6 +182,11 @@ func (t *Tunneld) Peer(ctx context.Context, name string) (*Channel, error) {
 		return nil, fmt.Errorf("%w: %q at %s: %v", ErrNotEstablished, name, addr, err)
 	}
 	t.mu.Lock()
+	if t.closed {
+		t.mu.Unlock()
+		conn.Close()
+		return nil, fmt.Errorf("%w: tunneld is closed", ErrNotEstablished)
+	}
 	t.conns = append(t.conns, conn)
 	t.mu.Unlock()
 	return &Channel{name: name, conn: conn}, nil

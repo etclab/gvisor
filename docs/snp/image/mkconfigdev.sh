@@ -10,9 +10,10 @@
 #   reference-values.json       the reference value set (attest/README.md)
 #   reference-values.json.sig   its detached Ed25519 signature (ADR-0006)
 #   peers.json                  the peer table
-#   chain/chain.pem             the provisioned certificate chain, VCEK first,
-#                               then ASK, then ARK (ADR-0005, ticket 15)
-#   chain/chain.json            the chip identity and TCB the chain was
+#   certificate-chain.bin       the provisioned certificate chain as an AMD
+#                               certificate table, VCEK, ASK, ARK (ADR-0005;
+#                               written by attest/cmd/provision-chain, ticket 15)
+#   certificate-chain.json      the chip identity and TCB the chain was
 #                               fetched for, so staleness is detectable
 #
 # Ticket 15 writes the files; this script only packages a directory. Missing
@@ -22,7 +23,7 @@ set -eu
 SRC="${1:?SRCDIR}"; OUT="${2:?OUT.img}"
 SIZE_MB="${SIZE_MB:-16}"
 
-for f in reference-values.json reference-values.json.sig peers.json chain/chain.pem chain/chain.json; do
+for f in reference-values.json reference-values.json.sig peers.json certificate-chain.bin certificate-chain.json; do
   [ -f "$SRC/$f" ] && echo "config: $f" || echo "config: $f  (absent)"
 done
 find "$SRC" -type f -perm /111 -print | sed 's/^/config: WARNING executable bit (ignored: mounted noexec): /' || true

@@ -24,12 +24,24 @@ package tunnel
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io"
 	"net"
+	"time"
 
 	"github.com/quic-go/quic-go"
 )
+
+// establishmentTimeout bounds how long a peer that completed the handshake
+// may take to open its establishment stream. Without it, one such peer would
+// hold the listener's accept path. Ticket 12's idle timeout subsumes this.
+const establishmentTimeout = 10 * time.Second
+
+// ErrListenerClosed is what Accept returns once the listener is closed. It is
+// the only error Accept returns other than the caller's context ending: a
+// peer that fails establishment is dropped without disturbing Accept.
+var ErrListenerClosed = errors.New("tunnel: listener closed")
 
 // Early data is refused on both ends. A listener's Allow0RTT stays false, and
 // the dial path is quic.DialAddr rather than DialAddrEarly, so a replayed
@@ -39,8 +51,15 @@ func config() *quic.Config {
 }
 
 // Listener accepts tunnels.
+//
+// Handshake-complete connections are taken off the QUIC listener as they
+// arrive and each answers its establishment round trip on its own goroutine,
+// so that neither a peer that never opens the stream nor one that breaks it
+// can hold up any other peer's establishment.
 type Listener struct {
-	l *quic.Listener
+	l           *quic.Listener
+	established chan *Conn
+	done        chan struct{}
 }
 
 // Listen binds a UDP address. Pass a port of 0 to take an ephemeral one and
@@ -50,30 +69,61 @@ func Listen(addr string, tlsConf *tls.Config) (*Listener, error) {
 	if err != nil {
 		return nil, fmt.Errorf("tunnel: listening on %s: %w", addr, err)
 	}
-	return &Listener{l: l}, nil
+	ln := &Listener{l: l, established: make(chan *Conn), done: make(chan struct{})}
+	go ln.run()
+	return ln, nil
+}
+
+func (l *Listener) run() {
+	defer close(l.done)
+	for {
+		c, err := l.l.Accept(context.Background())
+		if err != nil {
+			return // The only error a background Accept yields is closure.
+		}
+		go l.establish(c)
+	}
+}
+
+func (l *Listener) establish(c *quic.Conn) {
+	ctx, cancel := context.WithTimeout(context.Background(), establishmentTimeout)
+	defer cancel()
+	if err := answerEstablishment(ctx, c); err != nil {
+		c.CloseWithError(errProtocol, "establishment")
+		return
+	}
+	select {
+	case l.established <- &Conn{c: c}:
+	case <-l.done:
+		c.CloseWithError(0, "")
+	}
 }
 
 // Addr is the bound address.
 func (l *Listener) Addr() net.Addr { return l.l.Addr() }
 
-// Accept waits for the next connection whose handshake completed — which,
-// with ratls in the TLS configuration, means this side verified the peer —
-// and then answers the peer's establishment round trip, which is what tells
-// the peer that it happened.
+// Accept returns the next connection whose handshake completed — which, with
+// ratls in the TLS configuration, means this side verified the peer — and
+// whose establishment round trip has been answered, which is what tells the
+// peer that it happened. It returns an error only when ctx ends or the
+// listener is closed.
 func (l *Listener) Accept(ctx context.Context) (*Conn, error) {
-	c, err := l.l.Accept(ctx)
-	if err != nil {
-		return nil, err
+	select {
+	case c := <-l.established:
+		return c, nil
+	case <-l.done:
+		return nil, ErrListenerClosed
+	case <-ctx.Done():
+		return nil, ctx.Err()
 	}
-	if err := answerEstablishment(ctx, c); err != nil {
-		c.CloseWithError(errProtocol, "establishment")
-		return nil, fmt.Errorf("tunnel: establishing: %w", err)
-	}
-	return &Conn{c: c}, nil
 }
 
 // Close stops accepting. Established connections are unaffected.
-func (l *Listener) Close() error { return l.l.Close() }
+func (l *Listener) Close() error {
+	err := l.l.Close()
+	<-l.done
+	return err
+}
 
 // Dial establishes a connection to addr. It returns only once both sides
 // have accepted the other's evidence: ours by the time the QUIC handshake

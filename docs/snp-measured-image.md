@@ -81,7 +81,7 @@ mapping is auditable rather than assembled by a library.
 /bin/{sh,mount,umount,insmod,cat,echo,sleep,ls,dmesg,grep,sed,poweroff,sync} -> busybox
 /sbin/init                         docs/snp/image/init.rootfs
 /usr/bin/tunneld                   build parameter TUNNELD; placeholder until ticket 14
-/etc/attested-tunnel/author.pub    build parameter AUTHOR_PUBKEY, 64 hex chars + newline
+/etc/attested-tunnel/author.pub    derived from build parameter AUTHOR_KEY, 64 hex chars + newline
 /lib/modules/tsm_report.ko         report interface (ticket 01's evidence path)
 /lib/modules/sev-guest.ko
 /config /proc /sys /dev /run /tmp  mount points, empty
@@ -176,8 +176,8 @@ serial `attested-config`, mounted by the initrd at `/config` with `ro,noexec,nos
 | `reference-values.json` | the reference value set, `attest/README.md` format | ticket 07 emits, operator places |
 | `reference-values.json.sig` | its detached Ed25519 signature, hex, one line (ADR-0006) | same |
 | `peers.json` | the peer table | tunneld defines its contents |
-| `chain/chain.pem` | the provisioned certificate chain, VCEK then ASK then ARK, PEM | ticket 15 |
-| `chain/chain.json` | chip identity and TCB the chain was fetched for, so staleness is detectable (ADR-0005) | ticket 15 |
+| `certificate-chain.bin` | the provisioned certificate chain as an AMD certificate table (VCEK, ASK, ARK), written by `attest/cmd/provision-chain` | ticket 15 |
+| `certificate-chain.json` | chip identity and TCB the chain was fetched for, so staleness is detectable (ADR-0005) | ticket 15 |
 
 And inside the measurement, the one trust root:
 
@@ -185,11 +185,12 @@ And inside the measurement, the one trust root:
 |---|---|
 | `/etc/attested-tunnel/author.pub` | the reference value author's Ed25519 public key, 64 lowercase hex characters and a newline |
 
-`chain/chain.pem` and `chain/chain.json` are names this ticket chose so the mount has
-somewhere to put them; their internal format is ticket 15's. If ticket 15 needs a different
-shape (separate files per certificate, DER rather than PEM), the change is to
-`mkconfigdev.sh`'s comment block, `tunneld-placeholder.c`'s path constants, and this table,
-and it does not touch the measurement.
+`certificate-chain.bin` and `certificate-chain.json` are ticket 15's names and formats
+(`attest/provision` writes them; `attest/cmd/provision-chain fetch -out <SRCDIR>` targets the
+directory `mkconfigdev.sh` packages). This ticket originally chose `chain/chain.pem`; the
+06 boot evidence in `evidence/console-snp.txt` still shows those names. Renaming touched
+`mkconfigdev.sh`'s comment block, `tunneld-placeholder.c`'s path constants and this table, and
+did not touch the measurement.
 
 Updating any file on the device does not change M. The placeholder demonstrates the
 document-alone case ADR-0006 requires: a device with `reference-values.json` and no `.sig`
@@ -203,7 +204,8 @@ beside it is reported with the same refusal sentinel as a device with neither.
 
 | | |
 |---|---|
-| `AUTHOR_PUBKEY` | required. 32 raw bytes or 64 hex. Baked in at `/etc/attested-tunnel/author.pub`. Rotating it is a new measurement (ADR-0004). |
+| `AUTHOR_KEY` | required. The reference value author's Ed25519 private key (PEM); its public half is baked in at `/etc/attested-tunnel/author.pub` and the emitted set is signed with it (ticket 07). Rotating it is a new measurement (ADR-0004). |
+| `AUTHOR_PUBKEY` | optional cross-check: 32 raw bytes or 64 hex that must equal the public half of `AUTHOR_KEY`. |
 | `TUNNELD` | static binary for `/usr/bin/tunneld`. Default: `tunneld-placeholder.c`, built during the build. Ticket 14 sets this and nothing else. |
 | `STACK` | ticket 01's host stack (firmware, kernel, modules, edk2 and kernel trees). |
 | `OUT` | output directory, default `$STACK/image`. |
@@ -226,7 +228,7 @@ the part that is not — it depends on the host's grub package and edk2's own bu
 ```bash
 cd docs/snp/image
 bash build-ovmf-amdsev.sh                                # once; ~1 minute on 64 cores
-AUTHOR_PUBKEY=/path/to/author.pub bash build-image.sh    # ~5 seconds
+AUTHOR_KEY=/path/to/author.key bash build-image.sh    # ~5 seconds
 bash mkconfigdev.sh /path/to/config-src /path/to/config.img
 ```
 

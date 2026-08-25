@@ -21,8 +21,8 @@
 #define REFVALS     CONFIG_ROOT "/reference-values.json"
 #define REFVALS_SIG CONFIG_ROOT "/reference-values.json.sig"
 #define PEERS       CONFIG_ROOT "/peers.json"
-#define CHAIN_PEM   CONFIG_ROOT "/chain/chain.pem"
-#define CHAIN_JSON  CONFIG_ROOT "/chain/chain.json"
+#define CHAIN_BIN   CONFIG_ROOT "/certificate-chain.bin"
+#define CHAIN_JSON  CONFIG_ROOT "/certificate-chain.json"
 
 static int present(const char *p) {
 	struct stat st;
@@ -55,7 +55,7 @@ int main(void) {
 	report("reference value set", REFVALS);
 	report("detached signature", REFVALS_SIG);
 	report("peer table", PEERS);
-	report("certificate chain", CHAIN_PEM);
+	report("certificate chain", CHAIN_BIN);
 	report("chain identity+tcb", CHAIN_JSON);
 
 	int doc = present(REFVALS), sig = present(REFVALS_SIG);

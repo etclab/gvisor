@@ -160,31 +160,19 @@ this reason.
 
 ## Status on this host
 
-The chain for this host has **not** yet been captured. On 2026-08-25 (15:00–15:45 UTC)
-`kdsintf.amd.com` (165.204.91.78/.79) was unreachable at the TCP level on 443 from four
-independent vantages — this host, a GCP VM in us-central1, a GCP VM in europe-west1, and a
-third-party fetcher — while `download.amd.com` and `kds-dev.amd.com` answered. That is an
-AMD-side outage of the KDS, not a property of this host's network. The tool was run from the
-GCP VM (`kds-fetch`, us-central1-a, project `nsf-2348130-428843`) with the static binary and
-`report.bin` copied over `gcloud compute scp`; it failed exactly at the dial.
+**Captured.** `docs/snp/evidence/certificate-chain.{bin,json}` is this host's chain (Genoa, chip
+`9b3716…5243`, TCB 9/0/23/72), fetched 2026-08-25 18:43 UTC from this host with
+`go run ./cmd/provision-chain fetch -report docs/snp/evidence/report.bin -out docs/snp/evidence/`.
+`TestTheCapturedPlatformsProvisionedChainVerifiesItsReport` runs against it and passes with
+AMD's embedded root.
 
-The path from this host enters Cloudflare Magic Transit in front of AMD's prefix and gets no
-reply past hop 17 (104.22.106.58); the failure is on the Cloudflare→AMD leg or at AMD's origin.
-
-**Retry in progress.** `kds-fetch` runs `until ./provision-chain fetch -report report.bin -out out;
-do sleep 900; done` under `nohup`, logging to `~/fetch.log` and appending `FETCHED` on success.
-To collect:
-
-```sh
-gcloud compute ssh --zone=us-central1-a kds-fetch --command='tail -2 fetch.log; ls out'
-gcloud compute scp --zone=us-central1-a 'kds-fetch:~/out/certificate-chain.*' docs/snp/evidence/
-(cd attest && go test ./provision)          # the real-root test un-skips and must pass
-git add docs/snp/evidence && git commit -m "Capture the provisioned chain for this host."
-gcloud compute instances delete kds-fetch --zone=us-central1-a   # it bills until deleted
-```
+For the record: earlier the same day (15:00–15:45 UTC) `kdsintf.amd.com` (165.204.91.78/.79)
+was unreachable at the TCP level on 443 from four independent vantages — this host, GCP
+us-central1, GCP europe-west1 and a third-party fetcher — while `download.amd.com` and
+`kds-dev.amd.com` answered: an AMD-side KDS outage. A GCP VM (`kds-fetch`) was left retrying
+and has since been deleted. The outage is the availability dependency ADR-0005 exists to keep
+off the handshake path; provisioning simply waited it out.
 
 Everything up to the network call is exercised offline — `attest/provision`'s tests run the fetch
 against a fake KDS, and drive ticket 01's real report through the tool to show it asks for
-exactly `Genoa/9b3716…5243?blSPL=9&teeSPL=0&snpSPL=23&ucodeSPL=72`. When the KDS is back, step 2
-with `-out docs/snp/evidence/` (from any machine that reaches it) completes the record and
-un-skips `TestTheCapturedPlatformsProvisionedChainVerifiesItsReport`.
+exactly `Genoa/9b3716…5243?blSPL=9&teeSPL=0&snpSPL=23&ucodeSPL=72`.

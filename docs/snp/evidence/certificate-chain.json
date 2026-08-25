@@ -1,0 +1,14 @@
+{
+  "format": "gvisor.dev/gvisor/attest/certificate-chain",
+  "version": 1,
+  "vendor": "amd-sev-snp",
+  "product_line": "Genoa",
+  "chip_id": "9b371644fd3a24506777c8293ce0747804fc575468e695e4e937d4f1f541ede938fc9e79a26dbb1a328d5f2d73f10b5d02a4e3cb58eae3179e6ba923d2995243",
+  "tcb": {
+    "bootloader": 9,
+    "tee": 0,
+    "snp": 23,
+    "microcode": 72
+  },
+  "fetched_at": "2026-08-25T18:43:54Z"
+}

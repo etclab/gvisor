@@ -3,8 +3,9 @@
 #
 # Mounts the kernel filesystems (all noexec), loads the report interface
 # driver, proves to the console that no writable path is executable, and runs
-# the embedded binary. When it exits the guest powers off: there is no shell,
-# no getty and nothing else to run.
+# the embedded binary. When it exits the guest powers off: no shell is ever
+# spawned (the busybox that runs this script is present, but nothing listens
+# and nothing else is run), no getty, nothing else.
 export PATH=/bin:/sbin:/usr/bin
 say() { echo "init: $*"; }
 
@@ -35,8 +36,14 @@ while read -r dev mnt type opts rest; do
             esac ;;
   esac
 done < /proc/mounts
-[ $bad = 0 ] && say "no writable path is executable" || say "FATAL: writable executable path present"
 sed 's/^/init: mount: /' /proc/mounts
+if [ $bad != 0 ]; then
+  # A guest that could diverge from what was measured must not run tunneld.
+  say "FATAL: writable executable path present; powering off without running tunneld"
+  sync
+  poweroff -f
+fi
+say "no writable path is executable"
 
 say "running /usr/bin/tunneld"
 /usr/bin/tunneld

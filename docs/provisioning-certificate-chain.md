@@ -74,7 +74,10 @@ It does not have to be the host: the fetch is keyed only by what the report says
    verifier's refusal in the error, and nothing is written.
 
    AMD rate-limits the KDS to roughly one request per ten seconds per argument set; the tool
-   retries with backoff for up to five minutes (`-timeout`).
+   retries with backoff for up to five minutes (`-timeout`). The interface itself — one base URL,
+   `cert_chain`, `crl`, and `{hwID}?…SPL=` — is documented on the IETF RATS wiki:
+   <https://wiki.ietf.org/group/rats/referencevalues/amd-key-distribution-service>. This tool
+   never requests `/crl`; see *Revocation is out of scope* below.
 
 3. **Check what was written**, against the same or a fresh report:
 
@@ -132,6 +135,29 @@ silent fetch would reinstate exactly the dependency ADR-0005 removes, invisibly 
 (`provision.Load`) refuses a missing chain with an error that does not match `os.ErrNotExist`, so
 that the "there is no chain here, carry on" branch cannot be written by accident.
 
+## Revocation is out of scope
+
+The verifier does not check the KDS CRL (`CheckRevocations` is off), and this procedure does not
+provision one. That is a decision, not an omission: AMD publishes the CRL monthly with a 42-day
+`nextUpdate` as of 2026-05-01 (<https://kds-dev.amd.com/doc1.pdf>), and AMD's notice says
+outright that "deployments that check CRL only at provisioning time must be revised". A CRL on
+the config device would therefore go stale every six weeks, and honouring it would mean either
+monthly re-provisioning of every host or a fetch at handshake time — the dependency ADR-0005
+removes. AMD's CRLs contain no production revocations at time of writing. Revisit only if a
+VCEK revocation ever matters to the threat model; if it does, it is an ADR, not a flag.
+
+## The verification library must stay at go-sev-guest ≥ v0.15.0
+
+go-sev-guest issue #185 (fixed by PR #190, merged 2026-06-09, minutes before v0.15.0 was
+tagged): with `TrustedRoots` unset and a report carrying no product information, earlier
+versions resolved no embedded root and validated the peer's chain against the ARK *inside that
+chain* — a complete bypass for an offline verifier, which is what ours is. v0.15.0 always
+resolves the embedded root by product line and never treats the incoming chain as a root.
+`attest/verify` runs exactly that code path in production (`verify.Options{}`), and
+`TestEvidenceNotChainingToTheVendorRootIsRefused` in `attest` is the regression guard for it.
+Whoever next edits `attest/go.mod` (ticket 09) should leave a comment pinning the minimum for
+this reason.
+
 ## Status on this host
 
 The chain for this host has **not** yet been captured. On 2026-08-25 (15:00–15:45 UTC)
@@ -141,6 +167,21 @@ third-party fetcher — while `download.amd.com` and `kds-dev.amd.com` answered.
 AMD-side outage of the KDS, not a property of this host's network. The tool was run from the
 GCP VM (`kds-fetch`, us-central1-a, project `nsf-2348130-428843`) with the static binary and
 `report.bin` copied over `gcloud compute scp`; it failed exactly at the dial.
+
+The path from this host enters Cloudflare Magic Transit in front of AMD's prefix and gets no
+reply past hop 17 (104.22.106.58); the failure is on the Cloudflare→AMD leg or at AMD's origin.
+
+**Retry in progress.** `kds-fetch` runs `until ./provision-chain fetch -report report.bin -out out;
+do sleep 900; done` under `nohup`, logging to `~/fetch.log` and appending `FETCHED` on success.
+To collect:
+
+```sh
+gcloud compute ssh --zone=us-central1-a kds-fetch --command='tail -2 fetch.log; ls out'
+gcloud compute scp --zone=us-central1-a 'kds-fetch:~/out/certificate-chain.*' docs/snp/evidence/
+(cd attest && go test ./provision)          # the real-root test un-skips and must pass
+git add docs/snp/evidence && git commit -m "Capture the provisioned chain for this host."
+gcloud compute instances delete kds-fetch --zone=us-central1-a   # it bills until deleted
+```
 
 Everything up to the network call is exercised offline — `attest/provision`'s tests run the fetch
 against a fake KDS, and drive ticket 01's real report through the tool to show it asks for

@@ -1,0 +1,15 @@
+# Predicted SEV-SNP launch measurement, computed offline from the inputs below.
+# Not read from any machine. Cross-checked once: docs/snp-measurement-prediction.md.
+launch_measurement: 448f0553567f49e22d4a776e92c9263d37c6b1223aa0926f6960f7fcaf5ed1d1e0d3e6e2f94bbd450f5728f9a7f66272
+
+## Inputs (sha256 of each file as measured; cmdline is the -append string plus NUL)
+ffd6bfa8c76c460a4dba62c39b2c9cf5a7ac425148eede7fb610f4c3cd96a895  OVMF.fd
+c3b443dbdafbaf3cb92d119482143a76876a752c7335a61faa917361d9724b75  vmlinuz
+7dbb73ca192dab3d11755a0b3d5ce86f5118881377c8c94117445e55ddf5282b  initrd.img
+41485db3f3199638327e343396933bea10ce7ca9d9eb94cb0482067e79c9dd67  cmdline (192 bytes + NUL)
+cmdline: console=ttyS0 earlyprintk=serial panic=-1 rdinit=/init verity.roothash=2863267c328552fafcc6af79a125c5b2fa0ef8e4665f98fbd3157cb095859402 verity.salt=- verity.datablocks=339 verity.hashstart=339
+vcpus: 4
+vcpu_type: EPYC-v4
+vmm: QEMU (sev-snp-guest, kernel-hashes=on; firmware OvmfPkg/AmdSev/AmdSevX64 with BlobVerifierLibSevHashes)
+guest_features: 0x1 (sev-snp-measure default: SNPActive)
+tool: sev-snp-measure 0.0.13 (pip, virtualenv /home/pniroula/Projects/gvisor-ticket07/.scratch/attested-secure-tunnel/host-stack/sev-snp-measure-venv)

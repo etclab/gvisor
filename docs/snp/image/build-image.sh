@@ -7,6 +7,13 @@
 # filesystem is covered transitively through the verity root hash on the
 # command line. Nothing else is in the image.
 #
+# Ticket 07: the build then predicts the launch measurement of what it just
+# built, from those inputs alone (predict-measurement.sh), and emits it as the
+# signed reference value set — reference-values.json and .sig, in the ticket 03
+# format, signed with the author key — beside a record of every input that
+# went into the prediction. Building and authorising are one step. No part of
+# this asks a platform anything; see docs/snp-measurement-prediction.md.
+#
 # Rebuildable and auditable, not bit-reproducible: every input is pinned by
 # hash or version, every tool version is recorded, and the manifest lists
 # every file that went in. Nothing here needs root.
@@ -14,10 +21,24 @@
 # Build parameters (environment):
 #   STACK           ticket 01's host stack (default: .scratch/attested-secure-tunnel/host-stack)
 #   OUT             output directory (default: $STACK/image)
-#   AUTHOR_PUBKEY   REQUIRED. The reference value author's Ed25519 public key:
-#                   32 raw bytes, or 64 hex characters. Baked into the root
-#                   filesystem at /etc/attested-tunnel/author.pub (ADR-0004);
-#                   rotating it is a new measurement.
+#   AUTHOR_KEY      REQUIRED. The reference value author's Ed25519 private key,
+#                   PKCS#8 PEM (openssl genpkey -algorithm ed25519). Signs the
+#                   emitted reference value set. Its public half is baked into
+#                   the root filesystem at /etc/attested-tunnel/author.pub
+#                   (ADR-0004); rotating it is a new measurement.
+#   AUTHOR_PUBKEY   optional cross-check: 32 raw bytes or 64 hex characters that
+#                   must equal the public half of AUTHOR_KEY.
+#   VCPUS           vCPU count the image is launched with (default 4). One
+#                   measured VMSA per vCPU, so it is a measurement input.
+#   VCPU_TYPE       QEMU -cpu model (default EPYC-v4); its signature is in each VMSA.
+#   POLICY          SEV-SNP guest policy (default 0x30000); the emitted
+#                   guest_policy permits exactly its bits.
+#   TCB_FLOOR       minimum TCB the reference value admits, as
+#                   bootloader,tee,snp,microcode. Default 9,0,23,72 — the level
+#                   ticket 01 observed on this host. An authoring decision,
+#                   recorded in the emitted artifact; not a build input.
+#   Every one of VCPUS, VCPU_TYPE and POLICY must match launch-measured-guest.sh
+#   (-smp, -cpu, policy=) or the prediction is for a different launch.
 #   TUNNELD         static binary to embed as /usr/bin/tunneld. Default: build
 #                   tunneld-placeholder.c. Ticket 14 sets this and nothing else.
 #   BUSYBOX         static busybox (default /bin/busybox from busybox-static)
@@ -28,7 +49,11 @@ STACK="${STACK:-$REPO/.scratch/attested-secure-tunnel/host-stack}"
 OUT="${OUT:-$STACK/image}"
 BUSYBOX="${BUSYBOX:-/bin/busybox}"
 TUNNELD="${TUNNELD:-}"
-: "${AUTHOR_PUBKEY:?set AUTHOR_PUBKEY to the reference value author Ed25519 public key file}"
+VCPUS="${VCPUS:-4}"; VCPU_TYPE="${VCPU_TYPE:-EPYC-v4}"; POLICY="${POLICY:-0x30000}"
+TCB_FLOOR="${TCB_FLOOR:-9,0,23,72}"
+: "${AUTHOR_KEY:?set AUTHOR_KEY to the reference value author Ed25519 private key, PKCS8 PEM}"
+export PATH="/usr/local/go/bin:$PATH"
+command -v go >/dev/null || { echo "go not found; attest/README.md says how" >&2; exit 1; }
 
 # ---- pinned inputs ---------------------------------------------------------
 # From docs/snp-host-stack.md. A different firmware or kernel is a different
@@ -76,13 +101,21 @@ if [ -z "$TUNNELD" ]; then
 fi
 file "$TUNNELD" | grep -q 'statically linked' || { echo "TUNNELD $TUNNELD is not static" >&2; exit 1; }
 
-# Author key: normalise to one line of 64 lowercase hex characters.
-case "$(stat -c %s "$AUTHOR_PUBKEY")" in
-  32)    KEYHEX=$(xxd -p "$AUTHOR_PUBKEY" | tr -d '\n') ;;
-  64|65) KEYHEX=$(tr -d '\n' < "$AUTHOR_PUBKEY" | tr 'A-F' 'a-f') ;;
-  *)     echo "AUTHOR_PUBKEY must be 32 raw bytes or 64 hex chars" >&2; exit 1 ;;
-esac
-[[ "$KEYHEX" =~ ^[0-9a-f]{64}$ ]] || { echo "AUTHOR_PUBKEY is not an Ed25519 public key" >&2; exit 1; }
+# The reference value set emitter: the author-side half of attest/refvalsfile.go,
+# built from source so the document shipped is the one the loader reads.
+(cd "$HERE/emit-refvals" && go build -o "$B/emit-refvals" .)
+
+# Author key: the public half of AUTHOR_KEY, as one line of 64 lowercase hex.
+KEYHEX=$(openssl pkey -in "$AUTHOR_KEY" -pubout -outform DER | tail -c 32 | xxd -p | tr -d '\n')
+[[ "$KEYHEX" =~ ^[0-9a-f]{64}$ ]] || { echo "AUTHOR_KEY is not an Ed25519 private key" >&2; exit 1; }
+if [ -n "${AUTHOR_PUBKEY:-}" ]; then
+  case "$(stat -c %s "$AUTHOR_PUBKEY")" in
+    32)    GIVEN=$(xxd -p "$AUTHOR_PUBKEY" | tr -d '\n') ;;
+    64|65) GIVEN=$(tr -d '\n' < "$AUTHOR_PUBKEY" | tr 'A-F' 'a-f') ;;
+    *)     echo "AUTHOR_PUBKEY must be 32 raw bytes or 64 hex chars" >&2; exit 1 ;;
+  esac
+  [ "$GIVEN" = "$KEYHEX" ] || { echo "AUTHOR_PUBKEY $GIVEN is not the public half of AUTHOR_KEY ($KEYHEX)" >&2; exit 1; }
+fi
 printf '%s\n' "$KEYHEX" > author.pub
 
 # ---- root filesystem -------------------------------------------------------
@@ -149,6 +182,30 @@ cp "$FIRMWARE" "$OUT/OVMF.fd"
 CMDLINE="console=ttyS0 earlyprintk=serial panic=-1 rdinit=/init verity.roothash=$ROOTHASH verity.salt=- verity.datablocks=$DATABLOCKS verity.hashstart=$DATABLOCKS"
 printf '%s\n' "$CMDLINE" > "$OUT/cmdline.txt"
 
+# ---- predicted measurement and the reference value set --------------------
+# From the four files just written plus VCPUS and VCPU_TYPE, and nothing else:
+# no platform is consulted (docs/snp-measurement-prediction.md).
+MEASUREMENT=$(bash "$HERE/predict-measurement.sh" "$OUT" -vcpus "$VCPUS" -vcpu-type "$VCPU_TYPE" \
+                -out "$OUT/predicted-measurement.txt")
+[[ "$MEASUREMENT" =~ ^[0-9a-f]{96}$ ]] || { echo "no measurement predicted" >&2; exit 1; }
+"$B/emit-refvals" -measurement "$MEASUREMENT" -key "$AUTHOR_KEY" -out "$OUT" \
+                  -tcb "$TCB_FLOOR" -policy "$POLICY"
+{
+  echo "# Inputs of the reference value set emitted beside this file (ticket 07)."
+  echo "# The launch measurement in reference-values.json is a prediction from these"
+  echo "# inputs. It was not read from any machine."
+  echo
+  echo "reference-values.json sha256: $(sha256sum "$OUT/reference-values.json" | cut -d' ' -f1)"
+  echo "signed by author key:         $KEYHEX (Ed25519; also at /etc/attested-tunnel/author.pub in rootfs.img)"
+  echo "launch policy:                $POLICY"
+  echo "tcb floor (authoring choice): $TCB_FLOOR (bootloader,tee,snp,microcode)"
+  echo
+  cat "$OUT/predicted-measurement.txt"
+  echo
+  echo "## The measured files' provenance is in manifest.txt; rootfs.img enters through"
+  echo "## verity.roothash on the command line: $ROOTHASH"
+} > "$OUT/reference-values.inputs.txt"
+
 # ---- manifest --------------------------------------------------------------
 {
   echo "# Measured image manifest. Built $(date -u +%Y-%m-%dT%H:%M:%SZ) on $(hostname)."
@@ -158,6 +215,10 @@ printf '%s\n' "$CMDLINE" > "$OUT/cmdline.txt"
   echo "## rootfs.img is covered through verity.roothash on the command line."
   (cd "$OUT" && sha256sum OVMF.fd vmlinuz initrd.img cmdline.txt rootfs.img)
   echo "verity root hash: $ROOTHASH  (sha256, no salt, 4096-byte blocks, $DATABLOCKS data blocks, hash tree at block $DATABLOCKS)"
+  echo
+  echo "## Predicted launch measurement (offline, from the files above + vcpus=$VCPUS vcpu_type=$VCPU_TYPE; not read from a machine)"
+  echo "launch_measurement: $MEASUREMENT"
+  echo "emitted as reference-values.json (+ .sig, signed by the author key); inputs in reference-values.inputs.txt"
   echo
   echo "## Provenance"
   echo "firmware: tianocore/edk2 $OVMF_TAG $OVMF_COMMIT OvmfPkg/AmdSev/AmdSevX64.dsc, built by docs/snp/image/build-ovmf-amdsev.sh"
@@ -190,8 +251,9 @@ printf '%s\n' "$CMDLINE" > "$OUT/cmdline.txt"
   done
 } > "$OUT/manifest.txt"
 
-cp "$HERE"/{build-image.sh,init.initrd,init.rootfs,veritymap.c,tunneld-placeholder.c} "$B/" 2>/dev/null || true
+cp "$HERE"/{build-image.sh,predict-measurement.sh,init.initrd,init.rootfs,veritymap.c,tunneld-placeholder.c} "$B/" 2>/dev/null || true
 echo
 echo "image in $OUT:"
 ls -l "$OUT" | grep -v '^d\|^total'
 echo "command line: $CMDLINE"
+echo "predicted launch measurement: $MEASUREMENT"

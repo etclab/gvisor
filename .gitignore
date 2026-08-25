@@ -12,3 +12,6 @@
 # clangd compilation database
 /.cache/clangd
 /compile_commands.json
+
+# Agent scratch space (local markdown issue tracker)
+.scratch/

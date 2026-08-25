@@ -45,3 +45,15 @@ AI agents should use these commands to build, test, and verify:
 
 -   **Breaking Changes:** Any change to the ABI implementation must be verified
     against the equivalent Linux kernel behavior.
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs live as local markdown under `.scratch/<feature>/` — this fork
+has GitHub Issues disabled. See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+Single-context: `CONTEXT.md` + `docs/adr/` at the repo root. See
+`docs/agents/domain.md`.

@@ -14,6 +14,11 @@
 
 package attest
 
+import (
+	"errors"
+	"fmt"
+)
+
 // A ReferenceValue is an expected launch measurement plus the TCB floor and the
 // guest policy a peer must satisfy to be admitted.
 //
@@ -27,8 +32,14 @@ type ReferenceValue struct {
 	// prediction, and a check built on one cannot fail.
 	//
 	// It must not be empty. A reference value naming no measurement matches
-	// every authentic platform, so [New] refuses a set containing one. Its
-	// width is the vendor's and is checked where the set is loaded.
+	// every authentic platform, so both [New] and [LoadReferenceValueSet]
+	// refuse a set containing one.
+	//
+	// Its width is deliberately checked nowhere. How wide a launch measurement
+	// is belongs to the hardware vendor, and a width baked in here would be a
+	// vendor's digest sitting above the seam that exists to make a second
+	// vendor a day's work. A measurement of the wrong width matches nothing,
+	// which fails closed.
 	LaunchMeasurement []byte
 
 	// MinimumTCB is the lowest platform trusted computing base level this value
@@ -44,9 +55,10 @@ type ReferenceValue struct {
 // accept. Evidence satisfying any one of them is accepted, which is what lets a
 // new image roll out while the old one is still running.
 //
-// Here the set is an in-memory value. The signed file a reference value author
-// writes, its signature validation, and its loader are ticket 03; this package
-// deliberately knows nothing about where a set came from.
+// Here the set is an in-memory value. The signed document a reference value
+// author writes, its detached signature and its loader are in refvalsfile.go,
+// and produce exactly this type: nothing that consumes a set can tell whether
+// it was read off the config device or built in a test.
 type ReferenceValueSet struct {
 	Values []ReferenceValue
 }
@@ -104,4 +116,31 @@ type GuestPolicy struct {
 	// socket. Unlike the fields above this one is a requirement rather than a
 	// permission, which is why it is not named Allow.
 	RequireSingleSocket bool
+}
+
+// validate reports the two ways a reference value set can be wrong in the
+// direction that matters, and is the single place either is decided.
+//
+// An empty set admits nobody, which is a configuration mistake every time.
+//
+// A reference value with no launch measurement admits *everybody*: it names no
+// image, so every authentic platform matches it, and a set holding one is
+// strictly weaker than its author can have intended. That is the failure worth
+// catching loudly, because it does not announce itself — every handshake
+// succeeds and nothing looks wrong.
+//
+// Both [New] and the loader in refvalsfile.go call this, so a set that would
+// admit everybody is refused whether it was built in memory or read off the
+// config device. The width of a launch measurement is deliberately not checked:
+// see [ReferenceValue.LaunchMeasurement].
+func (set ReferenceValueSet) validate() error {
+	if len(set.Values) == 0 {
+		return errors.New("the reference value set is empty; it would admit nobody")
+	}
+	for i, rv := range set.Values {
+		if len(rv.LaunchMeasurement) == 0 {
+			return fmt.Errorf("reference value %d has no launch measurement; it would admit every authentic platform", i)
+		}
+	}
+	return nil
 }

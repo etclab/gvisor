@@ -603,9 +603,24 @@ If a step fails, these are what a working run looks like at that point.
 - **HMP `pmemsave` mis-parses absolute paths** on QEMU 10.0 (`invalid char 'h' in
   expression`). Reading `/proc/<pid>/fd/<memfd>` is both a workaround and a more faithful
   test of what a host operator can actually see.
-- **The measurement changes if firmware, kernel, initrd or command line changes.** That is
-  the point, but it means a rebuilt OVMF invalidates any recorded measurement. Trace it
-  through the artifact hashes above.
+- **On this stack the measurement covers the firmware, and NOT the kernel, initrd or command
+  line.** This is the opposite of what one would assume, so it is stated plainly. The firmware
+  built here is `OvmfPkg/OvmfPkgX64.dsc`, which links `BlobVerifierLibNull` — it accepts every
+  blob it is handed — and the launches recorded here do not pass `kernel-hashes=on`, so QEMU
+  never writes a hashes table into the measured firmware page. The kernel, initrd and command
+  line are loaded through `fw_cfg` and never hashed into **M**. A rebuilt OVMF does invalidate
+  any recorded measurement; a rebuilt kernel or an edited command line does not move it at all.
+
+  This also bounds what the "identical measurement across three boots" result above proves. It
+  shows **M** is stable, which is consistent with **M** being a function of the firmware and the
+  VMSAs alone — it is not evidence that **M** tracks the kernel, initrd or command line, because
+  on this stack it does not.
+
+  Ticket 06 establishes the property for the measured image by building
+  `OvmfPkg/AmdSev/AmdSevX64.dsc`, which links `BlobVerifierLibSevHashes` and returns
+  `EFI_ACCESS_DENIED` on a mismatch, and by launching with `kernel-hashes=on`. The memo's claim
+  that the verity root hash on the command line covers the root filesystem transitively holds
+  under that firmware and that flag, and under nothing else. See `docs/snp-measured-image.md`.
 
 ---
 

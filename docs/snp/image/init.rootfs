@@ -1,0 +1,46 @@
+#!/bin/sh
+# /sbin/init of the measured root filesystem.
+#
+# Mounts the kernel filesystems (all noexec), loads the report interface
+# driver, proves to the console that no writable path is executable, and runs
+# the embedded binary. When it exits the guest powers off: there is no shell,
+# no getty and nothing else to run.
+export PATH=/bin:/sbin:/usr/bin
+say() { echo "init: $*"; }
+
+exec >/dev/console 2>&1
+mount -t proc   -o nosuid,nodev,noexec proc   /proc
+mount -t sysfs  -o nosuid,nodev,noexec sysfs  /sys
+mount -t tmpfs  -o nosuid,nodev,noexec,mode=755 tmpfs /run
+mount -t tmpfs  -o nosuid,nodev,noexec,mode=1777 tmpfs /tmp
+mount -t configfs -o nosuid,nodev,noexec configfs /sys/kernel/config
+
+say "kernel $(cat /proc/sys/kernel/osrelease)"
+dmesg | grep -E 'SEV|Memory Encryption' | sed 's/^/init: dmesg: /'
+
+# The report interface (ticket 01's by-hand evidence path) lives on
+# /sys/kernel/config/tsm/report once these load. On a non-confidential boot
+# sev-guest refuses with "No such device", which is itself a diagnostic.
+insmod /lib/modules/tsm_report.ko || say "tsm_report did not load"
+insmod /lib/modules/sev-guest.ko  && say "sev-guest loaded: report interface at /sys/kernel/config/tsm/report" \
+                                  || say "sev-guest did not load (expected on a non-confidential boot)"
+
+# Every mount that is writable must be noexec. Listed, not assumed.
+bad=0
+while read -r dev mnt type opts rest; do
+  case ",$opts," in
+    *,rw,*) case ",$opts," in
+              *,noexec,*) ;;
+              *) say "WRITABLE AND EXECUTABLE: $mnt ($type,$opts)"; bad=1 ;;
+            esac ;;
+  esac
+done < /proc/mounts
+[ $bad = 0 ] && say "no writable path is executable" || say "FATAL: writable executable path present"
+sed 's/^/init: mount: /' /proc/mounts
+
+say "running /usr/bin/tunneld"
+/usr/bin/tunneld
+rc=$?
+say "tunneld exited with status $rc; powering off"
+sync
+poweroff -f

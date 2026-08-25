@@ -134,10 +134,16 @@ that the "there is no chain here, carry on" branch cannot be written by accident
 
 ## Status on this host
 
-The chain for this host has **not** yet been captured: `kdsintf.amd.com` (165.204.91.78/.79)
-is unreachable from this host at the TCP level on 443 and 80, while other outbound HTTPS works.
+The chain for this host has **not** yet been captured. On 2026-08-25 (15:30–16:10 UTC)
+`kdsintf.amd.com` (165.204.91.78/.79) was unreachable at the TCP level on 443 from four
+independent vantages — this host, a GCP VM in us-central1, a GCP VM in europe-west1, and a
+third-party fetcher — while `download.amd.com` and `kds-dev.amd.com` answered. That is an
+AMD-side outage of the KDS, not a property of this host's network. The tool was run from the
+GCP VM (`kds-fetch`, us-central1-a, project `nsf-2348130-428843`) with the static binary and
+`report.bin` copied over `gcloud compute scp`; it failed exactly at the dial.
+
 Everything up to the network call is exercised offline — `attest/provision`'s tests run the fetch
 against a fake KDS, and drive ticket 01's real report through the tool to show it asks for
-exactly `Genoa/9b3716…5243?blSPL=9&teeSPL=0&snpSPL=23&ucodeSPL=72`. When a route to the KDS
-exists, step 2 with `-out docs/snp/evidence/` completes the record and un-skips
-`TestTheCapturedPlatformsProvisionedChainVerifiesItsReport`.
+exactly `Genoa/9b3716…5243?blSPL=9&teeSPL=0&snpSPL=23&ucodeSPL=72`. When the KDS is back, step 2
+with `-out docs/snp/evidence/` (from any machine that reaches it) completes the record and
+un-skips `TestTheCapturedPlatformsProvisionedChainVerifiesItsReport`.

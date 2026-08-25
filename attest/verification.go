@@ -36,28 +36,24 @@ type Verification struct {
 // New builds a Verification from a verifier and the reference value set it
 // should admit peers against.
 //
-// The set is checked here for the two ways it can be wrong in the dangerous
-// direction, and both are refused at startup rather than at the first peer.
-//
-// An empty set admits nobody, which is a configuration mistake every time.
-//
-// A reference value with no launch measurement admits *everybody*: it names no
-// image, so every authentic platform matches it, and a set holding one is
-// strictly weaker than its author can have intended. That is the failure worth
-// catching loudly, because it does not announce itself — every handshake
-// succeeds and nothing looks wrong.
+// The set is checked by [ReferenceValueSet.validate] for the two ways it can be
+// wrong in the dangerous direction, and both are refused at startup rather than
+// at the first peer. A set read off the config device has already been checked
+// the same way by [LoadReferenceValueSet]; it is checked again here because a
+// set can also be built in memory, and a trust root is worth refusing twice.
 //
 // The width of a launch measurement is the vendor's business and is not checked
-// here; a value of the wrong width matches nothing, which fails closed. That
-// asymmetry is deliberate: anything that could weaken the set is a startup
-// error, and anything that could only over-refuse is left to the loader that
-// knows the vendor (ticket 03).
+// here or in the loader; a value of the wrong width matches nothing, which
+// fails closed. That asymmetry is deliberate: anything that could weaken the
+// set is a startup error, and anything that could only over-refuse is left
+// alone, because a digest width baked into this module is the seam a second
+// vendor would have to break.
 func New(verifier Verifier, set ReferenceValueSet) (*Verification, error) {
 	if verifier == nil {
 		return nil, errors.New("attest: no verifier")
 	}
-	if len(set.Values) == 0 {
-		return nil, errors.New("attest: reference value set is empty; it would admit nobody")
+	if err := set.validate(); err != nil {
+		return nil, fmt.Errorf("attest: %w", err)
 	}
 	// The set is copied rather than referenced. It is this design's trust root
 	// and it was just checked; holding a caller's slice would let it be
@@ -65,9 +61,6 @@ func New(verifier Verifier, set ReferenceValueSet) (*Verification, error) {
 	// touching a trust root.
 	held := ReferenceValueSet{Values: make([]ReferenceValue, len(set.Values))}
 	for i, rv := range set.Values {
-		if len(rv.LaunchMeasurement) == 0 {
-			return nil, fmt.Errorf("attest: reference value %d has no launch measurement; it would admit every authentic platform", i)
-		}
 		held.Values[i] = rv
 		held.Values[i].LaunchMeasurement = append([]byte(nil), rv.LaunchMeasurement...)
 	}

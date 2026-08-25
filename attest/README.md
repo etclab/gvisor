@@ -42,7 +42,7 @@ iteration of unproven code.
 
 | Package   | What it is |
 |-----------|------------|
-| `attest`  | The public surface: the vendor seam, the reference value vocabulary, the binding of ADR-0002, the refusal taxonomy, and `Verification.Verify`. |
+| `attest`  | The public surface: the vendor seam, the reference value vocabulary, the signed reference value set format and its loader, the binding of ADR-0002, the refusal taxonomy, and `Verification.Verify`. |
 | `verify`  | The SEV-SNP verifier. Wraps `go-sev-guest` (ADR-0003) and keeps that library's API shape from reaching anywhere else. |
 | `snpfake` | A fake SEV-SNP platform built on `go-sev-guest`'s test signing. Implements the acquisition half of the seam; the real acquirer is ticket 04. Test support, but not a `_test` package, because tunneld's tests will inject it through a constructor. |
 
@@ -52,3 +52,56 @@ seam here is this module's public surface. Every test drives `Verification.Verif
 external behaviour — accepted, or refused with a given reason — and none reaches inside `verify`
 or asserts on how a verdict was reached. Those packages stay free to change, which is the point
 of ADR-0003 having drawn the seam deliberately.
+
+The reference value loader is driven through the same seam: a set is loaded and then wired into a
+`Verification` and shown to admit or refuse a fake platform, because what a set is for is deciding
+who gets in. The spec's module list names a separate `refvals` package for the format; it lives in
+`attest` instead, following the same collapse ticket 02 made when the reference value vocabulary
+became `attest/refvals.go` rather than a package. A separate package would have to import `attest`
+for `ReferenceValueSet`, so `attest` could not expose the loader, and the loader would then be a
+second public surface for tests to drive.
+
+## The signed reference value set
+
+A set is two files: a JSON document and a detached signature beside it, named by appending
+`.sig`. The document is delivered from outside the launch measurement and only the reference
+value author's public key lives inside it (ADR-0004), so updating values needs no new
+measurement.
+
+```json
+{
+  "format": "gvisor.dev/gvisor/attest/reference-value-set",
+  "version": 1,
+  "reference_values": [
+    {
+      "launch_measurement": "1111…",
+      "minimum_tcb": {"bootloader": 9, "tee": 0, "snp": 23, "microcode": 72},
+      "guest_policy": {"allow_smt": true}
+    }
+  ]
+}
+```
+
+Four things about it are decided rather than incidental:
+
+- **The signature is detached and covers the document's exact bytes** (ADR-0006). The alternative — an
+  envelope whose payload is an opaque blob parsed only after its signature verifies — gives the
+  same unambiguous signed region and was rejected because the file exists to be read and reviewed
+  by a human, and a base64 payload cannot be. There is no canonical form, nothing is ever
+  re-serialised and then checked, and the API has no path from a parsed set back to a signature
+  check.
+- **The set is always a list**, even holding one value, because that is what makes an image
+  rollout without downtime expressible rather than special.
+- **A TCB floor is four separately named component versions**, all four required. This file is the
+  trust root and nobody reviews a packed integer for whether it means "microcode 72".
+- **Unknown fields are refused, and so are repeated ones.** An unknown field is a constraint the
+  loader cannot see; a field named twice is a constraint the reviewer cannot see, since a person
+  reads the first occurrence and a JSON parser takes the last. Both end with a value weaker than
+  its author intended. Because Go's parser matches names case-insensitively (and folds U+212A and
+  U+017F), `"Microcode"` would be a repeat of `"microcode"` to the parser and a different field to
+  a reviewer; field names are therefore restricted to lowercase ASCII and underscore, and any other
+  name is refused before it can alias one.
+
+A launch measurement's width is deliberately checked nowhere: it belongs to the hardware vendor,
+and one of them baked in here would sit above the seam that makes a second vendor tractable. A
+measurement of the wrong width matches nothing, which fails closed.

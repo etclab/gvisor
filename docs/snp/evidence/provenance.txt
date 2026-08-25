@@ -1,0 +1,22 @@
+### AMDSEV scripts
+6e0ef356e2d21513882abe4379a3fbadf8e51d62
+### AMDESE/qemu snp-latest
+afe54d06015d3c90b4b745e468ee3317c5513de8
+Wed Aug 6 13:49:45 2025 -0500 *physmem: ensure memslot virtual addresses are hugepage-aligned
+10.0.0
+### tianocore/edk2
+fbe0805b2091393406952e84724188f8c1941837
+edk2-stable202502
+### AMDESE/linux snp-guest-latest
+038d61fd642278bab63ee8ef722c50d10ab01e8f
+Sun Jul 27 14:26:38 2025 -0700 Linux 6.16
+6.16.0-snp-guest-038d61fd6422
+### artifact hashes
+7e0821e2f3ab06cae67a2aadfaadba338f275fa4dada2ce506f646b8b3703de2  $STACK/usr/local/bin/qemu-system-x86_64
+8a417b9ec16707672407f545e6fe95520ebb2109eefe9bb2856c4639aa1bbb0c  $STACK/usr/local/share/qemu/OVMF.fd
+4b519144f1c5e17a22c4289fc6ec00e680869d549a2a9f7484590a1d4fe23cd6  $STACK/usr/local/share/qemu/OVMF_CODE.fd
+5d2ac383371b408398accee7ec27c8c09ea5b74a0de0ceea6513388b15be5d1e  $STACK/usr/local/share/qemu/OVMF_VARS.fd
+c3b443dbdafbaf3cb92d119482143a76876a752c7335a61faa917361d9724b75  $STACK/guest-kernel/vmlinuz-snp-guest
+### host
+6.11.0-rc3-snp-host-85ef1ac03941
+model name	: AMD EPYC 9354P 32-Core Processor

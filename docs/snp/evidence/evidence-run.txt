@@ -1,0 +1,48 @@
+############ 1. is this actually a confidential guest? ############
+--- kernel memory-encryption line ---
+[    0.000000] Linux version 6.16.0-snp-guest-038d61fd6422 (pniroula@shs1) (gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, GNU ld (GNU Binutils for Ubuntu) 2.42) #1 SMP Mon Aug 24 23:03:37 EDT 2026
+[    2.276926] Memory Encryption Features active: AMD SEV SEV-ES SEV-SNP
+[    2.277879] SEV: Status: SEV SEV-ES SEV-SNP 
+[    2.643951] SEV: Using SNP CPUID table, 28 entries present.
+[    2.644879] SEV: SNP running at VMPL0.
+[    3.155819] SEV: SNP guest platform devices initialized.
+[    5.036179] systemd[1]: Hostname set to <snp-stock>.
+--- /sys/kernel/debug/x86/sev_status (if debugfs is mounted) ---
+cat: /sys/kernel/debug/x86/sev_status: No such file or directory
+(not available)
+--- CPUID 0x8000001F ---
+  eax ebx ecx edx:  0000001a 000001b3 00000000 00000000
+
+############ 2. report interface ############
+crw------- 1 root root 10, 261 Aug 25 03:24 /dev/sev-guest
+--- configfs tsm tree ---
+total 0
+drwxr-xr-x 2 root root 0 Aug 25 03:24 report
+total 0
+
+############ 3. acquire evidence ############
+--- attributes exposed by this kernel ---
+total 0
+-r--r--r-- 1 root root    0 Aug 25 03:25 auxblob
+-r--r--r-- 1 root root 4096 Aug 25 03:25 generation
+--w------- 1 root root    0 Aug 25 03:25 inblob
+-r--r--r-- 1 root root    0 Aug 25 03:25 outblob
+--w------- 1 root root 4096 Aug 25 03:25 privlevel
+-r--r--r-- 1 root root 4096 Aug 25 03:25 privlevel_floor
+-r--r--r-- 1 root root 4096 Aug 25 03:25 provider
+inblob written (64 bytes, single write)
+provider   : sev_guest
+generation : 1
+privlevel  : (not exposed)
+outblob    : 1184 bytes  
+auxblob    : 0 bytes  
+AUXBLOB IS EMPTY -- host did not provision a certificate chain
+generation after read : 1
+
+############ 4. base64 of collected evidence ############
+===BEGIN report.bin===
+AwAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAJAAAAAAAXSAcAAAAAAAAAAAAAAAAAAAAAAQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8wMTIzNDU2Nzg5Ojs8PT4/hKr2L0MfCpQ5ROELBWnHyJm/Xpz9DGF2rz9wAz4kGsHp2Af1YF/X3Qi/G/Hwm12lAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAsMByiJohGRQAs8/XxolrtPQnImxri2BtJOhruBHKUb///////////////////////////////////////////CQAAAAAAF0gZEQEAAAAAAAAAAAAAAAAAAAAAAAAAAACbNxZE/TokUGd3yCk84HR4BPxXVGjmleTpN9Tx9UHt6Tj8nnmibbsaMo1fLXPxC10CpOPLWOrjF55rqSPSmVJDCQAAAAAAF0gnNwEAJzcBAAkAAAAAABdIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB86bUp34+jLioPdA5Cs1OuJQ9jRGWSWYIDCRn3Pn+qoWhxBFuertjbLjX16Zo9POAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY/OhO1lD62u6+zQ60euLzSC9zZonPIqcmCS4y6UzQEpkrXnhQrbKxygHIy/6/4hxAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+===END report.bin===
+===BEGIN certs.bin===
+
+===END certs.bin===

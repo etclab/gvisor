@@ -1,0 +1,14 @@
+### SEV-SNP GUEST (confidential) ###
+qemu pid           : 3259178
+guest RAM backing  : /proc/3259178/fd/19 -> /memfd:memory-backend-memfd (deleted)
+size               : 4294967296 bytes (4.00 GiB)
+bytes read         : 4294967296 (4.00 GiB)
+non-zero bytes     : 110235561 (2.5666% of what was read)
+canary             : TICKET01-SNP-CANARY-0xDEADBEEFCAFEBABE
+occurrences        : 7
+copies written     : 42384384
+visible fraction   : 0.000017%
+
+RESULT: the bulk of guest RAM is not readable by the host.
+        The 7 copies that are visible are the marker text in transit
+        through shared bounce buffers, not the pages the guest filled.

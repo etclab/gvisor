@@ -1,0 +1,39 @@
+== SEV-SNP attestation report ==
+version                : 3
+guest_svn              : 0
+policy                 : 0x30000
+  abi                  : 0.0
+  bits                 : SMT_ALLOWED, RESERVED_MBO
+  DEBUG_ALLOWED        : no
+vmpl                   : 0
+signature algo         : 1 (1 = ECDSA P-384 with SHA-384)
+signing key            : VCEK (0)
+author key enabled     : 0
+mask chip key          : 0
+platform_info          : 0x7  [SMT_EN, TSME_EN, ECC_EN]
+
+LAUNCH MEASUREMENT (M) : 84aaf62f431f0a943944e10b0569c7c899bf5e9cfd0c6176af3f70033e241ac1e9d807f5605fd7dd08bf1bf1f09b5da5
+report_data (64B)      : 000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f
+host_data              : 0000000000000000000000000000000000000000000000000000000000000000
+family_id              : 00000000000000000000000000000000
+image_id               : 00000000000000000000000000000000
+id_key_digest          : 000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+author_key_digest      : 000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+report_id              : 2c301ca226884645002cf3f5f1a25aed3d09c89b1ae2d81b493a1aee0472946f
+chip_id                : 9b371644fd3a24506777c8293ce0747804fc575468e695e4e937d4f1f541ede938fc9e79a26dbb1a328d5f2d73f10b5d02a4e3cb58eae3179e6ba923d2995243
+
+current_tcb            : bootloader=9 tee=0 snp=23 microcode=72
+reported_tcb           : bootloader=9 tee=0 snp=23 microcode=72
+committed_tcb          : bootloader=9 tee=0 snp=23 microcode=72
+launch_tcb             : bootloader=9 tee=0 snp=23 microcode=72
+current firmware       : 1.55 build 39
+committed firmware     : 1.55 build 39
+cpuid fam/mod/step     : 0x19/0x11/0x01
+signature r (first 16) : 07ce9b529df8fa32e2a0f740e42b353a...
+signature s (first 16) : 63f3a13b5943eb6bbafb343ad1eb8bcd...
+signature all-zero     : no
+
+== certificate table (auxblob) ==
+EMPTY -- the host did not provision a certificate chain.
+Offline verification cannot use the platform chain; the KDS fetch
+becomes the primary retrieval path rather than a fallback.

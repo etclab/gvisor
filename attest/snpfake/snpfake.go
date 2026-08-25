@@ -289,9 +289,56 @@ func (p *Platform) AcquireForged(ctx context.Context, callerSupplied [attest.Cal
 // broken certificate.
 func (p *Platform) VendorRootPEM() []byte { return append([]byte(nil), p.rootPEM...) }
 
+// EndorsementKeyCertificate returns this platform's VCEK in DER, as the key
+// distribution service serves it. It is what [KDS] answers with, exposed so
+// that a test can build a service that serves the wrong platform's
+// certificate at the right URL.
+func (p *Platform) EndorsementKeyCertificate() []byte {
+	return append([]byte(nil), p.signer.Vcek.Raw...)
+}
+
 // ProductLine returns the AMD product line this platform claims, for
 // configuring a verifier that should trust it.
 func (p *Platform) ProductLine() string { return p.productLine }
+
+// KDS returns a fake of the vendor's key distribution service for this
+// platform, in the shape gvisor.dev/gvisor/attest/provision fetches through:
+// it serves this platform's VCEK at the URL for its chip and TCB, and its ASK
+// and ARK at the product line's cert_chain URL, and answers anything else —
+// another chip, another TCB, another product — the way the real service does,
+// with no certificate. That last part is what lets a test show that a chain
+// requested for the wrong TCB never gets written.
+func (p *Platform) KDS() *KDS {
+	return &KDS{platform: p}
+}
+
+// A KDS is a fake key distribution service. See [Platform.KDS].
+type KDS struct {
+	platform *Platform
+
+	// Requested records every URL asked for, in order, so that a test can
+	// assert on what was fetched — and, from the consumer side, that nothing
+	// was.
+	Requested []string
+}
+
+// Get serves one URL. It has the signature provision.Getter asks for without
+// naming that package, so that snpfake stays importable from anywhere.
+func (k *KDS) Get(_ context.Context, url string) ([]byte, error) {
+	k.Requested = append(k.Requested, url)
+	p := k.platform
+	if url == kds.ProductCertChainURL(abi.VcekReportSigner, p.productLine) {
+		return p.VendorRootPEM(), nil
+	}
+	tcbVersion, err := kds.ComposeTCBParts(p.tcb)
+	if err != nil {
+		return nil, err
+	}
+	if url == kds.VCEKCertURL(p.productLine, p.chipID[:], tcbVersion) {
+		return p.EndorsementKeyCertificate(), nil
+	}
+	return nil, fmt.Errorf("snpfake: the key distribution service has no certificate at %s", url)
+}
 
 // report builds and signs one SEV-SNP report.
 func (p *Platform) report(callerSupplied [attest.CallerSuppliedBytesSize]byte) ([]byte, error) {

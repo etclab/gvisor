@@ -1,0 +1,12 @@
+### CONTROL: identical guest, SEV-SNP OFF ###
+qemu pid           : 3258169
+guest RAM backing  : /proc/3258169/fd/18 -> /memfd:memory-backend-memfd (deleted)
+size               : 4294967296 bytes (4.00 GiB)
+bytes read         : 4294967296 (4.00 GiB)
+non-zero bytes     : 2047990897 (47.6835% of what was read)
+canary             : TICKET01-SNP-CANARY-0xDEADBEEFCAFEBABE
+occurrences        : 42405927
+copies written     : 42384384
+visible fraction   : 100.050828%
+
+RESULT: the host can read the bulk of guest RAM -- NOT confidential.

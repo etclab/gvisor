@@ -1,0 +1,16 @@
+#!/bin/bash
+# ssh/scp into the ticket-01 guest with the throwaway key.
+#   gssh  <command...>       run a command in the guest
+#   gssh --scp <src> <dst>   copy (paths on the guest are written as G:/path)
+STACK="$(dirname "$(readlink -f "$0")")"
+KEY="$STACK/guest/id_snp"
+PORT="${SNP_SSH_PORT:-10022}"
+OPTS=(-i "$KEY" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
+      -o LogLevel=ERROR -o ConnectTimeout=10)
+if [ "${1:-}" = "--scp" ]; then
+  shift
+  args=()
+  for a in "$@"; do args+=( "${a/#G:/snp@127.0.0.1:}" ); done
+  exec scp -P "$PORT" "${OPTS[@]}" "${args[@]}"
+fi
+exec ssh -p "$PORT" "${OPTS[@]}" snp@127.0.0.1 "$@"

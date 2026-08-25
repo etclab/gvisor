@@ -41,7 +41,7 @@ import (
 // values needs no new measurement and only rotating the author key does
 // (ADR-0004).
 //
-// # A detached signature, not an envelope
+// # A detached signature, not an envelope (ADR-0006)
 //
 // The signature is detached: the document is a plain JSON file, and its
 // signature is a second file beside it. The alternative — an envelope whose
@@ -80,7 +80,8 @@ import (
 // signed-document formats; instead the loader knows one scheme and the scheme
 // is bound into the signature by [signaturePrefix]. Changing it is a new loader
 // and therefore a new measurement — the same flag day as rotating the author
-// key, which ADR-0004 already accepts as the one remaining cascade.
+// key, which ADR-0004 already accepts as the one remaining cascade. ADR-0006
+// records all of this.
 //
 // # Signing is an author-side operation
 //

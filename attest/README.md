@@ -84,7 +84,7 @@ measurement.
 
 Four things about it are decided rather than incidental:
 
-- **The signature is detached and covers the document's exact bytes.** The alternative — an
+- **The signature is detached and covers the document's exact bytes** (ADR-0006). The alternative — an
   envelope whose payload is an opaque blob parsed only after its signature verifies — gives the
   same unambiguous signed region and was rejected because the file exists to be read and reviewed
   by a human, and a base64 payload cannot be. There is no canonical form, nothing is ever

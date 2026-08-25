@@ -23,10 +23,10 @@ ticket 01's firmware does not measure the kernel, initrd or command line at all*
 [Firmware](#firmware-the-kernel-was-not-measured-under-ticket-01s-ovmffd). The image uses a
 different firmware build, and the launch adds `kernel-hashes=on`.
 
-The confidential boot itself is the one step this session could not run: it needs root for
-`/dev/sev`, and `sudo` here needs a password. The control boot of the same kernel, initrd,
-command line and root filesystem ran end to end; the SNP command is written down below for an
-operator to run once.
+The confidential boot was run once by the operator (it needs root for `/dev/sev`): the guest
+reports `SEV: Status: SEV SEV-ES SEV-SNP` and `SNP running at VMPL0`, `sev-guest` loads and
+the report interface appears, and the boot is otherwise line-for-line the control boot.
+Console, manifest and QEMU command line are in `docs/snp/image/evidence/`.
 
 ---
 
@@ -267,11 +267,15 @@ The flipped-byte case mounted the root first and panicked when block 200 was rea
 is lazy, and the panic is the point of `panic_on_corruption` — a corrupted block is never
 returned as an I/O error something might tolerate.
 
-**Not run: the confidential boot.** It opens `/dev/sev`, which is root-only; `sudo` in this
-session requires a password and ticket 01's `root-runner.sh` is not running. Everything the
-SNP boot adds over the control is the measurement itself and the two `SEV:` console lines,
-both of which are ticket 07's cross-check to read. The command an operator runs, with the
-paths as built here:
+**The confidential boot**, run as root by the operator with the command below, under the
+AmdSev firmware with `kernel-hashes=on` (`evidence/qemu-cmdline.txt`). The console
+(`evidence/console-snp.txt`) shows, in order: `Memory Encryption Features active: AMD SEV
+SEV-ES SEV-SNP`, `SEV: SNP running at VMPL0`, the same five `initrd:` lines as the control,
+`sev-guest: Initialized SEV guest driver (using VMPCK0 communication key)`, `init: sev-guest
+loaded: report interface at /sys/kernel/config/tsm/report`, `init: no writable path is
+executable`, the placeholder finding all five config files, and `reboot: Power down` at
+1.18 s. Because the firmware verifies every fw_cfg blob against the hashes table, reaching
+`initrd:` at all means the kernel, initrd and command line matched what QEMU measured.
 
 ```bash
 sudo bash docs/snp/image/launch-measured-guest.sh \
@@ -303,7 +307,8 @@ Recorded here because this is where the inputs are decided.
 
 ## What this does not establish
 
-- **The measurement was not observed.** No SNP boot ran; see above.
+- **The measurement was not read out.** The guest boots and the report interface is present,
+  but no report was pulled; that is ticket 07's cross-check, done once, against its prediction.
 - **Nothing is verified against the author key.** The placeholder reports presence; the
   loader in `attest/refvalsfile.go` verifies, and it is not in the image until ticket 14.
 - **The firmware's bytes depend on the host's grub package.** Recorded, not fixed.

@@ -134,7 +134,7 @@ that the "there is no chain here, carry on" branch cannot be written by accident
 
 ## Status on this host
 
-The chain for this host has **not** yet been captured. On 2026-08-25 (15:30–16:10 UTC)
+The chain for this host has **not** yet been captured. On 2026-08-25 (15:00–15:45 UTC)
 `kdsintf.amd.com` (165.204.91.78/.79) was unreachable at the TCP level on 443 from four
 independent vantages — this host, a GCP VM in us-central1, a GCP VM in europe-west1, and a
 third-party fetcher — while `download.amd.com` and `kds-dev.amd.com` answered. That is an

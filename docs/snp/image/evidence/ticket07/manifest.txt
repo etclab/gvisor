@@ -1,0 +1,81 @@
+# Measured image manifest. Built 2026-08-25T17:28:14Z on shs1.
+
+## Measured inputs. The firmware is measured directly; kernel, initrd and command line
+## enter through the SEV hashes table QEMU writes into the firmware (kernel-hashes=on);
+## rootfs.img is covered through verity.roothash on the command line.
+ffd6bfa8c76c460a4dba62c39b2c9cf5a7ac425148eede7fb610f4c3cd96a895  OVMF.fd
+c3b443dbdafbaf3cb92d119482143a76876a752c7335a61faa917361d9724b75  vmlinuz
+7dbb73ca192dab3d11755a0b3d5ce86f5118881377c8c94117445e55ddf5282b  initrd.img
+ed539323a75d2a6ad9698c8d2bdc47d1e2b29f8cfaf5bd1d0d32b59223f36fcd  cmdline.txt
+00605e036088ee1a030bff7e57a02f3cc4f4dd473b361aa037e7a9b5ec79a7d0  rootfs.img
+verity root hash: 1a5e21ec9c02183708fe8c505a2d7a45afbc2fa71186e931cd40e18cd0c61011  (sha256, no salt, 4096-byte blocks, 339 data blocks, hash tree at block 339)
+
+## Predicted launch measurement (offline, from the files above + vcpus=4 vcpu_type=EPYC-v4; not read from a machine)
+launch_measurement: 4835c9f3579e93ca787f1764ea32ecab0c7885efafd8718215d0b92a39eed27a3fa69f77b2e996a9aaa73d6997525db2
+emitted as reference-values.json (+ .sig, signed by the author key); inputs in reference-values.inputs.txt
+
+## Provenance
+firmware: tianocore/edk2 edk2-stable202502 fbe0805b2091393406952e84724188f8c1941837 OvmfPkg/AmdSev/AmdSevX64.dsc, built by docs/snp/image/build-ovmf-amdsev.sh
+          embedded grub built from grub-efi-amd64-bin 2.12-1ubuntu7.3 (pinned: 2.12-1ubuntu7.3)
+kernel:   AMDESE/linux snp-guest-latest 038d61fd642278bab63ee8ef722c50d10ab01e8f, release 6.16.0-snp-guest-038d61fd6422
+busybox:  /bin/busybox  busybox-static 1:1.36.1-6ubuntu3.1
+tunneld:  /home/pniroula/Projects/gvisor-ticket07/.scratch/attested-secure-tunnel/host-stack/image/build/tunneld-placeholder
+author key: 32ecdecef187bf48c7d7d3b0c61345d5fc85f8252a241f3f87c95bbfccf5947b
+
+## Toolchain
+gcc:         gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+veritysetup: veritysetup 2.7.0 flags: UDEV BLKID KEYRING FIPS KERNEL_CAPI HW_OPAL 
+mksquashfs:  mksquashfs version 4.6.1 (2023/03/25)
+mke2fs:      mke2fs 1.47.0 (5-Feb-2023)
+gzip:        gzip 1.12
+gen_init_cpio: from the kernel tree at 038d61fd642278bab63ee8ef722c50d10ab01e8f
+
+## Root filesystem contents (path sha256 mode size)
+./bin/busybox dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 755 2124608
+./bin/cat -> busybox
+./bin/dmesg -> busybox
+./bin/echo -> busybox
+./bin/grep -> busybox
+./bin/insmod -> busybox
+./bin/ls -> busybox
+./bin/mount -> busybox
+./bin/poweroff -> busybox
+./bin/sed -> busybox
+./bin/sh -> busybox
+./bin/sleep -> busybox
+./bin/sync -> busybox
+./bin/umount -> busybox
+./etc/attested-tunnel/author.pub 333da24086459bbf3306afbe1570eb0be9e1125e11731c1656e0c0b995fc6094 444 65
+./lib/modules/sev-guest.ko 6a2a639e905ad8b8350ef517110ce1f0dca155d9005f28cc01f21e0233a7dc7e 444 32273
+./lib/modules/tsm_report.ko 11723a0e7eb38d07baf0714aa6deb42f2b18c4ded62ad3a5e6efc5358855151b 444 30193
+./sbin/init cbba73d148ed8fc9ae7a77ac4f2cad21daeaf7f0ee986c04ae0217ccd3d10650 755 1897
+./usr/bin/tunneld ebb50a2e288a9c5cf68486aaadcc2c95a85b6830195e65d804adbd5362bfd51b 755 789864
+
+## Initrd contents (gen_init_cpio list)
+dir /dev 0755 0 0
+nod /dev/console 0600 0 0 c 5 1
+dir /proc 0755 0 0
+dir /sys 0755 0 0
+dir /newroot 0755 0 0
+dir /bin 0755 0 0
+dir /sbin 0755 0 0
+dir /lib 0755 0 0
+file /init init 0755 0 0
+file /bin/busybox busybox 0755 0 0
+slink /bin/sh busybox 0755 0 0
+slink /bin/mount busybox 0755 0 0
+slink /bin/umount busybox 0755 0 0
+slink /bin/insmod busybox 0755 0 0
+slink /bin/cat busybox 0755 0 0
+slink /bin/echo busybox 0755 0 0
+slink /bin/sleep busybox 0755 0 0
+slink /bin/switch_root busybox 0755 0 0
+file /sbin/veritymap veritymap 0755 0 0
+file /lib/dm-bufio.ko dm-bufio.ko 0444 0 0
+file /lib/dm-verity.ko dm-verity.ko 0444 0 0
+
+## Guest kernel modules
+dm-bufio.ko cc8778aa411c5a1c0c935b30e5f75aa183e1d1d2ac677110a4b411df679470d5 vermagic=6.16.0-snp-guest-038d61fd6422 SMP mod_unload modversions 
+dm-verity.ko a348f29d5185065d48f97b394566b1f676ac14988db4c790c738163b03bf550e vermagic=6.16.0-snp-guest-038d61fd6422 SMP mod_unload modversions 
+tsm_report.ko 11723a0e7eb38d07baf0714aa6deb42f2b18c4ded62ad3a5e6efc5358855151b vermagic=6.16.0-snp-guest-038d61fd6422 SMP mod_unload modversions 
+sev-guest.ko 6a2a639e905ad8b8350ef517110ce1f0dca155d9005f28cc01f21e0233a7dc7e vermagic=6.16.0-snp-guest-038d61fd6422 SMP mod_unload modversions 

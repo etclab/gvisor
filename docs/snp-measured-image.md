@@ -291,7 +291,8 @@ files; its `README` says so. Neither is a real trust root.
 
 ## For ticket 07
 
-Recorded here because this is where the inputs are decided.
+Recorded here because this is where the inputs are decided. Ticket 07's result is
+`docs/snp-measurement-prediction.md`; `build-image.sh` now also predicts and emits.
 
 - The measured command line is the `-append` string plus its terminating NUL, exactly as
   QEMU hands it to fw_cfg. The firmware appends ` initrd=initrd` for the EFI stub *after*

@@ -1,0 +1,8 @@
+cross-check 2026-08-25T18:15:47Z
+  predicted (before boot, from build inputs): 448f0553567f49e22d4a776e92c9263d37c6b1223aa0926f6960f7fcaf5ed1d1e0d3e6e2f94bbd450f5728f9a7f66272
+  reported  (by the booted guest, once):      448f0553567f49e22d4a776e92c9263d37c6b1223aa0926f6960f7fcaf5ed1d1e0d3e6e2f94bbd450f5728f9a7f66272
+  RESULT: MATCH — the offline computation is validated
+  guest_svn              : 0
+  policy                 : 0x30000
+  vmpl                   : 0
+  reported_tcb           : bootloader=9 tee=0 snp=23 microcode=72

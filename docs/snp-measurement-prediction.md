@@ -131,8 +131,7 @@ before any boot:
 predicted: 448f0553567f49e22d4a776e92c9263d37c6b1223aa0926f6960f7fcaf5ed1d1e0d3e6e2f94bbd450f5728f9a7f66272
 ```
 
-The boot needs root (`/dev/sev`), which this session did not have; the job is spooled for
-ticket 01's root runner as `$STACK/root-spool/crosscheck07.job`, or run directly:
+The boot needs root (`/dev/sev`) and was run once by the operator:
 
 ```bash
 sudo bash docs/snp/image/launch-measured-guest.sh -image $STACK/image-crosscheck \
@@ -142,15 +141,28 @@ bash docs/snp/image/crosscheck-compare.sh $STACK/image-crosscheck
 
 `crosscheck-compare.sh` recovers the report from the console, decodes it with
 `docs/snp/parse-snp-report.py`, compares `MEASUREMENT` with `predicted-measurement.txt`, and
-appends the verdict to `crosscheck.txt`. **Result: see the section below, filled in once the
-boot has run.** If it says MISMATCH, the candidates are, in order: `--vcpu-type` (QEMU's
+appends the verdict to `crosscheck.txt`. **Result: MATCH** (section below). If it had said MISMATCH, the candidates are, in order: `--vcpu-type` (QEMU's
 `EPYC-v4` signature), `--guest-features` (QEMU 10.0 sets `SNPActive` only), and the VMSA
 layout QEMU 10.0 hands KVM versus the one `sev-snp-measure` 0.0.13 models.
 
 ### Result
 
-_Pending: the cross-check boot has not been run. The prediction above is on disk and in git
-before it; whatever the guest reports is compared against it and not copied from it._
+Prediction committed in `0189a4ab7` before the boot; boot on 2026-08-25, `crosscheck.txt`:
+
+```
+predicted (before boot, from build inputs): 448f0553567f49e22d4a776e92c9263d37c6b1223aa0926f6960f7fcaf5ed1d1e0d3e6e2f94bbd450f5728f9a7f66272
+reported  (by the booted guest, once):      448f0553567f49e22d4a776e92c9263d37c6b1223aa0926f6960f7fcaf5ed1d1e0d3e6e2f94bbd450f5728f9a7f66272
+RESULT: MATCH — the offline computation is validated
+policy 0x30000, vmpl 0, reported_tcb bootloader=9 tee=0 snp=23 microcode=72
+```
+
+The guest reported `SEV: Status: SEV SEV-ES SEV-SNP`, `SNP running at VMPL0`, a 1184-byte
+report, and powered off with status 0. Console, decoded report, QEMU command line and the
+verdict are in `docs/snp/image/evidence/ticket07/crosscheck/`. The model — AmdSev firmware
+with the hashes table, four `EPYC-v4` VMSAs, `guest_features=0x1`, `sev-snp-measure` 0.0.13
+against QEMU 10.0 — is right for this stack, which is all this check establishes. The value
+in `reference-values.json` for the canonical image remains the one its build computed; the
+reported value above was compared and is not used anywhere.
 
 ---
 

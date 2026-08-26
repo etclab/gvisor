@@ -1,0 +1,16 @@
+# Mutation "rootfs-byte" of /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/base, written to /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/rootfs-byte.
+
+source change: rootfs.img byte 3571711 of 3571712 (0x367fff), 0 -> 1
+  one byte of the measured root filesystem image, and nothing else
+
+## Byte differences against the base image, per measured file.
+OVMF.fd: identical
+vmlinuz: identical
+initrd.img: identical
+cmdline.txt: 58 byte(s) differ of 193
+rootfs.img: 63 byte(s) differ of 3604480
+rootfs.img data region (first 3571712 bytes): 1 byte(s) differ; the rest is the re-derived hash tree
+base command line: console=ttyS0 earlyprintk=serial panic=-1 rdinit=/init verity.roothash=0a39885f42df7f8ab2996be4e64047105489a162e5d842ac966236d8cb794f3b verity.salt=- verity.datablocks=872 verity.hashstart=872
+this command line: console=ttyS0 earlyprintk=serial panic=-1 rdinit=/init verity.roothash=34f18651a5247ad0accdfa847059934f0f46d9713e21559ea67fb1738a942631 verity.salt=- verity.datablocks=872 verity.hashstart=872
+base command line sha256 (as measured, no newline, plus NUL is added by QEMU): a01ce3ffbe647fee4b8f150603effebcb09ad5393ff25196db9f785c63c92bc1
+this command line sha256: 1deb2be1d6f82383412113a44eac14eeb577896326402ad3c821ce7cc8e4dea3

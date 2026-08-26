@@ -1,0 +1,23 @@
+{
+  "format": "gvisor.dev/gvisor/attest/reference-value-set",
+  "version": 1,
+  "reference_values": [
+    {
+      "launch_measurement": "16c37b84895e01c363fa2b0844d98d44340cf524c49017e15a0511126b89e3ef225b169f29351026230d65e19657883b",
+      "minimum_tcb": {
+        "bootloader": 9,
+        "tee": 0,
+        "snp": 23,
+        "microcode": 72
+      },
+      "guest_policy": {
+        "abi_major": 0,
+        "abi_minor": 0,
+        "allow_smt": true,
+        "allow_migration_agent": false,
+        "allow_debug": false,
+        "require_single_socket": false
+      }
+    }
+  ]
+}

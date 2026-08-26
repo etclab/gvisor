@@ -1,0 +1,18 @@
+# Mutation "rootfs-file" of /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/base, written to /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/rootfs-file.
+
+source change: /etc/attested-tunnel/author.pub, 1 byte of 65
+  the reference value author's public key (ADR-0004): ...ccf5947b -> ...ccf5947c
+  the squashfs is then rebuilt over it, so rootfs.img differs by more than one byte:
+  zstd re-compresses the block the file sits in, and the metadata around it moves.
+
+## Byte differences against the base image, per measured file.
+OVMF.fd: identical
+vmlinuz: identical
+initrd.img: identical
+cmdline.txt: 60 byte(s) differ of 193
+rootfs.img: 15456 byte(s) differ of 3604480
+rootfs.img data region (first 3571712 bytes): 15265 byte(s) differ; the rest is the re-derived hash tree
+base command line: console=ttyS0 earlyprintk=serial panic=-1 rdinit=/init verity.roothash=0a39885f42df7f8ab2996be4e64047105489a162e5d842ac966236d8cb794f3b verity.salt=- verity.datablocks=872 verity.hashstart=872
+this command line: console=ttyS0 earlyprintk=serial panic=-1 rdinit=/init verity.roothash=6a1ce69ef2ee70c6f98521d9b2973e560f285874884b9a4eaa0a8a8721464cd9 verity.salt=- verity.datablocks=872 verity.hashstart=872
+base command line sha256 (as measured, no newline, plus NUL is added by QEMU): a01ce3ffbe647fee4b8f150603effebcb09ad5393ff25196db9f785c63c92bc1
+this command line sha256: 08005ac780d9b80ac49218e028c5f01bebec235ef947df20ba4812f7bc03fe6b

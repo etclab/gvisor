@@ -1,0 +1,14 @@
+evidence            : /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/rootfs-byte/bundle/evidence.bin, 1184 bytes
+certificate chain   : /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/rootfs-byte/bundle/certificate-chain.bin, 4759 bytes (provisioned, ADR-0005)
+public key (SPKI)   : /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/rootfs-byte/bundle/public-key.der, 44 bytes, 302a300506032b6570032100721593a1fdbbc973a6272da787d756683c9d9d1004caf4eaddb81a676d3453a6
+binding context     : v1, 00000000000000000000000000000000
+vendor root         : the AMD roots embedded in the verification library — no fetch, no file
+reference value set : /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/base/reference-values.json, 1 value(s), author 32ecdecef187bf48c7d7d3b0c61345d5fc85f8252a241f3f87c95bbfccf5947b
+  [0] launch measurement 16c37b84895e01c363fa2b0844d98d44340cf524c49017e15a0511126b89e3ef225b169f29351026230d65e19657883b
+      minimum TCB        bootloader=9 tee=0 snp=23 microcode=72
+      guest policy       abi=0.0 smt=true migration_agent=false debug=false single_socket_required=false
+
+REFUSED
+  reason            : launch measurement not in the reference value set
+  operator log      : verification refused: launch measurement not in the reference value set: launch measurement matches none of the 1 reference values in the set
+  a caller learns   : attest: verification failed

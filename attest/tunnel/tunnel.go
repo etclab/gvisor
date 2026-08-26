@@ -16,14 +16,15 @@
 //
 // It knows nothing about attestation. The TLS configuration it is handed
 // already decides who is admitted (see package ratls); this package's job is
-// to refuse early data, carry an exchange, and nothing more. Connection
-// caching, idle and age limits, and the framing checks arrive with tickets 11
-// and 12 and belong here when they do.
+// to refuse early data, carry an exchange under the framing below, and
+// nothing more. Connection caching and idle and age limits arrive with
+// ticket 12 and belong here when they do.
 package tunnel
 
 import (
 	"context"
 	"crypto/tls"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
@@ -190,38 +191,140 @@ func answerEstablishment(ctx context.Context, c *quic.Conn) error {
 	return s.Close()
 }
 
+// The exchange frame
+//
+// An exchange occupies exactly one stream in each direction and is carried as
+// a single frame: a four-byte big-endian payload length, that many payload
+// bytes, and then end-of-stream. Nothing may follow the frame.
+//
+// The length prefix is what makes "trailing bytes are a protocol violation"
+// (CONTEXT.md, Exchange) a check a receiver can actually make. A stream is a
+// byte stream, so a sender that framed a second message behind the first —
+// two lengths and two payloads on one stream — would be indistinguishable
+// from one long message to a receiver that only read to end-of-stream, and
+// would be two exchanges to a receiver that looped over frames. Reading
+// exactly one frame and then requiring end-of-stream refuses both readings:
+// one stream is one exchange, and a second message needs a second stream,
+// where it is subject to every check the first was.
+
+// frameHeaderSize is the width of the big-endian payload length prefix.
+const frameHeaderSize = 4
+
+// maxFramePayload bounds a declared length. Without it the four-byte prefix
+// invites a peer to declare four gigabytes and have the receiver allocate
+// them before a single payload byte arrives. It is a framing bound, not a
+// policy one; nothing in this design needs an exchange anywhere near it.
+const maxFramePayload = 16 << 20
+
+// ErrFraming reports a peer that broke the exchange framing: a truncated
+// frame, a length beyond the bound, or bytes after the frame. It is a
+// protocol violation and the connection it happened on does not survive it.
+var ErrFraming = errors.New("tunnel: framing violation")
+
+// writeFrame sends payload as one frame and closes the write side, which is
+// the end-of-stream the peer reads to.
+func writeFrame(s *quic.Stream, payload []byte) error {
+	if len(payload) > maxFramePayload {
+		return fmt.Errorf("%w: %d bytes exceeds the %d byte maximum", ErrFraming, len(payload), maxFramePayload)
+	}
+	var header [frameHeaderSize]byte
+	binary.BigEndian.PutUint32(header[:], uint32(len(payload)))
+	if _, err := s.Write(header[:]); err != nil {
+		return err
+	}
+	if _, err := s.Write(payload); err != nil {
+		return err
+	}
+	return s.Close()
+}
+
+// readFrame reads one frame and then requires end-of-stream. Every way the
+// bytes on the stream fail to be exactly one frame — short header, oversized
+// length, short payload, or anything at all after the payload — comes back
+// wrapping ErrFraming.
+func readFrame(s *quic.Stream) ([]byte, error) {
+	var header [frameHeaderSize]byte
+	if _, err := io.ReadFull(s, header[:]); err != nil {
+		if isEOF(err) {
+			return nil, fmt.Errorf("%w: stream ended inside the frame header", ErrFraming)
+		}
+		return nil, err
+	}
+	length := binary.BigEndian.Uint32(header[:])
+	if length > maxFramePayload {
+		return nil, fmt.Errorf("%w: peer declared %d bytes, over the %d byte maximum", ErrFraming, length, maxFramePayload)
+	}
+	payload := make([]byte, length)
+	if _, err := io.ReadFull(s, payload); err != nil {
+		if isEOF(err) {
+			return nil, fmt.Errorf("%w: stream ended inside a %d byte payload", ErrFraming, length)
+		}
+		return nil, err
+	}
+	// One exchange per stream: what follows the frame must be nothing.
+	var trailing [1]byte
+	switch _, err := io.ReadFull(s, trailing[:]); {
+	case errors.Is(err, io.EOF):
+		return payload, nil
+	case err != nil:
+		return nil, err
+	default:
+		return nil, fmt.Errorf("%w: peer sent trailing bytes after the frame", ErrFraming)
+	}
+}
+
+// isEOF reports whether err is the stream ending where more of the frame was
+// expected — a short frame either way, whether the peer stopped on a header
+// boundary or inside a payload.
+func isEOF(err error) bool {
+	return errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF)
+}
+
 // Conn is one established tunnel.
 type Conn struct {
 	c *quic.Conn
 }
 
-// Exchange sends one request on a fresh stream and returns the response. The
-// request ends when its stream's write side closes; the response ends at
-// end-of-stream.
+// Exchange sends one request as a frame on a fresh stream and returns the
+// peer's response frame. Concurrent calls on one Conn each take their own
+// stream and neither waits on the other: that is the whole reason the
+// transport is QUIC rather than one TLS connection per tunnel.
 func (c *Conn) Exchange(ctx context.Context, request []byte) ([]byte, error) {
 	s, err := c.c.OpenStreamSync(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("tunnel: opening a stream: %w", err)
 	}
-	defer s.CancelRead(0)
-	if _, err := s.Write(request); err != nil {
+	if err := writeFrame(s, request); err != nil {
+		s.CancelWrite(0)
+		s.CancelRead(0)
 		return nil, fmt.Errorf("tunnel: sending the request: %w", err)
 	}
-	if err := s.Close(); err != nil {
-		return nil, fmt.Errorf("tunnel: finishing the request: %w", err)
-	}
-	response, err := io.ReadAll(s)
+	response, err := readFrame(s)
 	if err != nil {
+		s.CancelRead(0)
+		c.refuse(err)
 		return nil, fmt.Errorf("tunnel: reading the response: %w", err)
 	}
 	return response, nil
+}
+
+// refuse ends the connection when err is a framing violation. A peer that
+// cannot frame is not one to keep a tunnel to, and leaving the connection up
+// would mean the bytes it smuggled were merely discarded rather than
+// refused. Errors that are not framing violations leave it alone.
+func (c *Conn) refuse(err error) {
+	if errors.Is(err, ErrFraming) {
+		c.c.CloseWithError(errProtocol, "framing")
+	}
 }
 
 // Handler answers one exchange.
 type Handler func(ctx context.Context, request []byte) ([]byte, error)
 
 // Serve answers exchanges on c until the connection ends. Each stream is one
-// exchange; a handler error closes that stream without a response.
+// exchange, answered on its own goroutine so that a slow handler holds up
+// only its own caller; a handler error closes that stream without a
+// response, and a peer that breaks the framing ends the connection.
 func (c *Conn) Serve(handler Handler) error {
 	for {
 		s, err := c.c.AcceptStream(c.c.Context())
@@ -229,9 +332,11 @@ func (c *Conn) Serve(handler Handler) error {
 			return err
 		}
 		go func() {
-			request, err := io.ReadAll(s)
+			request, err := readFrame(s)
 			if err != nil {
 				s.CancelWrite(0)
+				s.CancelRead(0)
+				c.refuse(err)
 				return
 			}
 			response, err := handler(c.c.Context(), request)
@@ -239,8 +344,9 @@ func (c *Conn) Serve(handler Handler) error {
 				s.CancelWrite(0)
 				return
 			}
-			s.Write(response)
-			s.Close()
+			if err := writeFrame(s, response); err != nil {
+				s.CancelWrite(0)
+			}
 		}()
 	}
 }

@@ -22,9 +22,10 @@ alternative (the go1.26.3 inside
 the version is pinned by the `go` directive in `go.mod` rather than by which binary is invoked,
 so a reader who runs the commands above gets the same compiler whatever `go` resolves to.
 
-Every test runs against fake hardware with test signing. No confidential VM and no network is
-required: the tunneld tests talk over loopback on ephemeral ports, and the suite passes inside
-an empty network namespace with only loopback up:
+Almost every test runs against fake hardware with test signing; the exceptions replay reports
+that real silicon produced, captured under `docs/snp/evidence`. Either way no confidential VM
+and no network is required: the tunneld tests talk over loopback on ephemeral ports, and the
+suite passes inside an empty network namespace with only loopback up:
 
 ```sh
 unshare -rn sh -c 'ip link set lo up && env PATH=/usr/local/go/bin:$PATH HOME=$HOME go test ./...'
@@ -53,6 +54,7 @@ iteration of unproven code.
 | `snpfake` | A fake SEV-SNP platform built on `go-sev-guest`'s test signing. Implements the acquisition half of the seam for everything that must run without a confidential VM. Test support, but not a `_test` package, because tunneld's tests inject it through `tunneld.Config`. |
 | `provision` | Ticket 15: fetches the certificate chain for a platform's chip and TCB from AMD's key distribution service once, validates it through `verify`, and writes it beside the reference value set (ADR-0005); the consumer half loads it and refuses a missing or stale chain rather than fetching. Procedure: `docs/provisioning-certificate-chain.md`. |
 | `cmd/provision-chain` | The operator command over `provision`: `fetch` and `check`. |
+| `cmd/verify-evidence` | Ticket 05: the command that takes a verdict on a bundle from outside the guest that produced it — load the signed set, wire it to the verifier, exit 0 on acceptance and 2 on refusal. Procedure: `docs/verification-on-hardware.md`. |
 | `ratls`   | The certificate as a serialization envelope: a versioned payload under a private arc carrying the evidence, the chain and the binding context, and the handshake callback that runs `Verification.Verify` on the peer's. Nothing else in the certificate is read. |
 | `tunnel`  | The transport: QUIC with TLS 1.3, early data refused on both ends, one exchange per stream, and the establishment round trip. Knows nothing about attestation. |
 | `tunneld` | The composition root and the public API: `New` with a `Config`, `Peer(name)` yielding a `Channel`, `Channel.Exchange`. |
@@ -138,6 +140,33 @@ who gets in. The spec's module list names a separate `refvals` package for the f
 became `attest/refvals.go` rather than a package. A separate package would have to import `attest`
 for `ReferenceValueSet`, so `attest` could not expose the loader, and the loader would then be a
 second public surface for tests to drive.
+
+## Verification on real hardware
+
+Milestone 1 (ticket 05) is the first point at which a report from a physical AMD processor is
+checked against AMD's own root, outside the guest that produced it, against a set signed for
+that guest. It needed no new verification code — `attest/cmd/verify-evidence` loads a set,
+wires it to `verify`, and asks `Verification.Verify` for a verdict — and it is established by
+a recorded harness, `docs/snp/verify-on-hardware.sh`, because a live guest cannot be replayed.
+
+Three things about the run are decided rather than incidental:
+
+- **The reference value was predicted before the guest was asked anything.** A measurement
+  read off a booted platform makes a check that cannot fail
+  (`docs/snp-measurement-prediction.md`), so the harness predicts the stock guest's **M** from
+  the firmware image and the launch parameters, authors and signs the set, and only then
+  acquires evidence.
+- **The verdicts were taken with the vendor unreachable, and then again with it reachable.**
+  The first shows verification needs no network; the second shows the refusals are decisions
+  rather than failed fetches. `verify`'s `offlineGetter` and `tsm`'s import allowlist test are
+  the structural guards for both.
+- **A stale chain does not surface as this design's documents say it does.** AMD derives the
+  VCEK per TCB, so a stale chain carries a different key and the report's signature fails
+  first: the verdict is `ReasonChainNotRooted`, not `ReasonMalformedEvidence`. See
+  `docs/verification-on-hardware.md`, *What this run corrected*.
+
+`hardwareevidence_test.go` replays the captured artifacts offline on every `go test`, as a
+regression guard on that conclusion rather than as a substitute for it.
 
 ## The signed reference value set
 

@@ -1,0 +1,17 @@
+# Mutation "initrd" of /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/base, written to /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/initrd.
+
+source change: the initrd's /init, 1 byte of 3074
+  a comment, "# Job:" -> "# job:": nothing the guest executes changed
+cpio archive before gzip: 1 byte of 3119104
+  gzip's output diverges from that byte onwards, which is why initrd.img differs in bulk
+
+## Byte differences against the base image, per measured file.
+OVMF.fd: identical
+vmlinuz: identical
+initrd.img: 1507234 -> 1507235 bytes, 1501338 byte(s) differ in the common prefix
+cmdline.txt: identical
+rootfs.img: identical
+base command line: console=ttyS0 earlyprintk=serial panic=-1 rdinit=/init verity.roothash=0a39885f42df7f8ab2996be4e64047105489a162e5d842ac966236d8cb794f3b verity.salt=- verity.datablocks=872 verity.hashstart=872
+this command line: console=ttyS0 earlyprintk=serial panic=-1 rdinit=/init verity.roothash=0a39885f42df7f8ab2996be4e64047105489a162e5d842ac966236d8cb794f3b verity.salt=- verity.datablocks=872 verity.hashstart=872
+base command line sha256 (as measured, no newline, plus NUL is added by QEMU): a01ce3ffbe647fee4b8f150603effebcb09ad5393ff25196db9f785c63c92bc1
+this command line sha256: a01ce3ffbe647fee4b8f150603effebcb09ad5393ff25196db9f785c63c92bc1

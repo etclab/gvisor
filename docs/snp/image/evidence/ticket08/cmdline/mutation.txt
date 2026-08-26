@@ -1,0 +1,16 @@
+# Mutation "cmdline" of /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/base, written to /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/cmdline.
+
+source change: one space appended to the kernel command line
+  the measured string is the file without its newline, so it goes from 192 to 193 bytes
+  the kernel ignores it, and no rendering of the file shows it
+
+## Byte differences against the base image, per measured file.
+OVMF.fd: identical
+vmlinuz: identical
+initrd.img: identical
+cmdline.txt: 193 -> 194 bytes, 1 byte(s) differ in the common prefix
+rootfs.img: identical
+base command line: console=ttyS0 earlyprintk=serial panic=-1 rdinit=/init verity.roothash=0a39885f42df7f8ab2996be4e64047105489a162e5d842ac966236d8cb794f3b verity.salt=- verity.datablocks=872 verity.hashstart=872
+this command line: console=ttyS0 earlyprintk=serial panic=-1 rdinit=/init verity.roothash=0a39885f42df7f8ab2996be4e64047105489a162e5d842ac966236d8cb794f3b verity.salt=- verity.datablocks=872 verity.hashstart=872 
+base command line sha256 (as measured, no newline, plus NUL is added by QEMU): a01ce3ffbe647fee4b8f150603effebcb09ad5393ff25196db9f785c63c92bc1
+this command line sha256: bc0c95ee0ec96a3ca86d6cd43e42a799e6703706b873facddda5775c11f203f4

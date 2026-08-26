@@ -1,0 +1,27 @@
+# Inputs of the reference value set emitted beside this file (ticket 07).
+# The launch measurement in reference-values.json is a prediction from these
+# inputs. It was not read from any machine.
+
+reference-values.json sha256: 2ad610b84f355b86365eb7f4c111a6a38b36e8c61d3a72bf1af41847252d268a
+signed by author key:         32ecdecef187bf48c7d7d3b0c61345d5fc85f8252a241f3f87c95bbfccf5947b (Ed25519; also at /etc/attested-tunnel/author.pub in rootfs.img)
+launch policy:                0x30000
+tcb floor (authoring choice): 9,0,23,72 (bootloader,tee,snp,microcode)
+
+# Predicted SEV-SNP launch measurement, computed offline from the inputs below.
+# Not read from any machine. Cross-checked once: docs/snp-measurement-prediction.md.
+launch_measurement: 16c37b84895e01c363fa2b0844d98d44340cf524c49017e15a0511126b89e3ef225b169f29351026230d65e19657883b
+
+## Inputs (sha256 of each file as measured; cmdline is the -append string plus NUL)
+ffd6bfa8c76c460a4dba62c39b2c9cf5a7ac425148eede7fb610f4c3cd96a895  OVMF.fd
+c3b443dbdafbaf3cb92d119482143a76876a752c7335a61faa917361d9724b75  vmlinuz
+7dbb73ca192dab3d11755a0b3d5ce86f5118881377c8c94117445e55ddf5282b  initrd.img
+a01ce3ffbe647fee4b8f150603effebcb09ad5393ff25196db9f785c63c92bc1  cmdline (192 bytes + NUL)
+cmdline: console=ttyS0 earlyprintk=serial panic=-1 rdinit=/init verity.roothash=0a39885f42df7f8ab2996be4e64047105489a162e5d842ac966236d8cb794f3b verity.salt=- verity.datablocks=872 verity.hashstart=872
+vcpus: 4
+vcpu_type: EPYC-v4
+vmm: QEMU (sev-snp-guest, kernel-hashes=on; firmware OvmfPkg/AmdSev/AmdSevX64 with BlobVerifierLibSevHashes)
+guest_features: 0x1 (sev-snp-measure default: SNPActive)
+tool: sev-snp-measure 0.0.13 (pip, virtualenv /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/sev-snp-measure-venv-ticket08)
+
+## The measured files' provenance is in manifest.txt; rootfs.img enters through
+## verity.roothash on the command line: 0a39885f42df7f8ab2996be4e64047105489a162e5d842ac966236d8cb794f3b

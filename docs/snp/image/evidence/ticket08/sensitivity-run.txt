@@ -1,0 +1,615 @@
+
+=== 0. Provenance ===
+date              : 2026-08-26T03:54:38Z
+host              : shs1
+repository        : /home/pniroula/Projects/gvisor-ticket08 at 45873d5bf (ticket-08-m2-measurement-sensitivity)
+host kernel       : 6.11.0-rc3-snp-host-85ef1ac03941
+work directory    : /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08
+go                : go version go1.26.3 linux/amd64
+predictor         : sev-snp-measure 0.0.13 (/home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/sev-snp-measure-venv-ticket08)
+qemu              : QEMU emulator version 10.0.0
+firmware (AmdSev) : /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/usr/local/share/qemu/OVMF.amdsev.fd
+                    sha256 ffd6bfa8c76c460a4dba62c39b2c9cf5a7ac425148eede7fb610f4c3cd96a895
+author key        : /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-inputs/author/reference-value-author.key
+provisioned chain : /home/pniroula/Projects/gvisor-ticket08/docs/snp/evidence/certificate-chain.bin
+                    sha256 0957b4aa0678b511c89d6f9b49742ab114043b662408b13e9f7b43d1033d5a81
+root mode         : spool
+
+=== 1. Build the baseline image, and predict its measurement offline ===
+    TUNNELD = /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/report-evidence (6910114 bytes, ELF 64-bit LSB executable, x86-64, version 1 (SYSV))
+    -rw------- 1 pniroula 253477      193 Aug 25 23:54 cmdline.txt
+    -rw------- 1 pniroula 253477  1507234 Aug 25 23:54 initrd.img
+    -rw------- 1 pniroula 253477     4388 Aug 25 23:54 manifest.txt
+    -rw------- 1 pniroula 253477  4194304 Aug 25 23:54 OVMF.fd
+    -rw------- 1 pniroula 253477     1240 Aug 25 23:54 predicted-measurement.txt
+    -rw------- 1 pniroula 253477     1987 Aug 25 23:54 reference-values.inputs.txt
+    -rw------- 1 pniroula 253477      582 Aug 25 23:54 reference-values.json
+    -rw------- 1 pniroula 253477      129 Aug 25 23:54 reference-values.json.sig
+    -rw------- 1 pniroula 253477  3604480 Aug 25 23:54 rootfs.img
+    -rw------- 1 pniroula 253477 12825088 Aug 25 23:54 vmlinuz
+    command line: console=ttyS0 earlyprintk=serial panic=-1 rdinit=/init verity.roothash=0a39885f42df7f8ab2996be4e64047105489a162e5d842ac966236d8cb794f3b verity.salt=- verity.datablocks=872 verity.hashstart=872
+    predicted launch measurement: 16c37b84895e01c363fa2b0844d98d44340cf524c49017e15a0511126b89e3ef225b169f29351026230d65e19657883b
+
+    baseline predicted launch measurement: 16c37b84895e01c363fa2b0844d98d44340cf524c49017e15a0511126b89e3ef225b169f29351026230d65e19657883b
+    signed into /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/base/reference-values.json, author 32ecdecef187bf48c7d7d3b0c61345d5fc85f8252a241f3f87c95bbfccf5947b
+    this is the ONE reference value set every verdict below is taken against
+
+=== 2. Build the five variants and predict each of them, before any boot ===
+
+--- none: control: nothing changed, both regenerated inputs rebuilt ---
+    # Mutation "none" of /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/base, written to /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/none.
+    
+    no source change: this is the control on the mutator, not a mutation
+    
+    ## Byte differences against the base image, per measured file.
+    OVMF.fd: identical
+    vmlinuz: identical
+    initrd.img: identical
+    cmdline.txt: identical
+    rootfs.img: identical
+    base command line: console=ttyS0 earlyprintk=serial panic=-1 rdinit=/init verity.roothash=0a39885f42df7f8ab2996be4e64047105489a162e5d842ac966236d8cb794f3b verity.salt=- verity.datablocks=872 verity.hashstart=872
+    this command line: console=ttyS0 earlyprintk=serial panic=-1 rdinit=/init verity.roothash=0a39885f42df7f8ab2996be4e64047105489a162e5d842ac966236d8cb794f3b verity.salt=- verity.datablocks=872 verity.hashstart=872
+    base command line sha256 (as measured, no newline, plus NUL is added by QEMU): a01ce3ffbe647fee4b8f150603effebcb09ad5393ff25196db9f785c63c92bc1
+    this command line sha256: a01ce3ffbe647fee4b8f150603effebcb09ad5393ff25196db9f785c63c92bc1
+    predicted launch measurement: 16c37b84895e01c363fa2b0844d98d44340cf524c49017e15a0511126b89e3ef225b169f29351026230d65e19657883b
+
+--- rootfs-file: root filesystem: one hex character of /etc/attested-tunnel/author.pub ---
+    # Mutation "rootfs-file" of /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/base, written to /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/rootfs-file.
+    
+    source change: /etc/attested-tunnel/author.pub, 1 byte of 65
+      the reference value author's public key (ADR-0004): ...ccf5947b -> ...ccf5947c
+      the squashfs is then rebuilt over it, so rootfs.img differs by more than one byte:
+      zstd re-compresses the block the file sits in, and the metadata around it moves.
+    
+    ## Byte differences against the base image, per measured file.
+    OVMF.fd: identical
+    vmlinuz: identical
+    initrd.img: identical
+    cmdline.txt: 60 byte(s) differ of 193
+    rootfs.img: 15456 byte(s) differ of 3604480
+    rootfs.img data region (first 3571712 bytes): 15265 byte(s) differ; the rest is the re-derived hash tree
+    base command line: console=ttyS0 earlyprintk=serial panic=-1 rdinit=/init verity.roothash=0a39885f42df7f8ab2996be4e64047105489a162e5d842ac966236d8cb794f3b verity.salt=- verity.datablocks=872 verity.hashstart=872
+    this command line: console=ttyS0 earlyprintk=serial panic=-1 rdinit=/init verity.roothash=6a1ce69ef2ee70c6f98521d9b2973e560f285874884b9a4eaa0a8a8721464cd9 verity.salt=- verity.datablocks=872 verity.hashstart=872
+    base command line sha256 (as measured, no newline, plus NUL is added by QEMU): a01ce3ffbe647fee4b8f150603effebcb09ad5393ff25196db9f785c63c92bc1
+    this command line sha256: 08005ac780d9b80ac49218e028c5f01bebec235ef947df20ba4812f7bc03fe6b
+    predicted launch measurement: b3d63753de71d184a5c13efb7fe9a334debb44c4df9fa1da0cde8b7c927b43cdf37255102505521cc79f85ba5d0a54f1
+
+--- rootfs-byte: root filesystem: one byte of rootfs.img, at a fixed offset ---
+    # Mutation "rootfs-byte" of /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/base, written to /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/rootfs-byte.
+    
+    source change: rootfs.img byte 3571711 of 3571712 (0x367fff), 0 -> 1
+      one byte of the measured root filesystem image, and nothing else
+    
+    ## Byte differences against the base image, per measured file.
+    OVMF.fd: identical
+    vmlinuz: identical
+    initrd.img: identical
+    cmdline.txt: 58 byte(s) differ of 193
+    rootfs.img: 63 byte(s) differ of 3604480
+    rootfs.img data region (first 3571712 bytes): 1 byte(s) differ; the rest is the re-derived hash tree
+    base command line: console=ttyS0 earlyprintk=serial panic=-1 rdinit=/init verity.roothash=0a39885f42df7f8ab2996be4e64047105489a162e5d842ac966236d8cb794f3b verity.salt=- verity.datablocks=872 verity.hashstart=872
+    this command line: console=ttyS0 earlyprintk=serial panic=-1 rdinit=/init verity.roothash=34f18651a5247ad0accdfa847059934f0f46d9713e21559ea67fb1738a942631 verity.salt=- verity.datablocks=872 verity.hashstart=872
+    base command line sha256 (as measured, no newline, plus NUL is added by QEMU): a01ce3ffbe647fee4b8f150603effebcb09ad5393ff25196db9f785c63c92bc1
+    this command line sha256: 1deb2be1d6f82383412113a44eac14eeb577896326402ad3c821ce7cc8e4dea3
+    predicted launch measurement: 218777e1b7d96f05ce288ce1b6de2e5b81b725792960c6b047b57196ca5dc640d82ad0a654633f788945de527a72100d
+
+--- initrd: initrd: one byte of a comment in /init ---
+    # Mutation "initrd" of /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/base, written to /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/initrd.
+    
+    source change: the initrd's /init, 1 byte of 3074
+      a comment, "# Job:" -> "# job:": nothing the guest executes changed
+    cpio archive before gzip: 1 byte of 3119104
+      gzip's output diverges from that byte onwards, which is why initrd.img differs in bulk
+    
+    ## Byte differences against the base image, per measured file.
+    OVMF.fd: identical
+    vmlinuz: identical
+    initrd.img: 1507234 -> 1507235 bytes, 1501338 byte(s) differ in the common prefix
+    cmdline.txt: identical
+    rootfs.img: identical
+    base command line: console=ttyS0 earlyprintk=serial panic=-1 rdinit=/init verity.roothash=0a39885f42df7f8ab2996be4e64047105489a162e5d842ac966236d8cb794f3b verity.salt=- verity.datablocks=872 verity.hashstart=872
+    this command line: console=ttyS0 earlyprintk=serial panic=-1 rdinit=/init verity.roothash=0a39885f42df7f8ab2996be4e64047105489a162e5d842ac966236d8cb794f3b verity.salt=- verity.datablocks=872 verity.hashstart=872
+    base command line sha256 (as measured, no newline, plus NUL is added by QEMU): a01ce3ffbe647fee4b8f150603effebcb09ad5393ff25196db9f785c63c92bc1
+    this command line sha256: a01ce3ffbe647fee4b8f150603effebcb09ad5393ff25196db9f785c63c92bc1
+    predicted launch measurement: 43213f81f1a9b592d9281c51848d732165090a32ab11f1881c46dfcd171271d088ccf6519ea381a81d07d88f73f32bbf
+
+--- cmdline: kernel command line: one trailing space ---
+    # Mutation "cmdline" of /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/base, written to /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/cmdline.
+    
+    source change: one space appended to the kernel command line
+      the measured string is the file without its newline, so it goes from 192 to 193 bytes
+      the kernel ignores it, and no rendering of the file shows it
+    
+    ## Byte differences against the base image, per measured file.
+    OVMF.fd: identical
+    vmlinuz: identical
+    initrd.img: identical
+    cmdline.txt: 193 -> 194 bytes, 1 byte(s) differ in the common prefix
+    rootfs.img: identical
+    base command line: console=ttyS0 earlyprintk=serial panic=-1 rdinit=/init verity.roothash=0a39885f42df7f8ab2996be4e64047105489a162e5d842ac966236d8cb794f3b verity.salt=- verity.datablocks=872 verity.hashstart=872
+    this command line: console=ttyS0 earlyprintk=serial panic=-1 rdinit=/init verity.roothash=0a39885f42df7f8ab2996be4e64047105489a162e5d842ac966236d8cb794f3b verity.salt=- verity.datablocks=872 verity.hashstart=872 
+    base command line sha256 (as measured, no newline, plus NUL is added by QEMU): a01ce3ffbe647fee4b8f150603effebcb09ad5393ff25196db9f785c63c92bc1
+    this command line sha256: bc0c95ee0ec96a3ca86d6cd43e42a799e6703706b873facddda5775c11f203f4
+    predicted launch measurement: 62ad80bfb3ec63c6be5ab95a42b32ea7a4c2918c6d018c808919e5160e5c0d667b5c68b015d4a53bf3d8d939a551b86a
+
+=== 2a. Assertions on the predictions — all of them offline, none of them a readback ===
+PASS: CONTROL: regenerating both inputs with nothing changed predicts the baseline measurement
+PASS: CONTROL: OVMF.fd came back byte-identical
+PASS: CONTROL: vmlinuz came back byte-identical
+PASS: CONTROL: initrd.img came back byte-identical
+PASS: CONTROL: cmdline.txt came back byte-identical
+PASS: CONTROL: rootfs.img came back byte-identical
+PASS: rootfs-file moves the launch measurement
+PASS: rootfs-byte moves the launch measurement
+PASS: initrd moves the launch measurement
+PASS: cmdline moves the launch measurement
+PASS: the four mutations predict four different measurements, not one shared "changed" value
+PASS: rootfs-file left OVMF.fd byte-identical
+PASS: rootfs-file left vmlinuz byte-identical
+PASS: rootfs-file left initrd.img byte-identical
+PASS: rootfs-byte left OVMF.fd byte-identical
+PASS: rootfs-byte left vmlinuz byte-identical
+PASS: rootfs-byte left initrd.img byte-identical
+PASS: initrd left OVMF.fd byte-identical
+PASS: initrd left vmlinuz byte-identical
+PASS: initrd left cmdline.txt byte-identical
+PASS: initrd left rootfs.img byte-identical
+PASS: cmdline left OVMF.fd byte-identical
+PASS: cmdline left vmlinuz byte-identical
+PASS: cmdline left initrd.img byte-identical
+PASS: cmdline left rootfs.img byte-identical
+
+=== 3. How the root filesystem gets into the measurement, since it is not hashed into the firmware ===
+
+--- rootfs-file ---
+    base command line : console=ttyS0 earlyprintk=serial panic=-1 rdinit=/init verity.roothash=0a39885f42df7f8ab2996be4e64047105489a162e5d842ac966236d8cb794f3b verity.salt=- verity.datablocks=872 verity.hashstart=872
+    this command line : console=ttyS0 earlyprintk=serial panic=-1 rdinit=/init verity.roothash=6a1ce69ef2ee70c6f98521d9b2973e560f285874884b9a4eaa0a8a8721464cd9 verity.salt=- verity.datablocks=872 verity.hashstart=872
+    characters differing on the command line: 60, all of them inside verity.roothash=
+    sha256 of the measured command line: a01ce3ffbe647fee4b8f150603effebcb09ad5393ff25196db9f785c63c92bc1
+                                      -> 08005ac780d9b80ac49218e028c5f01bebec235ef947df20ba4812f7bc03fe6b
+PASS: rootfs-file: the command line differs in the verity root hash and in nothing else
+
+--- rootfs-byte ---
+    base command line : console=ttyS0 earlyprintk=serial panic=-1 rdinit=/init verity.roothash=0a39885f42df7f8ab2996be4e64047105489a162e5d842ac966236d8cb794f3b verity.salt=- verity.datablocks=872 verity.hashstart=872
+    this command line : console=ttyS0 earlyprintk=serial panic=-1 rdinit=/init verity.roothash=34f18651a5247ad0accdfa847059934f0f46d9713e21559ea67fb1738a942631 verity.salt=- verity.datablocks=872 verity.hashstart=872
+    characters differing on the command line: 58, all of them inside verity.roothash=
+    sha256 of the measured command line: a01ce3ffbe647fee4b8f150603effebcb09ad5393ff25196db9f785c63c92bc1
+                                      -> 1deb2be1d6f82383412113a44eac14eeb577896326402ad3c821ce7cc8e4dea3
+PASS: rootfs-byte: the command line differs in the verity root hash and in nothing else
+    
+    So the chain is: rootfs byte -> dm-verity root hash -> kernel command line ->
+    the command line's SHA-256 in the hashes table -> the measured firmware page -> M.
+    There is no digest of rootfs.img in the measurement, and looking for one finds nothing.
+
+=== 4. The config device — one device, every boot, outside the measurement ===
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config device written to /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/config.img (c399e9dff2ed8108…, not measured)
+    the same /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/config.img is attached to all 5 boots and to the baseline's
+    nothing in the guest reads reference-values.json: report-evidence acquires and prints,
+    and the verdict is taken outside the guest by cmd/verify-evidence.
+
+=== 5. What dm-verity catches at runtime, and what only the measurement catches ===
+    # Mutation "rootfs-byte" of /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/base, written to /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/rootfs-byte-in-block.
+    
+    source change: rootfs.img byte 65536 of 3571712 (0x10000), 63 -> 62
+      one byte of the measured root filesystem image, and nothing else
+    
+    ## Byte differences against the base image, per measured file.
+    OVMF.fd: identical
+    vmlinuz: identical
+    initrd.img: identical
+    cmdline.txt: 59 byte(s) differ of 193
+    rootfs.img: 65 byte(s) differ of 3604480
+    rootfs.img data region (first 3571712 bytes): 1 byte(s) differ; the rest is the re-derived hash tree
+    base command line: console=ttyS0 earlyprintk=serial panic=-1 rdinit=/init verity.roothash=0a39885f42df7f8ab2996be4e64047105489a162e5d842ac966236d8cb794f3b verity.salt=- verity.datablocks=872 verity.hashstart=872
+    this command line: console=ttyS0 earlyprintk=serial panic=-1 rdinit=/init verity.roothash=3f69edcfdcd157e045b7f452667e9934d7f668dd61985ceba9ad8d3d7c40d5ce verity.salt=- verity.datablocks=872 verity.hashstart=872
+    base command line sha256 (as measured, no newline, plus NUL is added by QEMU): a01ce3ffbe647fee4b8f150603effebcb09ad5393ff25196db9f785c63c92bc1
+    this command line sha256: eafd80bfc83993ba53a5e65906453b928c51a7ccde4c5293b4aabdc035532c4d
+    predicted launch measurement: baf86f78baa1a9fa9f0c44f35df43a48fab5926aba893599e5ababf123df0a4afb99f048715e4db15f39edce4eb9ac98
+
+    $ launch-measured-guest.sh -no-snp -image /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/rootfs-byte
+    control boot: using non-verifying firmware /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/usr/local/share/qemu/OVMF.fd, not the image's
+    initrd: dm-verity mapping /dev/dm-0 active (panic_on_corruption)
+    initrd: root filesystem mounted read-only
+    init: running /usr/bin/tunneld
+    init: tunneld exited with status 2; powering off
+
+    $ launch-measured-guest.sh -no-snp -image /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/rootfs-byte-in-block
+    control boot: using non-verifying firmware /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/usr/local/share/qemu/OVMF.fd, not the image's
+    initrd: dm-verity mapping /dev/dm-0 active (panic_on_corruption)
+    initrd: root filesystem mounted read-only
+    [    0.989444] SQUASHFS error: zstd decompression error: 70
+    [    0.990406] SQUASHFS error: zstd decompression failed, data probably corrupt
+    [    0.991540] SQUASHFS error: Failed to read block 0xcde9: -5
+    [    0.992898] SQUASHFS error: zstd decompression error: 70
+    [    0.993804] SQUASHFS error: zstd decompression failed, data probably corrupt
+    [    0.994952] SQUASHFS error: Failed to read block 0xcde9: -5
+PASS: a byte inside a compressed block moves the measurement too
+PASS: and at runtime it is squashfs that fails, on a block it cannot decompress
+PASS: dm-verity reports no corruption: the tree was re-derived, so the image agrees with its root hash
+PASS: and nothing panicked the way ticket 06's flipped byte under a stale root hash did
+PASS: while the padding-byte variant boots cleanly, dm-verity equally content
+PASS: its modified root filesystem mounts without a complaint from anything
+    
+    So: dm-verity secures the root filesystem against a change made under a fixed root hash.
+    It cannot secure the root hash. The launch measurement is what does, and it is why a
+    self-consistent modified image — verity-clean, mounting without complaint — is still refused.
+
+=== 6. Boot each image as a confidential guest ===
+$ (as root) bash /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/boot.job
+    waiting for the privileged job ticket08-3681255-boot in /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/root-spool
+    if nothing happens, the root runner is not started; in another terminal:
+        sudo bash /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/root-runner.sh
+    still waiting (60s) for ticket08-3681255-boot
+=== booting base ===
+base: qemu exited 0
+=== booting none ===
+none: qemu exited 0
+=== booting rootfs-file ===
+rootfs-file: qemu exited 0
+=== booting rootfs-byte ===
+rootfs-byte: qemu exited 0
+=== booting initrd ===
+initrd: qemu exited 0
+=== booting cmdline ===
+cmdline: qemu exited 0
+    the privileged job exited 0
+
+=== 6a. What each guest said ===
+
+--- base ---
+    [    0.214039] Memory Encryption Features active: AMD SEV SEV-ES SEV-SNP
+    [    0.393016] SEV: SNP running at VMPL0.
+    initrd: verity root hash 0a39885f42df7f8ab2996be4e64047105489a162e5d842ac966236d8cb794f3b
+    initrd: root filesystem image on /dev/vda
+    initrd: dm-verity mapping /dev/dm-0 active (panic_on_corruption)
+    initrd: root filesystem mounted read-only
+    initrd: config device /dev/vdb mounted at /config (ro,noexec,nosuid,nodev)
+    initrd: switching root
+    init: kernel 6.16.0-snp-guest-038d61fd6422
+    init: dmesg: [    0.214039] Memory Encryption Features active: AMD SEV SEV-ES SEV-SNP
+    init: dmesg: [    0.215016] SEV: Status: SEV SEV-ES SEV-SNP 
+    init: dmesg: [    0.328035] SEV: APIC: wakeup_secondary_cpu() replaced with wakeup_cpu_via_vmgexit()
+    init: dmesg: [    0.392168] SEV: Using SNP CPUID table, 28 entries present.
+    init: dmesg: [    0.393016] SEV: SNP running at VMPL0.
+    init: dmesg: [    0.770620] SEV: SNP guest platform devices initialized.
+    init: sev-guest loaded: report interface at /sys/kernel/config/tsm/report
+    init: mount: devtmpfs /dev devtmpfs rw,nosuid,noexec,relatime,size=936548k,nr_inodes=234137,mode=755,inode64 0 0
+    init: mount: /dev/dm-0 / squashfs ro,relatime,errors=continue,threads=single 0 0
+    init: mount: /dev/vdb /config ext4 ro,nosuid,nodev,noexec,relatime 0 0
+    init: mount: proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+    init: mount: sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+    init: mount: tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,inode64 0 0
+    init: mount: tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,inode64 0 0
+    init: mount: configfs /sys/kernel/config configfs rw,nosuid,nodev,noexec,relatime 0 0
+    init: no writable path is executable
+    init: running /usr/bin/tunneld
+    report-evidence: tsm: provider "sev_guest" (amd-sev-snp) returned 1184 bytes of evidence over 1 write(s); its own certificate table is empty (auxblob, 0 bytes), which is the expected state on this host and not an error; bundled the 4759-byte chain provisioned in /config for chip 9b3716…5243 at bootloader=9 tee=0 snp=23 microcode=72 (ADR-0005)
+    report-evidence: caller-supplied ccaef285de829f2669b38e0cd61353ad8247e4897bf24fd4d3a308cc6f32dd414ac9049c3dd16f7e5cdc7de9915bc4c480278f1bcb5244ab1da051616830b0f7
+    report-evidence: launch measurement as reported by the platform: 16c37b84895e01c363fa2b0844d98d44340cf524c49017e15a0511126b89e3ef225b169f29351026230d65e19657883b
+    report-evidence: bundle complete
+
+--- none ---
+    [    0.210456] Memory Encryption Features active: AMD SEV SEV-ES SEV-SNP
+    [    0.388433] SEV: SNP running at VMPL0.
+    initrd: verity root hash 0a39885f42df7f8ab2996be4e64047105489a162e5d842ac966236d8cb794f3b
+    initrd: root filesystem image on /dev/vda
+    initrd: dm-verity mapping /dev/dm-0 active (panic_on_corruption)
+    initrd: root filesystem mounted read-only
+    initrd: config device /dev/vdb mounted at /config (ro,noexec,nosuid,nodev)
+    initrd: switching root
+    init: kernel 6.16.0-snp-guest-038d61fd6422
+    init: dmesg: [    0.210456] Memory Encryption Features active: AMD SEV SEV-ES SEV-SNP
+    init: dmesg: [    0.211432] SEV: Status: SEV SEV-ES SEV-SNP 
+    init: dmesg: [    0.325450] SEV: APIC: wakeup_secondary_cpu() replaced with wakeup_cpu_via_vmgexit()
+    init: dmesg: [    0.387934] SEV: Using SNP CPUID table, 28 entries present.
+    init: dmesg: [    0.388433] SEV: SNP running at VMPL0.
+    init: dmesg: [    0.753523] SEV: SNP guest platform devices initialized.
+    init: sev-guest loaded: report interface at /sys/kernel/config/tsm/report
+    init: mount: devtmpfs /dev devtmpfs rw,nosuid,noexec,relatime,size=936544k,nr_inodes=234136,mode=755,inode64 0 0
+    init: mount: /dev/dm-0 / squashfs ro,relatime,errors=continue,threads=single 0 0
+    init: mount: /dev/vdb /config ext4 ro,nosuid,nodev,noexec,relatime 0 0
+    init: mount: proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+    init: mount: sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+    init: mount: tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,inode64 0 0
+    init: mount: tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,inode64 0 0
+    init: mount: configfs /sys/kernel/config configfs rw,nosuid,nodev,noexec,relatime 0 0
+    init: no writable path is executable
+    init: running /usr/bin/tunneld
+    report-evidence: tsm: provider "sev_guest" (amd-sev-snp) returned 1184 bytes of evidence over 1 write(s); its own certificate table is empty (auxblob, 0 bytes), which is the expected state on this host and not an error; bundled the 4759-byte chain provisioned in /config for chip 9b3716…5243 at bootloader=9 tee=0 snp=23 microcode=72 (ADR-0005)
+    report-evidence: caller-supplied 0674b3dbb145d53e0c1352ce8a8bcb821be172e26ad0ad102837b29a3ba1f08eff8eb4393b2c03878dd2181162a67e17fbd2aa6f874f92dfaa33ff2d5c8f82b5
+    report-evidence: launch measurement as reported by the platform: 16c37b84895e01c363fa2b0844d98d44340cf524c49017e15a0511126b89e3ef225b169f29351026230d65e19657883b
+    report-evidence: bundle complete
+
+--- rootfs-file ---
+    [    0.210169] Memory Encryption Features active: AMD SEV SEV-ES SEV-SNP
+    [    0.387148] SEV: SNP running at VMPL0.
+    initrd: verity root hash 6a1ce69ef2ee70c6f98521d9b2973e560f285874884b9a4eaa0a8a8721464cd9
+    initrd: root filesystem image on /dev/vda
+    initrd: dm-verity mapping /dev/dm-0 active (panic_on_corruption)
+    initrd: root filesystem mounted read-only
+    initrd: config device /dev/vdb mounted at /config (ro,noexec,nosuid,nodev)
+    initrd: switching root
+    init: kernel 6.16.0-snp-guest-038d61fd6422
+    init: dmesg: [    0.210169] Memory Encryption Features active: AMD SEV SEV-ES SEV-SNP
+    init: dmesg: [    0.211147] SEV: Status: SEV SEV-ES SEV-SNP 
+    init: dmesg: [    0.325166] SEV: APIC: wakeup_secondary_cpu() replaced with wakeup_cpu_via_vmgexit()
+    init: dmesg: [    0.386217] SEV: Using SNP CPUID table, 28 entries present.
+    init: dmesg: [    0.387148] SEV: SNP running at VMPL0.
+    init: dmesg: [    0.779963] SEV: SNP guest platform devices initialized.
+    init: sev-guest loaded: report interface at /sys/kernel/config/tsm/report
+    init: mount: devtmpfs /dev devtmpfs rw,nosuid,noexec,relatime,size=936548k,nr_inodes=234137,mode=755,inode64 0 0
+    init: mount: /dev/dm-0 / squashfs ro,relatime,errors=continue,threads=single 0 0
+    init: mount: /dev/vdb /config ext4 ro,nosuid,nodev,noexec,relatime 0 0
+    init: mount: proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+    init: mount: sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+    init: mount: tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,inode64 0 0
+    init: mount: tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,inode64 0 0
+    init: mount: configfs /sys/kernel/config configfs rw,nosuid,nodev,noexec,relatime 0 0
+    init: no writable path is executable
+    init: running /usr/bin/tunneld
+    report-evidence: tsm: provider "sev_guest" (amd-sev-snp) returned 1184 bytes of evidence over 1 write(s); its own certificate table is empty (auxblob, 0 bytes), which is the expected state on this host and not an error; bundled the 4759-byte chain provisioned in /config for chip 9b3716…5243 at bootloader=9 tee=0 snp=23 microcode=72 (ADR-0005)
+    report-evidence: caller-supplied 4670dc9a4fe15b6e1beb1b3fea6a5bc80d814ef9a99cd60456baf45efe2cb1b3177dea6e9a9698db2be39344e0e7144d56fc032f175a6d96c7d81fa3faf39b13
+    report-evidence: launch measurement as reported by the platform: b3d63753de71d184a5c13efb7fe9a334debb44c4df9fa1da0cde8b7c927b43cdf37255102505521cc79f85ba5d0a54f1
+    report-evidence: bundle complete
+
+--- rootfs-byte ---
+    [    0.209795] Memory Encryption Features active: AMD SEV SEV-ES SEV-SNP
+    [    0.385772] SEV: SNP running at VMPL0.
+    initrd: verity root hash 34f18651a5247ad0accdfa847059934f0f46d9713e21559ea67fb1738a942631
+    initrd: root filesystem image on /dev/vda
+    initrd: dm-verity mapping /dev/dm-0 active (panic_on_corruption)
+    initrd: root filesystem mounted read-only
+    initrd: config device /dev/vdb mounted at /config (ro,noexec,nosuid,nodev)
+    initrd: switching root
+    init: kernel 6.16.0-snp-guest-038d61fd6422
+    init: dmesg: [    0.209795] Memory Encryption Features active: AMD SEV SEV-ES SEV-SNP
+    init: dmesg: [    0.211771] SEV: Status: SEV SEV-ES SEV-SNP 
+    init: dmesg: [    0.323790] SEV: APIC: wakeup_secondary_cpu() replaced with wakeup_cpu_via_vmgexit()
+    init: dmesg: [    0.384839] SEV: Using SNP CPUID table, 28 entries present.
+    init: dmesg: [    0.385772] SEV: SNP running at VMPL0.
+    init: dmesg: [    0.846970] SEV: SNP guest platform devices initialized.
+    init: sev-guest loaded: report interface at /sys/kernel/config/tsm/report
+    init: mount: devtmpfs /dev devtmpfs rw,nosuid,noexec,relatime,size=936548k,nr_inodes=234137,mode=755,inode64 0 0
+    init: mount: /dev/dm-0 / squashfs ro,relatime,errors=continue,threads=single 0 0
+    init: mount: /dev/vdb /config ext4 ro,nosuid,nodev,noexec,relatime 0 0
+    init: mount: proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+    init: mount: sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+    init: mount: tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,inode64 0 0
+    init: mount: tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,inode64 0 0
+    init: mount: configfs /sys/kernel/config configfs rw,nosuid,nodev,noexec,relatime 0 0
+    init: no writable path is executable
+    init: running /usr/bin/tunneld
+    report-evidence: tsm: provider "sev_guest" (amd-sev-snp) returned 1184 bytes of evidence over 1 write(s); its own certificate table is empty (auxblob, 0 bytes), which is the expected state on this host and not an error; bundled the 4759-byte chain provisioned in /config for chip 9b3716…5243 at bootloader=9 tee=0 snp=23 microcode=72 (ADR-0005)
+    report-evidence: caller-supplied c161e5372ed48fd428418a2fdbc300d51718cedc99977e300922e702c7be6d9e3f3de3675da330b03519c4a149551332d0228f1a94da7f1d9e10caec19289784
+    report-evidence: launch measurement as reported by the platform: 218777e1b7d96f05ce288ce1b6de2e5b81b725792960c6b047b57196ca5dc640d82ad0a654633f788945de527a72100d
+    report-evidence: bundle complete
+
+--- initrd ---
+    [    0.211203] Memory Encryption Features active: AMD SEV SEV-ES SEV-SNP
+    [    0.388185] SEV: SNP running at VMPL0.
+    initrd: verity root hash 0a39885f42df7f8ab2996be4e64047105489a162e5d842ac966236d8cb794f3b
+    initrd: root filesystem image on /dev/vda
+    initrd: dm-verity mapping /dev/dm-0 active (panic_on_corruption)
+    initrd: root filesystem mounted read-only
+    initrd: config device /dev/vdb mounted at /config (ro,noexec,nosuid,nodev)
+    initrd: switching root
+    init: kernel 6.16.0-snp-guest-038d61fd6422
+    init: dmesg: [    0.211203] Memory Encryption Features active: AMD SEV SEV-ES SEV-SNP
+    init: dmesg: [    0.212179] SEV: Status: SEV SEV-ES SEV-SNP 
+    init: dmesg: [    0.327198] SEV: APIC: wakeup_secondary_cpu() replaced with wakeup_cpu_via_vmgexit()
+    init: dmesg: [    0.387581] SEV: Using SNP CPUID table, 28 entries present.
+    init: dmesg: [    0.388185] SEV: SNP running at VMPL0.
+    init: dmesg: [    0.808176] SEV: SNP guest platform devices initialized.
+    init: sev-guest loaded: report interface at /sys/kernel/config/tsm/report
+    init: mount: devtmpfs /dev devtmpfs rw,nosuid,noexec,relatime,size=936548k,nr_inodes=234137,mode=755,inode64 0 0
+    init: mount: /dev/dm-0 / squashfs ro,relatime,errors=continue,threads=single 0 0
+    init: mount: /dev/vdb /config ext4 ro,nosuid,nodev,noexec,relatime 0 0
+    init: mount: proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+    init: mount: sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+    init: mount: tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,inode64 0 0
+    init: mount: tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,inode64 0 0
+    init: mount: configfs /sys/kernel/config configfs rw,nosuid,nodev,noexec,relatime 0 0
+    init: no writable path is executable
+    init: running /usr/bin/tunneld
+    report-evidence: tsm: provider "sev_guest" (amd-sev-snp) returned 1184 bytes of evidence over 1 write(s); its own certificate table is empty (auxblob, 0 bytes), which is the expected state on this host and not an error; bundled the 4759-byte chain provisioned in /config for chip 9b3716…5243 at bootloader=9 tee=0 snp=23 microcode=72 (ADR-0005)
+    report-evidence: caller-supplied 456c74fc5f920f4ee5fd1687f5a3726479ae6c172e8597614c6cbc9546e5109397c078405a82bf245d690fa2691a76961e8ad1ad07879ca3c750cc4ee6eb8fe3
+    report-evidence: launch measurement as reported by the platform: 43213f81f1a9b592d9281c51848d732165090a32ab11f1881c46dfcd171271d088ccf6519ea381a81d07d88f73f32bbf
+    report-evidence: bundle complete
+
+--- cmdline ---
+    [    0.210545] Memory Encryption Features active: AMD SEV SEV-ES SEV-SNP
+    [    0.388528] SEV: SNP running at VMPL0.
+    initrd: verity root hash 0a39885f42df7f8ab2996be4e64047105489a162e5d842ac966236d8cb794f3b
+    initrd: root filesystem image on /dev/vda
+    initrd: dm-verity mapping /dev/dm-0 active (panic_on_corruption)
+    initrd: root filesystem mounted read-only
+    initrd: config device /dev/vdb mounted at /config (ro,noexec,nosuid,nodev)
+    initrd: switching root
+    init: kernel 6.16.0-snp-guest-038d61fd6422
+    init: dmesg: [    0.210545] Memory Encryption Features active: AMD SEV SEV-ES SEV-SNP
+    init: dmesg: [    0.211522] SEV: Status: SEV SEV-ES SEV-SNP 
+    init: dmesg: [    0.324541] SEV: APIC: wakeup_secondary_cpu() replaced with wakeup_cpu_via_vmgexit()
+    init: dmesg: [    0.387913] SEV: Using SNP CPUID table, 28 entries present.
+    init: dmesg: [    0.388528] SEV: SNP running at VMPL0.
+    init: dmesg: [    0.817252] SEV: SNP guest platform devices initialized.
+    init: sev-guest loaded: report interface at /sys/kernel/config/tsm/report
+    init: mount: devtmpfs /dev devtmpfs rw,nosuid,noexec,relatime,size=936548k,nr_inodes=234137,mode=755,inode64 0 0
+    init: mount: /dev/dm-0 / squashfs ro,relatime,errors=continue,threads=single 0 0
+    init: mount: /dev/vdb /config ext4 ro,nosuid,nodev,noexec,relatime 0 0
+    init: mount: proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+    init: mount: sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+    init: mount: tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,inode64 0 0
+    init: mount: tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,inode64 0 0
+    init: mount: configfs /sys/kernel/config configfs rw,nosuid,nodev,noexec,relatime 0 0
+    init: no writable path is executable
+    init: running /usr/bin/tunneld
+    report-evidence: tsm: provider "sev_guest" (amd-sev-snp) returned 1184 bytes of evidence over 1 write(s); its own certificate table is empty (auxblob, 0 bytes), which is the expected state on this host and not an error; bundled the 4759-byte chain provisioned in /config for chip 9b3716…5243 at bootloader=9 tee=0 snp=23 microcode=72 (ADR-0005)
+    report-evidence: caller-supplied 8a6d0f84a1c9f5075c6b27f89e7555ec2692ccf4ed75bab5d6d60d6b8c71796264bf7819f568fed94c921776ec9312eee765b405f1f704df4324b010abb885ea
+    report-evidence: launch measurement as reported by the platform: 62ad80bfb3ec63c6be5ab95a42b32ea7a4c2918c6d018c808919e5160e5c0d667b5c68b015d4a53bf3d8d939a551b86a
+    report-evidence: bundle complete
+
+=== 7. Recover each bundle from its console and take a verdict on it ===
+    base         evidence 1184 bytes, chain 4759 bytes, reported M 16c37b84895e01c363fa2b0844d98d44340cf524c49017e15a0511126b89e3ef225b169f29351026230d65e19657883b
+    none         evidence 1184 bytes, chain 4759 bytes, reported M 16c37b84895e01c363fa2b0844d98d44340cf524c49017e15a0511126b89e3ef225b169f29351026230d65e19657883b
+    rootfs-file  evidence 1184 bytes, chain 4759 bytes, reported M b3d63753de71d184a5c13efb7fe9a334debb44c4df9fa1da0cde8b7c927b43cdf37255102505521cc79f85ba5d0a54f1
+    rootfs-byte  evidence 1184 bytes, chain 4759 bytes, reported M 218777e1b7d96f05ce288ce1b6de2e5b81b725792960c6b047b57196ca5dc640d82ad0a654633f788945de527a72100d
+    initrd       evidence 1184 bytes, chain 4759 bytes, reported M 43213f81f1a9b592d9281c51848d732165090a32ab11f1881c46dfcd171271d088ccf6519ea381a81d07d88f73f32bbf
+    cmdline      evidence 1184 bytes, chain 4759 bytes, reported M 62ad80bfb3ec63c6be5ab95a42b32ea7a4c2918c6d018c808919e5160e5c0d667b5c68b015d4a53bf3d8d939a551b86a
+$ unshare -rn bash /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/inside-netns.sh /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08 base none rootfs-file rootfs-byte initrd cmdline
+--- this shell's network ---
+1: lo: <LOOPBACK> mtu 65536 qdisc noop state DOWN mode DEFAULT group default qlen 1000\    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+getent rc=2
+--- verdict on the guest booted from: base ---
+evidence            : /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/base/bundle/evidence.bin, 1184 bytes
+certificate chain   : /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/base/bundle/certificate-chain.bin, 4759 bytes (provisioned, ADR-0005)
+public key (SPKI)   : /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/base/bundle/public-key.der, 44 bytes, 302a300506032b65700321002a47e7c25d8c41221ad6005e5e26250f2a804bda9b1ca054769cded297fd6b90
+binding context     : v1, 00000000000000000000000000000000
+vendor root         : the AMD roots embedded in the verification library — no fetch, no file
+reference value set : /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/base/reference-values.json, 1 value(s), author 32ecdecef187bf48c7d7d3b0c61345d5fc85f8252a241f3f87c95bbfccf5947b
+  [0] launch measurement 16c37b84895e01c363fa2b0844d98d44340cf524c49017e15a0511126b89e3ef225b169f29351026230d65e19657883b
+      minimum TCB        bootloader=9 tee=0 snp=23 microcode=72
+      guest policy       abi=0.0 smt=true migration_agent=false debug=false single_socket_required=false
+
+ACCEPTED
+  vendor            : amd-sev-snp
+  launch measurement: 16c37b84895e01c363fa2b0844d98d44340cf524c49017e15a0511126b89e3ef225b169f29351026230d65e19657883b
+  reported TCB      : bootloader=9 tee=0 snp=23 microcode=72
+  caller-supplied   : ccaef285de829f2669b38e0cd61353ad8247e4897bf24fd4d3a308cc6f32dd414ac9049c3dd16f7e5cdc7de9915bc4c480278f1bcb5244ab1da051616830b0f7
+    = SHA-512(public key ‖ binding context), recomputed from the key above (ADR-0002)
+  satisfied         : reference value with launch measurement 16c37b84895e01c363fa2b0844d98d44340cf524c49017e15a0511126b89e3ef225b169f29351026230d65e19657883b
+--- verdict on the guest booted from: none ---
+evidence            : /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/none/bundle/evidence.bin, 1184 bytes
+certificate chain   : /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/none/bundle/certificate-chain.bin, 4759 bytes (provisioned, ADR-0005)
+public key (SPKI)   : /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/none/bundle/public-key.der, 44 bytes, 302a300506032b6570032100673497597a05c5bb1a0978cf028b8fee410a9fa2b68589d77b5aa702ed6f5614
+binding context     : v1, 00000000000000000000000000000000
+vendor root         : the AMD roots embedded in the verification library — no fetch, no file
+reference value set : /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/base/reference-values.json, 1 value(s), author 32ecdecef187bf48c7d7d3b0c61345d5fc85f8252a241f3f87c95bbfccf5947b
+  [0] launch measurement 16c37b84895e01c363fa2b0844d98d44340cf524c49017e15a0511126b89e3ef225b169f29351026230d65e19657883b
+      minimum TCB        bootloader=9 tee=0 snp=23 microcode=72
+      guest policy       abi=0.0 smt=true migration_agent=false debug=false single_socket_required=false
+
+ACCEPTED
+  vendor            : amd-sev-snp
+  launch measurement: 16c37b84895e01c363fa2b0844d98d44340cf524c49017e15a0511126b89e3ef225b169f29351026230d65e19657883b
+  reported TCB      : bootloader=9 tee=0 snp=23 microcode=72
+  caller-supplied   : 0674b3dbb145d53e0c1352ce8a8bcb821be172e26ad0ad102837b29a3ba1f08eff8eb4393b2c03878dd2181162a67e17fbd2aa6f874f92dfaa33ff2d5c8f82b5
+    = SHA-512(public key ‖ binding context), recomputed from the key above (ADR-0002)
+  satisfied         : reference value with launch measurement 16c37b84895e01c363fa2b0844d98d44340cf524c49017e15a0511126b89e3ef225b169f29351026230d65e19657883b
+--- verdict on the guest booted from: rootfs-file ---
+evidence            : /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/rootfs-file/bundle/evidence.bin, 1184 bytes
+certificate chain   : /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/rootfs-file/bundle/certificate-chain.bin, 4759 bytes (provisioned, ADR-0005)
+public key (SPKI)   : /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/rootfs-file/bundle/public-key.der, 44 bytes, 302a300506032b65700321002f708e85770b57f2c4ef992bfe3fda8291b28eeb6dd7a9c6ea528a87b6c6c2a4
+binding context     : v1, 00000000000000000000000000000000
+vendor root         : the AMD roots embedded in the verification library — no fetch, no file
+reference value set : /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/base/reference-values.json, 1 value(s), author 32ecdecef187bf48c7d7d3b0c61345d5fc85f8252a241f3f87c95bbfccf5947b
+  [0] launch measurement 16c37b84895e01c363fa2b0844d98d44340cf524c49017e15a0511126b89e3ef225b169f29351026230d65e19657883b
+      minimum TCB        bootloader=9 tee=0 snp=23 microcode=72
+      guest policy       abi=0.0 smt=true migration_agent=false debug=false single_socket_required=false
+
+REFUSED
+  reason            : launch measurement not in the reference value set
+  operator log      : verification refused: launch measurement not in the reference value set: launch measurement matches none of the 1 reference values in the set
+  a caller learns   : attest: verification failed
+--- verdict on the guest booted from: rootfs-byte ---
+evidence            : /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/rootfs-byte/bundle/evidence.bin, 1184 bytes
+certificate chain   : /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/rootfs-byte/bundle/certificate-chain.bin, 4759 bytes (provisioned, ADR-0005)
+public key (SPKI)   : /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/rootfs-byte/bundle/public-key.der, 44 bytes, 302a300506032b6570032100721593a1fdbbc973a6272da787d756683c9d9d1004caf4eaddb81a676d3453a6
+binding context     : v1, 00000000000000000000000000000000
+vendor root         : the AMD roots embedded in the verification library — no fetch, no file
+reference value set : /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/base/reference-values.json, 1 value(s), author 32ecdecef187bf48c7d7d3b0c61345d5fc85f8252a241f3f87c95bbfccf5947b
+  [0] launch measurement 16c37b84895e01c363fa2b0844d98d44340cf524c49017e15a0511126b89e3ef225b169f29351026230d65e19657883b
+      minimum TCB        bootloader=9 tee=0 snp=23 microcode=72
+      guest policy       abi=0.0 smt=true migration_agent=false debug=false single_socket_required=false
+
+REFUSED
+  reason            : launch measurement not in the reference value set
+  operator log      : verification refused: launch measurement not in the reference value set: launch measurement matches none of the 1 reference values in the set
+  a caller learns   : attest: verification failed
+--- verdict on the guest booted from: initrd ---
+evidence            : /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/initrd/bundle/evidence.bin, 1184 bytes
+certificate chain   : /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/initrd/bundle/certificate-chain.bin, 4759 bytes (provisioned, ADR-0005)
+public key (SPKI)   : /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/initrd/bundle/public-key.der, 44 bytes, 302a300506032b6570032100d758e594d3fd9cc21736b99c846de0b39df205f267791260abd145b373d367f8
+binding context     : v1, 00000000000000000000000000000000
+vendor root         : the AMD roots embedded in the verification library — no fetch, no file
+reference value set : /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/base/reference-values.json, 1 value(s), author 32ecdecef187bf48c7d7d3b0c61345d5fc85f8252a241f3f87c95bbfccf5947b
+  [0] launch measurement 16c37b84895e01c363fa2b0844d98d44340cf524c49017e15a0511126b89e3ef225b169f29351026230d65e19657883b
+      minimum TCB        bootloader=9 tee=0 snp=23 microcode=72
+      guest policy       abi=0.0 smt=true migration_agent=false debug=false single_socket_required=false
+
+REFUSED
+  reason            : launch measurement not in the reference value set
+  operator log      : verification refused: launch measurement not in the reference value set: launch measurement matches none of the 1 reference values in the set
+  a caller learns   : attest: verification failed
+--- verdict on the guest booted from: cmdline ---
+evidence            : /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/cmdline/bundle/evidence.bin, 1184 bytes
+certificate chain   : /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/cmdline/bundle/certificate-chain.bin, 4759 bytes (provisioned, ADR-0005)
+public key (SPKI)   : /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/cmdline/bundle/public-key.der, 44 bytes, 302a300506032b657003210080fee2e13c0d52f715c90f6bf2364c9b549c34feebe9dd6dad25b9c36d5a7618
+binding context     : v1, 00000000000000000000000000000000
+vendor root         : the AMD roots embedded in the verification library — no fetch, no file
+reference value set : /home/pniroula/Projects/gvisor-ticket08/.scratch/attested-secure-tunnel/host-stack/image-ticket08/base/reference-values.json, 1 value(s), author 32ecdecef187bf48c7d7d3b0c61345d5fc85f8252a241f3f87c95bbfccf5947b
+  [0] launch measurement 16c37b84895e01c363fa2b0844d98d44340cf524c49017e15a0511126b89e3ef225b169f29351026230d65e19657883b
+      minimum TCB        bootloader=9 tee=0 snp=23 microcode=72
+      guest policy       abi=0.0 smt=true migration_agent=false debug=false single_socket_required=false
+
+REFUSED
+  reason            : launch measurement not in the reference value set
+  operator log      : verification refused: launch measurement not in the reference value set: launch measurement matches none of the 1 reference values in the set
+  a caller learns   : attest: verification failed
+--- the control again, after every refusal above ---
+
+ACCEPTED
+  vendor            : amd-sev-snp
+  launch measurement: 16c37b84895e01c363fa2b0844d98d44340cf524c49017e15a0511126b89e3ef225b169f29351026230d65e19657883b
+  reported TCB      : bootloader=9 tee=0 snp=23 microcode=72
+  caller-supplied   : ccaef285de829f2669b38e0cd61353ad8247e4897bf24fd4d3a308cc6f32dd414ac9049c3dd16f7e5cdc7de9915bc4c480278f1bcb5244ab1da051616830b0f7
+    = SHA-512(public key ‖ binding context), recomputed from the key above (ADR-0002)
+  satisfied         : reference value with launch measurement 16c37b84895e01c363fa2b0844d98d44340cf524c49017e15a0511126b89e3ef225b169f29351026230d65e19657883b
+
+=== 8. Assertions on the run above ===
+PASS: the namespace cannot resolve the vendor
+PASS: the baseline guest reported the measurement predicted for it before it existed
+PASS: CONTROL: the unmodified image is ACCEPTED
+PASS: the verdict is acceptance
+PASS: and the accepted measurement is the predicted one
+PASS: checked against AMD's root with no fetch and no file
+PASS: CONTROL: the variant with nothing mutated is ACCEPTED as well
+PASS: CONTROL: and its guest reported the same measurement as the baseline's, on a separate launch
+PASS: rootfs-file: the guest reported the measurement predicted for it before it booted
+PASS: rootfs-file: the guest booted from it is REFUSED
+PASS: rootfs-file: and the internal reason names the measurement mismatch
+PASS: rootfs-file: nothing accepted it
+PASS: rootfs-byte: the guest reported the measurement predicted for it before it booted
+PASS: rootfs-byte: the guest booted from it is REFUSED
+PASS: rootfs-byte: and the internal reason names the measurement mismatch
+PASS: rootfs-byte: nothing accepted it
+PASS: initrd: the guest reported the measurement predicted for it before it booted
+PASS: initrd: the guest booted from it is REFUSED
+PASS: initrd: and the internal reason names the measurement mismatch
+PASS: initrd: nothing accepted it
+PASS: cmdline: the guest reported the measurement predicted for it before it booted
+PASS: cmdline: the guest booted from it is REFUSED
+PASS: cmdline: and the internal reason names the measurement mismatch
+PASS: cmdline: nothing accepted it
+PASS: CONTROL: the unmodified image is still accepted after every refusal
+
+=== 9. The table ===
+variant       what changed                                               M moved   verdict on its guest
+-------       ------------                                               -------   --------------------
+base          nothing — the image as built                             —       accepted
+none          control: nothing changed, both regenerated inputs rebuilt  no        accepted
+rootfs-file   root filesystem: one hex character of /etc/attested-tunnel/author.pub yes       refused: launch measurement not in the set
+rootfs-byte   root filesystem: one byte of rootfs.img, at a fixed offset yes       refused: launch measurement not in the set
+initrd        initrd: one byte of a comment in /init                     yes       refused: launch measurement not in the set
+cmdline       kernel command line: one trailing space                    yes       refused: launch measurement not in the set
+
+=== 10. Result ===
+    artifacts copied to docs/snp/image/evidence/ticket08
+
+ALL CHECKS PASSED — every covered byte moves the launch measurement, each move was
+predicted offline before the guest booted, and every guest booted from a changed
+image was refused by name while the unchanged one was accepted.

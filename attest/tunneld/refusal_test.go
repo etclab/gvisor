@@ -734,7 +734,7 @@ func dialWithBindingContext(t *testing.T, addr string, bindingContext attest.Bin
 	if err != nil {
 		t.Fatalf("building the peer's verification: %v", err)
 	}
-	c, err := tunnel.Dial(ctx(t), addr, identity.ClientConfig(verification))
+	c, err := tunnel.Dial(ctx(t), addr, identity.ClientConfig(verification), tunnel.Limits{})
 	if err != nil {
 		return err
 	}

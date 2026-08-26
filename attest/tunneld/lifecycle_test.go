@@ -27,6 +27,17 @@
 // is only evidence of caching if exchanges were also answered over it, and a
 // tunnel that established and then dropped everything would satisfy the first
 // half of every assertion below and fail the second.
+//
+// # Three of these tests wait, and they must not be made parallel
+//
+// The idle and maximum-age cases spend about two and a half seconds between
+// them sleeping past a deadline, which is most of what this file costs. The
+// obvious repair is t.Parallel, and it does not work: snpfake.New reaches
+// go-sev-guest's fake certificate builder, which signs through the global
+// math/rand source and is not safe for concurrent use, so two tests building
+// platforms at once trip the race detector inside a dependency. It was tried
+// and reverted. Every test in this package is sequential for that reason and
+// not by oversight; shortening the waits is the lever that is left.
 
 package tunneld_test
 
@@ -167,6 +178,13 @@ func TestATunnelIsDialedOnFirstUseAndReusedAfterwards(t *testing.T) {
 // tunnelds in one process are two sandboxes with two identities, and the warm
 // path of one is not available to the other: the peer they share judges each of
 // them separately.
+//
+// This is half of what ticket 13 has to establish and no more. It shows two
+// sandboxes do not share a tunnel; it does not show that neither can use the
+// other's, which is the claim that needs a tunneld trying. The structure it can
+// build on: a Channel holds a peer name, an address and its own tunneld, and
+// resolves through that tunneld's cache every time, so a channel is not a thing
+// one sandbox can hand another.
 func TestEachSandboxDialsItsOwnTunnel(t *testing.T) {
 	b := startLifecycle(t, "b", imageB, admitting(imageA), nil, tunneld.Limits{}, "")
 	peers := tunneld.PeerTable{"b": b.Addr().String()}

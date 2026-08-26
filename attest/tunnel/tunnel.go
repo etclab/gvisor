@@ -58,6 +58,16 @@ type Limits struct {
 	// IdleTimeout closes a tunnel that has carried nothing for this long. It
 	// is the QUIC connection's own idle timeout, so both ends drop the tunnel
 	// without either sending anything to keep it alive.
+	//
+	// Two things follow from it being QUIC's, and a two-guest deployment meets
+	// both. The effective value is the *minimum* of what the two peers
+	// advertise (RFC 9000 §10.1), so two tunnelds configured differently both
+	// get the smaller one — configure a deployment's tunnelds alike or the
+	// number in one of their configurations is fiction. And nothing is sent to
+	// hold the path open, deliberately, so a middlebox between two guests that
+	// drops a flow sooner than this closes the tunnel first: the re-dial covers
+	// it, but in a packet trace it looks like a lost tunnel rather than like a
+	// NAT.
 	IdleTimeout time.Duration
 
 	// MaxAge closes a tunnel this long after it was established, whatever it

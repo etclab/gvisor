@@ -1,0 +1,34 @@
+== SEV-SNP attestation report ==
+version                : 3
+guest_svn              : 0
+policy                 : 0x30000
+  abi                  : 0.0
+  bits                 : SMT_ALLOWED, RESERVED_MBO
+  DEBUG_ALLOWED        : no
+vmpl                   : 0
+signature algo         : 1 (1 = ECDSA P-384 with SHA-384)
+signing key            : VCEK (0)
+author key enabled     : 0
+mask chip key          : 0
+platform_info          : 0x7  [SMT_EN, TSME_EN, ECC_EN]
+
+LAUNCH MEASUREMENT (M) : 84aaf62f431f0a943944e10b0569c7c899bf5e9cfd0c6176af3f70033e241ac1e9d807f5605fd7dd08bf1bf1f09b5da5
+report_data (64B)      : 2cac42bdae32e9d3ffe1734ba16f358b12f222f93ceb3d47b74a08cdbf832586c2efc5221707abfda80dabf47a192bdc5a7f6b09701e3976d246f3dac03eeb80
+host_data              : 0000000000000000000000000000000000000000000000000000000000000000
+family_id              : 00000000000000000000000000000000
+image_id               : 00000000000000000000000000000000
+id_key_digest          : 000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+author_key_digest      : 000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+report_id              : 2c301ca226884645002cf3f5f1a25aed3d09c89b1ae2d81b493a1aee0472946f
+chip_id                : 9b371644fd3a24506777c8293ce0747804fc575468e695e4e937d4f1f541ede938fc9e79a26dbb1a328d5f2d73f10b5d02a4e3cb58eae3179e6ba923d2995243
+
+current_tcb            : bootloader=9 tee=0 snp=23 microcode=72
+reported_tcb           : bootloader=9 tee=0 snp=23 microcode=72
+committed_tcb          : bootloader=9 tee=0 snp=23 microcode=72
+launch_tcb             : bootloader=9 tee=0 snp=23 microcode=72
+current firmware       : 1.55 build 39
+committed firmware     : 1.55 build 39
+cpuid fam/mod/step     : 0x19/0x11/0x01
+signature r (first 16) : e604c9717ce9ab944049fb551227d039...
+signature s (first 16) : 1dc1c7e674a9096cb25dda0832a4c3dd...
+signature all-zero     : no

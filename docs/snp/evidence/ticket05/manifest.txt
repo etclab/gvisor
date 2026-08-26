@@ -1,0 +1,112 @@
+# Milestone 1: evidence from real AMD silicon, verified outside its guest. Ticket 05.
+# 2026-08-26T03:12Z on shs1, from the branch at 1994c06bf.
+
+## What produced it
+docs/snp/verify-on-hardware.sh, in one run, in this order:
+
+  1. sev-snp-measure 0.0.13 predicted the stock guest's launch measurement from the
+     firmware image and two launch parameters. No guest, no /dev/sev, no report.
+  2. emit-refvals rendered and signed the reference value set naming that prediction,
+     and a second set differing from it in one byte of the measurement and nothing else.
+  3. acquire-evidence ran as root inside the stock SEV-SNP guest of docs/snp-host-stack.md
+     — Linux 6.16.0-snp-guest-038d61fd6422, "Memory Encryption Features active: AMD SEV
+     SEV-ES SEV-SNP", VMPL0 — and produced evidence bound to a key it generated a moment
+     earlier, bundled with the chain on its config device.
+  4. verify-evidence produced verdicts on that evidence, inside `unshare -rn`, in a
+     namespace that had just failed to resolve or reach kdsintf.amd.com.
+
+The whole run, including every refusal and the assertions on it, is verify-run.txt.
+
+## Files
+347c6fa0a31ea8bd3ab9c44c9c2b29e6a70e4edb535331e5244302d7de3011de  evidence.bin
+2bfe5df8e57bec9e69003acb4cf01decd03ad01b1281786eaeff290fd39ac1b7  public-key.der
+39df383a920e0d09fc9e308a66c76fec1400200437b92ec6e317404e4d155543  caller-supplied.bin
+6ba59942afb3417ed7ff67529dd7c2bf8b775c7e45f4dc2a004681ad94dacd3d  reference-values.json
+47bc6ba3c560cf4fb88961b3cd98a79ae07efe51803da7075b3936c8c4f5a925  reference-values.json.sig
+7b42251c4960fa53372bbd63b4c802a3fe39f2fb582438fcfd434e3a0fa07edb  reference-values-mutated.json
+ae7e01e90b7c714724c0264f4f4d4aacb300961065dd8c5116b7fe554c570c77  reference-values-mutated.json.sig
+7b4fc7e906c212822996065ca18aeb426a8e9307003bf1938fb078b13228f6e1  certificate-chain-stale.bin
+3043da64a1edd6edeeda6fb2dea21906c89686f851fed3793ddfed74d78e5dae  certificate-chain-stale.json
+
+evidence.bin                  1184 bytes, the SEV-SNP report the platform produced
+public-key.der                  44 bytes, the Ed25519 key it is bound to (PKIX SPKI)
+caller-supplied.bin             64 bytes, SHA-512(public-key.der || sixteen zero bytes),
+                                byte for byte the report's REPORT_DATA (ADR-0002)
+reference-values.json[.sig]     the set authored for this guest, and the author's detached
+                                Ed25519 signature over its exact bytes (ADR-0006)
+reference-values-mutated.json[.sig]
+                                the same set with one byte of the launch measurement
+                                changed, signed by the same author key — so its refusal is
+                                the measurement check's and not the loader's
+author.pub                      b6207f5fca0a59c3237045b5632a24dba1b9047d461a6d1037404679fca3489f
+                                a throwaway Ed25519 public key; who holds an author key in
+                                production is out of scope (spec, Out of Scope)
+predicted-measurement.txt       the prediction and its inputs
+certificate-chain-stale.bin     the provisioned chain with its VCEK replaced by one AMD
+certificate-chain-stale.json    issued for this same chip at microcode 71 — a real chain,
+                                one TCB level behind what this platform now reports
+observation.txt                 what the report interface said, as an operator reads it
+report-decoded.txt              docs/snp/parse-snp-report.py over evidence.bin
+verify-run.txt                  the recorded run
+
+The certificate chain the evidence verified against is not copied here. It is
+docs/snp/evidence/certificate-chain.bin byte for byte, 4759 bytes,
+sha256 0957b4aa0678b511c89d6f9b49742ab114043b662408b13e9f7b43d1033d5a81 — which is the
+point of ADR-0005: it came off the config device, and no verification reached AMD.
+
+## What the platform said
+version           : 3, VCEK-signed, ECDSA P-384 with SHA-384
+policy            : 0x30000 (SMT_ALLOWED, RESERVED_MBO; DEBUG_ALLOWED no)
+vmpl              : 0
+chip_id           : 9b371644fd3a24506777c8293ce0747804fc575468e695e4e937d4f1f541ede9
+                    38fc9e79a26dbb1a328d5f2d73f10b5d02a4e3cb58eae3179e6ba923d2995243
+reported_tcb      : bootloader=9 tee=0 snp=23 microcode=72 (= current = committed = launch)
+firmware          : 1.55 build 39
+launch measurement: 84aaf62f431f0a943944e10b0569c7c899bf5e9cfd0c6176af3f70033e241ac1
+                    e9d807f5605fd7dd08bf1bf1f09b5da5
+
+That measurement is byte for byte the one sev-snp-measure predicted from OVMF.fd
+(sha256 8a417b9e…bb0c), 4 vCPUs, EPYC-v4 — computed before the guest was asked for
+anything. On this firmware M covers the firmware image and the VMSAs and not the kernel,
+initrd or command line (docs/snp-host-stack.md), which is why the stock guest is the right
+one for this ticket and the wrong one for ticket 08.
+
+## Verdicts
+accepted   evidence + provisioned chain + reference-values.json
+refused    evidence + provisioned chain + reference-values-mutated.json
+             -> launch measurement not in the reference value set
+refused    evidence + no chain
+             -> evidence does not chain to the vendor root: no certificate chain presented
+refused    evidence + certificate-chain-stale.bin
+             -> evidence does not chain to the vendor root: report signature verification
+                error: x509: ECDSA verification failure
+accepted   the control again, after all three refusals
+
+And on the acquisition side, in the guest:
+refused    config device with nothing on it
+             -> no certificate chain is provisioned here — provision one, do not fetch (ADR-0005)
+refused    config device holding the stale chain
+             -> the chain is stale ... re-provision the chain after any TCB update (ADR-0005)
+
+## Finding: the stale-chain symptom is not the one the documents describe
+ADR-0005, docs/provisioning-certificate-chain.md and the comment in attest/verify/snp.go
+all say a stale chain surfaces at the peer as *malformed evidence*, because the library
+compares the reported TCB against the one the chain was issued for. On real silicon it
+does not. AMD derives the VCEK from the chip secret and the TCB together, so the chain for
+microcode 71 endorses a different key from the one for 72:
+
+  provisioned (microcode 72)  VCEK public key sha256 6f6da88d1b3f0fa91b01f6747026fa7afad26cc55d80e47750862257bfd5e293
+  stale       (microcode 71)  VCEK public key sha256 5887430b44eb7195933037cd4b82f5c8e9a913214063b735163584cdb9523d27
+
+so the report's own signature fails under it and the verdict is *evidence does not chain to
+the vendor root*, decided before the coherence check that would have called it malformed
+ever runs. Still fail-closed, still no fetch — but an operator told to look for "malformed
+evidence" will not find it, and that refusal's detail does not name ADR-0005. See
+docs/verification-on-hardware.md, *What this run corrected*.
+
+## What is checked without a guest
+attest/hardwareevidence_test.go replays these artifacts on every `go test`: the acceptance,
+the substituted-measurement refusal with its control, the missing-chain refusal, and the
+stale-chain refusal — against the AMD root certificates embedded in the verification
+library, with no hardware and no network. That is a regression guard, not the proof; the
+proof is verify-run.txt, because a live guest cannot be replayed.

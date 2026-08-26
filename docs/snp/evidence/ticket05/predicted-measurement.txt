@@ -1,0 +1,11 @@
+# Predicted SEV-SNP launch measurement of the stock confidential guest, computed
+# offline from the inputs below. Not read from any machine.
+launch_measurement: 84aaf62f431f0a943944e10b0569c7c899bf5e9cfd0c6176af3f70033e241ac1e9d807f5605fd7dd08bf1bf1f09b5da5
+
+## Inputs
+8a417b9ec16707672407f545e6fe95520ebb2109eefe9bb2856c4639aa1bbb0c  OVMF.fd
+vcpus     : 4
+vcpu_type : EPYC-v4
+vmm       : QEMU (sev-snp-guest, no kernel-hashes; firmware OvmfPkgX64 with BlobVerifierLibNull,
+            so the kernel, initrd and command line are outside M — docs/snp-host-stack.md)
+tool      : sev-snp-measure 0.0.13

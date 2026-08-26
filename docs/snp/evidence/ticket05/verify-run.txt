@@ -1,0 +1,230 @@
+
+=== 0. Provenance ===
+date            : 2026-08-26T03:12:22Z
+host            : shs1
+repository      : /home/pniroula/Projects/gvisor-ticket05 at 1994c06bf (ticket-05-m1-evidence-verification-on-hardware)
+host kernel     : 6.11.0-rc3-snp-host-85ef1ac03941
+work directory  : /tmp/pniroula/ticket05-verify
+go              : go version go1.26.3 linux/amd64
+predictor       : sev-snp-measure 0.0.13 (/home/pniroula/Projects/gvisor-ticket05/.scratch/attested-secure-tunnel/host-stack/sev-snp-measure-venv)
+guest           : Linux 6.16.0-snp-guest-038d61fd6422
+guest SNP state : [    2.276926] Memory Encryption Features active: AMD SEV SEV-ES SEV-SNP
+firmware        : /home/pniroula/Projects/gvisor-ticket05/.scratch/attested-secure-tunnel/host-stack/usr/local/share/qemu/OVMF.fd
+                  sha256 8a417b9ec16707672407f545e6fe95520ebb2109eefe9bb2856c4639aa1bbb0c
+provisioned chain: /home/pniroula/Projects/gvisor-ticket05/docs/snp/evidence/certificate-chain.bin
+                  sha256 0957b4aa0678b511c89d6f9b49742ab114043b662408b13e9f7b43d1033d5a81
+
+=== 1. Predict the launch measurement offline, before the guest is asked anything ===
+predicted launch measurement: 84aaf62f431f0a943944e10b0569c7c899bf5e9cfd0c6176af3f70033e241ac1e9d807f5605fd7dd08bf1bf1f09b5da5
+    written to /tmp/pniroula/ticket05-verify/predicted-measurement.txt
+
+=== 2. Author and sign the reference value set, and the mutated one ===
+$ emit-refvals -measurement 84aaf62f431f0a943944e10b0569c7c899bf5e9cfd0c6176af3f70033e241ac1e9d807f5605fd7dd08bf1bf1f09b5da5 -tcb 9,0,23,72 -policy 0x30000
+author public key: b6207f5fca0a59c3237045b5632a24dba1b9047d461a6d1037404679fca3489f
+wrote /tmp/pniroula/ticket05-verify/set/reference-values.json and /tmp/pniroula/ticket05-verify/set/reference-values.json.sig (loads back through attest.LoadReferenceValueSetFile)
+    author public key: b6207f5fca0a59c3237045b5632a24dba1b9047d461a6d1037404679fca3489f
+$ emit-refvals -measurement 84aaf62f431f0a943944e10b0569c7c899bf5e9cfd0c6176af3f70033e241ac1e9d807f5605fd7dd08bf1bf1f09b5da4   # one byte of the last, flipped
+    authored : /tmp/pniroula/ticket05-verify/set/reference-values.json
+    mutated  : /tmp/pniroula/ticket05-verify/set-mutated/reference-values.json
+    6c6
+    <             "launch_measurement": "84aaf62f431f0a943944e10b0569c7c899bf5e9cfd0c6176af3f70033e241ac1e9d807f5605fd7dd08bf1bf1f09b5da5",
+    ---
+    >             "launch_measurement": "84aaf62f431f0a943944e10b0569c7c899bf5e9cfd0c6176af3f70033e241ac1e9d807f5605fd7dd08bf1bf1f09b5da4",
+    the two sets differ in exactly the launch measurement, and both are signed by b6207f5fca0a59c3237045b5632a24dba1b9047d461a6d1037404679fca3489f
+
+=== 3. Acquire evidence from the live confidential guest ===
+rm: cannot remove '/tmp/ticket05/bundle/public-key.der': Permission denied
+rm: cannot remove '/tmp/ticket05/bundle/observation.txt': Permission denied
+rm: cannot remove '/tmp/ticket05/bundle/caller-supplied.bin': Permission denied
+rm: cannot remove '/tmp/ticket05/bundle/evidence.bin': Permission denied
+rm: cannot remove '/tmp/ticket05/bundle/certificate-chain.bin': Permission denied
+$ acquire-evidence -chain-dir /tmp/ticket05/config-device -out /tmp/ticket05/bundle   # in the guest, as root
+report requests before: 0
+tsm: provider "sev_guest" (amd-sev-snp) returned 1184 bytes of evidence over 1 write(s); its own certificate table is empty (auxblob, 0 bytes), which is the expected state on this host and not an error; bundled the 4759-byte chain provisioned in /tmp/ticket05/config-device for chip 9b3716…5243 at bootloader=9 tee=0 snp=23 microcode=72 (ADR-0005)
+vendor              : amd-sev-snp
+public key (SPKI)   : 44 bytes, 302a300506032b6570032100e9e24c88b33719495882c191ead4be59481f869b23a8bf6108b3c35c344f9f3f
+binding context     : v1 (version byte 0x00), 00000000000000000000000000000000
+caller-supplied     : 2cac42bdae32e9d3ffe1734ba16f358b12f222f93ceb3d47b74a08cdbf832586c2efc5221707abfda80dabf47a192bdc5a7f6b09701e3976d246f3dac03eeb80
+  = SHA-512(public key ‖ binding context), the whole 64-byte field (ADR-0002)
+evidence            : 1184 bytes
+certificate chain   : 4759 bytes, from /tmp/ticket05/config-device (ADR-0005)
+platform's own table: 0 bytes — empty, as expected on this host
+wrote /tmp/ticket05/bundle/evidence.bin (1184 bytes)
+wrote /tmp/ticket05/bundle/certificate-chain.bin (4759 bytes)
+wrote /tmp/ticket05/bundle/public-key.der (44 bytes)
+wrote /tmp/ticket05/bundle/caller-supplied.bin (64 bytes)
+wrote /tmp/ticket05/bundle/observation.txt (350 bytes)
+acquire rc=0
+report requests after: 0
+PASS: the guest produced evidence
+total 24
+-rw------- 1 pniroula 253477   64 Aug 25 23:12 caller-supplied.bin
+-rw------- 1 pniroula 253477 4759 Aug 25 23:12 certificate-chain.bin
+-rw------- 1 pniroula 253477 1184 Aug 25 23:12 evidence.bin
+-rw------- 1 pniroula 253477  350 Aug 25 23:12 observation.txt
+-rw------- 1 pniroula 253477   44 Aug 25 23:12 public-key.der
+PASS: the chain that came back is the provisioned one, byte for byte (ADR-0005)
+
+=== 4. Fetch a genuinely stale certificate, for case 7 ===
+$ curl https://kdsintf.amd.com/vcek/v1/Genoa/9b371644fd3a24506777c8293ce0747804fc575468e695e4e937d4f1f541ede938fc9e79a26dbb1a328d5f2d73f10b5d02a4e3cb58eae3179e6ba923d2995243?blSPL=9&teeSPL=0&snpSPL=23&ucodeSPL=71
+    fetched 1347 bytes: a VCEK for chip 9b3716… at microcode 71
+    wrote /tmp/pniroula/ticket05-verify/stale-device/certificate-chain.bin (4759 bytes)
+    metadata records microcode 71, and so does the VCEK beside it
+    provisioned (microcode 72)  VCEK public key sha256 6f6da88d1b3f0fa91b01f6747026fa7afad26cc55d80e47750862257bfd5e293
+    stale (microcode 71)        VCEK public key sha256 5887430b44eb7195933037cd4b82f5c8e9a913214063b735163584cdb9523d27
+
+=== 5. Verify, in an empty network namespace ===
+$ unshare -rn bash /tmp/pniroula/ticket05-verify/inside-netns.sh /tmp/pniroula/ticket05-verify
+--- this shell's network ---
+1: lo: <LOOPBACK> mtu 65536 qdisc noop state DOWN mode DEFAULT group default qlen 1000\    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+--- can it resolve the vendor? ---
+getent rc=2
+--- can it open a socket to the vendor? ---
+bash: connect: Network is unreachable
+bash: line 1: /dev/tcp/165.204.91.78/443: Network is unreachable
+connect rc=1
+curl: (6) Could not resolve host: kdsintf.amd.com
+curl rc=6
+--- case 1: the control — real evidence, the authored set ---
+evidence            : /tmp/pniroula/ticket05-verify/bundle/evidence.bin, 1184 bytes
+certificate chain   : /tmp/pniroula/ticket05-verify/bundle/certificate-chain.bin, 4759 bytes (provisioned, ADR-0005)
+public key (SPKI)   : /tmp/pniroula/ticket05-verify/bundle/public-key.der, 44 bytes, 302a300506032b6570032100e9e24c88b33719495882c191ead4be59481f869b23a8bf6108b3c35c344f9f3f
+binding context     : v1, 00000000000000000000000000000000
+vendor root         : the AMD roots embedded in the verification library — no fetch, no file
+reference value set : /tmp/pniroula/ticket05-verify/set/reference-values.json, 1 value(s), author b6207f5fca0a59c3237045b5632a24dba1b9047d461a6d1037404679fca3489f
+  [0] launch measurement 84aaf62f431f0a943944e10b0569c7c899bf5e9cfd0c6176af3f70033e241ac1e9d807f5605fd7dd08bf1bf1f09b5da5
+      minimum TCB        bootloader=9 tee=0 snp=23 microcode=72
+      guest policy       abi=0.0 smt=true migration_agent=false debug=false single_socket_required=false
+
+ACCEPTED
+  vendor            : amd-sev-snp
+  launch measurement: 84aaf62f431f0a943944e10b0569c7c899bf5e9cfd0c6176af3f70033e241ac1e9d807f5605fd7dd08bf1bf1f09b5da5
+  reported TCB      : bootloader=9 tee=0 snp=23 microcode=72
+  caller-supplied   : 2cac42bdae32e9d3ffe1734ba16f358b12f222f93ceb3d47b74a08cdbf832586c2efc5221707abfda80dabf47a192bdc5a7f6b09701e3976d246f3dac03eeb80
+    = SHA-512(public key ‖ binding context), recomputed from the key above (ADR-0002)
+  satisfied         : reference value with launch measurement 84aaf62f431f0a943944e10b0569c7c899bf5e9cfd0c6176af3f70033e241ac1e9d807f5605fd7dd08bf1bf1f09b5da5
+--- case 2: one byte of the launch measurement substituted, re-signed ---
+evidence            : /tmp/pniroula/ticket05-verify/bundle/evidence.bin, 1184 bytes
+certificate chain   : /tmp/pniroula/ticket05-verify/bundle/certificate-chain.bin, 4759 bytes (provisioned, ADR-0005)
+public key (SPKI)   : /tmp/pniroula/ticket05-verify/bundle/public-key.der, 44 bytes, 302a300506032b6570032100e9e24c88b33719495882c191ead4be59481f869b23a8bf6108b3c35c344f9f3f
+binding context     : v1, 00000000000000000000000000000000
+vendor root         : the AMD roots embedded in the verification library — no fetch, no file
+reference value set : /tmp/pniroula/ticket05-verify/set-mutated/reference-values.json, 1 value(s), author b6207f5fca0a59c3237045b5632a24dba1b9047d461a6d1037404679fca3489f
+  [0] launch measurement 84aaf62f431f0a943944e10b0569c7c899bf5e9cfd0c6176af3f70033e241ac1e9d807f5605fd7dd08bf1bf1f09b5da4
+      minimum TCB        bootloader=9 tee=0 snp=23 microcode=72
+      guest policy       abi=0.0 smt=true migration_agent=false debug=false single_socket_required=false
+
+REFUSED
+  reason            : launch measurement not in the reference value set
+  operator log      : verification refused: launch measurement not in the reference value set: launch measurement matches none of the 1 reference values in the set
+  a caller learns   : attest: verification failed
+--- case 3: the provisioned chain removed ---
+evidence            : /tmp/pniroula/ticket05-verify/bundle/evidence.bin, 1184 bytes
+certificate chain   : none presented (-without-chain)
+public key (SPKI)   : /tmp/pniroula/ticket05-verify/bundle/public-key.der, 44 bytes, 302a300506032b6570032100e9e24c88b33719495882c191ead4be59481f869b23a8bf6108b3c35c344f9f3f
+binding context     : v1, 00000000000000000000000000000000
+vendor root         : the AMD roots embedded in the verification library — no fetch, no file
+reference value set : /tmp/pniroula/ticket05-verify/set/reference-values.json, 1 value(s), author b6207f5fca0a59c3237045b5632a24dba1b9047d461a6d1037404679fca3489f
+  [0] launch measurement 84aaf62f431f0a943944e10b0569c7c899bf5e9cfd0c6176af3f70033e241ac1e9d807f5605fd7dd08bf1bf1f09b5da5
+      minimum TCB        bootloader=9 tee=0 snp=23 microcode=72
+      guest policy       abi=0.0 smt=true migration_agent=false debug=false single_socket_required=false
+
+REFUSED
+  reason            : evidence does not chain to the vendor root
+  operator log      : verification refused: evidence does not chain to the vendor root: no certificate chain presented with the evidence
+  a caller learns   : attest: verification failed
+--- case 4: a genuinely stale chain that reached a verifier anyway ---
+evidence            : /tmp/pniroula/ticket05-verify/bundle/evidence.bin, 1184 bytes
+certificate chain   : /tmp/pniroula/ticket05-verify/stale-device/certificate-chain.bin, 4759 bytes (provisioned, ADR-0005)
+public key (SPKI)   : /tmp/pniroula/ticket05-verify/bundle/public-key.der, 44 bytes, 302a300506032b6570032100e9e24c88b33719495882c191ead4be59481f869b23a8bf6108b3c35c344f9f3f
+binding context     : v1, 00000000000000000000000000000000
+vendor root         : the AMD roots embedded in the verification library — no fetch, no file
+reference value set : /tmp/pniroula/ticket05-verify/set/reference-values.json, 1 value(s), author b6207f5fca0a59c3237045b5632a24dba1b9047d461a6d1037404679fca3489f
+  [0] launch measurement 84aaf62f431f0a943944e10b0569c7c899bf5e9cfd0c6176af3f70033e241ac1e9d807f5605fd7dd08bf1bf1f09b5da5
+      minimum TCB        bootloader=9 tee=0 snp=23 microcode=72
+      guest policy       abi=0.0 smt=true migration_agent=false debug=false single_socket_required=false
+
+REFUSED
+  reason            : evidence does not chain to the vendor root
+  operator log      : verification refused: evidence does not chain to the vendor root: report signature verification error: x509: ECDSA verification failure
+  a caller learns   : attest: verification failed
+--- case 5: the control again, after every refusal above ---
+
+ACCEPTED
+  vendor            : amd-sev-snp
+  launch measurement: 84aaf62f431f0a943944e10b0569c7c899bf5e9cfd0c6176af3f70033e241ac1e9d807f5605fd7dd08bf1bf1f09b5da5
+  reported TCB      : bootloader=9 tee=0 snp=23 microcode=72
+  caller-supplied   : 2cac42bdae32e9d3ffe1734ba16f358b12f222f93ceb3d47b74a08cdbf832586c2efc5221707abfda80dabf47a192bdc5a7f6b09701e3976d246f3dac03eeb80
+    = SHA-512(public key ‖ binding context), recomputed from the key above (ADR-0002)
+  satisfied         : reference value with launch measurement 84aaf62f431f0a943944e10b0569c7c899bf5e9cfd0c6176af3f70033e241ac1e9d807f5605fd7dd08bf1bf1f09b5da5
+
+=== 5a. Assertions on the run above ===
+PASS: the namespace cannot resolve the vendor
+PASS: the namespace cannot open a socket to the vendor
+PASS: the namespace cannot reach the vendor over HTTPS
+PASS: M1: real evidence verifies outside the guest, offline (exit 0)
+PASS: the verdict is acceptance
+PASS: the accepted launch measurement is the predicted one
+PASS: it was checked against AMD's root with no fetch and no file
+PASS: a substituted launch measurement is refused (exit 2)
+PASS: and the internal reason names the measurement
+PASS: evidence with no provisioned chain is refused (exit 2)
+PASS: and the refusal names the missing chain
+PASS: no silent fetch stood in for the missing chain
+PASS: a stale chain reaching a verifier is refused (exit 2)
+PASS: as evidence that does not chain to the vendor root
+PASS: because the report is not signed by the stale chain's key
+PASS: and nothing was fetched to rescue it
+    
+    FINDING. ADR-0005, docs/provisioning-certificate-chain.md and the comment in
+    attest/verify/snp.go all say a stale chain surfaces at the peer as MALFORMED
+    EVIDENCE, because the library compares the reported TCB against the one the
+    chain was issued for. On real silicon it does not. The VCEK is derived from
+    the chip secret AND the TCB, so a chain for microcode 71 endorses a different
+    key (the two public keys above), the report's own signature fails under it,
+    and the refusal is CHAIN NOT ROOTED — reported before the coherence check that
+    would have said malformed. Still fail-closed, still no fetch; but an operator
+    told to look for "malformed evidence" will not find it, and this refusal's
+    detail does not name ADR-0005. The local check in provision.CheckFor (case 6
+    below) does name it, and is where a stale chain is actually caught.
+PASS: control: the unmodified set still accepts the same evidence (exit 0)
+
+=== 6. The provisioned chain, removed and staled on the config device ===
+$ acquire-evidence -chain-dir /tmp/ticket05/empty-device   # nothing provisioned
+acquire-evidence: provision: certificate chain refused: reading /tmp/ticket05/empty-device/certificate-chain.json: open /tmp/ticket05/empty-device/certificate-chain.json: no such file or directory; no certificate chain is provisioned here — provision one, do not fetch (ADR-0005)
+rc=1
+PASS: an unprovisioned config device fails closed
+PASS: and names ADR-0005
+PASS: and the acquisition exits non-zero
+$ acquire-evidence -chain-dir /tmp/ticket05/stale-device   # AMD-issued, for microcode 71
+acquire-evidence: provision: certificate chain refused: the provisioned chain was issued for TCB bootloader=9 tee=0 snp=23 microcode=71 but this platform reports TCB bootloader=9 tee=0 snp=23 microcode=72: the chain is stale, which peers would refuse as malformed evidence; re-provision the chain after any TCB update (ADR-0005)
+rc=1
+PASS: a stale config device fails closed locally
+PASS: and names ADR-0005
+PASS: and the acquisition exits non-zero
+
+=== 7. The refusals are the code's, not the namespace's ===
+    the vendor is reachable from this shell: HTTP 200
+
+REFUSED
+  reason            : evidence does not chain to the vendor root
+  operator log      : verification refused: evidence does not chain to the vendor root: no certificate chain presented with the evidence
+  a caller learns   : attest: verification failed
+rc=2
+PASS: with the vendor reachable, a missing chain is still refused
+PASS: and the exit status is the same refusal
+
+REFUSED
+  reason            : evidence does not chain to the vendor root
+  operator log      : verification refused: evidence does not chain to the vendor root: report signature verification error: x509: ECDSA verification failure
+  a caller learns   : attest: verification failed
+rc=2
+PASS: with the vendor reachable, a stale chain is still refused
+    the structural guards for this are attest/verify's offlineGetter, which refuses every URL,
+    and attest/tsm's import allowlist test, which fails if a fetch is ever written into the acquirer.
+
+=== 8. Result ===
+    artifacts copied to /home/pniroula/Projects/gvisor-ticket05/docs/snp/evidence/ticket05
+
+ALL CHECKS PASSED — evidence from real AMD silicon verified outside its guest,
+against AMD's root and a signed reference value set, with no network at any point.

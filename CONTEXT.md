@@ -79,10 +79,19 @@ An admission check that must pass before traffic flows. There are two: the hands
 evidence check, and the post-handshake freshness challenge.
 _Avoid_: stage, phase, check.
 
+**Re-attestation**:
+The Gate running again for a platform already admitted once. Two occasions, and they differ
+in where the Evidence comes from: a Tunnel reaching its maximum age, where the same Evidence
+is re-judged against the current Reference Value Set and nothing fresher is obtained; and a
+change that invalidates the Evidence a deployment already holds (ADR-0002's binding
+retrofit), where every platform must produce new Evidence before it can pass at all. Not a
+third Gate — the same handshake-time Gate, run again.
+_Avoid_: refresh, renewal, re-verification.
+
 **Freshness Challenge**:
 The post-handshake exchange of a newly generated report over a nonce and the channel's
 exporter, proving the platform is in the attested state now.
-_Avoid_: liveness check, heartbeat, re-attestation.
+_Avoid_: liveness check, heartbeat.
 
 ### Channel
 

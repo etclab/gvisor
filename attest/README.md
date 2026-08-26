@@ -48,7 +48,9 @@ iteration of unproven code.
 |-----------|------------|
 | `attest`  | The public surface: the vendor seam, the reference value vocabulary, the signed reference value set format and its loader, the binding of ADR-0002, the refusal taxonomy, and `Verification.Verify`. |
 | `verify`  | The SEV-SNP verifier. Wraps `go-sev-guest` (ADR-0003) and keeps that library's API shape from reaching anywhere else. |
-| `snpfake` | A fake SEV-SNP platform built on `go-sev-guest`'s test signing. Implements the acquisition half of the seam; the real acquirer is ticket 04. Test support, but not a `_test` package, because tunneld's tests inject it through `tunneld.Config`. |
+| `tsm`     | Ticket 04: evidence acquisition from real hardware, through the kernel's vendor-neutral report interface at `/sys/kernel/config/tsm/report`. Writes the caller-supplied bytes, reads the evidence back, and bundles the chain the config device holds — never the platform's, which is empty here, and never the network's (ADR-0005). Procedure: `docs/evidence-acquisition.md`. |
+| `cmd/acquire-evidence` | The command over `tsm`, run inside a guest: generate a key, acquire evidence bound to it, bundle the chain, print what the platform said. |
+| `snpfake` | A fake SEV-SNP platform built on `go-sev-guest`'s test signing. Implements the acquisition half of the seam for everything that must run without a confidential VM. Test support, but not a `_test` package, because tunneld's tests inject it through `tunneld.Config`. |
 | `provision` | Ticket 15: fetches the certificate chain for a platform's chip and TCB from AMD's key distribution service once, validates it through `verify`, and writes it beside the reference value set (ADR-0005); the consumer half loads it and refuses a missing or stale chain rather than fetching. Procedure: `docs/provisioning-certificate-chain.md`. |
 | `cmd/provision-chain` | The operator command over `provision`: `fetch` and `check`. |
 | `ratls`   | The certificate as a serialization envelope: a versioned payload under a private arc carrying the evidence, the chain and the binding context, and the handshake callback that runs `Verification.Verify` on the peer's. Nothing else in the certificate is read. |
@@ -63,6 +65,38 @@ Above it the seam is tunneld's API: every `tunneld` test starts tunnelds with th
 injected through `Config` and asserts that a channel exists or does not, and that an exchange
 completes or does not. Certificate carry, transport and peer resolution are tested only through
 that API, and verification is not re-tested there.
+
+`tsm` is the one exception, and it is the exception for a reason worth stating. What sits below it
+is not a vendor but the kernel, so nothing above it can drive it without a confidential VM — the
+substitution has to happen where this package talks to the kernel. That boundary stays unexported
+and the fake for it is declared in `export_test.go`, so the tests themselves are still in
+`tsm_test` and still drive `Acquire` and nothing else. What they stand in for is the ABI, not the
+hardware: attributes generated on read, a generation counter that advances on every write, an
+`inblob` the width of the field, an empty `auxblob`. The evidence they feed it is real —
+`snpfake`'s, or the reports `docs/snp/evidence` captured from live guests.
+
+## Acquiring evidence
+
+`tsm` is the acquirer that runs on real hardware. The interface it drives is the kernel's and is
+the same on every vendor — make a request directory under `/sys/kernel/config/tsm/report`, write
+the caller-supplied bytes to `inblob`, read the evidence from `outblob`, remove the directory —
+so what is AMD-specific is only the bytes that come back, and it stays behind `attest.Acquirer`.
+The procedure and the captured run are `docs/evidence-acquisition.md`.
+
+Three things about it are decided rather than incidental:
+
+- **The caller-supplied bytes are written in one write and are not computed here.** They are
+  whatever `Binding.CallerSuppliedBytes` produced, so producer and consumer agree on ADR-0002 by
+  construction; and the write is one `write(2)`, never retried, because a partial `inblob` is a
+  different request rather than half of this one.
+- **An empty certificate table is recorded, not refused.** `auxblob` is empty on this host and no
+  operator action fills it (`docs/snp-host-stack.md`). Every acquisition reads it and records its
+  size in an `Observation` an operator can read, because the alternative — treating it as a
+  failure — fails on every host this design runs on.
+- **The chain comes from the config device, and a bad one fails closed.** `provision.LoadFor` is
+  the boundary: missing, mismatched or stale is a refusal naming ADR-0005, and there is no
+  fallback fetch. `tsm`'s import allowlist test is the structural guard that no fetch can be
+  written here without somebody saying so out loud.
 
 ## tunneld
 

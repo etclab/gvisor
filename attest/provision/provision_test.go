@@ -56,7 +56,7 @@ func platform(t *testing.T, tcb attest.TCB) *snpfake.Platform {
 	return p
 }
 
-// report obtains a report from the platform the way ticket 04's acquirer will:
+// report obtains a report from the platform the way the tsm acquirer does:
 // the evidence bytes, with the platform's own bundled chain discarded, because
 // on real hardware there is none.
 func report(t *testing.T, p *snpfake.Platform) []byte {

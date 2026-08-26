@@ -38,11 +38,11 @@
 // chip identity and TCB are recorded beside the chain so that staleness is
 // detectable rather than inferred from a failure.
 //
-// [Load] and [Chain.CheckFor] are the consumer-side half, for ticket 04's
-// acquirer: read the artifact back, confirm the metadata describes the chain
-// beside it, and confirm the chain is the one for the platform's *current*
-// report. A missing chain, or one whose recorded TCB is not the platform's
-// reported TCB, is refused with an error naming ADR-0005. Nothing here fetches
+// [Load] and [Chain.CheckFor] are the consumer-side half, for the acquirer in
+// gvisor.dev/gvisor/attest/tsm: read the artifact back, confirm the metadata
+// describes the chain beside it, and confirm the chain is the one for the
+// platform's *current* report. A missing chain, or one whose recorded TCB is
+// not the platform's reported TCB, is refused with an error naming ADR-0005. Nothing here fetches
 // on the consumer's behalf; a silent fallback would reinstate exactly the
 // dependency ADR-0005 removes, and do it invisibly.
 //

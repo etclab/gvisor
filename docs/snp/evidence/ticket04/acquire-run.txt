@@ -4,7 +4,7 @@ Linux snp-stock 6.16.0-snp-guest-038d61fd6422 #1 SMP Mon Aug 24 23:03:37 EDT 202
 [    2.644879] SEV: SNP running at VMPL0.
 report interface: /sys/kernel/config/tsm/report
 entries before  : 0
-attributes this kernel exposes on a request:
+attributes this kernel exposes on a request (listed from a temporary request, removed before the count above was taken):
 total 0
 -r--r--r-- 1 root root    0 Aug 25 19:51 auxblob
 -r--r--r-- 1 root root 4096 Aug 25 19:51 generation
@@ -36,6 +36,10 @@ acquire-evidence: provision: certificate chain refused: reading /tmp/ticket04/no
 exit: 1
 
 ############ 3. chain without its metadata: fails closed ############
+# NOTE: this case removed certificate-chain.json, which LoadFor reads first, so the refusal
+# is the same branch as case 2. A .bin-absent / .json-present run would exercise the other
+# branch; that one is covered offline by TestMetadataThatDoesNotDescribeTheChainBesideItIsRefused
+# and TestAMissingChainIsRefusedNotFetched in attest/provision.
 acquire-evidence: provision: certificate chain refused: reading /tmp/ticket04/half-chain/certificate-chain.json: open /tmp/ticket04/half-chain/certificate-chain.json: no such file or directory; no certificate chain is provisioned here — provision one, do not fetch (ADR-0005)
 exit: 1
 

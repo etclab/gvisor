@@ -576,3 +576,61 @@ func TestTheLiveGuestsEvidenceIsBoundToTheKeyItWasAcquiredFor(t *testing.T) {
 		t.Error("a live guest's evidence was accepted as bound to a key it was never acquired for")
 	}
 }
+
+// TestARefusedAcquisitionStillRemovesItsRequest: the request directory is
+// removed whichever way an acquisition ends. Only sixteen names are tried
+// before the acquirer refuses outright, so a request left behind on refusal
+// would turn a transient refusal into a permanent one.
+func TestARefusedAcquisitionStillRemovesItsRequest(t *testing.T) {
+	p := platform(t, platformTCB)
+	iface := reportInterfaceOf(p)
+	iface.RacingWriter = true
+	a, err := tsm.NewOnFake(tsm.Options{ChainDir: provisionChainFor(t, p)}, iface)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := a.Acquire(context.Background(), bindingFor(t).CallerSuppliedBytes()); err == nil {
+		t.Fatal("an acquisition raced by another writer was accepted")
+	}
+	if len(iface.Opened) != len(iface.Removed) {
+		t.Errorf("opened %v but removed only %v", iface.Opened, iface.Removed)
+	}
+}
+
+// TestARequestThatCannotBeRemovedIsAnError: a leaked request is reported, not
+// shrugged off, so an operator learns of it before the sixteenth one.
+func TestARequestThatCannotBeRemovedIsAnError(t *testing.T) {
+	p := platform(t, platformTCB)
+	iface := reportInterfaceOf(p)
+	a, err := tsm.NewOnFake(tsm.Options{ChainDir: provisionChainFor(t, p)}, iface)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Control: the same acquisition succeeds when removal works.
+	if _, err := a.Acquire(context.Background(), bindingFor(t).CallerSuppliedBytes()); err != nil {
+		t.Fatal(err)
+	}
+	iface.RemoveErr = errors.New("fake: rmdir: device or resource busy")
+	if _, err := a.Acquire(context.Background(), bindingFor(t).CallerSuppliedBytes()); err == nil || !strings.Contains(err.Error(), "removing the request") {
+		t.Errorf("a request that could not be removed was not reported: %v", err)
+	}
+}
+
+// TestAPlatformRejectionNamesThePrivilegeFloor: privlevel is left at the
+// kernel's default, so on a guest above VMPL0 the platform rejects the
+// request; the refusal says what the floor was, which is the one fact an
+// operator needs.
+func TestAPlatformRejectionNamesThePrivilegeFloor(t *testing.T) {
+	p := platform(t, platformTCB)
+	iface := reportInterfaceOf(p)
+	a, err := tsm.NewOnFake(tsm.Options{ChainDir: provisionChainFor(t, p)}, iface)
+	if err != nil {
+		t.Fatal(err)
+	}
+	iface.RejectWrite = errors.New("fake: the platform rejected the request: invalid argument")
+	iface.PrivlevelFloor = "2"
+	_, err = a.Acquire(context.Background(), bindingFor(t).CallerSuppliedBytes())
+	if err == nil || !strings.Contains(err.Error(), "privlevel_floor is 2") {
+		t.Errorf("a platform rejection did not name the privilege floor: %v", err)
+	}
+}

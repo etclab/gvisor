@@ -95,7 +95,7 @@ func run(args []string) error {
 	fmt.Println(observation)
 	fmt.Printf("vendor              : %s\n", ev.Vendor)
 	fmt.Printf("public key (SPKI)   : %d bytes, %x\n", len(spki), spki)
-	fmt.Printf("binding context     : v%d, %x\n", binding.Context.Version(), binding.Context[:])
+	fmt.Printf("binding context     : v1 (version byte 0x%02x), %x\n", binding.Context.Version(), binding.Context[:])
 	fmt.Printf("caller-supplied     : %x\n", callerSupplied[:])
 	fmt.Printf("  = SHA-512(public key ‖ binding context), the whole 64-byte field (ADR-0002)\n")
 	fmt.Printf("evidence            : %d bytes\n", len(ev.Bytes))

@@ -23,7 +23,7 @@
 // same way, at /sys/kernel/config/tsm/report: create a directory, write the
 // caller-supplied bytes to inblob in one write, read the evidence back from
 // outblob, remove the directory. The same four steps yield an SEV-SNP report
-// on AMD and a TDX quote on Intel. Only the bytes that come back are the
+// on AMD and TDX evidence on Intel. Only the bytes that come back are the
 // vendor's, which is why this package is named for the interface rather than
 // for AMD.
 //
@@ -80,11 +80,12 @@ const DefaultReportDir = "/sys/kernel/config/tsm/report"
 // The attribute names. Every one of them is the kernel's ABI
 // (Documentation/ABI/testing/configfs-tsm), not this package's invention.
 const (
-	attrProvider   = "provider"
-	attrGeneration = "generation"
-	attrInblob     = "inblob"
-	attrOutblob    = "outblob"
-	attrAuxblob    = "auxblob"
+	attrProvider       = "provider"
+	attrGeneration     = "generation"
+	attrInblob         = "inblob"
+	attrOutblob        = "outblob"
+	attrAuxblob        = "auxblob"
+	attrPrivlevelFloor = "privlevel_floor"
 )
 
 // providerSEVGuest is what the kernel calls the AMD SEV-SNP guest driver. It
@@ -222,9 +223,12 @@ func newOn(opts Options, iface reportInterface) (*Acquirer, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer req.close()
 	provider, err := readProvider(req, name)
 	if err != nil {
+		req.close()
+		return nil, err
+	}
+	if err := closeRequest(req, name); err != nil {
 		return nil, err
 	}
 	vendor, err := vendorOf(provider)
@@ -233,6 +237,18 @@ func newOn(opts Options, iface reportInterface) (*Acquirer, error) {
 	}
 	a.vendor = vendor
 	return a, nil
+}
+
+// closeRequest removes a request directory and says so if it could not. A
+// request left behind is not a wrong answer — every acquisition creates its
+// own — but it is a configfs entry this acquirer will never reclaim, and only
+// sixteen names are tried before it refuses outright, so a leak is an error
+// rather than a shrug.
+func closeRequest(req request, name string) error {
+	if err := req.close(); err != nil {
+		return fmt.Errorf("tsm: removing the request %s after use: %w", name, err)
+	}
+	return nil
 }
 
 // Vendor implements [attest.Acquirer]. It is the vendor whose driver answered
@@ -276,7 +292,7 @@ func (a *Acquirer) LastObservation() (Observation, bool) {
 //     silently answered.
 //  7. Load the chain the config device holds for this platform's current
 //     report, refusing a missing or stale one (ADR-0005).
-func (a *Acquirer) Acquire(ctx context.Context, callerSupplied [attest.CallerSuppliedBytesSize]byte) (attest.Evidence, error) {
+func (a *Acquirer) Acquire(ctx context.Context, callerSupplied [attest.CallerSuppliedBytesSize]byte) (ev attest.Evidence, err error) {
 	if err := ctx.Err(); err != nil {
 		return attest.Evidence{}, fmt.Errorf("tsm: %w", err)
 	}
@@ -284,10 +300,13 @@ func (a *Acquirer) Acquire(ctx context.Context, callerSupplied [attest.CallerSup
 	if err != nil {
 		return attest.Evidence{}, err
 	}
-	// A leaked request directory is a wasted configfs entry rather than a
-	// wrong answer: every acquisition creates its own, so a directory left
-	// behind cannot become the next acquisition's request.
-	defer req.close()
+	// The request is removed whichever way this returns, and a removal that
+	// fails is reported when nothing else already went wrong.
+	defer func() {
+		if cerr := closeRequest(req, name); cerr != nil && err == nil {
+			ev, err = attest.Evidence{}, cerr
+		}
+	}()
 
 	provider, err := readProvider(req, name)
 	if err != nil {
@@ -302,6 +321,12 @@ func (a *Acquirer) Acquire(ctx context.Context, callerSupplied [attest.CallerSup
 		return attest.Evidence{}, err
 	}
 	if err := req.write(attrInblob, callerSupplied[:]); err != nil {
+		// privlevel is left at the kernel's default and the platform
+		// rejects a request below the floor at close, so a rejection here
+		// on a guest above VMPL0 would otherwise be undiagnosable.
+		if floor, ferr := req.read(attrPrivlevelFloor); ferr == nil {
+			err = fmt.Errorf("%w (privlevel_floor is %s and privlevel was not set)", err, strings.TrimSpace(string(floor)))
+		}
 		return attest.Evidence{}, err
 	}
 	evidence, err := req.read(attrOutblob)

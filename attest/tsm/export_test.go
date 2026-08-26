@@ -74,6 +74,14 @@ type FakeReportInterface struct {
 	Opened  []string
 	Removed []string
 
+	// RemoveErr, if set, is what removing a request fails with.
+	RemoveErr error
+
+	// RejectWrite, if set, is what the platform rejects the inblob write
+	// with; PrivlevelFloor is what privlevel_floor then reads as.
+	RejectWrite    error
+	PrivlevelFloor string
+
 	// Writes records every write made to a request, in order. One write of
 	// the caller-supplied field's width to inblob is the whole of a correct
 	// acquisition.
@@ -132,6 +140,11 @@ func (r *fakeRequest) read(attr string) ([]byte, error) {
 			return nil, r.iface.CertificateTableErr
 		}
 		return append([]byte(nil), r.iface.CertificateTable...), nil
+	case attrPrivlevelFloor:
+		if r.iface.PrivlevelFloor == "" {
+			break
+		}
+		return []byte(r.iface.PrivlevelFloor + "\n"), nil
 	}
 	return nil, fmt.Errorf("fake: %s: %w", attr, fs.ErrNotExist)
 }
@@ -142,6 +155,9 @@ func (r *fakeRequest) write(attr string, data []byte) error {
 	if attr != attrInblob {
 		return nil
 	}
+	if r.iface.RejectWrite != nil {
+		return r.iface.RejectWrite
+	}
 	if len(data) != attest.CallerSuppliedBytesSize {
 		return fmt.Errorf("fake: inblob took %d bytes, not the field's %d; a partial write is a different request", len(data), attest.CallerSuppliedBytesSize)
 	}
@@ -150,6 +166,9 @@ func (r *fakeRequest) write(attr string, data []byte) error {
 }
 
 func (r *fakeRequest) close() error {
+	if r.iface.RemoveErr != nil {
+		return r.iface.RemoveErr
+	}
 	delete(r.iface.Taken, r.name)
 	r.iface.Removed = append(r.iface.Removed, r.name)
 	return nil

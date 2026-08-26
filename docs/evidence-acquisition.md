@@ -25,7 +25,7 @@ request and its answer:
 ```
 
 The same four steps — make the directory, write `inblob`, read `outblob`, remove the directory —
-yield an SEV-SNP report on AMD and a TDX quote on Intel. Only the bytes that come back are the
+yield an SEV-SNP report on AMD and TDX evidence on Intel. Only the bytes that come back are the
 vendor's, which is why the package is named for the interface rather than for AMD.
 
 `privlevel` is deliberately left alone: the guest runs at VMPL0, which is the floor the kernel
@@ -125,8 +125,11 @@ Needs the guest of `docs/snp-host-stack.md` — or any confidential guest with a
 and root, because `inblob` is root-only.
 
 ```sh
-# On the host: build it and copy it in, with a config device beside it.
+# On the host: build it and copy it in, with a config device beside it. $STACK is ticket 01's
+# host stack directory (docs/snp-host-stack.md); the guest is the stock one launched with
+# docs/snp/launch-snp-guest.sh from that document.
 export PATH=/usr/local/go/bin:$PATH
+STACK=${STACK:?ticket 01 host stack directory}
 cd attest && CGO_ENABLED=0 go build -o /tmp/acquire-evidence ./cmd/acquire-evidence
 
 bash "$STACK/gssh" 'mkdir -p /tmp/ticket04/config-device'
@@ -197,7 +200,7 @@ No confidential VM and no network. `go test ./...` from `attest/`.
 
 ## What this does not establish
 
-- **The report was not verified.** Its signature was not checked against the AMD root here, and
+- **The report's signature was not checked here**, not against the AMD root, and
   the chain was not validated. Producing and bundling is this ticket; proving is ticket 05.
 - **The guest is stock.** Its launch measurement covers the firmware and not the kernel, initrd
   or command line on this firmware (`docs/snp-host-stack.md`), so the measurement in the captured

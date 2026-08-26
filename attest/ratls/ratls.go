@@ -30,6 +30,15 @@
 // (per chip, so each side presents its own — ADR-0005), and the binding
 // context. The freshness challenge of Milestone 5 is a later payload version,
 // not a new protocol.
+//
+// # Refusals
+//
+// Every way a peer can fail aborts the handshake, so a peer that fails is never
+// a connection — there is no state in which it is connected and its exchanges
+// are refused afterwards. Every refusal this package reports is an
+// [attest.Refusal] carrying the [attest.Reason] that names it, and every one of
+// them has the same Error text, so the reason reaches an operator through
+// [WithRefusalLog] and reaches the peer through nothing at all.
 package ratls
 
 import (
@@ -80,7 +89,25 @@ type Identity struct {
 // NewIdentity generates a fresh key, binds it to evidence acquired from the
 // platform, and wraps both in a certificate. The key never leaves the process:
 // it is generated here and held only in the returned Identity.
+//
+// The binding context is [attest.BindingContextV1], which is what this version
+// of the protocol speaks. [NewIdentityForContext] is the seam a later one grows
+// through.
 func NewIdentity(ctx context.Context, acquirer attest.Acquirer) (*Identity, error) {
+	return NewIdentityForContext(ctx, acquirer, attest.BindingContextV1)
+}
+
+// NewIdentityForContext is [NewIdentity] with the binding context stated rather
+// than assumed.
+//
+// ADR-0002 reserves that field so that a later version can bind runsc's
+// configuration into the evidence without re-attesting every deployed platform,
+// and the reservation is worth nothing unless a verifier meeting a context it
+// does not understand refuses it. A v2 of this protocol is one caller: it
+// passes its own constant here and changes nothing else in this package. The
+// other is a test that needs a peer speaking a version this verifier does not,
+// which cannot otherwise exist while v1 is the only context anything mints.
+func NewIdentityForContext(ctx context.Context, acquirer attest.Acquirer, bindingContext attest.BindingContext) (*Identity, error) {
 	if acquirer == nil {
 		return nil, errors.New("ratls: no acquirer")
 	}
@@ -92,7 +119,7 @@ func NewIdentity(ctx context.Context, acquirer attest.Acquirer) (*Identity, erro
 	if err != nil {
 		return nil, fmt.Errorf("ratls: encoding the public key: %w", err)
 	}
-	binding := attest.Binding{PublicKey: spki, Context: attest.BindingContextV1}
+	binding := attest.Binding{PublicKey: spki, Context: bindingContext}
 	ev, err := acquirer.Acquire(ctx, binding.CallerSuppliedBytes())
 	if err != nil {
 		return nil, fmt.Errorf("ratls: acquiring evidence: %w", err)
@@ -140,24 +167,57 @@ func randomSerial() *big.Int {
 // for the server) because there is no hierarchy to build against; the
 // decision is VerifyPeerCertificate's alone.
 
+// A RefusalLog is handed every peer this side refuses, with the typed reason
+// that refused it. It is the only way the reason leaves this package: a peer
+// learns nothing from it, and a caller reads an error whose text is the same
+// for every reason.
+//
+// It runs on the handshake goroutine of the connection being refused, and one
+// log may be shared by every connection a tunneld has, so an implementation
+// must be safe to call concurrently and must not block.
+type RefusalLog func(*attest.Refusal)
+
+// An Option adjusts a configuration this package builds. There is one today.
+type Option func(*options)
+
+type options struct {
+	log RefusalLog
+}
+
+// WithRefusalLog sends every refusal to log. Without it a refusal still aborts
+// the handshake; it is simply not written down anywhere, which is the wrong
+// default for an operator and the right one for a package that must not choose
+// a destination for somebody else's logs.
+func WithRefusalLog(log RefusalLog) Option {
+	return func(o *options) { o.log = log }
+}
+
+func collect(opts []Option) options {
+	var o options
+	for _, opt := range opts {
+		opt(&o)
+	}
+	return o
+}
+
 // ClientConfig is the TLS configuration for dialing a peer.
-func (id *Identity) ClientConfig(v *attest.Verification) *tls.Config {
+func (id *Identity) ClientConfig(v *attest.Verification, opts ...Option) *tls.Config {
 	return &tls.Config{
 		MinVersion:            tls.VersionTLS13,
 		Certificates:          []tls.Certificate{id.cert},
 		InsecureSkipVerify:    true, // the envelope has no chain to verify; see VerifyPeerCertificate.
-		VerifyPeerCertificate: PeerVerifier(v),
+		VerifyPeerCertificate: PeerVerifier(v, opts...),
 		NextProtos:            []string{ALPN},
 	}
 }
 
 // ServerConfig is the TLS configuration for accepting peers.
-func (id *Identity) ServerConfig(v *attest.Verification) *tls.Config {
+func (id *Identity) ServerConfig(v *attest.Verification, opts ...Option) *tls.Config {
 	return &tls.Config{
 		MinVersion:            tls.VersionTLS13,
 		Certificates:          []tls.Certificate{id.cert},
 		ClientAuth:            tls.RequireAnyClientCert,
-		VerifyPeerCertificate: PeerVerifier(v),
+		VerifyPeerCertificate: PeerVerifier(v, opts...),
 		NextProtos:            []string{ALPN},
 		// Session tickets are what would let a returning client send early
 		// data; the transport also refuses 0-RTT, and this is the second lock.
@@ -169,30 +229,61 @@ func (id *Identity) ServerConfig(v *attest.Verification) *tls.Config {
 const ALPN = "gvisor-attested-tunnel/1"
 
 // ErrNoEnvelope is returned when the peer presented no certificate carrying
-// the payload. Like every other failure here it aborts the handshake.
-var ErrNoEnvelope = errors.New("ratls: peer presented no attestation envelope")
+// the payload. Like every other failure here it aborts the handshake, and like
+// every other it is a refusal carrying its reason: a peer with nothing to say
+// is refused for having said nothing, not for some failure to parse what it
+// did not send.
+var ErrNoEnvelope = attest.Refuse(attest.ReasonNoEvidence, "peer presented no certificate at all")
 
 // PeerVerifier returns the handshake callback that decides whether a peer is
 // admitted. Returning an error aborts the handshake, so a connection to a
 // peer that fails verification never exists — there is no state in which it
 // is connected but its exchanges are refused.
 //
+// Every error it returns is an [attest.Refusal], so the reason is typed on
+// every path and the text the peer sees is undifferentiated on every path.
+// [WithRefusalLog] is where the reason goes.
+//
 // The leaf is the first raw certificate and it is the only one read. Anything
 // after it is ignored, not rejected, because a peer's chain is carried in the
 // payload and never as TLS certificates. The verified chains argument is
 // always empty since chain building is disabled, and it is not consulted.
-func PeerVerifier(v *attest.Verification) func(rawCerts [][]byte, _ [][]*x509.Certificate) error {
+func PeerVerifier(v *attest.Verification, opts ...Option) func(rawCerts [][]byte, _ [][]*x509.Certificate) error {
+	o := collect(opts)
+	refuse := func(err error) error {
+		r := refusal(err)
+		if o.log != nil {
+			o.log(r)
+		}
+		return r
+	}
 	return func(rawCerts [][]byte, _ [][]*x509.Certificate) error {
 		if len(rawCerts) == 0 {
-			return ErrNoEnvelope
+			return refuse(ErrNoEnvelope)
 		}
 		ev, binding, err := Open(rawCerts[0])
 		if err != nil {
-			return err
+			return refuse(err)
 		}
-		_, err = v.Verify(context.Background(), ev, binding)
-		return err
+		if _, err := v.Verify(context.Background(), ev, binding); err != nil {
+			return refuse(err)
+		}
+		return nil
 	}
+}
+
+// refusal is what makes "every refusal is typed" a property of this package
+// rather than a habit of the packages below it. Everything reachable from here
+// already returns an [attest.Refusal]; an untyped error would be a bug in a
+// verifier, and it must not become an acceptance, must not reach a peer with
+// its text intact, and must not be silently filed under a reason that claims
+// more than is known.
+func refusal(err error) *attest.Refusal {
+	var r *attest.Refusal
+	if errors.As(err, &r) {
+		return r
+	}
+	return attest.Refuse(attest.ReasonMalformedEvidence, "peer refused by an untyped error, which is a bug in this verifier: %v", err)
 }
 
 // Open reads the evidence and the binding out of a presented certificate. It

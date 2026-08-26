@@ -35,6 +35,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"os"
 	"sync"
 
 	"gvisor.dev/gvisor/attest"
@@ -49,6 +50,10 @@ type PeerTable map[string]string
 
 // Handler answers the exchanges peers send to this tunneld.
 type Handler = tunnel.Handler
+
+// RefusalLog is handed every peer this tunneld refuses, with the typed reason
+// that refused it. See [Config.RefusalLog].
+type RefusalLog = ratls.RefusalLog
 
 // Config is everything a tunneld is started with.
 type Config struct {
@@ -77,6 +82,18 @@ type Config struct {
 	// Handler answers exchanges from peers. Nil answers none: every incoming
 	// stream is closed without a response.
 	Handler Handler
+
+	// RefusalLog receives every peer this tunneld refuses at the handshake,
+	// whichever role it was in, with the typed reason that refused it. It is
+	// the only place the reason surfaces: the peer sees an aborted handshake
+	// and the caller sees [ErrNotEstablished], and neither can tell one reason
+	// from another.
+	//
+	// Nil writes the line to standard error, which on a guest is the serial
+	// console the design already says these logs go to. A tunneld that dropped
+	// them by default would leave an operator with no way to tell a stale
+	// certificate chain from a rolled image.
+	RefusalLog RefusalLog
 }
 
 // ErrUnknownPeer is returned by Peer for a name the peer table does not hold.
@@ -93,6 +110,7 @@ type Tunneld struct {
 	identity     *ratls.Identity
 	verification *attest.Verification
 	listener     *tunnel.Listener
+	refusals     ratls.Option
 
 	mu     sync.Mutex
 	closed bool
@@ -127,14 +145,27 @@ func New(ctx context.Context, cfg Config) (*Tunneld, error) {
 	if addr == "" {
 		addr = "127.0.0.1:0"
 	}
-	listener, err := tunnel.Listen(addr, identity.ServerConfig(verification))
+	refusals := ratls.WithRefusalLog(refusalLog(cfg))
+	listener, err := tunnel.Listen(addr, identity.ServerConfig(verification, refusals))
 	if err != nil {
 		return nil, fmt.Errorf("tunneld: refusing to start: %w", err)
 	}
-	t := &Tunneld{cfg: cfg, identity: identity, verification: verification, listener: listener}
+	t := &Tunneld{cfg: cfg, identity: identity, verification: verification, listener: listener, refusals: refusals}
 	t.wg.Add(1)
 	go t.accept()
 	return t, nil
+}
+
+// refusalLog is the sink refusals go to: the one the caller supplied, or
+// standard error prefixed with the sandbox, so that two tunnelds in one process
+// are told apart.
+func refusalLog(cfg Config) RefusalLog {
+	if cfg.RefusalLog != nil {
+		return cfg.RefusalLog
+	}
+	return func(r *attest.Refusal) {
+		fmt.Fprintf(os.Stderr, "tunneld[%s]: %s\n", cfg.SandboxID, r.LogString())
+	}
 }
 
 // SandboxID is the sandbox this tunneld serves.
@@ -177,7 +208,7 @@ func (t *Tunneld) Peer(ctx context.Context, name string) (*Channel, error) {
 	if !ok {
 		return nil, fmt.Errorf("%w: %q is not in the peer table", ErrUnknownPeer, name)
 	}
-	conn, err := tunnel.Dial(ctx, addr, t.identity.ClientConfig(t.verification))
+	conn, err := tunnel.Dial(ctx, addr, t.identity.ClientConfig(t.verification, t.refusals))
 	if err != nil {
 		return nil, fmt.Errorf("%w: %q at %s: %v", ErrNotEstablished, name, addr, err)
 	}

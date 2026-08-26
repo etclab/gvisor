@@ -119,7 +119,8 @@ type Config struct {
 
 // A Platform is a fake SEV-SNP platform. It implements [attest.Acquirer], which
 // is the producer half of the vendor seam; the acquirer that talks to real
-// hardware through the platform's vendor-neutral report interface is ticket 04.
+// hardware through the platform's vendor-neutral report interface is
+// gvisor.dev/gvisor/attest/tsm.
 type Platform struct {
 	cfg         Config
 	productLine string
@@ -230,10 +231,10 @@ func (p *Platform) Vendor() attest.Vendor { return attest.VendorAMDSEVSNP }
 // hardware returns them.
 //
 // The certificate chain is bundled with the evidence, as ADR-0005 requires and
-// as ticket 04's acquirer will do from the config device. The platform's own
-// certificate table is empty on the host this was built against and no operator
-// action fills it, so a chain that arrived with the evidence is the only kind
-// there is.
+// as gvisor.dev/gvisor/attest/tsm does from the config device. The platform's
+// own certificate table is empty on the host this was built against and no
+// operator action fills it, so a chain that arrived with the evidence is the
+// only kind there is.
 func (p *Platform) Acquire(_ context.Context, callerSupplied [attest.CallerSuppliedBytesSize]byte) (attest.Evidence, error) {
 	raw, err := p.report(callerSupplied)
 	if err != nil {

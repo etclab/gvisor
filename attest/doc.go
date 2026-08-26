@@ -38,13 +38,15 @@
 // refusal taxonomy and the precedence between checks all live above the seam
 // and are not restated per vendor.
 //
-// Today there is one implementation of each. The verifier is
+// Today there is one hardware implementation of each. The verifier is
 // gvisor.dev/gvisor/attest/verify, which wraps github.com/google/go-sev-guest
 // for SEV-SNP (ADR-0003) and keeps that library's API shape from reaching any
-// other package. The acquirer is gvisor.dev/gvisor/attest/snpfake, a fake
-// SEV-SNP platform built on go-sev-guest's test signing; the acquirer that
-// talks to real hardware through the platform's vendor-neutral report
-// interface arrives with ticket 04.
+// other package. The acquirer is gvisor.dev/gvisor/attest/tsm, which drives
+// the kernel's vendor-neutral report interface and bundles the certificate
+// chain the config device holds (ADR-0005). Beside them,
+// gvisor.dev/gvisor/attest/snpfake is a fake SEV-SNP platform built on
+// go-sev-guest's test signing, which is what lets everything above the seam be
+// exercised with no confidential VM.
 //
 // # The reference value set
 //

@@ -89,11 +89,11 @@ const DefaultIdleTimeout = 60 * time.Second
 //
 // Fifteen minutes is a judgement, not a measurement, and it is worth saying
 // what the judgement is. Until the freshness challenge of Milestone 5 exists,
-// this number is the only bound on how stale an attestation can be while
-// traffic still flows: nothing else in this design ever re-examines a peer it
-// admitted once. A tunnel that lived for a day would be a tunnel whose peer
-// was last judged a day ago — against a reference value set that may since
-// have been rolled, and a platform whose TCB may since have moved.
+// this number is the only bound on how long a verdict about a peer is relied
+// on while traffic still flows: nothing else in this design ever re-examines a
+// peer it admitted once. A tunnel that lived for a day would be a tunnel whose
+// peer was last judged a day ago — against a reference value set that may
+// since have been rolled, and a platform whose TCB may since have moved.
 //
 // It is deliberately conservative in the direction of re-attesting too often.
 // Being wrong low costs one handshake and one verification, off the critical
@@ -413,9 +413,9 @@ type Conn struct {
 //
 // A tunnel that reaches its maximum age mid-exchange takes that exchange down
 // with it. That is deliberate: the alternative is waiting for quiescence,
-// which is waiting for a peer to stop talking, which unbounds exactly the
-// staleness this exists to bound. The caller sees a failed exchange and its
-// next one runs over a freshly attested tunnel.
+// which is waiting for a peer to stop talking, which is exactly how a verdict
+// on a busy peer would come to be relied on indefinitely. The caller sees a
+// failed exchange and its next one runs over a freshly attested tunnel.
 func newConn(c *quic.Conn, limits Limits) *Conn {
 	conn := &Conn{c: c, establishedAt: time.Now(), maxAge: limits.MaxAge}
 	conn.expiry = time.AfterFunc(limits.MaxAge, func() {

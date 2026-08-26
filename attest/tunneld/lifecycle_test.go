@@ -379,8 +379,10 @@ func TestAnIdleTunnelClosesAndTheNextUseDialsAgain(t *testing.T) {
 	}
 }
 
-// TestATunnelPastItsMaximumAgeIsTornDownAndReattested is the staleness bound,
-// enforced by the side holding the tunnel.
+// TestATunnelPastItsMaximumAgeIsTornDownAndReattested is the bound on how long
+// a verdict about a peer stands, enforced by the side holding the tunnel. It is
+// not a bound on how fresh that peer's evidence is — the re-handshake re-judges
+// the same report — and tunnel.DefaultMaxAge says why the difference matters.
 //
 // Only the dialer's maximum age is short here; the peer's is long enough that
 // it would happily keep this tunnel for the whole test. So what tears the
@@ -630,10 +632,10 @@ func TestARefusedTunnelIsNotRemembered(t *testing.T) {
 // TestTheDefaultLimitsAreTheChosenNumbers is a change detector, and it is here
 // because these two are the kind of constant that gets adjusted to make a test
 // faster. The maximum age in particular is a security parameter: until the
-// freshness challenge exists it is the only bound on how stale an attestation
-// can be while traffic still flows, so moving it is a decision somebody should
-// have to make on purpose. tunnel.DefaultMaxAge records why it is this number
-// and what would change it.
+// freshness challenge exists it is the only bound on how long a verdict about a
+// peer is relied on while traffic still flows, so moving it is a decision
+// somebody should have to make on purpose. tunnel.DefaultMaxAge records why it
+// is this number, what would change it, and what it does not bound.
 func TestTheDefaultLimitsAreTheChosenNumbers(t *testing.T) {
 	if got, want := tunnel.DefaultIdleTimeout, 60*time.Second; got != want {
 		t.Errorf("the default idle timeout is %v; the spec's Transport decision says %v", got, want)

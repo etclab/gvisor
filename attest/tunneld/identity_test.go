@@ -128,6 +128,7 @@ func startOnVM(t *testing.T, sandbox string, vm *snpfake.Platform, admits attest
 
 // presented is what one peer showed at one handshake.
 type presented struct {
+	openErr        error                 // set when ratls.Open failed on an admitted envelope
 	publicKey      []byte                // the key exactly as the peer presented it
 	bindingContext attest.BindingContext // the binding context it claimed
 	evidence       []byte                // the evidence bound to that key
@@ -180,15 +181,16 @@ func startWatchingPeer(t *testing.T, image []byte, admits attest.ReferenceValueS
 
 // record opens an admitted peer's envelope with the same reader the handshake
 // used and writes down what was in it. It runs on that peer's handshake
-// goroutine, so it reports with Errorf rather than Fatalf.
+// goroutine, so it reports nothing itself: an envelope it cannot open is
+// recorded as such and surfaces from admitted, on the test's own goroutine.
 func (w *watchingPeer) record(t *testing.T, der []byte) {
 	ev, binding, err := ratls.Open(der)
-	if err != nil {
-		t.Errorf("the watching peer admitted an envelope it cannot open: %v", err)
-		return
-	}
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	if err != nil {
+		w.seen = append(w.seen, presented{openErr: err})
+		return
+	}
 	w.seen = append(w.seen, presented{
 		publicKey:      binding.PublicKey,
 		bindingContext: binding.Context,
@@ -217,10 +219,17 @@ func (w *watchingPeer) accept() {
 func (w *watchingPeer) Addr() string { return w.listener.Addr().String() }
 
 // admitted is what every peer this listener let in presented, in the order it
-// was admitted.
-func (w *watchingPeer) admitted() []presented {
+// was admitted. An admitted envelope the reader could not open fails the test
+// here, on the test's goroutine.
+func (w *watchingPeer) admitted(t *testing.T) []presented {
+	t.Helper()
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	for _, p := range w.seen {
+		if p.openErr != nil {
+			t.Fatalf("the watching peer admitted an envelope it cannot open: %v", p.openErr)
+		}
+	}
 	return append([]presented(nil), w.seen...)
 }
 
@@ -273,7 +282,7 @@ func TestTwoTunneldsOnOneVMPresentDistinctKeysAndDistinctEvidence(t *testing.T) 
 		}
 	}
 
-	seen := peer.admitted()
+	seen := peer.admitted(t)
 	if len(seen) != 2 {
 		t.Fatalf("the peer admitted %d tunnelds; want 2", len(seen))
 	}
@@ -455,11 +464,6 @@ func TestATunnelToOneTunneldDoesNotReachTheOther(t *testing.T) {
 		if n := c.reached.verifier.handshakes(); n != 1 {
 			t.Errorf("%s judged %d peers; want 1", c.reached.name, n)
 		}
-	}
-	// Stated once more at the end, because the loop's second pass is the one
-	// that would catch a shared handler: each answered only its own.
-	if n, m := one.served.Load(), two.served.Load(); n != 1 || m != 1 {
-		t.Errorf("the two sandboxes answered %d and %d exchanges; want 1 each — a tunnel to one reached the other", n, m)
 	}
 }
 

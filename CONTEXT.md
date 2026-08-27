@@ -106,6 +106,7 @@ key and no trust decision attached.
 _Avoid_: socket, connection (reserve that for the transport-level object).
 
 **Exchange**:
-One request/response over a tunnel, occupying exactly one stream and ending at EOF. Trailing
-bytes are a protocol violation.
+One request/response over a tunnel, occupying exactly one stream: a four-byte payload length,
+that many bytes, and then the end of the stream. Anything after the declared payload is a
+protocol violation.
 _Avoid_: message, call, transaction.

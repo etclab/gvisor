@@ -182,13 +182,17 @@ func (l *Listener) run() {
 	}
 }
 
-// establish answers one peer's establishment round trip. The deadline is the
-// idle timeout, because a peer that has completed a handshake and not opened
-// its establishment stream is an idle connection and there is no second thing
-// to call it: QUIC's own idle timer would close it at that same moment, and a
-// separate constant here would either duplicate that number or contradict it.
+// establishmentBound caps how long a handshake-complete peer may take to open
+// its establishment stream. The idle timeout is the natural deadline — such a
+// peer is an idle connection — but the idle timeout is an operator's number
+// for a tunnel that has proven itself, and a peer that has not yet done so
+// gets at most this much of the listener's patience.
+const establishmentBound = 10 * time.Second
+
+// establish answers one peer's establishment round trip, within the idle
+// timeout or establishmentBound, whichever is shorter.
 func (l *Listener) establish(c *quic.Conn) {
-	ctx, cancel := context.WithTimeout(context.Background(), l.limits.IdleTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), min(l.limits.IdleTimeout, establishmentBound))
 	defer cancel()
 	if err := answerEstablishment(ctx, c); err != nil {
 		c.CloseWithError(errProtocol, "establishment")
@@ -279,7 +283,7 @@ func establish(ctx context.Context, c *quic.Conn) error {
 	if err := s.Close(); err != nil {
 		return err
 	}
-	reply, err := io.ReadAll(s)
+	reply, err := readAllUntil(ctx, s)
 	if err != nil {
 		return err
 	}
@@ -289,12 +293,26 @@ func establish(ctx context.Context, c *quic.Conn) error {
 	return nil
 }
 
+// readAllUntil reads s to end-of-stream, giving up when ctx ends. A stream
+// read does not watch a context on its own, so a peer that opens the
+// establishment stream and then says nothing would otherwise hold the reader
+// until the idle timeout rather than until the caller's deadline.
+func readAllUntil(ctx context.Context, s *quic.Stream) ([]byte, error) {
+	stop := context.AfterFunc(ctx, func() { s.SetReadDeadline(time.Now()) })
+	defer stop()
+	b, err := io.ReadAll(s)
+	if err != nil && ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+	return b, err
+}
+
 func answerEstablishment(ctx context.Context, c *quic.Conn) error {
 	s, err := c.AcceptStream(ctx)
 	if err != nil {
 		return err
 	}
-	probe, err := io.ReadAll(s)
+	probe, err := readAllUntil(ctx, s)
 	if err != nil {
 		return err
 	}
@@ -418,11 +436,17 @@ type Conn struct {
 // failed exchange and its next one runs over a freshly attested tunnel.
 func newConn(c *quic.Conn, limits Limits) *Conn {
 	conn := &Conn{c: c, establishedAt: time.Now(), maxAge: limits.MaxAge}
-	conn.expiry = time.AfterFunc(limits.MaxAge, func() {
-		c.CloseWithError(errExpired, "maximum age")
-	})
+	conn.expiry = time.AfterFunc(limits.MaxAge, conn.closeExpired)
+	// A tunnel that ends before its time — closed by either side, or dropped
+	// for idleness — has nothing left to expire.
+	context.AfterFunc(c.Context(), func() { conn.expiry.Stop() })
 	return conn
 }
+
+// closeExpired ends the tunnel because it reached its maximum age, saying so
+// on the wire. Both the timer and a holder that finds the tunnel too old use
+// this, so the peer reads one code for one event.
+func (c *Conn) closeExpired() { c.c.CloseWithError(errExpired, "maximum age") }
 
 // Age is how long ago this tunnel was established.
 func (c *Conn) Age() time.Duration { return time.Since(c.establishedAt) }
@@ -607,7 +631,11 @@ func (c *Cache) Get(ctx context.Context, addr string) (*Conn, error) {
 			// because a timer fires when the runtime gets to it, and a tunnel
 			// past its maximum age must not carry an exchange in the meantime.
 			c.discard(addr, p)
-			p.conn.Close()
+			if p.conn.Expired() {
+				p.conn.closeExpired()
+			} else {
+				p.conn.Close()
+			}
 			continue
 		}
 		p := &pending{ready: make(chan struct{})}

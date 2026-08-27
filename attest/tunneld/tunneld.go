@@ -323,7 +323,15 @@ func (c *Channel) Exchange(ctx context.Context, request []byte) ([]byte, error) 
 	if err != nil {
 		return nil, fmt.Errorf("%w: %q at %s: %v", ErrNotEstablished, c.name, c.addr, err)
 	}
-	return conn.Exchange(ctx, request)
+	response, err := conn.Exchange(ctx, request)
+	if err != nil && !conn.Live() {
+		// The tunnel was gone, or went, under this exchange. The cache had
+		// not yet heard: Live is the last thing this side was told, not a
+		// promise about the next instant. To the caller it is the same
+		// event as a tunnel found gone before the exchange started.
+		return nil, fmt.Errorf("%w: %q at %s: %v", ErrNotEstablished, c.name, c.addr, err)
+	}
+	return response, err
 }
 
 // Close gives up this channel. It does not end the tunnel: the tunnel is

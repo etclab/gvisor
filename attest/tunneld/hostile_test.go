@@ -16,7 +16,11 @@ package tunneld_test
 
 import (
 	"context"
+	"errors"
+	"io"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/quic-go/quic-go"
 
@@ -91,5 +95,70 @@ func TestAPeerThatBreaksEstablishmentDoesNotStopAccepting(t *testing.T) {
 	}
 	if _, err := ch.Exchange(ctx(t), []byte("hello")); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// TestAnExchangeWaitsForTheEstablishmentRoundTrip: a dial does not report
+// success, and no exchange reaches the wire, until the peer has answered the
+// establishment round trip. The listener here is attested and completes the
+// handshake, then never answers; if Dial skipped the round trip, the request
+// frame would arrive at it. Removing establish() from Dial fails this test.
+func TestAnExchangeWaitsForTheEstablishmentRoundTrip(t *testing.T) {
+	admits := admitting(imageA)
+	p := platform(t, imageA)
+	identity, err := ratls.NewIdentity(ctx(t), p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	verification, err := attest.New(verifierFor(t, p), admits)
+	if err != nil {
+		t.Fatal(err)
+	}
+	silent, err := quic.ListenAddr("127.0.0.1:0", identity.ServerConfig(verification), &quic.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer silent.Close()
+	var dataFrames atomic.Int32
+	go func() {
+		for {
+			c, err := silent.Accept(context.Background())
+			if err != nil {
+				return
+			}
+			go func() {
+				for {
+					s, err := c.AcceptStream(context.Background())
+					if err != nil {
+						return
+					}
+					// Read what the dialer sent and never answer. The
+					// establishment stream is empty; a request is not.
+					if b, _ := io.ReadAll(s); len(b) > 0 {
+						dataFrames.Add(1)
+					}
+				}
+			}()
+		}
+	}()
+
+	dialer := start(t, "dialer", imageA, admits, tunneld.PeerTable{"silent": silent.Addr().String()})
+	short, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	began := time.Now()
+	ch, err := dialer.Peer(short, "silent")
+	if !errors.Is(err, tunneld.ErrNotEstablished) {
+		if ch != nil {
+			ch.Close()
+		}
+		t.Fatalf("Peer(silent) = %v, %v; want ErrNotEstablished", ch, err)
+	}
+	// And it gave up at the caller's deadline, not at the idle timeout: the
+	// establishment read must watch the context.
+	if waited := time.Since(began); waited > 5*time.Second {
+		t.Errorf("Peer(silent) took %v to give up on a 2s context", waited)
+	}
+	if n := dataFrames.Load(); n != 0 {
+		t.Errorf("%d request frame(s) reached a peer that had not answered establishment", n)
 	}
 }

@@ -153,8 +153,11 @@ retransmits a second one 1.036 s later; it is answered, and the entire QUIC hand
 certificates, both reports, both chains, both verifications, and the establishment round trip —
 completes 15 ms after that. The second cold figure is the re-attestation at the maximum age,
 against a peer already in the ARP cache, and it is what a handshake between two attested guests
-actually costs on this hardware: **about 16 ms**, matching the 17–24 ms measured in the stock
-guest over loopback and the 31–42 ms of the shorter runs.
+actually costs on this hardware. Across every two-guest handshake recorded in this ticket the
+figure is **16–42 ms** (15.554, 15.699, 22.563, 30.996, 37.267, 37.524, 41.951), against 17–24 ms
+for two tunnelds inside the stock guest over loopback — the difference between them being the
+relay, the two virtual NICs and two guests' scheduling rather than anything about attestation,
+which is the same work in both.
 
 A deployment reading this should take the first figure seriously anyway. It is what the first
 dial after a cold boot costs when the peer is not yet answering for its address, and one ARP

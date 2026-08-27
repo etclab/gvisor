@@ -1,0 +1,41 @@
+### a peer presenting no evidence at all
+unattested-peer: dialing 127.0.0.1:14433 with a certificate carrying no attestation payload
+unattested-peer: the dial returned a connection — TLS 1.3 lets a client finish
+unattested-peer: before the server has judged its certificate, so this proves nothing yet
+unattested-peer: REFUSED by 127.0.0.1:14433: no application round trip: CRYPTO_ERROR 0x12a (remote): tls: bad certificate
+unattested-peer: which is the answer, and note what it does not say: not which
+unattested-peer: check refused it, not what would have satisfied it, not that
+unattested-peer: evidence was the missing thing.
+unattested-peer exit=0
+### the control: a peer that does present evidence
+tunneld-b exit=0
+=== BEGIN a.log
+tunneld: sandbox "stock-a"
+tunneld: author key b6207f5fca0a59c3… (author.pub, inside the launch measurement)
+tunneld: peer table: stock-a = 127.0.0.1:14433
+tunneld: report interface /sys/kernel/config/tsm/report: present, 0 request(s) outstanding; a platform driver that does not answer it is what a non-confidential VM looks like from inside
+tunneld: tsm: provider "sev_guest" (amd-sev-snp) returned 1184 bytes of evidence over 1 write(s); its own certificate table is empty (auxblob, 0 bytes), which is the expected state on this host and not an error; bundled the 4759-byte chain provisioned in config for chip 9b3716…5243 at bootloader=9 tee=0 snp=23 microcode=72 (ADR-0005)
+tunneld: listening on 127.0.0.1:14433 as "stock-a"; idle 1m0s, maximum age 15m0s
+tunneld: holding for 25s so that peers still dialing can finish
+tunneld: REFUSED verification refused: no evidence presented: peer's envelope carries no attestation payload
+tunneld: PEER key=5f65c599ed3d24f0… chain=0957b4aa0678b511… measurement=84aaf62f431f0a94… tcb=bootloader=9,tee=0,snp=23,microcode=72
+tunneld: PEERS verifier_calls=1 accepted=1 refused=0 distinct_keys=1 distinct_chains=1
+tunneld: PEER SEEN key=5f65c599ed3d24f039783c881bede15d554d2f9b55e1b17ff9f0b91c8776287be0fd09cfa35636e8f83713be6a011f8251684d674cbc564c93b0b9d137b0d989 chain=0957b4aa0678b511c89d6f9b49742ab114043b662408b13e9f7b43d1033d5a81 measurement=84aaf62f431f0a943944e10b0569c7c899bf5e9cfd0c6176af3f70033e241ac1e9d807f5605fd7dd08bf1bf1f09b5da5 times=1
+tunneld: EXIT status=0
+=== END a.log
+=== BEGIN b.log
+tunneld: sandbox "stock-b"
+tunneld: author key b6207f5fca0a59c3… (author.pub, inside the launch measurement)
+tunneld: peer table: stock-a = 127.0.0.1:14433
+tunneld: report interface /sys/kernel/config/tsm/report: present, 0 request(s) outstanding; a platform driver that does not answer it is what a non-confidential VM looks like from inside
+tunneld: tsm: provider "sev_guest" (amd-sev-snp) returned 1184 bytes of evidence over 1 write(s); its own certificate table is empty (auxblob, 0 bytes), which is the expected state on this host and not an error; bundled the 4759-byte chain provisioned in config for chip 9b3716…5243 at bootloader=9 tee=0 snp=23 microcode=72 (ADR-0005)
+tunneld: listening on 127.0.0.1:14434 as "stock-b"; idle 1m0s, maximum age 15m0s
+tunneld: exercise: dialing stock-a; 20 warm exchanges, 8 concurrent × 3 rounds, marker "attested-tunnel-plaintext-marker"
+tunneld: PEER key=523327e1bc1f1b9e… chain=0957b4aa0678b511… measurement=84aaf62f431f0a94… tcb=bootloader=9,tee=0,snp=23,microcode=72
+tunneld: LATENCY pass=1 peer=stock-a kind=establish ms=23.767 attempts=1 verifier_calls=1
+tunneld: LATENCY pass=1 peer=stock-a kind=warm_exchange n=20 min_ms=0.223 p50_ms=0.384 p90_ms=0.656 max_ms=0.726 mean_ms=0.415 answered_by="stock-a"
+tunneld: LATENCY pass=1 peer=stock-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=2.244 min_ms=0.140 p50_ms=0.443 p90_ms=0.695 max_ms=0.786 mean_ms=0.465
+tunneld: PEERS verifier_calls=1 accepted=1 refused=0 distinct_keys=1 distinct_chains=1
+tunneld: PEER SEEN key=523327e1bc1f1b9e8afbcb57637c7d8bf14272d2d532647403bbd09b11e4490df8371275ca438bc1cd151059256e7317ce4ddbddbdfe7029d7f04c57c96a6df3 chain=0957b4aa0678b511c89d6f9b49742ab114043b662408b13e9f7b43d1033d5a81 measurement=84aaf62f431f0a943944e10b0569c7c899bf5e9cfd0c6176af3f70033e241ac1e9d807f5605fd7dd08bf1bf1f09b5da5 times=1
+tunneld: EXIT status=0
+=== END b.log

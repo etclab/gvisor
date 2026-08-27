@@ -93,10 +93,10 @@ diagnostic surface a measured guest has (user story 48).
 |---|---|
 | tunneld packaged into the measured image, the measurement recomputed offline, the reference value re-emitted | `docs/snp/image/package-tunneld.sh`, recorded in `evidence/ticket14/packaging.txt` and `manifest.txt`. Both guests then reported that measurement in their evidence, and the peer wrote it down: the `PEER SEEN … measurement=` line on each console equals `predicted-measurement.txt` exactly. |
 | the packaged binary confirmed free of the fake platform before the measurement is computed | `attest/cmd/tunneld/importgraph_test.go` (both the command's graph and the package's) and `packaged_test.go` (the artifact: no forbidden package path in the file, no dynamic loader), run by the packaging script before the build. Both were mutation-checked: adding an `snpfake` import to the command fails both. |
-| two attested guests connect and a legitimate exchange succeeds, each with its own provisioned chain | the `live` scenario. Both consoles show evidence acquired from the platform and the chain read from their own config device; guest B establishes, exchanges and is answered by guest A by name. |
-| the exchange completes with egress to the vendor blocked | the topology: the guests' only link is the relay, and the relay's census records every address either guest ever resolved. In the recorded runs that is `10.14.0.2` and `10.14.0.3` and nothing else — no gateway was ever looked for, so nothing could have left the segment. |
+| two attested guests connect and a legitimate exchange succeeds, each with its own provisioned chain | the `live` scenario. Both consoles show evidence acquired from the platform and the chain read from their own config device; guest B establishes, exchanges and is answered by guest A by name. "Its own" is its own device: the two devices carry the same chain bytes, because both guests are on one chip (see *What this does not establish*). |
+| the exchange completes with egress to the vendor blocked | the topology: the guests' only link is the relay, which has no uplink, and the relay's ARP census records every IPv4 address either guest resolved — `10.14.0.2` and `10.14.0.3` and nothing else. This is blocking by construction: no guest attempted to reach the vendor and was refused, and the census is IPv4-only. The pcap holds what it leaves out, and it points the same way: 18 IPv6 router solicitations, every one to a link-local multicast address, and not a single router advertisement in reply. |
 | re-provisioning after a TCB change, and a stale chain failing at the peer rather than locally | **simulated, and it does not surface where the criterion expects.** See *What a stale chain actually does* below. |
-| a guest booted from a modified image is refused, naming the measurement internally | the `modified` scenario: ticket 08's `mutate-image.sh` changes one byte of `rootfs.img`, the guest boots and attests perfectly, and guest A refuses it with `launch measurement not in the reference value set` while telling it nothing. |
+| a guest booted from a modified image is refused, naming the measurement internally | the `modified` scenario: ticket 08's `mutate-image.sh` changes one byte of `rootfs.img`, the guest boots and attests perfectly, and guest A refuses it with `launch measurement not in the reference value set` while telling it nothing. The mutated image's own predicted measurement was not recorded, and the refusing side logs the reason rather than the value it saw. |
 | a guest below the TCB floor is refused | the `tcbfloor` scenario: guest A holds a set with the same measurement, the same author and a floor this platform does not meet. |
 | a non-confidential VM presenting no evidence is refused | two halves, both live. The `nosnp` scenario boots the same image without SEV-SNP: it has no evidence, refuses to start, and never listens. `docs/snp/unattested-peer` is the other half — a peer that does present a certificate, with no attestation payload in it, refused on the wire by a real tunneld. |
 | an attacker relaying datagrams reads nothing, with a control | the relay carries every frame of the `live` scenario — 4,941 frames, 568,830 bytes — and finds no plaintext in any of them, while the same run's exchanges succeed. The `tamper` scenario is the active half: the relay changes a bit in every twentieth datagram, 17 of them, and no exchange takes a changed datagram for its peer's answer while the exchanges complete anyway. `relay-selftest.sh` is the control on the control. |
@@ -153,11 +153,11 @@ retransmits a second one 1.036 s later; it is answered, and the entire QUIC hand
 certificates, both reports, both chains, both verifications, and the establishment round trip —
 completes 15 ms after that. The second cold figure is the re-attestation at the maximum age,
 against a peer already in the ARP cache, and it is what a handshake between two attested guests
-actually costs on this hardware. Across every two-guest handshake recorded in this ticket the
-figure is **16–42 ms** (15.554, 15.699, 22.563, 30.996, 37.267, 37.524, 41.951), against 17–24 ms
-for two tunnelds inside the stock guest over loopback — the difference between them being the
-relay, the two virtual NICs and two guests' scheduling rather than anything about attestation,
-which is the same work in both.
+actually costs on this hardware. The two-guest handshakes whose measurement is in
+`evidence/ticket14/` are 15.699, 37.267, 37.524 and 41.951 ms — four samples, so a range and
+not a figure; the one loopback handshake recorded (`stock-guest-run.txt`) is 23.767 ms. The
+attestation work is the same in both; what differs is the relay, the two virtual NICs and two
+guests' scheduling.
 
 A deployment reading this should take the first figure seriously anyway. It is what the first
 dial after a cold boot costs when the peer is not yet answering for its address, and one ARP
@@ -205,13 +205,16 @@ rollover would invalidate every recorded measurement baseline on this host and i
 reversible. Nothing here shows the operational sequence of a TCB update — only the state a host
 is left in by one it did not re-provision for.
 
-## The same binary without a guest launch
+## The same command without a guest launch
 
-`docs/snp/tunnel-in-stock-guest.sh` runs the packaged binary inside the stock SEV-SNP guest
-ticket 01 left running, where the only privileged step is the guest's own `sudo`. It needs no
-launch and no spool, which is why it exists: it is the way to exercise the whole path on real
-silicon when the operator's runner is not up, and it is where two things were established that
-the two-guest run does not reach.
+`docs/snp/tunnel-in-stock-guest.sh` runs `cmd/tunneld` inside the stock SEV-SNP guest ticket 01
+left running, where the only privileged step is the guest's own `sudo`. It builds its own binary
+rather than taking the packaged one, so the recorded run is **not** byte-for-byte what the image
+embeds: `stock-guest-run.txt` names `f800ec9a…` at commit `148111c9`, while `packaging.txt` names
+`fd1d0db0…` at `881f71ec`. Same source lineage, two builds, and the two-guest run is the one that
+speaks for the packaged artifact. It needs no launch and no spool, which is why it exists: it is
+the way to exercise the whole path on real silicon when the operator's runner is not up, and it
+is where two things were established that the two-guest run does not reach.
 
 **A peer with no evidence, on the wire.** `docs/snp/unattested-peer` dials a real tunneld with
 an ordinary self-signed certificate — no attestation payload — and is refused, with a peer that
@@ -228,9 +231,11 @@ is what the two-guest run asserts.
 
 A refusal that would also happen with the tunnel broken is not evidence, so the `live` scenario
 runs at both ends of the list, on the same wiring, and the refusals sit between them. Both
-passed: 30 assertions on the 1000-second run and 29 on the 150-second one that followed the
-refusals. Each refusal scenario carries its own local control as well — in `modified` and
-`tcbfloor` the refused guest *admits* the other, on the same handshake it is refused on, so the
+passed: 30 assertions on the 1000-second run. The 150-second run that followed the refusals
+also passed every assertion it reached, but its transcript is truncated (`live-run.txt`, see
+*Do not edit a running bash script* in the ticket), so it has no summary line and its count is
+not one the transcript states. Each refusal scenario carries its own local control as well — in
+`modified` and `tcbfloor` the refused guest *admits* the other, on the same handshake it is refused on, so the
 wiring is demonstrably intact at the moment of the refusal.
 
 The relay carries its own two controls (`relay-selftest.sh`), and the `tamper` scenario is a
@@ -318,3 +323,13 @@ default is the whole list with `live` at both ends.
   (`docs/snp-measured-image.md`).
 - **Key custody.** The reference value author key is a throwaway the packaging script generates,
   as in every run so far.
+- **Replay, drop or reorder on the segment.** The relay's active half flips bits; it does not
+  re-inject a recorded datagram on a later connection, drop, or reorder. The memo's "replayed
+  exchange on a fresh connection" item is not exercised here.
+- **A refusal of no evidence over the segment.** The `unattested-peer` half ran inside the stock
+  guest over loopback; on the two-guest segment the no-evidence case is a guest that never
+  listens.
+- **An attempt at egress.** No guest tried to reach the vendor and failed; egress is absent by
+  construction, and the census that says so is IPv4-only.
+- **Re-provisioning.** The stale chain was substituted in; no guest was re-provisioned and
+  shown to recover.

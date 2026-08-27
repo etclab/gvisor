@@ -176,6 +176,7 @@ func run(args []string, out io.Writer) int {
 	// peers'. Neither reaches the network — the chain is the one the config
 	// device holds (ADR-0005) and the vendor root is the one embedded in the
 	// verification library.
+	logf("report interface %s: %s", *reportDir, reportInterface(*reportDir))
 	acquirer, err := tsm.New(tsm.Options{ChainDir: *configDir, ReportDir: *reportDir, RequestName: "tunneld"})
 	if err != nil {
 		logf("refusing to start: %v", err)
@@ -270,6 +271,24 @@ func readAuthorKey(path string) (ed25519.PublicKey, error) {
 		return nil, fmt.Errorf("%s is neither %d raw bytes nor their hexadecimal", path, ed25519.PublicKeySize)
 	}
 	return ed25519.PublicKey(decoded), nil
+}
+
+// reportInterface says what is at the kernel's report interface, and it is
+// printed on every start rather than only on a failure. A guest that cannot
+// acquire evidence fails at ratls.NewIdentity with whatever errno the kernel
+// gave — "no such device or address" from a mkdir, on a guest whose sev-guest
+// driver did not load — and that is a true sentence about a syscall rather
+// than a legible one about a machine. The console is the only diagnostic
+// surface a measured guest has (spec, user story 48), so the fact a reader
+// needs is put there before the failure that depends on it.
+func reportInterface(dir string) string {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return fmt.Sprintf("absent (%v) — this kernel exposes no report interface, or configfs is not mounted; "+
+			"a platform with nothing to ask has no evidence to present", err)
+	}
+	return fmt.Sprintf("present, %d request(s) outstanding; a platform driver that does not answer it "+
+		"is what a non-confidential VM looks like from inside", len(entries))
 }
 
 func abbreviate(s string) string {

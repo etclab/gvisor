@@ -19,6 +19,8 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+
+	"gvisor.dev/gvisor/attest/tunnel"
 )
 
 // The run configuration is the one document on the config device that this
@@ -57,6 +59,17 @@ func TestRunConfigLoads(t *testing.T) {
 	}
 	if got := cfg.limits(); got.IdleTimeout != time.Minute || got.MaxAge != 15*time.Minute {
 		t.Errorf("limits %v; want 60s idle and 15m of age", got)
+	}
+	// An unstated limit is the transport's default, and the console has to say
+	// so: a guest whose peer advertises a smaller idle timeout runs on that
+	// one, and the number it printed is where anybody would look for it.
+	bare, err := loadRunConfig(write(t, "tunneld.json",
+		`{"format": "gvisor.dev/gvisor/attest/tunneld-run", "version": 1, "sandbox_id": "a"}`))
+	if err != nil {
+		t.Fatalf("loading: %v", err)
+	}
+	if got := bare.limits(); got.IdleTimeout != tunnel.DefaultIdleTimeout || got.MaxAge != tunnel.DefaultMaxAge {
+		t.Errorf("limits %v with none configured; want the transport's defaults, stated rather than zero", got)
 	}
 	if cfg.Link == nil || cfg.Link.Interface != "eth0" || cfg.Link.PrefixLength != 24 {
 		t.Errorf("link %+v; want eth0 at /24", cfg.Link)

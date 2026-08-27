@@ -128,10 +128,14 @@ func (w *watchedVerifier) report(logf func(string, ...any)) {
 	defer w.mu.Unlock()
 	logf("PEERS verifier_calls=%d accepted=%d refused=%d distinct_keys=%d distinct_chains=%d",
 		w.calls, w.accepted, w.refused, len(w.peers), len(w.chains))
+	// In full, unlike the line written when a peer first appears. This is the
+	// record: two guests are told apart by their keys, told to be on one chip
+	// by their chains, and told to be running the image somebody predicted by
+	// their measurement — and a reader checking any of those against another
+	// document cannot do it with sixteen characters.
 	for _, key := range sortedPeerKeys(w.peers) {
 		p := w.peers[key]
-		logf("PEER SEEN key=%s chain=%s measurement=%s times=%d",
-			abbreviate(p.key), abbreviate(p.chain), abbreviate(p.measurement), p.times)
+		logf("PEER SEEN key=%s chain=%s measurement=%s times=%d", p.key, p.chain, p.measurement, p.times)
 	}
 }
 

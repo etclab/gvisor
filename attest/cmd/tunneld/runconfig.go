@@ -153,11 +153,26 @@ func loadRunConfig(path string) (*runConfig, error) {
 	return &c, nil
 }
 
+// limits fills in the defaults here rather than leaving them to the transport,
+// which fills in the same two numbers itself. The duplication buys one thing
+// and it is worth the cost: the console line naming this tunneld's limits
+// names the ones in force. QUIC's idle timeout is the *minimum* of what the
+// two peers advertise, so a deployment whose two guests were configured
+// differently has one guest running on a number that appears nowhere in its
+// own configuration — and the first place anybody looks for that number is the
+// line this tunneld printed at startup.
 func (c *runConfig) limits() tunnel.Limits {
-	if c.Limits == nil {
-		return tunnel.Limits{}
+	var l tunnel.Limits
+	if c.Limits != nil {
+		l = tunnel.Limits{IdleTimeout: c.Limits.IdleTimeout.Duration, MaxAge: c.Limits.MaxAge.Duration}
 	}
-	return tunnel.Limits{IdleTimeout: c.Limits.IdleTimeout.Duration, MaxAge: c.Limits.MaxAge.Duration}
+	if l.IdleTimeout <= 0 {
+		l.IdleTimeout = tunnel.DefaultIdleTimeout
+	}
+	if l.MaxAge <= 0 {
+		l.MaxAge = tunnel.DefaultMaxAge
+	}
+	return l
 }
 
 func (c *runConfig) startTimeout() time.Duration {

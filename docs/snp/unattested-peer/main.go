@@ -34,6 +34,24 @@
 // reason it did not tell this program — ReasonNoEvidence. It exits 1 if it is
 // admitted, which would be the finding.
 //
+// # Refused is not the same as unreachable
+//
+// A program that exits 0 whenever anything goes wrong reports "refused" for a
+// peer it never reached, and a harness that greps its output then records a
+// refusal that never happened. So the two are separated and given different
+// statuses. Once the dial returns a connection the peer is reachable by
+// construction, and every failure after that point is its decision; at the
+// dial itself, an error the peer originated (a transport or application close
+// it sent us — a TLS alert carried as CRYPTO_ERROR is one) is a refusal, while
+// a timeout with nothing heard, or a network error, is not evidence about what
+// the peer would have done.
+//
+//	0  refused — the expected answer
+//	1  admitted — the finding
+//	2  usage
+//	3  never reached it; says nothing about the peer
+//	4  a failure this program could not classify, which is also not evidence
+//
 // "Refused" is not the same as "the dial failed", and this program is where
 // that stops being a subtlety. TLS 1.3 lets a client finish its handshake
 // before the server has processed the client's certificate, so the dial here
@@ -58,10 +76,12 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"math/big"
+	"net"
 	"os"
 	"time"
 
@@ -77,23 +97,44 @@ func main() {
 		flag.Usage()
 		os.Exit(2)
 	}
-	if err := run(*addr, *alpn, *timeout); err != nil {
+	switch verdict, err := run(*addr, *alpn, *timeout); verdict {
+	case refused:
 		fmt.Printf("unattested-peer: REFUSED by %s: %v\n", *addr, err)
 		fmt.Println("unattested-peer: which is the answer, and note what it does not say: not which")
 		fmt.Println("unattested-peer: check refused it, not what would have satisfied it, not that")
 		fmt.Println("unattested-peer: evidence was the missing thing.")
-		return
+	case unreachable:
+		fmt.Printf("unattested-peer: NEVER REACHED %s: %v\n", *addr, err)
+		fmt.Println("unattested-peer: this is not a refusal and must not be recorded as one — nothing")
+		fmt.Println("unattested-peer: here says what that peer would have done with the certificate.")
+		os.Exit(3)
+	case unclassified:
+		fmt.Printf("unattested-peer: UNCLASSIFIED failure against %s: %v\n", *addr, err)
+		fmt.Println("unattested-peer: neither a refusal nor a plain unreachable peer. Not evidence.")
+		os.Exit(4)
+	case admitted:
+		fmt.Printf("unattested-peer: ADMITTED by %s — a tunneld exchanged with a peer that presented no evidence\n", *addr)
+		os.Exit(1)
 	}
-	fmt.Printf("unattested-peer: ADMITTED by %s — a tunneld exchanged with a peer that presented no evidence\n", *addr)
-	os.Exit(1)
 }
 
-func run(addr, alpn string, timeout time.Duration) error {
+// A verdict is what this program is for. Every one of them is a different
+// thing to write in a record, which is why they are not an error and a nil.
+type verdict int
+
+const (
+	refused verdict = iota
+	unreachable
+	unclassified
+	admitted
+)
+
+func run(addr, alpn string, timeout time.Duration) (verdict, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	cert, err := selfSigned()
 	if err != nil {
-		return err
+		return unclassified, err
 	}
 	fmt.Printf("unattested-peer: dialing %s with a certificate carrying no attestation payload\n", addr)
 	conn, err := quic.DialAddr(ctx, addr, &tls.Config{
@@ -103,7 +144,7 @@ func run(addr, alpn string, timeout time.Duration) error {
 		NextProtos:         []string{alpn},
 	}, &quic.Config{})
 	if err != nil {
-		return err
+		return classifyDial(err), err
 	}
 	defer conn.CloseWithError(0, "")
 	fmt.Println("unattested-peer: the dial returned a connection — TLS 1.3 lets a client finish")
@@ -112,22 +153,60 @@ func run(addr, alpn string, timeout time.Duration) error {
 	// The establishment round trip, done the way tunnel.Dial does it: open a
 	// stream, close it, and read the listener's reply to end of stream. A
 	// listener answers only on a connection it admitted.
+	//
+	// Everything below this line is past the point where the peer proved it is
+	// there, so a failure is its decision and not the network's.
 	s, err := conn.OpenStreamSync(ctx)
 	if err != nil {
-		return fmt.Errorf("the connection was gone before a stream could be opened: %w", err)
+		return refused, fmt.Errorf("the connection was gone before a stream could be opened: %w", err)
 	}
 	if err := s.Close(); err != nil {
-		return fmt.Errorf("the connection was gone before the stream could be closed: %w", err)
+		return refused, fmt.Errorf("the connection was gone before the stream could be closed: %w", err)
 	}
 	if err := s.SetReadDeadline(time.Now().Add(timeout)); err != nil {
-		return err
+		return unclassified, err
 	}
 	reply, err := io.ReadAll(s)
 	if err != nil {
-		return fmt.Errorf("no application round trip: %w", err)
+		return refused, fmt.Errorf("no application round trip: %w", err)
 	}
 	fmt.Printf("unattested-peer: the listener answered %d bytes\n", len(reply))
-	return nil
+	return admitted, nil
+}
+
+// classifyDial decides whether a dial that failed failed because the peer said
+// no or because it was never there.
+//
+// The distinction is the peer's own bytes. A transport or application close
+// this end *received* is the peer speaking — a TLS alert reaches us as
+// CRYPTO_ERROR inside a transport close, and "bad certificate" is what a
+// tunneld's refusal looks like from out here. A handshake that timed out
+// having heard nothing, and any error from the socket underneath, is the
+// network and not a verdict.
+func classifyDial(err error) verdict {
+	var transport *quic.TransportError
+	if errors.As(err, &transport) && transport.Remote {
+		return refused
+	}
+	var application *quic.ApplicationError
+	if errors.As(err, &application) && application.Remote {
+		return refused
+	}
+	var handshakeTimeout *quic.HandshakeTimeoutError
+	var idleTimeout *quic.IdleTimeoutError
+	if errors.As(err, &handshakeTimeout) || errors.As(err, &idleTimeout) ||
+		errors.Is(err, context.DeadlineExceeded) || errors.Is(err, os.ErrDeadlineExceeded) {
+		return unreachable
+	}
+	var netErr net.Error
+	if errors.As(err, &netErr) {
+		return unreachable
+	}
+	var opErr *net.OpError
+	if errors.As(err, &opErr) {
+		return unreachable
+	}
+	return unclassified
 }
 
 // selfSigned is an ordinary throwaway certificate: no extensions, nothing

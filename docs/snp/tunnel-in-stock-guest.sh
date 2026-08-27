@@ -152,6 +152,12 @@ check "the peer that presented no evidence was refused" \
       has "$A" "REFUSED verification refused: no evidence presented"
 check "and it learned nothing about why"       has "$R" "tls: bad certificate"
 check "and it did not get an application round trip" has "$R" "no application round trip"
+# The attacker's own verdict, which is a different claim from the tunneld's:
+# status 0 is "the peer refused me", status 3 is "I never reached it". Without
+# this the two are indistinguishable in a transcript, and an unreachable
+# listener would read as a refusal that never happened.
+check "the attacker reached the listener and was refused by it, rather than never reaching it" \
+      has "$R" "unattested-peer exit=0"
 check "the control peer, on the same listener in the same run, was admitted" \
       has "$A" "tunneld: PEER key="
 KEY_A=$(sed -n 's/.*PEER SEEN key=\([0-9a-f]*\).*/\1/p' "$Bl" | head -1)
@@ -173,7 +179,13 @@ echo "=== $PASSES passed, $FAILURES failed ==="
 [ "$KEEP" = 1 ] || bash "$GSSH" 'rm -rf ~/ticket14-stock' || true
 if [ -n "$CAPTURE" ]; then
   mkdir -p "$CAPTURE"
-  cp "$TRANSCRIPT" "$OUT/console-a.txt" "$OUT/console-b.txt" "$OUT/run.txt" "$CAPTURE/" 2>/dev/null || true
+  # run.txt is not captured: the transcript already carries every line of it,
+  # indented, and two copies of one file in an evidence directory invite a
+  # reader to wonder which one is authoritative.
+  for f in console-a.txt console-b.txt; do
+    cp "$OUT/$f" "$CAPTURE/stock-$f" 2>/dev/null || true
+  done
+  cp "$TRANSCRIPT" "$CAPTURE/" 2>/dev/null || true
   echo "captured into $CAPTURE"
 fi
 [ "$FAILURES" = 0 ]

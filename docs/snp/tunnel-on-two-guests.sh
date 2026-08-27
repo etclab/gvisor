@@ -39,6 +39,25 @@
 # carries. The legitimate exchange and the relay's failure to read it are the
 # same run.
 #
+# Prerequisites, none of which this script installs, and each of which fails
+# somewhere further in than where it was missing:
+#
+#   squashfs-tools   mksquashfs, for the root filesystem (build-image.sh)
+#   cryptsetup-bin   veritysetup, for the hash tree over it
+#   e2fsprogs        mke2fs -d, for the config devices (mkconfigdev.sh)
+#   the cpuid module the launch path reads C-bit position from /dev/cpu/0/cpuid
+#   go               /usr/local/go/bin, added to PATH here (attest/README.md)
+#
+# and two artifacts that are not tools:
+#
+#   docs/snp/evidence/ticket05/certificate-chain-stale.{bin,json} — the real
+#   chain AMD issued for this chip one TCB level down, which the stalechain
+#   scenario needs and which cannot be manufactured (docs/verification-on-hardware.md)
+#   $STACK/image-ticket14-packaging/author.key — the key that signed the image's
+#   reference value set. The tcbfloor scenario re-signs a set with it, and a
+#   different key would need a different image, since the public half is inside
+#   the measurement.
+#
 # Privilege. Launching an SNP guest opens /dev/sev, which is root-only on this
 # host, and sudo needs a password. Every privileged step is therefore written
 # as a .job file into ticket 01's spool, where docs/snp/root-runner.sh — started
@@ -78,6 +97,31 @@ mkdir -p "$OUT"
 TRANSCRIPT="$OUT/tunnel-run.txt"
 exec > >(tee "$TRANSCRIPT") 2>&1
 PASSES=0; FAILURES=0
+
+# The relay outlives this script if this script dies, and then it is still
+# holding its two ports: the next run fails to bind and the failure looks like
+# a guest that would not start. It is killed by name here rather than left to
+# the operating system, and only by the pid this run started — never with a
+# bare `wait`, which would also wait for the `tee` in the process substitution
+# above and hang forever.
+#
+# What this cannot undo is a job already in the spool. The runner is root and
+# takes what it is given; a job handed over before an interrupt still runs and
+# still boots its guests, which is a property of the spool being reviewable
+# rather than revocable.
+RELAY_PID=""
+cleanup() {
+  local rc=$?
+  if [ -n "$RELAY_PID" ] && kill -0 "$RELAY_PID" 2>/dev/null; then
+    echo "cleanup: stopping the relay (pid $RELAY_PID)"
+    kill "$RELAY_PID" 2>/dev/null || true
+    wait "$RELAY_PID" 2>/dev/null || true
+  fi
+  RELAY_PID=""
+  return $rc
+}
+trap cleanup EXIT
+trap 'echo "interrupted"; cleanup; exit 130' INT TERM
 note()  { echo "$*"; }
 pass()  { PASSES=$((PASSES+1)); echo "PASS  $*"; }
 fail()  { FAILURES=$((FAILURES+1)); echo "FAIL  $*"; }
@@ -243,6 +287,7 @@ boot_pair() {
       --pcap "$pcap" --marker "$MARKER" --summary "$relay_log" --tamper "$TAMPER" \
       --seconds "$((seconds + 30))" --attach-timeout 120 > "$work/relay.log" 2>&1 &
   local relay=$!
+  RELAY_PID=$relay
   sleep 1
 
   local guest_b_flags=""
@@ -277,6 +322,7 @@ JOB
     bash "$work/boot.job" 2>&1 | sed 's/^/    | /'
   fi
   wait "$relay" 2>/dev/null || true
+  RELAY_PID=""
   note "relay:"; sed 's/^/    | /' "$relay_log" 2>/dev/null || true
 }
 

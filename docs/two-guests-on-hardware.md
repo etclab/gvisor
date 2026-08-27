@@ -123,20 +123,6 @@ median and maximum across 34 passes of twenty exchanges each; the concurrent row
 time of eight-in-flight × three rounds, and the row under it the individual exchanges inside
 them.
 
-**The two cold figures are 1077.569 ms and 15.699 ms, and the difference is not attestation.**
-The pcap says what it was. The first frame on the segment is guest B's ARP for `10.14.0.2`,
-which goes unanswered because guest A has not finished bringing its interface up; the kernel
-retransmits a second one 1.036 s later; it is answered, and the entire QUIC handshake — both
-certificates, both reports, both chains, both verifications, and the establishment round trip —
-completes 15 ms after that. The second cold figure is the re-attestation at the maximum age,
-against a peer already in the ARP cache, and it is what a handshake between two attested guests
-actually costs on this hardware: **about 16 ms**, matching the 17–24 ms measured in the stock
-guest over loopback and the 31–42 ms of the shorter runs.
-
-A deployment reading this should take the first figure seriously anyway. It is what the first
-dial after a cold boot costs when the peer is not yet answering for its address, and one ARP
-retransmission is a second on Linux.
-
 **Cold establish** is the whole cost of admission: a QUIC handshake, both sides' certificates
 carrying an SEV-SNP report and its chain, both sides verifying the other against AMD's root, and
 one empty application round trip before the tunnel counts as established. It happens once per
@@ -159,6 +145,20 @@ had been chosen differently.
 through it the tunnel is torn down and both guests judge each other again, under a caller that
 did nothing but keep asking for the same peer. It appears in the table as a second cold figure
 with a verification behind it.
+
+**The two cold figures are 1077.569 ms and 15.699 ms, and the difference is not attestation.**
+The pcap says what it was. The first frame on the segment is guest B's ARP for `10.14.0.2`,
+which goes unanswered because guest A has not finished bringing its interface up; the kernel
+retransmits a second one 1.036 s later; it is answered, and the entire QUIC handshake — both
+certificates, both reports, both chains, both verifications, and the establishment round trip —
+completes 15 ms after that. The second cold figure is the re-attestation at the maximum age,
+against a peer already in the ARP cache, and it is what a handshake between two attested guests
+actually costs on this hardware: **about 16 ms**, matching the 17–24 ms measured in the stock
+guest over loopback and the 31–42 ms of the shorter runs.
+
+A deployment reading this should take the first figure seriously anyway. It is what the first
+dial after a cold boot costs when the peer is not yet answering for its address, and one ARP
+retransmission is a second on Linux.
 
 ## What a stale chain actually does
 
@@ -201,6 +201,25 @@ microcode 71 during ticket 05, one level below what the platform reports. A real
 rollover would invalidate every recorded measurement baseline on this host and is not cleanly
 reversible. Nothing here shows the operational sequence of a TCB update — only the state a host
 is left in by one it did not re-provision for.
+
+## The same binary without a guest launch
+
+`docs/snp/tunnel-in-stock-guest.sh` runs the packaged binary inside the stock SEV-SNP guest
+ticket 01 left running, where the only privileged step is the guest's own `sudo`. It needs no
+launch and no spool, which is why it exists: it is the way to exercise the whole path on real
+silicon when the operator's runner is not up, and it is where two things were established that
+the two-guest run does not reach.
+
+**A peer with no evidence, on the wire.** `docs/snp/unattested-peer` dials a real tunneld with
+an ordinary self-signed certificate — no attestation payload — and is refused, with a peer that
+does present evidence admitted by the same listener in the same run as its control. It is
+deliberately not built from `ratls`: a peer built from this design's own certificate code and
+refused by this design's own reading of it proves less than one written the way a stranger would
+write it.
+
+**Two tunnelds on one chip.** They present distinct keys over one identical chain, which is the
+same shape the two-guest run produces and for the same reason — and it is why chain *equality*
+is what the two-guest run asserts.
 
 ## The controls
 

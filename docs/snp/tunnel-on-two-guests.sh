@@ -22,6 +22,10 @@
 #             reports. A refuses B for being below the floor.
 #   nosnp     guest B booted without SEV-SNP. It has no evidence to present,
 #             fails closed before it listens, and A gets no peer.
+#   tamper    the same pair, with the relay changing a bit in every twentieth
+#             datagram it carries. The active half of the attacker.
+#   stalechain guest B holding a chain provisioned for a TCB this platform is
+#             not at. It fails closed before it presents anything.
 #
 # The topology is the evidence for two of the criteria on its own, so it is
 # worth stating plainly. The guests' only network is
@@ -54,6 +58,7 @@ STALE="${STALE:-$REPO/docs/snp/evidence/ticket05}"
 SNP=1; CAPTURE=""; RUN_FOR=1000; SCENARIOS=(); SPOOL=""
 RELAY_A_PORT="${RELAY_A_PORT:-15801}"; RELAY_B_PORT="${RELAY_B_PORT:-15802}"
 MARKER="attested-tunnel-plaintext-marker"
+TAMPER=0
 while [ -n "${1:-}" ]; do
   case "$1" in
     -image)    IMAGE="$2"; shift 2 ;;
@@ -67,7 +72,7 @@ while [ -n "${1:-}" ]; do
     *) echo "unknown option: $1" >&2; exit 2 ;;
   esac
 done
-[ ${#SCENARIOS[@]} -gt 0 ] || SCENARIOS=(live modified tcbfloor nosnp live-again)
+[ ${#SCENARIOS[@]} -gt 0 ] || SCENARIOS=(live modified tcbfloor nosnp tamper stalechain live-again)
 
 mkdir -p "$OUT"
 TRANSCRIPT="$OUT/tunnel-run.txt"
@@ -104,9 +109,16 @@ echo
 # and there are two copies of it. Whichever exists is the one the operator is
 # watching; if neither does, nothing privileged can run and this says so rather
 # than hanging.
+# root-runner.sh takes its spool from its own directory, and the operator runs
+# the copy in the primary checkout — not in this worktree. A relative path here
+# would write into a directory nothing is watching, and the job would sit there
+# looking exactly like a hang, so the main checkout is found rather than
+# assumed: `git worktree list` names it first.
 find_spool() {
   [ -n "$SPOOL" ] && { echo "$SPOOL"; return 0; }
-  for d in "$REPO/docs/snp/root-spool" "$STACK/root-spool"; do
+  local main
+  main=$(git -C "$REPO" worktree list | head -1 | awk '{print $1}')
+  for d in "$main/docs/snp/root-spool" "$REPO/docs/snp/root-spool" "$STACK/root-spool"; do
     [ -d "$d" ] && { echo "$d"; return 0; }
   done
   return 1
@@ -211,7 +223,7 @@ dialer_json() { # SANDBOX ADDRESS PEER RUN_FOR WAIT
     "exchanges": 20,
     "concurrency": 8,
     "rounds": 3,
-    "repeat_every": "60s",
+    "repeat_every": "30s",
     "run_for": "$4"
   },
   "hold": "5s"
@@ -228,7 +240,7 @@ boot_pair() {
   local relay_log="$work/relay.txt" pcap="$work/segment.pcap"
   python3 "$HERE/l2relay.py" \
       --listen "127.0.0.1:$RELAY_A_PORT" --listen "127.0.0.1:$RELAY_B_PORT" \
-      --pcap "$pcap" --marker "$MARKER" --summary "$relay_log" \
+      --pcap "$pcap" --marker "$MARKER" --summary "$relay_log" --tamper "$TAMPER" \
       --seconds "$((seconds + 30))" --attach-timeout 120 > "$work/relay.log" 2>&1 &
   local relay=$!
   sleep 1
@@ -299,9 +311,12 @@ scenario_live() {
   echo
   echo "### $1: two attested guests, an exchange, and the latency table"
   mkdir -p "$work"
-  make_config "$work/config-a" guest-a 10.14.0.2 guest-b 10.14.0.3:4433 "$(answerer_json guest-a 10.14.0.2 "$((seconds + 30))s")"
-  make_config "$work/config-b" guest-b 10.14.0.3 guest-a 10.14.0.2:4433 "$(dialer_json guest-b 10.14.0.3 guest-a "${seconds}s" 120s)"
-  boot_pair "$work" "$IMAGE" "$IMAGE" "$((seconds + 150))" 1
+  # The answerer outlives the dialer's whole run: a peer that powers off while
+  # the other is still exchanging produces a failure that belongs to this
+  # harness rather than to the tunnel.
+  make_config "$work/config-a" guest-a 10.14.0.2 guest-b 10.14.0.3:4433 "$(answerer_json guest-a 10.14.0.2 "$((seconds + 90))s")"
+  make_config "$work/config-b" guest-b 10.14.0.3 guest-a 10.14.0.2:4433 "$(dialer_json guest-b 10.14.0.3 guest-a "${seconds}s" 90s)"
+  boot_pair "$work" "$IMAGE" "$IMAGE" "$((seconds + 240))" 1
 
   local a="$work/console-a.txt" b="$work/console-b.txt"
   [ -f "$a" ] && [ -f "$b" ] || { fail "$1: one of the guests left no console"; return; }
@@ -352,10 +367,17 @@ scenario_live() {
   check "no guest looked for a gateway or anything else off the segment" test -z "$bad"
 
   # A run longer than the maximum age re-handshakes in the middle of itself.
-  local establishes; establishes=$(grep -c "kind=establish" "$b" || true)
-  echo "    establishments in this run: $establishes (maximum age is 15m, run is ${seconds}s)"
+  # Every pass asks for the peer again. Within the maximum age that costs no
+  # handshake and no verification — the cache answers — so the number of passes
+  # that cost a verification is the number of times the two guests attested to
+  # each other, and it should be one until the tunnel reaches fifteen minutes.
+  local passes handshakes
+  passes=$(grep -c "kind=establish" "$b" || true)
+  handshakes=$(grep -c "kind=establish .*verifier_calls=[1-9]" "$b" || true)
+  echo "    passes: $passes, of which cost a verification: $handshakes (maximum age 15m, run ${seconds}s)"
+  check "asking for a warm peer again cost no handshake" test "$passes" -gt "$handshakes"
   if [ "$seconds" -gt 900 ]; then
-    check "the tunnel was re-attested when it reached its maximum age" test "$establishes" -ge 2
+    check "the tunnel was re-attested when it reached its maximum age" test "$handshakes" -ge 2
   fi
 }
 
@@ -478,6 +500,38 @@ scenario_stalechain() {
   check "it never presented anything to a peer"           not_in_file "$b" "tunneld: listening on"
 }
 
+# ---- scenario: an attacker that changes what it carries --------------------
+# The recording relay is the passive half of the attacker; this is the active
+# one. It flips a bit in the payload of every twentieth datagram it forwards.
+# Nothing here is expected to break: QUIC authenticates every packet, so a
+# changed one is discarded by the receiver and retransmitted by the sender, and
+# the exchange completes anyway. What matters is what cannot happen — a changed
+# datagram delivered as if it were the sender's — and tunneld would catch that
+# too, because an exchange checks that the response is the peer's echo of the
+# request it sent.
+scenario_tamper() {
+  local work="$OUT/tamper"
+  echo
+  echo "### tamper: the relay changes a bit in every twentieth datagram"
+  mkdir -p "$work"
+  make_config "$work/config-a" guest-a 10.14.0.2 guest-b 10.14.0.3:4433 "$(answerer_json guest-a 10.14.0.2 240s)"
+  make_config "$work/config-b" guest-b 10.14.0.3 guest-a 10.14.0.2:4433 "$(dialer_json guest-b 10.14.0.3 guest-a 60s 90s)"
+  TAMPER=20
+  boot_pair "$work" "$IMAGE" "$IMAGE" 300 1
+  TAMPER=0
+
+  local a="$work/console-a.txt" b="$work/console-b.txt"
+  [ -f "$a" ] && [ -f "$b" ] || { fail "tamper: one of the guests left no console"; return; }
+  if [ "$SNP" = 0 ]; then note "control boot: nothing attests, nothing to tamper with"; return; fi
+  check "the attacker really did change datagrams" \
+        grep -qE "tampered=[1-9]" "$work/relay.txt"
+  check "no exchange took a changed datagram for its peer's answer" \
+        not_in_file "$b" "want <sandbox>:"
+  check "the exchanges completed anyway, because QUIC discards what it cannot authenticate" \
+        in_file "$b" 'answered_by="guest-a"'
+  check "and the attacker still read nothing" in_file "$work/relay.txt" "MARKER not found"
+}
+
 # ---- run them -------------------------------------------------------------
 for s in "${SCENARIOS[@]}"; do
   case "$s" in
@@ -486,6 +540,7 @@ for s in "${SCENARIOS[@]}"; do
     modified)   scenario_modified ;;
     tcbfloor)   scenario_tcbfloor ;;
     nosnp)      scenario_nosnp ;;
+    tamper)     scenario_tamper ;;
     stalechain) scenario_stalechain ;;
     *) echo "unknown scenario: $s" >&2; exit 2 ;;
   esac

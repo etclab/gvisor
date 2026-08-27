@@ -1,0 +1,137 @@
+=== ticket 14: two attested guests ===
+date        : 2026-08-27T18:41:18Z
+repo        : 881f71eca365d50e75418f7feefc5e2a199b2522 on ticket-14-m3-two-guests-live
+image       : /home/pniroula/Projects/gvisor-ticket14/.scratch/attested-secure-tunnel/host-stack/image-ticket14
+mode        : SEV-SNP (privileged, through the spool)
+scenarios   : live live-again
+
+predicted launch measurement of the image both guests boot:
+  b818dd26b73f703580eeb842ed46188af3abb64515cbd67cd3ffc6f20fd5e2661554cd005f31727a328b9db697a42d1f
+the reference value set on both config devices names exactly that, signed by the
+author key baked into the image at /etc/attested-tunnel/author.pub (ADR-0004).
+
+spool       : /home/pniroula/Projects/gvisor/docs/snp/root-spool
+
+### live: two attested guests, an exchange, and the latency table
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config device written to /home/pniroula/Projects/gvisor-ticket14/.scratch/attested-secure-tunnel/host-stack/ticket14-live/live/config-a.img (f226050075390d05…, not measured)
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config device written to /home/pniroula/Projects/gvisor-ticket14/.scratch/attested-secure-tunnel/host-stack/ticket14-live/live/config-b.img (e873055414907a74…, not measured)
+spooled /home/pniroula/Projects/gvisor/docs/snp/root-spool/ticket14-4101875-live.job; waiting up to 1480s for the runner
+live finished, rc=0
+    | guest A qemu exited 0
+    | guest B qemu exited 0
+relay:
+    | l2relay: RELAYED a_to_b_frames=2482 b_to_a_frames=2459 a_to_b_bytes=284312 b_to_a_bytes=284518 tampered=0
+    | l2relay: MARKER not found hits=0 marker='attested-tunnel-plaintext-marker' in 4941 frames carrying 568830 bytes
+    | l2relay: what was on the segment:
+    |   ethertypes : IPv4=4817, ARP=96, IPv6=28
+    |   ip protocols: UDP=4817
+    |   arp targets : 10.14.0.2, 10.14.0.3
+    |   10.14.0.2 -> 10.14.0.3 proto=UDP frames=2419
+    |   10.14.0.3 -> 10.14.0.2 proto=UDP frames=2398
+PASS  guest-a: booted the measured image and ran the packaged tunneld
+PASS  guest-a: no writable path in the image is executable
+PASS  guest-a: read the author key from inside the launch measurement
+PASS  guest-a: read the reference value set and chain from the config device
+PASS  guest-b: booted the measured image and ran the packaged tunneld
+PASS  guest-b: no writable path in the image is executable
+PASS  guest-b: read the author key from inside the launch measurement
+PASS  guest-b: read the reference value set and chain from the config device
+PASS  guest-a: acquired its own evidence from the platform
+PASS  guest-a: bundled the chain provisioned on its config device, not the platform's
+PASS  guest-a: is listening
+PASS  guest-b: acquired its own evidence from the platform
+PASS  guest-b: bundled the chain provisioned on its config device, not the platform's
+PASS  guest-b: is listening
+PASS  guest-a admitted its peer's evidence
+PASS  guest-b admitted its peer's evidence
+PASS  guest-b established a tunnel
+PASS  guest-b exchanged over it, warm
+PASS  guest-b ran concurrent exchanges on one tunnel
+PASS  guest-a answered guest-b's exchanges
+PASS  guest-b's exercise completed
+PASS  neither guest refused the other
+    guest-a presented key ad8a040fdd94c011333a88971b7067684c9fd65ec42e4f59585142ecd3451d762b0d19724cd7611d60ddacfb8c725c9fd14ed5c2b4f744613d690c3a189ff8de
+    guest-b presented key 03445911e6f0036fbd356f6690cd6efd5f8204bdff6f49114376b8f2133dd3cd7ad32b8a59626a13bf982cb8f9e16bdbc4f529abe3c4bdf994e704cefdbd955f
+    both presented chain  0957b4aa0678b511c89d6f9b49742ab114043b662408b13e9f7b43d1033d5a81 / 0957b4aa0678b511c89d6f9b49742ab114043b662408b13e9f7b43d1033d5a81
+PASS  the two guests presented distinct keys
+PASS  the two guests presented the same chain, which is what one chip means
+PASS  each guest reported the measurement predicted offline for the image both booted
+PASS  the exchange went through the relay
+PASS  the relay found no plaintext on the wire
+    addresses resolved on the segment: 10.14.0.2, 10.14.0.3
+PASS  no guest looked for a gateway or anything else off the segment
+    passes: 34, of which cost a verification: 2 (maximum age 15m, run 1000s)
+PASS  asking for a warm peer again cost no handshake
+PASS  the tunnel was re-attested when it reached its maximum age
+
+### live-again: two attested guests, an exchange, and the latency table
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config device written to /home/pniroula/Projects/gvisor-ticket14/.scratch/attested-secure-tunnel/host-stack/ticket14-live/live-again/config-a.img (f7ea51d50a4909c9…, not measured)
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config device written to /home/pniroula/Projects/gvisor-ticket14/.scratch/attested-secure-tunnel/host-stack/ticket14-live/live-again/config-b.img (4a3fe084997eb4c4…, not measured)
+spooled /home/pniroula/Projects/gvisor/docs/snp/root-spool/ticket14-4101875-live-again.job; waiting up to 630s for the runner
+live-again finished, rc=0
+    | guest A qemu exited 0
+    | guest B qemu exited 0
+relay:
+    | l2relay: RELAYED a_to_b_frames=393 b_to_a_frames=392 a_to_b_bytes=53811 b_to_a_bytes=54439 tampered=0
+    | l2relay: MARKER not found hits=0 marker='attested-tunnel-plaintext-marker' in 785 frames carrying 108250 bytes
+    | l2relay: what was on the segment:
+    |   ethertypes : IPv4=746, ARP=17, IPv6=22
+    |   ip protocols: UDP=746
+    |   arp targets : 10.14.0.2, 10.14.0.3
+    |   10.14.0.3 -> 10.14.0.2 proto=UDP frames=375
+    |   10.14.0.2 -> 10.14.0.3 proto=UDP frames=371
+PASS  guest-a: booted the measured image and ran the packaged tunneld
+PASS  guest-a: no writable path in the image is executable
+PASS  guest-a: read the author key from inside the launch measurement
+PASS  guest-a: read the reference value set and chain from the config device
+PASS  guest-b: booted the measured image and ran the packaged tunneld
+PASS  guest-b: no writable path in the image is executable
+PASS  guest-b: read the author key from inside the launch measurement
+PASS  guest-b: read the reference value set and chain from the config device
+PASS  guest-a: acquired its own evidence from the platform
+PASS  guest-a: bundled the chain provisioned on its config device, not the platform's
+PASS  guest-a: is listening
+PASS  guest-b: acquired its own evidence from the platform
+PASS  guest-b: bundled the chain provisioned on its config device, not the platform's
+PASS  guest-b: is listening
+PASS  guest-a admitted its peer's evidence
+PASS  guest-b admitted its peer's evidence
+PASS  guest-b established a tunnel
+PASS  guest-b exchanged over it, warm
+PASS  guest-b ran concurrent exchanges on one tunnel
+PASS  guest-a answered guest-b's exchanges
+PASS  guest-b's exercise completed
+PASS  neither guest refused the other
+    guest-a presented key 46be92ec1e77378d869429e7b247c5e96374e812c5be7bb4a2820a571f835e028e77699e3539749e803f7e744008e34e2d609b5f78ddff4b1173f3d8d7276ae3
+    guest-b presented key bce7df9fb5a453712f3157af82ddb9266293713c9f72d8798cabc89e837b4d8f6f82505255ab2c9116058b845b57dccaf2501f9f68e345c016f986bfe18be601
+    both presented chain  0957b4aa0678b511c89d6f9b49742ab114043b662408b13e9f7b43d1033d5a81 / 0957b4aa0678b511c89d6f9b49742ab114043b662408b13e9f7b43d1033d5a81
+PASS  the two guests presented distinct keys
+PASS  the two guests presented the same chain, which is what one chip means
+PASS  each guest reported the measurement predicted offline for the image both booted
+PASS  the exchange went through the relay
+PASS  the relay found no plaintext on the wire
+    addresses resolved on the segment: 10.14.0.2, 10.14.0.3
+PASS  no guest looked for a gateway or anything else off the segment
+    passes: 5, of which cost a verification: 1 (maximum age 15m, run 150s)
+PASS  asking for a warm peer again cost no handshake
+docs/snp/tunnel-on-two-guests.sh: line 510: g: command not found

@@ -133,7 +133,11 @@ func (e *exercise) perform(ctx context.Context, td *tunneld.Tunneld, watched *wa
 				failures = append(failures, fmt.Sprintf("pass %d, peer %s: %v", pass, peer, err))
 			}
 		}
-		if cfg.RepeatEvery.Duration <= 0 || !time.Now().Before(deadline) {
+		// RunFor bounds the whole run, not the start of its last pass: a pass
+		// begun a minute before the end is a pass whose peer stops answering
+		// in the middle of it, and the failure that produces is this
+		// harness's, not the tunnel's.
+		if cfg.RepeatEvery.Duration <= 0 || time.Now().Add(cfg.RepeatEvery.Duration).After(deadline) {
 			break
 		}
 		select {

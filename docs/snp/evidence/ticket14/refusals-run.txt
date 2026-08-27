@@ -1,0 +1,167 @@
+=== ticket 14: two attested guests ===
+date        : 2026-08-27T18:31:08Z
+repo        : 881f71eca365d50e75418f7feefc5e2a199b2522 on ticket-14-m3-two-guests-live
+image       : /home/pniroula/Projects/gvisor-ticket14/.scratch/attested-secure-tunnel/host-stack/image-ticket14
+mode        : SEV-SNP (privileged, through the spool)
+scenarios   : modified tcbfloor nosnp stalechain
+
+predicted launch measurement of the image both guests boot:
+  b818dd26b73f703580eeb842ed46188af3abb64515cbd67cd3ffc6f20fd5e2661554cd005f31727a328b9db697a42d1f
+the reference value set on both config devices names exactly that, signed by the
+author key baked into the image at /etc/attested-tunnel/author.pub (ADR-0004).
+
+spool       : /home/pniroula/Projects/gvisor/docs/snp/root-spool
+
+### modified: guest B boots an image with one byte changed
+building the mutated image (ticket 08's mutate-image.sh, one byte of rootfs.img)
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config device written to /home/pniroula/Projects/gvisor-ticket14/.scratch/attested-secure-tunnel/host-stack/ticket14-refusals/modified/config-a.img (962f5f7c8d235989…, not measured)
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config device written to /home/pniroula/Projects/gvisor-ticket14/.scratch/attested-secure-tunnel/host-stack/ticket14-refusals/modified/config-b.img (f618ba5a994bb12f…, not measured)
+spooled /home/pniroula/Projects/gvisor/docs/snp/root-spool/ticket14-4098412-modified.job; waiting up to 540s for the runner
+modified finished, rc=0
+    | guest A qemu exited 0
+    | guest B qemu exited 0
+relay:
+    | l2relay: RELAYED a_to_b_frames=597 b_to_a_frames=663 a_to_b_bytes=535045 b_to_a_bytes=684667 tampered=0
+    | l2relay: MARKER not found hits=0 marker='attested-tunnel-plaintext-marker' in 1260 frames carrying 1219712 bytes
+    | l2relay: what was on the segment:
+    |   ethertypes : IPv4=1229, ARP=10, IPv6=21
+    |   ip protocols: ICMP=6, UDP=1223
+    |   arp targets : 10.14.0.2, 10.14.0.3
+    |   10.14.0.3 -> 10.14.0.2 proto=UDP frames=642
+    |   10.14.0.2 -> 10.14.0.3 proto=UDP frames=581
+    |   10.14.0.3 -> 10.14.0.2 proto=ICMP frames=6
+PASS  guest-b (modified image): acquired its own evidence from the platform
+PASS  guest-b (modified image): bundled the chain provisioned on its config device, not the platform's
+PASS  guest-b (modified image): is listening
+PASS  guest-a refused the modified guest, naming the measurement internally
+PASS  guest-a admitted nobody
+PASS  the modified guest was told nothing but that it did not get a tunnel
+PASS  the modified guest itself admitted guest-a, so the refusal is one-sided
+PASS  the modified guest's exercise failed
+
+### tcbfloor: guest A holds a set whose floor is above this platform
+    author public key: 27f21dc0e3b0d433f0d992e43e42c24d4bcb233e425b53659d75ba6270f27b12
+    wrote /home/pniroula/Projects/gvisor-ticket14/.scratch/attested-secure-tunnel/host-stack/ticket14-refusals/tcbfloor/refvals-tcbfloor/reference-values.json and /home/pniroula/Projects/gvisor-ticket14/.scratch/attested-secure-tunnel/host-stack/ticket14-refusals/tcbfloor/refvals-tcbfloor/reference-values.json.sig (loads back through attest.LoadReferenceValueSetFile)
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config device written to /home/pniroula/Projects/gvisor-ticket14/.scratch/attested-secure-tunnel/host-stack/ticket14-refusals/tcbfloor/config-a.img (8d399ab48b15cdd3…, not measured)
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config device written to /home/pniroula/Projects/gvisor-ticket14/.scratch/attested-secure-tunnel/host-stack/ticket14-refusals/tcbfloor/config-b.img (40f39691ffba3dcb…, not measured)
+spooled /home/pniroula/Projects/gvisor/docs/snp/root-spool/ticket14-4098412-tcbfloor.job; waiting up to 540s for the runner
+tcbfloor finished, rc=0
+    | guest A qemu exited 0
+    | guest B qemu exited 0
+relay:
+    | l2relay: RELAYED a_to_b_frames=599 b_to_a_frames=644 a_to_b_bytes=535031 b_to_a_bytes=674528 tampered=0
+    | l2relay: MARKER not found hits=0 marker='attested-tunnel-plaintext-marker' in 1243 frames carrying 1209559 bytes
+    | l2relay: what was on the segment:
+    |   ethertypes : IPv4=1215, ARP=8, IPv6=20
+    |   ip protocols: UDP=1215
+    |   arp targets : 10.14.0.2, 10.14.0.3
+    |   10.14.0.3 -> 10.14.0.2 proto=UDP frames=631
+    |   10.14.0.2 -> 10.14.0.3 proto=UDP frames=584
+PASS  guest-a refused a platform below its floor
+PASS  guest-a admitted nobody
+PASS  guest-b got no tunnel
+PASS  guest-b, whose floor is the ordinary one, admitted guest-a
+
+### nosnp: guest B is not a confidential VM and has nothing to present
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config device written to /home/pniroula/Projects/gvisor-ticket14/.scratch/attested-secure-tunnel/host-stack/ticket14-refusals/nosnp/config-a.img (2f71bda0ed26f14f…, not measured)
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config device written to /home/pniroula/Projects/gvisor-ticket14/.scratch/attested-secure-tunnel/host-stack/ticket14-refusals/nosnp/config-b.img (00950fe5ac32e64c…, not measured)
+spooled /home/pniroula/Projects/gvisor/docs/snp/root-spool/ticket14-4098412-nosnp.job; waiting up to 540s for the runner
+nosnp finished, rc=0
+    | control boot: non-verifying firmware /home/pniroula/Projects/gvisor-ticket14/.scratch/attested-secure-tunnel/host-stack/usr/local/share/qemu/OVMF.fd, not the image's
+    | guest A qemu exited 0
+    | guest B qemu exited 0
+relay:
+    | l2relay: RELAYED a_to_b_frames=43 b_to_a_frames=0 a_to_b_bytes=2182 b_to_a_bytes=0 tampered=0
+    | l2relay: MARKER not found hits=0 marker='attested-tunnel-plaintext-marker' in 43 frames carrying 2182 bytes
+    | l2relay: what was on the segment:
+    |   ethertypes : ARP=33, IPv6=10
+    |   ip protocols: none
+    |   arp targets : 10.14.0.3
+PASS  the non-confidential guest booted the same image
+PASS  its kernel would not load the guest driver
+PASS  it refused to start rather than run without evidence
+PASS  it never listened
+PASS  it exited saying so
+PASS  the attested guest admitted nobody
+PASS  the attested guest got no tunnel to it
+
+### stalechain: a chain provisioned for a TCB this platform is not at
+
+the peer's verdict, on ticket 05's captured evidence with the stale chain:
+    | evidence            : /home/pniroula/Projects/gvisor-ticket14/docs/snp/evidence/ticket05/evidence.bin, 1184 bytes
+    | certificate chain   : /home/pniroula/Projects/gvisor-ticket14/docs/snp/evidence/ticket05/certificate-chain-stale.bin, 4759 bytes (provisioned, ADR-0005)
+    | public key (SPKI)   : /home/pniroula/Projects/gvisor-ticket14/docs/snp/evidence/ticket05/public-key.der, 44 bytes, 302a300506032b6570032100e9e24c88b33719495882c191ead4be59481f869b23a8bf6108b3c35c344f9f3f
+    | binding context     : v1, 00000000000000000000000000000000
+    | vendor root         : the AMD roots embedded in the verification library — no fetch, no file
+    | reference value set : /home/pniroula/Projects/gvisor-ticket14/docs/snp/evidence/ticket05/reference-values.json, 1 value(s), author b6207f5fca0a59c3237045b5632a24dba1b9047d461a6d1037404679fca3489f
+    |   [0] launch measurement 84aaf62f431f0a943944e10b0569c7c899bf5e9cfd0c6176af3f70033e241ac1e9d807f5605fd7dd08bf1bf1f09b5da5
+    |       minimum TCB        bootloader=9 tee=0 snp=23 microcode=72
+    |       guest policy       abi=0.0 smt=true migration_agent=false debug=false single_socket_required=false
+    | 
+    | REFUSED
+    |   reason            : evidence does not chain to the vendor root
+    |   operator log      : verification refused: evidence does not chain to the vendor root: report signature verification error: x509: ECDSA verification failure
+    |   a caller learns   : attest: verification failed
+    | exit status 2
+
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config device written to /home/pniroula/Projects/gvisor-ticket14/.scratch/attested-secure-tunnel/host-stack/ticket14-refusals/stalechain/config-a.img (3fffbf93da2d93d1…, not measured)
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config device written to /home/pniroula/Projects/gvisor-ticket14/.scratch/attested-secure-tunnel/host-stack/ticket14-refusals/stalechain/config-b.img (0831727583ca7eec…, not measured)
+spooled /home/pniroula/Projects/gvisor/docs/snp/root-spool/ticket14-4098412-stalechain.job; waiting up to 480s for the runner
+stalechain finished, rc=0
+    | guest A qemu exited 0
+    | guest B qemu exited 0
+relay:
+    | l2relay: RELAYED a_to_b_frames=10 b_to_a_frames=1 a_to_b_bytes=796 b_to_a_bytes=90 tampered=0
+    | l2relay: MARKER not found hits=0 marker='attested-tunnel-plaintext-marker' in 11 frames carrying 886 bytes
+    | l2relay: what was on the segment:
+    |   ethertypes : IPv6=11
+    |   ip protocols: none
+    |   arp targets : none
+PASS  the guest with the stale chain refused to start
+PASS  it named ADR-0005 and the remedy
+PASS  it never presented anything to a peer
+
+=== latency, as the guests measured it ===
+  none recorded
+
+=== 22 passed, 0 failed ===

@@ -3,7 +3,7 @@
   "version": 1,
   "reference_values": [
     {
-      "launch_measurement": "5d5dd1dd9f6370d36be45d6d4974a7c940ae82d1d3ffaf45d2270adcd191da85b9fe632558f7298c3dea496b6777a6a7",
+      "launch_measurement": "b818dd26b73f703580eeb842ed46188af3abb64515cbd67cd3ffc6f20fd5e2661554cd005f31727a328b9db697a42d1f",
       "minimum_tcb": {
         "bootloader": 9,
         "tee": 0,

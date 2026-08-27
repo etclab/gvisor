@@ -66,7 +66,11 @@ external behaviour — accepted, or refused with a given reason — and none rea
 Above it the seam is tunneld's API: every `tunneld` test starts tunnelds with the fake platform
 injected through `Config` and asserts that a channel exists or does not, and that an exchange
 completes or does not. Certificate carry, transport and peer resolution are tested only through
-that API, and verification is not re-tested there.
+that API, and verification is not re-tested there. The package has one second instrument: a
+peer built by hand from `ratls` and `tunnel`, admitting on exactly a tunneld's terms, used where
+a tunneld cannot stand in — a peer that misbehaves after the handshake (`hostile_test.go`), and
+a peer that writes down the key it was shown (`identity_test.go`), since a tunneld's key is by
+design observable nowhere but at the peer it is presented to.
 
 `tsm` is the one exception, and it is the exception for a reason worth stating. What sits below it
 is not a vendor but the kernel, so nothing above it can drive it without a confidential VM — the
@@ -108,7 +112,7 @@ integration passes a real one), loads its reference value set through
 `attest.LoadReferenceValueSetFile` against the author public key it was started with, and refuses
 to start on `attest.ErrSetRefused` — there is no path that runs without a set.
 
-Three things about a tunnel's establishment and its life are decided rather than incidental:
+Four things about a tunnel's establishment and its life are decided rather than incidental:
 
 - **A tunnel exists only once both sides have accepted the other's evidence, and a refusal aborts
   the handshake.** `ratls.PeerVerifier` returns an error from `VerifyPeerCertificate`, which is
@@ -131,6 +135,12 @@ Three things about a tunnel's establishment and its life are decided rather than
   it does not bound — it is how long a verdict about a peer is relied on, not how fresh that
   peer's evidence is, because evidence is acquired once at startup and held for the life of the
   process.
+- **Identity is per tunneld, and so is everything built from it.** One `ratls.Identity`, one
+  `tunnel.Cache` made from it, and a `Channel` that resolves through its own tunneld and no
+  other — so two tunnelds on one VM present distinct keys and distinct evidence over one chain,
+  and neither can reach the tunnel under the other's channel by name, by address, by cache, or
+  by the other going away (`identity_test.go`). What that does not make is a peer that can tell
+  them apart: both run the measured image, and membership is "runs the measured image".
 
 The payload's extension identifier sits under the private enterprise number IANA reserves for
 documentation (32473, RFC 5612). It is nobody's, so no verifier can be led to guess another

@@ -20,6 +20,14 @@ The per-sandbox runsc helper process that acquires evidence, holds the sandbox's
 owns the tunnel. A sibling of the gofer, outside the sentry's syscall path.
 _Avoid_: tunnel supervisor (the binary), tunnel daemon, proxy.
 
+**Sandbox**:
+The unit of identity: one tunneld, one key, one tunnel cache. In Milestones 1-3 the sandbox
+identifier is a string tunneld takes as a parameter that reaches no evidence, no certificate
+and no wire format — nothing outside the process can observe which sandbox a key belongs to.
+That binding is trusted from the measured software, not proved (spec, *What a peer actually
+learns*); Milestone 4 gives the identifier a referent.
+_Avoid_: container, tenant, workload.
+
 **Supervisor**:
 The role tunneld plays, not a binary name: the component that mediates between one sentry
 and its peers.

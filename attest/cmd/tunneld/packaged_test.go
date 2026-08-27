@@ -75,16 +75,42 @@ func TestPackagedBinaryIsStaticAndFreeOfTestSupport(t *testing.T) {
 	if !bytes.Contains(raw, []byte("gvisor.dev/gvisor/attest/tunneld")) {
 		t.Fatalf("the built binary does not carry package tunneld's path; this test is checking the wrong file")
 	}
+
+	// And the property the whole image chain rests on: the measurement is a
+	// prediction from the build inputs, so the artifact must be a function of
+	// the source and not of where the source happens to sit. Without -trimpath
+	// a Go binary carries the absolute path of every file compiled into it, so
+	// the same source in two worktrees produces two measurements and nobody
+	// else can reproduce either. This looks for the checkout root in the bytes.
+	root, err := repoRoot()
+	if err != nil {
+		t.Fatalf("finding the checkout root: %v", err)
+	}
+	if bytes.Contains(raw, []byte(root)) {
+		t.Errorf("the packaged tunneld embeds the checkout path %q; the predicted launch measurement "+
+			"would then depend on which directory it was built in, and could not be reproduced from source elsewhere", root)
+	}
+}
+
+// repoRoot is the directory this module is checked out under, which is exactly
+// the string a binary built without -trimpath would carry.
+func repoRoot() (string, error) {
+	here, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	// .../attest/cmd/tunneld -> .../
+	return filepath.Dir(filepath.Dir(filepath.Dir(here))), nil
 }
 
 // build builds the command the way the packaging step does: no cgo, no tags,
-// no flags. Anything else here would be testing a binary the image does not
-// embed.
+// and the two flags that keep the artifact a function of the source alone.
+// Anything else here would be testing a binary the image does not embed.
 func build(t *testing.T) string {
 	t.Helper()
 	goBin := filepath.Join(runtime.GOROOT(), "bin", "go")
 	out := filepath.Join(t.TempDir(), "tunneld")
-	cmd := exec.Command(goBin, "build", "-o", out, "gvisor.dev/gvisor/attest/cmd/tunneld")
+	cmd := exec.Command(goBin, "build", "-trimpath", "-buildvcs=false", "-o", out, "gvisor.dev/gvisor/attest/cmd/tunneld")
 	cmd.Env = append(os.Environ(), "CGO_ENABLED=0")
 	if combined, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("CGO_ENABLED=0 go build ./cmd/tunneld: %v\n%s", err, combined)

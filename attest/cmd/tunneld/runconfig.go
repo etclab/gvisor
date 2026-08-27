@@ -115,6 +115,11 @@ type runConfig struct {
 	Hold duration `json:"hold"`
 }
 
+// maxAgeCeiling is the longest maximum age this binary will honour from the
+// config device. It is inside the launch measurement; the file that asks for a
+// maximum age is not.
+const maxAgeCeiling = tunnel.DefaultMaxAge
+
 // RunConfigFormat and RunConfigVersion name what this command reads.
 const (
 	RunConfigFormat  = "gvisor.dev/gvisor/attest/tunneld-run"
@@ -161,7 +166,41 @@ func loadRunConfig(path string) (*runConfig, error) {
 // differently has one guest running on a number that appears nowhere in its
 // own configuration — and the first place anybody looks for that number is the
 // line this tunneld printed at startup.
-func (c *runConfig) limits() tunnel.Limits {
+//
+// # Why the maximum age has a ceiling and the idle timeout does not
+//
+// The maximum age is clamped to [maxAgeCeiling], which is [tunnel.DefaultMaxAge]
+// — the ceiling is the default rather than a second number, because a number
+// this file could raise above the transport's own judgement would be a number
+// somebody has to justify twice. A run configuration may
+// ask for a shorter one and may not ask for a longer one. The reason is that
+// this file arrives on the config device, which is outside the launch
+// measurement and delivered by a host this design does not trust, and
+// [tunnel.DefaultMaxAge] is "the only bound on how long a verdict about a peer
+// is relied on while traffic still flows". Left unclamped, a host that wrote
+// max_age: 8760h onto both guests' devices would get two tunnelds that admit
+// each other once and never look again — no forged evidence, no substituted
+// set, nothing an operator would see, and re-attestation quietly deleted.
+//
+// There is a real tension here and it should be stated rather than papered
+// over. CONTEXT.md puts the operator — "whoever chooses which image to launch
+// and how to configure it" — explicitly outside the threat model, and this
+// file is configuration. But that same sentence would excuse delivering the
+// reference value set unsigned, and ADR-0004 refuses to: it signs the set
+// precisely because the untrusted host would otherwise "supply a permissive
+// set and defeat the design". A permissive maximum age is the same
+// substitution against the same adversary, so it gets the same answer. The
+// ceiling lives in the measured binary, where the host cannot reach it.
+//
+// The idle timeout is deliberately not clamped. An idle tunnel is still torn
+// down at the maximum age, so a long idle timeout costs a connection that sits
+// there and buys an attacker nothing; clamping it too would be a habit rather
+// than a reason.
+//
+// The second return is empty unless a clamp bit, and then it is the line to
+// put on the console: a configuration silently overruled is worse than one
+// refused, because the operator reading their own file has no way to know.
+func (c *runConfig) limits() (tunnel.Limits, string) {
 	var l tunnel.Limits
 	if c.Limits != nil {
 		l = tunnel.Limits{IdleTimeout: c.Limits.IdleTimeout.Duration, MaxAge: c.Limits.MaxAge.Duration}
@@ -172,7 +211,15 @@ func (c *runConfig) limits() tunnel.Limits {
 	if l.MaxAge <= 0 {
 		l.MaxAge = tunnel.DefaultMaxAge
 	}
-	return l
+	var clamped string
+	if l.MaxAge > maxAgeCeiling {
+		clamped = fmt.Sprintf("the run configuration asks for a maximum age of %s; using %s, which is the ceiling "+
+			"this binary carries. The config device is outside the launch measurement, and a maximum age a host "+
+			"could raise is a re-attestation a host could remove (ADR-0004's argument, applied to this field)",
+			l.MaxAge, maxAgeCeiling)
+		l.MaxAge = maxAgeCeiling
+	}
+	return l, clamped
 }
 
 func (c *runConfig) startTimeout() time.Duration {

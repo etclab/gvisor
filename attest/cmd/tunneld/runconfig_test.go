@@ -57,8 +57,8 @@ func TestRunConfigLoads(t *testing.T) {
 	if cfg.SandboxID != "guest-a" || cfg.Listen != "10.14.0.2:4433" {
 		t.Errorf("sandbox %q listening on %q; want guest-a on 10.14.0.2:4433", cfg.SandboxID, cfg.Listen)
 	}
-	if got := cfg.limits(); got.IdleTimeout != time.Minute || got.MaxAge != 15*time.Minute {
-		t.Errorf("limits %v; want 60s idle and 15m of age", got)
+	if got, clamped := cfg.limits(); got.IdleTimeout != time.Minute || got.MaxAge != 15*time.Minute || clamped != "" {
+		t.Errorf("limits %v (clamped: %q); want 60s idle and 15m of age, unclamped", got, clamped)
 	}
 	// An unstated limit is the transport's default, and the console has to say
 	// so: a guest whose peer advertises a smaller idle timeout runs on that
@@ -68,7 +68,7 @@ func TestRunConfigLoads(t *testing.T) {
 	if err != nil {
 		t.Fatalf("loading: %v", err)
 	}
-	if got := bare.limits(); got.IdleTimeout != tunnel.DefaultIdleTimeout || got.MaxAge != tunnel.DefaultMaxAge {
+	if got, _ := bare.limits(); got.IdleTimeout != tunnel.DefaultIdleTimeout || got.MaxAge != tunnel.DefaultMaxAge {
 		t.Errorf("limits %v with none configured; want the transport's defaults, stated rather than zero", got)
 	}
 	if cfg.Link == nil || cfg.Link.Interface != "eth0" || cfg.Link.PrefixLength != 24 {
@@ -118,5 +118,44 @@ func TestPeerTableLoads(t *testing.T) {
 	}
 	if _, err := loadPeerTable(write(t, "peers.json", `{"peer": {"a": "b"}}`)); err == nil {
 		t.Error("loaded a peer table whose field is misspelt; want a refusal")
+	}
+}
+
+// The config device is outside the launch measurement and delivered by a host
+// this design does not trust, and the maximum age is the only bound on how
+// long a verdict about a peer is relied on while traffic still flows. A host
+// that could raise it could delete re-attestation without forging anything, so
+// the ceiling lives in the measured binary. A shorter one is still honoured:
+// the ceiling is a ceiling, not a value.
+func TestMaximumAgeIsClampedButMayBeShortened(t *testing.T) {
+	document := func(maxAge string) string {
+		return `{"format": "gvisor.dev/gvisor/attest/tunneld-run", "version": 1, "sandbox_id": "a",
+		         "limits": {"idle_timeout": "600s", "max_age": "` + maxAge + `"}}`
+	}
+	// A year, which is what a host would write to stop re-attestation ever
+	// happening again.
+	cfg, err := loadRunConfig(write(t, "tunneld.json", document("8760h")))
+	if err != nil {
+		t.Fatalf("loading: %v", err)
+	}
+	got, clamped := cfg.limits()
+	if got.MaxAge != tunnel.DefaultMaxAge {
+		t.Errorf("maximum age %s from the config device; want it clamped to %s", got.MaxAge, tunnel.DefaultMaxAge)
+	}
+	if clamped == "" {
+		t.Error("the clamp said nothing; a configuration silently overruled is worse than one refused")
+	}
+	// The idle timeout is deliberately not clamped: an idle tunnel is still
+	// torn down at the maximum age, so a long one buys an attacker nothing.
+	if got.IdleTimeout != 10*time.Minute {
+		t.Errorf("idle timeout %s; want the configured 600s, which is not clamped", got.IdleTimeout)
+	}
+
+	shorter, err := loadRunConfig(write(t, "tunneld.json", document("90s")))
+	if err != nil {
+		t.Fatalf("loading: %v", err)
+	}
+	if got, clamped := shorter.limits(); got.MaxAge != 90*time.Second || clamped != "" {
+		t.Errorf("maximum age %s (clamped: %q); a shorter one is the operator's to choose", got.MaxAge, clamped)
 	}
 }

@@ -67,8 +67,19 @@ echo
 
 echo "=== 2. the binary"
 BIN="$WORK/tunneld"
-echo "\$ CGO_ENABLED=0 go build -o $BIN ./cmd/tunneld"
-(cd "$REPO/attest" && CGO_ENABLED=0 go build -o "$BIN" ./cmd/tunneld)
+# -trimpath, because without it a Go binary carries the absolute path of every
+# file compiled into it, and the launch measurement over that binary would then
+# depend on which directory it was built in — the same source in two worktrees
+# would produce two measurements and nobody outside this machine could
+# reproduce either. -buildvcs=false for the same reason one level up: the
+# commit belongs in the manifest, which records it, and not in the bytes the
+# measurement covers.
+echo "\$ CGO_ENABLED=0 go build -trimpath -buildvcs=false -o $BIN ./cmd/tunneld"
+(cd "$REPO/attest" && CGO_ENABLED=0 go build -trimpath -buildvcs=false -o "$BIN" ./cmd/tunneld)
+if strings -a "$BIN" | grep -q "$REPO"; then
+  echo "REFUSING: $BIN embeds the checkout path $REPO, so its measurement is not reproducible elsewhere" >&2
+  exit 1
+fi
 file "$BIN"
 file "$BIN" | grep -q 'statically linked' || {
   echo "REFUSING: $BIN is not statically linked. The image's root filesystem carries no dynamic" >&2

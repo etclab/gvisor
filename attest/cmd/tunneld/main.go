@@ -171,6 +171,11 @@ func run(args []string, out io.Writer) int {
 		logf("link %s up with %s/%d", cfg.Link.Interface, cfg.Link.Address, cfg.Link.PrefixLength)
 	}
 
+	limits, clamped := cfg.limits()
+	if clamped != "" {
+		logf("CLAMPED %s", clamped)
+	}
+
 	// The two halves of the vendor seam, both real: this platform's report
 	// interface for our own evidence, and go-sev-guest under attest/verify for
 	// peers'. Neither reaches the network — the chain is the one the config
@@ -203,7 +208,7 @@ func run(args []string, out io.Writer) int {
 		Peers:                 tunneld.PeerTable(peers),
 		ListenAddr:            cfg.Listen,
 		Handler:               echo(cfg.SandboxID),
-		Limits:                cfg.limits(),
+		Limits:                limits,
 		RefusalLog: func(r *attest.Refusal) {
 			// The one place a reason surfaces (spec, Error surface): the peer
 			// sees an aborted handshake and a caller sees ErrNotEstablished.
@@ -211,7 +216,7 @@ func run(args []string, out io.Writer) int {
 		},
 	})
 	if err != nil {
-		logf("refusing to start: %v", err)
+		logf("refusing to start: %s", withoutPackagePrefix(err))
 		if observation, ok := acquirer.LastObservation(); ok {
 			logf("%s", observation)
 		}
@@ -223,7 +228,7 @@ func run(args []string, out io.Writer) int {
 		logf("%s", observation)
 	}
 	logf("listening on %s as %q; idle %s, maximum age %s",
-		td.Addr(), td.SandboxID(), cfg.limits().IdleTimeout, cfg.limits().MaxAge)
+		td.Addr(), td.SandboxID(), limits.IdleTimeout, limits.MaxAge)
 
 	code := exitOK
 	if cfg.Exercise != nil {
@@ -289,6 +294,15 @@ func reportInterface(dir string) string {
 	}
 	return fmt.Sprintf("present, %d request(s) outstanding; a platform driver that does not answer it "+
 		"is what a non-confidential VM looks like from inside", len(entries))
+}
+
+// withoutPackagePrefix trims the lead-in [tunneld.New]'s errors already carry,
+// because this command's own log lines add the name again and a console line
+// reading "tunneld: refusing to start: tunneld: refusing to start: …" spends
+// its first half saying nothing twice. Only the prefix goes; the sentence
+// underneath is the one an operator needs and it is untouched.
+func withoutPackagePrefix(err error) string {
+	return strings.TrimPrefix(err.Error(), "tunneld: refusing to start: ")
 }
 
 func abbreviate(s string) string {

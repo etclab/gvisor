@@ -436,7 +436,10 @@ scenario_modified() {
   local mutated="$OUT/image-modified"
   if [ ! -f "$mutated/rootfs.img" ]; then
     note "building the mutated image (ticket 08's mutate-image.sh, one byte of rootfs.img)"
-    bash "$HERE/image/mutate-image.sh" -base "$IMAGE" -out "$mutated" -mutation rootfs-byte -quiet | sed 's/^/    /'
+    # Not -quiet: the mutated image's own predicted measurement is the number
+    # that says the mutation moved M, and a refusal recorded without it is a
+    # refusal whose cause the record does not name.
+    bash "$HERE/image/mutate-image.sh" -base "$IMAGE" -out "$mutated" -mutation rootfs-byte | sed 's/^/    /'
   fi
   # The mutated image is not re-authorised: its measurement appears in no
   # reference value set anywhere, which is the whole point. Guest B carries the

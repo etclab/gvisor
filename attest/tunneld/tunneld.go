@@ -27,6 +27,16 @@
 // The vendor is injected through [Config]: an [attest.Acquirer] for this
 // platform's evidence and an [attest.Verifier] for its peers'. Tests inject
 // the fake platform there; nothing in this package knows which one it has.
+//
+// # The life of a tunnel
+//
+// A [Channel] is a handle on a peer and not on a connection. The tunnel under
+// it is dialed the first time somebody asks for that peer, kept warm for
+// everyone who asks afterwards, and dialed again whenever the one that was
+// there has been lost or has reached its maximum age — at which point both
+// sides judge each other's evidence again, because that is what a handshake
+// is. [Config.Limits] sets both bounds; [tunnel.DefaultMaxAge] records why the
+// maximum age is the number it is and what it does and does not bound.
 package tunneld
 
 import (
@@ -37,6 +47,7 @@ import (
 	"net"
 	"os"
 	"sync"
+	"sync/atomic"
 
 	"gvisor.dev/gvisor/attest"
 	"gvisor.dev/gvisor/attest/ratls"
@@ -50,6 +61,12 @@ type PeerTable map[string]string
 
 // Handler answers the exchanges peers send to this tunneld.
 type Handler = tunnel.Handler
+
+// Limits bound the life of every tunnel this tunneld holds: how long one may
+// carry nothing before it closes, and how long one may carry anything before
+// both sides have to attest to each other again. See [tunnel.Limits], and
+// [tunnel.DefaultMaxAge] for why the maximum age is the number it is.
+type Limits = tunnel.Limits
 
 // RefusalLog is handed every peer this tunneld refuses, with the typed reason
 // that refused it. See [Config.RefusalLog].
@@ -83,6 +100,10 @@ type Config struct {
 	// stream is closed without a response.
 	Handler Handler
 
+	// Limits bound how long a tunnel lives. The zero value takes the defaults,
+	// which are 60 seconds idle and 15 minutes of age.
+	Limits Limits
+
 	// RefusalLog receives every peer this tunneld refuses at the handshake,
 	// whichever role it was in, with the typed reason that refused it. It is
 	// the only place the reason surfaces: the peer sees an aborted handshake
@@ -104,18 +125,25 @@ var ErrUnknownPeer = errors.New("tunneld: unknown peer")
 // refused. The caller learns only that; the reason stays in the operator log.
 var ErrNotEstablished = errors.New("tunneld: tunnel not established")
 
+// ErrChannelClosed is returned by [Channel.Exchange] on a channel its holder
+// has closed.
+var ErrChannelClosed = errors.New("tunneld: channel closed")
+
 // Tunneld is a running tunneld. Construct one with New.
 type Tunneld struct {
-	cfg          Config
-	identity     *ratls.Identity
-	verification *attest.Verification
-	listener     *tunnel.Listener
-	refusals     ratls.Option
+	cfg      Config
+	listener *tunnel.Listener
 
-	mu     sync.Mutex
-	closed bool
-	conns  []*tunnel.Conn
-	wg     sync.WaitGroup
+	// dialed holds the tunnels this tunneld opened, one per peer, and is what
+	// makes a peer's tunnel lazy, warm and re-attested on schedule. The client
+	// configuration it dials with is built once, at startup, from the one
+	// identity this tunneld has.
+	dialed *tunnel.Cache
+
+	mu       sync.Mutex
+	closed   bool
+	accepted []*tunnel.Conn
+	wg       sync.WaitGroup
 }
 
 // New starts a tunneld: loads and checks the reference value set, generates
@@ -146,11 +174,15 @@ func New(ctx context.Context, cfg Config) (*Tunneld, error) {
 		addr = "127.0.0.1:0"
 	}
 	refusals := ratls.WithRefusalLog(refusalLog(cfg))
-	listener, err := tunnel.Listen(addr, identity.ServerConfig(verification, refusals))
+	listener, err := tunnel.Listen(addr, identity.ServerConfig(verification, refusals), cfg.Limits)
 	if err != nil {
 		return nil, fmt.Errorf("tunneld: refusing to start: %w", err)
 	}
-	t := &Tunneld{cfg: cfg, identity: identity, verification: verification, listener: listener, refusals: refusals}
+	t := &Tunneld{
+		cfg:      cfg,
+		listener: listener,
+		dialed:   tunnel.NewCache(identity.ClientConfig(verification, refusals), cfg.Limits),
+	}
 	t.wg.Add(1)
 	go t.accept()
 	return t, nil
@@ -187,10 +219,25 @@ func (t *Tunneld) accept() {
 			conn.Close()
 			return
 		}
-		t.conns = append(t.conns, conn)
+		// Tunnels that have already closed — idle, expired, or ended by their
+		// peer — are dropped as new ones arrive, so this list is what is open
+		// rather than everything that ever was. A tunnel past its maximum age
+		// but not yet torn down stays: its own expiry closes it, and dropping
+		// it here would mean nothing did.
+		t.accepted = append(live(t.accepted), conn)
 		t.mu.Unlock()
 		go conn.Serve(t.handle)
 	}
+}
+
+func live(conns []*tunnel.Conn) []*tunnel.Conn {
+	kept := conns[:0]
+	for _, c := range conns {
+		if c.Live() {
+			kept = append(kept, c)
+		}
+	}
+	return kept
 }
 
 func (t *Tunneld) handle(ctx context.Context, request []byte) ([]byte, error) {
@@ -200,38 +247,40 @@ func (t *Tunneld) handle(ctx context.Context, request []byte) ([]byte, error) {
 	return t.cfg.Handler(ctx, request)
 }
 
-// Peer resolves name through the peer table and establishes a tunnel to it.
-// The channel exists only once both sides have accepted the other's
-// evidence; anything less is an error and no channel.
+// Peer resolves name through the peer table and gives back a channel to it.
+// The channel exists only once both sides have accepted the other's evidence;
+// anything less is an error and no channel.
+//
+// The tunnel underneath is dialed on first use and reused afterwards. Asking
+// for a peer a second time is not a second handshake, and no tunnel is dialed
+// for a peer nobody has asked for: the peer table is a table of addresses, not
+// a list of connections to open.
+//
+// Establishing here rather than at the first exchange is what makes a refusal
+// visible where the caller asked for the peer. A channel handed back before
+// anything was verified would be a channel that fails later for a reason the
+// caller cannot see, which is the shape this design refuses everywhere else.
 func (t *Tunneld) Peer(ctx context.Context, name string) (*Channel, error) {
 	addr, ok := t.cfg.Peers[name]
 	if !ok {
 		return nil, fmt.Errorf("%w: %q is not in the peer table", ErrUnknownPeer, name)
 	}
-	conn, err := tunnel.Dial(ctx, addr, t.identity.ClientConfig(t.verification, t.refusals))
-	if err != nil {
+	if _, err := t.dialed.Get(ctx, addr); err != nil {
 		return nil, fmt.Errorf("%w: %q at %s: %v", ErrNotEstablished, name, addr, err)
 	}
-	t.mu.Lock()
-	if t.closed {
-		t.mu.Unlock()
-		conn.Close()
-		return nil, fmt.Errorf("%w: tunneld is closed", ErrNotEstablished)
-	}
-	t.conns = append(t.conns, conn)
-	t.mu.Unlock()
-	return &Channel{name: name, conn: conn}, nil
+	return &Channel{name: name, addr: addr, t: t}, nil
 }
 
-// Close stops listening and ends every tunnel.
+// Close stops listening and ends every tunnel, dialed and accepted.
 func (t *Tunneld) Close() error {
 	t.mu.Lock()
 	t.closed = true
-	conns := t.conns
-	t.conns = nil
+	accepted := t.accepted
+	t.accepted = nil
 	t.mu.Unlock()
 	err := t.listener.Close()
-	for _, c := range conns {
+	t.dialed.Close()
+	for _, c := range accepted {
 		c.Close()
 	}
 	t.wg.Wait()
@@ -240,18 +289,49 @@ func (t *Tunneld) Close() error {
 
 // Channel is what a caller gets for a named peer: a means to exchange
 // messages, with no key and no trust decision attached.
+//
+// It is a handle on a peer, not on a connection. It holds the name it was
+// asked for and nothing else, and every exchange takes the tunnel from the
+// cache at the moment it runs — which is what lets a tunnel be lost, or reach
+// its maximum age and be re-attested, underneath a channel its holder keeps
+// using.
 type Channel struct {
-	name string
-	conn *tunnel.Conn
+	name   string
+	addr   string
+	t      *Tunneld
+	closed atomic.Bool
 }
 
 // Peer is the name the channel was asked for.
 func (c *Channel) Peer() string { return c.name }
 
-// Exchange sends one request and returns the peer's response.
+// Exchange sends one request and returns the peer's response, over the tunnel
+// to this peer — dialing one first if the tunnel that was there has been lost
+// or has reached its maximum age.
+//
+// A request that reached the wire is never sent a second time. Re-dialing is
+// transparent; re-sending would not be, because an exchange this design calls
+// privileged is exactly the thing replay must not be able to do, and a
+// transport that retried on the caller's behalf would replay it for them. A
+// caller whose exchange dies in flight sees the error, and its next exchange
+// runs over a new tunnel.
 func (c *Channel) Exchange(ctx context.Context, request []byte) ([]byte, error) {
-	return c.conn.Exchange(ctx, request)
+	if c.closed.Load() {
+		return nil, fmt.Errorf("%w: %q", ErrChannelClosed, c.name)
+	}
+	conn, err := c.t.dialed.Get(ctx, c.addr)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %q at %s: %v", ErrNotEstablished, c.name, c.addr, err)
+	}
+	return conn.Exchange(ctx, request)
 }
 
-// Close ends the tunnel behind the channel.
-func (c *Channel) Close() error { return c.conn.Close() }
+// Close gives up this channel. It does not end the tunnel: the tunnel is
+// cached per peer and may be carrying another caller's exchanges, and its life
+// belongs to the idle timeout and the maximum age rather than to whoever
+// happened to ask for the peer first. A closed channel refuses further
+// exchanges with [ErrChannelClosed].
+func (c *Channel) Close() error {
+	c.closed.Store(true)
+	return nil
+}

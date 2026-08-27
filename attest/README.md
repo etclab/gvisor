@@ -56,8 +56,8 @@ iteration of unproven code.
 | `cmd/provision-chain` | The operator command over `provision`: `fetch` and `check`. |
 | `cmd/verify-evidence` | Ticket 05: the command that takes a verdict on a bundle from outside the guest that produced it — load the signed set, wire it to the verifier, exit 0 on acceptance and 2 on refusal. Procedure: `docs/verification-on-hardware.md`. |
 | `ratls`   | The certificate as a serialization envelope: a versioned payload under a private arc carrying the evidence, the chain and the binding context, and the handshake callback that runs `Verification.Verify` on the peer's. Nothing else in the certificate is read. |
-| `tunnel`  | The transport: QUIC with TLS 1.3, early data refused on both ends, one exchange per stream, and the establishment round trip. Knows nothing about attestation. |
-| `tunneld` | The composition root and the public API: `New` with a `Config`, `Peer(name)` yielding a `Channel`, `Channel.Exchange`. |
+| `tunnel`  | The transport: QUIC with TLS 1.3, early data refused on both ends, one exchange per stream, the establishment round trip, and the cache that holds at most one tunnel per peer under an idle timeout and a maximum age (`Limits`). Knows nothing about attestation. |
+| `tunneld` | The composition root and the public API: `New` with a `Config`, `Peer(name)` yielding a `Channel`, `Channel.Exchange`. One `tunnel.Cache` per tunneld, built from its one identity, under `Config.Limits`; a `Channel` is a handle on a peer rather than a holder of a connection. |
 
 `verify`, `snpfake`, `ratls` and `tunnel` have no test files of their own, and that is the design
 rather than a gap. There are two seams, one per layer. Below tunneld the seam is this module's
@@ -108,7 +108,7 @@ integration passes a real one), loads its reference value set through
 `attest.LoadReferenceValueSetFile` against the author public key it was started with, and refuses
 to start on `attest.ErrSetRefused` — there is no path that runs without a set.
 
-Two things about establishment are decided rather than incidental:
+Three things about a tunnel's establishment and its life are decided rather than incidental:
 
 - **A tunnel exists only once both sides have accepted the other's evidence, and a refusal aborts
   the handshake.** `ratls.PeerVerifier` returns an error from `VerifyPeerCertificate`, which is
@@ -120,6 +120,17 @@ Two things about establishment are decided rather than incidental:
 - **Early data is off twice.** The listener's `Allow0RTT` is false and the dial path is
   `quic.DialAddr`, never `DialAddrEarly`; the server also disables session tickets. A replayed
   privileged exchange has no 0-RTT slot to ride in on.
+- **A tunnel's life belongs to the timeouts and not to its callers.** Tunnels are cached per peer
+  per sandbox, dialed the first time somebody asks for that peer, and dialed again whenever the
+  one that was there has gone — so no caller ever dials, and no tunnel exists because the peer
+  table mentions a peer. One closes after 60 seconds carrying nothing or 15 minutes carrying
+  anything, and both ends enforce the age, because a bound only the dialer honoured would depend
+  on the peer choosing to give a tunnel up. `Channel.Close` gives up the handle, not the tunnel.
+  A request that reached the wire is never sent again: re-dialing is transparent, re-sending
+  would be replay. `tunnel.DefaultMaxAge` records why 15 minutes, what would change it, and what
+  it does not bound — it is how long a verdict about a peer is relied on, not how fresh that
+  peer's evidence is, because evidence is acquired once at startup and held for the life of the
+  process.
 
 The payload's extension identifier sits under the private enterprise number IANA reserves for
 documentation (32473, RFC 5612). It is nobody's, so no verifier can be led to guess another

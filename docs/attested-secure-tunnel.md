@@ -153,8 +153,11 @@ QUIC with TLS 1.3, static-key pinning only, no certificate hierarchy.
   with an idle timeout and a maximum age forcing re-attestation.
 - **One exchange per stream.** QUIC's multiplexing has no cross-stream head-of-line
   blocking, which is what lets concurrent agent exchanges share a warm connection. Streams
-  are byte streams, so the receiver must read to EOF and **reject any trailing bytes** —
-  otherwise a sender frames a second message inside one exchange's payload.
+  are byte streams, so an exchange carries **a four-byte payload length and then that many
+  bytes**, and the receiver requires the stream to be over after them — otherwise a sender
+  frames a second message inside one exchange's payload. (This memo first said to read to
+  EOF and reject trailing bytes; with no declared length every byte on the stream is payload
+  by definition, so there is nothing for that rule to reject. Corrected by ticket 11.)
 
 *Caution:* a QUIC dial can return success for a client the server is about to reject,
 because in TLS 1.3 the client's handshake completes before the server evaluates its

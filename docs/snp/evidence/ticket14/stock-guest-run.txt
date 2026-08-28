@@ -1,0 +1,77 @@
+=== ticket 14: the packaged tunneld on real silicon, in ticket 01's stock guest ===
+date : 2026-08-28T00:14:38Z
+repo : 9dfa29794809317a78ac971dddcddd9386fe778e on ticket-14-m3-two-guests-live
+guest: 6.16.0-snp-guest-038d61fd6422
+guest: [    2.276926] Memory Encryption Features active: AMD SEV SEV-ES SEV-SNP
+
+building the two binaries this run needs
+tunneld sha256 c3eb66f2af1f542ba1009d5d447c69966f0b16bb4d24285e12e611c103ff2ac9
+copying it into the guest
+
+    | ### a peer presenting no evidence at all
+    | unattested-peer: dialing 127.0.0.1:14433 with a certificate carrying no attestation payload
+    | unattested-peer: the dial returned a connection — TLS 1.3 lets a client finish
+    | unattested-peer: before the server has judged its certificate, so this proves nothing yet
+    | unattested-peer: REFUSED by 127.0.0.1:14433: no application round trip: CRYPTO_ERROR 0x12a (remote): tls: bad certificate
+    | unattested-peer: which is the answer, and note what it does not say: not which
+    | unattested-peer: check refused it, not what would have satisfied it, not that
+    | unattested-peer: evidence was the missing thing.
+    | unattested-peer exit=0
+    | ### the control: a peer that does present evidence
+    | tunneld-b exit=0
+    | === BEGIN a.log
+    | tunneld: sandbox "stock-a"
+    | tunneld: author key b6207f5fca0a59c3… (author.pub, inside the launch measurement)
+    | tunneld: peer table: stock-a = 127.0.0.1:14433
+    | tunneld: report interface /sys/kernel/config/tsm/report: present, 0 request(s) outstanding; a platform driver that does not answer it is what a non-confidential VM looks like from inside
+    | tunneld: tsm: provider "sev_guest" (amd-sev-snp) returned 1184 bytes of evidence over 1 write(s); its own certificate table is empty (auxblob, 0 bytes), which is the expected state on this host and not an error; bundled the 4759-byte chain provisioned in config for chip 9b3716…5243 at bootloader=9 tee=0 snp=23 microcode=72 (ADR-0005)
+    | tunneld: listening on 127.0.0.1:14433 as "stock-a"; idle 1m0s, maximum age 15m0s
+    | tunneld: holding for 25s so that peers still dialing can finish
+    | tunneld: REFUSED verification refused: no evidence presented: peer's envelope carries no attestation payload
+    | tunneld: PEER key=99c42d694f321a1b… chain=0957b4aa0678b511… measurement=84aaf62f431f0a94… tcb=bootloader=9,tee=0,snp=23,microcode=72
+    | tunneld: PEERS verifier_calls=1 accepted=1 refused=0 distinct_keys=1 distinct_chains=1
+    | tunneld: PEER SEEN key=99c42d694f321a1ba1d712f3c8768de6d8089f0c86864b7951589ba6ff8efe847bb5640db9e91c2f447604731b17eb81629c4c77207fa1e560265ae0489d58bf chain=0957b4aa0678b511c89d6f9b49742ab114043b662408b13e9f7b43d1033d5a81 measurement=84aaf62f431f0a943944e10b0569c7c899bf5e9cfd0c6176af3f70033e241ac1e9d807f5605fd7dd08bf1bf1f09b5da5 times=1
+    | tunneld: EXIT status=0
+    | === END a.log
+    | === BEGIN b.log
+    | tunneld: sandbox "stock-b"
+    | tunneld: author key b6207f5fca0a59c3… (author.pub, inside the launch measurement)
+    | tunneld: peer table: stock-a = 127.0.0.1:14433
+    | tunneld: CLAMPED the run configuration asks for a maximum age of 8760h0m0s; using 15m0s, which is the ceiling this binary carries. The config device is outside the launch measurement, and a maximum age a host could raise is a re-attestation a host could remove (ADR-0004's argument, applied to this field)
+    | tunneld: report interface /sys/kernel/config/tsm/report: present, 0 request(s) outstanding; a platform driver that does not answer it is what a non-confidential VM looks like from inside
+    | tunneld: tsm: provider "sev_guest" (amd-sev-snp) returned 1184 bytes of evidence over 1 write(s); its own certificate table is empty (auxblob, 0 bytes), which is the expected state on this host and not an error; bundled the 4759-byte chain provisioned in config for chip 9b3716…5243 at bootloader=9 tee=0 snp=23 microcode=72 (ADR-0005)
+    | tunneld: listening on 127.0.0.1:14434 as "stock-b"; idle 1m0s, maximum age 15m0s
+    | tunneld: exercise: dialing stock-a; 20 warm exchanges, 8 concurrent × 3 rounds, marker "attested-tunnel-plaintext-marker"
+    | tunneld: PEER key=90c7dcf4e1d8ddfd… chain=0957b4aa0678b511… measurement=84aaf62f431f0a94… tcb=bootloader=9,tee=0,snp=23,microcode=72
+    | tunneld: LATENCY pass=1 peer=stock-a kind=establish ms=23.218 attempts=1 verifier_calls=1
+    | tunneld: LATENCY pass=1 peer=stock-a kind=warm_exchange n=20 min_ms=0.227 p50_ms=0.492 p90_ms=0.689 max_ms=0.757 mean_ms=0.487 answered_by="stock-a"
+    | tunneld: LATENCY pass=1 peer=stock-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=2.724 min_ms=0.332 p50_ms=0.660 p90_ms=0.961 max_ms=1.030 mean_ms=0.631
+    | tunneld: PEERS verifier_calls=1 accepted=1 refused=0 distinct_keys=1 distinct_chains=1
+    | tunneld: PEER SEEN key=90c7dcf4e1d8ddfd06616c9b671839eef6b52ee8f76869d4a90c2b4294aa8fba9275d513bd946d345a9b4edaf75e50472dd09102de822d76ea98139d51df891d chain=0957b4aa0678b511c89d6f9b49742ab114043b662408b13e9f7b43d1033d5a81 measurement=84aaf62f431f0a943944e10b0569c7c899bf5e9cfd0c6176af3f70033e241ac1e9d807f5605fd7dd08bf1bf1f09b5da5 times=1
+    | tunneld: EXIT status=0
+    | === END b.log
+
+PASS  both tunnelds acquired real evidence from the platform
+PASS  both tunnelds started; neither was answered by a leftover from an earlier run
+PASS  both bundled the chain provisioned for this chip, not the platform's empty table
+PASS  a tunnel was established, which took both sides admitting the other
+PASS  exchanges succeeded over it
+PASS  concurrent exchanges shared the one tunnel
+PASS  the peer that presented no evidence was refused
+PASS  and it learned nothing about why
+PASS  and it did not get an application round trip
+PASS  the attacker reached the listener and was refused by it, rather than never reaching it
+PASS  the control peer, on the same listener in the same run, was admitted
+PASS  a year-long maximum age from the config device was clamped
+PASS  and the tunneld ran on the ceiling, not on what it was handed
+    stock-a presented key 90c7dcf4e1d8ddfd06616c9b671839eef6b52ee8f76869d4a90c2b4294aa8fba9275d513bd946d345a9b4edaf75e50472dd09102de822d76ea98139d51df891d
+    stock-b presented key 99c42d694f321a1ba1d712f3c8768de6d8089f0c86864b7951589ba6ff8efe847bb5640db9e91c2f447604731b17eb81629c4c77207fa1e560265ae0489d58bf
+PASS  the two tunnelds presented distinct keys
+PASS  over one chip's chain, which is what one guest means
+
+=== latency on hardware, as the dialing tunneld measured it ===
+  LATENCY pass=1 peer=stock-a kind=establish ms=23.218 attempts=1 verifier_calls=1
+  LATENCY pass=1 peer=stock-a kind=warm_exchange n=20 min_ms=0.227 p50_ms=0.492 p90_ms=0.689 max_ms=0.757 mean_ms=0.487 answered_by="stock-a"
+  LATENCY pass=1 peer=stock-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=2.724 min_ms=0.332 p50_ms=0.660 p90_ms=0.961 max_ms=1.030 mean_ms=0.631
+
+=== 15 passed, 0 failed ===

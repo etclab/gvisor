@@ -40,7 +40,15 @@
 #   Every one of VCPUS, VCPU_TYPE and POLICY must match launch-measured-guest.sh
 #   (-smp, -cpu, policy=) or the prediction is for a different launch.
 #   TUNNELD         static binary to embed as /usr/bin/tunneld. Default: build
-#                   tunneld-placeholder.c. Ticket 14 sets this and nothing else.
+#                   tunneld-placeholder.c. Ticket 14 sets this and nothing else:
+#                   package-tunneld.sh checks the import graph and the built
+#                   artifact, builds attest/cmd/tunneld with CGO_ENABLED=0, and
+#                   calls this script with TUNNELD pointing at it. Run that
+#                   rather than setting this by hand — the checks have to
+#                   happen before the measurement is computed, and this script
+#                   computes it. The default is left as the placeholder so that
+#                   tickets 06-08's recorded images rebuild to the measurements
+#                   they recorded.
 #   BUSYBOX         static busybox (default /bin/busybox from busybox-static)
 set -euo pipefail
 HERE="$(dirname "$(readlink -f "$0")")"

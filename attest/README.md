@@ -149,10 +149,22 @@ work, `ratls.PayloadOID` is the one constant that changes. (Go's `encoding/asn1`
 as `int`, which rules out the UUID-based `2.25` arc.)
 
 `snpfake` must never reach a production binary: it imports `go-sev-guest`'s test helpers, which
-import `testing` and register flags at init, and ticket 14 puts the binary inside the launch
-measurement. `tunneld/importgraph_test.go` lists the non-test dependency graph of package
-`tunneld` and fails if `snpfake`, `go-sev-guest/testing` or `testing` appears; the fake is
-injected only through `Config`, from test code.
+import `testing` and register flags at init, and ticket 14 puts a binary inside the launch
+measurement. The binary that goes in is `cmd/tunneld`, not package `tunneld`, and that is where
+the guard lives: `cmd/tunneld/importgraph_test.go` lists the non-test dependency graph of
+`gvisor.dev/gvisor/attest/cmd/tunneld` and fails if `snpfake`, `go-sev-guest/testing` or
+`testing` appears, and checks package `tunneld`'s graph beside it so a failure names which of the
+two grew the dependency. The command's graph contains the package's, so one guard on the command
+is stronger than the guard that was in the package until ticket 14 moved it. The fake is injected
+only through `Config`, from test code.
+
+Two things about it are worth knowing before trusting it. It guards the *artifact* as well as the
+graph — `cmd/tunneld/packaged_test.go` builds the binary the way the packaging step does and reads
+what came out, refusing one that carries either package path or that asks for a dynamic loader,
+because the measured image ships none and such a binary fails at exec inside the guest with the
+measurement already fixed. And it has to run *before* the measurement is computed, which is a
+property of the packaging step rather than of any test file:
+`docs/snp/image/package-tunneld.sh` runs the tests, then builds, then calls `build-image.sh`.
 
 The reference value loader is driven through the same seam: a set is loaded and then wired into a
 `Verification` and shown to admit or refuse a fake platform, because what a set is for is deciding

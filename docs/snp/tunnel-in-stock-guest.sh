@@ -62,7 +62,13 @@ echo
 B="$OUT/bundle"
 rm -rf "$B"; mkdir -p "$B/config"
 echo "building the two binaries this run needs"
-(cd "$REPO/attest" && go test -count=1 ./cmd/tunneld >/dev/null && CGO_ENABLED=0 go build -o "$B/tunneld" ./cmd/tunneld)
+# Built exactly as package-tunneld.sh builds it, -trimpath and all, so that the
+# binary this run exercises is byte-for-byte the one the image embeds at the
+# same commit. Without the flags it would differ in nothing but the paths
+# compiled into it, which is a difference nobody can check by eye and everybody
+# has to explain.
+(cd "$REPO/attest" && go test -count=1 ./cmd/tunneld >/dev/null \
+    && CGO_ENABLED=0 go build -trimpath -buildvcs=false -o "$B/tunneld" ./cmd/tunneld)
 (cd "$HERE/unattested-peer" && CGO_ENABLED=0 go build -o "$B/unattested-peer" .)
 file "$B/tunneld" | grep -q 'statically linked' || { echo "tunneld is not static" >&2; exit 1; }
 echo "tunneld sha256 $(sha256sum "$B/tunneld" | cut -d' ' -f1)"
@@ -84,13 +90,17 @@ cat > "$B/config/tunneld-a.json" <<'JSON'
   "hold": "25s"
 }
 JSON
+# The dialer's maximum age is deliberately absurd. The config device is outside
+# the launch measurement, so this is what a host would write to stop
+# re-attestation ever happening again; the binary clamps it and says so, and
+# this run is where that is shown on hardware rather than only in a unit test.
 cat > "$B/config/tunneld-b.json" <<'JSON'
 {
   "format": "gvisor.dev/gvisor/attest/tunneld-run",
   "version": 1,
   "sandbox_id": "stock-b",
   "listen": "127.0.0.1:14434",
-  "limits": {"idle_timeout": "60s", "max_age": "15m"},
+  "limits": {"idle_timeout": "60s", "max_age": "8760h"},
   "exercise": {
     "dial": ["stock-a"],
     "wait": "60s",
@@ -160,6 +170,12 @@ check "the attacker reached the listener and was refused by it, rather than neve
       has "$R" "unattested-peer exit=0"
 check "the control peer, on the same listener in the same run, was admitted" \
       has "$A" "tunneld: PEER key="
+# A maximum age the host could raise is a re-attestation the host could delete,
+# so the ceiling is in the measured binary and a clamp that bites is loud.
+check "a year-long maximum age from the config device was clamped" \
+      has "$Bl" "CLAMPED"
+check "and the tunneld ran on the ceiling, not on what it was handed" \
+      has "$Bl" "maximum age 15m0s"
 KEY_A=$(sed -n 's/.*PEER SEEN key=\([0-9a-f]*\).*/\1/p' "$Bl" | head -1)
 KEY_B=$(sed -n 's/.*PEER SEEN key=\([0-9a-f]*\).*/\1/p' "$A" | head -1)
 CHAIN_A=$(sed -n 's/.*PEER SEEN .*chain=\([0-9a-f]*\).*/\1/p' "$Bl" | head -1)

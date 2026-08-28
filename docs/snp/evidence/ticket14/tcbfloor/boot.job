@@ -5,15 +5,15 @@
 # conversation, and a runner that ran them one after another would have each
 # talking to nobody.
 set -u
-A_LOG="/home/pniroula/Projects/gvisor-ticket14/.scratch/attested-secure-tunnel/host-stack/ticket14-refusals/tcbfloor/console-a.txt"
-B_LOG="/home/pniroula/Projects/gvisor-ticket14/.scratch/attested-secure-tunnel/host-stack/ticket14-refusals/tcbfloor/console-b.txt"
-timeout 300 bash "/home/pniroula/Projects/gvisor-ticket14/docs/snp/tunnel-guest.sh" -image "/home/pniroula/Projects/gvisor-ticket14/.scratch/attested-secure-tunnel/host-stack/image-ticket14" -config "/home/pniroula/Projects/gvisor-ticket14/.scratch/attested-secure-tunnel/host-stack/ticket14-refusals/tcbfloor/config-a.img" \
+A_LOG="/home/pniroula/Projects/gvisor-ticket14/.scratch/attested-secure-tunnel/host-stack/ticket14-final/tcbfloor/console-a.txt"
+B_LOG="/home/pniroula/Projects/gvisor-ticket14/.scratch/attested-secure-tunnel/host-stack/ticket14-final/tcbfloor/console-b.txt"
+timeout 300 bash "/home/pniroula/Projects/gvisor-ticket14/docs/snp/tunnel-guest.sh" -image "/home/pniroula/Projects/gvisor-ticket14/.scratch/attested-secure-tunnel/host-stack/image-ticket14" -config "/home/pniroula/Projects/gvisor-ticket14/.scratch/attested-secure-tunnel/host-stack/ticket14-final/tcbfloor/config-a.img" \
     -relay 127.0.0.1:15801 -console "$A_LOG" -mac 52:54:00:14:00:0a  &
 A=$!
-timeout 300 bash "/home/pniroula/Projects/gvisor-ticket14/docs/snp/tunnel-guest.sh" -image "/home/pniroula/Projects/gvisor-ticket14/.scratch/attested-secure-tunnel/host-stack/image-ticket14" -config "/home/pniroula/Projects/gvisor-ticket14/.scratch/attested-secure-tunnel/host-stack/ticket14-refusals/tcbfloor/config-b.img" \
+timeout 300 bash "/home/pniroula/Projects/gvisor-ticket14/docs/snp/tunnel-guest.sh" -image "/home/pniroula/Projects/gvisor-ticket14/.scratch/attested-secure-tunnel/host-stack/image-ticket14" -config "/home/pniroula/Projects/gvisor-ticket14/.scratch/attested-secure-tunnel/host-stack/ticket14-final/tcbfloor/config-b.img" \
     -relay 127.0.0.1:15802 -console "$B_LOG" -mac 52:54:00:14:00:0b   &
 B=$!
 wait $A; echo "guest A qemu exited $?"
 wait $B; echo "guest B qemu exited $?"
-chown -R 253477:253477 "/home/pniroula/Projects/gvisor-ticket14/.scratch/attested-secure-tunnel/host-stack/ticket14-refusals/tcbfloor" 2>/dev/null
-chmod -R a+rX "/home/pniroula/Projects/gvisor-ticket14/.scratch/attested-secure-tunnel/host-stack/ticket14-refusals/tcbfloor" 2>/dev/null
+chown -R 253477:253477 "/home/pniroula/Projects/gvisor-ticket14/.scratch/attested-secure-tunnel/host-stack/ticket14-final/tcbfloor" 2>/dev/null
+chmod -R a+rX "/home/pniroula/Projects/gvisor-ticket14/.scratch/attested-secure-tunnel/host-stack/ticket14-final/tcbfloor" 2>/dev/null

@@ -1,14 +1,14 @@
-=== relay self-test, 2026-08-27T18:42:02Z ===
+=== relay self-test, 2026-08-28T00:12:28Z ===
 
 ### 1. two guests on the segment reach each other through the relay
     PING 10.14.0.3 (10.14.0.3): 56 data bytes
-    64 bytes from 10.14.0.3: seq=0 ttl=64 time=1.299 ms
-    64 bytes from 10.14.0.3: seq=1 ttl=64 time=0.798 ms
-    64 bytes from 10.14.0.3: seq=2 ttl=64 time=0.796 ms
+    64 bytes from 10.14.0.3: seq=0 ttl=64 time=1.497 ms
+    64 bytes from 10.14.0.3: seq=1 ttl=64 time=0.840 ms
+    64 bytes from 10.14.0.3: seq=2 ttl=64 time=0.846 ms
     
     --- 10.14.0.3 ping statistics ---
     3 packets transmitted, 3 packets received, 0% packet loss
-    round-trip min/avg/max = 0.796/0.964/1.299 ms
+    round-trip min/avg/max = 0.840/1.061/1.497 ms
     l2relay: RELAYED a_to_b_frames=12 b_to_a_frames=12 a_to_b_bytes=964 b_to_a_bytes=964 tampered=0
     l2relay: MARKER not found hits=0 marker='attested-tunnel-plaintext-marker' in 24 frames carrying 1928 bytes
     l2relay: what was on the segment:

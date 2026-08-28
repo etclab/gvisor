@@ -441,6 +441,19 @@ scenario_modified() {
     # refusal whose cause the record does not name.
     bash "$HERE/image/mutate-image.sh" -base "$IMAGE" -out "$mutated" -mutation rootfs-byte | sed 's/^/    /'
   fi
+  # mutate-image.sh reports the byte it changed and the verity root hash that
+  # followed, but not a launch measurement — it does not predict one. Predict
+  # it here, because the number that says the mutation moved M is the number
+  # this scenario is about, and a refusal recorded without it is a refusal
+  # whose cause the record does not name.
+  bash "$HERE/image/predict-measurement.sh" "$mutated" -vcpus 4 -vcpu-type EPYC-v4 \
+      -out "$work/mutated-measurement.txt" > /dev/null
+  local mutated_m
+  mutated_m=$(sed -n 's/^launch_measurement: //p' "$work/mutated-measurement.txt")
+  echo "    the mutated image's predicted measurement: $mutated_m"
+  echo "    the image both sets name:                  $MEASUREMENT"
+  check "one byte of the root filesystem moved the launch measurement" \
+        test -n "$mutated_m" -a "$mutated_m" != "$MEASUREMENT"
   # The mutated image is not re-authorised: its measurement appears in no
   # reference value set anywhere, which is the whole point. Guest B carries the
   # same set as guest A, so B admits A and only A has anything to refuse.
@@ -608,7 +621,8 @@ if [ -n "$CAPTURE" ]; then
     n=$(basename "$d")
     case "$n" in image-*|config-*) continue ;; esac
     mkdir -p "$CAPTURE/$n"
-    cp "$d"/console-*.txt "$d"/relay.txt "$d"/segment.pcap "$d"/boot.job "$CAPTURE/$n/" 2>/dev/null || true
+    cp "$d"/console-*.txt "$d"/relay.txt "$d"/segment.pcap "$d"/boot.job \
+       "$d"/mutated-measurement.txt "$CAPTURE/$n/" 2>/dev/null || true
   done
   cp "$IMAGE/manifest.txt" "$IMAGE/reference-values.json" "$IMAGE/reference-values.json.sig" \
      "$IMAGE/predicted-measurement.txt" "$IMAGE/packaging.txt" "$CAPTURE/" 2>/dev/null || true

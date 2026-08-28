@@ -7,8 +7,8 @@ tunneld: tsm: provider "sev_guest" (amd-sev-snp) returned 1184 bytes of evidence
 tunneld: listening on 127.0.0.1:14433 as "stock-a"; idle 1m0s, maximum age 15m0s
 tunneld: holding for 25s so that peers still dialing can finish
 tunneld: REFUSED verification refused: no evidence presented: peer's envelope carries no attestation payload
-tunneld: PEER key=5f65c599ed3d24f0… chain=0957b4aa0678b511… measurement=84aaf62f431f0a94… tcb=bootloader=9,tee=0,snp=23,microcode=72
+tunneld: PEER key=99c42d694f321a1b… chain=0957b4aa0678b511… measurement=84aaf62f431f0a94… tcb=bootloader=9,tee=0,snp=23,microcode=72
 tunneld: PEERS verifier_calls=1 accepted=1 refused=0 distinct_keys=1 distinct_chains=1
-tunneld: PEER SEEN key=5f65c599ed3d24f039783c881bede15d554d2f9b55e1b17ff9f0b91c8776287be0fd09cfa35636e8f83713be6a011f8251684d674cbc564c93b0b9d137b0d989 chain=0957b4aa0678b511c89d6f9b49742ab114043b662408b13e9f7b43d1033d5a81 measurement=84aaf62f431f0a943944e10b0569c7c899bf5e9cfd0c6176af3f70033e241ac1e9d807f5605fd7dd08bf1bf1f09b5da5 times=1
+tunneld: PEER SEEN key=99c42d694f321a1ba1d712f3c8768de6d8089f0c86864b7951589ba6ff8efe847bb5640db9e91c2f447604731b17eb81629c4c77207fa1e560265ae0489d58bf chain=0957b4aa0678b511c89d6f9b49742ab114043b662408b13e9f7b43d1033d5a81 measurement=84aaf62f431f0a943944e10b0569c7c899bf5e9cfd0c6176af3f70033e241ac1e9d807f5605fd7dd08bf1bf1f09b5da5 times=1
 tunneld: EXIT status=0
 === END a.log

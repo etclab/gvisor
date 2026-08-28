@@ -42,10 +42,23 @@ type link struct {
 	// Address is the IPv4 address to set, in dotted quad.
 	Address string `json:"address"`
 
-	// PrefixLength is the network's prefix length. Every guest in a run sits
-	// on one subnet with no gateway and no resolver, which is what makes
-	// egress to the vendor structurally impossible rather than merely blocked.
+	// PrefixLength is the network's prefix length. In a ticket-14 run every
+	// guest sits on one subnet with no gateway and no resolver, which is what
+	// makes egress to the vendor structurally impossible rather than merely
+	// blocked.
 	PrefixLength int `json:"prefix_length"`
+
+	// Gateway, if set, is the IPv4 address a default route is added through.
+	// It is what a guest dialing a peer off its own segment needs — the cloud
+	// run, where the peer is behind QEMU's user-mode NAT and a real network —
+	// and it is what a ticket-14 guest must not have, because a guest with a
+	// route off its segment has a path to the vendor and "no egress" stops
+	// being a property of the wiring. Leave it out and no route is added; the
+	// guest can reach its own subnet and nothing else. It must be on that
+	// subnet: a gateway the guest cannot reach on-link is a route the kernel
+	// refuses, and it is refused here first, with a sentence rather than
+	// ENETUNREACH.
+	Gateway string `json:"gateway"`
 }
 
 func (l *link) validate() error {
@@ -58,7 +71,28 @@ func (l *link) validate() error {
 	if l.PrefixLength < 1 || l.PrefixLength > 32 {
 		return fmt.Errorf("prefix_length %d is not between 1 and 32", l.PrefixLength)
 	}
+	if l.Gateway != "" {
+		gw := l.gatewayIP()
+		if gw == nil {
+			return fmt.Errorf("gateway %q is not an IPv4 address", l.Gateway)
+		}
+		subnet := net.IPNet{IP: l.ip().Mask(net.IPMask(l.mask())), Mask: net.IPMask(l.mask())}
+		if !subnet.Contains(gw) {
+			return fmt.Errorf("gateway %s is not on %s, so no route could reach it", gw, subnet.String())
+		}
+		if gw.Equal(l.ip()) {
+			return fmt.Errorf("gateway %s is this guest's own address", gw)
+		}
+	}
 	return nil
+}
+
+func (l *link) gatewayIP() net.IP {
+	ip := net.ParseIP(l.Gateway)
+	if ip == nil {
+		return nil
+	}
+	return ip.To4()
 }
 
 func (l *link) ip() net.IP {

@@ -94,6 +94,12 @@ func TestRunConfigRefusals(t *testing.T) {
 			`{"format": "gvisor.dev/gvisor/attest/tunneld-run", "version": 1}`},
 		{"a link with no address",
 			`{"format": "gvisor.dev/gvisor/attest/tunneld-run", "version": 1, "sandbox_id": "a", "link": {"interface": "eth0"}}`},
+		{"a gateway off the link's own subnet, which no route could reach",
+			`{"format": "gvisor.dev/gvisor/attest/tunneld-run", "version": 1, "sandbox_id": "a", "link": {"interface": "eth0", "address": "10.0.2.15", "prefix_length": 24, "gateway": "10.0.3.2"}}`},
+		{"a gateway that is the guest's own address",
+			`{"format": "gvisor.dev/gvisor/attest/tunneld-run", "version": 1, "sandbox_id": "a", "link": {"interface": "eth0", "address": "10.0.2.15", "prefix_length": 24, "gateway": "10.0.2.15"}}`},
+		{"a gateway that is not an address",
+			`{"format": "gvisor.dev/gvisor/attest/tunneld-run", "version": 1, "sandbox_id": "a", "link": {"interface": "eth0", "address": "10.0.2.15", "prefix_length": 24, "gateway": "slirp"}}`},
 		{"an exercise with nobody to dial",
 			`{"format": "gvisor.dev/gvisor/attest/tunneld-run", "version": 1, "sandbox_id": "a", "exercise": {"exchanges": 4}}`},
 		{"a duration written as a number",
@@ -102,6 +108,23 @@ func TestRunConfigRefusals(t *testing.T) {
 		if _, err := loadRunConfig(write(t, "tunneld.json", c.document)); err == nil {
 			t.Errorf("loaded a configuration with %s; want a refusal", c.name)
 		}
+	}
+}
+
+// A gateway is optional, and its absence is the ticket-14 shape: a guest with
+// no route off its segment. Its presence is the cloud shape, where the peer is
+// behind QEMU's user-mode NAT and the guest has to be told the way out.
+func TestLinkGatewayIsOptionalAndOnLink(t *testing.T) {
+	cfg, err := loadRunConfig(write(t, "tunneld.json", `{"format": "gvisor.dev/gvisor/attest/tunneld-run", "version": 1, "sandbox_id": "a",
+		"link": {"interface": "eth0", "address": "10.0.2.15", "prefix_length": 24, "gateway": "10.0.2.2"}}`))
+	if err != nil {
+		t.Fatalf("loading: %v", err)
+	}
+	if cfg.Link.Gateway != "10.0.2.2" || cfg.Link.gatewayIP() == nil {
+		t.Errorf("gateway %q; want 10.0.2.2 parsed as an IPv4 address", cfg.Link.Gateway)
+	}
+	if goodLink, _ := loadRunConfig(write(t, "tunneld.json", goodRun)); goodLink.Link.Gateway != "" {
+		t.Errorf("a link that names no gateway has one: %q", goodLink.Link.Gateway)
 	}
 }
 

@@ -65,8 +65,11 @@
 // The guest's init does not configure networking and cannot be asked to: it is
 // inside the launch measurement, and every byte in there is a byte in M. This
 // command therefore sets the address on its interface itself, from the run
-// configuration, before it does anything else. It is three ioctls (link.go);
-// on a host that already has an address, leave "link" out and nothing happens.
+// configuration, before it does anything else. It is three ioctls (link.go),
+// and a fourth for a default route when the run configuration names a
+// gateway, which a guest dialing a peer across a real network needs and a
+// guest on a closed segment must not have. On a host that already has an
+// address, leave "link" out and nothing happens.
 //
 // # What it prints
 //
@@ -168,7 +171,11 @@ func run(args []string, out io.Writer) int {
 			logf("refusing to start: bringing up %s: %v", cfg.Link.Interface, err)
 			return exitRefusedToStart
 		}
-		logf("link %s up with %s/%d", cfg.Link.Interface, cfg.Link.Address, cfg.Link.PrefixLength)
+		if cfg.Link.Gateway != "" {
+			logf("link %s up with %s/%d, default route via %s", cfg.Link.Interface, cfg.Link.Address, cfg.Link.PrefixLength, cfg.Link.Gateway)
+		} else {
+			logf("link %s up with %s/%d, no route off the segment", cfg.Link.Interface, cfg.Link.Address, cfg.Link.PrefixLength)
+		}
 	}
 
 	limits, clamped := cfg.limits()

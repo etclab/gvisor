@@ -1,0 +1,55 @@
+=== package-tunneld: 2026-08-28T00:40:49Z on shs1
+repo 65353b7008d09c092c511bf544b8e08ebb3c4640 on cloud-mixed-shs1-and-gcp
+go   go version go1.26.3 linux/amd64
+
+=== 1. the guard, BEFORE anything is built or measured
+$ go test ./cmd/tunneld
+=== RUN   TestPackagedImportGraphExcludesTestSupport
+--- PASS: TestPackagedImportGraphExcludesTestSupport (0.10s)
+=== RUN   TestPackageImportGraphExcludesTestSupport
+--- PASS: TestPackageImportGraphExcludesTestSupport (0.09s)
+=== RUN   TestRtentryLayoutMatchesTheKernel
+--- PASS: TestRtentryLayoutMatchesTheKernel (0.00s)
+=== RUN   TestConfigureBringsUpLinkAndDefaultRoute
+    link_linux_test.go:63: set TUNNELD_LINK_TEST=1 inside a network namespace (unshare -rn) to run this
+--- SKIP: TestConfigureBringsUpLinkAndDefaultRoute (0.00s)
+=== RUN   TestPackagedBinaryIsStaticAndFreeOfTestSupport
+--- PASS: TestPackagedBinaryIsStaticAndFreeOfTestSupport (0.69s)
+=== RUN   TestRunConfigLoads
+--- PASS: TestRunConfigLoads (0.00s)
+=== RUN   TestRunConfigRefusals
+--- PASS: TestRunConfigRefusals (0.00s)
+=== RUN   TestLinkGatewayIsOptionalAndOnLink
+--- PASS: TestLinkGatewayIsOptionalAndOnLink (0.00s)
+=== RUN   TestPeerTableLoads
+--- PASS: TestPeerTableLoads (0.00s)
+=== RUN   TestMaximumAgeIsClampedButMayBeShortened
+--- PASS: TestMaximumAgeIsClampedButMayBeShortened (0.00s)
+PASS
+ok  	gvisor.dev/gvisor/attest/cmd/tunneld	0.898s
+guard passed: the packaged graph reaches no fake platform and no test support
+
+=== 2. the binary
+$ CGO_ENABLED=0 go build -trimpath -buildvcs=false -o /home/pniroula/Projects/gvisor-cloud/.scratch/attested-secure-tunnel/host-stack/image-cloud-packaging/tunneld ./cmd/tunneld
+/home/pniroula/Projects/gvisor-cloud/.scratch/attested-secure-tunnel/host-stack/image-cloud-packaging/tunneld: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, Go BuildID=nQJXIZ4YT_WDzCNB8YFT/tZA9xqfqpQmWqqhPsTyK/CUE960xJ8fCUgrNXC_hz/UszxqalnrsneQURr3wYk, BuildID[sha1]=c4e724976608569d6c3eb958a3de1c26b6c1e36d, with debug_info, not stripped
+tunneld sha256: b9d7fae68f6bf8ac7f93c07710c58f1e6ab95ca1f20bf218c5d31240972c01c0
+tunneld bytes : 16193819
+
+=== 3. the image, with TUNNELD set and nothing else
+generated a throwaway reference value author key at /home/pniroula/Projects/gvisor-cloud/.scratch/attested-secure-tunnel/host-stack/image-cloud-packaging/author.key
+author public key: b3bb138deb0d42459a26223bbddb39d7e32deadf4d33643915c69e2ec9b57ef9
+wrote /home/pniroula/Projects/gvisor-cloud/.scratch/attested-secure-tunnel/host-stack/image-cloud/reference-values.json and /home/pniroula/Projects/gvisor-cloud/.scratch/attested-secure-tunnel/host-stack/image-cloud/reference-values.json.sig (loads back through attest.LoadReferenceValueSetFile)
+
+image in /home/pniroula/Projects/gvisor-cloud/.scratch/attested-secure-tunnel/host-stack/image-cloud:
+-rw------- 1 pniroula 253477      195 Aug 27 20:40 cmdline.txt
+-rw------- 1 pniroula 253477  1507234 Aug 27 20:40 initrd.img
+-rw------- 1 pniroula 253477     4387 Aug 27 20:40 manifest.txt
+-rw------- 1 pniroula 253477  4194304 Aug 27 20:40 OVMF.fd
+-rw------- 1 pniroula 253477     1236 Aug 27 20:40 predicted-measurement.txt
+-rw------- 1 pniroula 253477     1983 Aug 27 20:40 reference-values.inputs.txt
+-rw------- 1 pniroula 253477      582 Aug 27 20:40 reference-values.json
+-rw------- 1 pniroula 253477      129 Aug 27 20:40 reference-values.json.sig
+-rw------- 1 pniroula 253477  9170944 Aug 27 20:40 rootfs.img
+-rw------- 1 pniroula 253477 12825088 Aug 27 20:40 vmlinuz
+command line: console=ttyS0 earlyprintk=serial panic=-1 rdinit=/init verity.roothash=f19ae0bd48b77fa7239f74aaa74c8bb982904e770af01c08d71316f551bd694d verity.salt=- verity.datablocks=2220 verity.hashstart=2220
+predicted launch measurement: 0ecf8f328899123781da8e800d57aaf6813581d1a3856d97c7b2a6b0bb1caac9551da44b498d81d4f85d1e427e0a98a5

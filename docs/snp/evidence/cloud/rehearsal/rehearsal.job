@@ -1,0 +1,9 @@
+# Cloud rehearsal: boot the repackaged image (M=0ecf8f32…) once, behind QEMU's
+# user-mode NAT with a gateway in its run configuration, dialing an address
+# nothing answers, with every frame captured. Privileged only for /dev/sev.
+# Nothing is changed on the host; the guest powers itself off within ~60s.
+set -u
+timeout 180 bash /home/pniroula/Projects/gvisor-cloud/docs/snp/cloud/nat-guest.sh -image /home/pniroula/Projects/gvisor-cloud/.scratch/attested-secure-tunnel/host-stack/image-cloud -config /home/pniroula/Projects/gvisor-cloud/.scratch/attested-secure-tunnel/host-stack/cloud-rehearsal/config.img \
+    -console /home/pniroula/Projects/gvisor-cloud/.scratch/attested-secure-tunnel/host-stack/cloud-rehearsal/console.txt -pcap /home/pniroula/Projects/gvisor-cloud/.scratch/attested-secure-tunnel/host-stack/cloud-rehearsal/guest.pcap
+echo "qemu exited $?"
+chown -R 253477:253477 /home/pniroula/Projects/gvisor-cloud/.scratch/attested-secure-tunnel/host-stack/cloud-rehearsal 2>/dev/null; chmod -R a+rX /home/pniroula/Projects/gvisor-cloud/.scratch/attested-secure-tunnel/host-stack/cloud-rehearsal 2>/dev/null

@@ -1,0 +1,249 @@
+=== the attested tunnel across a real network ===
+date        : 2026-08-28T02:07:35Z
+repo        : b1760462e8c28c22676b7d13ca966e848cf7d540 on cloud-mixed-shs1-and-gcp
+image       : /home/pniroula/Projects/gvisor-cloud/.scratch/attested-secure-tunnel/host-stack/image-cloud (the dialer, this host, Genoa)
+listener    : listener 10.128.0.18 in us-central1-a (SEV-SNP, Milan, provider firmware)
+relay       : relay 34.30.253.16 (ordinary VM; the attacker; what the dialer's peer table names)
+refvals     : /home/pniroula/Projects/gvisor-cloud/docs/snp/cloud/refvals
+scenarios   : tcbfloor
+
+predicted launch measurement of the image the dialer boots:
+  0ecf8f328899123781da8e800d57aaf6813581d1a3856d97c7b2a6b0bb1caac9551da44b498d81d4f85d1e427e0a98a5
+launch measurement of the provider's firmware, which is all the cloud peer attests:
+  2d24cf9624ee36449e50c6c84042540b05898f6559f02741b7b354e0cc2ed18d108352ade7dfc4cecce4fa974e51c773
+both sides' reference value sets name both; the author key is inside the dialer's image
+and is the file the listener was started with (-author).
+
+checking the cloud side
+listener is up; relay script at relay:/home/pniroula/attested-tunnel/udprelay.py
+this host's egress address: 128.239.2.78 (the relay's firewall rule admits it and nothing else)
+
+spool       : /home/pniroula/Projects/gvisor/docs/snp/root-spool
+
+### tcbfloor: the dialer holds a set whose cloud value's floor is above Milan's TCB
+    author public key: b3bb138deb0d42459a26223bbddb39d7e32deadf4d33643915c69e2ec9b57ef9
+    wrote /home/pniroula/Projects/gvisor-cloud/.scratch/attested-secure-tunnel/host-stack/cloud-run/tcbfloor/refvals-tcbfloor/reference-values.json and /home/pniroula/Projects/gvisor-cloud/.scratch/attested-secure-tunnel/host-stack/cloud-run/tcbfloor/refvals-tcbfloor/reference-values.json.sig with 2 values (loads back through attest.LoadReferenceValueSetFile)
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config device written to /home/pniroula/Projects/gvisor-cloud/.scratch/attested-secure-tunnel/host-stack/cloud-run/tcbfloor/config.img (4a2a6444d8aa2105…, not measured)
+    relay: relay-started
+spooled /home/pniroula/Projects/gvisor/docs/snp/root-spool/cloud-43984-tcbfloor.job; waiting up to 540s for the runner
+tcbfloor finished, rc=0
+    | guest qemu exited 0
+relay:
+    | udprelay: RELAYED dialer_to_listener_dgrams=228 listener_to_dialer_dgrams=400 dialer_to_listener_bytes=220932 listener_to_dialer_bytes=465296 tampered=0
+    | udprelay: MARKER not found hits=0 marker='attested-tunnel-plaintext-marker' in 628 datagrams carrying 686228 bytes
+    | udprelay: dialers seen: 128.239.2.78
+listener console during tcbfloor:
+what the guest put on its link (guest.pcap):
+    |     | frames: 642
+    |     | ethertypes: IPv4=628, ARP=6, IPv6=8
+    |     | arp targets: 10.0.2.15, 10.0.2.2
+    |     |   34.30.253.16 -> 10.0.2.15 proto=UDP frames=400
+    |     |   10.0.2.15 -> 34.30.253.16 proto=UDP frames=228
+    |     |   udp to 34.30.253.16:4433 datagrams=228
+    |     |   udp to 10.0.2.15:50792 datagrams=8
+    |     |   udp to 10.0.2.15:45689 datagrams=7
+    |     |   udp to 10.0.2.15:40480 datagrams=7
+    |     |   udp to 10.0.2.15:56704 datagrams=7
+    |     |   udp to 10.0.2.15:52179 datagrams=7
+    |     |   udp to 10.0.2.15:52332 datagrams=7
+    |     |   udp to 10.0.2.15:60953 datagrams=7
+    |     |   udp to 10.0.2.15:50971 datagrams=7
+    |     |   udp to 10.0.2.15:58892 datagrams=7
+    |     |   udp to 10.0.2.15:36580 datagrams=7
+    |     |   udp to 10.0.2.15:37604 datagrams=7
+    |     |   udp to 10.0.2.15:53239 datagrams=7
+    |     |   udp to 10.0.2.15:56096 datagrams=7
+    |     |   udp to 10.0.2.15:35479 datagrams=7
+    |     |   udp to 10.0.2.15:49551 datagrams=7
+    |     |   udp to 10.0.2.15:40392 datagrams=7
+    |     |   udp to 10.0.2.15:56594 datagrams=7
+    |     |   udp to 10.0.2.15:34842 datagrams=7
+    |     |   udp to 10.0.2.15:43498 datagrams=7
+    |     |   udp to 10.0.2.15:43765 datagrams=7
+    |     |   udp to 10.0.2.15:57111 datagrams=7
+    |     |   udp to 10.0.2.15:50287 datagrams=7
+    |     |   udp to 10.0.2.15:46499 datagrams=7
+    |     |   udp to 10.0.2.15:33326 datagrams=7
+    |     |   udp to 10.0.2.15:37376 datagrams=7
+    |     |   udp to 10.0.2.15:47251 datagrams=7
+    |     |   udp to 10.0.2.15:59105 datagrams=7
+    |     |   udp to 10.0.2.15:47105 datagrams=7
+    |     |   udp to 10.0.2.15:60313 datagrams=7
+    |     |   udp to 10.0.2.15:51903 datagrams=7
+    |     |   udp to 10.0.2.15:45138 datagrams=7
+    |     |   udp to 10.0.2.15:35159 datagrams=7
+    |     |   udp to 10.0.2.15:47754 datagrams=7
+    |     |   udp to 10.0.2.15:54131 datagrams=7
+    |     |   udp to 10.0.2.15:33756 datagrams=7
+    |     |   udp to 10.0.2.15:43238 datagrams=7
+    |     |   udp to 10.0.2.15:38188 datagrams=7
+    |     |   udp to 10.0.2.15:48096 datagrams=7
+    |     |   udp to 10.0.2.15:58788 datagrams=7
+    |     |   udp to 10.0.2.15:40133 datagrams=7
+    |     |   udp to 10.0.2.15:44246 datagrams=7
+    |     |   udp to 10.0.2.15:49525 datagrams=7
+    |     |   udp to 10.0.2.15:48429 datagrams=7
+    |     |   udp to 10.0.2.15:42298 datagrams=7
+    |     |   udp to 10.0.2.15:50938 datagrams=7
+    |     |   udp to 10.0.2.15:32879 datagrams=7
+    |     |   udp to 10.0.2.15:45551 datagrams=7
+    |     |   udp to 10.0.2.15:55931 datagrams=7
+    |     |   udp to 10.0.2.15:43263 datagrams=7
+    |     |   udp to 10.0.2.15:38610 datagrams=7
+    |     |   udp to 10.0.2.15:44182 datagrams=7
+    |     |   udp to 10.0.2.15:54166 datagrams=7
+    |     |   udp to 10.0.2.15:55402 datagrams=7
+    |     |   udp to 10.0.2.15:53020 datagrams=7
+    |     |   udp to 10.0.2.15:36468 datagrams=7
+    |     |   udp to 10.0.2.15:33861 datagrams=7
+    |     |   udp to 10.0.2.15:54102 datagrams=7
+PASS  the dialer refused a platform below its floor
+PASS  the dialer admitted nobody
+PASS  the dialer got no tunnel
+PASS  the listener saw nothing to judge: the dialer aborted before presenting anything
+PASS  and the listener refused nobody either
+
+=== latency, as the dialing guest measured it, across 128.239.2.78 -> 34.30.253.16 -> 10.128.0.18 ===
+GCP notice 2026-07-28: SEV-SNP instances may have longer boot times and performance changes Aug–Nov 2026 (guest kernel migration)
+  LATENCY pass=1 peer=gcp-listener kind=establish ms=138.503 attempts=1 verifier_calls=1
+  LATENCY pass=1 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.154 p50_ms=33.663 p90_ms=33.998 max_ms=34.219 mean_ms=33.673 answered_by="gcp-listener"
+  LATENCY pass=1 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=103.028 min_ms=33.471 p50_ms=33.767 p90_ms=34.080 max_ms=34.125 mean_ms=33.786
+  LATENCY pass=2 peer=gcp-listener kind=establish ms=0.010 attempts=1 verifier_calls=0
+  LATENCY pass=2 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.168 p50_ms=33.688 p90_ms=34.382 max_ms=34.963 mean_ms=33.707 answered_by="gcp-listener"
+  LATENCY pass=2 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=101.333 min_ms=33.154 p50_ms=33.679 p90_ms=33.828 max_ms=33.831 mean_ms=33.566
+  LATENCY pass=3 peer=gcp-listener kind=establish ms=0.011 attempts=1 verifier_calls=0
+  LATENCY pass=3 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.065 p50_ms=33.408 p90_ms=33.722 max_ms=34.721 mean_ms=33.415 answered_by="gcp-listener"
+  LATENCY pass=3 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=100.610 min_ms=32.946 p50_ms=33.264 p90_ms=33.818 max_ms=33.904 mean_ms=33.314
+  LATENCY pass=4 peer=gcp-listener kind=establish ms=0.010 attempts=1 verifier_calls=0
+  LATENCY pass=4 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.167 p50_ms=33.687 p90_ms=34.583 max_ms=35.721 mean_ms=33.786 answered_by="gcp-listener"
+  LATENCY pass=4 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=101.790 min_ms=33.083 p50_ms=33.554 p90_ms=34.420 max_ms=34.459 mean_ms=33.705
+  LATENCY pass=5 peer=gcp-listener kind=establish ms=0.011 attempts=1 verifier_calls=0
+  LATENCY pass=5 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.235 p50_ms=33.908 p90_ms=34.693 max_ms=36.062 mean_ms=34.011 answered_by="gcp-listener"
+  LATENCY pass=5 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=105.834 min_ms=33.486 p50_ms=34.048 p90_ms=37.765 max_ms=37.808 mean_ms=35.082
+  LATENCY pass=1 peer=gcp-listener kind=establish ms=134.060 attempts=1 verifier_calls=1
+  LATENCY pass=1 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.076 p50_ms=33.529 p90_ms=33.911 max_ms=34.024 mean_ms=33.522 answered_by="gcp-listener"
+  LATENCY pass=1 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=100.785 min_ms=32.473 p50_ms=32.958 p90_ms=33.958 max_ms=34.061 mean_ms=33.187
+  LATENCY pass=2 peer=gcp-listener kind=establish ms=0.013 attempts=1 verifier_calls=0
+  LATENCY pass=2 peer=gcp-listener kind=warm_exchange n=20 min_ms=32.996 p50_ms=33.297 p90_ms=33.551 max_ms=36.469 mean_ms=33.426 answered_by="gcp-listener"
+  LATENCY pass=2 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=100.963 min_ms=33.018 p50_ms=33.345 p90_ms=33.700 max_ms=33.844 mean_ms=33.370
+  LATENCY pass=3 peer=gcp-listener kind=establish ms=0.012 attempts=1 verifier_calls=0
+  LATENCY pass=3 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.024 p50_ms=33.389 p90_ms=33.754 max_ms=35.640 mean_ms=33.446 answered_by="gcp-listener"
+  LATENCY pass=3 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=106.263 min_ms=32.625 p50_ms=33.092 p90_ms=39.465 max_ms=39.598 mean_ms=35.077
+  LATENCY pass=4 peer=gcp-listener kind=establish ms=0.012 attempts=1 verifier_calls=0
+  LATENCY pass=4 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.496 p50_ms=33.995 p90_ms=34.690 max_ms=36.795 mean_ms=34.139 answered_by="gcp-listener"
+  LATENCY pass=4 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=102.419 min_ms=33.077 p50_ms=33.721 p90_ms=34.093 max_ms=34.144 mean_ms=33.633
+  LATENCY pass=5 peer=gcp-listener kind=establish ms=0.012 attempts=1 verifier_calls=0
+  LATENCY pass=5 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.236 p50_ms=33.753 p90_ms=34.125 max_ms=39.804 mean_ms=33.997 answered_by="gcp-listener"
+  LATENCY pass=5 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=101.254 min_ms=32.952 p50_ms=33.406 p90_ms=33.929 max_ms=33.934 mean_ms=33.412
+  LATENCY pass=6 peer=gcp-listener kind=establish ms=0.012 attempts=1 verifier_calls=0
+  LATENCY pass=6 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.238 p50_ms=33.722 p90_ms=34.460 max_ms=36.951 mean_ms=33.869 answered_by="gcp-listener"
+  LATENCY pass=6 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=101.941 min_ms=32.955 p50_ms=33.525 p90_ms=34.181 max_ms=34.218 mean_ms=33.582
+  LATENCY pass=7 peer=gcp-listener kind=establish ms=0.011 attempts=1 verifier_calls=0
+  LATENCY pass=7 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.253 p50_ms=33.457 p90_ms=33.970 max_ms=36.251 mean_ms=33.617 answered_by="gcp-listener"
+  LATENCY pass=7 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=100.966 min_ms=32.654 p50_ms=33.335 p90_ms=33.770 max_ms=33.823 mean_ms=33.324
+  LATENCY pass=8 peer=gcp-listener kind=establish ms=0.011 attempts=1 verifier_calls=0
+  LATENCY pass=8 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.139 p50_ms=33.526 p90_ms=34.100 max_ms=35.575 mean_ms=33.639 answered_by="gcp-listener"
+  LATENCY pass=8 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=101.139 min_ms=32.531 p50_ms=33.368 p90_ms=33.914 max_ms=33.952 mean_ms=33.375
+  LATENCY pass=9 peer=gcp-listener kind=establish ms=0.012 attempts=1 verifier_calls=0
+  LATENCY pass=9 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.150 p50_ms=33.550 p90_ms=33.939 max_ms=36.002 mean_ms=33.684 answered_by="gcp-listener"
+  LATENCY pass=9 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=102.981 min_ms=33.988 p50_ms=34.112 p90_ms=34.445 max_ms=34.514 mean_ms=34.183
+  LATENCY pass=10 peer=gcp-listener kind=establish ms=0.012 attempts=1 verifier_calls=0
+  LATENCY pass=10 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.400 p50_ms=33.938 p90_ms=34.179 max_ms=36.473 mean_ms=33.973 answered_by="gcp-listener"
+  LATENCY pass=10 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=101.513 min_ms=33.189 p50_ms=33.707 p90_ms=33.993 max_ms=34.074 mean_ms=33.659
+  LATENCY pass=11 peer=gcp-listener kind=establish ms=0.011 attempts=1 verifier_calls=0
+  LATENCY pass=11 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.217 p50_ms=33.528 p90_ms=34.205 max_ms=36.442 mean_ms=33.697 answered_by="gcp-listener"
+  LATENCY pass=11 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=101.896 min_ms=33.515 p50_ms=33.785 p90_ms=33.898 max_ms=33.948 mean_ms=33.747
+  LATENCY pass=12 peer=gcp-listener kind=establish ms=0.022 attempts=1 verifier_calls=0
+  LATENCY pass=12 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.104 p50_ms=33.531 p90_ms=33.961 max_ms=34.843 mean_ms=33.551 answered_by="gcp-listener"
+  LATENCY pass=12 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=107.055 min_ms=33.265 p50_ms=33.463 p90_ms=39.735 max_ms=39.828 mean_ms=35.478
+  LATENCY pass=13 peer=gcp-listener kind=establish ms=0.013 attempts=1 verifier_calls=0
+  LATENCY pass=13 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.215 p50_ms=33.716 p90_ms=34.494 max_ms=36.321 mean_ms=33.889 answered_by="gcp-listener"
+  LATENCY pass=13 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=101.903 min_ms=32.875 p50_ms=33.416 p90_ms=34.398 max_ms=34.496 mean_ms=33.611
+  LATENCY pass=14 peer=gcp-listener kind=establish ms=0.012 attempts=1 verifier_calls=0
+  LATENCY pass=14 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.132 p50_ms=33.961 p90_ms=34.304 max_ms=36.257 mean_ms=33.932 answered_by="gcp-listener"
+  LATENCY pass=14 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=101.570 min_ms=33.212 p50_ms=33.604 p90_ms=33.753 max_ms=33.756 mean_ms=33.511
+  LATENCY pass=15 peer=gcp-listener kind=establish ms=0.012 attempts=1 verifier_calls=0
+  LATENCY pass=15 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.066 p50_ms=33.517 p90_ms=34.021 max_ms=34.711 mean_ms=33.586 answered_by="gcp-listener"
+  LATENCY pass=15 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=106.795 min_ms=32.943 p50_ms=33.206 p90_ms=39.684 max_ms=39.707 mean_ms=35.293
+  LATENCY pass=16 peer=gcp-listener kind=establish ms=0.015 attempts=1 verifier_calls=0
+  LATENCY pass=16 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.175 p50_ms=33.545 p90_ms=33.759 max_ms=35.631 mean_ms=33.614 answered_by="gcp-listener"
+  LATENCY pass=16 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=100.707 min_ms=33.093 p50_ms=33.361 p90_ms=33.494 max_ms=33.497 mean_ms=33.339
+  LATENCY pass=17 peer=gcp-listener kind=establish ms=0.014 attempts=1 verifier_calls=0
+  LATENCY pass=17 peer=gcp-listener kind=warm_exchange n=20 min_ms=32.917 p50_ms=33.264 p90_ms=33.628 max_ms=34.626 mean_ms=33.343 answered_by="gcp-listener"
+  LATENCY pass=17 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=100.261 min_ms=33.038 p50_ms=33.217 p90_ms=33.358 max_ms=33.448 mean_ms=33.187
+  LATENCY pass=18 peer=gcp-listener kind=establish ms=0.013 attempts=1 verifier_calls=0
+  LATENCY pass=18 peer=gcp-listener kind=warm_exchange n=20 min_ms=32.911 p50_ms=33.348 p90_ms=33.798 max_ms=37.266 mean_ms=33.527 answered_by="gcp-listener"
+  LATENCY pass=18 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=101.556 min_ms=33.497 p50_ms=33.682 p90_ms=33.756 max_ms=33.765 mean_ms=33.655
+  LATENCY pass=19 peer=gcp-listener kind=establish ms=0.010 attempts=1 verifier_calls=0
+  LATENCY pass=19 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.344 p50_ms=33.825 p90_ms=34.772 max_ms=34.996 mean_ms=33.873 answered_by="gcp-listener"
+  LATENCY pass=19 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=101.669 min_ms=33.293 p50_ms=33.808 p90_ms=34.070 max_ms=34.092 mean_ms=33.701
+  LATENCY pass=20 peer=gcp-listener kind=establish ms=0.014 attempts=1 verifier_calls=0
+  LATENCY pass=20 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.320 p50_ms=33.718 p90_ms=34.062 max_ms=34.827 mean_ms=33.756 answered_by="gcp-listener"
+  LATENCY pass=20 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=103.105 min_ms=33.532 p50_ms=34.219 p90_ms=34.624 max_ms=34.632 mean_ms=34.080
+  LATENCY pass=21 peer=gcp-listener kind=establish ms=0.015 attempts=1 verifier_calls=0
+  LATENCY pass=21 peer=gcp-listener kind=warm_exchange n=20 min_ms=32.857 p50_ms=33.742 p90_ms=34.217 max_ms=34.431 mean_ms=33.647 answered_by="gcp-listener"
+  LATENCY pass=21 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=102.478 min_ms=33.344 p50_ms=33.907 p90_ms=34.577 max_ms=34.580 mean_ms=33.912
+  LATENCY pass=22 peer=gcp-listener kind=establish ms=0.014 attempts=1 verifier_calls=0
+  LATENCY pass=22 peer=gcp-listener kind=warm_exchange n=20 min_ms=32.882 p50_ms=33.258 p90_ms=33.640 max_ms=34.508 mean_ms=33.287 answered_by="gcp-listener"
+  LATENCY pass=22 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=99.954 min_ms=32.854 p50_ms=33.147 p90_ms=33.426 max_ms=33.462 mean_ms=33.153
+  LATENCY pass=23 peer=gcp-listener kind=establish ms=0.012 attempts=1 verifier_calls=0
+  LATENCY pass=23 peer=gcp-listener kind=warm_exchange n=20 min_ms=32.965 p50_ms=33.585 p90_ms=34.041 max_ms=35.075 mean_ms=33.607 answered_by="gcp-listener"
+  LATENCY pass=23 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=107.990 min_ms=33.182 p50_ms=33.883 p90_ms=40.206 max_ms=40.214 mean_ms=35.723
+  LATENCY pass=24 peer=gcp-listener kind=establish ms=0.012 attempts=1 verifier_calls=0
+  LATENCY pass=24 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.425 p50_ms=33.897 p90_ms=34.316 max_ms=34.905 mean_ms=33.911 answered_by="gcp-listener"
+  LATENCY pass=24 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=102.338 min_ms=33.813 p50_ms=33.906 p90_ms=34.050 max_ms=34.094 mean_ms=33.931
+  LATENCY pass=25 peer=gcp-listener kind=establish ms=0.012 attempts=1 verifier_calls=0
+  LATENCY pass=25 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.300 p50_ms=33.757 p90_ms=34.499 max_ms=35.314 mean_ms=33.839 answered_by="gcp-listener"
+  LATENCY pass=25 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=102.219 min_ms=33.364 p50_ms=34.105 p90_ms=34.278 max_ms=34.298 mean_ms=33.924
+  LATENCY pass=26 peer=gcp-listener kind=establish ms=0.011 attempts=1 verifier_calls=0
+  LATENCY pass=26 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.083 p50_ms=33.442 p90_ms=33.763 max_ms=34.989 mean_ms=33.504 answered_by="gcp-listener"
+  LATENCY pass=26 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=106.076 min_ms=32.677 p50_ms=33.182 p90_ms=38.953 max_ms=39.130 mean_ms=34.990
+  LATENCY pass=27 peer=gcp-listener kind=establish ms=0.086 attempts=1 verifier_calls=0
+  LATENCY pass=27 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.018 p50_ms=33.341 p90_ms=33.779 max_ms=36.109 mean_ms=33.504 answered_by="gcp-listener"
+  LATENCY pass=27 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=100.017 min_ms=32.734 p50_ms=33.046 p90_ms=33.656 max_ms=33.677 mean_ms=33.120
+  LATENCY pass=28 peer=gcp-listener kind=establish ms=0.011 attempts=1 verifier_calls=0
+  LATENCY pass=28 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.285 p50_ms=33.603 p90_ms=34.157 max_ms=34.993 mean_ms=33.724 answered_by="gcp-listener"
+  LATENCY pass=28 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=100.547 min_ms=32.981 p50_ms=33.261 p90_ms=33.507 max_ms=33.556 mean_ms=33.255
+  LATENCY pass=29 peer=gcp-listener kind=establish ms=0.013 attempts=1 verifier_calls=0
+  LATENCY pass=29 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.327 p50_ms=33.635 p90_ms=33.903 max_ms=34.508 mean_ms=33.633 answered_by="gcp-listener"
+  LATENCY pass=29 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=107.437 min_ms=33.736 p50_ms=34.134 p90_ms=39.053 max_ms=39.109 mean_ms=35.605
+  LATENCY pass=30 peer=gcp-listener kind=establish ms=0.012 attempts=1 verifier_calls=0
+  LATENCY pass=30 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.067 p50_ms=33.392 p90_ms=33.888 max_ms=34.380 mean_ms=33.461 answered_by="gcp-listener"
+  LATENCY pass=30 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=101.830 min_ms=33.579 p50_ms=33.805 p90_ms=33.998 max_ms=34.067 mean_ms=33.804
+  LATENCY pass=31 peer=gcp-listener kind=establish ms=125.457 attempts=1 verifier_calls=1
+  LATENCY pass=31 peer=gcp-listener kind=warm_exchange n=20 min_ms=36.970 p50_ms=37.558 p90_ms=37.631 max_ms=37.732 mean_ms=37.425 answered_by="gcp-listener"
+  LATENCY pass=31 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=113.919 min_ms=37.177 p50_ms=37.728 p90_ms=38.106 max_ms=38.118 mean_ms=37.679
+  LATENCY pass=32 peer=gcp-listener kind=establish ms=0.011 attempts=1 verifier_calls=0
+  LATENCY pass=32 peer=gcp-listener kind=warm_exchange n=20 min_ms=37.315 p50_ms=37.693 p90_ms=38.294 max_ms=39.689 mean_ms=37.807 answered_by="gcp-listener"
+  LATENCY pass=32 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=119.677 min_ms=37.227 p50_ms=38.562 p90_ms=43.176 max_ms=43.207 mean_ms=39.655
+  LATENCY pass=33 peer=gcp-listener kind=establish ms=0.012 attempts=1 verifier_calls=0
+  LATENCY pass=33 peer=gcp-listener kind=warm_exchange n=20 min_ms=36.855 p50_ms=37.500 p90_ms=38.115 max_ms=38.667 mean_ms=37.558 answered_by="gcp-listener"
+  LATENCY pass=33 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=119.465 min_ms=37.492 p50_ms=37.921 p90_ms=43.195 max_ms=43.199 mean_ms=39.599
+  LATENCY pass=1 peer=gcp-listener kind=establish ms=145.016 attempts=1 verifier_calls=1
+  LATENCY pass=1 peer=gcp-listener kind=warm_exchange n=20 min_ms=36.918 p50_ms=37.403 p90_ms=37.709 max_ms=37.832 mean_ms=37.415 answered_by="gcp-listener"
+  LATENCY pass=1 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=113.581 min_ms=37.193 p50_ms=37.718 p90_ms=38.201 max_ms=38.215 mean_ms=37.698
+  LATENCY pass=2 peer=gcp-listener kind=establish ms=114.451 attempts=1 verifier_calls=1
+  LATENCY pass=2 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.321 p50_ms=33.693 p90_ms=34.112 max_ms=34.271 mean_ms=33.725 answered_by="gcp-listener"
+  LATENCY pass=2 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=100.776 min_ms=32.969 p50_ms=33.327 p90_ms=33.865 max_ms=33.865 mean_ms=33.386
+  LATENCY pass=3 peer=gcp-listener kind=establish ms=118.611 attempts=1 verifier_calls=1
+  LATENCY pass=3 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.433 p50_ms=33.680 p90_ms=34.023 max_ms=37.365 mean_ms=33.884 answered_by="gcp-listener"
+  LATENCY pass=3 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=108.072 min_ms=32.950 p50_ms=33.706 p90_ms=34.106 max_ms=39.277 mean_ms=33.829
+  LATENCY pass=4 peer=gcp-listener kind=establish ms=116.340 attempts=1 verifier_calls=1
+  LATENCY pass=4 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.327 p50_ms=33.668 p90_ms=33.874 max_ms=34.142 mean_ms=33.660 answered_by="gcp-listener"
+  LATENCY pass=4 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=101.518 min_ms=33.271 p50_ms=33.540 p90_ms=34.257 max_ms=34.273 mean_ms=33.673
+  LATENCY pass=5 peer=gcp-listener kind=establish ms=127.027 attempts=1 verifier_calls=1
+  LATENCY pass=5 peer=gcp-listener kind=warm_exchange n=20 min_ms=36.799 p50_ms=37.528 p90_ms=38.041 max_ms=38.096 mean_ms=37.546 answered_by="gcp-listener"
+  LATENCY pass=5 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=118.181 min_ms=36.740 p50_ms=37.074 p90_ms=37.447 max_ms=43.122 mean_ms=37.387
+  LATENCY pass=1 peer=gcp-listener kind=establish ms=133.082 attempts=1 verifier_calls=1
+  LATENCY pass=1 peer=gcp-listener kind=warm_exchange n=20 min_ms=32.937 p50_ms=33.377 p90_ms=34.324 max_ms=134.755 mean_ms=38.494 answered_by="gcp-listener"
+  LATENCY pass=1 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=210.034 min_ms=33.145 p50_ms=33.503 p90_ms=70.650 max_ms=71.538 mean_ms=39.541
+  LATENCY pass=2 peer=gcp-listener kind=establish ms=0.080 attempts=1 verifier_calls=0
+  LATENCY pass=2 peer=gcp-listener kind=warm_exchange n=20 min_ms=39.499 p50_ms=39.998 p90_ms=110.567 max_ms=113.105 mean_ms=47.154 answered_by="gcp-listener"
+  LATENCY pass=2 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=206.166 min_ms=39.735 p50_ms=40.058 p90_ms=85.057 max_ms=85.061 mean_ms=47.248
+
+=== 5 passed, 0 failed ===

@@ -1,0 +1,19 @@
+{
+  "format": "gvisor.dev/gvisor/attest/tunneld-run",
+  "version": 1,
+  "sandbox_id": "shs1-guest",
+  "listen": "10.0.2.15:4433",
+  "link": {"interface": "eth0", "address": "10.0.2.15", "prefix_length": 24, "gateway": "10.0.2.2"},
+  "limits": {"idle_timeout": "60s", "max_age": "15m"},
+  "exercise": {
+    "dial": ["gcp-listener"],
+    "wait": "90s",
+    "payload": "attested-tunnel-plaintext-marker",
+    "exchanges": 20,
+    "concurrency": 8,
+    "rounds": 3,
+    "repeat_every": "120s",
+    "run_for": "600s"
+  },
+  "hold": "5s"
+}

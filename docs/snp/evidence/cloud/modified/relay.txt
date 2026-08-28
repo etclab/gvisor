@@ -1,0 +1,3 @@
+udprelay: RELAYED dialer_to_listener_dgrams=551 listener_to_dialer_dgrams=447 dialer_to_listener_bytes=576656 listener_to_dialer_bytes=452499 tampered=0
+udprelay: MARKER not found hits=0 marker='attested-tunnel-plaintext-marker' in 998 datagrams carrying 1029155 bytes
+udprelay: dialers seen: 128.239.2.78

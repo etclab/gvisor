@@ -1,0 +1,11 @@
+# Cloud run: launch the dialing guest of modified.
+#
+# Privileged only because an SNP launch opens /dev/sev. One guest; the other
+# side is a VM in Google Cloud that is already listening. The guest sits behind
+# QEMU's user-mode NAT and every frame it sends is written to guest.pcap.
+set -u
+timeout 300 bash "/home/pniroula/Projects/gvisor-cloud/docs/snp/cloud/nat-guest.sh" -image "/home/pniroula/Projects/gvisor-cloud/.scratch/attested-secure-tunnel/host-stack/cloud-run/image-modified" -config "/home/pniroula/Projects/gvisor-cloud/.scratch/attested-secure-tunnel/host-stack/cloud-run/modified/config.img" \
+    -console "/home/pniroula/Projects/gvisor-cloud/.scratch/attested-secure-tunnel/host-stack/cloud-run/modified/console.txt" -pcap "/home/pniroula/Projects/gvisor-cloud/.scratch/attested-secure-tunnel/host-stack/cloud-run/modified/guest.pcap" -mac 52:54:00:c1:00:0a
+echo "guest qemu exited $?"
+chown -R 253477:253477 "/home/pniroula/Projects/gvisor-cloud/.scratch/attested-secure-tunnel/host-stack/cloud-run/modified" 2>/dev/null
+chmod -R a+rX "/home/pniroula/Projects/gvisor-cloud/.scratch/attested-secure-tunnel/host-stack/cloud-run/modified" 2>/dev/null

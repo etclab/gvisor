@@ -1,0 +1,7 @@
+    | frames: 336
+    | ethertypes: IPv4=326, ARP=2, IPv6=8
+    | arp targets: 10.0.2.15, 10.0.2.2
+    |   10.0.2.15 -> 34.30.253.16 proto=UDP frames=163
+    |   34.30.253.16 -> 10.0.2.15 proto=UDP frames=163
+    |   udp to 34.30.253.16:4433 datagrams=163
+    |   udp to 10.0.2.15:59947 datagrams=163

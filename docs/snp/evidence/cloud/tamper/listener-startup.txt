@@ -1,0 +1,5 @@
+tunneld: sandbox "gcp-listener"
+tunneld: author key b3bb138deb0d4245… (/opt/attested-tunnel/author.pub, inside the launch measurement)
+tunneld: tsm: provider "sev_guest" (amd-sev-snp) returned 1184 bytes of evidence over 1 write(s); its own certificate table is empty (auxblob, 4763 bytes), which is the expected state on this host and not an error; bundled the 4763-byte chain provisioned in /opt/attested-tunnel/config for chip 9ca4af…b9dc at bootloader=4 tee=0 snp=29 microcode=222 (ADR-0005)
+tunneld: listening on [::]:4433 as "gcp-listener"; idle 1m0s, maximum age 15m0s
+tunneld: holding for 6h0m0s so that peers still dialing can finish

@@ -153,9 +153,9 @@ if ! vm_ssh "$LISTENER_VM" "sudo grep -q 'tunneld: listening on' $LISTENER_CONSO
   echo "tunneld is not listening on $LISTENER_VM (no 'listening on' in $LISTENER_CONSOLE or no process); provision-vms.sh starts it" >&2
   exit 1
 fi
-vm_ssh "$RELAY_VM" 'test -f ~/udprelay.py || test -f /tmp/udprelay.py' 2>/dev/null \
+vm_ssh "$RELAY_VM" 'test -f ~/attested-tunnel/udprelay.py || test -f ~/udprelay.py || test -f /tmp/udprelay.py' 2>/dev/null \
   || { echo "udprelay.py is not on $RELAY_VM; provision-vms.sh copies it" >&2; exit 1; }
-RELAY_PY=$(vm_ssh "$RELAY_VM" 'ls ~/udprelay.py /tmp/udprelay.py 2>/dev/null | head -1' 2>/dev/null | tr -d '\r')
+RELAY_PY=$(vm_ssh "$RELAY_VM" 'ls ~/attested-tunnel/udprelay.py ~/udprelay.py /tmp/udprelay.py 2>/dev/null | head -1' 2>/dev/null | tr -d '\r')
 note "listener is up; relay script at $RELAY_VM:$RELAY_PY"
 MY_EGRESS=$(curl -4 -s --max-time 10 https://ifconfig.me || echo unknown)
 note "this host's egress address: $MY_EGRESS (the relay's firewall rule admits it and nothing else)"
@@ -286,6 +286,9 @@ JOB
   vm_scp_from "$RELAY_VM" "/tmp/$name-relay.log" "$work/relay.log" 2>/dev/null || true
   vm_scp_from "$RELAY_VM" "/tmp/$name.pcap" "$work/relay.pcap" 2>/dev/null || note "no relay pcap came back"
   vm_ssh "$LISTENER_VM" "sudo tail -c +$((offset + 1)) $LISTENER_CONSOLE" 2>/dev/null | tr -d '\r' > "$work/listener-console.txt" || true
+  # The listener's startup lines predate every scenario's slice; the tsm
+  # observation about its certificate table is one of them.
+  vm_ssh "$LISTENER_VM" "sudo grep -E 'tunneld: (sandbox|author key|tsm:|listening on|holding)' $LISTENER_CONSOLE | tail -5" 2>/dev/null | tr -d '\r' > "$work/listener-startup.txt" || true
   note "relay:"; sed 's/^/    | /' "$work/relay.txt" 2>/dev/null || true
   note "listener console during $name:"; sed 's/^/    | /' "$work/listener-console.txt" | head -40
   if [ -f "$work/guest.pcap" ]; then
@@ -338,7 +341,7 @@ scenario_live() {
   [ -f "$c" ] || { fail "$1: the dialer left no console"; return; }
   assert_dialer_booted "$c"; assert_dialer_attested "$c"
   check "listener: its evidence came with a populated certificate table (auxblob), unlike this host" \
-        grep -qE 'certificate table.*auxblob, [1-9][0-9]* bytes|auxblob, [1-9][0-9]* bytes' "$l"
+        grep -qE 'auxblob, [1-9][0-9]* bytes' "$work/listener-startup.txt"
 
   check "listener admitted the dialer's evidence"        in_file "$l" "tunneld: PEER key="
   check "dialer admitted the listener's evidence"        in_file "$c" "tunneld: PEER key="
@@ -500,7 +503,16 @@ scenario_tcbfloor() {
   check "the dialer refused a platform below its floor" in_file "$c" "REFUSED verification refused: platform below the TCB floor"
   check "the dialer admitted nobody"                    not_in_file "$c" "tunneld: PEER key="
   check "the dialer got no tunnel"                      in_file "$c" "peer=gcp-listener FAILED"
-  check "the listener, whose floor is the ordinary one, admitted the dialer (one-sided)" in_file "$l" "tunneld: PEER key="
+  # Not the mirror of ticket 14's one-sided refusal, and the first run of this
+  # scenario asserted that it was and failed. There the refuser was the
+  # listener and the refused dialer had already admitted it; here the refuser
+  # IS the dialer, and a TLS 1.3 client judges the server's certificate before
+  # it sends its own, so the listener never sees a certificate to judge: no
+  # PEER line, no REFUSED line, only an aborted handshake. Which side refuses
+  # decides whether the other side ever gets to admit.
+  check "the listener saw nothing to judge: the dialer aborted before presenting anything" \
+        not_in_file "$l" "tunneld: PEER key="
+  check "and the listener refused nobody either" not_in_file "$l" "tunneld: REFUSED"
 }
 
 # ---- run them -------------------------------------------------------------
@@ -530,7 +542,7 @@ if [ -n "$CAPTURE" ]; then
     n=$(basename "$d")
     case "$n" in image-*|config*) continue ;; esac
     mkdir -p "$CAPTURE/$n"
-    cp "$d"/console.txt "$d"/listener-console.txt "$d"/relay.txt "$d"/relay.log "$d"/relay.pcap "$d"/guest.pcap \
+    cp "$d"/console.txt "$d"/listener-console.txt "$d"/listener-startup.txt "$d"/relay.txt "$d"/relay.log "$d"/relay.pcap "$d"/guest.pcap \
        "$d"/guest-census.txt "$d"/boot.job "$d"/mutated-measurement.txt "$d"/config/tunneld.json "$d"/config/peers.json "$CAPTURE/$n/" 2>/dev/null || true
     [ -d "$d/refvals-tcbfloor" ] && cp -r "$d/refvals-tcbfloor" "$CAPTURE/$n/" 2>/dev/null || true
   done

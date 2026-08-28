@@ -1,0 +1,1 @@
+tunneld: PEER key=e79070d3d2502f6c… chain=0957b4aa0678b511… measurement=0ecf8f3288991237… tcb=bootloader=9,tee=0,snp=23,microcode=72

@@ -1,0 +1,583 @@
+=== the attested tunnel across a real network ===
+date        : 2026-08-28T01:33:13Z
+repo        : b1760462e8c28c22676b7d13ca966e848cf7d540 on cloud-mixed-shs1-and-gcp
+image       : /home/pniroula/Projects/gvisor-cloud/.scratch/attested-secure-tunnel/host-stack/image-cloud (the dialer, this host, Genoa)
+listener    : listener 10.128.0.18 in us-central1-a (SEV-SNP, Milan, provider firmware)
+relay       : relay 34.30.253.16 (ordinary VM; the attacker; what the dialer's peer table names)
+refvals     : /home/pniroula/Projects/gvisor-cloud/docs/snp/cloud/refvals
+scenarios   : live nat-gap tamper modified tcbfloor live-again
+
+predicted launch measurement of the image the dialer boots:
+  0ecf8f328899123781da8e800d57aaf6813581d1a3856d97c7b2a6b0bb1caac9551da44b498d81d4f85d1e427e0a98a5
+launch measurement of the provider's firmware, which is all the cloud peer attests:
+  2d24cf9624ee36449e50c6c84042540b05898f6559f02741b7b354e0cc2ed18d108352ade7dfc4cecce4fa974e51c773
+both sides' reference value sets name both; the author key is inside the dialer's image
+and is the file the listener was started with (-author).
+
+checking the cloud side
+listener is up; relay script at relay:/home/pniroula/attested-tunnel/udprelay.py
+this host's egress address: 128.239.2.78 (the relay's firewall rule admits it and nothing else)
+
+spool       : /home/pniroula/Projects/gvisor/docs/snp/root-spool
+
+### live: the measured guest dials the cloud listener through the relay
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config device written to /home/pniroula/Projects/gvisor-cloud/.scratch/attested-secure-tunnel/host-stack/cloud-run/live/config.img (96496f372db58a92…, not measured)
+    relay: relay-started
+spooled /home/pniroula/Projects/gvisor/docs/snp/root-spool/cloud-35476-live.job; waiting up to 1480s for the runner
+live finished, rc=0
+    | guest qemu exited 0
+relay:
+    | udprelay: RELAYED dialer_to_listener_dgrams=2174 listener_to_dialer_dgrams=2294 dialer_to_listener_bytes=164546 listener_to_dialer_bytes=177035 tampered=0
+    | udprelay: MARKER not found hits=0 marker='attested-tunnel-plaintext-marker' in 4468 datagrams carrying 341581 bytes
+    | udprelay: dialers seen: 128.239.2.78
+listener console during live:
+    | tunneld: PEER key=46c34051fb565854… chain=0957b4aa0678b511… measurement=0ecf8f3288991237… tcb=bootloader=9,tee=0,snp=23,microcode=72
+what the guest put on its link (guest.pcap):
+    |     | frames: 4515
+    |     | ethertypes: IPv4=4470, ARP=36, IPv6=9
+    |     | arp targets: 10.0.2.15, 10.0.2.2
+    |     |   34.30.253.16 -> 10.0.2.15 proto=UDP frames=2294
+    |     |   10.0.2.15 -> 34.30.253.16 proto=UDP frames=2174
+    |     |   10.0.2.15 -> 34.30.253.16 proto=ICMP frames=2
+    |     |   udp to 34.30.253.16:4433 datagrams=2174
+    |     |   udp to 10.0.2.15:48535 datagrams=2078
+    |     |   udp to 10.0.2.15:40927 datagrams=216
+PASS  dialer: booted the measured image and ran the packaged tunneld
+PASS  dialer: no writable path in the image is executable
+PASS  dialer: read the author key from inside the launch measurement
+PASS  dialer: brought its link up with a default route
+PASS  dialer: acquired its own evidence from the platform
+PASS  dialer: bundled the chain provisioned on its config device; its own auxblob is empty, as on this host
+PASS  dialer: is listening
+PASS  listener: its evidence came with a populated certificate table (auxblob), unlike this host
+PASS  listener admitted the dialer's evidence
+PASS  dialer admitted the listener's evidence
+PASS  dialer established a tunnel
+PASS  dialer exchanged over it, warm
+PASS  dialer ran concurrent exchanges on one tunnel
+PASS  the listener answered the dialer's exchanges
+PASS  dialer's exercise completed
+PASS  the dialer refused nobody
+PASS  the listener refused nobody during this scenario
+    the dialer saw the listener's chain    99fa96ae9e3e1f60c722258942f8093731e4f9a0f3864b2bcbd5d804c41423ff
+    the listener saw the dialer's chain    0957b4aa0678b511…
+    the dialer saw the listener's M        2d24cf9624ee36449e50c6c84042540b05898f6559f02741b7b354e0cc2ed18d108352ade7dfc4cecce4fa974e51c773
+    the listener saw the dialer's M        0ecf8f3288991237…
+PASS  the two peers presented different chains: two chips, two product lines
+PASS  the dialer saw the provider firmware's measurement, which is all the cloud peer attests
+PASS  the listener saw the measurement predicted offline for the image the dialer booted
+PASS  the exchange went through the relay
+PASS  the relay found no plaintext on the wire
+PASS  the guest sent IPv4 to the relay's address and port and to nothing else
+PASS  the guest resolved its gateway and nothing else
+    passes: 33, of which cost a verification: 2 (maximum age 15m, run 1000s)
+PASS  asking for a warm peer again cost no handshake
+PASS  the tunnel was re-attested when it reached its maximum age
+
+### nat-gap: the tunnel idles past its timeout and past the NAT mapping's
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config device written to /home/pniroula/Projects/gvisor-cloud/.scratch/attested-secure-tunnel/host-stack/cloud-run/nat-gap/config.img (a2c7f724af7dd4c1…, not measured)
+    relay: relay-started
+spooled /home/pniroula/Projects/gvisor/docs/snp/root-spool/cloud-35476-nat-gap.job; waiting up to 1080s for the runner
+nat-gap finished, rc=0
+    | guest qemu exited 0
+relay:
+    | udprelay: RELAYED dialer_to_listener_dgrams=404 listener_to_dialer_dgrams=394 dialer_to_listener_bytes=100632 listener_to_dialer_bytes=84651 tampered=0
+    | udprelay: MARKER not found hits=0 marker='attested-tunnel-plaintext-marker' in 798 datagrams carrying 185283 bytes
+    | udprelay: dialers seen: 128.239.2.78
+listener console during nat-gap:
+    | tunneld: PEER key=db526f550b5eb50f… chain=0957b4aa0678b511… measurement=0ecf8f3288991237… tcb=bootloader=9,tee=0,snp=23,microcode=72
+what the guest put on its link (guest.pcap):
+    |     | frames: 817
+    |     | ethertypes: IPv4=798, ARP=10, IPv6=9
+    |     | arp targets: 10.0.2.15, 10.0.2.2
+    |     |   10.0.2.15 -> 34.30.253.16 proto=UDP frames=404
+    |     |   34.30.253.16 -> 10.0.2.15 proto=UDP frames=394
+    |     |   udp to 34.30.253.16:4433 datagrams=404
+    |     |   udp to 10.0.2.15:47002 datagrams=85
+    |     |   udp to 10.0.2.15:60463 datagrams=81
+    |     |   udp to 10.0.2.15:45133 datagrams=81
+    |     |   udp to 10.0.2.15:54222 datagrams=76
+    |     |   udp to 10.0.2.15:39085 datagrams=71
+PASS  nat-gap: the dialer's exercise completed
+    passes: 5; establishes that cost a verification: 5; passes whose first attempt failed: 0
+    | LATENCY pass=1 peer=gcp-listener kind=establish ms=145.016 attempts=1 verifier_calls=1
+    | LATENCY pass=2 peer=gcp-listener kind=establish ms=114.451 attempts=1 verifier_calls=1
+    | LATENCY pass=3 peer=gcp-listener kind=establish ms=118.611 attempts=1 verifier_calls=1
+    | LATENCY pass=4 peer=gcp-listener kind=establish ms=116.340 attempts=1 verifier_calls=1
+    | LATENCY pass=5 peer=gcp-listener kind=establish ms=127.027 attempts=1 verifier_calls=1
+    NAT GAP: each pass cost a verification — the tunnel was gone every time (idle 60s < 120s) and re-dialed; re-attestation, not a lost tunnel
+    and no pass failed a first attempt: the NAT mapping either survived or was re-created transparently
+PASS  nat-gap: recorded (the outcome is a finding, not an assertion)
+
+### tamper: the relay changes a bit in every twentieth datagram
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config device written to /home/pniroula/Projects/gvisor-cloud/.scratch/attested-secure-tunnel/host-stack/cloud-run/tamper/config.img (f4878cb08a10775e…, not measured)
+    relay: relay-started
+spooled /home/pniroula/Projects/gvisor/docs/snp/root-spool/cloud-35476-tamper.job; waiting up to 540s for the runner
+tamper finished, rc=0
+    | guest qemu exited 0
+relay:
+    | udprelay: RELAYED dialer_to_listener_dgrams=163 listener_to_dialer_dgrams=163 dialer_to_listener_bytes=25023 listener_to_dialer_bytes=23824 tampered=16
+    | udprelay: MARKER not found hits=0 marker='attested-tunnel-plaintext-marker' in 326 datagrams carrying 48847 bytes
+    | udprelay: dialers seen: 128.239.2.78
+listener console during tamper:
+    | tunneld: PEER key=e79070d3d2502f6c… chain=0957b4aa0678b511… measurement=0ecf8f3288991237… tcb=bootloader=9,tee=0,snp=23,microcode=72
+what the guest put on its link (guest.pcap):
+    |     | frames: 336
+    |     | ethertypes: IPv4=326, ARP=2, IPv6=8
+    |     | arp targets: 10.0.2.15, 10.0.2.2
+    |     |   10.0.2.15 -> 34.30.253.16 proto=UDP frames=163
+    |     |   34.30.253.16 -> 10.0.2.15 proto=UDP frames=163
+    |     |   udp to 34.30.253.16:4433 datagrams=163
+    |     |   udp to 10.0.2.15:59947 datagrams=163
+PASS  the attacker really did change datagrams
+PASS  no exchange took a changed datagram for its peer's answer
+PASS  the exchanges completed anyway, because QUIC discards what it cannot authenticate
+PASS  and the attacker still read nothing
+
+### modified: the dialer boots an image with one byte changed
+building the mutated image (ticket 08's mutate-image.sh, one byte of rootfs.img)
+        rootfs.img byte 9093119 of 9093120 (0x8abfff): 0 -> 1
+        verity root hash now 2d809de605b4fe81d2708791735fe2065865cfc59340d838d302a5903c9f28b6, and it is the only thing the command line changed
+        # Mutation "rootfs-byte" of /home/pniroula/Projects/gvisor-cloud/.scratch/attested-secure-tunnel/host-stack/image-cloud, written to /home/pniroula/Projects/gvisor-cloud/.scratch/attested-secure-tunnel/host-stack/cloud-run/image-modified.
+        
+        source change: rootfs.img byte 9093119 of 9093120 (0x8abfff), 0 -> 1
+          one byte of the measured root filesystem image, and nothing else
+        
+        ## Byte differences against the base image, per measured file.
+        OVMF.fd: identical
+        vmlinuz: identical
+        initrd.img: identical
+        cmdline.txt: 60 byte(s) differ of 195
+        rootfs.img: 64 byte(s) differ of 9170944
+        rootfs.img data region (first 9093120 bytes): 1 byte(s) differ; the rest is the re-derived hash tree
+        base command line: console=ttyS0 earlyprintk=serial panic=-1 rdinit=/init verity.roothash=f19ae0bd48b77fa7239f74aaa74c8bb982904e770af01c08d71316f551bd694d verity.salt=- verity.datablocks=2220 verity.hashstart=2220
+        this command line: console=ttyS0 earlyprintk=serial panic=-1 rdinit=/init verity.roothash=2d809de605b4fe81d2708791735fe2065865cfc59340d838d302a5903c9f28b6 verity.salt=- verity.datablocks=2220 verity.hashstart=2220
+        base command line sha256 (as measured, no newline, plus NUL is added by QEMU): 29540449678ec79f41992ecaaa09e50a4f528e2f7449cca065615f44bab33575
+        this command line sha256: df79e4f14cb5626e003d1c5415f3cc9580438a1b682a46b4bb4dbccdc9819d3c
+    the mutated image's predicted measurement: d2a04e8a673fe8542782b1fcd315d8295b81b2d1015f6da2e598870773ba2f57cb5bf23496818478084c75b340f8d7fa
+    the image both sets name:                  0ecf8f328899123781da8e800d57aaf6813581d1a3856d97c7b2a6b0bb1caac9551da44b498d81d4f85d1e427e0a98a5
+PASS  one byte of the root filesystem moved the launch measurement
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config device written to /home/pniroula/Projects/gvisor-cloud/.scratch/attested-secure-tunnel/host-stack/cloud-run/modified/config.img (60e7d2293ae83a73…, not measured)
+    relay: relay-started
+spooled /home/pniroula/Projects/gvisor/docs/snp/root-spool/cloud-35476-modified.job; waiting up to 540s for the runner
+modified finished, rc=0
+    | guest qemu exited 0
+relay:
+    | udprelay: RELAYED dialer_to_listener_dgrams=551 listener_to_dialer_dgrams=447 dialer_to_listener_bytes=576656 listener_to_dialer_bytes=452499 tampered=0
+    | udprelay: MARKER not found hits=0 marker='attested-tunnel-plaintext-marker' in 998 datagrams carrying 1029155 bytes
+    | udprelay: dialers seen: 128.239.2.78
+listener console during modified:
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+    | tunneld: REFUSED verification refused: launch measurement not in the reference value set: launch measurement matches none of the 2 reference values in the set
+what the guest put on its link (guest.pcap):
+    |     | frames: 1010
+    |     | ethertypes: IPv4=998, ARP=4, IPv6=8
+    |     | arp targets: 10.0.2.15, 10.0.2.2
+    |     |   10.0.2.15 -> 34.30.253.16 proto=UDP frames=551
+    |     |   34.30.253.16 -> 10.0.2.15 proto=UDP frames=447
+    |     |   udp to 34.30.253.16:4433 datagrams=551
+    |     |   udp to 10.0.2.15:49517 datagrams=11
+    |     |   udp to 10.0.2.15:38890 datagrams=9
+    |     |   udp to 10.0.2.15:42653 datagrams=9
+    |     |   udp to 10.0.2.15:36333 datagrams=9
+    |     |   udp to 10.0.2.15:35596 datagrams=9
+    |     |   udp to 10.0.2.15:50534 datagrams=8
+    |     |   udp to 10.0.2.15:58643 datagrams=8
+    |     |   udp to 10.0.2.15:34973 datagrams=8
+    |     |   udp to 10.0.2.15:58032 datagrams=8
+    |     |   udp to 10.0.2.15:39177 datagrams=8
+    |     |   udp to 10.0.2.15:48678 datagrams=8
+    |     |   udp to 10.0.2.15:54327 datagrams=8
+    |     |   udp to 10.0.2.15:50948 datagrams=8
+    |     |   udp to 10.0.2.15:57878 datagrams=8
+    |     |   udp to 10.0.2.15:42317 datagrams=8
+    |     |   udp to 10.0.2.15:52114 datagrams=8
+    |     |   udp to 10.0.2.15:46414 datagrams=8
+    |     |   udp to 10.0.2.15:37962 datagrams=8
+    |     |   udp to 10.0.2.15:39184 datagrams=8
+    |     |   udp to 10.0.2.15:42505 datagrams=8
+    |     |   udp to 10.0.2.15:58367 datagrams=8
+    |     |   udp to 10.0.2.15:60437 datagrams=8
+    |     |   udp to 10.0.2.15:60185 datagrams=8
+    |     |   udp to 10.0.2.15:52035 datagrams=8
+    |     |   udp to 10.0.2.15:57427 datagrams=8
+    |     |   udp to 10.0.2.15:54290 datagrams=8
+    |     |   udp to 10.0.2.15:36830 datagrams=8
+    |     |   udp to 10.0.2.15:60742 datagrams=8
+    |     |   udp to 10.0.2.15:59557 datagrams=8
+    |     |   udp to 10.0.2.15:45689 datagrams=8
+    |     |   udp to 10.0.2.15:48650 datagrams=8
+    |     |   udp to 10.0.2.15:36669 datagrams=8
+    |     |   udp to 10.0.2.15:44206 datagrams=8
+    |     |   udp to 10.0.2.15:41362 datagrams=8
+    |     |   udp to 10.0.2.15:38032 datagrams=8
+    |     |   udp to 10.0.2.15:52896 datagrams=8
+    |     |   udp to 10.0.2.15:41953 datagrams=8
+    |     |   udp to 10.0.2.15:40893 datagrams=8
+    |     |   udp to 10.0.2.15:37276 datagrams=8
+    |     |   udp to 10.0.2.15:35326 datagrams=8
+    |     |   udp to 10.0.2.15:51965 datagrams=8
+    |     |   udp to 10.0.2.15:36060 datagrams=8
+    |     |   udp to 10.0.2.15:54100 datagrams=8
+    |     |   udp to 10.0.2.15:49734 datagrams=8
+    |     |   udp to 10.0.2.15:43306 datagrams=8
+    |     |   udp to 10.0.2.15:57466 datagrams=8
+    |     |   udp to 10.0.2.15:53317 datagrams=8
+    |     |   udp to 10.0.2.15:33484 datagrams=8
+    |     |   udp to 10.0.2.15:58533 datagrams=8
+    |     |   udp to 10.0.2.15:43991 datagrams=8
+    |     |   udp to 10.0.2.15:55922 datagrams=8
+    |     |   udp to 10.0.2.15:45051 datagrams=8
+    |     |   udp to 10.0.2.15:43024 datagrams=8
+    |     |   udp to 10.0.2.15:46416 datagrams=8
+    |     |   udp to 10.0.2.15:46694 datagrams=8
+PASS  dialer: acquired its own evidence from the platform
+PASS  dialer: bundled the chain provisioned on its config device; its own auxblob is empty, as on this host
+PASS  dialer: is listening
+PASS  the listener refused the modified guest, naming the measurement internally
+PASS  the listener admitted nobody during this scenario
+PASS  the modified guest was told nothing but that it did not get a tunnel
+PASS  the modified guest itself admitted the listener, so the refusal is one-sided
+PASS  the modified guest's exercise failed
+
+### tcbfloor: the dialer holds a set whose cloud value's floor is above Milan's TCB
+    author public key: b3bb138deb0d42459a26223bbddb39d7e32deadf4d33643915c69e2ec9b57ef9
+    wrote /home/pniroula/Projects/gvisor-cloud/.scratch/attested-secure-tunnel/host-stack/cloud-run/tcbfloor/refvals-tcbfloor/reference-values.json and /home/pniroula/Projects/gvisor-cloud/.scratch/attested-secure-tunnel/host-stack/cloud-run/tcbfloor/refvals-tcbfloor/reference-values.json.sig with 2 values (loads back through attest.LoadReferenceValueSetFile)
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config device written to /home/pniroula/Projects/gvisor-cloud/.scratch/attested-secure-tunnel/host-stack/cloud-run/tcbfloor/config.img (138d46a7feb48278…, not measured)
+    relay: relay-started
+spooled /home/pniroula/Projects/gvisor/docs/snp/root-spool/cloud-35476-tcbfloor.job; waiting up to 540s for the runner
+tcbfloor finished, rc=0
+    | guest qemu exited 0
+relay:
+    | udprelay: RELAYED dialer_to_listener_dgrams=228 listener_to_dialer_dgrams=401 dialer_to_listener_bytes=220932 listener_to_dialer_bytes=465348 tampered=0
+    | udprelay: MARKER not found hits=0 marker='attested-tunnel-plaintext-marker' in 629 datagrams carrying 686280 bytes
+    | udprelay: dialers seen: 128.239.2.78
+listener console during tcbfloor:
+what the guest put on its link (guest.pcap):
+    |     | frames: 643
+    |     | ethertypes: IPv4=629, ARP=6, IPv6=8
+    |     | arp targets: 10.0.2.15, 10.0.2.2
+    |     |   34.30.253.16 -> 10.0.2.15 proto=UDP frames=401
+    |     |   10.0.2.15 -> 34.30.253.16 proto=UDP frames=228
+    |     |   udp to 34.30.253.16:4433 datagrams=228
+    |     |   udp to 10.0.2.15:36114 datagrams=8
+    |     |   udp to 10.0.2.15:53813 datagrams=8
+    |     |   udp to 10.0.2.15:34035 datagrams=7
+    |     |   udp to 10.0.2.15:52165 datagrams=7
+    |     |   udp to 10.0.2.15:37416 datagrams=7
+    |     |   udp to 10.0.2.15:41681 datagrams=7
+    |     |   udp to 10.0.2.15:36828 datagrams=7
+    |     |   udp to 10.0.2.15:49985 datagrams=7
+    |     |   udp to 10.0.2.15:42262 datagrams=7
+    |     |   udp to 10.0.2.15:57523 datagrams=7
+    |     |   udp to 10.0.2.15:37931 datagrams=7
+    |     |   udp to 10.0.2.15:41802 datagrams=7
+    |     |   udp to 10.0.2.15:46112 datagrams=7
+    |     |   udp to 10.0.2.15:56532 datagrams=7
+    |     |   udp to 10.0.2.15:36087 datagrams=7
+    |     |   udp to 10.0.2.15:56504 datagrams=7
+    |     |   udp to 10.0.2.15:38024 datagrams=7
+    |     |   udp to 10.0.2.15:47858 datagrams=7
+    |     |   udp to 10.0.2.15:50147 datagrams=7
+    |     |   udp to 10.0.2.15:54791 datagrams=7
+    |     |   udp to 10.0.2.15:45367 datagrams=7
+    |     |   udp to 10.0.2.15:36112 datagrams=7
+    |     |   udp to 10.0.2.15:36574 datagrams=7
+    |     |   udp to 10.0.2.15:34175 datagrams=7
+    |     |   udp to 10.0.2.15:38325 datagrams=7
+    |     |   udp to 10.0.2.15:53465 datagrams=7
+    |     |   udp to 10.0.2.15:58245 datagrams=7
+    |     |   udp to 10.0.2.15:43055 datagrams=7
+    |     |   udp to 10.0.2.15:44380 datagrams=7
+    |     |   udp to 10.0.2.15:52502 datagrams=7
+    |     |   udp to 10.0.2.15:49999 datagrams=7
+    |     |   udp to 10.0.2.15:50992 datagrams=7
+    |     |   udp to 10.0.2.15:33104 datagrams=7
+    |     |   udp to 10.0.2.15:36035 datagrams=7
+    |     |   udp to 10.0.2.15:48579 datagrams=7
+    |     |   udp to 10.0.2.15:46610 datagrams=7
+    |     |   udp to 10.0.2.15:52822 datagrams=7
+    |     |   udp to 10.0.2.15:59259 datagrams=7
+    |     |   udp to 10.0.2.15:50911 datagrams=7
+    |     |   udp to 10.0.2.15:44270 datagrams=7
+    |     |   udp to 10.0.2.15:59546 datagrams=7
+    |     |   udp to 10.0.2.15:44626 datagrams=7
+    |     |   udp to 10.0.2.15:41125 datagrams=7
+    |     |   udp to 10.0.2.15:37303 datagrams=7
+    |     |   udp to 10.0.2.15:55765 datagrams=7
+    |     |   udp to 10.0.2.15:53261 datagrams=7
+    |     |   udp to 10.0.2.15:41567 datagrams=7
+    |     |   udp to 10.0.2.15:56880 datagrams=7
+    |     |   udp to 10.0.2.15:53990 datagrams=7
+    |     |   udp to 10.0.2.15:43035 datagrams=7
+    |     |   udp to 10.0.2.15:53227 datagrams=7
+    |     |   udp to 10.0.2.15:50109 datagrams=7
+    |     |   udp to 10.0.2.15:32915 datagrams=7
+    |     |   udp to 10.0.2.15:52130 datagrams=7
+    |     |   udp to 10.0.2.15:36545 datagrams=7
+    |     |   udp to 10.0.2.15:42983 datagrams=7
+    |     |   udp to 10.0.2.15:33312 datagrams=7
+PASS  the dialer refused a platform below its floor
+PASS  the dialer admitted nobody
+PASS  the dialer got no tunnel
+FAIL  the listener, whose floor is the ordinary one, admitted the dialer (one-sided)
+
+### live-again: the measured guest dials the cloud listener through the relay
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config device written to /home/pniroula/Projects/gvisor-cloud/.scratch/attested-secure-tunnel/host-stack/cloud-run/live-again/config.img (f31b0eadbd91d8ae…, not measured)
+    relay: relay-started
+spooled /home/pniroula/Projects/gvisor/docs/snp/root-spool/cloud-35476-live-again.job; waiting up to 630s for the runner
+live-again finished, rc=0
+    | guest qemu exited 0
+relay:
+    | udprelay: RELAYED dialer_to_listener_dgrams=328 listener_to_dialer_dgrams=354 dialer_to_listener_bytes=35702 listener_to_dialer_bytes=37542 tampered=0
+    | udprelay: MARKER not found hits=0 marker='attested-tunnel-plaintext-marker' in 682 datagrams carrying 73244 bytes
+    | udprelay: dialers seen: 128.239.2.78
+listener console during live-again:
+    | tunneld: PEER key=2723d09177fa1c3d… chain=0957b4aa0678b511… measurement=0ecf8f3288991237… tcb=bootloader=9,tee=0,snp=23,microcode=72
+what the guest put on its link (guest.pcap):
+    |     | frames: 696
+    |     | ethertypes: IPv4=682, ARP=6, IPv6=8
+    |     | arp targets: 10.0.2.15, 10.0.2.2
+    |     |   34.30.253.16 -> 10.0.2.15 proto=UDP frames=354
+    |     |   10.0.2.15 -> 34.30.253.16 proto=UDP frames=328
+    |     |   udp to 10.0.2.15:38852 datagrams=354
+    |     |   udp to 34.30.253.16:4433 datagrams=328
+PASS  dialer: booted the measured image and ran the packaged tunneld
+PASS  dialer: no writable path in the image is executable
+PASS  dialer: read the author key from inside the launch measurement
+PASS  dialer: brought its link up with a default route
+PASS  dialer: acquired its own evidence from the platform
+PASS  dialer: bundled the chain provisioned on its config device; its own auxblob is empty, as on this host
+PASS  dialer: is listening
+PASS  listener: its evidence came with a populated certificate table (auxblob), unlike this host
+PASS  listener admitted the dialer's evidence
+PASS  dialer admitted the listener's evidence
+PASS  dialer established a tunnel
+PASS  dialer exchanged over it, warm
+PASS  dialer ran concurrent exchanges on one tunnel
+PASS  the listener answered the dialer's exchanges
+PASS  dialer's exercise completed
+PASS  the dialer refused nobody
+PASS  the listener refused nobody during this scenario
+    the dialer saw the listener's chain    99fa96ae9e3e1f60c722258942f8093731e4f9a0f3864b2bcbd5d804c41423ff
+    the listener saw the dialer's chain    0957b4aa0678b511…
+    the dialer saw the listener's M        2d24cf9624ee36449e50c6c84042540b05898f6559f02741b7b354e0cc2ed18d108352ade7dfc4cecce4fa974e51c773
+    the listener saw the dialer's M        0ecf8f3288991237…
+PASS  the two peers presented different chains: two chips, two product lines
+PASS  the dialer saw the provider firmware's measurement, which is all the cloud peer attests
+PASS  the listener saw the measurement predicted offline for the image the dialer booted
+PASS  the exchange went through the relay
+PASS  the relay found no plaintext on the wire
+PASS  the guest sent IPv4 to the relay's address and port and to nothing else
+PASS  the guest resolved its gateway and nothing else
+    passes: 5, of which cost a verification: 1 (maximum age 15m, run 150s)
+PASS  asking for a warm peer again cost no handshake
+
+=== latency, as the dialing guest measured it, across 128.239.2.78 -> 34.30.253.16 -> 10.128.0.18 ===
+GCP notice 2026-07-28: SEV-SNP instances may have longer boot times and performance changes Aug–Nov 2026 (guest kernel migration)
+  LATENCY pass=1 peer=gcp-listener kind=establish ms=138.503 attempts=1 verifier_calls=1
+  LATENCY pass=1 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.154 p50_ms=33.663 p90_ms=33.998 max_ms=34.219 mean_ms=33.673 answered_by="gcp-listener"
+  LATENCY pass=1 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=103.028 min_ms=33.471 p50_ms=33.767 p90_ms=34.080 max_ms=34.125 mean_ms=33.786
+  LATENCY pass=2 peer=gcp-listener kind=establish ms=0.010 attempts=1 verifier_calls=0
+  LATENCY pass=2 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.168 p50_ms=33.688 p90_ms=34.382 max_ms=34.963 mean_ms=33.707 answered_by="gcp-listener"
+  LATENCY pass=2 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=101.333 min_ms=33.154 p50_ms=33.679 p90_ms=33.828 max_ms=33.831 mean_ms=33.566
+  LATENCY pass=3 peer=gcp-listener kind=establish ms=0.011 attempts=1 verifier_calls=0
+  LATENCY pass=3 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.065 p50_ms=33.408 p90_ms=33.722 max_ms=34.721 mean_ms=33.415 answered_by="gcp-listener"
+  LATENCY pass=3 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=100.610 min_ms=32.946 p50_ms=33.264 p90_ms=33.818 max_ms=33.904 mean_ms=33.314
+  LATENCY pass=4 peer=gcp-listener kind=establish ms=0.010 attempts=1 verifier_calls=0
+  LATENCY pass=4 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.167 p50_ms=33.687 p90_ms=34.583 max_ms=35.721 mean_ms=33.786 answered_by="gcp-listener"
+  LATENCY pass=4 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=101.790 min_ms=33.083 p50_ms=33.554 p90_ms=34.420 max_ms=34.459 mean_ms=33.705
+  LATENCY pass=5 peer=gcp-listener kind=establish ms=0.011 attempts=1 verifier_calls=0
+  LATENCY pass=5 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.235 p50_ms=33.908 p90_ms=34.693 max_ms=36.062 mean_ms=34.011 answered_by="gcp-listener"
+  LATENCY pass=5 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=105.834 min_ms=33.486 p50_ms=34.048 p90_ms=37.765 max_ms=37.808 mean_ms=35.082
+  LATENCY pass=1 peer=gcp-listener kind=establish ms=134.060 attempts=1 verifier_calls=1
+  LATENCY pass=1 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.076 p50_ms=33.529 p90_ms=33.911 max_ms=34.024 mean_ms=33.522 answered_by="gcp-listener"
+  LATENCY pass=1 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=100.785 min_ms=32.473 p50_ms=32.958 p90_ms=33.958 max_ms=34.061 mean_ms=33.187
+  LATENCY pass=2 peer=gcp-listener kind=establish ms=0.013 attempts=1 verifier_calls=0
+  LATENCY pass=2 peer=gcp-listener kind=warm_exchange n=20 min_ms=32.996 p50_ms=33.297 p90_ms=33.551 max_ms=36.469 mean_ms=33.426 answered_by="gcp-listener"
+  LATENCY pass=2 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=100.963 min_ms=33.018 p50_ms=33.345 p90_ms=33.700 max_ms=33.844 mean_ms=33.370
+  LATENCY pass=3 peer=gcp-listener kind=establish ms=0.012 attempts=1 verifier_calls=0
+  LATENCY pass=3 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.024 p50_ms=33.389 p90_ms=33.754 max_ms=35.640 mean_ms=33.446 answered_by="gcp-listener"
+  LATENCY pass=3 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=106.263 min_ms=32.625 p50_ms=33.092 p90_ms=39.465 max_ms=39.598 mean_ms=35.077
+  LATENCY pass=4 peer=gcp-listener kind=establish ms=0.012 attempts=1 verifier_calls=0
+  LATENCY pass=4 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.496 p50_ms=33.995 p90_ms=34.690 max_ms=36.795 mean_ms=34.139 answered_by="gcp-listener"
+  LATENCY pass=4 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=102.419 min_ms=33.077 p50_ms=33.721 p90_ms=34.093 max_ms=34.144 mean_ms=33.633
+  LATENCY pass=5 peer=gcp-listener kind=establish ms=0.012 attempts=1 verifier_calls=0
+  LATENCY pass=5 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.236 p50_ms=33.753 p90_ms=34.125 max_ms=39.804 mean_ms=33.997 answered_by="gcp-listener"
+  LATENCY pass=5 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=101.254 min_ms=32.952 p50_ms=33.406 p90_ms=33.929 max_ms=33.934 mean_ms=33.412
+  LATENCY pass=6 peer=gcp-listener kind=establish ms=0.012 attempts=1 verifier_calls=0
+  LATENCY pass=6 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.238 p50_ms=33.722 p90_ms=34.460 max_ms=36.951 mean_ms=33.869 answered_by="gcp-listener"
+  LATENCY pass=6 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=101.941 min_ms=32.955 p50_ms=33.525 p90_ms=34.181 max_ms=34.218 mean_ms=33.582
+  LATENCY pass=7 peer=gcp-listener kind=establish ms=0.011 attempts=1 verifier_calls=0
+  LATENCY pass=7 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.253 p50_ms=33.457 p90_ms=33.970 max_ms=36.251 mean_ms=33.617 answered_by="gcp-listener"
+  LATENCY pass=7 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=100.966 min_ms=32.654 p50_ms=33.335 p90_ms=33.770 max_ms=33.823 mean_ms=33.324
+  LATENCY pass=8 peer=gcp-listener kind=establish ms=0.011 attempts=1 verifier_calls=0
+  LATENCY pass=8 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.139 p50_ms=33.526 p90_ms=34.100 max_ms=35.575 mean_ms=33.639 answered_by="gcp-listener"
+  LATENCY pass=8 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=101.139 min_ms=32.531 p50_ms=33.368 p90_ms=33.914 max_ms=33.952 mean_ms=33.375
+  LATENCY pass=9 peer=gcp-listener kind=establish ms=0.012 attempts=1 verifier_calls=0
+  LATENCY pass=9 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.150 p50_ms=33.550 p90_ms=33.939 max_ms=36.002 mean_ms=33.684 answered_by="gcp-listener"
+  LATENCY pass=9 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=102.981 min_ms=33.988 p50_ms=34.112 p90_ms=34.445 max_ms=34.514 mean_ms=34.183
+  LATENCY pass=10 peer=gcp-listener kind=establish ms=0.012 attempts=1 verifier_calls=0
+  LATENCY pass=10 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.400 p50_ms=33.938 p90_ms=34.179 max_ms=36.473 mean_ms=33.973 answered_by="gcp-listener"
+  LATENCY pass=10 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=101.513 min_ms=33.189 p50_ms=33.707 p90_ms=33.993 max_ms=34.074 mean_ms=33.659
+  LATENCY pass=11 peer=gcp-listener kind=establish ms=0.011 attempts=1 verifier_calls=0
+  LATENCY pass=11 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.217 p50_ms=33.528 p90_ms=34.205 max_ms=36.442 mean_ms=33.697 answered_by="gcp-listener"
+  LATENCY pass=11 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=101.896 min_ms=33.515 p50_ms=33.785 p90_ms=33.898 max_ms=33.948 mean_ms=33.747
+  LATENCY pass=12 peer=gcp-listener kind=establish ms=0.022 attempts=1 verifier_calls=0
+  LATENCY pass=12 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.104 p50_ms=33.531 p90_ms=33.961 max_ms=34.843 mean_ms=33.551 answered_by="gcp-listener"
+  LATENCY pass=12 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=107.055 min_ms=33.265 p50_ms=33.463 p90_ms=39.735 max_ms=39.828 mean_ms=35.478
+  LATENCY pass=13 peer=gcp-listener kind=establish ms=0.013 attempts=1 verifier_calls=0
+  LATENCY pass=13 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.215 p50_ms=33.716 p90_ms=34.494 max_ms=36.321 mean_ms=33.889 answered_by="gcp-listener"
+  LATENCY pass=13 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=101.903 min_ms=32.875 p50_ms=33.416 p90_ms=34.398 max_ms=34.496 mean_ms=33.611
+  LATENCY pass=14 peer=gcp-listener kind=establish ms=0.012 attempts=1 verifier_calls=0
+  LATENCY pass=14 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.132 p50_ms=33.961 p90_ms=34.304 max_ms=36.257 mean_ms=33.932 answered_by="gcp-listener"
+  LATENCY pass=14 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=101.570 min_ms=33.212 p50_ms=33.604 p90_ms=33.753 max_ms=33.756 mean_ms=33.511
+  LATENCY pass=15 peer=gcp-listener kind=establish ms=0.012 attempts=1 verifier_calls=0
+  LATENCY pass=15 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.066 p50_ms=33.517 p90_ms=34.021 max_ms=34.711 mean_ms=33.586 answered_by="gcp-listener"
+  LATENCY pass=15 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=106.795 min_ms=32.943 p50_ms=33.206 p90_ms=39.684 max_ms=39.707 mean_ms=35.293
+  LATENCY pass=16 peer=gcp-listener kind=establish ms=0.015 attempts=1 verifier_calls=0
+  LATENCY pass=16 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.175 p50_ms=33.545 p90_ms=33.759 max_ms=35.631 mean_ms=33.614 answered_by="gcp-listener"
+  LATENCY pass=16 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=100.707 min_ms=33.093 p50_ms=33.361 p90_ms=33.494 max_ms=33.497 mean_ms=33.339
+  LATENCY pass=17 peer=gcp-listener kind=establish ms=0.014 attempts=1 verifier_calls=0
+  LATENCY pass=17 peer=gcp-listener kind=warm_exchange n=20 min_ms=32.917 p50_ms=33.264 p90_ms=33.628 max_ms=34.626 mean_ms=33.343 answered_by="gcp-listener"
+  LATENCY pass=17 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=100.261 min_ms=33.038 p50_ms=33.217 p90_ms=33.358 max_ms=33.448 mean_ms=33.187
+  LATENCY pass=18 peer=gcp-listener kind=establish ms=0.013 attempts=1 verifier_calls=0
+  LATENCY pass=18 peer=gcp-listener kind=warm_exchange n=20 min_ms=32.911 p50_ms=33.348 p90_ms=33.798 max_ms=37.266 mean_ms=33.527 answered_by="gcp-listener"
+  LATENCY pass=18 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=101.556 min_ms=33.497 p50_ms=33.682 p90_ms=33.756 max_ms=33.765 mean_ms=33.655
+  LATENCY pass=19 peer=gcp-listener kind=establish ms=0.010 attempts=1 verifier_calls=0
+  LATENCY pass=19 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.344 p50_ms=33.825 p90_ms=34.772 max_ms=34.996 mean_ms=33.873 answered_by="gcp-listener"
+  LATENCY pass=19 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=101.669 min_ms=33.293 p50_ms=33.808 p90_ms=34.070 max_ms=34.092 mean_ms=33.701
+  LATENCY pass=20 peer=gcp-listener kind=establish ms=0.014 attempts=1 verifier_calls=0
+  LATENCY pass=20 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.320 p50_ms=33.718 p90_ms=34.062 max_ms=34.827 mean_ms=33.756 answered_by="gcp-listener"
+  LATENCY pass=20 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=103.105 min_ms=33.532 p50_ms=34.219 p90_ms=34.624 max_ms=34.632 mean_ms=34.080
+  LATENCY pass=21 peer=gcp-listener kind=establish ms=0.015 attempts=1 verifier_calls=0
+  LATENCY pass=21 peer=gcp-listener kind=warm_exchange n=20 min_ms=32.857 p50_ms=33.742 p90_ms=34.217 max_ms=34.431 mean_ms=33.647 answered_by="gcp-listener"
+  LATENCY pass=21 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=102.478 min_ms=33.344 p50_ms=33.907 p90_ms=34.577 max_ms=34.580 mean_ms=33.912
+  LATENCY pass=22 peer=gcp-listener kind=establish ms=0.014 attempts=1 verifier_calls=0
+  LATENCY pass=22 peer=gcp-listener kind=warm_exchange n=20 min_ms=32.882 p50_ms=33.258 p90_ms=33.640 max_ms=34.508 mean_ms=33.287 answered_by="gcp-listener"
+  LATENCY pass=22 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=99.954 min_ms=32.854 p50_ms=33.147 p90_ms=33.426 max_ms=33.462 mean_ms=33.153
+  LATENCY pass=23 peer=gcp-listener kind=establish ms=0.012 attempts=1 verifier_calls=0
+  LATENCY pass=23 peer=gcp-listener kind=warm_exchange n=20 min_ms=32.965 p50_ms=33.585 p90_ms=34.041 max_ms=35.075 mean_ms=33.607 answered_by="gcp-listener"
+  LATENCY pass=23 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=107.990 min_ms=33.182 p50_ms=33.883 p90_ms=40.206 max_ms=40.214 mean_ms=35.723
+  LATENCY pass=24 peer=gcp-listener kind=establish ms=0.012 attempts=1 verifier_calls=0
+  LATENCY pass=24 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.425 p50_ms=33.897 p90_ms=34.316 max_ms=34.905 mean_ms=33.911 answered_by="gcp-listener"
+  LATENCY pass=24 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=102.338 min_ms=33.813 p50_ms=33.906 p90_ms=34.050 max_ms=34.094 mean_ms=33.931
+  LATENCY pass=25 peer=gcp-listener kind=establish ms=0.012 attempts=1 verifier_calls=0
+  LATENCY pass=25 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.300 p50_ms=33.757 p90_ms=34.499 max_ms=35.314 mean_ms=33.839 answered_by="gcp-listener"
+  LATENCY pass=25 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=102.219 min_ms=33.364 p50_ms=34.105 p90_ms=34.278 max_ms=34.298 mean_ms=33.924
+  LATENCY pass=26 peer=gcp-listener kind=establish ms=0.011 attempts=1 verifier_calls=0
+  LATENCY pass=26 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.083 p50_ms=33.442 p90_ms=33.763 max_ms=34.989 mean_ms=33.504 answered_by="gcp-listener"
+  LATENCY pass=26 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=106.076 min_ms=32.677 p50_ms=33.182 p90_ms=38.953 max_ms=39.130 mean_ms=34.990
+  LATENCY pass=27 peer=gcp-listener kind=establish ms=0.086 attempts=1 verifier_calls=0
+  LATENCY pass=27 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.018 p50_ms=33.341 p90_ms=33.779 max_ms=36.109 mean_ms=33.504 answered_by="gcp-listener"
+  LATENCY pass=27 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=100.017 min_ms=32.734 p50_ms=33.046 p90_ms=33.656 max_ms=33.677 mean_ms=33.120
+  LATENCY pass=28 peer=gcp-listener kind=establish ms=0.011 attempts=1 verifier_calls=0
+  LATENCY pass=28 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.285 p50_ms=33.603 p90_ms=34.157 max_ms=34.993 mean_ms=33.724 answered_by="gcp-listener"
+  LATENCY pass=28 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=100.547 min_ms=32.981 p50_ms=33.261 p90_ms=33.507 max_ms=33.556 mean_ms=33.255
+  LATENCY pass=29 peer=gcp-listener kind=establish ms=0.013 attempts=1 verifier_calls=0
+  LATENCY pass=29 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.327 p50_ms=33.635 p90_ms=33.903 max_ms=34.508 mean_ms=33.633 answered_by="gcp-listener"
+  LATENCY pass=29 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=107.437 min_ms=33.736 p50_ms=34.134 p90_ms=39.053 max_ms=39.109 mean_ms=35.605
+  LATENCY pass=30 peer=gcp-listener kind=establish ms=0.012 attempts=1 verifier_calls=0
+  LATENCY pass=30 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.067 p50_ms=33.392 p90_ms=33.888 max_ms=34.380 mean_ms=33.461 answered_by="gcp-listener"
+  LATENCY pass=30 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=101.830 min_ms=33.579 p50_ms=33.805 p90_ms=33.998 max_ms=34.067 mean_ms=33.804
+  LATENCY pass=31 peer=gcp-listener kind=establish ms=125.457 attempts=1 verifier_calls=1
+  LATENCY pass=31 peer=gcp-listener kind=warm_exchange n=20 min_ms=36.970 p50_ms=37.558 p90_ms=37.631 max_ms=37.732 mean_ms=37.425 answered_by="gcp-listener"
+  LATENCY pass=31 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=113.919 min_ms=37.177 p50_ms=37.728 p90_ms=38.106 max_ms=38.118 mean_ms=37.679
+  LATENCY pass=32 peer=gcp-listener kind=establish ms=0.011 attempts=1 verifier_calls=0
+  LATENCY pass=32 peer=gcp-listener kind=warm_exchange n=20 min_ms=37.315 p50_ms=37.693 p90_ms=38.294 max_ms=39.689 mean_ms=37.807 answered_by="gcp-listener"
+  LATENCY pass=32 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=119.677 min_ms=37.227 p50_ms=38.562 p90_ms=43.176 max_ms=43.207 mean_ms=39.655
+  LATENCY pass=33 peer=gcp-listener kind=establish ms=0.012 attempts=1 verifier_calls=0
+  LATENCY pass=33 peer=gcp-listener kind=warm_exchange n=20 min_ms=36.855 p50_ms=37.500 p90_ms=38.115 max_ms=38.667 mean_ms=37.558 answered_by="gcp-listener"
+  LATENCY pass=33 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=119.465 min_ms=37.492 p50_ms=37.921 p90_ms=43.195 max_ms=43.199 mean_ms=39.599
+  LATENCY pass=1 peer=gcp-listener kind=establish ms=145.016 attempts=1 verifier_calls=1
+  LATENCY pass=1 peer=gcp-listener kind=warm_exchange n=20 min_ms=36.918 p50_ms=37.403 p90_ms=37.709 max_ms=37.832 mean_ms=37.415 answered_by="gcp-listener"
+  LATENCY pass=1 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=113.581 min_ms=37.193 p50_ms=37.718 p90_ms=38.201 max_ms=38.215 mean_ms=37.698
+  LATENCY pass=2 peer=gcp-listener kind=establish ms=114.451 attempts=1 verifier_calls=1
+  LATENCY pass=2 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.321 p50_ms=33.693 p90_ms=34.112 max_ms=34.271 mean_ms=33.725 answered_by="gcp-listener"
+  LATENCY pass=2 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=100.776 min_ms=32.969 p50_ms=33.327 p90_ms=33.865 max_ms=33.865 mean_ms=33.386
+  LATENCY pass=3 peer=gcp-listener kind=establish ms=118.611 attempts=1 verifier_calls=1
+  LATENCY pass=3 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.433 p50_ms=33.680 p90_ms=34.023 max_ms=37.365 mean_ms=33.884 answered_by="gcp-listener"
+  LATENCY pass=3 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=108.072 min_ms=32.950 p50_ms=33.706 p90_ms=34.106 max_ms=39.277 mean_ms=33.829
+  LATENCY pass=4 peer=gcp-listener kind=establish ms=116.340 attempts=1 verifier_calls=1
+  LATENCY pass=4 peer=gcp-listener kind=warm_exchange n=20 min_ms=33.327 p50_ms=33.668 p90_ms=33.874 max_ms=34.142 mean_ms=33.660 answered_by="gcp-listener"
+  LATENCY pass=4 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=101.518 min_ms=33.271 p50_ms=33.540 p90_ms=34.257 max_ms=34.273 mean_ms=33.673
+  LATENCY pass=5 peer=gcp-listener kind=establish ms=127.027 attempts=1 verifier_calls=1
+  LATENCY pass=5 peer=gcp-listener kind=warm_exchange n=20 min_ms=36.799 p50_ms=37.528 p90_ms=38.041 max_ms=38.096 mean_ms=37.546 answered_by="gcp-listener"
+  LATENCY pass=5 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=118.181 min_ms=36.740 p50_ms=37.074 p90_ms=37.447 max_ms=43.122 mean_ms=37.387
+  LATENCY pass=1 peer=gcp-listener kind=establish ms=133.082 attempts=1 verifier_calls=1
+  LATENCY pass=1 peer=gcp-listener kind=warm_exchange n=20 min_ms=32.937 p50_ms=33.377 p90_ms=34.324 max_ms=134.755 mean_ms=38.494 answered_by="gcp-listener"
+  LATENCY pass=1 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=210.034 min_ms=33.145 p50_ms=33.503 p90_ms=70.650 max_ms=71.538 mean_ms=39.541
+  LATENCY pass=2 peer=gcp-listener kind=establish ms=0.080 attempts=1 verifier_calls=0
+  LATENCY pass=2 peer=gcp-listener kind=warm_exchange n=20 min_ms=39.499 p50_ms=39.998 p90_ms=110.567 max_ms=113.105 mean_ms=47.154 answered_by="gcp-listener"
+  LATENCY pass=2 peer=gcp-listener kind=concurrent streams=8 rounds=3 n=24 wall_ms=206.166 min_ms=39.735 p50_ms=40.058 p90_ms=85.057 max_ms=85.061 mean_ms=47.248
+
+=== 69 passed, 1 failed ===
+captured into docs/snp/evidence/cloud

@@ -1,0 +1,5 @@
+udprelay: listening on 0.0.0.0:4433, forwarding to 10.128.0.18:4433
+udprelay: new dialer 128.239.2.78:35658 -> mapping 35401
+udprelay: RELAYED dialer_to_listener_dgrams=328 listener_to_dialer_dgrams=354 dialer_to_listener_bytes=35702 listener_to_dialer_bytes=37542 tampered=0
+udprelay: MARKER not found hits=0 marker='attested-tunnel-plaintext-marker' in 682 datagrams carrying 73244 bytes
+udprelay: dialers seen: 128.239.2.78

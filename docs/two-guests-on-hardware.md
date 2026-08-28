@@ -65,7 +65,13 @@ afterwards. Egress to the vendor is *absent* during the run rather than filtered
 path to AMD's key distribution service to block, and a guest that tried would have to ARP for a
 gateway that does not exist, which the relay would record. And because every frame passes
 through the relay, the relay is the on-path attacker: it writes every frame to a pcap and
-searches each one for the plaintext an exchange carries. The legitimate exchange and the
+searches each one for the plaintext an exchange carries. There is one capture per scenario —
+`evidence/ticket14/<scenario>/segment.pcap`, seven of them — kept whether or not a claim rests on
+that scenario's, because a rule that captures everything does not drift the way one that captures
+what somebody thought would matter does. Two of them are the largest: `modified` and `tcbfloor`
+are mostly a refused dialer retrying about once a second, which is itself the record of what a
+refusal costs a peer that keeps asking. A re-run replaces this directory rather than adding to
+it, so every number here comes from one binary. The legitimate exchange and the
 attacker's failure to read it are the same run, which is what user story 49 asks for.
 
 A relay that carried nothing would report no plaintext too, and a scanner that never matched

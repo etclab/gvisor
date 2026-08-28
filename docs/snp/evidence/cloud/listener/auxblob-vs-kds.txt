@@ -1,0 +1,3 @@
+79b3b74a-acbb-e44f-a02f-05aef327c782.der (SEV-Milan): byte-identical to the KDS chain's
+8d75da63-64e6-6445-adc5-f4b93be8accd.der (SEV-VCEK): same public key, different certificate (auxblob notBefore Apr  9 22:40:54 2026 GMT; KDS notBefore Aug 27 01:24:27 2026 GMT)
+a406b4c0-03a8-5249-9743-3fb6014cd0ae.der (ARK-Milan): byte-identical to the KDS chain's

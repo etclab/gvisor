@@ -1,0 +1,14 @@
+{
+  "format": "gvisor.dev/gvisor/attest/certificate-chain",
+  "version": 1,
+  "vendor": "amd-sev-snp",
+  "product_line": "Milan",
+  "chip_id": "9ca4af443d77fe0f4df8d61ca6552f2daf801636b09238948a791b1a1b9d35265b2efe9864a039e7cfe3df2451e9509a1fa461aeaa1a3343a041ff644654b9dc",
+  "tcb": {
+    "bootloader": 4,
+    "tee": 0,
+    "snp": 29,
+    "microcode": 222
+  },
+  "fetched_at": "2026-08-28T01:24:27Z"
+}

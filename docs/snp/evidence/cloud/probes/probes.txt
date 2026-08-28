@@ -1,0 +1,54 @@
+=== cloud probes: 2026-08-28T01:16:45Z ===
+project nsf-2348130-428843 zone us-central1-a account pniroula@cloudbank.org
+repo    4ca53329113a542dd3489301730557b38b2833e7
+
+$ gcloud compute instances create probe-a (ubuntu-2404-lts-amd64)
+WARNING: You have selected a disk size of under [200GB]. This may result in poor I/O performance. For more information, see: https://developers.google.com/compute/docs/disks#performance.
+Created [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/zones/us-central1-a/instances/probe-a].
+probe-a	us-central1-a	n2d-standard-2	RUNNING
+$ gcloud compute instances create probe-b (ubuntu-2204-lts)
+WARNING: You have selected a disk size of under [200GB]. This may result in poor I/O performance. For more information, see: https://developers.google.com/compute/docs/disks#performance.
+Created [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/zones/us-central1-a/instances/probe-b].
+probe-b	us-central1-a	n2d-standard-2	RUNNING
+
+### probe-a
+provider   : sev_guest
+outblob    : 1184 bytes  
+auxblob    : 4763 bytes  
+policy                 : 0x30000
+LAUNCH MEASUREMENT (M) : 2d24cf9624ee36449e50c6c84042540b05898f6559f02741b7b354e0cc2ed18d108352ade7dfc4cecce4fa974e51c773
+family_id              : 00000000000000000000000000000000
+image_id               : 00000000000000000000000000000000
+chip_id                : 9ca4af443d77fe0f4df8d61ca6552f2daf801636b09238948a791b1a1b9d35265b2efe9864a039e7cfe3df2451e9509a1fa461aeaa1a3343a041ff644654b9dc
+current_tcb            : bootloader=4 tee=0 snp=29 microcode=222
+reported_tcb           : bootloader=4 tee=0 snp=29 microcode=222
+current firmware       : 1.58 build 1
+
+### probe-b
+provider   : sev_guest
+outblob    : 1184 bytes  
+auxblob    : 4763 bytes  
+policy                 : 0x30000
+LAUNCH MEASUREMENT (M) : 2d24cf9624ee36449e50c6c84042540b05898f6559f02741b7b354e0cc2ed18d108352ade7dfc4cecce4fa974e51c773
+family_id              : 00000000000000000000000000000000
+image_id               : 00000000000000000000000000000000
+chip_id                : 2523d793d7fcecb5421fca67cfaece185925d1031838ad6651191424cedbfe9c4aedfadf3a2c1b0fd6f78f666702928f304f8bffdc3c1e6d8cb543272c95d01e
+current_tcb            : bootloader=4 tee=0 snp=29 microcode=222
+reported_tcb           : bootloader=4 tee=0 snp=29 microcode=222
+current firmware       : 1.58 build 1
+
+=== answers ===
+1. launch measurement, ubuntu 24.04 : 2d24cf9624ee36449e50c6c84042540b05898f6559f02741b7b354e0cc2ed18d108352ade7dfc4cecce4fa974e51c773
+   launch measurement, ubuntu 22.04 : 2d24cf9624ee36449e50c6c84042540b05898f6559f02741b7b354e0cc2ed18d108352ade7dfc4cecce4fa974e51c773
+   SAME: the measurement does not cover the boot disk; it is over the provider's firmware.
+   provider endorsement for 2d24cf9624ee36449e50c6c84042540b05898f6559f02741b7b354e0cc2ed18d108352ade7dfc4cecce4fa974e51c773: PUBLISHED, 5308 bytes (https://storage.googleapis.com/gce_tcb_integrity/ovmf_x64_csm/sevsnp/2d24cf9624ee36449e50c6c84042540b05898f6559f02741b7b354e0cc2ed18d108352ade7dfc4cecce4fa974e51c773.binarypb)
+   provider endorsement for 2d24cf9624ee36449e50c6c84042540b05898f6559f02741b7b354e0cc2ed18d108352ade7dfc4cecce4fa974e51c773: PUBLISHED, 5308 bytes (https://storage.googleapis.com/gce_tcb_integrity/ovmf_x64_csm/sevsnp/2d24cf9624ee36449e50c6c84042540b05898f6559f02741b7b354e0cc2ed18d108352ade7dfc4cecce4fa974e51c773.binarypb)
+2. auxblob probe-a: 4763 bytes; probe-b: 4763 bytes
+   POPULATED: the provider fills the certificate table; ticket 01's finding is host-specific and so is ADR-0005's premise.
+3. chip_id probe-a: 9ca4af443d77fe0f4df8d61ca6552f2daf801636b09238948a791b1a1b9d35265b2efe9864a039e7cfe3df2451e9509a1fa461aeaa1a3343a041ff644654b9dc
+   chip_id probe-b: 2523d793d7fcecb5421fca67cfaece185925d1031838ad6651191424cedbfe9c4aedfadf3a2c1b0fd6f78f666702928f304f8bffdc3c1e6d8cb543272c95d01e
+   TWO CHIPS.
+
+deleting probe-a probe-b
+Deleted [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/zones/us-central1-a/instances/probe-a].
+Deleted [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/zones/us-central1-a/instances/probe-b].

@@ -5,4 +5,4 @@ Update on every create, stop and delete.
 
 | created | name | type | purpose | state |
 |---|---|---|---|---|
-| — | — | — | nothing created yet: gcloud needs re-authentication | — |
+| 2026-08-28 01:17Z | probe-a, probe-b | n2d-standard-2 SEV-SNP, us-central1-a | the three probes | deleted 01:20Z |

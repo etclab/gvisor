@@ -1,0 +1,43 @@
+== SEV-SNP attestation report ==
+version                : 5
+guest_svn              : 0
+policy                 : 0x30000
+  abi                  : 0.0
+  bits                 : SMT_ALLOWED, RESERVED_MBO
+  DEBUG_ALLOWED        : no
+vmpl                   : 0
+signature algo         : 1 (1 = ECDSA P-384 with SHA-384)
+signing key            : VCEK (0)
+author key enabled     : 0
+mask chip key          : 0
+platform_info          : 0x25  [SMT_EN, ECC_EN]
+
+LAUNCH MEASUREMENT (M) : 2d24cf9624ee36449e50c6c84042540b05898f6559f02741b7b354e0cc2ed18d108352ade7dfc4cecce4fa974e51c773
+report_data (64B)      : 000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f
+host_data              : 0000000000000000000000000000000000000000000000000000000000000000
+family_id              : 00000000000000000000000000000000
+image_id               : 00000000000000000000000000000000
+id_key_digest          : 000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+author_key_digest      : 000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+report_id              : 5394cfb5156dd387cab11910c403348b2d5abe61813c2686025b7db7a30c6240
+chip_id                : 9ca4af443d77fe0f4df8d61ca6552f2daf801636b09238948a791b1a1b9d35265b2efe9864a039e7cfe3df2451e9509a1fa461aeaa1a3343a041ff644654b9dc
+
+current_tcb            : bootloader=4 tee=0 snp=29 microcode=222
+reported_tcb           : bootloader=4 tee=0 snp=29 microcode=222
+committed_tcb          : bootloader=4 tee=0 snp=29 microcode=222
+launch_tcb             : bootloader=4 tee=0 snp=29 microcode=222
+current firmware       : 1.58 build 1
+committed firmware     : 1.58 build 1
+cpuid fam/mod/step     : 0x19/0x01/0x01
+signature r (first 16) : 86aace5b8c1ee8018f9a331959f12664...
+signature s (first 16) : 0c3129f7b33d0497c19073bf2a41e235...
+signature all-zero     : no
+
+== certificate table (auxblob) ==
+GUID                                   OFFSET     LENGTH   MEANING
+8d75da63-64e6-6445-adc5-f4b93be8accd   96         1351     unknown
+79b3b74a-acbb-e44f-a02f-05aef327c782   1447       1677     unknown
+a406b4c0-03a8-5249-9743-3fb6014cd0ae   3124       1639     unknown
+wrote /home/pniroula/Projects/gvisor-cloud/docs/snp/evidence/cloud/probes/probe-a/certs/8d75da63-64e6-6445-adc5-f4b93be8accd.der (1351 bytes)
+wrote /home/pniroula/Projects/gvisor-cloud/docs/snp/evidence/cloud/probes/probe-a/certs/79b3b74a-acbb-e44f-a02f-05aef327c782.der (1677 bytes)
+wrote /home/pniroula/Projects/gvisor-cloud/docs/snp/evidence/cloud/probes/probe-a/certs/a406b4c0-03a8-5249-9743-3fb6014cd0ae.der (1639 bytes)

@@ -1,0 +1,13 @@
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+Connection closed by 35.202.54.249 port 22
+
+Recommendation: To check for possible causes of SSH connectivity issues and get
+recommendations, rerun the ssh command with the --troubleshoot option.
+
+gcloud compute ssh tdx-probe-c --project=nsf-2348130-428843 --zone=us-central1-a --troubleshoot
+
+Or, to investigate an IAP tunneling issue:
+
+gcloud compute ssh tdx-probe-c --project=nsf-2348130-428843 --zone=us-central1-a --troubleshoot --tunnel-through-iap
+
+ERROR: (gcloud.compute.ssh) [/usr/bin/ssh] exited with return code [255].

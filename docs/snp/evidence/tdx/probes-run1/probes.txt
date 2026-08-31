@@ -111,3 +111,60 @@ Systems on them will not be added to the GRUB boot configuration.
 Check GRUB_DISABLE_OS_PROBER documentation entry.
 Adding boot menu entry for UEFI Firmware Settings ...
 done
+inblob written (64 bytes, single write)
+provider   : tdx_guest
+generation : 1
+privlevel  : (not exposed)
+outblob    : 8000 bytes  
+auxblob    : ATTRIBUTE ABSENT -- this kernel does not expose one
+quote version       : 4
+tee_type            : 0x00000081 (TDX)
+mrseam              : ab62561a173acbd18ee50ff37750db44184c6cf5e886df74247cc575e163b04c34b9e18374757c235affa614d4127f6b
+td_attributes       : 0000001000000000
+xfam                : e702060000000000
+mrtd                : c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+rtmr0               : c0b8b19ca6f51dc37435da45a61ab417e59253cd31cc2eeb3e833e8b8979679fe5a65387e0014831fe7b3ec4be51896d
+rtmr1               : 02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b
+rtmr2               : ecc9935861eba8e47817c10761468525af6df776fa2fa2767be5d6d152a5ae3a62da7b750df33d8069c7ff9bae811df9
+rtmr3               : 000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+reportdata echoes the 64 bytes handed in: True
+
+--- mutation 2: initrd only, command line put back ---
+
+gcloud compute ssh tdx-probe-c --project=nsf-2348130-428843 --zone=us-central1-a --troubleshoot
+
+Or, to investigate an IAP tunneling issue:
+
+gcloud compute ssh tdx-probe-c --project=nsf-2348130-428843 --zone=us-central1-a --troubleshoot --tunnel-through-iap
+
+ERROR: (gcloud.compute.ssh) [/usr/bin/ssh] exited with return code [255].
+inblob written (64 bytes, single write)
+provider   : tdx_guest
+generation : 1
+privlevel  : (not exposed)
+outblob    : 8000 bytes  
+auxblob    : ATTRIBUTE ABSENT -- this kernel does not expose one
+quote version       : 4
+tee_type            : 0x00000081 (TDX)
+mrseam              : ab62561a173acbd18ee50ff37750db44184c6cf5e886df74247cc575e163b04c34b9e18374757c235affa614d4127f6b
+td_attributes       : 0000001000000000
+xfam                : e702060000000000
+mrtd                : c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+rtmr0               : c0b8b19ca6f51dc37435da45a61ab417e59253cd31cc2eeb3e833e8b8979679fe5a65387e0014831fe7b3ec4be51896d
+rtmr1               : 3a446943925fef7f1682fd54e1b6697df864692e28592ec373860d1868582ac14ca3029c48282eb964868a785bafd691
+rtmr2               : 0375c957827297814393458ff7ce320514bf227fa51af473091bbeb0b9dde8a7fe8fef3f4f208e843addaee422981847
+rtmr3               : 000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+reportdata echoes the 64 bytes handed in: True
+
+=== answers: probe 3, one disk, three boots ===
+register baseline vs cmdline      baseline vs initrd       baseline value
+mrtd     SAME                     SAME                     c1ee9c16e3afc506cfe042c5b846a368…
+rtmr0    SAME                     SAME                     c0b8b19ca6f51dc37435da45a61ab417…
+rtmr1    SAME                     DIFFERENT                02c7f19c862b3dae1592c737358d9bb1…
+rtmr2    SAME                     DIFFERENT                ecc9935861eba8e47817c10761468525…
+rtmr3    SAME                     SAME                     00000000000000000000000000000000…
+
+deleting tdx-probe-c
+Deleted [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/zones/us-central1-a/instances/tdx-probe-c].
+
+=== done 2026-08-31T20:55:10Z ===

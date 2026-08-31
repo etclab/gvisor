@@ -1,0 +1,104 @@
+=== TDX mutation probe: 2026-08-31T20:57:31Z ===
+project nsf-2348130-428843 zone us-central1-a
+repo    08206a5fcc591c89431edac15393911a3f19682b
+
+Created [https://www.googleapis.com/compute/beta/projects/nsf-2348130-428843/zones/us-central1-a/instances/tdx-mutate].
+WARNING: Some requests generated warnings:
+ - Disk size: '20 GB' is larger than image size: '10 GB'. You might need to resize the root repartition manually if the operating system does not support automatic resizing. See https://cloud.google.com/compute/docs/disks/add-persistent-disk#resize_pd for details.
+
+tdx-mutate	us-central1-a	c3-standard-4	RUNNING
+
+### what this image's boot chain actually looks like
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+--- /etc/default/grub.d/ ---
+total 8
+-rw-r--r-- 1 root root 174 Aug 26 09:55 40-force-partuuid.cfg
+-rw-r--r-- 1 root root 261 Aug 26 09:54 50-cloudimg-settings.cfg
+--- fragments ---
+/etc/default/grub.d/40-force-partuuid.cfg:# Force boot without an initramfs by setting GRUB_FORCE_PARTUUID
+/etc/default/grub.d/40-force-partuuid.cfg:# Remove this line to enable boot with an initramfs
+/etc/default/grub.d/40-force-partuuid.cfg:GRUB_FORCE_PARTUUID=fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7
+/etc/default/grub.d/50-cloudimg-settings.cfg:# CLOUD_IMG: This file was created/modified by the Cloud Image build process
+/etc/default/grub.d/50-cloudimg-settings.cfg:GRUB_DEFAULT=0
+/etc/default/grub.d/50-cloudimg-settings.cfg:GRUB_HIDDEN_TIMEOUT=0.1
+/etc/default/grub.d/50-cloudimg-settings.cfg:GRUB_HIDDEN_TIMEOUT_QUIET=true
+/etc/default/grub.d/50-cloudimg-settings.cfg:GRUB_TIMEOUT=0.1
+/etc/default/grub.d/50-cloudimg-settings.cfg:GRUB_CMDLINE_LINUX_DEFAULT="console=ttyS0,115200"
+/etc/default/grub.d/50-cloudimg-settings.cfg:GRUB_RECORDFAIL_TIMEOUT=0
+/etc/default/grub.d/50-cloudimg-settings.cfg:GRUB_TERMINAL=serial
+--- /etc/default/grub ---
+GRUB_DEFAULT=0
+GRUB_TIMEOUT_STYLE=hidden
+GRUB_TIMEOUT=0
+GRUB_DISTRIBUTOR=`( . /etc/os-release; echo ${NAME:-Ubuntu} ) 2>/dev/null || echo Ubuntu`
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"
+GRUB_CMDLINE_LINUX=""
+--- what grub.cfg puts on the linux line ---
+		linux	/vmlinuz-6.17.0-1022-gcp root=PARTUUID=fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7 ro  console=ttyS0,115200
+		linux	/vmlinuz-6.17.0-1022-gcp root=PARTUUID=fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7 ro  console=ttyS0,115200 panic=-1
+			linux	/vmlinuz-6.17.0-1022-gcp root=PARTUUID=fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7 ro  console=ttyS0,115200
+
+############ boot 1: baseline ############
+--- baseline ---
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+boot_id : d0e9b897-c1a5-40df-b572-5064fd300498
+cmdline : BOOT_IMAGE=/vmlinuz-6.17.0-1022-gcp root=PARTUUID=fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7 ro console=ttyS0,115200 panic=-1
+kernel  : 6.17.0-1022-gcp
+initrd  : 99b0dcc93aca6499b4c222ef751d0384
+grubcfg : d0d7ec65eb4a81659b81759198d55402
+mrtd                : c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+rtmr0               : c0b8b19ca6f51dc37435da45a61ab417e59253cd31cc2eeb3e833e8b8979679fe5a65387e0014831fe7b3ec4be51896d
+rtmr1               : 02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b
+rtmr2               : ecc9935861eba8e47817c10761468525af6df776fa2fa2767be5d6d152a5ae3a62da7b750df33d8069c7ff9bae811df9
+rtmr3               : 000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+
+############ boot 2: plain reboot, NOTHING changed (the control) ############
+  boot_id d0e9b897-c1a5-40df-b572-5064fd300498 -> 32a5618a-b49f-4b43-8ccd-3757c32be24e (barrier crossed on attempt 4)
+--- control-reboot ---
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+boot_id : 32a5618a-b49f-4b43-8ccd-3757c32be24e
+cmdline : BOOT_IMAGE=/vmlinuz-6.17.0-1022-gcp root=PARTUUID=fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7 ro console=ttyS0,115200 panic=-1
+kernel  : 6.17.0-1022-gcp
+initrd  : 99b0dcc93aca6499b4c222ef751d0384
+grubcfg : d0d7ec65eb4a81659b81759198d55402
+mrtd                : c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+rtmr0               : c0b8b19ca6f51dc37435da45a61ab417e59253cd31cc2eeb3e833e8b8979679fe5a65387e0014831fe7b3ec4be51896d
+rtmr1               : 3a446943925fef7f1682fd54e1b6697df864692e28592ec373860d1868582ac14ca3029c48282eb964868a785bafd691
+rtmr2               : ecc9935861eba8e47817c10761468525af6df776fa2fa2767be5d6d152a5ae3a62da7b750df33d8069c7ff9bae811df9
+rtmr3               : 000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+
+############ probe 2, at the seam: attest/tsm's own Acquirer on Intel ############
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+go version go1.27.0 linux/amd64
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+=== building attest/cmd/acquire-evidence on the TDX guest ===
+go: downloading github.com/google/go-sev-guest v0.15.0
+go: downloading github.com/google/logger v1.1.1
+go: downloading github.com/google/uuid v1.6.0
+go: downloading golang.org/x/crypto v0.41.0
+go: downloading google.golang.org/protobuf v1.33.0
+go: downloading go.uber.org/multierr v1.11.0
+=== built; running it against a directory that holds no chain ===
+acquire-evidence: tsm: the report interface is provided by "tdx_guest", which this acquirer does not implement; a second vendor adds a case here and an implementation of attest.Verifier, and touches nothing else
+exit status: 1
+
+############ boot 3: kernel command line only ############
+Pseudo-terminal will not be allocated because stdin is not a terminal.
++ printf 'GRUB_CMDLINE_LINUX="$GRUB_CMDLINE_LINUX tdx.probe.marker=alpha"\n'
++ sudo tee /etc/default/grub.d/99-tdx-probe.cfg
+GRUB_CMDLINE_LINUX="$GRUB_CMDLINE_LINUX tdx.probe.marker=alpha"
++ sudo update-grub
++ tail -3
+Check GRUB_DISABLE_OS_PROBER documentation entry.
+Adding boot menu entry for UEFI Firmware Settings ...
+done
+--- CONTROL: is the marker in grub.cfg? ---
++ echo '--- CONTROL: is the marker in grub.cfg? ---'
++ sudo grep -c tdx.probe.marker=alpha /boot/grub/grub.cfg
+6
+--- CONTROL: initrd hash, must not have moved ---
++ echo '--- CONTROL: initrd hash, must not have moved ---'
++ cut -c1-32
+++ uname -r
++ sudo sha256sum /boot/initrd.img-6.17.0-1022-gcp
+99b0dcc93aca6499b4c222ef751d0384

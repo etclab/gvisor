@@ -1,0 +1,11 @@
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+=== building attest/cmd/acquire-evidence on the TDX guest ===
+go: downloading github.com/google/go-sev-guest v0.15.0
+go: downloading github.com/google/logger v1.1.1
+go: downloading github.com/google/uuid v1.6.0
+go: downloading golang.org/x/crypto v0.41.0
+go: downloading google.golang.org/protobuf v1.33.0
+go: downloading go.uber.org/multierr v1.11.0
+=== built; running it against a directory that holds no chain ===
+acquire-evidence: tsm: the report interface is provided by "tdx_guest", which this acquirer does not implement; a second vendor adds a case here and an implementation of attest.Verifier, and touches nothing else
+exit status: 1

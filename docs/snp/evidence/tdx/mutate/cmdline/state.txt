@@ -1,0 +1,6 @@
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+boot_id : 412c4ede-4bed-4423-96f6-f05833bdee0e
+cmdline : BOOT_IMAGE=/vmlinuz-6.17.0-1022-gcp root=PARTUUID=fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7 ro tdx.probe.marker=alpha console=ttyS0,115200 panic=-1
+kernel  : 6.17.0-1022-gcp
+initrd  : 99b0dcc93aca6499b4c222ef751d0384
+grubcfg : 0c0dc5f81e7ff387f65c8dd5c69a4018

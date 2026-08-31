@@ -13,15 +13,23 @@ produced an RTMR and check each one against something it knows. If there is no
 log, an RTMR is 48 opaque bytes and the only thing anyone can do with it is
 compare it to another observation of the same thing.
 
-The PCR-to-register mapping is the TDVF's, from edk2's MapPcrToMrIndex:
+The index in each record's first field is NOT a TPM PCR index. edk2's TDX
+path maps the PCR a component would have used onto a measurement-register
+index and writes *that* into the log, so the field is the MrIndex:
 
-    PCR 0            -> MRTD    (build time; never extended at runtime)
-    PCR 1, 7         -> RTMR0
-    PCR 2, 3, 4, 5   -> RTMR1
-    PCR 8 .. 15      -> RTMR2
-    (nothing)        -> RTMR3
+    0 -> MRTD     (build time; never extended at runtime)
+    1 -> RTMR0    firmware configuration: SecureBoot, PK/KEK/db, BootOrder, ACPI
+    2 -> RTMR1    the EFI boot chain: GPT, shimx64.efi, grubx64.efi, ExitBootServices
+    3 -> RTMR2    grub: grub.cfg, every grub_cmd, the kernel, kernel_cmdline, the initrd
+    4 -> RTMR3    unused here
 
-and the extend is RTMR = SHA384(RTMR || digest), per TDG.MR.RTMR.EXTEND.
+Reading it as a PCR index is a mistake this file made first time round: it
+put indexes 2 and 3 both into RTMR1, RTMR0 still replayed (only index 1
+appears), and RTMR1 and RTMR2 both failed. Two independent things fix the
+mapping — grub's `kernel_cmdline:` record sits at index 3, and the mutation
+probe found a kernel command line change moving RTMR2 and nothing else.
+
+The extend is RTMR = SHA384(RTMR || digest), per TDG.MR.RTMR.EXTEND.
 """
 import hashlib
 import struct
@@ -55,17 +63,13 @@ EVENT_TYPE = {
 }
 
 
-def mr_of(pcr):
-    """The TDVF's PCR-to-measurement-register mapping. Returns 'mrtd',
-    'rtmr0'..'rtmr2', or None for a PCR that extends nothing."""
-    if pcr == 0:
+def mr_of(index):
+    """Map a record's MrIndex to the register it extends. Returns 'mrtd',
+    'rtmr0'..'rtmr3', or None for an index that extends nothing."""
+    if index == 0:
         return "mrtd"
-    if pcr in (1, 7):
-        return "rtmr0"
-    if pcr in (2, 3, 4, 5):
-        return "rtmr1"
-    if 8 <= pcr <= 15:
-        return "rtmr2"
+    if 1 <= index <= 4:
+        return f"rtmr{index - 1}"
     return None
 
 
@@ -155,7 +159,7 @@ def main():
     print(f"records             : {len(rows)}")
     print("records per register: " + ", ".join(f"{k}={v}" for k, v in sorted(counts.items())))
     print()
-    print(f"{'PCR':<4} {'register':<8} {'event type':<38} description")
+    print(f"{'idx':<4} {'register':<8} {'event type':<38} description")
     for pcr, target, name, text in rows:
         print(f"{pcr:<4} {target:<8} {name:<38} {text}")
     print()

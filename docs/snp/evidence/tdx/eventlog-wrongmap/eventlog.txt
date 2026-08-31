@@ -1,0 +1,159 @@
+=== TDX event log probe: 2026-08-31T21:05:22Z ===
+project nsf-2348130-428843 zone us-central1-a
+repo    03eac49288ea56c45dbe6f3ae4f68c8d7bfec7d2
+
+Created [https://www.googleapis.com/compute/beta/projects/nsf-2348130-428843/zones/us-central1-a/instances/tdx-eventlog].
+WARNING: Some requests generated warnings:
+ - Disk size: '20 GB' is larger than image size: '10 GB'. You might need to resize the root repartition manually if the operating system does not support automatic resizing. See https://cloud.google.com/compute/docs/disks/add-persistent-disk#resize_pd for details.
+
+tdx-eventlog	us-central1-a	c3-standard-4	RUNNING
+
+### 1. is the CCEL table there?
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+-r-------- 1 root root     56 Aug 31 21:06 /sys/firmware/acpi/tables/CCEL
+-r-------- 1 root root 262144 Aug 31 21:06 /sys/firmware/acpi/tables/data/CCEL
+--- all ACPI tables that look confidential ---
+CCEL
+TPM2
+--- can the guest read the data table? ---
+ 01 00 00 00 03 00 00 00 00 00 00 00 00 00 00 00
+ 00 00 00 00 00 00 00 00 00 00 00 00 21 00 00 00
+ 53 70 65 63 20 49 44 20 45 76 65 6e 74 30 33 00
+ 00 00 00 00 00 02 00 02 01 00 00 00 0c 00 30 00
+
+### 2 and 3. the events, and whether they replay to the quote
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+CCEL data table     : 262144 bytes at /sys/firmware/acpi/tables/data/CCEL
+records             : 112
+records per register: mrtd=2, rtmr0=17, rtmr1=93
+
+PCR  register event type                             description
+1    rtmr0    EV_NO_ACTION                           Spec ID Event030
+0    mrtd     EV_NO_ACTION                           SP800-155 Event3y+FNYHpFGoogle, Inc.Google Compute EngineGoogle, Inc.y+2
+0    mrtd     EV_NO_ACTION                           SP800-155 Event3y+FNYHpFGoogle, Inc.Google Compute EngineGoogle, Inc.y+2
+1    rtmr0    EV_EFI_HANDOFF_TABLES2                 TdxTableNbtVB6
+1    rtmr0    EV_EFI_PLATFORM_FIRMWARE_BLOB2         )Fv(48DB5E17-707C-472D-91CD-1613E7EF51B0)
+1    rtmr0    EV_EFI_VARIABLE_DRIVER_CONFIG          诤鏊ᇒඪΘ谫SecureBoot
+1    rtmr0    EV_EFI_VARIABLE_DRIVER_CONFIG          a+&PKYJ\+r&G[G00Jg]0*H010Unewpk0180821215115Z180920215115Z010Unewpk0"0*H
+1    rtmr0    EV_EFI_VARIABLE_DRIVER_CONFIG          a+KEKYJ\+rG[G00a0*H010UUS10UWashington10URedmond10UMicrosoft Corporation
+1    rtmr0    EV_EFI_VARIABLE_DRIVER_CONFIG          :=EgeodbYJ\+r@$G[G00a0*H010UUS10UWashington10URedmond10UMicrosoft Corpor
+1    rtmr0    EV_EFI_VARIABLE_DRIVER_CONFIG          :=EgeoEdbx&LP@A6C(E0wY2M`(xKi1ORm@`MAewY2M`(xK/r($E4[$k;}nzwY2M`(xK-*o.s
+1    rtmr0    EV_SEPARATOR                           
+1    rtmr0    EV_PLATFORM_CONFIG_FLAGS               ACPI DATA
+1    rtmr0    EV_PLATFORM_CONFIG_FLAGS               ACPI DATA
+1    rtmr0    EV_PLATFORM_CONFIG_FLAGS               ACPI DATA
+1    rtmr0    EV_EFI_VARIABLE_BOOT                   诤鏊ᇒඪΘ谫BootOrder
+1    rtmr0    EV_EFI_VARIABLE_BOOT                   诤鏊ᇒඪΘ谫Boot0002UbuntuĂ䇐ਃāЀᜃĄ*⠀倀陻樊䚋ಯ뿶㡥৯ȂЄ4\EFI\ubuntu\shimx64.efiｿ
+1    rtmr0    EV_EFI_VARIABLE_BOOT                   a+`Boot0001&UEFI nvme_card-pdANYMR,Y
+1    rtmr0    EV_EFI_VARIABLE_BOOT                   a+>Boot0000,UiApp|4O>e!,FvEnf#1
+2    rtmr1    EV_EFI_ACTION                          Calling EFI Application from Boot Option
+2    rtmr1    EV_SEPARATOR                           
+2    rtmr1    EV_EFI_GPT_EVENT                       䙅⁉䅐呒\⤼럁"聘⬊灢䯀릸ቸ鶟鸘䌾㶯࿆蒃䝲禎椽䟘ﳵ幽䖚鶱ꑜࠀ 慈Ⅸ摉湯乴敥䕤䥆텋ポꙉ俔춢已棈㎾ࠀ⟿猨섪ᇒ䮺ꀀ㻉㯉陻樊䚋ಯ뿶㡥৯⠀矿싿밓姦䉢劣疲濽
+2    rtmr1    EV_EFI_BOOT_SERVICES_APPLICATION       逘봶쀈Ă䇐ਃāЀᜃĄ*⠀倀陻樊䚋ಯ뿶㡥৯ȂЄ4\EFI\ubuntu\shimx64.efiｿ
+3    rtmr1    EV_IPL                                 MokList
+3    rtmr1    EV_IPL                                 MokListX
+1    rtmr0    EV_EFI_VARIABLE_AUTHORITY              P]`FC=#SbatLevelsbat,1,2021030218
+3    rtmr1    EV_IPL                                 MokListTrusted
+2    rtmr1    EV_EFI_BOOT_SERVICES_APPLICATION       (84\EFI\ubuntu\grubx64.efi
+3    rtmr1    EV_IPL                                 (hd0,gpt15)/EFI/ubuntu/grub.cfg
+3    rtmr1    EV_IPL                                 (hd0,gpt15)/EFI/ubuntu/grub.cfg
+3    rtmr1    EV_IPL                                 grub_cmd: search.fs_uuid b4f9057b-66e6-4f5a-bbba-a8086989e88f root
+3    rtmr1    EV_IPL                                 grub_cmd: set prefix=(hd0,gpt16)/grub
+3    rtmr1    EV_IPL                                 (hd0,gpt16)/grub/x86_64-efi/command.lst
+3    rtmr1    EV_IPL                                 (hd0,gpt16)/grub/x86_64-efi/fs.lst
+3    rtmr1    EV_IPL                                 (hd0,gpt16)/grub/x86_64-efi/crypto.lst
+3    rtmr1    EV_IPL                                 (hd0,gpt16)/grub/x86_64-efi/terminal.lst
+3    rtmr1    EV_IPL                                 grub_cmd: configfile (hd0,gpt16)/grub/grub.cfg
+3    rtmr1    EV_IPL                                 (hd0,gpt16)/grub/grub.cfg
+3    rtmr1    EV_IPL                                 grub_cmd: [ -s (hd0,gpt16)/grub/grubenv ]
+3    rtmr1    EV_IPL                                 (hd0,gpt16)/grub/grubenv
+3    rtmr1    EV_IPL                                 grub_cmd: set have_grubenv=true
+3    rtmr1    EV_IPL                                 grub_cmd: load_env
+3    rtmr1    EV_IPL                                 (hd0,gpt16)/grub/grubenv
+3    rtmr1    EV_IPL                                 grub_cmd: [  = 2 ]
+3    rtmr1    EV_IPL                                 grub_cmd: [  = 1 ]
+3    rtmr1    EV_IPL                                 grub_cmd: [  ]
+3    rtmr1    EV_IPL                                 grub_cmd: set default=0
+3    rtmr1    EV_IPL                                 grub_cmd: [ xy = xy ]
+3    rtmr1    EV_IPL                                 grub_cmd: menuentry_id_option=--id
+3    rtmr1    EV_IPL                                 grub_cmd: export menuentry_id_option
+3    rtmr1    EV_IPL                                 grub_cmd: [  ]
+3    rtmr1    EV_IPL                                 grub_cmd: serial
+3    rtmr1    EV_IPL                                 grub_cmd: terminal_input serial
+3    rtmr1    EV_IPL                                 grub_cmd: terminal_output serial
+3    rtmr1    EV_IPL                                 grub_cmd: [  = 1 ]
+3    rtmr1    EV_IPL                                 grub_cmd: [ xy = xy ]
+3    rtmr1    EV_IPL                                 grub_cmd: set timeout_style=hidden
+3    rtmr1    EV_IPL                                 grub_cmd: set timeout=0.1
+3    rtmr1    EV_IPL                                 grub_cmd: [ -n true ]
+3    rtmr1    EV_IPL                                 grub_cmd: [ -n  ]
+3    rtmr1    EV_IPL                                 grub_cmd: unset initrdless_boot_fallback_triggered
+3    rtmr1    EV_IPL                                 grub_cmd: save_env initrdless_boot_fallback_triggered
+3    rtmr1    EV_IPL                                 grub_cmd: set menu_color_normal=white/black
+3    rtmr1    EV_IPL                                 grub_cmd: set menu_color_highlight=black/light-gray
+3    rtmr1    EV_IPL                                 grub_cmd: set partuuid=fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7
+3    rtmr1    EV_IPL                                 grub_cmd: [  != 1 ]
+3    rtmr1    EV_IPL                                 grub_cmd: [ -e (hd0,gpt16)/grub/gfxblacklist.txt ]
+3    rtmr1    EV_IPL                                 grub_cmd: [ efi != pc ]
+3    rtmr1    EV_IPL                                 grub_cmd: set linux_gfx_mode=keep
+3    rtmr1    EV_IPL                                 grub_cmd: export linux_gfx_mode
+3    rtmr1    EV_IPL                                 grub_cmd: menuentry Ubuntu --class ubuntu --class gnu-linux --class gnu 
+3    rtmr1    EV_IPL                                 grub_cmd: submenu Advanced options for Ubuntu --id gnulinux-advanced-d6a
+3    rtmr1    EV_IPL                                 grub_cmd: [ efi = efi ]
+3    rtmr1    EV_IPL                                 grub_cmd: insmod bli
+3    rtmr1    EV_IPL                                 (hd0,gpt16)/grub/x86_64-efi/bli.mod
+3    rtmr1    EV_IPL                                 grub_cmd: [ efi = efi ]
+3    rtmr1    EV_IPL                                 grub_cmd: fwsetup --is-supported
+3    rtmr1    EV_IPL                                 grub_cmd: [ 0 = 0 ]
+3    rtmr1    EV_IPL                                 grub_cmd: menuentry UEFI Firmware Settings --id uefi-firmware {fwsetup}
+3    rtmr1    EV_IPL                                 grub_cmd: [ -f (hd0,gpt16)/grub/custom.cfg ]
+3    rtmr1    EV_IPL                                 grub_cmd: [ -z (hd0,gpt16)/grub -a -f (hd0,gpt16)/grub/custom.cfg ]
+3    rtmr1    EV_IPL                                 grub_cmd: setparams Ubuntu
+3    rtmr1    EV_IPL                                 grub_cmd: recordfail
+3    rtmr1    EV_IPL                                 grub_cmd: set recordfail=1
+3    rtmr1    EV_IPL                                 grub_cmd: [ -n true ]
+3    rtmr1    EV_IPL                                 grub_cmd: [ -z  ]
+3    rtmr1    EV_IPL                                 grub_cmd: save_env recordfail
+3    rtmr1    EV_IPL                                 grub_cmd: load_video
+3    rtmr1    EV_IPL                                 grub_cmd: [ xy = xy ]
+3    rtmr1    EV_IPL                                 grub_cmd: insmod all_video
+3    rtmr1    EV_IPL                                 grub_cmd: gfxmode keep
+3    rtmr1    EV_IPL                                 grub_cmd: set gfxpayload=keep
+3    rtmr1    EV_IPL                                 grub_cmd: [ keep = keep ]
+3    rtmr1    EV_IPL                                 grub_cmd: set vt_handoff=vt.handoff=7
+3    rtmr1    EV_IPL                                 grub_cmd: insmod gzio
+3    rtmr1    EV_IPL                                 grub_cmd: [ xefi = xxen ]
+3    rtmr1    EV_IPL                                 grub_cmd: insmod part_gpt
+3    rtmr1    EV_IPL                                 grub_cmd: insmod ext2
+3    rtmr1    EV_IPL                                 grub_cmd: search --no-floppy --fs-uuid --set=root b4f9057b-66e6-4f5a-bbb
+3    rtmr1    EV_IPL                                 grub_cmd: [  = 1 ]
+3    rtmr1    EV_IPL                                 grub_cmd: echo GRUB_FORCE_PARTUUID set, attempting initrdless boot.
+3    rtmr1    EV_IPL                                 grub_cmd: linux /vmlinuz-6.17.0-1022-gcp root=PARTUUID=fcf50dcd-5e7d-459
+3    rtmr1    EV_IPL                                 /vmlinuz-6.17.0-1022-gcp
+3    rtmr1    EV_IPL                                 kernel_cmdline: /vmlinuz-6.17.0-1022-gcp root=PARTUUID=fcf50dcd-5e7d-459
+3    rtmr1    EV_IPL                                 grub_cmd: initrdfail
+3    rtmr1    EV_IPL                                 grub_cmd: [ -n true ]
+3    rtmr1    EV_IPL                                 grub_cmd: [ -n fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7 ]
+3    rtmr1    EV_IPL                                 grub_cmd: [ -z  ]
+3    rtmr1    EV_IPL                                 grub_cmd: set initrdfail=1
+3    rtmr1    EV_IPL                                 grub_cmd: [ -n  ]
+3    rtmr1    EV_IPL                                 grub_cmd: save_env initrdfail
+2    rtmr1    EV_EFI_ACTION                          Exit Boot Services Invocation
+2    rtmr1    EV_EFI_ACTION                          Exit Boot Services Returned with Success
+
+register replayed == quote    quote value
+mrtd     n/a (build time)     c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+rtmr0    YES                  c0b8b19ca6f51dc37435da45a61ab417e59253cd31cc2eeb3e833e8b8979679fe5a65387e0014831fe7b3ec4be51896d
+rtmr1    NO                   02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b
+         replayed:            893ce3c5c608c790781becdb205b39a2aa6cedcc63d42c9dc4e09aef760b41848ac5575bf63378f061cf151f5dcf19ce
+rtmr2    NO                   ecc9935861eba8e47817c10761468525af6df776fa2fa2767be5d6d152a5ae3a62da7b750df33d8069c7ff9bae811df9
+         replayed:            000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+rtmr3    YES                  000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+
+The replay does not reproduce every RTMR; see above for which.
+
+recovered: quote.bin 8000 bytes, ccel.bin 262144 bytes
+
+deleting tdx-eventlog
+Deleted [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/zones/us-central1-a/instances/tdx-eventlog].
+=== done 2026-08-31T21:07:42Z ===

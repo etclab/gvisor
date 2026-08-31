@@ -102,3 +102,82 @@ done
 ++ uname -r
 + sudo sha256sum /boot/initrd.img-6.17.0-1022-gcp
 99b0dcc93aca6499b4c222ef751d0384
+  boot_id 32a5618a-b49f-4b43-8ccd-3757c32be24e -> 412c4ede-4bed-4423-96f6-f05833bdee0e (barrier crossed on attempt 4)
+--- cmdline ---
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+boot_id : 412c4ede-4bed-4423-96f6-f05833bdee0e
+cmdline : BOOT_IMAGE=/vmlinuz-6.17.0-1022-gcp root=PARTUUID=fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7 ro tdx.probe.marker=alpha console=ttyS0,115200 panic=-1
+kernel  : 6.17.0-1022-gcp
+initrd  : 99b0dcc93aca6499b4c222ef751d0384
+grubcfg : 0c0dc5f81e7ff387f65c8dd5c69a4018
+mrtd                : c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+rtmr0               : c0b8b19ca6f51dc37435da45a61ab417e59253cd31cc2eeb3e833e8b8979679fe5a65387e0014831fe7b3ec4be51896d
+rtmr1               : 3a446943925fef7f1682fd54e1b6697df864692e28592ec373860d1868582ac14ca3029c48282eb964868a785bafd691
+rtmr2               : 26cb60ef4d9dd8661175a85bfdff5c1340f474ded885579e2df22b7a7ea96aae09605f37f886ae6fe5d80da6c78b8584
+rtmr3               : 000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+
+############ boot 4: initrd only, command line put back ############
+Pseudo-terminal will not be allocated because stdin is not a terminal.
++ sudo rm -f /etc/default/grub.d/99-tdx-probe.cfg
++ echo 'a file that was not in the initrd before'
++ sudo tee /etc/tdx-probe-marker
++ sudo mkdir -p /etc/initramfs-tools/hooks
++ printf '#!/bin/sh\n[ "$1" = prereqs ] && { echo; exit 0; }\n. /usr/share/initramfs-tools/hook-functions\ncopy_file text /etc/tdx-probe-marker /etc/tdx-probe-marker\n'
++ sudo tee /etc/initramfs-tools/hooks/tdxprobe
++ sudo chmod +x /etc/initramfs-tools/hooks/tdxprobe
++ sudo update-initramfs -u
++ tail -3
+update-initramfs: Generating /boot/initrd.img-6.17.0-1022-gcp
++ sudo update-grub
++ tail -2
+Adding boot menu entry for UEFI Firmware Settings ...
+done
+--- CONTROL: marker gone from grub.cfg? (want 0) ---
++ echo '--- CONTROL: marker gone from grub.cfg? (want 0) ---'
++ sudo grep -c tdx.probe.marker=alpha /boot/grub/grub.cfg
+0
++ true
++ echo '--- CONTROL: is the marker file in the initrd? ---'
+--- CONTROL: is the marker file in the initrd? ---
++ grep -c tdx-probe-marker
+++ uname -r
++ sudo lsinitramfs /boot/initrd.img-6.17.0-1022-gcp
+1
+--- CONTROL: initrd hash, must have moved ---
++ echo '--- CONTROL: initrd hash, must have moved ---'
++ cut -c1-32
+++ uname -r
++ sudo sha256sum /boot/initrd.img-6.17.0-1022-gcp
+4a75372a37348da4d117dd5e9c89e319
+  boot_id 412c4ede-4bed-4423-96f6-f05833bdee0e -> 84412eb0-28c4-466a-af07-264c63382959 (barrier crossed on attempt 4)
+--- initrd ---
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+boot_id : 84412eb0-28c4-466a-af07-264c63382959
+cmdline : BOOT_IMAGE=/vmlinuz-6.17.0-1022-gcp root=PARTUUID=fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7 ro console=ttyS0,115200 panic=-1
+kernel  : 6.17.0-1022-gcp
+initrd  : 4a75372a37348da4d117dd5e9c89e319
+grubcfg : c084cc1398cd08a86aeb1c9c090acbce
+mrtd                : c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+rtmr0               : c0b8b19ca6f51dc37435da45a61ab417e59253cd31cc2eeb3e833e8b8979679fe5a65387e0014831fe7b3ec4be51896d
+rtmr1               : 3a446943925fef7f1682fd54e1b6697df864692e28592ec373860d1868582ac14ca3029c48282eb964868a785bafd691
+rtmr2               : 0375c957827297814393458ff7ce320514bf227fa51af473091bbeb0b9dde8a7fe8fef3f4f208e843addaee422981847
+rtmr3               : 000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+
+=== answers: one disk, four boots ===
+register plain reboot   cmdline        initrd        
+mrtd     SAME           SAME           SAME          
+rtmr0    SAME           SAME           SAME          
+rtmr1    DIFFERENT      DIFFERENT      DIFFERENT     
+rtmr2    SAME           DIFFERENT      DIFFERENT     
+rtmr3    SAME           SAME           SAME          
+
+the controls those verdicts depend on:
+boot             boot_id / cmdline / initrd hash
+baseline         d0e9b897-c1a5-40df-b572-5064fd300498 | BOOT_IMAGE=/vmlinuz-6.17.0-1022-gcp root=PARTUUID=fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7 ro console=ttyS0,115200 panic=-1 | 99b0dcc93aca6499b4c222ef751d0384
+control-reboot   32a5618a-b49f-4b43-8ccd-3757c32be24e | BOOT_IMAGE=/vmlinuz-6.17.0-1022-gcp root=PARTUUID=fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7 ro console=ttyS0,115200 panic=-1 | 99b0dcc93aca6499b4c222ef751d0384
+cmdline          412c4ede-4bed-4423-96f6-f05833bdee0e | BOOT_IMAGE=/vmlinuz-6.17.0-1022-gcp root=PARTUUID=fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7 ro tdx.probe.marker=alpha console=ttyS0,115200 panic=-1 | 99b0dcc93aca6499b4c222ef751d0384
+initrd           84412eb0-28c4-466a-af07-264c63382959 | BOOT_IMAGE=/vmlinuz-6.17.0-1022-gcp root=PARTUUID=fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7 ro console=ttyS0,115200 panic=-1 | 4a75372a37348da4d117dd5e9c89e319
+
+deleting tdx-mutate
+Deleted [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/zones/us-central1-a/instances/tdx-mutate].
+=== done 2026-08-31T21:04:59Z ===

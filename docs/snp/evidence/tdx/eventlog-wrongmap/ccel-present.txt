@@ -1,0 +1,11 @@
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+-r-------- 1 root root     56 Aug 31 21:06 /sys/firmware/acpi/tables/CCEL
+-r-------- 1 root root 262144 Aug 31 21:06 /sys/firmware/acpi/tables/data/CCEL
+--- all ACPI tables that look confidential ---
+CCEL
+TPM2
+--- can the guest read the data table? ---
+ 01 00 00 00 03 00 00 00 00 00 00 00 00 00 00 00
+ 00 00 00 00 00 00 00 00 00 00 00 00 21 00 00 00
+ 53 70 65 63 20 49 44 20 45 76 65 6e 74 30 33 00
+ 00 00 00 00 00 02 00 02 01 00 00 00 0c 00 30 00

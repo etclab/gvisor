@@ -1,0 +1,12 @@
+Pseudo-terminal will not be allocated because stdin is not a terminal.
++ sudo cp /etc/default/grub /tmp/grub.orig
++ sudo sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT="\(.*\)"/GRUB_CMDLINE_LINUX_DEFAULT="\1 tdx.probe.marker=alpha"/' /etc/default/grub
++ grep GRUB_CMDLINE_LINUX_DEFAULT /etc/default/grub
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash tdx.probe.marker=alpha"
++ sudo update-grub
++ tail -5
+Warning: os-prober will not be executed to detect other bootable partitions.
+Systems on them will not be added to the GRUB boot configuration.
+Check GRUB_DISABLE_OS_PROBER documentation entry.
+Adding boot menu entry for UEFI Firmware Settings ...
+done

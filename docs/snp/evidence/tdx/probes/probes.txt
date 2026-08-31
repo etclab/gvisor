@@ -1,0 +1,113 @@
+=== TDX probes: 2026-08-31T20:50:20Z ===
+project nsf-2348130-428843 zone us-central1-a account pniroula@cloudbank.org
+repo    1d24ad83d3b29b48bce2167d7ded3b78c27391cf
+gcloud  Google Cloud SDK 493.0.0
+
+$ gcloud beta compute instances create tdx-probe-a (ubuntu-2404-lts-amd64)
+Created [https://www.googleapis.com/compute/beta/projects/nsf-2348130-428843/zones/us-central1-a/instances/tdx-probe-a].
+WARNING: Some requests generated warnings:
+ - Disk size: '20 GB' is larger than image size: '10 GB'. You might need to resize the root repartition manually if the operating system does not support automatic resizing. See https://cloud.google.com/compute/docs/disks/add-persistent-disk#resize_pd for details.
+
+tdx-probe-a	us-central1-a	c3-standard-4	RUNNING
+$ gcloud beta compute instances create tdx-probe-b (ubuntu-2204-lts)
+Created [https://www.googleapis.com/compute/beta/projects/nsf-2348130-428843/zones/us-central1-a/instances/tdx-probe-b].
+WARNING: Some requests generated warnings:
+ - Disk size: '20 GB' is larger than image size: '10 GB'. You might need to resize the root repartition manually if the operating system does not support automatic resizing. See https://cloud.google.com/compute/docs/disks/add-persistent-disk#resize_pd for details.
+
+tdx-probe-b	us-central1-a	c3-standard-4	RUNNING
+$ gcloud beta compute instances create tdx-probe-c (ubuntu-2404-lts-amd64)
+Created [https://www.googleapis.com/compute/beta/projects/nsf-2348130-428843/zones/us-central1-a/instances/tdx-probe-c].
+WARNING: Some requests generated warnings:
+ - Disk size: '20 GB' is larger than image size: '10 GB'. You might need to resize the root repartition manually if the operating system does not support automatic resizing. See https://cloud.google.com/compute/docs/disks/add-persistent-disk#resize_pd for details.
+
+tdx-probe-c	us-central1-a	c3-standard-4	RUNNING
+
+### tdx-probe-a (ubuntu-2404-lts-amd64)
+inblob written (64 bytes, single write)
+provider   : tdx_guest
+generation : 1
+privlevel  : (not exposed)
+outblob    : 8000 bytes  
+auxblob    : ATTRIBUTE ABSENT -- this kernel does not expose one
+quote version       : 4
+tee_type            : 0x00000081 (TDX)
+mrseam              : ab62561a173acbd18ee50ff37750db44184c6cf5e886df74247cc575e163b04c34b9e18374757c235affa614d4127f6b
+td_attributes       : 0000001000000000
+xfam                : e702060000000000
+mrtd                : c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+rtmr0               : c0b8b19ca6f51dc37435da45a61ab417e59253cd31cc2eeb3e833e8b8979679fe5a65387e0014831fe7b3ec4be51896d
+rtmr1               : 02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b
+rtmr2               : ecc9935861eba8e47817c10761468525af6df776fa2fa2767be5d6d152a5ae3a62da7b750df33d8069c7ff9bae811df9
+rtmr3               : 000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+reportdata echoes the 64 bytes handed in: True
+
+### tdx-probe-b (ubuntu-2204-lts)
+inblob written (64 bytes, single write)
+provider   : tdx_guest
+generation : 1
+privlevel  : (not exposed)
+outblob    : 8000 bytes  
+auxblob    : ATTRIBUTE ABSENT -- this kernel does not expose one
+quote version       : 4
+tee_type            : 0x00000081 (TDX)
+mrseam              : ab62561a173acbd18ee50ff37750db44184c6cf5e886df74247cc575e163b04c34b9e18374757c235affa614d4127f6b
+td_attributes       : 0000001000000000
+xfam                : e702060000000000
+mrtd                : c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+rtmr0               : 79bf29c4cc3941594bce25e2bf6b0c5529c19d276d09ebdee9a2af850c6b220557579d17259a308d68e3c9fc7e67e8d4
+rtmr1               : 4eb6e4f655069cd075077386c8bd19fae51fb90f46647f055c77bc3529ad5d1a53167cdb94f19624e722df2e0e69ce3b
+rtmr2               : b2cd32ffe137d9c60337786471f726142f45be852dc7892bc01d2f5b4cd8b91ba957c668baf620655d1d9775f9948445
+rtmr3               : 000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+reportdata echoes the 64 bytes handed in: True
+
+=== answers: probes 1 and 2 ===
+probe-a image: ubuntu-2404-lts-amd64
+probe-b image: ubuntu-2204-lts
+register verdict    probe-a / probe-b
+mrtd     SAME       c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+                    c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+rtmr0    DIFFERENT  c0b8b19ca6f51dc37435da45a61ab417e59253cd31cc2eeb3e833e8b8979679fe5a65387e0014831fe7b3ec4be51896d
+                    79bf29c4cc3941594bce25e2bf6b0c5529c19d276d09ebdee9a2af850c6b220557579d17259a308d68e3c9fc7e67e8d4
+rtmr1    DIFFERENT  02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b
+                    4eb6e4f655069cd075077386c8bd19fae51fb90f46647f055c77bc3529ad5d1a53167cdb94f19624e722df2e0e69ce3b
+rtmr2    DIFFERENT  ecc9935861eba8e47817c10761468525af6df776fa2fa2767be5d6d152a5ae3a62da7b750df33d8069c7ff9bae811df9
+                    b2cd32ffe137d9c60337786471f726142f45be852dc7892bc01d2f5b4cd8b91ba957c668baf620655d1d9775f9948445
+rtmr3    SAME       000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+                    000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+
+provider name reported by the kernel:
+  tdx-probe-a: tdx_guest
+  tdx-probe-b: tdx_guest
+auxblob:
+  tdx-probe-a: ATTRIBUTE ABSENT -- this kernel does not expose one
+  tdx-probe-b: ATTRIBUTE ABSENT -- this kernel does not expose one
+
+deleting tdx-probe-a tdx-probe-b
+Deleted [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/zones/us-central1-a/instances/tdx-probe-a].
+Deleted [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/zones/us-central1-a/instances/tdx-probe-b].
+
+### tdx-probe-c: same image as probe-a, three boots, one change each
+inblob written (64 bytes, single write)
+provider   : tdx_guest
+generation : 1
+privlevel  : (not exposed)
+outblob    : 8000 bytes  
+auxblob    : ATTRIBUTE ABSENT -- this kernel does not expose one
+quote version       : 4
+tee_type            : 0x00000081 (TDX)
+mrseam              : ab62561a173acbd18ee50ff37750db44184c6cf5e886df74247cc575e163b04c34b9e18374757c235affa614d4127f6b
+td_attributes       : 0000001000000000
+xfam                : e702060000000000
+mrtd                : c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+rtmr0               : c0b8b19ca6f51dc37435da45a61ab417e59253cd31cc2eeb3e833e8b8979679fe5a65387e0014831fe7b3ec4be51896d
+rtmr1               : 02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b
+rtmr2               : ecc9935861eba8e47817c10761468525af6df776fa2fa2767be5d6d152a5ae3a62da7b750df33d8069c7ff9bae811df9
+rtmr3               : 000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+reportdata echoes the 64 bytes handed in: True
+
+--- mutation 1: kernel command line only ---
+Warning: os-prober will not be executed to detect other bootable partitions.
+Systems on them will not be added to the GRUB boot configuration.
+Check GRUB_DISABLE_OS_PROBER documentation entry.
+Adding boot menu entry for UEFI Firmware Settings ...
+done

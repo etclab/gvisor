@@ -4,7 +4,11 @@
 # kernel upgrade -- and, where it moves, can the new value still be predicted
 # from the disk bytes alone?
 #
-#   probe-tdx-upgrade.sh [-out DIR] [-zone ZONE] [-image NAME] [-keep]
+#   probe-tdx-upgrade.sh [-out DIR] [-zone ZONE] [-image NAME] [-keep] [-kernel-only]
+#
+# -kernel-only skips boots 2 and 3. The first run's kernel step asked apt for a
+# package that does not exist (linux-modules-gcp), so apt installed nothing and
+# boot 4 was a no-change boot; the rerun asks for the metapackage alone.
 #
 # One c3-standard-4 TDX instance, tdx-upgrade, booted from the SAME pinned
 # image the ticket's CCEL came from (not the family alias, which has rolled),
@@ -34,12 +38,14 @@ ZONE="${ZONE:-us-central1-a}"
 IMAGE="${IMAGE:-ubuntu-2404-noble-amd64-v20260826}"
 VM=tdx-upgrade
 KEEP=0
+KERNEL_ONLY=0
 while [ -n "${1:-}" ]; do
   case "$1" in
     -out)   OUT="$2"; shift 2 ;;
     -zone)  ZONE="$2"; shift 2 ;;
     -image) IMAGE="$2"; shift 2 ;;
     -keep)  KEEP=1; shift ;;
+    -kernel-only) KERNEL_ONLY=1; shift ;;
     *) echo "unknown option: $1" >&2; exit 2 ;;
   esac
 done
@@ -130,6 +136,7 @@ gather baseline
 B=$(boot_id)
 echo
 
+if [ "$KERNEL_ONLY" = 0 ]; then
 echo "############ boot 2: update-grub with nothing changed ############"
 ssh_vm 'echo "grub.cfg before: $(sudo sha256sum /boot/grub/grub.cfg | cut -c1-32)"; sudo update-grub 2>&1 | tail -5;
         echo "grub.cfg after : $(sudo sha256sum /boot/grub/grub.cfg | cut -c1-32)"' | tee "$OUT/update-grub.log"
@@ -146,10 +153,11 @@ reboot_and_wait "$B" || true
 gather recordfail
 B=$(boot_id)
 echo
+fi
 
 echo "############ boot 4: kernel upgrade ############"
 ssh_vm 'sudo apt-get update -qq 2>&1 | tail -2; echo "candidate: $(apt-cache policy linux-image-gcp | grep -E "Installed|Candidate" | tr "\n" " ")";
-        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq linux-image-gcp linux-modules-gcp 2>&1 | grep -E "^(Setting up|Unpacking|Processing|Generating|Found|done|Sourcing|Adding|update-initramfs)" | head -40;
+        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq linux-image-gcp 2>&1 | grep -vE "^(Selecting|Preparing|Unpacking|Get:|Reading|Building|\(Reading)" | head -60;
         echo "kernels on disk now: $(ls /boot/vmlinuz-* | tr "\n" " ")"' | tee "$OUT/kernel-upgrade.log"
 snapshot kernel-upgrade
 reboot_and_wait "$B" || true

@@ -1,0 +1,86 @@
+=== TDX upgrade/stability probe: 2026-09-08T18:24:52Z ===
+project nsf-2348130-428843 zone us-central1-a image ubuntu-2404-noble-amd64-v20260826
+repo    cc725f896bb227b004fe674c48c1ba99c160af83
+
+Created [https://www.googleapis.com/compute/beta/projects/nsf-2348130-428843/zones/us-central1-a/instances/tdx-upgrade].
+WARNING: Some requests generated warnings:
+ - Disk size: '20 GB' is larger than image size: '10 GB'. You might need to resize the root repartition manually if the operating system does not support automatic resizing. See https://cloud.google.com/compute/docs/disks/add-persistent-disk#resize_pd for details.
+ - The resource 'projects/ubuntu-os-cloud/global/images/ubuntu-2404-noble-amd64-v20260826' is deprecated. A suggested replacement is 'projects/ubuntu-os-cloud/global/images/ubuntu-2404-noble-amd64-v20260906'.
+
+tdx-upgrade	us-central1-a	c3-standard-4	RUNNING
+
+############ boot 1: baseline, the pinned image untouched ############
+--- baseline ---
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+boot_id : dd201781-3d25-4379-b4e6-7ba75325a4c9
+cmdline : BOOT_IMAGE=/vmlinuz-6.17.0-1022-gcp root=PARTUUID=fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7 ro console=ttyS0,115200 panic=-1
+rtmr2               : ecc9935861eba8e47817c10761468525af6df776fa2fa2767be5d6d152a5ae3a62da7b750df33d8069c7ff9bae811df9
+  ccel 262144 bytes
+
+############ boot 4: kernel upgrade ############
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+candidate:   Installed: 6.17.0-1022.25   Candidate: 7.0.0-1011.11~24.04.1 
+Preconfiguring packages ...
+Setting up libllvm19:amd64 (1:19.1.1-1ubuntu1~24.04.2) ...
+Setting up libdebuginfod-common (0.190-1.1ubuntu0.1) ...
+Setting up linux-modules-7.0.0-1011-gcp (7.0.0-1011.11~24.04.1) ...
+Setting up linux-gcp-7.0-headers-7.0.0-1011 (7.0.0-1011.11~24.04.1) ...
+Setting up libdebuginfod1t64:amd64 (0.190-1.1ubuntu0.1) ...
+Setting up linux-image-7.0.0-1011-gcp (7.0.0-1011.11~24.04.1) ...
+I: /boot/vmlinuz is now a symlink to vmlinuz-7.0.0-1011-gcp
+I: /boot/initrd.img is now a symlink to initrd.img-7.0.0-1011-gcp
+Setting up linux-headers-7.0.0-1011-gcp (7.0.0-1011.11~24.04.1) ...
+Setting up linux-headers-gcp (7.0.0-1011.11~24.04.1) ...
+Setting up linux-image-gcp (7.0.0-1011.11~24.04.1) ...
+Setting up linux-gcp-7.0-tools-7.0.0-1011 (7.0.0-1011.11~24.04.1) ...
+Setting up linux-tools-7.0.0-1011-gcp (7.0.0-1011.11~24.04.1) ...
+Setting up linux-gcp (7.0.0-1011.11~24.04.1) ...
+Processing triggers for man-db (2.12.0-4build2) ...
+Processing triggers for libc-bin (2.39-0ubuntu8.8) ...
+Processing triggers for linux-image-7.0.0-1011-gcp (7.0.0-1011.11~24.04.1) ...
+/etc/kernel/postinst.d/initramfs-tools:
+update-initramfs: Generating /boot/initrd.img-7.0.0-1011-gcp
+/etc/kernel/postinst.d/zz-update-grub:
+Sourcing file `/etc/default/grub'
+Sourcing file `/etc/default/grub.d/40-force-partuuid.cfg'
+Sourcing file `/etc/default/grub.d/50-cloudimg-settings.cfg'
+Generating grub configuration file ...
+Warning: Requested serial terminal but GRUB_SERIAL_COMMAND is unspecified. Default parameters will be used.
+GRUB_FORCE_PARTUUID is set, will attempt initrdless boot
+Found linux image: /boot/vmlinuz-7.0.0-1011-gcp
+Found initrd image: /boot/initrd.img-7.0.0-1011-gcp
+Found linux image: /boot/vmlinuz-6.17.0-1022-gcp
+Found initrd image: /boot/initrd.img-6.17.0-1022-gcp
+Warning: os-prober will not be executed to detect other bootable partitions.
+Systems on them will not be added to the GRUB boot configuration.
+Check GRUB_DISABLE_OS_PROBER documentation entry.
+Adding boot menu entry for UEFI Firmware Settings ...
+done
+
+No services need to be restarted.
+
+No containers need to be restarted.
+
+No user sessions are running outdated binaries.
+
+No VM guests are running outdated hypervisor (qemu) binaries on this host.
+kernels on disk now: /boot/vmlinuz-6.17.0-1022-gcp /boot/vmlinuz-7.0.0-1011-gcp 
+  snapshot for kernel-upgrade: 132515840 bytes
+  boot_id dd201781-3d25-4379-b4e6-7ba75325a4c9 -> 04d80a1e-fcdc-47f6-88ee-77bc94bf53cb (barrier crossed on attempt 4)
+--- kernel-upgrade ---
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+boot_id : 04d80a1e-fcdc-47f6-88ee-77bc94bf53cb
+cmdline : BOOT_IMAGE=/vmlinuz-7.0.0-1011-gcp root=PARTUUID=fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7 ro console=ttyS0,115200 panic=-1
+rtmr2               : bdd9486c72b4f25e40884c9c1e88dc27567ad1c39436a4880071ff6abb802a963f9447e9e0b953c4238f892f06be031d
+  ccel 262144 bytes
+
+############ registers across the four boots ############
+baseline        rtmr2 ecc9935861eba8e47817c10761468525af6df776fa2fa2767be5d6d152a5ae3a62da7b750df33d8069c7ff9bae811df9
+update-grub     rtmr2 
+recordfail      rtmr2 
+kernel-upgrade  rtmr2 bdd9486c72b4f25e40884c9c1e88dc27567ad1c39436a4880071ff6abb802a963f9447e9e0b953c4238f892f06be031d
+(the prediction for each is made on the workstation from that boot's bootstate.tar; see predict-rtmr2.py)
+
+deleting tdx-upgrade
+Deleted [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/zones/us-central1-a/instances/tdx-upgrade].
+=== done 2026-09-08T18:29:56Z ===

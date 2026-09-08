@@ -1,0 +1,32 @@
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+--- sha256 of what grub will read at the next boot ---
+f5f44bbd2277f4e882ee56f35d1e557a8e67c3cdc0e4202eba6c5addbb260590  /boot/efi/EFI/ubuntu/grub.cfg
+6fe6e1bcbe6cf6baec8e056d40361ca1aa715cc04ddcc2855351de060b84350b  /boot/efi/EFI/ubuntu/shimx64.efi
+a831af01e4fb5e3c9457120e1d08ea13d98a0a47b62728c284b7f502d535965c  /boot/efi/EFI/ubuntu/grubx64.efi
+bash: line 4: /boot/grub/grub.cfg: Permission denied
+bash: line 5: /boot/grub/x86_64-efi/crypto.lst: Permission denied
+--- partitions ---
+NAME         PARTUUID                             UUID                                 MOUNTPOINTS                  SIZE
+loop0                                                                                  /snap/core24/1643           66.8M
+loop1                                                                                  /snap/google-cloud-cli/491 344.5M
+loop2                                                                                  /snap/snapd/27710           50.1M
+nvme0n1                                                                                                              20G
+├─nvme0n1p1  fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7 d6a74ed7-6f8e-440e-a2d5-a30c23ac640b /                             19G
+├─nvme0n1p14 30ddd14b-a649-4fd4-a2cd-f25dc868be33                                                                     4M
+├─nvme0n1p15 6a0a967b-f814-468b-af0c-f6bf6538ef09 7038-D0CC                            /boot/efi                    106M
+└─nvme0n1p16 dbf34f44-ded2-4878-b8de-f3d710283689 b4f9057b-66e6-4f5a-bbba-a8086989e88f /boot                        913M
+--- grubenv bytes ---
+IyBHUlVCIEVudmlyb25tZW50IEJsb2NrCiMgV0FSTklORzogRG8gbm90IGVkaXQgdGhpcyBmaWxlIGJ5IHRvb2xzIG90aGVyIHRo
+YW4gZ3J1Yi1lZGl0ZW52ISEhCnJlY29yZGZhaWw9MQojIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMj
+IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMj
+IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMj
+IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMj
+IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMj
+IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMj
+IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMj
+IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMj
+IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMj
+IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMj
+IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMj
+IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMj
+IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIw==

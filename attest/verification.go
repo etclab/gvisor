@@ -61,8 +61,7 @@ func New(verifier Verifier, set ReferenceValueSet) (*Verification, error) {
 	// touching a trust root.
 	held := ReferenceValueSet{Values: make([]ReferenceValue, len(set.Values))}
 	for i, rv := range set.Values {
-		held.Values[i] = rv
-		held.Values[i].LaunchMeasurement = append([]byte(nil), rv.LaunchMeasurement...)
+		held.Values[i] = rv.clone()
 	}
 	return &Verification{verifier: verifier, set: held}, nil
 }

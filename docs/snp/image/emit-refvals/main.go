@@ -87,7 +87,11 @@ func run(measurementHex, keyPath, out, tcbSpec, policySpec string) error {
 		return fmt.Errorf("-out is required")
 	}
 
+	// The vendor is written down rather than defaulted: since format version 2
+	// every reference value says whose evidence it admits, and this program
+	// emits SEV-SNP values only (see the -measurement width check above).
 	set := attest.ReferenceValueSet{Values: []attest.ReferenceValue{{
+		Vendor:            attest.VendorAMDSEVSNP,
 		LaunchMeasurement: m,
 		MinimumTCB:        floor,
 		GuestPolicy:       gp,

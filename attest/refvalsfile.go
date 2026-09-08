@@ -61,6 +61,22 @@ import (
 // and [LoadReferenceValueSet] both take the document as bytes, and there is no
 // path from a parsed set back to a signature check.
 //
+// # Every value names its vendor (version 2)
+//
+// Each reference value in the document carries a "vendor" field, and the rest
+// of its fields are that vendor's: an amd-sev-snp value names a launch
+// measurement, a four-component TCB floor and a guest policy; an intel-tdx
+// value names the provider's observed registers, the image's predicted RTMR2, a
+// TD attributes policy and an Intel TCB floor. A field belonging to the other
+// vendor is refused rather than ignored, because a value whose author was
+// writing about one vendor and named another's constraint would otherwise be
+// enforced as the half that matched — which is weaker than what they wrote.
+//
+// Version 1 documents had no vendor field and could name only an SEV-SNP launch
+// digest. They are refused rather than read as SEV-SNP by default: a default is
+// a guess about what an author meant, and this file is the one place in the
+// design where guessing is not allowed. Re-emit the set and sign it again.
+//
 // # Order of operations
 //
 // [LoadReferenceValueSet] verifies before it parses. Everything in the document
@@ -101,7 +117,11 @@ const ReferenceValueSetFormat = "gvisor.dev/gvisor/attest/reference-value-set"
 // than read on a best-effort basis, for the reason ADR-0002 gives about the
 // binding context: a reader that skips what it does not understand admits a
 // value weaker than its author intended.
-const ReferenceValueSetVersion = 1
+//
+// Version 2 added the per-value vendor field. Version 1 is refused with a
+// message saying so, because reading one as SEV-SNP would be this loader
+// deciding what an author did not write down (ADR-0006, addendum).
+const ReferenceValueSetVersion = 2
 
 // SignatureFileSuffix is appended to a document's path to find its signature.
 // A set delivered on the config device is therefore two files —
@@ -166,28 +186,55 @@ func MarshalReferenceValueSet(set ReferenceValueSet) ([]byte, error) {
 	if err := set.validate(); err != nil {
 		return nil, fmt.Errorf("attest: %w", err)
 	}
-	doc := wireSet{
-		Format:  ptr(ReferenceValueSetFormat),
-		Version: ptr(ReferenceValueSetVersion),
+	doc := wireDocument{
+		Format:  ReferenceValueSetFormat,
+		Version: ReferenceValueSetVersion,
 	}
-	for _, rv := range set.Values {
-		doc.ReferenceValues = append(doc.ReferenceValues, wireValue{
-			LaunchMeasurement: ptr(hex.EncodeToString(rv.LaunchMeasurement)),
-			MinimumTCB: &wireTCB{
-				Bootloader: ptr(rv.MinimumTCB.Bootloader),
-				TEE:        ptr(rv.MinimumTCB.TEE),
-				SNP:        ptr(rv.MinimumTCB.SNP),
-				Microcode:  ptr(rv.MinimumTCB.Microcode),
-			},
-			GuestPolicy: &wirePolicy{
-				ABIMajor:            rv.GuestPolicy.ABIMajor,
-				ABIMinor:            rv.GuestPolicy.ABIMinor,
-				AllowSMT:            rv.GuestPolicy.AllowSMT,
-				AllowMigrationAgent: rv.GuestPolicy.AllowMigrationAgent,
-				AllowDebug:          rv.GuestPolicy.AllowDebug,
-				RequireSingleSocket: rv.GuestPolicy.RequireSingleSocket,
-			},
-		})
+	for i, rv := range set.Values {
+		// rv.vendor(), not rv.Vendor: an empty Vendor means SEV-SNP in memory,
+		// and this format always writes the tag explicitly, so a value built
+		// by code from before version 2 is rendered exactly as its version-2
+		// equivalent would be.
+		switch rv.vendor() {
+		case VendorAMDSEVSNP:
+			doc.ReferenceValues = append(doc.ReferenceValues, wireAMDOut{
+				Vendor:            string(VendorAMDSEVSNP),
+				LaunchMeasurement: hex.EncodeToString(rv.LaunchMeasurement),
+				MinimumTCB: wireTCBOut{
+					Bootloader: rv.MinimumTCB.Bootloader,
+					TEE:        rv.MinimumTCB.TEE,
+					SNP:        rv.MinimumTCB.SNP,
+					Microcode:  rv.MinimumTCB.Microcode,
+				},
+				GuestPolicy: wirePolicy{
+					ABIMajor:            rv.GuestPolicy.ABIMajor,
+					ABIMinor:            rv.GuestPolicy.ABIMinor,
+					AllowSMT:            rv.GuestPolicy.AllowSMT,
+					AllowMigrationAgent: rv.GuestPolicy.AllowMigrationAgent,
+					AllowDebug:          rv.GuestPolicy.AllowDebug,
+					RequireSingleSocket: rv.GuestPolicy.RequireSingleSocket,
+				},
+			})
+		case VendorIntelTDX:
+			doc.ReferenceValues = append(doc.ReferenceValues, wireTDXOut{
+				Vendor:             string(VendorIntelTDX),
+				ObservedMRTD:       hexEach(rv.TDX.ObservedMRTD),
+				ObservedRTMR0:      hexEach(rv.TDX.ObservedRTMR0),
+				ObservedRTMR1:      hexEach(rv.TDX.ObservedRTMR1),
+				PredictedRTMR2:     hex.EncodeToString(rv.TDX.PredictedRTMR2),
+				TDAttributesPolicy: wireTDPolicy{AllowDebug: rv.TDX.TDPolicy.AllowDebug},
+				MinimumTCB: wireTDXTCBOut{
+					Status:               string(rv.TDX.MinimumTCB.Status),
+					EvaluationDataNumber: rv.TDX.MinimumTCB.EvaluationDataNumber,
+				},
+			})
+		default:
+			// Unreachable: validate above refuses a value naming any other
+			// vendor. It is written down anyway, because a format that
+			// silently omitted a value it could not render would ship a
+			// weaker set than the one it was handed.
+			return nil, fmt.Errorf("attest: reference value %d names vendor %q, which this format cannot write", i, rv.Vendor)
+		}
 	}
 	out, err := json.MarshalIndent(doc, "", "  ")
 	if err != nil {
@@ -322,13 +369,20 @@ func parseReferenceValueSetDocument(document []byte) (ReferenceValueSet, error) 
 	if doc.Version == nil {
 		return ReferenceValueSet{}, refuseSet("the document does not say what version it is; want %d", ReferenceValueSetVersion)
 	}
+	if *doc.Version == 1 {
+		return ReferenceValueSet{}, refuseSet(
+			"the document is version 1 and this loader reads version %d: a version 1 reference value "+
+				"carries no vendor tag, so it does not say whose evidence it admits, and reading one as "+
+				"SEV-SNP would be this loader deciding what its author did not write down; "+
+				"re-emit the set with a vendor on every value and sign it again", ReferenceValueSetVersion)
+	}
 	if *doc.Version != ReferenceValueSetVersion {
 		return ReferenceValueSet{}, refuseSet("the document is version %d, this loader reads version %d", *doc.Version, ReferenceValueSetVersion)
 	}
 
 	set := ReferenceValueSet{}
-	for i, wv := range doc.ReferenceValues {
-		rv, err := wv.referenceValue()
+	for i, raw := range doc.ReferenceValues {
+		rv, err := parseReferenceValue(raw)
 		if err != nil {
 			return ReferenceValueSet{}, refuseSet("reference value %d: %v", i, err)
 		}
@@ -340,13 +394,68 @@ func parseReferenceValueSetDocument(document []byte) (ReferenceValueSet, error) 
 	return set, nil
 }
 
-// wireSet is the document. Its required fields are pointers so that absent and
-// zero are distinguishable: a document that forgot to say what version it is
-// must not be read as version zero.
+// wireSet is the document as it is read. Its required fields are pointers so
+// that absent and zero are distinguishable: a document that forgot to say what
+// version it is must not be read as version zero.
+//
+// Its reference values are held unparsed. Which fields an entry may carry
+// depends on the vendor it names, and two vendors put objects of different
+// shapes under the same "minimum_tcb" key, so an entry is decoded once its
+// vendor is known and not before.
 type wireSet struct {
-	Format          *string     `json:"format"`
-	Version         *int        `json:"version"`
-	ReferenceValues []wireValue `json:"reference_values"`
+	Format          *string           `json:"format"`
+	Version         *int              `json:"version"`
+	ReferenceValues []json.RawMessage `json:"reference_values"`
+}
+
+// wireDocument is the document as it is written, and is deliberately a
+// different type from wireSet. What is written is one shape per vendor with
+// every field present; what is read has to be strict about fields that are
+// absent, repeated, or belong to the other vendor. Sharing one type between the
+// two jobs is how a renderer ends up defining the format.
+type wireDocument struct {
+	Format          string `json:"format"`
+	Version         int    `json:"version"`
+	ReferenceValues []any  `json:"reference_values"`
+}
+
+// wireAMDOut and wireTDXOut are one rendered reference value each.
+type wireAMDOut struct {
+	Vendor            string     `json:"vendor"`
+	LaunchMeasurement string     `json:"launch_measurement"`
+	MinimumTCB        wireTCBOut `json:"minimum_tcb"`
+	GuestPolicy       wirePolicy `json:"guest_policy"`
+}
+
+type wireTDXOut struct {
+	Vendor             string        `json:"vendor"`
+	ObservedMRTD       []string      `json:"observed_mrtd"`
+	ObservedRTMR0      []string      `json:"observed_rtmr0"`
+	ObservedRTMR1      []string      `json:"observed_rtmr1"`
+	PredictedRTMR2     string        `json:"predicted_rtmr2"`
+	TDAttributesPolicy wireTDPolicy  `json:"td_attributes_policy"`
+	MinimumTCB         wireTDXTCBOut `json:"minimum_tcb"`
+}
+
+type wireTCBOut struct {
+	Bootloader uint8 `json:"bootloader"`
+	TEE        uint8 `json:"tee"`
+	SNP        uint8 `json:"snp"`
+	Microcode  uint8 `json:"microcode"`
+}
+
+type wireTDXTCBOut struct {
+	Status               string `json:"status"`
+	EvaluationDataNumber uint32 `json:"tcb_evaluation_data_number"`
+}
+
+// hexEach renders a list of observed register values.
+func hexEach(values [][]byte) []string {
+	out := make([]string, len(values))
+	for i, v := range values {
+		out[i] = hex.EncodeToString(v)
+	}
+	return out
 }
 
 // wireValue is one reference value.
@@ -357,24 +466,52 @@ type wireSet struct {
 // stop for the other. A format that allowed a bare single value would make the
 // common case shorter and the case the design exists to support a special one.
 type wireValue struct {
-	// LaunchMeasurement is hexadecimal. Its width is not checked, deliberately:
-	// how wide a launch measurement is belongs to the hardware vendor, and
-	// baking one vendor's digest width into the format is exactly the seam that
-	// makes a second vendor a day's work rather than a refactor. A measurement
-	// of the wrong width matches nothing, which fails closed.
+	// Vendor is required and is the first thing read. Every field below it
+	// belongs to one vendor or the other, and which of them may appear is
+	// decided by this one.
+	Vendor *string `json:"vendor"`
+
+	// MinimumTCB is required, for both vendors, and its shape is the vendor's.
+	// An author writing a trust root has an opinion about which platform levels
+	// to admit, and a floor that defaults silently to zero when the key is left
+	// out is a floor nobody chose. It is held unparsed because AMD's floor is
+	// four component versions and Intel's is a status and an evaluation number.
+	MinimumTCB json.RawMessage `json:"minimum_tcb"`
+
+	// LaunchMeasurement is hexadecimal, and amd-sev-snp's. Its width is not
+	// checked, deliberately: how wide a launch measurement is belongs to the
+	// hardware vendor, and baking one vendor's digest width into the format is
+	// exactly the seam that makes a second vendor tractable. A measurement of
+	// the wrong width matches nothing, which fails closed.
 	LaunchMeasurement *string `json:"launch_measurement"`
 
-	// MinimumTCB is required. An author writing a trust root has an opinion
-	// about which firmware levels to admit, and a floor that defaults silently
-	// to zero when the key is left out is a floor nobody chose.
-	MinimumTCB *wireTCB `json:"minimum_tcb"`
-
-	// GuestPolicy may be omitted, and omitting it permits nothing — the zero
-	// value of [GuestPolicy] is the fail-closed direction, which is the right
-	// default for a reference value whose author did not think about policy.
-	// This asymmetry with MinimumTCB is deliberate: an absent field may make a
-	// value stricter than intended, never weaker.
+	// GuestPolicy is amd-sev-snp's, and may be omitted: omitting it permits
+	// nothing — the zero value of [GuestPolicy] is the fail-closed direction,
+	// which is the right default for a reference value whose author did not
+	// think about policy. This asymmetry with MinimumTCB is deliberate: an
+	// absent field may make a value stricter than intended, never weaker.
 	GuestPolicy *wirePolicy `json:"guest_policy"`
+
+	// ObservedMRTD, ObservedRTMR0 and ObservedRTMR1 are intel-tdx's, each a
+	// list of hexadecimal values of which a peer must present one. They are
+	// named observed because they are the provider's and nobody here can
+	// predict them (docs/tdx-rtmr2-prediction.md); a list because the
+	// provider's values are not single. Each is required and each must name at
+	// least one value: a register with no expected value is a register not
+	// checked, which is the fail-open direction.
+	ObservedMRTD  []string `json:"observed_mrtd"`
+	ObservedRTMR0 []string `json:"observed_rtmr0"`
+	ObservedRTMR1 []string `json:"observed_rtmr1"`
+
+	// PredictedRTMR2 is intel-tdx's, hexadecimal, and required. It is named
+	// predicted because it is computed from the image before anything boots,
+	// under the same rule as an SEV-SNP launch measurement: a value read off a
+	// booted guest is not a prediction and a check built on one cannot fail.
+	PredictedRTMR2 *string `json:"predicted_rtmr2"`
+
+	// TDAttributesPolicy is intel-tdx's, and like GuestPolicy may be omitted to
+	// permit nothing.
+	TDAttributesPolicy *wireTDPolicy `json:"td_attributes_policy"`
 }
 
 // wireTCB is a TCB floor: four separately named component versions, never the
@@ -403,7 +540,54 @@ type wirePolicy struct {
 	RequireSingleSocket bool  `json:"require_single_socket"`
 }
 
-func (w wireValue) referenceValue() (ReferenceValue, error) {
+// wireTDPolicy is what an intel-tdx reference value permits of TD_ATTRIBUTES.
+// Its one field's absence is the fail-closed answer, as in wirePolicy.
+type wireTDPolicy struct {
+	AllowDebug bool `json:"allow_debug"`
+}
+
+// wireTDXTCB is an Intel TCB floor. Both fields are required, for the reason
+// wireTCB gives about a component left out: a status floor with no evaluation
+// number admits a TCB info from before any TCB recovery, which still verifies
+// and still calls a since-vulnerable platform UpToDate — and that is the field
+// the host provisions, so it is the one an author must actually choose.
+type wireTDXTCB struct {
+	Status               *string `json:"status"`
+	EvaluationDataNumber *uint32 `json:"tcb_evaluation_data_number"`
+}
+
+// parseReferenceValue turns one entry of the document into a reference value.
+//
+// The vendor is read first and decides everything after it. The entry is
+// decoded strictly, so a field no vendor defines is refused here exactly as an
+// unknown field at the top level is.
+func parseReferenceValue(raw json.RawMessage) (ReferenceValue, error) {
+	var w wireValue
+	if err := strictDecode(raw, &w, "the reference value"); err != nil {
+		return ReferenceValue{}, err
+	}
+	if w.Vendor == nil {
+		return ReferenceValue{}, errors.New(
+			"names no vendor; every value in a version 2 document says whose evidence it admits, " +
+				"and one that does not cannot be read as any vendor's without guessing")
+	}
+	switch vendor := Vendor(*w.Vendor); vendor {
+	case VendorAMDSEVSNP:
+		return w.amdReferenceValue()
+	case VendorIntelTDX:
+		return w.tdxReferenceValue()
+	default:
+		return ReferenceValue{}, fmt.Errorf("names vendor %q; this loader reads %q and %q",
+			vendor, VendorAMDSEVSNP, VendorIntelTDX)
+	}
+}
+
+// amdReferenceValue reads the amd-sev-snp half of the format, which is exactly
+// what version 1 held.
+func (w wireValue) amdReferenceValue() (ReferenceValue, error) {
+	if err := w.refuseTheOtherVendorsFields(VendorAMDSEVSNP); err != nil {
+		return ReferenceValue{}, err
+	}
 	if w.LaunchMeasurement == nil {
 		return ReferenceValue{}, errors.New("no launch_measurement")
 	}
@@ -414,11 +598,15 @@ func (w wireValue) referenceValue() (ReferenceValue, error) {
 	if w.MinimumTCB == nil {
 		return ReferenceValue{}, errors.New("no minimum_tcb; a floor left out is a floor of zero, which admits every firmware level")
 	}
-	tcb, err := w.MinimumTCB.tcb()
+	var floor wireTCB
+	if err := strictDecode(w.MinimumTCB, &floor, "minimum_tcb"); err != nil {
+		return ReferenceValue{}, err
+	}
+	tcb, err := floor.tcb()
 	if err != nil {
 		return ReferenceValue{}, err
 	}
-	rv := ReferenceValue{LaunchMeasurement: measurement, MinimumTCB: tcb}
+	rv := ReferenceValue{Vendor: VendorAMDSEVSNP, LaunchMeasurement: measurement, MinimumTCB: tcb}
 	if w.GuestPolicy != nil {
 		rv.GuestPolicy = GuestPolicy{
 			ABIMajor:            w.GuestPolicy.ABIMajor,
@@ -430,6 +618,102 @@ func (w wireValue) referenceValue() (ReferenceValue, error) {
 		}
 	}
 	return rv, nil
+}
+
+// tdxReferenceValue reads the intel-tdx half.
+func (w wireValue) tdxReferenceValue() (ReferenceValue, error) {
+	if err := w.refuseTheOtherVendorsFields(VendorIntelTDX); err != nil {
+		return ReferenceValue{}, err
+	}
+	tdx := &TDXReferenceValue{}
+	for _, r := range []struct {
+		name   string
+		values []string
+		into   *[][]byte
+	}{
+		{"observed_mrtd", w.ObservedMRTD, &tdx.ObservedMRTD},
+		{"observed_rtmr0", w.ObservedRTMR0, &tdx.ObservedRTMR0},
+		{"observed_rtmr1", w.ObservedRTMR1, &tdx.ObservedRTMR1},
+	} {
+		if r.values == nil {
+			return ReferenceValue{}, fmt.Errorf(
+				"no %s; a register with no expected value is a register not checked", r.name)
+		}
+		for i, v := range r.values {
+			b, err := hex.DecodeString(v)
+			if err != nil {
+				return ReferenceValue{}, fmt.Errorf("%s[%d] is not hexadecimal: %v", r.name, i, err)
+			}
+			*r.into = append(*r.into, b)
+		}
+	}
+	if w.PredictedRTMR2 == nil {
+		return ReferenceValue{}, errors.New(
+			"no predicted_rtmr2; the value naming the image is the one that must not be left out, " +
+				"because a value without it admits every image the provider boots")
+	}
+	rtmr2, err := hex.DecodeString(*w.PredictedRTMR2)
+	if err != nil {
+		return ReferenceValue{}, fmt.Errorf("predicted_rtmr2 is not hexadecimal: %v", err)
+	}
+	tdx.PredictedRTMR2 = rtmr2
+	if w.MinimumTCB == nil {
+		return ReferenceValue{}, errors.New("no minimum_tcb; a floor left out is a floor nobody chose, which admits a platform at any Intel TCB level")
+	}
+	var floor wireTDXTCB
+	if err := strictDecode(w.MinimumTCB, &floor, "minimum_tcb"); err != nil {
+		return ReferenceValue{}, err
+	}
+	tdx.MinimumTCB, err = floor.floor()
+	if err != nil {
+		return ReferenceValue{}, err
+	}
+	if w.TDAttributesPolicy != nil {
+		tdx.TDPolicy = TDPolicy{AllowDebug: w.TDAttributesPolicy.AllowDebug}
+	}
+	return ReferenceValue{Vendor: VendorIntelTDX, TDX: tdx}, nil
+}
+
+// refuseTheOtherVendorsFields refuses a value carrying a field that belongs to
+// the vendor it does not name.
+//
+// Ignoring such a field is the same failure as ignoring an unknown one, and
+// worse for being plausible: an author who wrote "predicted_rtmr2" on an
+// amd-sev-snp value was thinking about a register this value cannot check, and
+// enforcing only the part that parsed would admit more than they wrote down.
+func (w wireValue) refuseTheOtherVendorsFields(vendor Vendor) error {
+	for _, f := range []struct {
+		name    string
+		present bool
+		owner   Vendor
+	}{
+		{"launch_measurement", w.LaunchMeasurement != nil, VendorAMDSEVSNP},
+		{"guest_policy", w.GuestPolicy != nil, VendorAMDSEVSNP},
+		{"observed_mrtd", w.ObservedMRTD != nil, VendorIntelTDX},
+		{"observed_rtmr0", w.ObservedRTMR0 != nil, VendorIntelTDX},
+		{"observed_rtmr1", w.ObservedRTMR1 != nil, VendorIntelTDX},
+		{"predicted_rtmr2", w.PredictedRTMR2 != nil, VendorIntelTDX},
+		{"td_attributes_policy", w.TDAttributesPolicy != nil, VendorIntelTDX},
+	} {
+		if f.present && f.owner != vendor {
+			return fmt.Errorf("is a %s value carrying %s, which is a %s field; a value is about one vendor",
+				vendor, f.name, f.owner)
+		}
+	}
+	return nil
+}
+
+// strictDecode reads one JSON value that has already been extracted from the
+// signed document, refusing any field the target type does not define. It is
+// how the strictness the top-level decode applies reaches the parts of the
+// document that are decoded separately.
+func strictDecode(raw json.RawMessage, into any, what string) error {
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(into); err != nil {
+		return fmt.Errorf("%s does not parse: %v", what, err)
+	}
+	return nil
 }
 
 func (w wireTCB) tcb() (TCB, error) {
@@ -455,6 +739,19 @@ func (w wireTCB) tcb() (TCB, error) {
 		TEE:        *w.TEE,
 		SNP:        *w.SNP,
 		Microcode:  *w.Microcode,
+	}, nil
+}
+
+func (w wireTDXTCB) floor() (TDXTCBFloor, error) {
+	if w.Status == nil {
+		return TDXTCBFloor{}, fmt.Errorf("minimum_tcb does not name status; a floor is %q or %q, and a value that names neither admits a platform Intel has already said is out of date", TDXTCBUpToDate, TDXTCBSWHardeningNeeded)
+	}
+	if w.EvaluationDataNumber == nil {
+		return TDXTCBFloor{}, errors.New("minimum_tcb does not name tcb_evaluation_data_number; a status floor alone is met by TCB info from before any TCB recovery, which still calls a since-vulnerable platform UpToDate")
+	}
+	return TDXTCBFloor{
+		Status:               TDXTCBStatus(*w.Status),
+		EvaluationDataNumber: *w.EvaluationDataNumber,
 	}, nil
 }
 
@@ -555,18 +852,21 @@ func walkForRepeats(dec *json.Decoder, path string) error {
 }
 
 // isFormatFieldName reports whether key is drawn from the only alphabet the
-// format's field names use: lowercase ASCII letters and underscore.
+// format's field names use: lowercase ASCII letters, digits and underscore.
+//
+// Digits are here for observed_rtmr0 and its neighbours. They are safe for the
+// reason the letters are restricted: what this check exists to stop is one
+// field name folding onto another under the parser's case-insensitive match,
+// and a digit has no other case to fold to.
 func isFormatFieldName(key string) bool {
 	if key == "" {
 		return false
 	}
 	for i := 0; i < len(key); i++ {
 		c := key[i]
-		if c != '_' && (c < 'a' || c > 'z') {
+		if c != '_' && (c < 'a' || c > 'z') && (c < '0' || c > '9') {
 			return false
 		}
 	}
 	return true
 }
-
-func ptr[T any](v T) *T { return &v }

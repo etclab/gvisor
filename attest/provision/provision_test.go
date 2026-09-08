@@ -137,6 +137,7 @@ func TestAProvisionedChainVerifiesThePlatformsEvidence(t *testing.T) {
 		t.Fatalf("verify.New: %v", err)
 	}
 	set := attest.ReferenceValueSet{Values: []attest.ReferenceValue{{
+		Vendor:            attest.VendorAMDSEVSNP,
 		LaunchMeasurement: bytes.Repeat([]byte{0xA5}, 48),
 		MinimumTCB:        platformTCB,
 		GuestPolicy:       attest.GuestPolicy{AllowSMT: true},
@@ -207,7 +208,7 @@ func TestAStaleChainIsRefusedLocallyAndNamesTheADR(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	set := attest.ReferenceValueSet{Values: []attest.ReferenceValue{{LaunchMeasurement: bytes.Repeat([]byte{0xA5}, 48), MinimumTCB: platformTCB, GuestPolicy: attest.GuestPolicy{AllowSMT: true}}}}
+	set := attest.ReferenceValueSet{Values: []attest.ReferenceValue{{Vendor: attest.VendorAMDSEVSNP, LaunchMeasurement: bytes.Repeat([]byte{0xA5}, 48), MinimumTCB: platformTCB, GuestPolicy: attest.GuestPolicy{AllowSMT: true}}}}
 	_, err = v.Verify(context.Background(), attest.Evidence{Vendor: attest.VendorAMDSEVSNP, Bytes: report(t, after), Chain: stale.Bytes}, set)
 	if got := attest.ReasonOf(err); got != attest.ReasonMalformedEvidence {
 		t.Fatalf("a peer refused the stale chain with %v; want %v", got, attest.ReasonMalformedEvidence)
@@ -329,6 +330,7 @@ func TestTheCapturedPlatformsProvisionedChainVerifiesItsReport(t *testing.T) {
 	// The report's own measurement and policy; the point is authenticity
 	// against AMD's real root, not admission.
 	set := attest.ReferenceValueSet{Values: []attest.ReferenceValue{{
+		Vendor:            attest.VendorAMDSEVSNP,
 		LaunchMeasurement: mustHex(t, "84aaf62f431f0a943944e10b0569c7c899bf5e9cfd0c6176af3f70033e241ac1e9d807f5605fd7dd08bf1bf1f09b5da5"),
 		MinimumTCB:        chain.TCB,
 		GuestPolicy:       attest.GuestPolicy{AllowSMT: true},

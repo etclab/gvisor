@@ -16,11 +16,16 @@
 // and its loader.
 //
 // These drive the same seam as the verification tests — this module's public
-// surface, and the one a tunneld will call at ticket 09. A loaded set is never
+// surface, and the one a tunneld will call at ticket 09. A loaded set is not
 // inspected field by field as though loading were the point; it is wired into a
 // [attest.Verification] and shown to admit or refuse a fake platform, because
 // what a reference value set is for is deciding who gets in. Nothing here
 // reaches inside the loader or asserts on how a refusal was reached.
+//
+// The Intel TDX values are the exception, and are inspected. Their verifier and
+// its fake platform live in other packages, so what a TDX document decides is
+// tested where that verifier is; what is tested here is that the document says
+// it.
 //
 // The documents are written out as literals rather than rendered by
 // [attest.MarshalReferenceValueSet]. That is the point of the format: a
@@ -43,6 +48,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -64,9 +70,10 @@ const documentFormat = "gvisor.dev/gvisor/attest/reference-value-set"
 // numbers below are the same ones platformTCB and permittedPolicy hold in Go.
 const oneValueDocument = `{
   "format": "gvisor.dev/gvisor/attest/reference-value-set",
-  "version": 1,
+  "version": 2,
   "reference_values": [
     {
+      "vendor": "amd-sev-snp",
       "launch_measurement": "$MEASUREMENT",
       "minimum_tcb": {
         "bootloader": 9,
@@ -92,14 +99,16 @@ const oneValueDocument = `{
 // that neither deployment has to stop for the other.
 const twoValueDocument = `{
   "format": "gvisor.dev/gvisor/attest/reference-value-set",
-  "version": 1,
+  "version": 2,
   "reference_values": [
     {
+      "vendor": "amd-sev-snp",
       "launch_measurement": "$MEASUREMENT",
       "minimum_tcb": {"bootloader": 9, "tee": 0, "snp": 23, "microcode": 72},
       "guest_policy": {"allow_smt": true}
     },
     {
+      "vendor": "amd-sev-snp",
       "launch_measurement": "$MEASUREMENT",
       "minimum_tcb": {"bootloader": 9, "tee": 0, "snp": 23, "microcode": 72},
       "guest_policy": {"allow_smt": true}
@@ -114,8 +123,96 @@ const twoValueDocument = `{
 // canonical form to be in, so it loads and admits the same platform.
 const nonCanonicalDocument = `{"reference_values":[{"guest_policy":{"allow_smt":true},` +
 	`"minimum_tcb":{"microcode":72,"snp":23,"tee":0,"bootloader":9},` +
-	`"launch_measurement":"$MEASUREMENT"}],"version":1,` +
+	`"vendor":"amd-sev-snp","launch_measurement":"$MEASUREMENT"}],"version":2,` +
 	`"format":"gvisor.dev/gvisor/attest/reference-value-set"}`
+
+// versionOneDocument is a set as it was authored and signed before this format
+// carried a vendor: version 1, and a reference value that names a launch
+// measurement without saying whose evidence it admits.
+//
+// Documents of this shape exist and are signed — every set recorded under
+// docs/snp is one — which is exactly why the loader has to refuse them out
+// loud rather than read them as SEV-SNP.
+const versionOneDocument = `{
+  "format": "gvisor.dev/gvisor/attest/reference-value-set",
+  "version": 1,
+  "reference_values": [
+    {
+      "launch_measurement": "$MEASUREMENT",
+      "minimum_tcb": {"bootloader": 9, "tee": 0, "snp": 23, "microcode": 72},
+      "guest_policy": {"allow_smt": true}
+    }
+  ]
+}
+`
+
+// The registers an Intel TDX reference value names. Each is a distinct repeated
+// byte, so a value read back out of a loaded set says which register it came
+// from. Their roles are not interchangeable: theMRTD, theRTMR0 and the two
+// values RTMR1 takes are the provider's, observed on real hardware and
+// unpredictable from anything an author holds, while thePredictedRTMR2 is the
+// image's, computed before anything boots.
+//
+// RTMR1 has two values because Google's VMs give it two: one on a VM's first
+// boot and another on every boot after (docs/snp/evidence/tdx). A reference
+// value naming one would refuse its own peer after a reboot.
+var (
+	theMRTD           = bytes.Repeat([]byte{0x33}, 48)
+	theRTMR0          = bytes.Repeat([]byte{0x44}, 48)
+	firstBootRTMR1    = bytes.Repeat([]byte{0x55}, 48)
+	laterBootRTMR1    = bytes.Repeat([]byte{0x66}, 48)
+	thePredictedRTMR2 = bytes.Repeat([]byte{0x77}, 48)
+)
+
+// tdxValueDocument is an Intel TDX reference value as an author writes it.
+//
+// Read it, and read the field names in particular. Three of them say observed
+// and one says predicted, and that is the difference between a constant copied
+// off the provider's running machines because nobody can compute it, and the
+// one register computed from the image before it booted. A check built on a
+// value read back off the machine it is checking cannot fail.
+const tdxValueDocument = `{
+  "format": "gvisor.dev/gvisor/attest/reference-value-set",
+  "version": 2,
+  "reference_values": [
+    {
+      "vendor": "intel-tdx",
+      "observed_mrtd": ["$MRTD"],
+      "observed_rtmr0": ["$RTMR0"],
+      "observed_rtmr1": ["$RTMR1A", "$RTMR1B"],
+      "predicted_rtmr2": "$RTMR2",
+      "td_attributes_policy": {"allow_debug": false},
+      "minimum_tcb": {"status": "UpToDate", "tcb_evaluation_data_number": 20}
+    }
+  ]
+}
+`
+
+// mixedDocument is one file holding both vendors: the same peer group reachable
+// from an AMD guest and from an Intel one, which is the whole reason a value
+// carries a vendor rather than a verifier carrying a file of its own.
+const mixedDocument = `{
+  "format": "gvisor.dev/gvisor/attest/reference-value-set",
+  "version": 2,
+  "reference_values": [
+    {
+      "vendor": "amd-sev-snp",
+      "launch_measurement": "$MEASUREMENT",
+      "minimum_tcb": {"bootloader": 9, "tee": 0, "snp": 23, "microcode": 72},
+      "guest_policy": {"allow_smt": true}
+    },
+    {
+      "vendor": "intel-tdx",
+      "observed_mrtd": ["$MRTD"],
+      "observed_rtmr0": ["$RTMR0"],
+      "observed_rtmr1": ["$RTMR1A", "$RTMR1B"],
+      "predicted_rtmr2": "$RTMR2",
+      "td_attributes_policy": {"allow_debug": false},
+      "minimum_tcb": {"status": "UpToDate", "tcb_evaluation_data_number": 20}
+    }
+  ]
+}
+`
 
 // measurementPlaceholder stands in for a hexadecimal launch measurement in the
 // document templates above.
@@ -139,6 +236,30 @@ func documentFor(template string, measurements ...[]byte) string {
 // theDocument is the one-value document naming theMeasurement — the good set
 // that every refusal below is paired against.
 func theDocument() string { return documentFor(oneValueDocument, theMeasurement) }
+
+// withRegisters fills a TDX template's register placeholders. They are named
+// rather than positional because a document that named RTMR0 where it meant
+// RTMR2 would still load, and the test would be checking the wrong register.
+func withRegisters(template string) string {
+	for _, r := range []struct {
+		placeholder string
+		value       []byte
+	}{
+		{"$MRTD", theMRTD},
+		{"$RTMR0", theRTMR0},
+		{"$RTMR1A", firstBootRTMR1},
+		{"$RTMR1B", laterBootRTMR1},
+		{"$RTMR2", thePredictedRTMR2},
+	} {
+		template = strings.ReplaceAll(template, r.placeholder, hex.EncodeToString(r.value))
+	}
+	return template
+}
+
+// theTDXDocument is the one-value TDX document, and theMixedDocument the file
+// holding one value of each vendor.
+func theTDXDocument() string   { return withRegisters(tdxValueDocument) }
+func theMixedDocument() string { return withRegisters(documentFor(mixedDocument, theMeasurement)) }
 
 // an author is a reference value author: the key pair whose public half a
 // measured image carries and whose private half authorises a set.
@@ -386,8 +507,8 @@ func TestASetSignedByTheWrongKeyIsRefused(t *testing.T) {
 	// real author's own signature over it, so that the refusal is the invented
 	// field and nothing else. The key the loader trusts comes from inside the
 	// launch measurement and from nowhere else.
-	nominating := strings.Replace(permissive, `"version": 1,`,
-		`"version": 1,
+	nominating := strings.Replace(permissive, `"version": 2,`,
+		`"version": 2,
   "public_key": "`+hex.EncodeToString(host.public)+`",`, 1)
 	refusesToLoad(t, nominating, a.sign(t, nominating), a.public)
 }
@@ -407,7 +528,7 @@ func TestADocumentModifiedAfterSigningIsRefused(t *testing.T) {
 	for _, tc := range []struct{ name, modified string }{
 		{"a policy bit relaxed", strings.Replace(document, `"allow_debug": false`, `"allow_debug": true`, 1)},
 		{"the TCB floor lowered", strings.Replace(document, `"microcode": 72`, `"microcode": 0`, 1)},
-		{"whitespace only", strings.Replace(document, `"version": 1,`, `"version":1,`, 1)},
+		{"whitespace only", strings.Replace(document, `"version": 2,`, `"version":2,`, 1)},
 		{"a byte appended", document + " "},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -437,8 +558,8 @@ func TestAnUnknownFieldIsRefused(t *testing.T) {
 	for _, tc := range []struct{ name, from, to string }{
 		{
 			"at the top level",
-			`"version": 1,`,
-			`"version": 1,
+			`"version": 2,`,
+			`"version": 2,
   "allow_anything": true,`,
 		},
 		{
@@ -581,8 +702,9 @@ func TestADocumentOfTheWrongFormatOrVersionIsRefused(t *testing.T) {
 	for _, tc := range []struct{ name, from, to string }{
 		{"another format", `"format": "` + documentFormat + `"`, `"format": "example.com/some-other-file"`},
 		{"no format", `"format": "` + documentFormat + `",`, ``},
-		{"a later version", `"version": 1`, `"version": 2`},
-		{"no version", `"version": 1,`, ``},
+		{"a later version", `"version": 2`, `"version": 3`},
+		{"the version before this one", `"version": 2`, `"version": 1`},
+		{"no version", `"version": 2,`, ``},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			modified := strings.Replace(document, tc.from, tc.to, 1)
@@ -611,12 +733,13 @@ func TestASetThatCannotMeanWhatItsAuthorIntendedDoesNotLoad(t *testing.T) {
 	f := newFixture(t, defaultConfig())
 
 	const (
-		head   = `{"format": "` + documentFormat + `", "version": 1, "reference_values": [`
+		head   = `{"format": "` + documentFormat + `", "version": 2, "reference_values": [`
+		vendor = `"vendor": "amd-sev-snp"`
 		policy = `"guest_policy": {"allow_smt": true}`
 		floor  = `"minimum_tcb": {"bootloader": 9, "tee": 0, "snp": 23, "microcode": 72}`
 		tail   = `]}`
 	)
-	complete := head + `{"launch_measurement": "` + measurementPlaceholder + `", ` + floor + `, ` + policy + `}` + tail
+	complete := head + `{` + vendor + `, "launch_measurement": "` + measurementPlaceholder + `", ` + floor + `, ` + policy + `}` + tail
 
 	// Control: complete, this document loads and admits its platform. Every
 	// variant below is this document minus one thing.
@@ -629,19 +752,19 @@ func TestASetThatCannotMeanWhatItsAuthorIntendedDoesNotLoad(t *testing.T) {
 		},
 		{
 			"no launch measurement",
-			head + `{` + floor + `, ` + policy + `}` + tail,
+			head + `{` + vendor + `, ` + floor + `, ` + policy + `}` + tail,
 		},
 		{
 			"an empty launch measurement",
-			head + `{"launch_measurement": "", ` + floor + `, ` + policy + `}` + tail,
+			head + `{` + vendor + `, "launch_measurement": "", ` + floor + `, ` + policy + `}` + tail,
 		},
 		{
 			"no TCB floor",
-			head + `{"launch_measurement": "` + measurementPlaceholder + `", ` + policy + `}` + tail,
+			head + `{` + vendor + `, "launch_measurement": "` + measurementPlaceholder + `", ` + policy + `}` + tail,
 		},
 		{
 			"a TCB floor missing a component",
-			head + `{"launch_measurement": "` + measurementPlaceholder + `", ` +
+			head + `{` + vendor + `, "launch_measurement": "` + measurementPlaceholder + `", ` +
 				`"minimum_tcb": {"bootloader": 9, "tee": 0, "snp": 23}, ` + policy + `}` + tail,
 		},
 	} {
@@ -763,6 +886,9 @@ func TestARenderedSetIsSignableAndLoadable(t *testing.T) {
 	if err != nil {
 		t.Fatalf("rendering a reference value set: %v", err)
 	}
+	if !strings.Contains(string(document), `"vendor": "amd-sev-snp"`) {
+		t.Errorf("the rendered document does not name the vendor its value is about:\n%s", document)
+	}
 	for _, component := range []string{`"bootloader"`, `"tee"`, `"snp"`, `"microcode"`} {
 		if !strings.Contains(string(document), component) {
 			t.Errorf("the rendered document does not name %s; a TCB floor is four separately named "+
@@ -843,6 +969,375 @@ func TestAnAuthorKeyThatIsNotAnEd25519KeyIsRefused(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			refusesToLoad(t, document, signature, tc.key)
 		})
+	}
+}
+
+// TestAVersionOneDocumentIsRefusedAsCarryingNoVendorTag is the format change
+// this ticket priced, enforced.
+//
+// A version 1 value names a launch measurement and nothing about whose
+// hardware produced it. Reading it as SEV-SNP would be defensible and is still
+// wrong: it is this loader deciding what an author did not write down, in the
+// one file where nothing may be inferred. So the document is refused, and —
+// because a refused set is a guest that will not boot — the refusal says what
+// to do about it.
+func TestAVersionOneDocumentIsRefusedAsCarryingNoVendorTag(t *testing.T) {
+	a := newAuthor(t)
+	f := newFixture(t, defaultConfig())
+
+	// Control: the same values, re-emitted at version 2, still admit the
+	// platform. The refusal below is the version and the missing vendor, not
+	// anything about these values.
+	admits(t, f, loads(t, a, theDocument()))
+
+	document := documentFor(versionOneDocument, theMeasurement)
+	refusesToLoad(t, document, a.sign(t, document), a.public)
+
+	_, err := attest.LoadReferenceValueSet([]byte(document), a.sign(t, document), a.public)
+	for _, want := range []string{"version 1", "vendor", "re-emit"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("the refusal does not mention %q, so an operator reading it does not learn "+
+				"that the fix is to re-emit and re-sign the set: %v", want, err)
+		}
+	}
+}
+
+// TestAReferenceValueThatNamesNoVendorIsRefused: version 2 is not version 1
+// with an optional field. A value that does not say whose evidence it admits is
+// refused inside a version 2 document too, and so is one naming hardware no
+// verifier here implements — which is refused at load rather than at the first
+// peer, because a set nobody can enforce is a configuration mistake and not a
+// verdict.
+func TestAReferenceValueThatNamesNoVendorIsRefused(t *testing.T) {
+	a := newAuthor(t)
+	f := newFixture(t, defaultConfig())
+	document := theDocument()
+
+	// Control.
+	admits(t, f, loads(t, a, document))
+
+	for _, tc := range []struct{ name, from, to string }{
+		{"no vendor at all", `"vendor": "amd-sev-snp",` + "\n      ", ``},
+		{"an empty vendor", `"vendor": "amd-sev-snp"`, `"vendor": ""`},
+		{"hardware nobody here verifies", `"vendor": "amd-sev-snp"`, `"vendor": "example-corp-tee"`},
+		{"a vendor spelled as something else", `"vendor": "amd-sev-snp"`, `"vendor": "sev-snp"`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			modified := strings.Replace(document, tc.from, tc.to, 1)
+			if modified == document {
+				t.Fatalf("the document does not contain %q; the fixture has drifted", tc.from)
+			}
+			refusesToLoad(t, modified, a.sign(t, modified), a.public)
+		})
+	}
+}
+
+// TestATDXReferenceValueLoadsAndSurvivesARoundTrip is the control for the
+// second vendor: the document an author writes for an Intel TDX peer loads, and
+// every field arrives where it was written.
+//
+// Unlike every other set in this file, this one is inspected rather than wired
+// to a verifier and shown to admit a platform. The TDX verifier and its fake
+// platform are in other packages; what is under test here is the document, and
+// whether these fields decide a verdict is that verifier's test to make.
+func TestATDXReferenceValueLoadsAndSurvivesARoundTrip(t *testing.T) {
+	a := newAuthor(t)
+	set := loads(t, a, theTDXDocument())
+
+	if len(set.Values) != 1 {
+		t.Fatalf("the document holds one value; %d loaded", len(set.Values))
+	}
+	rv := set.Values[0]
+	if rv.Vendor != attest.VendorIntelTDX {
+		t.Fatalf("loaded as vendor %q; want %q", rv.Vendor, attest.VendorIntelTDX)
+	}
+	if rv.TDX == nil {
+		t.Fatal("an intel-tdx value loaded with no TDX fields")
+	}
+	if len(rv.LaunchMeasurement) != 0 {
+		t.Errorf("a TDX value loaded carrying an SEV-SNP launch measurement %x", rv.LaunchMeasurement)
+	}
+	// Each register where the document put it. A loader that filled RTMR0 from
+	// the RTMR2 line would still produce a set that loads, and every check
+	// built on it would then be checking the wrong register.
+	for _, r := range []struct {
+		name string
+		got  [][]byte
+		want [][]byte
+	}{
+		{"observed_mrtd", rv.TDX.ObservedMRTD, [][]byte{theMRTD}},
+		{"observed_rtmr0", rv.TDX.ObservedRTMR0, [][]byte{theRTMR0}},
+		{"observed_rtmr1", rv.TDX.ObservedRTMR1, [][]byte{firstBootRTMR1, laterBootRTMR1}},
+		{"predicted_rtmr2", [][]byte{rv.TDX.PredictedRTMR2}, [][]byte{thePredictedRTMR2}},
+	} {
+		if !reflect.DeepEqual(r.got, r.want) {
+			t.Errorf("%s loaded as %x; the document names %x", r.name, r.got, r.want)
+		}
+	}
+	if want := (attest.TDXTCBFloor{Status: attest.TDXTCBUpToDate, EvaluationDataNumber: 20}); rv.TDX.MinimumTCB != want {
+		t.Errorf("the loaded Intel TCB floor is %+v; want %+v", rv.TDX.MinimumTCB, want)
+	}
+	if rv.TDX.TDPolicy.AllowDebug {
+		t.Error("the loaded TD attributes policy permits debugging; the document does not")
+	}
+
+	// A set that loaded renders back to a document that loads to the same set,
+	// so an author can read one out of the loader and hand it to the signer.
+	// The bytes are not expected to match: there is no canonical form, and the
+	// signature covers what was delivered rather than what a renderer produces.
+	rendered, err := attest.MarshalReferenceValueSet(set)
+	if err != nil {
+		t.Fatalf("rendering a loaded TDX set: %v", err)
+	}
+	if back := loads(t, a, string(rendered)); !reflect.DeepEqual(back, set) {
+		t.Errorf("the set does not survive a round trip through the document:\n got %+v\nwant %+v\n%s",
+			back.Values[0].TDX, set.Values[0].TDX, rendered)
+	}
+}
+
+// TestATDAttributesPolicyLeftOutPermitsNothing is the asymmetry the format
+// keeps in both vendors: a floor left out is refused, a permission left out is
+// the fail-closed answer. An absent field may make a value stricter than its
+// author intended, never weaker.
+func TestATDAttributesPolicyLeftOutPermitsNothing(t *testing.T) {
+	a := newAuthor(t)
+	document := strings.Replace(theTDXDocument(),
+		`      "td_attributes_policy": {"allow_debug": false},`+"\n", ``, 1)
+	if document == theTDXDocument() {
+		t.Fatal("the fixture has drifted; nothing was removed")
+	}
+	set := loads(t, a, document)
+	if set.Values[0].TDX.TDPolicy.AllowDebug {
+		t.Error("a value with no td_attributes_policy permits debugging; " +
+			"an omitted permission must permit nothing")
+	}
+}
+
+// TestEachRequiredTDXFieldIsLoadBearing is
+// TestEachNamedTCBComponentIsLoadBearing's sibling for the other vendor.
+//
+// Every field a TDX value must name is cut out, one at a time, and the document
+// must not load without it. Each default a loader could reach for instead is a
+// permission it would be granting on the author's behalf: no observed_rtmr0 is
+// a register not checked, no predicted_rtmr2 is every image the provider boots,
+// no status is a platform Intel has already called out of date, and no
+// evaluation number is a TCB info from before the recovery that named the
+// vulnerability.
+func TestEachRequiredTDXFieldIsLoadBearing(t *testing.T) {
+	a := newAuthor(t)
+
+	const (
+		head     = `{"format": "` + documentFormat + `", "version": 2, "reference_values": [{"vendor": "intel-tdx", `
+		tail     = `}]}`
+		mrtd     = `"observed_mrtd": ["$MRTD"]`
+		rtmr0    = `"observed_rtmr0": ["$RTMR0"]`
+		rtmr1    = `"observed_rtmr1": ["$RTMR1A", "$RTMR1B"]`
+		rtmr2    = `"predicted_rtmr2": "$RTMR2"`
+		tdPolicy = `"td_attributes_policy": {"allow_debug": false}`
+		floor    = `"minimum_tcb": {"status": "UpToDate", "tcb_evaluation_data_number": 20}`
+	)
+	complete := head + strings.Join([]string{mrtd, rtmr0, rtmr1, rtmr2, tdPolicy, floor}, ", ") + tail
+
+	// Control: complete, this document loads. Every variant below is this
+	// document minus one thing.
+	loads(t, a, withRegisters(complete))
+
+	for _, tc := range []struct{ name, document string }{
+		{"no observed MRTD", head + strings.Join([]string{rtmr0, rtmr1, rtmr2, tdPolicy, floor}, ", ") + tail},
+		{"no observed RTMR0", head + strings.Join([]string{mrtd, rtmr1, rtmr2, tdPolicy, floor}, ", ") + tail},
+		{"no observed RTMR1", head + strings.Join([]string{mrtd, rtmr0, rtmr2, tdPolicy, floor}, ", ") + tail},
+		{"no predicted RTMR2", head + strings.Join([]string{mrtd, rtmr0, rtmr1, tdPolicy, floor}, ", ") + tail},
+		{"no TCB floor", head + strings.Join([]string{mrtd, rtmr0, rtmr1, rtmr2, tdPolicy}, ", ") + tail},
+		{
+			"a TCB floor naming no status",
+			head + strings.Join([]string{mrtd, rtmr0, rtmr1, rtmr2, tdPolicy,
+				`"minimum_tcb": {"tcb_evaluation_data_number": 20}`}, ", ") + tail,
+		},
+		{
+			"a TCB floor naming no evaluation number",
+			head + strings.Join([]string{mrtd, rtmr0, rtmr1, rtmr2, tdPolicy,
+				`"minimum_tcb": {"status": "UpToDate"}`}, ", ") + tail,
+		},
+		{"an empty predicted RTMR2", strings.Replace(complete, rtmr2, `"predicted_rtmr2": ""`, 1)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.document == complete {
+				t.Fatal("the variant is the control document; the fixture has drifted")
+			}
+			document := withRegisters(tc.document)
+			refusesToLoad(t, document, a.sign(t, document), a.public)
+		})
+	}
+}
+
+// TestAnObservedRegisterListThatChecksNothingIsRefused: the lists say "any of
+// these", never "ignore". An empty list, or a list holding an empty value, is a
+// register the author has stopped checking without saying so — and a TDX peer
+// is admitted on its registers, so a list that matches anything is the same
+// mistake as a reference value naming no launch measurement.
+func TestAnObservedRegisterListThatChecksNothingIsRefused(t *testing.T) {
+	a := newAuthor(t)
+
+	// Control.
+	loads(t, a, theTDXDocument())
+
+	for _, tc := range []struct{ name, from, to string }{
+		{"an empty MRTD list", `"observed_mrtd": ["$MRTD"]`, `"observed_mrtd": []`},
+		{"an empty RTMR0 list", `"observed_rtmr0": ["$RTMR0"]`, `"observed_rtmr0": []`},
+		{"an empty RTMR1 list", `"observed_rtmr1": ["$RTMR1A", "$RTMR1B"]`, `"observed_rtmr1": []`},
+		{"an empty value in a list", `"observed_mrtd": ["$MRTD"]`, `"observed_mrtd": [""]`},
+		{"a value that is not hexadecimal", `"observed_rtmr0": ["$RTMR0"]`, `"observed_rtmr0": ["not a register"]`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			modified := strings.Replace(tdxValueDocument, tc.from, tc.to, 1)
+			if modified == tdxValueDocument {
+				t.Fatalf("the document does not contain %q; the fixture has drifted", tc.from)
+			}
+			document := withRegisters(modified)
+			refusesToLoad(t, document, a.sign(t, document), a.public)
+		})
+	}
+}
+
+// TestATCBStatusIntelDoesNotVouchForIsRefused: a floor is one of the two
+// statuses that mean the platform is at Intel's current level. Everything else
+// Intel can say — ConfigurationNeeded, OutOfDate, Revoked and their
+// combinations — is below either floor, and a document naming one as its floor
+// is refused rather than treated as a floor of "whatever Intel says".
+func TestATCBStatusIntelDoesNotVouchForIsRefused(t *testing.T) {
+	a := newAuthor(t)
+
+	// Control: both admissible floors load.
+	for _, status := range []string{"UpToDate", "SWHardeningNeeded"} {
+		document := withRegisters(strings.Replace(tdxValueDocument, `"status": "UpToDate"`,
+			`"status": "`+status+`"`, 1))
+		loads(t, a, document)
+	}
+
+	for _, status := range []string{"OutOfDate", "Revoked", "ConfigurationNeeded", "uptodate", ""} {
+		t.Run("a floor of "+status, func(t *testing.T) {
+			document := withRegisters(strings.Replace(tdxValueDocument, `"status": "UpToDate"`,
+				`"status": "`+status+`"`, 1))
+			refusesToLoad(t, document, a.sign(t, document), a.public)
+		})
+	}
+}
+
+// TestAValueCarryingTheOtherVendorsFieldsIsRefused closes the hole the vendor
+// tag would otherwise open.
+//
+// An entry naming one vendor and carrying the other's field is not an entry
+// with a stray key: its author was thinking about a constraint this value
+// cannot express, and a loader that enforced only the half it recognised would
+// admit more than they wrote down. That is the same failure as ignoring an
+// unknown field, arrived at from a direction that looks like a valid document.
+func TestAValueCarryingTheOtherVendorsFieldsIsRefused(t *testing.T) {
+	a := newAuthor(t)
+	f := newFixture(t, defaultConfig())
+
+	// Controls: each vendor's own document, unmixed.
+	admits(t, f, loads(t, a, theDocument()))
+	loads(t, a, theTDXDocument())
+
+	for _, tc := range []struct{ name, document string }{
+		{
+			"an SEV-SNP value naming a predicted RTMR2",
+			strings.Replace(theDocument(), `"launch_measurement": "`,
+				`"predicted_rtmr2": "`+hex.EncodeToString(thePredictedRTMR2)+`",
+      "launch_measurement": "`, 1),
+		},
+		{
+			"an SEV-SNP value naming an observed register",
+			strings.Replace(theDocument(), `"launch_measurement": "`,
+				`"observed_rtmr1": ["`+hex.EncodeToString(firstBootRTMR1)+`"],
+      "launch_measurement": "`, 1),
+		},
+		{
+			"an SEV-SNP value naming a TD attributes policy",
+			strings.Replace(theDocument(), `"launch_measurement": "`,
+				`"td_attributes_policy": {"allow_debug": true},
+      "launch_measurement": "`, 1),
+		},
+		{
+			"a TDX value naming a launch measurement",
+			strings.Replace(theTDXDocument(), `"observed_mrtd": [`,
+				`"launch_measurement": "`+hex.EncodeToString(theMeasurement)+`",
+      "observed_mrtd": [`, 1),
+		},
+		{
+			"a TDX value naming a guest policy",
+			strings.Replace(theTDXDocument(), `"observed_mrtd": [`,
+				`"guest_policy": {"allow_debug": true},
+      "observed_mrtd": [`, 1),
+		},
+		{
+			"a TDX value carrying an SEV-SNP TCB floor",
+			strings.Replace(theTDXDocument(),
+				`"minimum_tcb": {"status": "UpToDate", "tcb_evaluation_data_number": 20}`,
+				`"minimum_tcb": {"bootloader": 9, "tee": 0, "snp": 23, "microcode": 72}`, 1),
+		},
+		{
+			"an SEV-SNP value carrying an Intel TCB floor",
+			strings.Replace(theDocument(),
+				`"minimum_tcb": {
+        "bootloader": 9,
+        "tee": 0,
+        "snp": 23,
+        "microcode": 72
+      }`,
+				`"minimum_tcb": {"status": "UpToDate", "tcb_evaluation_data_number": 20}`, 1),
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.document == theDocument() || tc.document == theTDXDocument() {
+				t.Fatal("the variant is a control document; the fixture has drifted")
+			}
+			refusesToLoad(t, tc.document, a.sign(t, tc.document), a.public)
+		})
+	}
+}
+
+// TestOneFileHoldsBothVendors is what the vendor tag is for. A peer group can
+// span hardware, so a set holds an SEV-SNP value and an Intel TDX value at
+// once, and each verifier reads the values that are its own. A format that
+// carried the vendor once at the top of the document, or a deployment that
+// shipped one file per vendor, would make the mixed group the special case.
+func TestOneFileHoldsBothVendors(t *testing.T) {
+	a := newAuthor(t)
+	f := newFixture(t, defaultConfig())
+
+	set := loads(t, a, theMixedDocument())
+	if len(set.Values) != 2 {
+		t.Fatalf("the mixed document holds two values; %d loaded", len(set.Values))
+	}
+	if got := []attest.Vendor{set.Values[0].Vendor, set.Values[1].Vendor}; got[0] != attest.VendorAMDSEVSNP || got[1] != attest.VendorIntelTDX {
+		t.Fatalf("the values loaded as %v; want the SEV-SNP one and then the TDX one", got)
+	}
+	if !bytes.Equal(set.Values[0].LaunchMeasurement, theMeasurement) {
+		t.Errorf("the SEV-SNP value names %x; the document names %x",
+			set.Values[0].LaunchMeasurement, theMeasurement)
+	}
+	if set.Values[0].TDX != nil {
+		t.Error("the SEV-SNP value loaded carrying TDX fields")
+	}
+	if set.Values[1].TDX == nil || !bytes.Equal(set.Values[1].TDX.PredictedRTMR2, thePredictedRTMR2) {
+		t.Errorf("the TDX value did not load its predicted RTMR2")
+	}
+
+	// It is a trust root a Verification will hold: New copies it and refuses at
+	// startup anything that could not mean what its author intended, and both
+	// vendors' values have to survive that.
+	if _, err := attest.New(verifierTrusting(t, f.platform), set); err != nil {
+		t.Fatalf("a mixed set was refused at construction: %v", err)
+	}
+
+	// And it renders back to a document that loads to the same set.
+	rendered, err := attest.MarshalReferenceValueSet(set)
+	if err != nil {
+		t.Fatalf("rendering a mixed set: %v", err)
+	}
+	if back := loads(t, a, string(rendered)); !reflect.DeepEqual(back, set) {
+		t.Errorf("a mixed set does not survive a round trip through the document:\n%s", rendered)
 	}
 }
 

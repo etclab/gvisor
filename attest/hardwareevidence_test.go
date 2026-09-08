@@ -35,8 +35,8 @@ package attest_test
 
 import (
 	"context"
-	"crypto/ed25519"
 	"encoding/hex"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -61,7 +61,6 @@ const (
 type liveGuest struct {
 	evidence attest.Evidence
 	binding  attest.Binding
-	author   ed25519.PublicKey
 }
 
 // loadLiveGuest reads the captured run, or skips. It skips rather than fails
@@ -81,19 +80,97 @@ func loadLiveGuest(t *testing.T) liveGuest {
 	if err != nil {
 		t.Fatalf("evidence was captured without the key it is bound to: %v", err)
 	}
-	raw, err := os.ReadFile(filepath.Join(hardwareDir, "author.pub"))
-	if err != nil {
-		t.Fatalf("the reference value set was captured without its author's public key: %v", err)
-	}
-	author, err := hex.DecodeString(strings.TrimSpace(string(raw)))
-	if err != nil || len(author) != ed25519.PublicKeySize {
-		t.Fatalf("author.pub is not a hexadecimal Ed25519 public key")
-	}
+	// The recorded author.pub is not read. The recorded set is re-authored in
+	// this process rather than loaded as delivered, for the reason reauthoredSet
+	// gives, so the key that signed it has nothing left to verify.
 	return liveGuest{
 		evidence: attest.Evidence{Vendor: attest.VendorAMDSEVSNP, Bytes: report, Chain: chain},
 		binding:  attest.Binding{PublicKey: publicKey, Context: attest.BindingContextV1},
-		author:   author,
 	}
+}
+
+// reauthoredSet reads a reference value set recorded beside captured evidence
+// and re-authors it here: same values, tagged with the vendor the run was on,
+// rendered by this package's own writer, signed with a key generated in the
+// test, and put back through the loader.
+//
+// The recorded documents are version 1. They were authored and signed before
+// the format carried a vendor on every value, and this loader now refuses that
+// version rather than reading it as SEV-SNP. Re-signing them as they stand is
+// not possible either: each run's reference value author key was generated for
+// that run and is not in git. The recorded artifacts themselves are not
+// touched — they are the record of a run on real hardware (tickets 05, 07, 08)
+// and cannot be regenerated without booking the machine again.
+//
+// What survives is what these tests are about. The launch measurement, the TCB
+// floor and the guest policy are the recorded ones — predicted and written down
+// before the guest booted — and the set still reaches the verifier through the
+// loader rather than being handed to it. What does not survive is the original
+// author's signature over those bytes; that it held is recorded in the run
+// itself, and no test replaying captured bytes could re-establish it.
+func reauthoredSet(t *testing.T, path string) attest.ReferenceValueSet {
+	t.Helper()
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("reading the recorded reference value set: %v", err)
+	}
+	var recorded struct {
+		ReferenceValues []struct {
+			LaunchMeasurement string `json:"launch_measurement"`
+			MinimumTCB        struct {
+				Bootloader uint8 `json:"bootloader"`
+				TEE        uint8 `json:"tee"`
+				SNP        uint8 `json:"snp"`
+				Microcode  uint8 `json:"microcode"`
+			} `json:"minimum_tcb"`
+			GuestPolicy struct {
+				ABIMajor            uint8 `json:"abi_major"`
+				ABIMinor            uint8 `json:"abi_minor"`
+				AllowSMT            bool  `json:"allow_smt"`
+				AllowMigrationAgent bool  `json:"allow_migration_agent"`
+				AllowDebug          bool  `json:"allow_debug"`
+				RequireSingleSocket bool  `json:"require_single_socket"`
+			} `json:"guest_policy"`
+		} `json:"reference_values"`
+	}
+	if err := json.Unmarshal(raw, &recorded); err != nil {
+		t.Fatalf("%s is not a reference value set document: %v", path, err)
+	}
+	set := attest.ReferenceValueSet{}
+	for _, v := range recorded.ReferenceValues {
+		measurement, err := hex.DecodeString(v.LaunchMeasurement)
+		if err != nil {
+			t.Fatalf("%s names a launch measurement that is not hexadecimal: %v", path, err)
+		}
+		set.Values = append(set.Values, attest.ReferenceValue{
+			Vendor:            attest.VendorAMDSEVSNP,
+			LaunchMeasurement: measurement,
+			MinimumTCB: attest.TCB{
+				Bootloader: v.MinimumTCB.Bootloader,
+				TEE:        v.MinimumTCB.TEE,
+				SNP:        v.MinimumTCB.SNP,
+				Microcode:  v.MinimumTCB.Microcode,
+			},
+			GuestPolicy: attest.GuestPolicy{
+				ABIMajor:            v.GuestPolicy.ABIMajor,
+				ABIMinor:            v.GuestPolicy.ABIMinor,
+				AllowSMT:            v.GuestPolicy.AllowSMT,
+				AllowMigrationAgent: v.GuestPolicy.AllowMigrationAgent,
+				AllowDebug:          v.GuestPolicy.AllowDebug,
+				RequireSingleSocket: v.GuestPolicy.RequireSingleSocket,
+			},
+		})
+	}
+	document, err := attest.MarshalReferenceValueSet(set)
+	if err != nil {
+		t.Fatalf("rendering the recorded set from %s: %v", path, err)
+	}
+	a := newAuthor(t)
+	loaded, err := attest.LoadReferenceValueSet(document, a.sign(t, string(document)), a.public)
+	if err != nil {
+		t.Fatalf("the re-authored set from %s was refused: %v", path, err)
+	}
+	return loaded
 }
 
 // against builds the verification a peer would run: the real SEV-SNP verifier
@@ -106,10 +183,7 @@ func loadLiveGuest(t *testing.T) liveGuest {
 // to AMD; here the whole point is that it does.
 func (g liveGuest) against(t *testing.T, setName string) *attest.Verification {
 	t.Helper()
-	set, err := attest.LoadReferenceValueSetFile(filepath.Join(hardwareDir, setName), g.author)
-	if err != nil {
-		t.Fatalf("the captured reference value set was refused: %v", err)
-	}
+	set := reauthoredSet(t, filepath.Join(hardwareDir, setName))
 	verifier, err := verify.New(verify.Options{})
 	if err != nil {
 		t.Fatal(err)
@@ -263,10 +337,7 @@ func TestARealPlatformsEvidenceWithAStaleProvisionedChainIsRefused(t *testing.T)
 // is refused here.
 func (g liveGuest) reference(t *testing.T, setName string) string {
 	t.Helper()
-	set, err := attest.LoadReferenceValueSetFile(filepath.Join(hardwareDir, setName), g.author)
-	if err != nil {
-		t.Fatalf("%s was refused: %v", setName, err)
-	}
+	set := reauthoredSet(t, filepath.Join(hardwareDir, setName))
 	if len(set.Values) != 1 {
 		t.Fatalf("%s holds %d reference values; these tests are written for one", setName, len(set.Values))
 	}

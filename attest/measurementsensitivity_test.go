@@ -40,7 +40,6 @@ package attest_test
 
 import (
 	"context"
-	"crypto/ed25519"
 	"encoding/hex"
 	"os"
 	"path/filepath"
@@ -134,19 +133,7 @@ func predictionFor(dir string) (string, error) {
 // embedded in the library, and the set the baseline's build signed.
 func baselineSet(t *testing.T) *attest.Verification {
 	t.Helper()
-	raw, err := os.ReadFile(filepath.Join(sensitivityDir, "author.pub"))
-	if err != nil {
-		t.Skipf("no captured reference value set: %v", err)
-	}
-	author, err := hex.DecodeString(strings.TrimSpace(string(raw)))
-	if err != nil || len(author) != ed25519.PublicKeySize {
-		t.Fatalf("author.pub is not a hexadecimal Ed25519 public key")
-	}
-	set, err := attest.LoadReferenceValueSetFile(
-		filepath.Join(sensitivityDir, "reference-values.json"), ed25519.PublicKey(author))
-	if err != nil {
-		t.Fatalf("the captured reference value set was refused: %v", err)
-	}
+	set := baselineReferenceValues(t)
 	verifier, err := verify.New(verify.Options{})
 	if err != nil {
 		t.Fatal(err)
@@ -244,21 +231,10 @@ func baselineSetOrOwn(t *testing.T, v variant) *attest.Verification {
 	}
 	// Everything but the measurement is the baseline set's, taken from the
 	// file rather than restated here.
-	raw, err := os.ReadFile(filepath.Join(sensitivityDir, "author.pub"))
-	if err != nil {
-		t.Skipf("no captured reference value set: %v", err)
-	}
-	author, err := hex.DecodeString(strings.TrimSpace(string(raw)))
-	if err != nil {
-		t.Fatal(err)
-	}
-	base, err := attest.LoadReferenceValueSetFile(
-		filepath.Join(sensitivityDir, "reference-values.json"), ed25519.PublicKey(author))
-	if err != nil {
-		t.Fatal(err)
-	}
+	base := baselineReferenceValues(t)
 	own := base
 	own.Values = []attest.ReferenceValue{{
+		Vendor:            attest.VendorAMDSEVSNP,
 		LaunchMeasurement: m,
 		MinimumTCB:        base.Values[0].MinimumTCB,
 		GuestPolicy:       base.Values[0].GuestPolicy,
@@ -272,6 +248,22 @@ func baselineSetOrOwn(t *testing.T, v variant) *attest.Verification {
 		t.Fatal(err)
 	}
 	return got
+}
+
+// baselineReferenceValues is the set the baseline image's build authored and
+// signed, re-authored in this process because the recorded document is version
+// 1 and the key that signed it is not in git; reauthoredSet says what that
+// preserves and what it does not. The recorded artifacts are untouched.
+//
+// It skips rather than fails when the run's artifacts are not in the checkout,
+// for the reason loadBootedGuest does.
+func baselineReferenceValues(t *testing.T) attest.ReferenceValueSet {
+	t.Helper()
+	path := filepath.Join(sensitivityDir, "reference-values.json")
+	if _, err := os.Stat(path); err != nil {
+		t.Skipf("no captured reference value set: %v", err)
+	}
+	return reauthoredSet(t, path)
 }
 
 // mustAccept verifies and returns the launch measurement of the verdict.

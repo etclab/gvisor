@@ -211,18 +211,37 @@ measurement.
 ```json
 {
   "format": "gvisor.dev/gvisor/attest/reference-value-set",
-  "version": 1,
+  "version": 2,
   "reference_values": [
     {
+      "vendor": "amd-sev-snp",
       "launch_measurement": "1111…",
       "minimum_tcb": {"bootloader": 9, "tee": 0, "snp": 23, "microcode": 72},
       "guest_policy": {"allow_smt": true}
+    },
+    {
+      "vendor": "intel-tdx",
+      "observed_mrtd": ["c1ee…"],
+      "observed_rtmr0": ["c0b8…"],
+      "observed_rtmr1": ["02c7…", "3a44…"],
+      "predicted_rtmr2": "ecc9…",
+      "td_attributes_policy": {"allow_debug": false},
+      "minimum_tcb": {"status": "UpToDate", "tcb_evaluation_data_number": 20}
     }
   ]
 }
 ```
 
-Four things about it are decided rather than incidental:
+Five things about it are decided rather than incidental:
+
+- **Every value names its vendor, and one file holds both** (format version 2, ADR-0006's
+  addendum). The rest of a value's fields are that vendor's, and a field belonging to the other
+  one is refused rather than ignored. Version 1 documents carried no vendor and are refused
+  outright rather than read as SEV-SNP: that would be the loader deciding what an author did not
+  write down. Re-emit and re-sign them. The Intel names say which kind of value each register is
+  — three *observed* on the provider's hardware because nobody can predict them, one *predicted*
+  from the image before it booted, which is the only one that can fail a check
+  (`docs/tdx-rtmr2-prediction.md`).
 
 - **The signature is detached and covers the document's exact bytes** (ADR-0006). The alternative — an
   envelope whose payload is an opaque blob parsed only after its signature verifies — gives the

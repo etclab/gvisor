@@ -56,3 +56,52 @@ accepts as the single remaining cascade; there is now a second way to trigger it
 Because there is no canonical form, an author must sign the bytes they intend to ship and ship
 the bytes they signed. Rendering a set twice and signing one rendering to check the other does
 not work and is not meant to.
+
+## Addendum: format version 2, one vendor per value (ticket 17)
+
+Version 1 of the document could name an SEV-SNP launch digest and nothing else. Intel TDX
+admits a peer on a different shape of evidence — several registers, of which one is predicted
+from the image and three are constants observed on the provider's hardware — so a second
+vendor could not be expressed in it at all. That is the cost `docs/tdx-as-a-second-vendor.md`
+priced under *`ReferenceValue.LaunchMeasurement []byte` — cannot express TDX evidence*: the
+problem was never the digest's width, which this format already refused to check, but its
+**arity and selectivity**. Version 2 is that price paid.
+
+**What version 2 adds.** Every reference value carries a required `"vendor"`, `"amd-sev-snp"`
+or `"intel-tdx"`. An `amd-sev-snp` value holds exactly what version 1 held —
+`launch_measurement`, a four-component `minimum_tcb`, `guest_policy` — under exactly the old
+rules. An `intel-tdx` value holds `observed_mrtd`, `observed_rtmr0` and `observed_rtmr1`, each
+a non-empty list of which a peer must match one; `predicted_rtmr2`; an optional
+`td_attributes_policy`; and a `minimum_tcb` that is Intel's shape, a `status` and a
+`tcb_evaluation_data_number`, both required. One file holds values of both vendors, because a
+peer group can span hardware and a format that carried the vendor once at the top would make
+the mixed group the special case. A value carrying the other vendor's field is refused rather
+than ignored, for the same reason an unknown field is: its author was writing down a
+constraint this value cannot enforce, and enforcing the half that parsed would admit more than
+they wrote.
+
+**Why version 1 is refused rather than read as SEV-SNP.** Reading it as SEV-SNP would be
+right about every version 1 document that exists, and is still wrong: it is the loader
+deciding what an author did not write down. This file is the design's trust root and the one
+place where nothing may be inferred — the same argument ADR-0002 makes about an unrecognised
+binding context, and the same argument that refuses an unknown field and a repeated one. The
+refusal says so in words and names the fix, because a set that will not load is a guest that
+will not boot and the operator reading the log needs to know to re-emit and re-sign. The
+signature is no help here either: a version 1 document is perfectly signed by its author, and
+what it lacks is not integrity but a statement of what it means.
+
+**Consequence.** Every set recorded under `docs/snp` is version 1 and this loader now refuses
+it. The recorded evidence is not regenerated — it is the record of runs on real hardware
+(tickets 05, 07, 08) and each run's author key was thrown away with it — so the tests that
+replay those runs re-author the recorded values in-process, tagging them with the vendor the
+run was on and signing them with a key the test generates. What that preserves is the
+measurement, the floor and the policy, predicted and written down before the guest booted; the
+original signature having held is what the recorded run itself records. Deployments re-emit:
+`docs/snp/image/emit-refvals` for SEV-SNP and `docs/snp/cloud/tdx/emit-tdx-refvals` for TDX
+both write version 2.
+
+The version number is the document's own and is separate from the signature scheme's, which is
+still v1 in the domain separation prefix: a document that gains a field does not change how it
+is signed, and no key rotates. What does change is the loader, and the loader is inside the
+launch measurement — so version 2 is a new measurement and therefore the same flag day this
+ADR already accepts, spent on the format rather than on the key.

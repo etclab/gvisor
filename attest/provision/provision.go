@@ -241,6 +241,7 @@ func validate(ctx context.Context, report []byte, c Chain, opts Options) error {
 	// is one anybody wants to admit — that is the reference value author's
 	// question, answered elsewhere.
 	self := attest.ReferenceValueSet{Values: []attest.ReferenceValue{{
+		Vendor:            attest.VendorAMDSEVSNP,
 		LaunchMeasurement: parsed.GetMeasurement(),
 		MinimumTCB:        c.TCB,
 		GuestPolicy: attest.GuestPolicy{

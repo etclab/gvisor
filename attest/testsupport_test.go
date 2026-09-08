@@ -119,6 +119,7 @@ func defaultConfig() snpfake.Config {
 // defaultSet is a reference value set that admits defaultConfig's platform.
 func defaultSet() attest.ReferenceValueSet {
 	return attest.ReferenceValueSet{Values: []attest.ReferenceValue{{
+		Vendor:            attest.VendorAMDSEVSNP,
 		LaunchMeasurement: theMeasurement,
 		MinimumTCB:        floorTCB,
 		GuestPolicy:       permittedPolicy,

@@ -51,8 +51,8 @@ func TestEvidenceSatisfyingAReferenceValueIsAccepted(t *testing.T) {
 // value and a peer matching any of them is admitted.
 func TestASetAdmitsEvidenceMatchingAnyOneOfItsValues(t *testing.T) {
 	set := attest.ReferenceValueSet{Values: []attest.ReferenceValue{
-		{LaunchMeasurement: otherMeasurement, MinimumTCB: floorTCB, GuestPolicy: permittedPolicy},
-		{LaunchMeasurement: theMeasurement, MinimumTCB: floorTCB, GuestPolicy: permittedPolicy},
+		{Vendor: attest.VendorAMDSEVSNP, LaunchMeasurement: otherMeasurement, MinimumTCB: floorTCB, GuestPolicy: permittedPolicy},
+		{Vendor: attest.VendorAMDSEVSNP, LaunchMeasurement: theMeasurement, MinimumTCB: floorTCB, GuestPolicy: permittedPolicy},
 	}}
 
 	// A platform running the first image is admitted.
@@ -126,6 +126,7 @@ func TestLaunchMeasurementAbsentFromTheSetIsRefused(t *testing.T) {
 	accepts(t, verification(t, f, defaultSet()), f)
 
 	other := attest.ReferenceValueSet{Values: []attest.ReferenceValue{{
+		Vendor:            attest.VendorAMDSEVSNP,
 		LaunchMeasurement: otherMeasurement,
 		MinimumTCB:        floorTCB,
 		GuestPolicy:       permittedPolicy,
@@ -143,6 +144,7 @@ func TestPlatformBelowTheTCBFloorIsRefused(t *testing.T) {
 	accepts(t, verification(t, f, defaultSet()), f)
 
 	raised := attest.ReferenceValueSet{Values: []attest.ReferenceValue{{
+		Vendor:            attest.VendorAMDSEVSNP,
 		LaunchMeasurement: theMeasurement,
 		MinimumTCB:        aboveTCB,
 		GuestPolicy:       permittedPolicy,
@@ -293,6 +295,7 @@ func TestASetThatCannotMeanWhatItsAuthorIntendedIsRejectedAtConstruction(t *test
 	}
 
 	wildcard := attest.ReferenceValueSet{Values: []attest.ReferenceValue{{
+		Vendor:      attest.VendorAMDSEVSNP,
 		MinimumTCB:  floorTCB,
 		GuestPolicy: permittedPolicy,
 	}}}
@@ -310,6 +313,7 @@ func TestASetThatCannotMeanWhatItsAuthorIntendedIsRejectedAtConstruction(t *test
 
 func setFor(measurement []byte, floor attest.TCB, policy attest.GuestPolicy) attest.ReferenceValueSet {
 	return attest.ReferenceValueSet{Values: []attest.ReferenceValue{{
+		Vendor:            attest.VendorAMDSEVSNP,
 		LaunchMeasurement: measurement,
 		MinimumTCB:        floor,
 		GuestPolicy:       policy,

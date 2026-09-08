@@ -41,7 +41,7 @@ import (
 func hostileDial(t *testing.T, addr string, admits attest.ReferenceValueSet, misbehave func(*quic.Conn)) {
 	t.Helper()
 	p := platform(t, imageA)
-	identity, err := ratls.NewIdentity(ctx(t), p)
+	identity, err := ratls.NewIdentity(ctx(t), p, somePolicyDigest("hostile dialer"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -106,7 +106,7 @@ func TestAPeerThatBreaksEstablishmentDoesNotStopAccepting(t *testing.T) {
 func TestAnExchangeWaitsForTheEstablishmentRoundTrip(t *testing.T) {
 	admits := admitting(imageA)
 	p := platform(t, imageA)
-	identity, err := ratls.NewIdentity(ctx(t), p)
+	identity, err := ratls.NewIdentity(ctx(t), p, somePolicyDigest("silent listener"))
 	if err != nil {
 		t.Fatal(err)
 	}

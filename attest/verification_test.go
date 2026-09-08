@@ -17,6 +17,8 @@ package attest_test
 import (
 	"bytes"
 	"context"
+	"errors"
+	"strings"
 	"testing"
 
 	"gvisor.dev/gvisor/attest"
@@ -201,12 +203,12 @@ func TestUnrecognisedBindingContextIsRefused(t *testing.T) {
 	f := newFixture(t, defaultConfig())
 	v := verification(t, f, defaultSet())
 
-	// Control: v1, all zero, is understood and admitted.
+	// Control: v2 is understood and admitted.
 	accepts(t, v, f)
 
 	future := attest.BindingContext{}
-	future[0] = 2
-	binding := attest.Binding{PublicKey: f.binding.PublicKey, Context: future}
+	future[0] = 3
+	binding := attest.Binding{PublicKey: f.binding.PublicKey, Context: future, PolicyDigest: thePolicy}
 	evidence, err := f.platform.Acquire(context.Background(), binding.CallerSuppliedBytes())
 	if err != nil {
 		t.Fatalf("acquiring evidence: %v", err)
@@ -217,8 +219,46 @@ func TestUnrecognisedBindingContextIsRefused(t *testing.T) {
 	refuses(t, v, evidence, binding, attest.ReasonUnknownBindingContext)
 }
 
+// TestAVersionOneBindingContextIsNoLongerAdmitted is the same reservation being
+// spent, which is a refusal in the other direction.
+//
+// A v1 peer is not speaking a version from the future; it is speaking the one
+// this verifier used to speak, and its evidence commits to no policy at all.
+// Admitting it would let any peer skip the policy check by claiming the older
+// context — the reserved field would have bought a version bump and nothing
+// else. So a v1 peer is refused on the version, before the vendor's verifier
+// is asked anything.
+//
+// The evidence here is genuine and genuinely bound under v1, which is what a
+// peer running yesterday's tunneld actually presents.
+func TestAVersionOneBindingContextIsNoLongerAdmitted(t *testing.T) {
+	f := newFixture(t, defaultConfig())
+	v := verification(t, f, defaultSet())
+
+	// Control: the same platform speaking v2 is admitted.
+	accepts(t, v, f)
+
+	old := attest.Binding{PublicKey: f.binding.PublicKey, Context: attest.BindingContextV1}
+	evidence, err := f.platform.Acquire(context.Background(), old.CallerSuppliedBytes())
+	if err != nil {
+		t.Fatalf("acquiring evidence: %v", err)
+	}
+	refuses(t, v, evidence, old, attest.ReasonUnknownBindingContext)
+
+	// And the detail says what a v1 peer is missing, because the operator on
+	// the other end of it has a tunneld to rebuild.
+	_, err = v.Verify(context.Background(), evidence, old)
+	var r *attest.Refusal
+	if !errors.As(err, &r) {
+		t.Fatalf("expected a refusal, got %v", err)
+	}
+	if !strings.Contains(r.Detail(), "policy digest") {
+		t.Errorf("the operator log does not say what v1 lacks: %s", r.LogString())
+	}
+}
+
 // TestReservedBytesOfTheBindingContextAreNotIgnored covers the case a version
-// byte alone would miss: a context claiming v1 but with a reserved byte set. If
+// byte alone would miss: a context claiming v2 but with a reserved byte set. If
 // only the version byte were checked, a peer could smuggle a value past a
 // verifier that never looked at it.
 func TestReservedBytesOfTheBindingContextAreNotIgnored(t *testing.T) {
@@ -227,9 +267,9 @@ func TestReservedBytesOfTheBindingContextAreNotIgnored(t *testing.T) {
 
 	accepts(t, v, f)
 
-	sneaky := attest.BindingContext{}
+	sneaky := attest.BindingContextV2
 	sneaky[attest.BindingContextSize-1] = 1
-	binding := attest.Binding{PublicKey: f.binding.PublicKey, Context: sneaky}
+	binding := attest.Binding{PublicKey: f.binding.PublicKey, Context: sneaky, PolicyDigest: thePolicy}
 	evidence, err := f.platform.Acquire(context.Background(), binding.CallerSuppliedBytes())
 	if err != nil {
 		t.Fatalf("acquiring evidence: %v", err)

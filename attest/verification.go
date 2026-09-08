@@ -109,8 +109,9 @@ func (v *Verification) Verify(ctx context.Context, ev Evidence, binding Binding)
 	}
 	if !binding.Context.Recognised() {
 		return Attested{}, Refuse(ReasonUnknownBindingContext,
-			"peer claims binding context version %d (%x); this verifier understands only v1, which is every byte zero",
-			binding.Context.Version(), binding.Context[:])
+			"peer claims binding context version %d (%x); this verifier understands only v2 (%x), "+
+				"and v1 carried no policy digest, so a peer speaking it commits to no policy at all",
+			binding.Context.Version(), binding.Context[:], BindingContextV2[:])
 	}
 
 	attested, err := v.verifier.Verify(ctx, ev, v.set)

@@ -165,7 +165,10 @@ func New(ctx context.Context, cfg Config) (*Tunneld, error) {
 	if err != nil {
 		return nil, fmt.Errorf("tunneld: refusing to start: %w", err)
 	}
-	identity, err := ratls.NewIdentity(ctx, cfg.Acquirer)
+	// The set is this tunneld's policy as well as its guest list: its digest is
+	// what the identity binds into the evidence and what a peer checks against
+	// its own allow-list.
+	identity, err := ratls.NewIdentity(ctx, cfg.Acquirer, set.PolicyDigest)
 	if err != nil {
 		return nil, fmt.Errorf("tunneld: refusing to start: %w", err)
 	}

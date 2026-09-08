@@ -495,13 +495,17 @@ func TestAProviderRegisterOutsideTheObservedListIsRefused(t *testing.T) {
 // any key, so any key at all is the wrong one for them. That is exactly the
 // shape of a replayed report: genuine evidence, genuine chain, presented
 // alongside a key it was never bound to.
+//
+// The binding claims v2, which is what a peer today speaks, and the reference
+// value lists no policy digest, so the policy check admits any policy and the
+// refusal below is the binding and nothing before it.
 func TestARecordedQuoteIsRefusedWhenItsBindingIsWrong(t *testing.T) {
 	boot := tdxBoots[0]
 	verification, err := attest.New(tdxRecordedVerifier(t), tdxSetFor(t, boot))
 	if err != nil {
 		t.Fatalf("attest.New: %v", err)
 	}
-	binding := attest.Binding{PublicKey: []byte("a public key this evidence was never bound to"), Context: attest.BindingContextV1}
+	binding := attest.Binding{PublicKey: []byte("a public key this evidence was never bound to"), Context: attest.BindingContextV2, PolicyDigest: tdxPolicy}
 	_, err = verification.Verify(context.Background(), tdxRecordedEvidence(t, boot), binding)
 	if got := attest.ReasonOf(err); got != attest.ReasonBindingMismatch {
 		t.Fatalf("refused with %v, want %v", got, attest.ReasonBindingMismatch)
@@ -528,7 +532,7 @@ func TestAFakeTDXPlatformIsAcceptedThroughVerification(t *testing.T) {
 		t.Fatalf("attest.New: %v", err)
 	}
 
-	binding := attest.Binding{PublicKey: []byte("the peer's presented public key"), Context: attest.BindingContextV1}
+	binding := attest.Binding{PublicKey: []byte("the peer's presented public key"), Context: attest.BindingContextV2, PolicyDigest: tdxPolicy}
 	evidence, err := platform.Acquire(context.Background(), binding.CallerSuppliedBytes())
 	if err != nil {
 		t.Fatalf("acquiring evidence: %v", err)
@@ -543,7 +547,7 @@ func TestAFakeTDXPlatformIsAcceptedThroughVerification(t *testing.T) {
 
 	// And the same evidence against another key is refused, so the acceptance
 	// above was not the binding being ignored.
-	other := attest.Binding{PublicKey: []byte("somebody else's public key"), Context: attest.BindingContextV1}
+	other := attest.Binding{PublicKey: []byte("somebody else's public key"), Context: attest.BindingContextV2, PolicyDigest: tdxPolicy}
 	if _, err := verification.Verify(context.Background(), evidence, other); attest.ReasonOf(err) != attest.ReasonBindingMismatch {
 		t.Fatalf("refused with %v, want %v", attest.ReasonOf(err), attest.ReasonBindingMismatch)
 	}
@@ -579,6 +583,12 @@ func TestAVerifierWhoseCollateralIsMissingRefusesRatherThanFetching(t *testing.T
 		t.Errorf("the operator log does not point at the provisioning decision: %s", refusal.LogString())
 	}
 }
+
+// tdxPolicy is the policy digest a TDX peer presents in these tests, standing
+// in for the digest of its own signed reference value set. Whose document it is
+// the digest of is settled in refvalsfile_test.go; here it only has to be
+// something a peer can bind and a set can list.
+var tdxPolicy = attest.PolicyDigest{0xd1, 0xd2, 0xd3, 0xd4, 0xd5, 0xd6, 0xd7, 0xd8}
 
 // tdxRecordedTDAttributes is TD_ATTRIBUTES as every recorded boot carries it:
 // DEBUG clear. It is a fact about the recordings, used to build a debugging

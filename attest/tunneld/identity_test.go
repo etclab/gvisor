@@ -151,7 +151,7 @@ type watchingPeer struct {
 func startWatchingPeer(t *testing.T, image []byte, admits attest.ReferenceValueSet) *watchingPeer {
 	t.Helper()
 	p := platform(t, image)
-	identity, err := ratls.NewIdentity(ctx(t), p)
+	identity, err := ratls.NewIdentity(ctx(t), p, somePolicyDigest("watching peer"))
 	if err != nil {
 		t.Fatalf("building the watching peer's identity: %v", err)
 	}
@@ -296,8 +296,8 @@ func TestTwoTunneldsOnOneVMPresentDistinctKeysAndDistinctEvidence(t *testing.T) 
 	// because the keys do and not because the two are speaking different
 	// versions of the binding.
 	for i, p := range seen {
-		if p.bindingContext != attest.BindingContextV1 {
-			t.Errorf("tunneld %d claimed binding context %x; want v1", i, p.bindingContext[:])
+		if p.bindingContext != attest.BindingContextV2 {
+			t.Errorf("tunneld %d claimed binding context %x; want v2", i, p.bindingContext[:])
 		}
 	}
 	if !bytes.Equal(seen[0].chain, seen[1].chain) {

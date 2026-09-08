@@ -39,8 +39,15 @@ package tunneld_test
 
 import (
 	"context"
+	"crypto/ed25519"
+	"crypto/rand"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/asn1"
 	"errors"
 	"fmt"
+	"math/big"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -659,52 +666,63 @@ func TestEveryWayEvidenceCanFailRefusesTheTunnel(t *testing.T) {
 }
 
 // TestAPeerSpeakingAnUnrecognisedBindingContextIsRefused is ADR-0002's
-// reservation made a test.
+// reservation made a test, in both directions.
 //
-// A v1 verifier meeting a context it does not understand must refuse rather
-// than ignore it: a v2 peer carrying a policy digest that a v1 verifier never
-// looked at would be admitted on the strength of a field nobody read, which is
-// the deployment the reservation exists to prevent.
+// A verifier meeting a context it does not understand must refuse rather than
+// ignore it. A version from the future may bind something this verifier cannot
+// see; a version from the past — v1, since ticket 18 — binds no policy at all,
+// and admitting one would let any peer skip the policy check by claiming the
+// older context. Both are the same refusal for the same reason.
 //
-// The peer here is built out of ratls directly, because nothing that speaks v1
-// can present a v2 context and a peer that cannot exist cannot be refused. The
-// tunneld under test is still driven through its public API; only the adversary
-// reaches lower, as the hostile peers in hostile_test.go do.
+// The peers here are built out of ratls directly, because nothing that speaks
+// v2 can present another context and a peer that cannot exist cannot be
+// refused. The tunneld under test is still driven through its public API; only
+// the adversary reaches lower, as the hostile peers in hostile_test.go do.
 func TestAPeerSpeakingAnUnrecognisedBindingContextIsRefused(t *testing.T) {
-	v2 := attest.BindingContext{}
-	v2[0] = 2
+	v3 := attest.BindingContext{}
+	v3[0] = 3
 
 	listener := startRefusalNode(t, "listener", refusalGenuine(t), refusalFakeRoot(t),
 		refusalSet(imageA, platformTCB, permitted), nil)
 
-	// Control: the same construction speaking v1 completes the handshake, so a
+	// Control: the same construction speaking v2 completes the handshake, so a
 	// failure below is the context and not the way the peer was built.
-	if err := dialWithBindingContext(t, listener.Addr().String(), attest.BindingContextV1); err != nil {
-		t.Fatalf("control: a v1 peer built the same way was refused: %v", err)
+	if err := dialWithBindingContext(t, listener.Addr().String(), attest.BindingContextV2); err != nil {
+		t.Fatalf("control: a v2 peer built the same way was refused: %v", err)
 	}
 
-	if err := dialWithBindingContext(t, listener.Addr().String(), v2); err == nil {
-		t.Fatal("a peer claiming an unrecognised binding context completed the handshake")
-	}
-	r := listener.refusals.next(t)
-	if got := r.Reason(); got != attest.ReasonUnknownBindingContext {
-		t.Errorf("refused with %v; want %v (log: %s)", got, attest.ReasonUnknownBindingContext, r.LogString())
-	}
-	if line := r.LogString(); !strings.Contains(line, attest.ReasonUnknownBindingContext.String()) {
-		t.Errorf("the operator log does not name the reason: %q", line)
-	}
-	if n := listener.served.Load(); n != 0 {
-		t.Errorf("%d exchanges were answered over a refused tunnel", n)
+	for _, tc := range []struct {
+		name    string
+		context attest.BindingContext
+	}{
+		{"a version this verifier has not reached", v3},
+		{"the version it used to speak", attest.BindingContextV1},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if err := dialWithBindingContext(t, listener.Addr().String(), tc.context); err == nil {
+				t.Fatal("a peer claiming an unrecognised binding context completed the handshake")
+			}
+			r := listener.refusals.next(t)
+			if got := r.Reason(); got != attest.ReasonUnknownBindingContext {
+				t.Errorf("refused with %v; want %v (log: %s)", got, attest.ReasonUnknownBindingContext, r.LogString())
+			}
+			if line := r.LogString(); !strings.Contains(line, attest.ReasonUnknownBindingContext.String()) {
+				t.Errorf("the operator log does not name the reason: %q", line)
+			}
+			if n := listener.served.Load(); n != 0 {
+				t.Errorf("%d exchanges were answered over a refused tunnel", n)
+			}
+		})
 	}
 
 	// Control, again and end to end: an ordinary peer still gets a channel and
-	// an answer from the same listener after the refusal. The listener admits
+	// an answer from the same listener after the refusals. The listener admits
 	// imageA, so the dialer runs it.
 	dialer := startRefusalNode(t, "dialer", refusalGenuine(t), refusalFakeRoot(t),
 		refusalSet(imageA, platformTCB, permitted), tunneld.PeerTable{"listener": listener.Addr().String()})
 	ch, err := dialer.Peer(ctx(t), "listener")
 	if err != nil {
-		t.Fatalf("control: a legitimate peer was refused after the v2 one: %v", err)
+		t.Fatalf("control: a legitimate peer was refused after the unrecognised ones: %v", err)
 	}
 	defer ch.Close()
 	got, err := ch.Exchange(ctx(t), []byte("hello"))
@@ -726,7 +744,7 @@ func TestAPeerSpeakingAnUnrecognisedBindingContextIsRefused(t *testing.T) {
 // against a listener that was in the middle of refusing it.
 func dialWithBindingContext(t *testing.T, addr string, bindingContext attest.BindingContext) error {
 	t.Helper()
-	identity, err := ratls.NewIdentityForContext(ctx(t), refusalGenuine(t), bindingContext)
+	identity, err := ratls.NewIdentityForContext(ctx(t), refusalGenuine(t), bindingContext, somePolicyDigest("a peer naming its own context"))
 	if err != nil {
 		t.Fatalf("building the peer: %v", err)
 	}
@@ -735,6 +753,114 @@ func dialWithBindingContext(t *testing.T, addr string, bindingContext attest.Bin
 		t.Fatalf("building the peer's verification: %v", err)
 	}
 	c, err := tunnel.Dial(ctx(t), addr, identity.ClientConfig(verification), tunnel.Limits{})
+	if err != nil {
+		return err
+	}
+	t.Cleanup(func() { c.Close() })
+	return nil
+}
+
+// TestAPeerSpeakingPayloadVersionOneIsRefused is the peer the test above cannot
+// build: not a v2 envelope carrying an old context, but yesterday's tunneld —
+// a five-field payload with no policy digest in it at all.
+//
+// Such a peer exists in the world: every guest built before ticket 18 presents
+// one. It is refused as an unrecognised binding context rather than as
+// malformed evidence, because that is what it is — this protocol, one version
+// back — and because an operator reading the log has a tunneld to rebuild
+// rather than a corrupted peer to investigate.
+//
+// The envelope is assembled here rather than obtained from ratls, since ratls
+// no longer writes version 1 and a peer that cannot exist cannot be refused.
+// Everything else about the peer is genuine: a real key, real evidence from the
+// fake platform acquired over the v1 binding, and the real transport.
+func TestAPeerSpeakingPayloadVersionOneIsRefused(t *testing.T) {
+	listener := startRefusalNode(t, "listener", refusalGenuine(t), refusalFakeRoot(t),
+		refusalSet(imageA, platformTCB, permitted), nil)
+
+	// Control: a peer this side does speak to completes the handshake.
+	if err := dialWithBindingContext(t, listener.Addr().String(), attest.BindingContextV2); err != nil {
+		t.Fatalf("control: a v2 peer was refused: %v", err)
+	}
+
+	if err := dialWithVersionOnePayload(t, listener.Addr().String()); err == nil {
+		t.Fatal("a peer speaking payload version 1 completed the handshake")
+	}
+	r := listener.refusals.next(t)
+	if got := r.Reason(); got != attest.ReasonUnknownBindingContext {
+		t.Errorf("refused with %v; want %v (log: %s)", got, attest.ReasonUnknownBindingContext, r.LogString())
+	}
+	if line := r.LogString(); !strings.Contains(line, "version 1") {
+		t.Errorf("the operator log does not say which version the peer speaks: %q", line)
+	}
+	if n := listener.served.Load(); n != 0 {
+		t.Errorf("%d exchanges were answered over a refused tunnel", n)
+	}
+}
+
+// versionOnePayload is the extension as ratls wrote it before ticket 18: five
+// fields, and no policy digest. It is written out here because it is a wire
+// format that still exists in the field, and the only way to present one.
+type versionOnePayload struct {
+	Version        int
+	Vendor         string
+	Evidence       []byte
+	Chain          []byte
+	BindingContext []byte
+}
+
+// dialWithVersionOnePayload dials the listener at addr as a peer whose envelope
+// carries a version 1 payload, and reports whether it was admitted.
+func dialWithVersionOnePayload(t *testing.T, addr string) error {
+	t.Helper()
+	pub, priv, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatalf("generating the peer's key: %v", err)
+	}
+	spki, err := x509.MarshalPKIXPublicKey(pub)
+	if err != nil {
+		t.Fatalf("encoding the peer's public key: %v", err)
+	}
+	binding := attest.Binding{PublicKey: spki, Context: attest.BindingContextV1}
+	ev, err := refusalGenuine(t).Acquire(ctx(t), binding.CallerSuppliedBytes())
+	if err != nil {
+		t.Fatalf("acquiring the peer's evidence: %v", err)
+	}
+	ext, err := asn1.Marshal(versionOnePayload{
+		Version:        1,
+		Vendor:         string(ev.Vendor),
+		Evidence:       ev.Bytes,
+		Chain:          ev.Chain,
+		BindingContext: binding.Context[:],
+	})
+	if err != nil {
+		t.Fatalf("encoding the version 1 payload: %v", err)
+	}
+	tmpl := &x509.Certificate{
+		SerialNumber:    big.NewInt(1),
+		Subject:         pkix.Name{CommonName: "tunneld"},
+		NotBefore:       time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC),
+		NotAfter:        time.Date(9999, time.December, 31, 0, 0, 0, 0, time.UTC),
+		ExtraExtensions: []pkix.Extension{{Id: ratls.PayloadOID, Value: ext}},
+	}
+	der, err := x509.CreateCertificate(rand.Reader, tmpl, tmpl, pub, priv)
+	if err != nil {
+		t.Fatalf("creating the peer's certificate: %v", err)
+	}
+	verification, err := attest.New(refusalFakeRoot(t), refusalSet(imageA, platformTCB, permitted))
+	if err != nil {
+		t.Fatalf("building the peer's verification: %v", err)
+	}
+	// The client configuration ratls builds, with this envelope in place of the
+	// one it would have written.
+	conf := &tls.Config{
+		MinVersion:            tls.VersionTLS13,
+		Certificates:          []tls.Certificate{{Certificate: [][]byte{der}, PrivateKey: priv}},
+		InsecureSkipVerify:    true,
+		VerifyPeerCertificate: ratls.PeerVerifier(verification),
+		NextProtos:            []string{ratls.ALPN},
+	}
+	c, err := tunnel.Dial(ctx(t), addr, conf, tunnel.Limits{})
 	if err != nil {
 		return err
 	}

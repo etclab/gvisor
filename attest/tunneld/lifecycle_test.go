@@ -544,7 +544,7 @@ func TestEarlyDataHasNothingToRideOn(t *testing.T) {
 func earlyDial(t *testing.T, addr string, admits attest.ReferenceValueSet, sessions tls.ClientSessionCache) *quic.Conn {
 	t.Helper()
 	p := platform(t, imageA)
-	identity, err := ratls.NewIdentity(ctx(t), p)
+	identity, err := ratls.NewIdentity(ctx(t), p, somePolicyDigest("early dialer"))
 	if err != nil {
 		t.Fatalf("building the peer: %v", err)
 	}

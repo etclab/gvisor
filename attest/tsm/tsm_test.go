@@ -120,7 +120,11 @@ func provisionChainFor(t *testing.T, p *snpfake.Platform) string {
 }
 
 // bindingFor is what a tunneld binds its evidence to: a key it just generated,
-// and the v1 binding context.
+// the binding context it speaks, and the digest of its own policy (ADR-0002's
+// amendment). What this package does with any of it is unchanged — the acquirer
+// writes the 64 bytes it is handed and reads back what the platform echoed —
+// but the verifier at the end of the control test admits v2 alone, so this is
+// the binding a peer presents today.
 func bindingFor(t *testing.T) attest.Binding {
 	t.Helper()
 	pub, _, err := ed25519.GenerateKey(rand.Reader)
@@ -131,7 +135,7 @@ func bindingFor(t *testing.T) attest.Binding {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return attest.Binding{PublicKey: spki, Context: attest.BindingContextV1}
+	return attest.Binding{PublicKey: spki, Context: attest.BindingContextV2, PolicyDigest: attest.PolicyDigest{0x18}}
 }
 
 // TestEvidenceIsProducedOverTheBindingAndAcceptedByAVerifier is the control,

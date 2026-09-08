@@ -71,7 +71,7 @@ func TestEvidenceBoundToNoPublicKeyIsRefused(t *testing.T) {
 
 	accepts(t, v, f)
 
-	keyless := attest.Binding{Context: attest.BindingContextV1}
+	keyless := attest.Binding{Context: attest.BindingContextV2, PolicyDigest: thePolicy}
 	evidence, err := f.platform.Acquire(context.Background(), keyless.CallerSuppliedBytes())
 	if err != nil {
 		t.Fatalf("acquiring evidence: %v", err)

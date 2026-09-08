@@ -19,6 +19,7 @@ import (
 	"context"
 	"crypto/ed25519"
 	"crypto/rand"
+	"crypto/sha256"
 	"errors"
 	"os"
 	"path/filepath"
@@ -96,6 +97,18 @@ func admitting(measurements ...[]byte) attest.ReferenceValueSet {
 		})
 	}
 	return set
+}
+
+// somePolicyDigest stands in for the digest of a peer's own reference value set,
+// where a test builds a peer out of ratls directly instead of starting a
+// tunneld to build one.
+//
+// Every set these tests write lists no policy_digest on any value, so every
+// entry admits any policy and the number here decides nothing. What matters is
+// that the peer presents one at all, which every peer speaking binding context
+// v2 must. The tests that are about the digest name their own.
+func somePolicyDigest(who string) attest.PolicyDigest {
+	return sha256.Sum256([]byte("a test peer's policy: " + who))
 }
 
 // writeSet writes a signed reference value set and returns the document path.

@@ -86,9 +86,30 @@ type fixture struct {
 	evidence attest.Evidence
 }
 
+// thePolicy is the policy digest the fixture's platform presents: what a
+// sandbox that loaded its own signed reference value set would fold into its
+// evidence under binding context v2. otherPolicy is a different sandbox's.
+//
+// They are arbitrary bytes rather than digests of real documents, because what
+// a policy digest is a digest *of* is settled where the document is, in
+// refvalsfile_test.go. Neither is the zero digest, so a test that asserted a
+// digest travelled cannot pass on a field nobody set.
+var (
+	thePolicy   = attest.PolicyDigest{0xa1, 0xa2, 0xa3, 0xa4, 0xa5, 0xa6, 0xa7, 0xa8}
+	otherPolicy = attest.PolicyDigest{0xb1, 0xb2, 0xb3, 0xb4, 0xb5, 0xb6, 0xb7, 0xb8}
+)
+
 // newFixture builds a fake platform, generates a key the way a tunneld does at
-// startup, and acquires evidence bound to it.
+// startup, and acquires evidence bound to it and to [thePolicy].
 func newFixture(t *testing.T, cfg snpfake.Config) *fixture {
+	return newFixturePresenting(t, cfg, thePolicy)
+}
+
+// newFixturePresenting is [newFixture] with the policy the platform binds its
+// evidence to stated rather than assumed. The binding is v2 throughout: v1 is
+// the version this verifier no longer admits, and a fixture speaking it would
+// be refused before any of these tests reached what they are about.
+func newFixturePresenting(t *testing.T, cfg snpfake.Config, policy attest.PolicyDigest) *fixture {
 	t.Helper()
 	platform, err := snpfake.New(cfg)
 	if err != nil {
@@ -98,7 +119,7 @@ func newFixture(t *testing.T, cfg snpfake.Config) *fixture {
 	if err != nil {
 		t.Fatalf("generating a key: %v", err)
 	}
-	binding := attest.Binding{PublicKey: pub, Context: attest.BindingContextV1}
+	binding := attest.Binding{PublicKey: pub, Context: attest.BindingContextV2, PolicyDigest: policy}
 	evidence, err := platform.Acquire(context.Background(), binding.CallerSuppliedBytes())
 	if err != nil {
 		t.Fatalf("acquiring evidence: %v", err)
@@ -164,9 +185,16 @@ func accepts(t *testing.T, v *attest.Verification, f *fixture) attest.Attested {
 	return attested
 }
 
+// A verdictSource is what [refuses] drives: an [attest.Verification], or the
+// stand-in in hardwareevidence_test.go that judges a recording made before
+// binding context v2 existed.
+type verdictSource interface {
+	Verify(ctx context.Context, ev attest.Evidence, binding attest.Binding) (attest.Attested, error)
+}
+
 // refuses asserts that verification refused for exactly the given reason, and
 // that a caller learns nothing beyond the fact of refusal.
-func refuses(t *testing.T, v *attest.Verification, ev attest.Evidence, b attest.Binding, want attest.Reason) {
+func refuses(t *testing.T, v verdictSource, ev attest.Evidence, b attest.Binding, want attest.Reason) {
 	t.Helper()
 	attested, err := v.Verify(context.Background(), ev, b)
 	if err == nil {

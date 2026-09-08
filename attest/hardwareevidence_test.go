@@ -181,22 +181,70 @@ func reauthoredSet(t *testing.T, path string) attest.ReferenceValueSet {
 // verify.Options is left empty deliberately. Every other test in this package
 // hands the verifier a test root, because test-signed evidence must not chain
 // to AMD; here the whole point is that it does.
-func (g liveGuest) against(t *testing.T, setName string) *attest.Verification {
+//
+// What comes back is a [preV2] rather than an [attest.Verification], because
+// this evidence was recorded before binding context v2 existed: see that type.
+func (g liveGuest) against(t *testing.T, setName string) *preV2 {
 	t.Helper()
-	set := reauthoredSet(t, filepath.Join(hardwareDir, setName))
+	return &preV2{verifier: snpAgainstAMDsRoot(t), set: reauthoredSet(t, filepath.Join(hardwareDir, setName))}
+}
+
+// snpAgainstAMDsRoot is the production SEV-SNP verifier: no root of its own, so
+// the AMD roots embedded in the library.
+func snpAgainstAMDsRoot(t *testing.T) attest.Verifier {
+	t.Helper()
 	verifier, err := verify.New(verify.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	v, err := attest.New(verifier, set)
-	if err != nil {
-		t.Fatal(err)
+	return verifier
+}
+
+// preV2 answers the questions [attest.Verification] answers, for evidence
+// recorded before ADR-0002's binding version 2 existed.
+//
+// Every bundle under docs/snp was acquired over SHA-512(public key ‖ v1
+// context): the guests that produced them ran a tunneld that predates the
+// policy digest, and the machines are not booked again to redo it. Ticket 18
+// made v2 the only context [attest.Verification.Verify] admits, so these
+// bundles are now refused there on the version alone, before anything AMD
+// signed is looked at — which is correct, and is asserted as its own test in
+// TestARecordingMadeBeforeBindingVersionTwoIsRefusedAsAnUnknownContext.
+//
+// It is not what these tests are about. They are about what real silicon
+// reported and what a signed set decided about it, so they keep asking those
+// two questions in the order Verify asks them: the vendor's verifier against
+// the set, and then the binding recomputed from the recording's own v1 context
+// with [attest.Binding.CallerSuppliedBytes] — the same arithmetic, on the same
+// exported surface, as the guest used when it asked for the report.
+type preV2 struct {
+	verifier attest.Verifier
+	set      attest.ReferenceValueSet
+}
+
+// Verify is [attest.Verification.Verify] with the binding context check left
+// out and the binding check kept.
+func (p *preV2) Verify(ctx context.Context, ev attest.Evidence, binding attest.Binding) (attest.Attested, error) {
+	if !ev.Present() {
+		return attest.Attested{}, attest.Refuse(attest.ReasonNoEvidence, "peer presented no evidence")
 	}
-	return v
+	if binding.Context != attest.BindingContextV1 {
+		return attest.Attested{}, attest.Refuse(attest.ReasonUnknownBindingContext,
+			"this stand-in judges v1 recordings only; %x is not v1", binding.Context[:])
+	}
+	attested, err := p.verifier.Verify(ctx, ev, p.set)
+	if err != nil {
+		return attest.Attested{}, err
+	}
+	if want := binding.CallerSuppliedBytes(); want != attested.Claims.CallerSuppliedBytes {
+		return attest.Attested{}, attest.Refuse(attest.ReasonBindingMismatch,
+			"evidence is bound to different caller-supplied bytes than the presented public key produces under v1")
+	}
+	return attested, nil
 }
 
 // accept is the control, and the milestone: this evidence, this set, accepted.
-func (g liveGuest) accept(t *testing.T, v *attest.Verification) attest.Attested {
+func (g liveGuest) accept(t *testing.T, v *preV2) attest.Attested {
 	t.Helper()
 	attested, err := v.Verify(context.Background(), g.evidence, g.binding)
 	if err != nil {
@@ -236,10 +284,38 @@ func TestARealPlatformsEvidenceVerifiesAgainstAMDsRoot(t *testing.T) {
 	// AMD are the digest of the key the guest generated for it (ADR-0002).
 	// This is the same arithmetic attest/tsm checks against the captured
 	// bytes; what is new here is that the signature over them was checked.
+	//
+	// It is the v1 formula — SHA-512(public key ‖ context), no policy digest —
+	// because that is what the guest that produced this report computed. That
+	// the formula still reproduces these recorded bytes is the property ticket
+	// 18 had to keep while making v2 the only context a peer may speak.
 	want := g.binding.CallerSuppliedBytes()
 	if attested.Claims.CallerSuppliedBytes != want {
 		t.Errorf("evidence carries %x; the presented key produces %x", attested.Claims.CallerSuppliedBytes, want)
 	}
+}
+
+// TestARecordingMadeBeforeBindingVersionTwoIsRefusedAsAnUnknownContext is the
+// other half of the test above, and the reason it needs a stand-in at all.
+//
+// This bundle is genuine AMD-signed evidence over a genuine v1 binding. A
+// tunneld built today refuses it without reading any of that, because a v1 peer
+// commits to no policy digest and admitting one would let any peer skip the
+// policy check by claiming the older context. The recording is kept, the
+// refusal is asserted, and the two together say exactly what changed: not that
+// the evidence went bad, but that this verifier stopped speaking its version.
+func TestARecordingMadeBeforeBindingVersionTwoIsRefusedAsAnUnknownContext(t *testing.T) {
+	g := loadLiveGuest(t)
+
+	// Control: through the stand-in that does speak v1, the same evidence and
+	// the same set are accepted.
+	g.accept(t, g.against(t, "reference-values.json"))
+
+	v, err := attest.New(snpAgainstAMDsRoot(t), reauthoredSet(t, filepath.Join(hardwareDir, "reference-values.json")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	refuses(t, v, g.evidence, g.binding, attest.ReasonUnknownBindingContext)
 }
 
 // TestSubstitutingALaunchMeasurementRefusesARealPlatformsEvidence is the

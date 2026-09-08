@@ -59,7 +59,11 @@ func New(verifier Verifier, set ReferenceValueSet) (*Verification, error) {
 	// and it was just checked; holding a caller's slice would let it be
 	// weakened afterwards, at a distance, by code that has no idea it is
 	// touching a trust root.
-	held := ReferenceValueSet{Values: make([]ReferenceValue, len(set.Values))}
+	held := ReferenceValueSet{
+		Values:       make([]ReferenceValue, len(set.Values)),
+		Egress:       set.Egress,
+		PolicyDigest: set.PolicyDigest,
+	}
 	for i, rv := range set.Values {
 		held.Values[i] = rv.clone()
 	}

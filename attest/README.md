@@ -211,7 +211,8 @@ measurement.
 ```json
 {
   "format": "gvisor.dev/gvisor/attest/reference-value-set",
-  "version": 2,
+  "version": 3,
+  "egress": {"version": 1, "unattested": false},
   "reference_values": [
     {
       "vendor": "amd-sev-snp",
@@ -232,7 +233,16 @@ measurement.
 }
 ```
 
-Five things about it are decided rather than incidental:
+Six things about it are decided rather than incidental:
+
+- **The document is the sandbox's policy, and the egress section is what makes it one** (format
+  version 3). `egress` says what leaves the sandbox; today it says that unattested egress is
+  refused, and both its `version` and its `unattested` field are required, because a policy a
+  verifier vouches for is one its author wrote down. The document's digest — SHA-256 over exactly
+  the bytes the signature covers, `attest.PolicyDigestOf` — is what a peer folds into its evidence
+  under ADR-0002's binding version 2 and what a verifier checks against an entry's optional
+  `policy_digest`. Version 2 documents carried no egress section and are refused with a sentence
+  saying to add one and sign it again.
 
 - **Every value names its vendor, and one file holds both** (format version 2, ADR-0006's
   addendum). The rest of a value's fields are that vendor's, and a field belonging to the other

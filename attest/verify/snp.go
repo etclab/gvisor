@@ -12,12 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package verify is the SEV-SNP implementation of the vendor seam's consumer
-// half. It answers the vendor's questions about evidence — does it parse, does
-// it chain to AMD's root, does it satisfy a reference value — and answers
-// nothing else.
+// Package verify is the vendor seam's consumer half. It answers the vendor's
+// questions about evidence — does it parse, does it chain to the vendor's root,
+// does it satisfy a reference value — and answers nothing else.
 //
-// It wraps github.com/google/go-sev-guest for report parsing, chain validation
+// There are two implementations and they share this package rather than
+// splitting into two. [SNP] is AMD SEV-SNP, in this file; [TDX] is Intel TDX,
+// in tdx.go, with the Intel collateral format beside it in tdxcollateral.go.
+// One package because the containment argument below is the same argument for
+// both, and because the doctrine — an injected clock, a provisioned root, a
+// getter that refuses the network, a refusal per predicate — is worth having
+// in one place where a second implementation can be read against the first.
+// Nothing routes between them here; [attest.Dispatch] does that, above the
+// seam.
+//
+// This file's half wraps github.com/google/go-sev-guest for report parsing, chain validation
 // and the TCB and policy predicates, per ADR-0003. Hand-rolling that would mean
 // owning ASN.1 and AMD's certificate semantics inside the security boundary the
 // whole design rests on, in a prototype where that code is not the
@@ -174,9 +183,19 @@ func (s *SNP) Verify(ctx context.Context, ev attest.Evidence, set attest.Referen
 	}
 
 	// Evidence is accepted if it satisfies any one reference value, which is
-	// what lets a new image roll out while the old one is still running.
+	// what lets a new image roll out while the old one is still running. A
+	// value about another vendor's hardware says nothing about this peer and
+	// is skipped rather than refused: a set holding AMD and Intel entries is
+	// one signed document naming peers on both, and an SEV-SNP peer has
+	// nothing to say about an Intel entry. The TDX verifier does the same in
+	// reverse. An empty Vendor is not "another vendor" — it means SEV-SNP,
+	// the vendor that existed before values named one at all — so it is not
+	// skipped here.
 	var specific error
 	for _, rv := range set.Values {
+		if rv.Vendor != "" && rv.Vendor != attest.VendorAMDSEVSNP {
+			continue
+		}
 		err := satisfies(att, selfPolicy, rv)
 		if err == nil {
 			return attest.Attested{Vendor: attest.VendorAMDSEVSNP, Claims: claims, Satisfied: rv}, nil

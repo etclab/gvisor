@@ -47,6 +47,8 @@ func TestPackagedImportGraphExcludesTestSupport(t *testing.T) {
 	forbidden := []string{
 		"gvisor.dev/gvisor/attest/snpfake",
 		"github.com/google/go-sev-guest/testing",
+		"gvisor.dev/gvisor/attest/tdxfake",
+		"github.com/google/go-tdx-guest/testing",
 		"testing",
 	}
 	for _, f := range forbidden {
@@ -78,6 +80,8 @@ func TestPackageImportGraphExcludesTestSupport(t *testing.T) {
 	for _, f := range []string{
 		"gvisor.dev/gvisor/attest/snpfake",
 		"github.com/google/go-sev-guest/testing",
+		"gvisor.dev/gvisor/attest/tdxfake",
+		"github.com/google/go-tdx-guest/testing",
 		"testing",
 	} {
 		if contains(deps, f) {

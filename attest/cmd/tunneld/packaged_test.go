@@ -65,6 +65,8 @@ func TestPackagedBinaryIsStaticAndFreeOfTestSupport(t *testing.T) {
 	for _, forbidden := range []string{
 		"gvisor.dev/gvisor/attest/snpfake",
 		"github.com/google/go-sev-guest/testing",
+		"gvisor.dev/gvisor/attest/tdxfake",
+		"github.com/google/go-tdx-guest/testing",
 	} {
 		if bytes.Contains(raw, []byte(forbidden)) {
 			t.Errorf("the packaged tunneld carries %q; the fake platform must not be inside the launch measurement", forbidden)

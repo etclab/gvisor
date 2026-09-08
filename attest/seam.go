@@ -20,10 +20,16 @@ import "context"
 // module can be taught to verify.
 type Vendor string
 
-// VendorAMDSEVSNP is AMD SEV-SNP, the only vendor implemented. A second vendor
-// adds a constant here and an implementation of [Acquirer] and [Verifier], and
-// touches nothing else in this package.
+// VendorAMDSEVSNP is AMD SEV-SNP, the first vendor implemented.
 const VendorAMDSEVSNP Vendor = "amd-sev-snp"
+
+// VendorIntelTDX is Intel TDX, the second. Adding it did not touch "nothing
+// else in this package", as this constant's neighbour once promised: it changed
+// [ReferenceValue], [Claims] and the signed document's format (version 2),
+// because a reference value that can only name one launch digest cannot say
+// "match RTMR2 and ignore RTMR1". docs/tdx-as-a-second-vendor.md records what
+// the seam held and what it did not.
+const VendorIntelTDX Vendor = "intel-tdx"
 
 // Evidence is the vendor-specific attestation blob obtained from the platform,
 // bundled with the certificate chain a verifier needs in order to check it.
@@ -61,12 +67,18 @@ func (e Evidence) Present() bool { return len(e.Bytes) > 0 }
 // authentic. They are claims and not conclusions: they are what the evidence
 // says, before any reference value has been applied to it.
 type Claims struct {
-	// LaunchMeasurement is the digest of initial guest memory the evidence
-	// attests.
+	// LaunchMeasurement is the digest that names the image the evidence
+	// attests: the SEV-SNP launch digest of initial guest memory, or, for TDX,
+	// RTMR2 — the register that covers grub, the kernel and the command line
+	// and the one a reference value predicts (docs/tdx-rtmr2-prediction.md).
 	LaunchMeasurement []byte
 
-	// TCB is the trusted computing base level the platform reports.
+	// TCB is the trusted computing base level an SEV-SNP platform reports. It
+	// is AMD's shape and is zero for TDX evidence, whose level is in TDX.
 	TCB TCB
+
+	// TDX is what Intel TDX evidence said, and nil for every other vendor.
+	TDX *TDXClaims
 
 	// CallerSuppliedBytes are the bytes the guest handed the platform when it
 	// asked for this evidence, returned verbatim. ADR-0002 governs what they
@@ -74,6 +86,33 @@ type Claims struct {
 	// [Verification.Verify], because the binding is this design's invention
 	// rather than any vendor's.
 	CallerSuppliedBytes [CallerSuppliedBytesSize]byte
+}
+
+// TDXClaims are the platform facts read out of an authentic TDX quote.
+type TDXClaims struct {
+	// MRTD is the TD's build-time measurement, and RTMR0 to RTMR3 its runtime
+	// measurement registers. On a provider-booted VM MRTD, RTMR0 and RTMR1 are
+	// the provider's firmware and boot chain and RTMR2 is the image; RTMR3 is
+	// unused and zero.
+	MRTD  []byte
+	RTMR0 []byte
+	RTMR1 []byte
+	RTMR2 []byte
+	RTMR3 []byte
+
+	// TDAttributes is the TD_ATTRIBUTES field: the capabilities the TD was
+	// created with. Bit 0 is DEBUG.
+	TDAttributes [8]byte
+
+	// TCBStatus is Intel's word for the platform's level, resolved by looking
+	// its FMSPC up in the provisioned TCB info; TCBEvaluationDataNumber is that
+	// TCB info's evaluation number, which rises on every TCB recovery.
+	TCBStatus               TDXTCBStatus
+	TCBEvaluationDataNumber uint32
+
+	// FMSPC identifies the platform family, model, stepping, platform type
+	// and customisation the TCB info was looked up for.
+	FMSPC string
 }
 
 // Attested describes a platform whose evidence satisfied the reference value

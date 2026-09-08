@@ -53,7 +53,10 @@ const (
 	// vendor's root. A bad signature and a chain that does not root are one
 	// reason because they answer one question: is this evidence authentic. A
 	// peer that fails it has forged something, and which byte it forged is not
-	// a distinction worth drawing.
+	// a distinction worth drawing. It also covers a chain or collateral that is
+	// not valid at the time verification runs — an expired VCEK, or Intel
+	// collateral past its nextUpdate — since neither can be judged rooted now;
+	// the detail says which.
 	ReasonChainNotRooted
 
 	// ReasonMeasurementNotInSet is authentic evidence whose launch measurement

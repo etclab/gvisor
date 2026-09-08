@@ -82,7 +82,10 @@ func run(args []string, out *os.File) int {
 	vendorRoot := fs.String("vendor-root", "", "PEM file holding the vendor root (ASK and ARK); empty uses the AMD roots embedded in the verification library, which is the production path")
 	productLine := fs.String("product-line", "", "the AMD product line -vendor-root is for, such as Genoa; required with -vendor-root")
 	withoutChain := fs.Bool("without-chain", false, "present the evidence with no certificate chain at all, to exercise what a verifier does with one (ADR-0005)")
-	nowFlag := fs.String("now", "", "RFC 3339 instant at which certificate validity is judged; empty means now")
+	nowFlag := fs.String("now", "", "RFC 3339 instant at which certificate validity is judged and Intel collateral expiry is decided; empty means now")
+	vendor := fs.String("vendor", string(attest.VendorAMDSEVSNP), "the hardware that produced the evidence: "+string(attest.VendorAMDSEVSNP)+" or "+string(attest.VendorIntelTDX)+". It is a flag rather than a guess: sniffing the format of an untrusted blob to decide which parser to hand it to is the mistake the vendor tag exists to prevent")
+	tdxCollateralDir := fs.String("tdx-collateral-dir", "", "directory holding Intel's provisioned TCB info, quoting-enclave identity and revocation lists; required to verify Intel TDX evidence, and never fetched (ADR-0005)")
+	tdxRoot := fs.String("tdx-root", "", "PEM file holding the Intel SGX Root CA; empty uses the Intel root embedded in the verification library, which is the production path")
 	if err := fs.Parse(args); err != nil {
 		return exitFailed
 	}
@@ -98,6 +101,9 @@ func run(args []string, out *os.File) int {
 		productLine:  *productLine,
 		withoutChain: *withoutChain,
 		now:          *nowFlag,
+		vendor:       attest.Vendor(*vendor),
+		tdxDir:       *tdxCollateralDir,
+		tdxRoot:      *tdxRoot,
 	})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "verify-evidence:", err)
@@ -116,6 +122,9 @@ type options struct {
 	productLine  string
 	withoutChain bool
 	now          string
+	vendor       attest.Vendor
+	tdxDir       string
+	tdxRoot      string
 }
 
 func verdict(fs *flag.FlagSet, out *os.File, o options) (int, error) {
@@ -148,8 +157,28 @@ func verdict(fs *flag.FlagSet, out *os.File, o options) (int, error) {
 	if err != nil {
 		return exitFailed, fmt.Errorf("reading the public key the evidence is bound to: %w", err)
 	}
+	switch o.vendor {
+	case attest.VendorAMDSEVSNP, attest.VendorIntelTDX:
+	default:
+		return exitFailed, fmt.Errorf("-vendor %q: this command verifies %q and %q", o.vendor, attest.VendorAMDSEVSNP, attest.VendorIntelTDX)
+	}
+	if o.vendor == attest.VendorIntelTDX {
+		// A TDX quote carries its own PCK certificate chain, so there is no
+		// separate chain file to present or to withhold. Saying so is better
+		// than silently ignoring a path the operator typed.
+		if o.chainPath != "" || o.withoutChain {
+			return exitFailed, errors.New("-chain and -without-chain are SEV-SNP's: an Intel TDX quote carries its certificate chain inside itself")
+		}
+		if o.tdxDir == "" {
+			return exitFailed, errors.New("-tdx-collateral-dir is required for Intel TDX evidence: the collateral is provisioned, never fetched (ADR-0005)")
+		}
+		chainPath = ""
+	}
+
 	var chain []byte
 	switch {
+	case o.vendor == attest.VendorIntelTDX:
+		// Nothing to load: see above.
 	case o.withoutChain:
 		// Deliberately none. The acquirer will not produce a bundle without
 		// one — provision.LoadFor refuses first — so this is how a peer that
@@ -178,19 +207,39 @@ func verdict(fs *flag.FlagSet, out *os.File, o options) (int, error) {
 			return exitFailed, fmt.Errorf("reading the vendor root: %w", err)
 		}
 	}
+	var tdxRootPEM []byte
+	if o.tdxRoot != "" {
+		if tdxRootPEM, err = os.ReadFile(o.tdxRoot); err != nil {
+			return exitFailed, fmt.Errorf("reading the Intel root: %w", err)
+		}
+	}
 
 	fmt.Fprintf(out, "evidence            : %s, %d bytes\n", evidencePath, len(evidence))
-	if o.withoutChain {
+	fmt.Fprintf(out, "vendor              : %s\n", o.vendor)
+	switch {
+	case o.vendor == attest.VendorIntelTDX:
+		fmt.Fprintf(out, "certificate chain   : carried inside the quote\n")
+	case o.withoutChain:
 		fmt.Fprintf(out, "certificate chain   : none presented (-without-chain)\n")
-	} else {
+	default:
 		fmt.Fprintf(out, "certificate chain   : %s, %d bytes (provisioned, ADR-0005)\n", chainPath, len(chain))
 	}
 	fmt.Fprintf(out, "public key (SPKI)   : %s, %d bytes, %x\n", keyPath, len(publicKey), publicKey)
 	fmt.Fprintf(out, "binding context     : v1, %x\n", attest.BindingContextV1[:])
-	if rootPEM == nil {
-		fmt.Fprintf(out, "vendor root         : the AMD roots embedded in the verification library — no fetch, no file\n")
-	} else {
-		fmt.Fprintf(out, "vendor root         : %s (%s)\n", o.vendorRoot, o.productLine)
+	if o.vendor == attest.VendorAMDSEVSNP {
+		if rootPEM == nil {
+			fmt.Fprintf(out, "vendor root         : the AMD roots embedded in the verification library — no fetch, no file\n")
+		} else {
+			fmt.Fprintf(out, "vendor root         : %s (%s)\n", o.vendorRoot, o.productLine)
+		}
+	}
+	if o.vendor == attest.VendorIntelTDX {
+		fmt.Fprintf(out, "intel collateral    : %s (provisioned, ADR-0005)\n", o.tdxDir)
+		if tdxRootPEM == nil {
+			fmt.Fprintf(out, "intel root          : the Intel root embedded in the verification library — no fetch, no file\n")
+		} else {
+			fmt.Fprintf(out, "intel root          : %s\n", o.tdxRoot)
+		}
 	}
 
 	// The trust root. A set that is missing, unsigned, or signed by another
@@ -203,13 +252,38 @@ func verdict(fs *flag.FlagSet, out *os.File, o options) (int, error) {
 	}
 	fmt.Fprintf(out, "reference value set : %s, %d value(s), author %x\n", o.refvals, len(set.Values), []byte(authorKey))
 	for i, rv := range set.Values {
-		fmt.Fprintf(out, "  [%d] launch measurement %x\n", i, rv.LaunchMeasurement)
+		if rv.Vendor == attest.VendorIntelTDX && rv.TDX != nil {
+			fmt.Fprintf(out, "  [%d] %s predicted RTMR2 %x\n", i, rv.Vendor, rv.TDX.PredictedRTMR2)
+			fmt.Fprintf(out, "      observed MRTD      %s\n", digestList(rv.TDX.ObservedMRTD))
+			fmt.Fprintf(out, "      observed RTMR0     %s\n", digestList(rv.TDX.ObservedRTMR0))
+			fmt.Fprintf(out, "      observed RTMR1     %s\n", digestList(rv.TDX.ObservedRTMR1))
+			fmt.Fprintf(out, "      minimum TCB        status=%s evaluation_data_number=%d\n",
+				rv.TDX.MinimumTCB.Status, rv.TDX.MinimumTCB.EvaluationDataNumber)
+			fmt.Fprintf(out, "      TD policy          debug=%t\n", rv.TDX.TDPolicy.AllowDebug)
+			continue
+		}
+		fmt.Fprintf(out, "  [%d] %s launch measurement %x\n", i, rv.Vendor, rv.LaunchMeasurement)
 		fmt.Fprintf(out, "      minimum TCB        bootloader=%d tee=%d snp=%d microcode=%d\n",
 			rv.MinimumTCB.Bootloader, rv.MinimumTCB.TEE, rv.MinimumTCB.SNP, rv.MinimumTCB.Microcode)
 		fmt.Fprintf(out, "      guest policy       %s\n", policyString(rv.GuestPolicy))
 	}
 
-	verifier, err := verify.New(verify.Options{VendorRootPEM: rootPEM, ProductLine: o.productLine, Now: at})
+	snp, err := verify.New(verify.Options{VendorRootPEM: rootPEM, ProductLine: o.productLine, Now: at})
+	if err != nil {
+		return exitFailed, err
+	}
+	verifiers := []attest.Verifier{snp}
+	if o.tdxDir != "" {
+		tdx, err := verify.NewTDX(verify.TDXOptions{CollateralDir: o.tdxDir, VendorRootPEM: tdxRootPEM, Now: at})
+		if err != nil {
+			return exitFailed, err
+		}
+		verifiers = append(verifiers, tdx)
+	}
+	// One verifier per vendor, routed by the evidence's own tag. Evidence from
+	// a vendor that was not configured is refused as unsupported rather than
+	// offered to whoever might parse it.
+	verifier, err := attest.Dispatch(verifiers...)
 	if err != nil {
 		return exitFailed, err
 	}
@@ -220,7 +294,7 @@ func verdict(fs *flag.FlagSet, out *os.File, o options) (int, error) {
 
 	binding := attest.Binding{PublicKey: publicKey, Context: attest.BindingContextV1}
 	attested, err := verification.Verify(context.Background(), attest.Evidence{
-		Vendor: attest.VendorAMDSEVSNP,
+		Vendor: o.vendor,
 		Bytes:  evidence,
 		Chain:  chain,
 	}, binding)
@@ -238,13 +312,41 @@ func verdict(fs *flag.FlagSet, out *os.File, o options) (int, error) {
 
 	fmt.Fprintf(out, "\nACCEPTED\n")
 	fmt.Fprintf(out, "  vendor            : %s\n", attested.Vendor)
-	fmt.Fprintf(out, "  launch measurement: %x\n", attested.Claims.LaunchMeasurement)
-	fmt.Fprintf(out, "  reported TCB      : bootloader=%d tee=%d snp=%d microcode=%d\n",
-		attested.Claims.TCB.Bootloader, attested.Claims.TCB.TEE, attested.Claims.TCB.SNP, attested.Claims.TCB.Microcode)
+	if td := attested.Claims.TDX; td != nil {
+		// Intel's fields, in Intel's vocabulary. RTMR2 is the launch
+		// measurement for this vendor — the register that covers grub, the
+		// kernel and the command line — and MRTD, RTMR0 and RTMR1 are the
+		// provider's, printed so that an operator can see what was matched
+		// against the observed constants.
+		fmt.Fprintf(out, "  RTMR2             : %x\n", td.RTMR2)
+		fmt.Fprintf(out, "  MRTD              : %x\n", td.MRTD)
+		fmt.Fprintf(out, "  RTMR0             : %x\n", td.RTMR0)
+		fmt.Fprintf(out, "  RTMR1             : %x\n", td.RTMR1)
+		fmt.Fprintf(out, "  TD attributes     : %x (debug=%t)\n", td.TDAttributes, td.TDAttributes[0]&0x01 != 0)
+		fmt.Fprintf(out, "  Intel TCB         : status=%s evaluation_data_number=%d fmspc=%s\n",
+			td.TCBStatus, td.TCBEvaluationDataNumber, td.FMSPC)
+	} else {
+		fmt.Fprintf(out, "  launch measurement: %x\n", attested.Claims.LaunchMeasurement)
+		fmt.Fprintf(out, "  reported TCB      : bootloader=%d tee=%d snp=%d microcode=%d\n",
+			attested.Claims.TCB.Bootloader, attested.Claims.TCB.TEE, attested.Claims.TCB.SNP, attested.Claims.TCB.Microcode)
+	}
 	fmt.Fprintf(out, "  caller-supplied   : %x\n", attested.Claims.CallerSuppliedBytes[:])
 	fmt.Fprintf(out, "    = SHA-512(public key ‖ binding context), recomputed from the key above (ADR-0002)\n")
-	fmt.Fprintf(out, "  satisfied         : reference value with launch measurement %x\n", attested.Satisfied.LaunchMeasurement)
+	if td := attested.Satisfied.TDX; td != nil {
+		fmt.Fprintf(out, "  satisfied         : reference value with predicted RTMR2 %x\n", td.PredictedRTMR2)
+	} else {
+		fmt.Fprintf(out, "  satisfied         : reference value with launch measurement %x\n", attested.Satisfied.LaunchMeasurement)
+	}
 	return exitAccepted, nil
+}
+
+// digestList renders an any-of list of expected register values.
+func digestList(values [][]byte) string {
+	parts := make([]string, len(values))
+	for i, v := range values {
+		parts[i] = fmt.Sprintf("%x", v)
+	}
+	return strings.Join(parts, " | ")
 }
 
 // readAuthorKey reads the reference value author's public key from a file

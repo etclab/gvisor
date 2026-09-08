@@ -133,6 +133,7 @@ func run(args []string, out io.Writer) int {
 	authorPath := fs.String("author", defaultAuthorKey, "the reference value author's public key, which is inside the launch measurement (ADR-0004)")
 	reportDir := fs.String("report-dir", tsm.DefaultReportDir, "the kernel's vendor-neutral report interface")
 	runPath := fs.String("run", "", "the run configuration; empty means <config>/"+runConfigName)
+	tdxCollateralDir := fs.String("tdx-collateral-dir", "", "directory holding Intel's provisioned TCB info, quoting-enclave identity and revocation lists; empty means this tunneld admits no Intel TDX peers. Never fetched (ADR-0005)")
 	if err := fs.Parse(args); err != nil {
 		return exitRefusedToStart
 	}
@@ -187,12 +188,34 @@ func run(args []string, out io.Writer) int {
 		logf("refusing to start: %v", err)
 		return exitRefusedToStart
 	}
-	verifier, err := verify.New(verify.Options{})
+	snp, err := verify.New(verify.Options{})
 	if err != nil {
 		logf("refusing to start: %v", err)
 		return exitRefusedToStart
 	}
-	watched := newWatchedVerifier(verifier, logf)
+	verifiers := []attest.Verifier{snp}
+
+	// The second vendor is opt in, and it is opt in because it needs something
+	// the config device may not carry: Intel's collateral, provisioned ahead of
+	// use like the AMD chain beside it. A tunneld without it admits no Intel
+	// peer, which is the honest state — it holds nothing that could judge one —
+	// rather than a tunneld that would try and then reach the network.
+	if *tdxCollateralDir != "" {
+		tdx, err := verify.NewTDX(verify.TDXOptions{CollateralDir: *tdxCollateralDir})
+		if err != nil {
+			logf("refusing to start: %v", err)
+			return exitRefusedToStart
+		}
+		verifiers = append(verifiers, tdx)
+		logf("intel tdx collateral %s (provisioned, never fetched — ADR-0005)", *tdxCollateralDir)
+	}
+	routed, err := attest.Dispatch(verifiers...)
+	if err != nil {
+		logf("refusing to start: %v", err)
+		return exitRefusedToStart
+	}
+	logf("verifying evidence from %s", routed.Vendor())
+	watched := newWatchedVerifier(routed, logf)
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()

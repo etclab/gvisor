@@ -15,7 +15,8 @@
 // verify-evidence produces a verdict on one evidence bundle, outside the guest
 // that produced it (ticket 05).
 //
-//	verify-evidence -bundle DIR -refvals PATH -author PATH
+//	verify-evidence -bundle DIR -refvals PATH -author PATH \
+//	                [-policy-digest HEX] [-binding-version 1|2]
 //
 // It is what a tunneld does when it meets a peer, with the tunnel left out:
 // load the reference value set the author signed, wire it to a verifier, and
@@ -86,6 +87,8 @@ func run(args []string, out *os.File) int {
 	vendor := fs.String("vendor", string(attest.VendorAMDSEVSNP), "the hardware that produced the evidence: "+string(attest.VendorAMDSEVSNP)+" or "+string(attest.VendorIntelTDX)+". It is a flag rather than a guess: sniffing the format of an untrusted blob to decide which parser to hand it to is the mistake the vendor tag exists to prevent")
 	tdxCollateralDir := fs.String("tdx-collateral-dir", "", "directory holding Intel's provisioned TCB info, quoting-enclave identity and revocation lists; required to verify Intel TDX evidence, and never fetched (ADR-0005)")
 	tdxRoot := fs.String("tdx-root", "", "PEM file holding the Intel SGX Root CA; empty uses the Intel root embedded in the verification library, which is the production path")
+	bindingVersion := fs.Int("binding-version", 2, "the ADR-0002 binding version the bundle was acquired under: 2, or 1 for a bundle recorded before the policy digest existed")
+	policyDigest := fs.String("policy-digest", "", "the policy digest the bundle is bound to, hex; empty is 32 zero bytes. Meaningless with -binding-version 1, which had no such field")
 	if err := fs.Parse(args); err != nil {
 		return exitFailed
 	}
@@ -104,6 +107,8 @@ func run(args []string, out *os.File) int {
 		vendor:       attest.Vendor(*vendor),
 		tdxDir:       *tdxCollateralDir,
 		tdxRoot:      *tdxRoot,
+		binding:      *bindingVersion,
+		policyDigest: *policyDigest,
 	})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "verify-evidence:", err)
@@ -125,6 +130,8 @@ type options struct {
 	vendor       attest.Vendor
 	tdxDir       string
 	tdxRoot      string
+	binding      int
+	policyDigest string
 }
 
 func verdict(fs *flag.FlagSet, out *os.File, o options) (int, error) {
@@ -191,6 +198,10 @@ func verdict(fs *flag.FlagSet, out *os.File, o options) (int, error) {
 		}
 	}
 
+	binding, err := o.bindingFor(publicKey)
+	if err != nil {
+		return exitFailed, err
+	}
 	authorKey, err := readAuthorKey(o.author)
 	if err != nil {
 		return exitFailed, err
@@ -225,7 +236,14 @@ func verdict(fs *flag.FlagSet, out *os.File, o options) (int, error) {
 		fmt.Fprintf(out, "certificate chain   : %s, %d bytes (provisioned, ADR-0005)\n", chainPath, len(chain))
 	}
 	fmt.Fprintf(out, "public key (SPKI)   : %s, %d bytes, %x\n", keyPath, len(publicKey), publicKey)
-	fmt.Fprintf(out, "binding context     : v1, %x\n", attest.BindingContextV1[:])
+	fmt.Fprintf(out, "binding context     : v%d, %x\n", o.bindingVersion(), binding.Context[:])
+	if o.bindingVersion() == 1 {
+		fmt.Fprintf(out, "                      a pre-v2 bundle: its report data covers the key and the context and no policy,\n")
+		fmt.Fprintf(out, "                      so it is judged by the vendor's verifier plus the v1 binding rather than by\n")
+		fmt.Fprintf(out, "                      attest.Verification, which admits v2 alone\n")
+	} else {
+		fmt.Fprintf(out, "policy digest       : %s\n", binding.PolicyDigest)
+	}
 	if o.vendor == attest.VendorAMDSEVSNP {
 		if rootPEM == nil {
 			fmt.Fprintf(out, "vendor root         : the AMD roots embedded in the verification library — no fetch, no file\n")
@@ -260,9 +278,11 @@ func verdict(fs *flag.FlagSet, out *os.File, o options) (int, error) {
 			fmt.Fprintf(out, "      minimum TCB        status=%s evaluation_data_number=%d\n",
 				rv.TDX.MinimumTCB.Status, rv.TDX.MinimumTCB.EvaluationDataNumber)
 			fmt.Fprintf(out, "      TD policy          debug=%t\n", rv.TDX.TDPolicy.AllowDebug)
+			fmt.Fprintf(out, "      admits policy      %s\n", admittedPolicy(rv))
 			continue
 		}
 		fmt.Fprintf(out, "  [%d] %s launch measurement %x\n", i, rv.Vendor, rv.LaunchMeasurement)
+		fmt.Fprintf(out, "      admits policy      %s\n", admittedPolicy(rv))
 		fmt.Fprintf(out, "      minimum TCB        bootloader=%d tee=%d snp=%d microcode=%d\n",
 			rv.MinimumTCB.Bootloader, rv.MinimumTCB.TEE, rv.MinimumTCB.SNP, rv.MinimumTCB.Microcode)
 		fmt.Fprintf(out, "      guest policy       %s\n", policyString(rv.GuestPolicy))
@@ -292,12 +312,13 @@ func verdict(fs *flag.FlagSet, out *os.File, o options) (int, error) {
 		return exitFailed, err
 	}
 
-	binding := attest.Binding{PublicKey: publicKey, Context: attest.BindingContextV1}
-	attested, err := verification.Verify(context.Background(), attest.Evidence{
-		Vendor: o.vendor,
-		Bytes:  evidence,
-		Chain:  chain,
-	}, binding)
+	ev := attest.Evidence{Vendor: o.vendor, Bytes: evidence, Chain: chain}
+	var attested attest.Attested
+	if o.bindingVersion() == 1 {
+		attested, err = verifyPreV2(verifier, set, ev, binding)
+	} else {
+		attested, err = verification.Verify(context.Background(), ev, binding)
+	}
 	if err != nil {
 		var refusal *attest.Refusal
 		errors.As(err, &refusal)
@@ -331,13 +352,83 @@ func verdict(fs *flag.FlagSet, out *os.File, o options) (int, error) {
 			attested.Claims.TCB.Bootloader, attested.Claims.TCB.TEE, attested.Claims.TCB.SNP, attested.Claims.TCB.Microcode)
 	}
 	fmt.Fprintf(out, "  caller-supplied   : %x\n", attested.Claims.CallerSuppliedBytes[:])
-	fmt.Fprintf(out, "    = SHA-512(public key ‖ binding context), recomputed from the key above (ADR-0002)\n")
+	if o.bindingVersion() == 1 {
+		fmt.Fprintf(out, "    = SHA-512(public key ‖ binding context), recomputed from the key above (ADR-0002, v1)\n")
+	} else {
+		fmt.Fprintf(out, "    = SHA-512(public key ‖ binding context ‖ policy digest), recomputed from the key above (ADR-0002, v2)\n")
+	}
 	if td := attested.Satisfied.TDX; td != nil {
 		fmt.Fprintf(out, "  satisfied         : reference value with predicted RTMR2 %x\n", td.PredictedRTMR2)
 	} else {
 		fmt.Fprintf(out, "  satisfied         : reference value with launch measurement %x\n", attested.Satisfied.LaunchMeasurement)
 	}
 	return exitAccepted, nil
+}
+
+// bindingVersion is -binding-version, defaulted for a zero value so that a
+// caller building options in code gets what the flag's default gives.
+func (o options) bindingVersion() int {
+	if o.binding == 0 {
+		return 2
+	}
+	return o.binding
+}
+
+// bindingFor builds the binding the bundle claims to be bound to.
+//
+// Version 1 exists here and nowhere else in this tree that still produces
+// evidence: bundles acquired before ticket 18 are recorded under docs/snp and
+// cannot be re-acquired without booking the machines again, so the tool that
+// re-checks them has to be able to speak the version they were written in.
+func (o options) bindingFor(publicKey []byte) (attest.Binding, error) {
+	switch o.bindingVersion() {
+	case 1:
+		if o.policyDigest != "" {
+			return attest.Binding{}, errors.New("-policy-digest with -binding-version 1: a v1 binding covers no policy, and pretending otherwise would compute bytes no platform ever echoed")
+		}
+		return attest.Binding{PublicKey: publicKey, Context: attest.BindingContextV1}, nil
+	case 2:
+		binding := attest.Binding{PublicKey: publicKey, Context: attest.BindingContextV2}
+		if o.policyDigest != "" {
+			raw, err := hex.DecodeString(o.policyDigest)
+			if err != nil {
+				return attest.Binding{}, fmt.Errorf("-policy-digest is not hexadecimal: %v", err)
+			}
+			if len(raw) != len(binding.PolicyDigest) {
+				return attest.Binding{}, fmt.Errorf("-policy-digest is %d bytes; a policy digest is %d", len(raw), len(binding.PolicyDigest))
+			}
+			copy(binding.PolicyDigest[:], raw)
+		}
+		return binding, nil
+	default:
+		return attest.Binding{}, fmt.Errorf("-binding-version %d: this command speaks 1 and 2", o.bindingVersion())
+	}
+}
+
+// verifyPreV2 is what a v1 bundle is judged by, since [attest.Verification]
+// refuses a v1 context before it looks at anything else — correctly, because a
+// v1 peer commits to no policy and a live verifier must not admit one.
+//
+// It asks the two questions that are still answerable about a recording: the
+// vendor's, against the same set loaded from the same signed document, and the
+// binding, recomputed from the recording's own v1 context through the same
+// exported [attest.Binding.CallerSuppliedBytes] the guest used when it asked
+// for the report. What it does not do is check a policy digest, because there
+// is none to check; that is said out loud in the output rather than left for a
+// reader to infer from an unusually short transcript.
+func verifyPreV2(verifier attest.Verifier, set attest.ReferenceValueSet, ev attest.Evidence, binding attest.Binding) (attest.Attested, error) {
+	if !ev.Present() {
+		return attest.Attested{}, attest.Refuse(attest.ReasonNoEvidence, "no evidence presented")
+	}
+	attested, err := verifier.Verify(context.Background(), ev, set)
+	if err != nil {
+		return attest.Attested{}, err
+	}
+	if want := binding.CallerSuppliedBytes(); want != attested.Claims.CallerSuppliedBytes {
+		return attest.Attested{}, attest.Refuse(attest.ReasonBindingMismatch,
+			"evidence is bound to different caller-supplied bytes than the presented public key produces under v1")
+	}
+	return attested, nil
 }
 
 // digestList renders an any-of list of expected register values.
@@ -366,6 +457,17 @@ func readAuthorKey(path string) (ed25519.PublicKey, error) {
 		return nil, fmt.Errorf("%s is neither %d raw bytes nor their hexadecimal", path, ed25519.PublicKeySize)
 	}
 	return ed25519.PublicKey(decoded), nil
+}
+
+// admittedPolicy renders the peer policy a reference value admits, saying so in
+// words when it admits any — an entry that lists none is the weaker reading of
+// an absent field, and a transcript should not leave that looking like a value
+// somebody chose.
+func admittedPolicy(rv attest.ReferenceValue) string {
+	if rv.PolicyDigest == nil {
+		return "any (this value lists no policy_digest)"
+	}
+	return rv.PolicyDigest.String()
 }
 
 // policyString renders what a reference value permits, naming every field, so

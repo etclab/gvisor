@@ -182,7 +182,11 @@ shaped the code:
 - **That a live tunnel can be built on it.** The acquirer has two SEV-SNP-only shortcuts
   (`attest/tsm/tsm.go:370` loads an AMD chain unconditionally; `:388` returns no provider name
   for any other vendor), left for ticket 19 as the ticket directs.
-- **The policy hash in user data** (ticket 18). The binding check is unchanged and vendor-neutral.
+- **The policy hash in user data** as this verifier saw it when it was written. Ticket 18 has since
+  made the binding version 2 and added the per-entry `policy_digest`, above the seam and without
+  touching `verify/tdx.go`: the recorded quotes are still judged by the same code, and a peer
+  presenting a policy is tested against the fake TDX platform, because a recording's report data is
+  fixed and cannot be bound to a policy chosen afterwards.
 - **RTMR0 and RTMR1 as predictions.** They are pinned, not derived; `gce-tcb-verifier` issue #73
   is still where that question lives.
 - **Behaviour on a SWHardeningNeeded platform**, until the library is bumped.
@@ -193,7 +197,9 @@ shaped the code:
 export PATH=$PATH:/usr/local/go/bin
 cd attest && GOPROXY=off go test ./... -count=1
 
-# a recorded quote against the recorded collateral and a signed version-2 set
+# a recorded quote against the recorded collateral and a signed version-3 set
+# (the recorded reference-values.v20260826.json is version 2 and no longer loads;
+#  re-emit it with an egress section — docs/snp/cloud/tdx/emit-tdx-refvals)
 go run ./cmd/verify-evidence -vendor intel-tdx \
     -evidence ../docs/snp/evidence/tdx/eventlog/quote.bin \
     -tdx-collateral-dir ../docs/snp/evidence/tdx/collateral \

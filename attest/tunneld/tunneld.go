@@ -134,6 +134,13 @@ type Tunneld struct {
 	cfg      Config
 	listener *tunnel.Listener
 
+	// policy is the digest of the set this tunneld loaded, and unconstrained
+	// the values in it that list no policy of their own. Both are read off the
+	// set at startup and never change: the set is loaded once, and the identity
+	// bound to it is held for the life of the process.
+	policy        attest.PolicyDigest
+	unconstrained []attest.UnconstrainedValue
+
 	// dialed holds the tunnels this tunneld opened, one per peer, and is what
 	// makes a peer's tunnel lazy, warm and re-attested on schedule. The client
 	// configuration it dials with is built once, at startup, from the one
@@ -182,9 +189,11 @@ func New(ctx context.Context, cfg Config) (*Tunneld, error) {
 		return nil, fmt.Errorf("tunneld: refusing to start: %w", err)
 	}
 	t := &Tunneld{
-		cfg:      cfg,
-		listener: listener,
-		dialed:   tunnel.NewCache(identity.ClientConfig(verification, refusals), cfg.Limits),
+		cfg:           cfg,
+		listener:      listener,
+		policy:        set.PolicyDigest,
+		unconstrained: set.Unconstrained(),
+		dialed:        tunnel.NewCache(identity.ClientConfig(verification, refusals), cfg.Limits),
 	}
 	t.wg.Add(1)
 	go t.accept()
@@ -208,6 +217,26 @@ func (t *Tunneld) SandboxID() string { return t.cfg.SandboxID }
 
 // Addr is the address peers reach this tunneld at.
 func (t *Tunneld) Addr() net.Addr { return t.listener.Addr() }
+
+// PolicyDigest is the digest of the reference value set this tunneld loaded,
+// which is the policy it presents to every peer it meets (ADR-0002's
+// amendment).
+//
+// It is here so that the process around a tunneld can print it: a peer admits
+// this sandbox only if one of its own reference values lists this number, and
+// the only way an operator gets it is off a start log. It is a digest of a
+// document that travels on an untrusted device, so nothing about publishing it
+// is a disclosure.
+func (t *Tunneld) PolicyDigest() attest.PolicyDigest { return t.policy }
+
+// Unconstrained is the values in this tunneld's own set that list no policy
+// digest, and so admit a peer running the named image under any policy at all.
+//
+// It is exposed for the same reason as [Tunneld.PolicyDigest] and with more
+// urgency: an unconstrained value is the weaker reading of an absent field,
+// which this design takes exactly once, and a deployment that did not mean to
+// take it should be able to see that it did.
+func (t *Tunneld) Unconstrained() []attest.UnconstrainedValue { return t.unconstrained }
 
 func (t *Tunneld) accept() {
 	defer t.wg.Done()

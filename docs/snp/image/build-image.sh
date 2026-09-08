@@ -33,6 +33,14 @@
 #   VCPU_TYPE       QEMU -cpu model (default EPYC-v4); its signature is in each VMSA.
 #   POLICY          SEV-SNP guest policy (default 0x30000); the emitted
 #                   guest_policy permits exactly its bits.
+#   PEER_POLICY_DIGEST
+#                   optional. The peer policy the emitted reference value
+#                   admits: the digest another guest's tunneld prints at start.
+#                   Left unset the value is unconstrained and admits a peer
+#                   running the named image under any policy, which is what
+#                   every set authored before ticket 18 says. Either way the
+#                   emitted set's own digest is recorded in the manifest as
+#                   policy_digest.
 #   TCB_FLOOR       minimum TCB the reference value admits, as
 #                   bootloader,tee,snp,microcode. Default 9,0,23,72 — the level
 #                   ticket 01 observed on this host. An authoring decision,
@@ -196,14 +204,25 @@ printf '%s\n' "$CMDLINE" > "$OUT/cmdline.txt"
 MEASUREMENT=$(bash "$HERE/predict-measurement.sh" "$OUT" -vcpus "$VCPUS" -vcpu-type "$VCPU_TYPE" \
                 -out "$OUT/predicted-measurement.txt")
 [[ "$MEASUREMENT" =~ ^[0-9a-f]{96}$ ]] || { echo "no measurement predicted" >&2; exit 1; }
-"$B/emit-refvals" -measurement "$MEASUREMENT" -key "$AUTHOR_KEY" -out "$OUT" \
-                  -tcb "$TCB_FLOOR" -policy "$POLICY"
+EMITTED=$("$B/emit-refvals" -measurement "$MEASUREMENT" -key "$AUTHOR_KEY" -out "$OUT" \
+                  -tcb "$TCB_FLOOR" -policy "$POLICY" \
+                  ${PEER_POLICY_DIGEST:+-policy-digest "$PEER_POLICY_DIGEST"})
+printf '%s\n' "$EMITTED"
+# The emitted set's own policy digest, which is what a peer puts in its
+# policy_digest to admit a guest running this image (ticket 18). It is SHA-256
+# over the bytes the author signed rather than over the file, so it comes from
+# the tool that knows that and never from sha256sum.
+POLICY_DIGEST=$(printf '%s\n' "$EMITTED" | sed -n 's/^policy digest: //p')
+[[ "$POLICY_DIGEST" =~ ^[0-9a-f]{64}$ ]] || { echo "emit-refvals printed no policy digest" >&2; exit 1; }
 {
   echo "# Inputs of the reference value set emitted beside this file (ticket 07)."
   echo "# The launch measurement in reference-values.json is a prediction from these"
   echo "# inputs. It was not read from any machine."
   echo
   echo "reference-values.json sha256: $(sha256sum "$OUT/reference-values.json" | cut -d' ' -f1)"
+  echo "policy digest:                $POLICY_DIGEST (sha256 over the signed bytes, not over the file;"
+  echo "                              this is what a peer's policy_digest names)"
+  echo "admits peer policy:           ${PEER_POLICY_DIGEST:-any (this value lists no policy_digest)}"
   echo "signed by author key:         $KEYHEX (Ed25519; also at /etc/attested-tunnel/author.pub in rootfs.img)"
   echo "launch policy:                $POLICY"
   echo "tcb floor (authoring choice): $TCB_FLOOR (bootloader,tee,snp,microcode)"
@@ -227,6 +246,10 @@ MEASUREMENT=$(bash "$HERE/predict-measurement.sh" "$OUT" -vcpus "$VCPUS" -vcpu-t
   echo "## Predicted launch measurement (offline, from the files above + vcpus=$VCPUS vcpu_type=$VCPU_TYPE; not read from a machine)"
   echo "launch_measurement: $MEASUREMENT"
   echo "emitted as reference-values.json (+ .sig, signed by the author key); inputs in reference-values.inputs.txt"
+  echo
+  echo "## Policy digest of the emitted reference value set (ticket 18): sha256 over the bytes the"
+  echo "## author signed, which is not sha256sum of the file. A peer admits this image by naming it."
+  echo "policy_digest: $POLICY_DIGEST"
   echo
   echo "## Provenance"
   echo "firmware: tianocore/edk2 $OVMF_TAG $OVMF_COMMIT OvmfPkg/AmdSev/AmdSevX64.dsc, built by docs/snp/image/build-ovmf-amdsev.sh"

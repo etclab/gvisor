@@ -250,6 +250,24 @@ func run(args []string, out io.Writer) int {
 	if observation, ok := acquirer.LastObservation(); ok {
 		logf("%s", observation)
 	}
+	// The number a peer's operator needs, printed where the only diagnostic
+	// surface a measured guest has can carry it (spec, user story 48). It is
+	// SHA-256 over the bytes the reference value author signed, so it is not
+	// what sha256sum of reference-values.json prints; emit-refvals prints the
+	// same number at build time and this prints it at run time, from the file
+	// the guest actually loaded.
+	logf("policy digest %s (sha256 over the signed reference value set; put it in a peer's policy_digest)",
+		td.PolicyDigest())
+
+	// And the entries that will admit any policy at all. This is the one place
+	// this design reads an absent field the weaker way, so it says so out loud,
+	// once per entry, every start — rather than leaving an operator to notice
+	// by reading a file they did not write.
+	for _, u := range td.Unconstrained() {
+		logf("reference value %d (%s, measurement %s) is unconstrained: it admits any policy",
+			u.Index, u.Vendor, abbreviate(hex.EncodeToString(u.Measurement)))
+	}
+
 	logf("listening on %s as %q; idle %s, maximum age %s",
 		td.Addr(), td.SandboxID(), limits.IdleTimeout, limits.MaxAge)
 

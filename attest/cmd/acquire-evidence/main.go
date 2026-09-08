@@ -37,6 +37,7 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"encoding/base64"
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"os"
@@ -59,7 +60,12 @@ func run(args []string) error {
 	reportDir := fs.String("report-dir", tsm.DefaultReportDir, "the kernel's vendor-neutral report interface")
 	out := fs.String("out", "", "directory to write the bundle to; empty writes nothing")
 	b64 := fs.Bool("base64", false, "print the bundle base64-encoded, for recovery from a serial console")
+	policyDigest := fs.String("policy-digest", "", "the policy this evidence commits to, hex: the digest of the sandbox's own signed reference value set. Empty binds 32 zero bytes, which is a policy no set names")
 	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	policy, err := parsePolicyDigest(*policyDigest)
+	if err != nil {
 		return err
 	}
 	if *chainDir == "" {
@@ -83,7 +89,11 @@ func run(args []string) error {
 	if err != nil {
 		return fmt.Errorf("encoding the public key: %w", err)
 	}
-	binding := attest.Binding{PublicKey: spki, Context: attest.BindingContextV1}
+	// v2: the binding covers the policy as well as the key (ADR-0002's
+	// amendment). A bundle acquired here is verified by cmd/verify-evidence,
+	// which speaks the same version by default and has a flag for the older
+	// one, since bundles recorded before ticket 18 are still on disk.
+	binding := attest.Binding{PublicKey: spki, Context: attest.BindingContextV2, PolicyDigest: policy}
 	callerSupplied := binding.CallerSuppliedBytes()
 
 	ev, err := acquirer.Acquire(context.Background(), callerSupplied)
@@ -95,9 +105,10 @@ func run(args []string) error {
 	fmt.Println(observation)
 	fmt.Printf("vendor              : %s\n", ev.Vendor)
 	fmt.Printf("public key (SPKI)   : %d bytes, %x\n", len(spki), spki)
-	fmt.Printf("binding context     : v1 (version byte 0x%02x), %x\n", binding.Context.Version(), binding.Context[:])
+	fmt.Printf("binding context     : v%d (version byte 0x%02x), %x\n", binding.Context.Version(), binding.Context.Version(), binding.Context[:])
+	fmt.Printf("policy digest       : %s\n", binding.PolicyDigest)
 	fmt.Printf("caller-supplied     : %x\n", callerSupplied[:])
-	fmt.Printf("  = SHA-512(public key ‖ binding context), the whole 64-byte field (ADR-0002)\n")
+	fmt.Printf("  = SHA-512(public key ‖ binding context ‖ policy digest), the whole 64-byte field (ADR-0002)\n")
 	fmt.Printf("evidence            : %d bytes\n", len(ev.Bytes))
 	fmt.Printf("certificate chain   : %d bytes, from %s (ADR-0005)\n", len(ev.Chain), *chainDir)
 	fmt.Printf("platform's own table: %d bytes — empty, as expected on this host\n", observation.CertificateTableBytes)
@@ -111,6 +122,7 @@ func run(args []string) error {
 			{"certificate-chain.bin", ev.Chain},
 			{"public-key.der", spki},
 			{"caller-supplied.bin", callerSupplied[:]},
+			{"policy-digest.bin", append([]byte(nil), binding.PolicyDigest[:]...)},
 			{"observation.txt", []byte(observation.String() + "\n")},
 		}
 		if err := os.MkdirAll(*out, 0o755); err != nil {
@@ -135,4 +147,24 @@ func run(args []string) error {
 
 func dump(name string, data []byte) {
 	fmt.Printf("===BEGIN %s===\n%s\n===END %s===\n", name, base64.StdEncoding.EncodeToString(data), name)
+}
+
+// parsePolicyDigest reads -policy-digest. Empty is 32 zero bytes: a definite
+// policy that no reference value set names, so a bundle acquired without one
+// is verifiable but not admissible, which is the honest state for a tool that
+// holds no set.
+func parsePolicyDigest(spec string) (attest.PolicyDigest, error) {
+	var digest attest.PolicyDigest
+	if spec == "" {
+		return digest, nil
+	}
+	raw, err := hex.DecodeString(spec)
+	if err != nil {
+		return digest, fmt.Errorf("-policy-digest is not hexadecimal: %v", err)
+	}
+	if len(raw) != len(digest) {
+		return digest, fmt.Errorf("-policy-digest is %d bytes; a policy digest is %d", len(raw), len(digest))
+	}
+	copy(digest[:], raw)
+	return digest, nil
 }

@@ -25,10 +25,28 @@
 // that refuses.
 //
 //	emit-refvals -measurement HEX -key author.key.pem -out DIR \
-//	             [-tcb bootloader,tee,snp,microcode] [-policy 0x30000]
+//	             [-tcb bootloader,tee,snp,microcode] [-policy 0x30000] \
+//	             [-policy-digest HEX]
+//	emit-refvals -digest-of PATH
 //
 // The measurement is an input. This program has no way to obtain one from a
 // platform, deliberately.
+//
+// -policy-digest is the peer policy this reference value admits: the digest of
+// the peer's own signed set, which that peer prints at startup. Left out, the
+// value is unconstrained and admits a peer running the named image under any
+// policy — which is what every set authored before ticket 18 says, and which
+// the guest that loads it logs one line about per value.
+//
+// After writing the pair, this prints the emitted document's own policy digest:
+//
+//	policy digest: <64 hex characters>
+//
+// That is the number to put in a *peer's* -policy-digest, and it is SHA-256
+// over the bytes the signature covers rather than over the file, so sha256sum
+// of reference-values.json is a different number and the wrong one. -digest-of
+// prints the same line for a set that already exists, without a key and without
+// loading it, so a harness can read a digest off a document it did not emit.
 package main
 
 import (
@@ -53,14 +71,39 @@ func main() {
 	out := flag.String("out", "", "output directory for reference-values.json and reference-values.json.sig")
 	tcb := flag.String("tcb", "", "TCB floor as bootloader,tee,snp,microcode (all four required)")
 	policy := flag.String("policy", "0x30000", "SEV-SNP guest policy the guest is launched with; the emitted guest_policy permits exactly its bits")
+	policyDigest := flag.String("policy-digest", "", "the peer policy this reference value admits, hex; empty leaves the value unconstrained, which admits any policy")
+	digestOf := flag.String("digest-of", "", "print the policy digest of an existing reference value set and exit; emits nothing")
 	flag.Parse()
-	if err := run(*measurement, *keyPath, *out, *tcb, *policy); err != nil {
+	if *digestOf != "" {
+		if err := printDigestOf(*digestOf); err != nil {
+			fmt.Fprintln(os.Stderr, "emit-refvals:", err)
+			os.Exit(1)
+		}
+		return
+	}
+	if err := run(*measurement, *keyPath, *out, *tcb, *policy, *policyDigest); err != nil {
 		fmt.Fprintln(os.Stderr, "emit-refvals:", err)
 		os.Exit(1)
 	}
 }
 
-func run(measurementHex, keyPath, out, tcbSpec, policySpec string) error {
+// printDigestOf prints the policy digest of a document already on disk.
+//
+// It does not load the set and does not want the author's public key: the
+// digest is over bytes, and asking a harness to hold a key in order to learn
+// the name of a file it can already read would buy nothing. What it reads has
+// to be the document as delivered, which is the only thing a signature ever
+// covered.
+func printDigestOf(path string) error {
+	document, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("policy digest: %s\n", attest.PolicyDigestOf(document))
+	return nil
+}
+
+func run(measurementHex, keyPath, out, tcbSpec, policySpec, policyDigestHex string) error {
 	m, err := hex.DecodeString(measurementHex)
 	if err != nil || len(m) == 0 {
 		return fmt.Errorf("-measurement must be non-empty hex")
@@ -78,6 +121,10 @@ func run(measurementHex, keyPath, out, tcbSpec, policySpec string) error {
 	if err != nil {
 		return err
 	}
+	admitted, err := parsePolicyDigest(policyDigestHex)
+	if err != nil {
+		return err
+	}
 	priv, err := loadKey(keyPath)
 	if err != nil {
 		return err
@@ -90,11 +137,17 @@ func run(measurementHex, keyPath, out, tcbSpec, policySpec string) error {
 	// The vendor is written down rather than defaulted: since format version 2
 	// every reference value says whose evidence it admits, and this program
 	// emits SEV-SNP values only (see the -measurement width check above).
+	//
+	// The egress section is not a parameter. Version 3 requires one, and the
+	// only thing this build can honestly say is that unattested egress is
+	// refused — nothing enforces permitting it — so the zero value is rendered
+	// and there is no flag with which to write down something untrue.
 	set := attest.ReferenceValueSet{Values: []attest.ReferenceValue{{
 		Vendor:            attest.VendorAMDSEVSNP,
 		LaunchMeasurement: m,
 		MinimumTCB:        floor,
 		GuestPolicy:       gp,
+		PolicyDigest:      admitted,
 	}}}
 	doc, err := attest.MarshalReferenceValueSet(set)
 	if err != nil {
@@ -120,9 +173,48 @@ func run(measurementHex, keyPath, out, tcbSpec, policySpec string) error {
 	if len(loaded.Values) != 1 || !bytes.Equal(loaded.Values[0].LaunchMeasurement, m) {
 		return fmt.Errorf("the emitted set loaded back with a different measurement")
 	}
+	if admitted == nil {
+		if loaded.Values[0].PolicyDigest != nil {
+			return fmt.Errorf("the emitted set loaded back constraining a policy nobody asked for")
+		}
+	} else if loaded.Values[0].PolicyDigest == nil || *loaded.Values[0].PolicyDigest != *admitted {
+		return fmt.Errorf("the emitted set loaded back admitting a different policy")
+	}
+	if loaded.PolicyDigest != attest.PolicyDigestOf(doc) {
+		return fmt.Errorf("the loader and this program disagree about the emitted set's policy digest")
+	}
+
 	fmt.Printf("author public key: %s\n", hex.EncodeToString(pub))
 	fmt.Printf("wrote %s and %s (loads back through attest.LoadReferenceValueSetFile)\n", docPath, docPath+attest.SignatureFileSuffix)
+	if admitted == nil {
+		fmt.Printf("admits any peer policy (no -policy-digest given; the guest logs one line per unconstrained value)\n")
+	} else {
+		fmt.Printf("admits peer policy: %s\n", admitted)
+	}
+	// Last, and on its own line, because it is the line a harness reads: the
+	// name of the document just written, for a peer's -policy-digest.
+	fmt.Printf("policy digest: %s\n", loaded.PolicyDigest)
 	return nil
+}
+
+// parsePolicyDigest reads -policy-digest: absent means unconstrained, and
+// anything present must be exactly a digest. A short or long value is refused
+// rather than padded, because it would name a policy no peer can present while
+// looking like an allow-list entry that works.
+func parsePolicyDigest(spec string) (*attest.PolicyDigest, error) {
+	if spec == "" {
+		return nil, nil
+	}
+	raw, err := hex.DecodeString(spec)
+	if err != nil {
+		return nil, fmt.Errorf("-policy-digest is not hexadecimal: %v", err)
+	}
+	var digest attest.PolicyDigest
+	if len(raw) != len(digest) {
+		return nil, fmt.Errorf("-policy-digest is %d bytes; a policy digest is %d", len(raw), len(digest))
+	}
+	copy(digest[:], raw)
+	return &digest, nil
 }
 
 func parseTCB(spec string) (attest.TCB, error) {

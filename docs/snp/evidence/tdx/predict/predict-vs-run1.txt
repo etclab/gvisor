@@ -1,0 +1,189 @@
+predict-rtmr2: RTMR2 computed from the image, nothing booted
+source              : /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-tdx-work/1676f99a-ef26-49c0-bb4a-480939f07027/scratchpad/img/disk.raw
+partitions          : gpt1 at byte 1074790400 (ext), gpt14 at byte 1048576 (unknown fs), gpt15 at byte 5242880 (vfat), gpt16 at byte 116391936 (ext)
+ESP / EFI directory : partition 15, /EFI/ubuntu
+note                : grubx64.efi: 124 modules built in, embedded prefix '/EFI/ubuntu'
+model inputs        : grub_platform=efi, feature_menuentry_id=y, feature_all_video_module=y, feature_timeout_style=y
+                      boot config measured 2 times, fwsetup --is-supported=0,
+                      shim mirrors vendor dbx into MokListX: False
+records predicted   : 86
+records recorded    : 86 (docs/snp/evidence/tdx/eventlog-wrongmap/ccel.bin)
+
+  0 OK  a 053357ea65185f010b8caa1fc265cfd5e80c7cc781254fa3f1e5ea9d345a87003cf761472a2f0423f15297f55cfe248f  MokList
+             <- shimx64.efi .vendor_cert vendor_authorized, 1080 bytes of DER, wrapped by shim in one EFI_SIGNATURE_LIST (EFI_CERT_X509_GUID, owner SHIM_LOCK_GUID)
+  1 OK  c 80ee2571334a57bf90238d21964447e542079d4805fa87887817a97dcb720906683a09b1ac634c76c0c0be1177f76110  MokListX
+             <- shim's empty-key-database placeholder: one EFI_SIGNATURE_LIST (EFI_CERT_SHA256_GUID, owner SHIM_LOCK_GUID) over 32 zero bytes. Ubuntu's shim 15.8-0ubuntu1 removes .addend/.addend_size from the MokListX entry, so the 8921-byte vendor dbx in .vendor_cert is never mirrored
+  2 OK  c 8d2ce87d86f55fcfab770a047b090da23270fa206832dfea7e0c946fff451f819add242374be551b0d6318ed6c7d41d8  MokListTrusted
+             <- MOK_VARIABLE_INVERSE: no MokListTrusted variable in NVRAM, so shim mirrors the single byte 0x01
+  3 OK  a b662589ce02c97161afbe058f2a5f2ce9bc110b6d6b9ce2daefdd35024b3226ce60481895d6f39395202f958adc54ba2  (hd0,gpt15)/EFI/ubuntu/grub.cfg
+             <- /EFI/ubuntu/grub.cfg in gpt15 at byte 5242880 (vfat), 112 bytes; the boot config, opened by `normal`
+  4 OK  a b662589ce02c97161afbe058f2a5f2ce9bc110b6d6b9ce2daefdd35024b3226ce60481895d6f39395202f958adc54ba2  (hd0,gpt15)/EFI/ubuntu/grub.cfg
+             <- /EFI/ubuntu/grub.cfg in gpt15 at byte 5242880 (vfat), 112 bytes; the boot config, opened by `normal`
+  5 OK  b 1b53acb6b136112626f76a642b553c8f8f854c8a981a3e3ccfa13e0baa32eca59a675c7d61c4f6c73d23dcdd2e2ef3a2  grub_cmd: search.fs_uuid b4f9057b-66e6-4f5a-bbba-a8086989e88f root
+             <- (hd0,gpt15)/EFI/ubuntu/grub.cfg line 1
+  6 OK  b 3998b46aa4561c52c3e3b07e57c03127a4acc2b65a72764f9ee9daf3ae0edc64cee435a0bc1254e074d86e0e7e68e59c  grub_cmd: set prefix=(hd0,gpt16)/grub
+             <- (hd0,gpt15)/EFI/ubuntu/grub.cfg line 2
+  7 OK  a eb772b276dc07ee8822910ff74ee3d36d2af0a66c0202046ec5aed537bcdd2373e7468c6dda47c1e38cc6a6b70b3673c  (hd0,gpt16)/grub/x86_64-efi/command.lst
+             <- /grub/x86_64-efi/command.lst in gpt16 at byte 116391936 (ext), 3707 bytes; read by normal.mod's $prefix hook (read_lists)
+  8 OK  a 73e17c3ea36dea576f107728630b937f74006954f2be9143eb124b76706173d7d9a68c32e7c90f74b0ff5ced89603914  (hd0,gpt16)/grub/x86_64-efi/fs.lst
+             <- /grub/x86_64-efi/fs.lst in gpt16 at byte 116391936 (ext), 219 bytes; read by normal.mod's $prefix hook (read_lists)
+  9 OK  a c7d01ae51404411a65b0d26a601a01d63b914e7477825d5ecd87840a36434c6bd956725441b82a66b6581c36bd38fad4  (hd0,gpt16)/grub/x86_64-efi/crypto.lst
+             <- /grub/x86_64-efi/crypto.lst in gpt16 at byte 116391936 (ext), 936 bytes; read by normal.mod's $prefix hook (read_lists)
+ 10 OK  a 800824fd124df10eeafd6bba36c596c33afbb527e3006b58c19fadced47b03c8ae92f89ef3caef2346b3bd545cfdd8de  (hd0,gpt16)/grub/x86_64-efi/terminal.lst
+             <- /grub/x86_64-efi/terminal.lst in gpt16 at byte 116391936 (ext), 162 bytes; read by normal.mod's $prefix hook (read_lists)
+ 11 OK  b 35976c7215488f26b8f07c250919cecdb5ddaaba8a27d7402e30533488152e7a8392bebdd55f401b2d12554f6a6e7d96  grub_cmd: configfile (hd0,gpt16)/grub/grub.cfg
+             <- (hd0,gpt15)/EFI/ubuntu/grub.cfg line 3
+ 12 OK  a e1de2fb33b778a8600565ebbcef1e1cc01a194e523b80deaf31581616094a72aa6dad2570b16cdb17fb6967fa6fed462  (hd0,gpt16)/grub/grub.cfg
+             <- /grub/grub.cfg in gpt16 at byte 116391936 (ext), 7531 bytes; read by `configfile`
+ 13 OK  b 085797486f51ef5ed2147001fb266eb663e9db92b7ccbc3d4a82b92d5f2902f5252ca4232ba97b8fdabff8161fa6688a  grub_cmd: [ -s (hd0,gpt16)/grub/grubenv ]
+             <- (hd0,gpt16)/grub/grub.cfg line 9
+ 14 OK  a a6b13b11a752a7d69031e8f90fe728b237e212c88c5f5ea1dac672f06472b15bc31333b32e62296311cf37df45b90389  (hd0,gpt16)/grub/grubenv
+             <- /grub/grubenv in gpt16 at byte 116391936 (ext), 1024 bytes; opened by the grub `[ -s ]` test, which measures it
+ 15 OK  b 541c82f4046719d9bda2729278af735f44e40d779dc860b69b6fc9e4ddc3d1233830fb101dc487f9524ccf5aa152f5f5  grub_cmd: set have_grubenv=true
+             <- (hd0,gpt16)/grub/grub.cfg line 10
+ 16 OK  b b0f5c156e035813aeb78d5ec47d4a6c2d0651c884384987907340fd18b45384cdab8cb460b5475427c848868b132887b  grub_cmd: load_env
+             <- (hd0,gpt16)/grub/grub.cfg line 11
+ 17 OK  a a6b13b11a752a7d69031e8f90fe728b237e212c88c5f5ea1dac672f06472b15bc31333b32e62296311cf37df45b90389  (hd0,gpt16)/grub/grubenv
+             <- /grub/grubenv in gpt16 at byte 116391936 (ext), 1024 bytes; read by `load_env`
+ 18 OK  b 1b2d9a89f98d0d60ee47648b016de86c2c7840b26bd31248be74c3146a07e0c83e889887fe212a121943ddbdab5d3246  grub_cmd: [  = 2 ]
+             <- (hd0,gpt16)/grub/grub.cfg line 13
+ 19 OK  b ae1061c45b3c25c89cea3f7ddee4640f8e776086f7d62fb4b9c1d56148a1be04bf11de6a395344567b538c6df06d079e  grub_cmd: [  = 1 ]
+             <- (hd0,gpt16)/grub/grub.cfg line 15
+ 20 OK  b 222e2570e52f72bb99f3ef97cb751dd4de0f3a545583ea4d66015680673f74bb27031bd0ca5cb3b58a25ec78ce8f4851  grub_cmd: [  ]
+             <- (hd0,gpt16)/grub/grub.cfg line 23
+ 21 OK  b 6bf6242f8eb0ca7217c6e3a5d4c6a62e5858440264e84696cd67306ef2db8cf625952d5fd9061daadefd181039479740  grub_cmd: set default=0
+             <- (hd0,gpt16)/grub/grub.cfg line 29
+ 22 OK  b 10b1f8d036aefd32ce770311ea00426e147b3daee378dd0679aeda81963b2c5389178787962ce9ea08e5571701cce94a  grub_cmd: [ xy = xy ]
+             <- (hd0,gpt16)/grub/grub.cfg line 32
+ 23 OK  b 8661953f518c898cb9407c831fa60654fdaf9804d25d99cbc31fd15255b532bad044c390b7a63b2961eed1e9beac6603  grub_cmd: menuentry_id_option=--id
+             <- (hd0,gpt16)/grub/grub.cfg line 33
+ 24 OK  b 952dce390ea9e283ee7b3defb664fc8d7f942a9598bd8b6d20a9843b28786ec7c27f6bafa28c0c16013cfb88dbb7b568  grub_cmd: export menuentry_id_option
+             <- (hd0,gpt16)/grub/grub.cfg line 38
+ 25 OK  b 222e2570e52f72bb99f3ef97cb751dd4de0f3a545583ea4d66015680673f74bb27031bd0ca5cb3b58a25ec78ce8f4851  grub_cmd: [  ]
+             <- (hd0,gpt16)/grub/grub.cfg line 40
+ 26 OK  b 66b65621df68a26172ff6779a8f046061e9c000cfab4e41286119c7df38e773ba91385021a91dd3236a3c9972fb3e454  grub_cmd: serial
+             <- (hd0,gpt16)/grub/grub.cfg line 84
+ 27 OK  b 65eb406f919a441f3e4bedc5b35c2b69006249c7fd2262732df04c6b069fcca6be82c46e95c423e60ac2b09ccfa95e8e  grub_cmd: terminal_input serial
+             <- (hd0,gpt16)/grub/grub.cfg line 85
+ 28 OK  b 065548d700589f5f793bff88c34ba265be1919f23811f9914f4b136bcb6cfa25c9dd5a7519fbfbdc5e51b3a0114a7914  grub_cmd: terminal_output serial
+             <- (hd0,gpt16)/grub/grub.cfg line 86
+ 29 OK  b ae1061c45b3c25c89cea3f7ddee4640f8e776086f7d62fb4b9c1d56148a1be04bf11de6a395344567b538c6df06d079e  grub_cmd: [  = 1 ]
+             <- (hd0,gpt16)/grub/grub.cfg line 87
+ 30 OK  b 10b1f8d036aefd32ce770311ea00426e147b3daee378dd0679aeda81963b2c5389178787962ce9ea08e5571701cce94a  grub_cmd: [ xy = xy ]
+             <- (hd0,gpt16)/grub/grub.cfg line 90
+ 31 OK  b 9f76cda76fd82e4b45a00f258357a71046172ea7dee437017ad0d94b489f7d8b021f121044e7886542f5dc8a1cf15617  grub_cmd: set timeout_style=hidden
+             <- (hd0,gpt16)/grub/grub.cfg line 91
+ 32 OK  b 9c452ba5b9a6104c8ed813cc0692b7e69c76c0ff1ce99fc0f38940f540b465b86b1e8f556885eb5acce9f10e6cef1b0d  grub_cmd: set timeout=0.1
+             <- (hd0,gpt16)/grub/grub.cfg line 92
+ 33 OK  b 934aafc99cb0a7cb1ef83c5a1eb01c31d60927f08b2ff72d2c05e0b4660ed1dd1e139738b3c5630502e629e8f593d7af  grub_cmd: [ -n true ]
+             <- (hd0,gpt16)/grub/grub.cfg line 102
+ 34 OK  b 4cf726ecd422b56df71dca2f377cb2a4ee6d9ca1f5b44096f8fc6607b73b56d0effc393100c506a93327511a72cbf707  grub_cmd: [ -n  ]
+             <- (hd0,gpt16)/grub/grub.cfg line 103
+ 35 OK  b 07f9190e876f9fdd341cae43e70953888bca1d46099d4ac294f721eaf476621bc1b84528107bc77a29fe9b1a0f4a1f63  grub_cmd: unset initrdless_boot_fallback_triggered
+             <- (hd0,gpt16)/grub/grub.cfg line 106
+ 36 OK  b 8e0666266caf626cedc801ac78249b0e70cca2936ae65826a8b0baaca9c6aa9bc84e1156b02b7749ac1e7ad797c6fe6a  grub_cmd: save_env initrdless_boot_fallback_triggered
+             <- (hd0,gpt16)/grub/grub.cfg line 108
+ 37 OK  b 697c60cddf7d386b91a21c6bd5005181777d52d625ae27fd61036ef4424c57d4b2b97552b484177d628761a396148dac  grub_cmd: set menu_color_normal=white/black
+             <- (hd0,gpt16)/grub/grub.cfg line 113
+ 38 OK  b 4eeef8dcc4a61638868d1dca696cad45913d3922b90ea7f264ba78f02e1f80095c9b668229ecff972c4cc586b14d9870  grub_cmd: set menu_color_highlight=black/light-gray
+             <- (hd0,gpt16)/grub/grub.cfg line 114
+ 39 OK  b 59fdd102c76e37edc2fd693f9e2abad40442496dc933c3aae5692cd88469ecf46e20c4c4e8e2d629098ac43ec96a6a38  grub_cmd: set partuuid=fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7
+             <- (hd0,gpt16)/grub/grub.cfg line 121
+ 40 OK  b 7a5ac0796fa82f4efa88b6213985b213d878e64988066a9958760166cf85c5f4778a00a3cf84952c18a6cad3f38553cb  grub_cmd: [  != 1 ]
+             <- (hd0,gpt16)/grub/grub.cfg line 130
+ 41 OK  b 6802779233f0e39527f3a52ff8984df7b6d34c784a0367ced3aa7553912e789caae96284fb797196aea39a9009ec5efe  grub_cmd: [ -e (hd0,gpt16)/grub/gfxblacklist.txt ]
+             <- (hd0,gpt16)/grub/grub.cfg line 131
+ 42 OK  b 8f47b40648176fcbbad9ba2139d0078fdf19b1bf4c7eb931276e1ea407c8b9dc747ed452918ecc790fd6ad9167265363  grub_cmd: [ efi != pc ]
+             <- (hd0,gpt16)/grub/grub.cfg line 132
+ 43 OK  b e16fb8446b3d8cdc0e33185504b69e3d00d9646d5c71c42311c1dbaa996451a9f1910b70f8fa1d97e6a4ec3abe6bf48d  grub_cmd: set linux_gfx_mode=keep
+             <- (hd0,gpt16)/grub/grub.cfg line 133
+ 44 OK  b f5e5365d6e97649411362c83e2e8808f7c19efa11d4f16d4ac66093214510beed55448882cbbdda8f0164688465905b0  grub_cmd: export linux_gfx_mode
+             <- (hd0,gpt16)/grub/grub.cfg line 149
+ 45 OK  b 1365196b59893b24a54b4a742db2cce82fa8f931637189ac167ba695339d6144adf12ec16ace1c30298ccb37274964c5  grub_cmd: menuentry Ubuntu --class ubuntu --class gnu-linux --class gnu --class os --id gnulinux-simple-d6a74ed7-6f8e-440e-a2d5-a30c23ac640b {\n\tr...
+             <- (hd0,gpt16)/grub/grub.cfg line 150
+ 46 OK  b 947a4c21add062db464655b9ee7944db6c1a35cbc8cc315261dcbc4d41f9c55bc2c332f64a0d782897a32ba29e9264f1  grub_cmd: submenu Advanced options for Ubuntu --id gnulinux-advanced-d6a74ed7-6f8e-440e-a2d5-a30c23ac640b {\n\tmenuentry 'Ubuntu, with Linux 6.17.0...
+             <- (hd0,gpt16)/grub/grub.cfg line 169
+ 47 OK  b a40b24ba7d9f7f2e05865e1949238c859b3066ee1ebaab9498fb3323bc09ef8d3d408dbc679af15a1bf492da68845731  grub_cmd: [ efi = efi ]
+             <- (hd0,gpt16)/grub/grub.cfg line 223
+ 48 OK  b 55c32199e4c3e07f319728b69514ee442efa76005d1f3b9726b16c9b803ea29a4d6776209f7b6e9adfc17dd184ff2fe1  grub_cmd: insmod bli
+             <- (hd0,gpt16)/grub/grub.cfg line 224
+ 49 OK  a 4a208507f8289b79050c885877f969b21ed4910c27c67d7ecb4db36a2c90edb8573a29345996371ab392edbb664e049b  (hd0,gpt16)/grub/x86_64-efi/bli.mod
+             <- /grub/x86_64-efi/bli.mod in gpt16 at byte 116391936 (ext), 3640 bytes; loaded by `insmod bli`
+ 50 OK  b a40b24ba7d9f7f2e05865e1949238c859b3066ee1ebaab9498fb3323bc09ef8d3d408dbc679af15a1bf492da68845731  grub_cmd: [ efi = efi ]
+             <- (hd0,gpt16)/grub/grub.cfg line 229
+ 51 OK  b bd75e1760d322c5a84c97007a6c8899aeef052fd47a4daae83ae8d117b26ce6898ba7160d6942dc417e53da46eb61d6a  grub_cmd: fwsetup --is-supported
+             <- (hd0,gpt16)/grub/grub.cfg line 230
+ 52 OK  b 6d1be92404da145cece392a01ad9cb92b4359142889659ea66122eee9fae6b753fa86eb64a1690a91f63b9169db52d3a  grub_cmd: [ 0 = 0 ]
+             <- (hd0,gpt16)/grub/grub.cfg line 231
+ 53 OK  b e15c09ef1ec1173e095ecfa9a370d46066a20e38da8ec81d8943ee917bb6ae03620f2669b3ceaa589643b2659b322c71  grub_cmd: menuentry UEFI Firmware Settings --id uefi-firmware {\n\t\t\tfwsetup\n\t\t}
+             <- (hd0,gpt16)/grub/grub.cfg line 232
+ 54 OK  b e4f58da9c87e0e86648fbb413a094b413f9dd5895d9f1e13ffb3b4f0d74210ce581617996b3aae8665fec96962d5a638  grub_cmd: [ -f (hd0,gpt16)/grub/custom.cfg ]
+             <- (hd0,gpt16)/grub/grub.cfg line 246
+ 55 OK  b a2771e4b5f38b5fc88ca6250a6bbb915842f8361d60a3cb68eef0af5fccd8df89d74aea2be1106ed846ff9febbc84f37  grub_cmd: [ -z (hd0,gpt16)/grub -a -f (hd0,gpt16)/grub/custom.cfg ]
+             <- (hd0,gpt16)/grub/grub.cfg line 248
+ 56 OK  b a30a7be4fb9beb8b2282ff1414d0a47eb11b36471a2628d4284bd9ae8e8a74a8e15f0a1e84b413636db7692a4a60cc1a  grub_cmd: setparams Ubuntu
+             <- (hd0,gpt16)/grub/grub.cfg line 150
+ 57 OK  b b0bb85ff789f25dd63e341736b94f4bf3acd1cff1c1df60bd3ffca5789eb737d2817a39af66de46640134bfbbb20dad7  grub_cmd: recordfail
+             <- (hd0,gpt16)/grub/grub.cfg line 151
+ 58 OK  b b353cf9833059be9abadf180d83abeb5eeeec00843b3f22476bb5db0ba2f4361a0260af3460aecb3c124eda90b6ca7a2  grub_cmd: set recordfail=1
+             <- (hd0,gpt16)/grub/grub.cfg line 67
+ 59 OK  b 934aafc99cb0a7cb1ef83c5a1eb01c31d60927f08b2ff72d2c05e0b4660ed1dd1e139738b3c5630502e629e8f593d7af  grub_cmd: [ -n true ]
+             <- (hd0,gpt16)/grub/grub.cfg line 68
+ 60 OK  b fef379383e771fed457fecfc7148e008c90234d0526b282690c57c93802cc9623c25923689de1c2fcb62669f10e3e1e1  grub_cmd: [ -z  ]
+             <- (hd0,gpt16)/grub/grub.cfg line 68
+ 61 OK  b 022e47c5e49bf3c934f488fcc07318489550a64db62aa07ca044c9dd9c2a0ff90637641b7c87bd77e3383e70039ea0fa  grub_cmd: save_env recordfail
+             <- (hd0,gpt16)/grub/grub.cfg line 68
+ 62 OK  b cbb709d13faf7d16f191751ae275f22a003503389e2e490a60cff78beb3cd546222d591904d51987487f03cdbd41e479  grub_cmd: load_video
+             <- (hd0,gpt16)/grub/grub.cfg line 152
+ 63 OK  b 10b1f8d036aefd32ce770311ea00426e147b3daee378dd0679aeda81963b2c5389178787962ce9ea08e5571701cce94a  grub_cmd: [ xy = xy ]
+             <- (hd0,gpt16)/grub/grub.cfg line 71
+ 64 OK  b 147bbdcd0704d1942b2171a097e7b08384f106cac76f7d5737e5fee2bc2e38dedb821b91e09ac184b46bb4dc86b4a8af  grub_cmd: insmod all_video
+             <- (hd0,gpt16)/grub/grub.cfg line 72
+ 65 OK  b f27a8ddb553135ee8002572775ae390b1bc7443ebbe11b863cd79ae66b2065cd02e98cfb170b897112986a88cd071ef8  grub_cmd: gfxmode keep
+             <- (hd0,gpt16)/grub/grub.cfg line 153
+ 66 OK  b 7c5ea1b10ba69215090e2490e10f9d2db5f6a5b0eb6e08d366cceb8acb4478857242221cf56323a493d1b3a958fa137c  grub_cmd: set gfxpayload=keep
+             <- (hd0,gpt16)/grub/grub.cfg line 123
+ 67 OK  b f7c74459bb0d16f8ae24911858879c7fcab3b8af909d811d945e09f7b16977bd65a819128d0b5c88ff29cb76f381bdd6  grub_cmd: [ keep = keep ]
+             <- (hd0,gpt16)/grub/grub.cfg line 124
+ 68 OK  b 8bc8e8c561f27f5988be9e69da2a00f626c7d3c735f599abcf27f83c02530ca76847dc5e15007f490e2f417a24b2f457  grub_cmd: set vt_handoff=vt.handoff=7
+             <- (hd0,gpt16)/grub/grub.cfg line 125
+ 69 OK  b 862ae797615324fd5c153dfbfcb226391262855ed2db2969f98456f0da17b6aa1c8aa2e2fe90bc1567295786a83c5371  grub_cmd: insmod gzio
+             <- (hd0,gpt16)/grub/grub.cfg line 154
+ 70 OK  b 995dbf6286dc9d47f0eee049a465847bb1e4cb1fa91deffb00dde832d2e00b109049c0f2edd6ad66525227758138a601  grub_cmd: [ xefi = xxen ]
+             <- (hd0,gpt16)/grub/grub.cfg line 155
+ 71 OK  b cac0f0b93ee7eaa45e36cda3faf3d0a5f5fc92ec4d24c3af4ad9584669598f34b603c211b220e56be52bdbc3a2f74ffb  grub_cmd: insmod part_gpt
+             <- (hd0,gpt16)/grub/grub.cfg line 156
+ 72 OK  b e142a594d988fda5a65b1424a4a48c2cf4b036dd779d4ae299af45b7d33b0bfe07a4a969d3c0da72c2ba53f9eeeaf7a6  grub_cmd: insmod ext2
+             <- (hd0,gpt16)/grub/grub.cfg line 157
+ 73 OK  b 271d094f506e9e0c5283ef62b714edfbea2178083c7e5e874e272f3e833d8c699b1f123e63b74f4457cd2c56587f8690  grub_cmd: search --no-floppy --fs-uuid --set=root b4f9057b-66e6-4f5a-bbba-a8086989e88f
+             <- (hd0,gpt16)/grub/grub.cfg line 158
+ 74 OK  b ae1061c45b3c25c89cea3f7ddee4640f8e776086f7d62fb4b9c1d56148a1be04bf11de6a395344567b538c6df06d079e  grub_cmd: [  = 1 ]
+             <- (hd0,gpt16)/grub/grub.cfg line 159
+ 75 OK  b 2164d946e27c14eed101898c7ed88f7699292963b92d40d8ea3085b43284a57b3f3dfb83ac0945eb28ae70dd5ffd5184  grub_cmd: echo GRUB_FORCE_PARTUUID set, attempting initrdless boot.
+             <- (hd0,gpt16)/grub/grub.cfg line 164
+ 76 OK  b a0d0d42792f7c4dd72f575cfa88c91b89946dcb2da19c70ff20588c5b91a0d5249edebc3f45b2316da126bfecb51ec42  grub_cmd: linux /vmlinuz-6.17.0-1022-gcp root=PARTUUID=fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7 ro console=ttyS0,115200 panic=-1
+             <- (hd0,gpt16)/grub/grub.cfg line 165
+ 77 OK  a d0bc4df3c4439be584307ae86186919b9ede90997265a74236b7885295cb4b068608611991c087204fc17e482ace8cb8  /vmlinuz-6.17.0-1022-gcp
+             <- /vmlinuz-6.17.0-1022-gcp in gpt16 at byte 116391936 (ext), 16775240 bytes; the kernel, opened by `linux`
+ 78 OK  b 8fe4c6d5af22949ddfd23ecfbcb740413871ef5aaeb1ccfcc81b348a37802e09240207d56147fbfada4d01d75e767e54  kernel_cmdline: /vmlinuz-6.17.0-1022-gcp root=PARTUUID=fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7 ro console=ttyS0,115200 panic=-1
+             <- the argv of the `linux` command, measured again by grub's kernel-command-line verifier
+ 79 OK  b 73d5fcf7750e63d42ab36b31da800a479873e4383ec2d8428ed572fa08429eccfbd63ebf7d342ba19a7ee828ed33d395  grub_cmd: initrdfail
+             <- (hd0,gpt16)/grub/grub.cfg line 167
+ 80 OK  b 934aafc99cb0a7cb1ef83c5a1eb01c31d60927f08b2ff72d2c05e0b4660ed1dd1e139738b3c5630502e629e8f593d7af  grub_cmd: [ -n true ]
+             <- (hd0,gpt16)/grub/grub.cfg line 55
+ 81 OK  b 4ec776a3a2b18fee0f7dc17976413c75f4c179f82bff62da6a79bc815354bcf929929356e54896e16ab4f67a4883c655  grub_cmd: [ -n fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7 ]
+             <- (hd0,gpt16)/grub/grub.cfg line 55
+ 82 OK  b fef379383e771fed457fecfc7148e008c90234d0526b282690c57c93802cc9623c25923689de1c2fcb62669f10e3e1e1  grub_cmd: [ -z  ]
+             <- (hd0,gpt16)/grub/grub.cfg line 56
+ 83 OK  b c9320c7d11fa8ba02fbf8fe0e952e2bf0b98478bb278e78b32e8af5f2fcade0ef682e200818ff2e84f279bab4e22b207  grub_cmd: set initrdfail=1
+             <- (hd0,gpt16)/grub/grub.cfg line 57
+ 84 OK  b 4cf726ecd422b56df71dca2f377cb2a4ee6d9ca1f5b44096f8fc6607b73b56d0effc393100c506a93327511a72cbf707  grub_cmd: [ -n  ]
+             <- (hd0,gpt16)/grub/grub.cfg line 58
+ 85 OK  b 902625d0fdf460a02c0c993eb960c9b8ad2acd3099ea2304eb3fea5816b3263dd98955f34aa8948e0234e864b7470cad  grub_cmd: save_env initrdfail
+             <- (hd0,gpt16)/grub/grub.cfg line 63
+
+RTMR2 predicted     : ecc9935861eba8e47817c10761468525af6df776fa2fa2767be5d6d152a5ae3a62da7b750df33d8069c7ff9bae811df9
+RTMR2 in quote      : ecc9935861eba8e47817c10761468525af6df776fa2fa2767be5d6d152a5ae3a62da7b750df33d8069c7ff9bae811df9 (docs/snp/evidence/tdx/eventlog-wrongmap/quote.bin)
+RTMR2 comparison    : MATCH
+
+RESULT: MATCH

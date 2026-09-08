@@ -1094,6 +1094,110 @@ func TestAnEgressSectionThatIsNotAPolicyIsRefused(t *testing.T) {
 	}
 }
 
+// TestAPolicyDigestOnAValueSurvivesTheDocument is the allow-list entry made
+// writable: a reference value is a measurement and a policy, and both have to
+// come back out of the file the way they went in.
+//
+// It is checked for both vendors in one document, because policy_digest is the
+// only field of this format that belongs to both, and a loader that read it out
+// of the amd-sev-snp branch alone would leave the Intel half unconstrained
+// while looking correct.
+func TestAPolicyDigestOnAValueSurvivesTheDocument(t *testing.T) {
+	a := newAuthor(t)
+	document := strings.NewReplacer(
+		`"vendor": "amd-sev-snp",`, `"vendor": "amd-sev-snp",
+      "policy_digest": "`+theListedPolicy.String()+`",`,
+		`"vendor": "intel-tdx",`, `"vendor": "intel-tdx",
+      "policy_digest": "`+theOtherListedPolicy.String()+`",`,
+	).Replace(theMixedDocument())
+
+	set := loads(t, a, document)
+	if len(set.Values) != 2 {
+		t.Fatalf("the document holds two values; %d loaded", len(set.Values))
+	}
+	for i, want := range []attest.PolicyDigest{theListedPolicy, theOtherListedPolicy} {
+		got := set.Values[i].PolicyDigest
+		if got == nil {
+			t.Errorf("value %d (%s) loaded unconstrained; the document lists %s", i, set.Values[i].Vendor, want)
+			continue
+		}
+		if *got != want {
+			t.Errorf("value %d (%s) lists policy %s; the document lists %s", i, set.Values[i].Vendor, got, want)
+		}
+	}
+	if got := set.Unconstrained(); len(got) != 0 {
+		t.Errorf("a set whose every value lists a policy reports %+v as unconstrained", got)
+	}
+
+	// It renders back out, and back in, unchanged. An author can therefore read
+	// a set out of the loader, hand it to the signer, and get the same
+	// allow-list rather than a weaker one.
+	rendered, err := attest.MarshalReferenceValueSet(set)
+	if err != nil {
+		t.Fatalf("rendering the set: %v", err)
+	}
+	back := loads(t, a, string(rendered))
+	if !reflect.DeepEqual(back.Values, set.Values) {
+		t.Errorf("the policy digests did not survive a round trip:\n%s", rendered)
+	}
+	if strings.Count(string(rendered), "policy_digest") != 2 {
+		t.Errorf("the rendered document names policy_digest %d times; want one per value:\n%s",
+			strings.Count(string(rendered), "policy_digest"), rendered)
+	}
+
+	// And a value that lists none renders without the field rather than with an
+	// empty one, because "" is a policy nobody has and absent is any policy.
+	unconstrained, err := attest.MarshalReferenceValueSet(loads(t, a, theDocument()))
+	if err != nil {
+		t.Fatalf("rendering an unconstrained set: %v", err)
+	}
+	if strings.Contains(string(unconstrained), "policy_digest") {
+		t.Errorf("a value listing no policy rendered a policy_digest field:\n%s", unconstrained)
+	}
+}
+
+// TestAPolicyDigestOfTheWrongShapeIsRefused: a digest that is not 32 bytes of
+// hexadecimal names no policy any peer can present.
+//
+// It would match nothing, which fails closed — and that is exactly why it is
+// refused out loud instead. An allow-list entry that silently matches nothing
+// is an entry that does not do its job while looking as though it does, and the
+// author who typed it will be reading a refusal about a peer rather than about
+// their file.
+func TestAPolicyDigestOfTheWrongShapeIsRefused(t *testing.T) {
+	a := newAuthor(t)
+	f := newFixture(t, defaultConfig())
+	document := theDocument()
+
+	// Control.
+	admits(t, f, loads(t, a, document))
+
+	for _, tc := range []struct{ name, digest string }{
+		{"too short", theListedPolicy.String()[:62]},
+		{"too long", theListedPolicy.String() + "00"},
+		{"empty", ""},
+		{"not hexadecimal", strings.Repeat("g", 64)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			modified := strings.Replace(document, `"vendor": "amd-sev-snp",`,
+				`"vendor": "amd-sev-snp",
+      "policy_digest": "`+tc.digest+`",`, 1)
+			if modified == document {
+				t.Fatal("the document has no vendor line; the fixture has drifted")
+			}
+			refusesToLoad(t, modified, a.sign(t, modified), a.public)
+		})
+	}
+}
+
+// theListedPolicy and theOtherListedPolicy are policy digests as a document
+// lists them. What they are digests of does not matter here — the loader never
+// computes one — only that they are 32 bytes and tell each other apart.
+var (
+	theListedPolicy      = attest.PolicyDigest{0xc1, 0xc2, 0xc3, 0xc4, 0xc5, 0xc6, 0xc7, 0xc8}
+	theOtherListedPolicy = attest.PolicyDigest{0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7, 0xf8}
+)
+
 // TestALoadedSetCarriesTheDigestOfTheBytesItsAuthorSigned is what makes the
 // digest nameable by two parties who never meet.
 //

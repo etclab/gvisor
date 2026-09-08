@@ -68,9 +68,14 @@ const (
 	// This is the refusal that keeps a known-vulnerable firmware level out.
 	ReasonTCBBelowFloor
 
-	// ReasonPolicyMismatch is a guest whose policy claims a capability the
-	// reference value does not permit. This is the refusal that keeps a
-	// debug-enabled guest out.
+	// ReasonPolicyMismatch is a guest whose policy is not one the reference
+	// value permits. It covers two things that are one question asked at two
+	// levels. The vendor's: a guest claiming a capability the reference value
+	// does not permit, which is the refusal that keeps a debug-enabled guest
+	// out. And this design's: a peer presenting a policy digest that no
+	// reference value for its measurement lists, which is the refusal that
+	// keeps a peer running the right image under the wrong behavioural policy
+	// out (ADR-0002's amendment).
 	ReasonPolicyMismatch
 
 	// ReasonBindingMismatch is evidence whose caller-supplied bytes are not the
@@ -93,7 +98,7 @@ var reasonNames = map[Reason]string{
 	ReasonChainNotRooted:        "evidence does not chain to the vendor root",
 	ReasonMeasurementNotInSet:   "launch measurement not in the reference value set",
 	ReasonTCBBelowFloor:         "platform below the TCB floor",
-	ReasonPolicyMismatch:        "guest policy not permitted by the reference value",
+	ReasonPolicyMismatch:        "guest policy or policy digest not permitted by the reference value",
 	ReasonBindingMismatch:       "caller-supplied bytes do not match the presented public key",
 	ReasonUnknownBindingContext: "unrecognised binding context",
 }

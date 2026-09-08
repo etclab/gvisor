@@ -264,6 +264,7 @@ func MarshalReferenceValueSet(set ReferenceValueSet) ([]byte, error) {
 		case VendorAMDSEVSNP:
 			doc.ReferenceValues = append(doc.ReferenceValues, wireAMDOut{
 				Vendor:            string(VendorAMDSEVSNP),
+				PolicyDigest:      renderPolicyDigest(rv.PolicyDigest),
 				LaunchMeasurement: hex.EncodeToString(rv.LaunchMeasurement),
 				MinimumTCB: wireTCBOut{
 					Bootloader: rv.MinimumTCB.Bootloader,
@@ -283,6 +284,7 @@ func MarshalReferenceValueSet(set ReferenceValueSet) ([]byte, error) {
 		case VendorIntelTDX:
 			doc.ReferenceValues = append(doc.ReferenceValues, wireTDXOut{
 				Vendor:             string(VendorIntelTDX),
+				PolicyDigest:       renderPolicyDigest(rv.PolicyDigest),
 				ObservedMRTD:       hexEach(rv.TDX.ObservedMRTD),
 				ObservedRTMR0:      hexEach(rv.TDX.ObservedRTMR0),
 				ObservedRTMR1:      hexEach(rv.TDX.ObservedRTMR1),
@@ -575,8 +577,14 @@ type wireDocument struct {
 }
 
 // wireAMDOut and wireTDXOut are one rendered reference value each.
+//
+// PolicyDigest is the one field of either that is omitted when it is not set,
+// and the exception is the whole point: an entry with no policy_digest is
+// unconstrained, and writing "policy_digest": "" would render that as a policy
+// nobody has rather than as no constraint at all.
 type wireAMDOut struct {
 	Vendor            string     `json:"vendor"`
+	PolicyDigest      string     `json:"policy_digest,omitempty"`
 	LaunchMeasurement string     `json:"launch_measurement"`
 	MinimumTCB        wireTCBOut `json:"minimum_tcb"`
 	GuestPolicy       wirePolicy `json:"guest_policy"`
@@ -584,6 +592,7 @@ type wireAMDOut struct {
 
 type wireTDXOut struct {
 	Vendor             string        `json:"vendor"`
+	PolicyDigest       string        `json:"policy_digest,omitempty"`
 	ObservedMRTD       []string      `json:"observed_mrtd"`
 	ObservedRTMR0      []string      `json:"observed_rtmr0"`
 	ObservedRTMR1      []string      `json:"observed_rtmr1"`
@@ -602,6 +611,15 @@ type wireTCBOut struct {
 type wireTDXTCBOut struct {
 	Status               string `json:"status"`
 	EvaluationDataNumber uint32 `json:"tcb_evaluation_data_number"`
+}
+
+// renderPolicyDigest renders an entry's policy digest, or the empty string for
+// an entry that lists none.
+func renderPolicyDigest(d *PolicyDigest) string {
+	if d == nil {
+		return ""
+	}
+	return d.String()
 }
 
 // hexEach renders a list of observed register values.
@@ -625,6 +643,18 @@ type wireValue struct {
 	// belongs to one vendor or the other, and which of them may appear is
 	// decided by this one.
 	Vendor *string `json:"vendor"`
+
+	// PolicyDigest is optional and belongs to both vendors, which makes it the
+	// only field here that does. It is the digest of the peer's own signed
+	// reference value set, in hexadecimal, exactly 32 bytes wide.
+	//
+	// Absent means unconstrained: this value admits a peer running the named
+	// image under any policy. That is the weaker reading of an absent field,
+	// which the rest of this format refuses to take — and it is taken here
+	// because the alternative refuses every set authored before the field
+	// existed, and because an unconstrained entry is reported by
+	// [ReferenceValueSet.Unconstrained] rather than passing unremarked.
+	PolicyDigest *string `json:"policy_digest"`
 
 	// MinimumTCB is required, for both vendors, and its shape is the vendor's.
 	// An author writing a trust root has an opinion about which platform levels
@@ -761,7 +791,11 @@ func (w wireValue) amdReferenceValue() (ReferenceValue, error) {
 	if err != nil {
 		return ReferenceValue{}, err
 	}
-	rv := ReferenceValue{Vendor: VendorAMDSEVSNP, LaunchMeasurement: measurement, MinimumTCB: tcb}
+	policy, err := w.policyDigest()
+	if err != nil {
+		return ReferenceValue{}, err
+	}
+	rv := ReferenceValue{Vendor: VendorAMDSEVSNP, LaunchMeasurement: measurement, MinimumTCB: tcb, PolicyDigest: policy}
 	if w.GuestPolicy != nil {
 		rv.GuestPolicy = GuestPolicy{
 			ABIMajor:            w.GuestPolicy.ABIMajor,
@@ -826,7 +860,34 @@ func (w wireValue) tdxReferenceValue() (ReferenceValue, error) {
 	if w.TDAttributesPolicy != nil {
 		tdx.TDPolicy = TDPolicy{AllowDebug: w.TDAttributesPolicy.AllowDebug}
 	}
-	return ReferenceValue{Vendor: VendorIntelTDX, TDX: tdx}, nil
+	policy, err := w.policyDigest()
+	if err != nil {
+		return ReferenceValue{}, err
+	}
+	return ReferenceValue{Vendor: VendorIntelTDX, TDX: tdx, PolicyDigest: policy}, nil
+}
+
+// policyDigest reads the entry's optional policy digest.
+//
+// A digest of the wrong width is refused rather than padded or truncated. It
+// would match nothing, which fails closed, but it is also unambiguously a
+// mistake in a file somebody wrote by hand — and an entry that silently matches
+// nothing is an allow-list entry that does not do its job while looking as
+// though it does.
+func (w wireValue) policyDigest() (*PolicyDigest, error) {
+	if w.PolicyDigest == nil {
+		return nil, nil
+	}
+	raw, err := hex.DecodeString(*w.PolicyDigest)
+	if err != nil {
+		return nil, fmt.Errorf("policy_digest is not hexadecimal: %v", err)
+	}
+	if len(raw) != sha256.Size {
+		return nil, fmt.Errorf("policy_digest is %d bytes, want %d; a digest of the wrong width names no policy any peer can present", len(raw), sha256.Size)
+	}
+	var digest PolicyDigest
+	copy(digest[:], raw)
+	return &digest, nil
 }
 
 // refuseTheOtherVendorsFields refuses a value carrying a field that belongs to

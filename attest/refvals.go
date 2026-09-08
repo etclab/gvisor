@@ -15,6 +15,7 @@
 package attest
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 )
@@ -66,6 +67,24 @@ type ReferenceValue struct {
 	// widths, so they get their own type rather than being packed into the
 	// three fields above.
 	TDX *TDXReferenceValue
+
+	// PolicyDigest is the policy a peer running this image must present:
+	// the digest of its own signed reference value set, folded into its
+	// evidence under ADR-0002's binding version 2.
+	//
+	// It is a pointer because nil means something different from the zero
+	// digest. Nil is unconstrained — this value admits a peer running the
+	// named image whatever policy it presents — and the zero digest is a
+	// policy nobody has, which admits nobody. A set is written by hand and
+	// reviewed by eye, so the difference between "any policy" and "this exact
+	// policy" must not be a value a reviewer can mistake for a default.
+	//
+	// Unconstrained is deliberately the *weaker* direction, and deliberately
+	// visible: a set loaded with unconstrained entries reports them through
+	// [ReferenceValueSet.Unconstrained] so a tunneld can say so at startup.
+	// Making it a hard failure instead would refuse every set authored before
+	// this field existed, including every one under docs/snp.
+	PolicyDigest *PolicyDigest
 }
 
 // A TDXReferenceValue is what an Intel TDX peer on a provider-booted VM must
@@ -161,6 +180,10 @@ type TDXTCBFloor struct {
 func (rv ReferenceValue) clone() ReferenceValue {
 	out := rv
 	out.LaunchMeasurement = cloneBytes(rv.LaunchMeasurement)
+	if rv.PolicyDigest != nil {
+		digest := *rv.PolicyDigest
+		out.PolicyDigest = &digest
+	}
 	if rv.TDX != nil {
 		tdx := *rv.TDX
 		tdx.ObservedMRTD = cloneDigests(rv.TDX.ObservedMRTD)
@@ -329,6 +352,75 @@ func (set ReferenceValueSet) validate() error {
 		}
 	}
 	return nil
+}
+
+// matchesMeasurement reports whether rv names the image these claims describe.
+//
+// Which field holds "the image" is the vendor's business: for SEV-SNP it is the
+// launch digest of initial guest memory, and for TDX it is RTMR2, the register
+// a reference value predicts. Both arrive above the seam in the same place —
+// [Claims.LaunchMeasurement] — so this is a comparison and not a second
+// implementation of either verifier's matching.
+//
+// It exists so that [Verification.Verify] can ask which entries the peer's
+// measurement matched without asking a vendor verifier a second question, and
+// without anything below the seam learning that policies exist.
+func (rv ReferenceValue) matchesMeasurement(claims Claims) bool {
+	switch rv.vendor() {
+	case VendorIntelTDX:
+		return rv.TDX != nil && bytes.Equal(rv.TDX.PredictedRTMR2, claims.LaunchMeasurement)
+	default:
+		return bytes.Equal(rv.LaunchMeasurement, claims.LaunchMeasurement)
+	}
+}
+
+// permits reports whether rv admits a peer presenting this policy digest: it
+// does if it lists that digest, and it does if it lists none at all.
+func (rv ReferenceValue) permits(presented PolicyDigest) bool {
+	return rv.PolicyDigest == nil || *rv.PolicyDigest == presented
+}
+
+// An UnconstrainedValue names one reference value that lists no policy digest,
+// so that whatever loaded the set can say so out loud.
+//
+// It carries the index, the vendor and the measurement rather than the value
+// itself because it exists to be written to a log: an operator reading one
+// needs to find the entry in the file, and handing out the trust root's own
+// values to make a log line would be handing them out for no reason.
+type UnconstrainedValue struct {
+	// Index is the entry's position in the document, counting from zero.
+	Index int
+
+	// Vendor is the entry's effective vendor.
+	Vendor Vendor
+
+	// Measurement is the image the entry names: the SEV-SNP launch measurement
+	// or the predicted RTMR2. It is a copy.
+	Measurement []byte
+}
+
+// Unconstrained lists the values in set that name no policy digest, in the
+// order the document holds them.
+//
+// An unconstrained value admits a peer running the named image under any policy
+// at all, which is what a set authored before policies existed says. That is a
+// legitimate thing to write and a dangerous thing to write by accident, so it
+// is neither refused nor silent: the loader admits it and the process that
+// loaded the set is expected to log it. [attest/cmd/tunneld] does, one line per
+// value, at startup.
+func (set ReferenceValueSet) Unconstrained() []UnconstrainedValue {
+	var out []UnconstrainedValue
+	for i, rv := range set.Values {
+		if rv.PolicyDigest != nil {
+			continue
+		}
+		measurement := rv.LaunchMeasurement
+		if rv.vendor() == VendorIntelTDX && rv.TDX != nil {
+			measurement = rv.TDX.PredictedRTMR2
+		}
+		out = append(out, UnconstrainedValue{Index: i, Vendor: rv.vendor(), Measurement: cloneBytes(measurement)})
+	}
+	return out
 }
 
 // vendor returns the effective vendor of rv: rv.Vendor itself, except that an

@@ -58,6 +58,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/hex"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -553,6 +554,82 @@ func TestAFakeTDXPlatformIsAcceptedThroughVerification(t *testing.T) {
 	}
 }
 
+// TestATDXPeerIsAdmittedOnlyByASetListingItsPolicy is ticket 18's allow-list at
+// the second vendor, which is the point of putting the check above the seam:
+// the entries are measurement and policy pairs for Intel exactly as they are
+// for AMD, and nothing in verify/tdx.go knows a policy exists.
+//
+// The platform is the fake one rather than a recorded quote, and it has to be.
+// The recordings were taken over fixed caller-supplied bytes, so their binding
+// cannot be chosen and a peer presenting a policy of its own cannot be built
+// out of one. What a recorded quote can show about this is the refusal, and
+// TestARecordedQuoteIsRefusedWhenItsBindingIsWrong shows it.
+func TestATDXPeerIsAdmittedOnlyByASetListingItsPolicy(t *testing.T) {
+	boot := tdxBoots[0]
+	platform := tdxNewFake(t, boot, tdxfake.Config{})
+	binding := attest.Binding{
+		PublicKey:    []byte("the TDX peer's presented public key"),
+		Context:      attest.BindingContextV2,
+		PolicyDigest: tdxPolicy,
+	}
+	evidence, err := platform.Acquire(context.Background(), binding.CallerSuppliedBytes())
+	if err != nil {
+		t.Fatalf("acquiring evidence: %v", err)
+	}
+	verify := func(t *testing.T, set attest.ReferenceValueSet, b attest.Binding) (attest.Attested, error) {
+		t.Helper()
+		v, err := attest.New(tdxFakeVerifier(t, platform), set)
+		if err != nil {
+			t.Fatalf("attest.New: %v", err)
+		}
+		return v.Verify(context.Background(), evidence, b)
+	}
+
+	// Listed: admitted, by the value that lists it.
+	attested, err := verify(t, tdxSetListing(t, boot, tdxPolicy), binding)
+	if err != nil {
+		t.Fatalf("a TDX peer presenting a listed policy was refused: %v", tdxLog(err))
+	}
+	if attested.Satisfied.PolicyDigest == nil || *attested.Satisfied.PolicyDigest != tdxPolicy {
+		t.Errorf("admitted by a value listing %v; want the one listing %s", attested.Satisfied.PolicyDigest, tdxPolicy)
+	}
+
+	// Unlisted: refused as a policy mismatch, with the presented digest named.
+	_, err = verify(t, tdxSetListing(t, boot, tdxOtherPolicy), binding)
+	if got := attest.ReasonOf(err); got != attest.ReasonPolicyMismatch {
+		t.Fatalf("refused with %v, want %v (%s)", got, attest.ReasonPolicyMismatch, tdxLog(err))
+	}
+	var refusal *attest.Refusal
+	if errors.As(err, &refusal) && !strings.Contains(refusal.Detail(), tdxPolicy.String()) {
+		t.Errorf("the operator log does not name the policy the peer presented: %s", refusal.LogString())
+	}
+
+	// Unconstrained: the set every TDX value on this branch was authored as,
+	// which lists no policy and admits any.
+	if _, err := verify(t, tdxSetFor(t, boot), binding); err != nil {
+		t.Errorf("an unconstrained TDX value refused a peer's policy: %v", tdxLog(err))
+	}
+
+	// And a digest swapped in flight is refused at the binding rather than
+	// admitted: both policies are listed, so the peer reaches the binding check
+	// instead of being turned away a step earlier as a policy mismatch.
+	claimed := binding
+	claimed.PolicyDigest = tdxOtherPolicy
+	both := tdxSetListing(t, boot, tdxPolicy)
+	both.Values = append(both.Values, tdxSetListing(t, boot, tdxOtherPolicy).Values...)
+	if _, err := verify(t, both, claimed); attest.ReasonOf(err) != attest.ReasonBindingMismatch {
+		t.Fatalf("refused with %v, want %v (%s)", attest.ReasonOf(err), attest.ReasonBindingMismatch, tdxLog(err))
+	}
+}
+
+// tdxSetListing is tdxSetFor with a policy digest on its one value.
+func tdxSetListing(t *testing.T, boot tdxBoot, policy attest.PolicyDigest) attest.ReferenceValueSet {
+	t.Helper()
+	set := tdxSetFor(t, boot)
+	set.Values[0].PolicyDigest = &policy
+	return set
+}
+
 // TestNoTDXEvidenceIsRefused: a peer that presents none must be refused, not
 // treated as unknown.
 func TestNoTDXEvidenceIsRefused(t *testing.T) {
@@ -589,6 +666,10 @@ func TestAVerifierWhoseCollateralIsMissingRefusesRatherThanFetching(t *testing.T
 // the digest of is settled in refvalsfile_test.go; here it only has to be
 // something a peer can bind and a set can list.
 var tdxPolicy = attest.PolicyDigest{0xd1, 0xd2, 0xd3, 0xd4, 0xd5, 0xd6, 0xd7, 0xd8}
+
+// tdxOtherPolicy is a second sandbox's policy: a digest this peer does not
+// present, and therefore one an allow-list holding only it must refuse.
+var tdxOtherPolicy = attest.PolicyDigest{0xe1, 0xe2, 0xe3, 0xe4, 0xe5, 0xe6, 0xe7, 0xe8}
 
 // tdxRecordedTDAttributes is TD_ATTRIBUTES as every recorded boot carries it:
 // DEBUG clear. It is a fact about the recordings, used to build a debugging

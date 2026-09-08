@@ -169,6 +169,130 @@ func TestGuestPolicyNotPermittedIsRefused(t *testing.T) {
 	refuses(t, verification(t, f, defaultSet()), f.evidence, f.binding, attest.ReasonPolicyMismatch)
 }
 
+// TestAPeerPresentingAListedPolicyIsAccepted is the first half of ticket 18's
+// allow-list: entries are measurement and policy pairs, and a peer running the
+// named image under a listed policy is admitted.
+//
+// The verdict names the entry that admitted it, which is what an operator reads
+// when two entries name one image during a policy rollout.
+func TestAPeerPresentingAListedPolicyIsAccepted(t *testing.T) {
+	f := newFixture(t, defaultConfig())
+
+	attested := accepts(t, verification(t, f, setListingPolicies(thePolicy)), f)
+	if attested.Satisfied.PolicyDigest == nil || *attested.Satisfied.PolicyDigest != thePolicy {
+		t.Errorf("admitted by a value listing %v; want the one listing %s", attested.Satisfied.PolicyDigest, thePolicy)
+	}
+
+	// A set naming this image twice, under two policies, admits it by the entry
+	// that lists the one it presents. That is the rollout case: an operator
+	// adds the new policy beside the old and neither peer stops working.
+	rollout := setListingPolicies(otherPolicy, thePolicy)
+	attested = accepts(t, verification(t, f, rollout), f)
+	if attested.Satisfied.PolicyDigest == nil || *attested.Satisfied.PolicyDigest != thePolicy {
+		t.Errorf("admitted by a value listing %v; want the one listing the presented %s",
+			attested.Satisfied.PolicyDigest, thePolicy)
+	}
+}
+
+// TestAPeerPresentingAnUnlistedPolicyIsRefused is the refusal the allow-list
+// exists for: the right image, running behaviour this verifier did not
+// authorise.
+//
+// Everything else about the peer is in order — genuine platform, authentic
+// evidence, measurement in the set, TCB met, guest policy permitted, binding
+// sound — so a refusal here is the policy digest and nothing else. The detail
+// names the digest the peer presented, because the operator's next move is to
+// decide whether to add it to the set or to ask the peer what it is running.
+func TestAPeerPresentingAnUnlistedPolicyIsRefused(t *testing.T) {
+	f := newFixture(t, defaultConfig())
+
+	// Control: the same peer against a set that lists its policy.
+	accepts(t, verification(t, f, setListingPolicies(thePolicy)), f)
+
+	v := verification(t, f, setListingPolicies(otherPolicy))
+	refuses(t, v, f.evidence, f.binding, attest.ReasonPolicyMismatch)
+
+	_, err := v.Verify(context.Background(), f.evidence, f.binding)
+	var r *attest.Refusal
+	if !errors.As(err, &r) {
+		t.Fatalf("expected a refusal, got %v", err)
+	}
+	if !strings.Contains(r.Detail(), thePolicy.String()) {
+		t.Errorf("the operator log does not name the policy the peer presented: %s", r.LogString())
+	}
+	if strings.Contains(r.Detail(), otherPolicy.String()) {
+		t.Errorf("the operator log names a policy the set holds; a refused peer's log line is not the place "+
+			"to print the allow-list back: %s", r.LogString())
+	}
+}
+
+// TestAnEntryWithNoPolicyDigestAdmitsAnyPolicy is the compatibility direction,
+// stated as a test so that it is a decision rather than an oversight.
+//
+// A reference value that lists no policy_digest admits the image under any
+// policy at all. Every set authored before ticket 18 is of that shape, and
+// refusing them would have made this change a flag day for every deployment.
+// The weakening is real, which is why a loaded set reports its unconstrained
+// entries and a tunneld prints one line for each at startup.
+func TestAnEntryWithNoPolicyDigestAdmitsAnyPolicy(t *testing.T) {
+	unconstrained := defaultSet()
+	if unconstrained.Values[0].PolicyDigest != nil {
+		t.Fatal("the default set constrains a policy; this test is about one that does not")
+	}
+	for _, policy := range []attest.PolicyDigest{thePolicy, otherPolicy, {}} {
+		f := newFixturePresenting(t, defaultConfig(), policy)
+		accepts(t, verification(t, f, unconstrained), f)
+	}
+
+	// And the set says which entries those were, so nothing has to notice by
+	// reading the file.
+	if got := unconstrained.Unconstrained(); len(got) != 1 || got[0].Index != 0 || got[0].Vendor != attest.VendorAMDSEVSNP {
+		t.Errorf("the set reports %+v as unconstrained; want its one value", got)
+	}
+	if got := setListingPolicies(thePolicy).Unconstrained(); len(got) != 0 {
+		t.Errorf("a set whose every value lists a policy reports %+v as unconstrained", got)
+	}
+}
+
+// TestAPolicyDigestSwappedInFlightIsRefusedAsABindingMismatch is what stops the
+// allow-list being a formality.
+//
+// The peer's evidence was acquired over thePolicy; it is presented claiming
+// otherPolicy, which is what an attacker holding a genuine report from a
+// sandbox with a permissive policy would do to be admitted as a strict one.
+// Both digests are in the set on purpose: without that the peer would be
+// refused a step earlier as a policy mismatch, and this test would pass while
+// proving nothing about the binding.
+func TestAPolicyDigestSwappedInFlightIsRefusedAsABindingMismatch(t *testing.T) {
+	f := newFixture(t, defaultConfig())
+	v := verification(t, f, setListingPolicies(thePolicy, otherPolicy))
+
+	// Control: presented honestly, against that same set, it is admitted.
+	accepts(t, v, f)
+
+	claimed := f.binding
+	claimed.PolicyDigest = otherPolicy
+	refuses(t, v, f.evidence, claimed, attest.ReasonBindingMismatch)
+}
+
+// setListingPolicies is defaultSet with one value per named policy digest, each
+// naming theMeasurement. A set holding two is the policy rollout: one image,
+// two policies, both admitted while a deployment moves between them.
+func setListingPolicies(digests ...attest.PolicyDigest) attest.ReferenceValueSet {
+	var set attest.ReferenceValueSet
+	for _, d := range digests {
+		digest := d
+		set.Values = append(set.Values, attest.ReferenceValue{
+			Vendor:            attest.VendorAMDSEVSNP,
+			LaunchMeasurement: theMeasurement,
+			MinimumTCB:        floorTCB,
+			GuestPolicy:       permittedPolicy,
+			PolicyDigest:      &digest,
+		})
+	}
+	return set
+}
+
 // TestNoEvidenceIsRefused is a non-confidential VM: it has nothing to say, and
 // it must be refused rather than treated as unknown.
 func TestNoEvidenceIsRefused(t *testing.T) {

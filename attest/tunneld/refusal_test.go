@@ -665,6 +665,99 @@ func TestEveryWayEvidenceCanFailRefusesTheTunnel(t *testing.T) {
 	}
 }
 
+// TestATunneldAdmitsAPeerOnlyIfItsSetListsThatPeersPolicy is ticket 18 through
+// the public API, in the shape the live run on two guests takes: one dialer,
+// two listeners, and the only difference between them is which policy digest
+// their reference value names.
+//
+// The dialer presents the digest of its own signed set, which is the number its
+// start log prints and the number an operator copies. One listener has that
+// number in its allow-list and carries traffic; the other has somebody else's
+// and refuses, naming the digest the peer presented so that the operator can
+// see which of the two they got wrong. Everything else about the two listeners
+// is identical, so the verdicts cannot differ for any other reason.
+func TestATunneldAdmitsAPeerOnlyIfItsSetListsThatPeersPolicy(t *testing.T) {
+	// The dialer's own set: unconstrained, so it admits either listener
+	// whatever policy that listener presents, and the verdicts under test are
+	// the listeners' alone.
+	dialerSet := refusalSet(imageA, platformTCB, permitted)
+	dialerPolicy := policyOf(t, dialerSet)
+
+	listening := func(t *testing.T, name string, admitted attest.PolicyDigest) *refusalNode {
+		t.Helper()
+		set := refusalSet(imageA, platformTCB, permitted)
+		set.Values[0].PolicyDigest = &admitted
+		return startRefusalNode(t, name, refusalGenuine(t), refusalFakeRoot(t), set, nil)
+	}
+	admitting := listening(t, "admitting", dialerPolicy)
+	refusing := listening(t, "refusing", policyOf(t, refusalSet(imageB, platformTCB, permitted)))
+
+	dialer := startRefusalNode(t, "dialer", refusalGenuine(t), refusalFakeRoot(t), dialerSet,
+		tunneld.PeerTable{"admitting": admitting.Addr().String(), "refusing": refusing.Addr().String()})
+
+	// The digest the dialer presents is the digest of the document it loaded,
+	// which is what makes an operator able to compute it from the file.
+	if got := dialer.PolicyDigest(); got != dialerPolicy {
+		t.Fatalf("the dialer presents policy %s; its own set is %s", got, dialerPolicy)
+	}
+	// And it says which of its own values admit any policy, since its set lists
+	// none.
+	if u := dialer.Unconstrained(); len(u) != 1 || u[0].Index != 0 {
+		t.Errorf("the dialer reports %+v as unconstrained; want its one value", u)
+	}
+	if u := admitting.Unconstrained(); len(u) != 0 {
+		t.Errorf("a tunneld whose value lists a policy reports %+v as unconstrained", u)
+	}
+
+	// The listener that names this dialer's policy carries traffic.
+	ch, err := dialer.Peer(ctx(t), "admitting")
+	if err != nil {
+		t.Fatalf("a peer whose policy the listener lists was refused: %v", err)
+	}
+	defer ch.Close()
+	got, err := ch.Exchange(ctx(t), []byte("hello"))
+	if err != nil {
+		t.Fatalf("the exchange failed: %v", err)
+	}
+	if want := "admitting:hello"; string(got) != want {
+		t.Errorf("the exchange returned %q; want %q", got, want)
+	}
+	if x := admitting.refusals.none(); len(x) != 0 {
+		t.Errorf("the admitting listener logged %d refusals", len(x))
+	}
+
+	// The listener that names somebody else's refuses, and says whose policy it
+	// was handed.
+	if _, err := dialer.Peer(ctx(t), "refusing"); err == nil {
+		t.Fatal("a peer whose policy no reference value lists was admitted")
+	}
+	r := refusing.refusals.next(t)
+	if r.Reason() != attest.ReasonPolicyMismatch {
+		t.Errorf("refused with %v; want %v (log: %s)", r.Reason(), attest.ReasonPolicyMismatch, r.LogString())
+	}
+	if !strings.Contains(r.LogString(), dialerPolicy.String()) {
+		t.Errorf("the operator log does not name the policy the peer presented: %s", r.LogString())
+	}
+	if n := refusing.served.Load(); n != 0 {
+		t.Errorf("%d exchanges were answered over a refused tunnel", n)
+	}
+}
+
+// policyOf is the policy digest a tunneld that loaded this set will present.
+//
+// It renders the set the way writeSet renders it, which is the only way this
+// package writes one, so the two produce the same document and therefore the
+// same digest. That is asserted rather than assumed in the test above, which
+// compares this against what the running tunneld reports.
+func policyOf(t *testing.T, set attest.ReferenceValueSet) attest.PolicyDigest {
+	t.Helper()
+	doc, err := attest.MarshalReferenceValueSet(set)
+	if err != nil {
+		t.Fatalf("rendering a set: %v", err)
+	}
+	return attest.PolicyDigestOf(doc)
+}
+
 // TestAPeerSpeakingAnUnrecognisedBindingContextIsRefused is ADR-0002's
 // reservation made a test, in both directions.
 //

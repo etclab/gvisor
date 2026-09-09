@@ -1,0 +1,19 @@
+# ticket 18, policy-mismatch: the policy digests this scenario turns on.
+#
+# A policy digest is SHA-256 over the bytes a reference value set's author
+# signed, so it is not sha256sum of reference-values.json. Each number below
+# was printed by emit-refvals when it wrote the set, checked against
+# 'emit-refvals -digest-of' on the document as delivered, and checked again
+# against the line the guest holding that set printed at start.
+
+launch measurement, both guests : a60effdeb1668a5c19c2116797d30d5b3213e4559b5a8e0c7b795934ab3c5a8d4bdba150ab16eb21d226576e884750b2
+D_A, guest A's own policy       : 8bf8b2a3f22de6b5ab4e154c22cddb1f7677679c7502eeccec4f261518afcf0b
+    the digest of set-a.json, which is on guest A's config device
+D_B, guest B's own policy       : 85c03a8250025c1a75408718993027e3576e6dd3f3a71a9f87c98be1815bf1e7
+    the digest of set-b.json, which is on guest B's config device
+
+set-a.json's value admits policy : 85c03a8250025c1a75408718993027e3576e6dd3f3a71a9f87c98be1815bf1e7   (guest B's, so A admits B)
+set-b.json's value admits policy : 4ece55849cd4a4a4ad97965b4f58fc8336abab4d50958aadddd185ccede035d6
+    = sha256 of the ASCII string "not the policy guest A presents", with no
+    trailing newline. It is the digest of no document: guest A presents D_A,
+    so B refuses A as a policy mismatch and names D_A when it does.

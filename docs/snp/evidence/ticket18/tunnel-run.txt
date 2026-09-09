@@ -1,0 +1,293 @@
+=== two attested guests, from image-ticket18 ===
+date        : 2026-09-09T00:29:36Z
+repo        : cb11d46aa07965052e1adfa3a056ef1239bf0e04 on tdx-attested-tunnel
+image       : /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket18
+mode        : SEV-SNP (privileged, through the spool)
+scenarios   : live policy-pinned policy-mismatch
+
+predicted launch measurement of the image both guests boot:
+  a60effdeb1668a5c19c2116797d30d5b3213e4559b5a8e0c7b795934ab3c5a8d4bdba150ab16eb21d226576e884750b2
+the reference value set on both config devices names exactly that, signed by the
+author key baked into the image at /etc/attested-tunnel/author.pub (ADR-0004).
+
+spool       : /home/pniroula/Projects/gvisor/docs/snp/root-spool
+
+### live: two attested guests, an exchange, and the latency table
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config device written to /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/ticket18-run/live/config-a.img (74f2df6b7cfa2aad…, not measured)
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config device written to /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/ticket18-run/live/config-b.img (c3cfabb99210a26b…, not measured)
+spooled /home/pniroula/Projects/gvisor/docs/snp/root-spool/tunnel-763157-live.job; waiting up to 780s for the runner
+live finished, rc=0
+    | guest A qemu exited 0
+    | guest B qemu exited 0
+relay:
+    | l2relay: RELAYED a_to_b_frames=764 b_to_a_frames=757 a_to_b_bytes=91629 b_to_a_bytes=95241 tampered=0
+    | l2relay: MARKER not found hits=0 marker='attested-tunnel-plaintext-marker' in 1521 frames carrying 186870 bytes
+    | l2relay: what was on the segment:
+    |   ethertypes : IPv4=1476, ARP=21, IPv6=24
+    |   ip protocols: UDP=1476
+    |   arp targets : 10.14.0.2, 10.14.0.3
+    |   10.14.0.2 -> 10.14.0.3 proto=UDP frames=742
+    |   10.14.0.3 -> 10.14.0.2 proto=UDP frames=734
+PASS  guest-a: booted the measured image and ran the packaged tunneld
+PASS  guest-a: no writable path in the image is executable
+PASS  guest-a: read the author key from inside the launch measurement
+PASS  guest-a: read the reference value set and chain from the config device
+PASS  guest-b: booted the measured image and ran the packaged tunneld
+PASS  guest-b: no writable path in the image is executable
+PASS  guest-b: read the author key from inside the launch measurement
+PASS  guest-b: read the reference value set and chain from the config device
+PASS  guest-a: acquired its own evidence from the platform
+PASS  guest-a: bundled the chain provisioned on its config device, not the platform's
+PASS  guest-a: is listening
+PASS  guest-b: acquired its own evidence from the platform
+PASS  guest-b: bundled the chain provisioned on its config device, not the platform's
+PASS  guest-b: is listening
+PASS  guest-a admitted its peer's evidence
+PASS  guest-b admitted its peer's evidence
+PASS  guest-b established a tunnel
+PASS  guest-b exchanged over it, warm
+PASS  guest-b ran concurrent exchanges on one tunnel
+PASS  guest-a answered guest-b's exchanges
+PASS  guest-b's exercise completed
+PASS  neither guest refused the other
+    guest-a presented key b64cbd6ba3530ec2d72c74f0994d6d9754719397586041f6a113e031f998c62054b7e3e63668c12b4cc0f567d360214925e752746620c941b16863758704cfaa
+    guest-b presented key 337fad466e6ead5b07490110a3b651e40c884f1f257fc98405c25fa262ceec1e8b9d7a1b8e6600b25735e484953c3d069b96f3fb056afcdb58e6b01ed10a673f
+    both presented chain  0957b4aa0678b511c89d6f9b49742ab114043b662408b13e9f7b43d1033d5a81 / 0957b4aa0678b511c89d6f9b49742ab114043b662408b13e9f7b43d1033d5a81
+PASS  the two guests presented distinct keys
+PASS  the two guests presented the same chain, which is what one chip means
+PASS  each guest reported the measurement predicted offline for the image both booted
+PASS  the exchange went through the relay
+PASS  the relay found no plaintext on the wire
+    addresses resolved on the segment: 10.14.0.2, 10.14.0.3
+PASS  no guest looked for a gateway or anything else off the segment
+    passes: 10, of which cost a verification: 1 (maximum age 15m, run 300s)
+PASS  asking for a warm peer again cost no handshake
+
+### policy-pinned: guest A's value names guest B's policy digest and no other
+PASS  policy-pinned: re-signing with the key whose public half is inside the launch measurement
+    | author public key: 3f27c388b8c18afb53cce0214c3a9c7650290073d23ceffe09042c8d017dec72
+    | wrote /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/ticket18-run/policy-pinned/refvals-b/reference-values.json and /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/ticket18-run/policy-pinned/refvals-b/reference-values.json.sig (loads back through attest.LoadReferenceValueSetFile)
+    | admits any peer policy (no -policy-digest given; the guest logs one line per unconstrained value)
+    | policy digest: c7294dec1685169613b4fd90b8845596c43a3fec0474270b0e8f3348762de1b4
+    | author public key: 3f27c388b8c18afb53cce0214c3a9c7650290073d23ceffe09042c8d017dec72
+    | wrote /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/ticket18-run/policy-pinned/refvals-a/reference-values.json and /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/ticket18-run/policy-pinned/refvals-a/reference-values.json.sig (loads back through attest.LoadReferenceValueSetFile)
+    | admits peer policy: c7294dec1685169613b4fd90b8845596c43a3fec0474270b0e8f3348762de1b4
+    | policy digest: 4f6ba312d5cf712ab393d9b6ec0207e1ea47e44534554b35377968d2dd3e0a40
+PASS  the digest emit-refvals printed for guest A's set is the digest of the document it wrote
+PASS  the digest emit-refvals printed for guest B's set is the digest of the document it wrote
+    # ticket 18, policy-pinned: the policy digests this scenario turns on.
+    #
+    # A policy digest is SHA-256 over the bytes a reference value set's author
+    # signed, so it is not sha256sum of reference-values.json. Each number below
+    # was printed by emit-refvals when it wrote the set, checked against
+    # 'emit-refvals -digest-of' on the document as delivered, and checked again
+    # against the line the guest holding that set printed at start.
+    
+    launch measurement, both guests : a60effdeb1668a5c19c2116797d30d5b3213e4559b5a8e0c7b795934ab3c5a8d4bdba150ab16eb21d226576e884750b2
+    D_A, guest A's own policy       : 4f6ba312d5cf712ab393d9b6ec0207e1ea47e44534554b35377968d2dd3e0a40
+        the digest of set-a.json, which is on guest A's config device
+    D_B, guest B's own policy       : c7294dec1685169613b4fd90b8845596c43a3fec0474270b0e8f3348762de1b4
+        the digest of set-b.json, which is on guest B's config device
+    
+    set-a.json's value admits policy : c7294dec1685169613b4fd90b8845596c43a3fec0474270b0e8f3348762de1b4   (guest B's, and no other)
+    set-b.json's value admits policy : any — it lists no policy_digest, which
+        guest B reports at start as one unconstrained value. It cannot name D_A:
+        D_A is the digest of a set that names D_B, and a set naming the digest of
+        a set that names it does not exist.
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config device written to /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/ticket18-run/policy-pinned/config-a.img (827064754b99346b…, not measured)
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config device written to /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/ticket18-run/policy-pinned/config-b.img (533b076d900dc9eb…, not measured)
+spooled /home/pniroula/Projects/gvisor/docs/snp/root-spool/tunnel-763157-policy-pinned.job; waiting up to 600s for the runner
+policy-pinned finished, rc=0
+    | guest A qemu exited 0
+    | guest B qemu exited 0
+relay:
+    | l2relay: RELAYED a_to_b_frames=108 b_to_a_frames=89 a_to_b_bytes=25472 b_to_a_bytes=27201 tampered=0
+    | l2relay: MARKER not found hits=0 marker='attested-tunnel-plaintext-marker' in 197 frames carrying 52673 bytes
+    | l2relay: what was on the segment:
+    |   ethertypes : IPv4=176, ARP=4, IPv6=17
+    |   ip protocols: ICMP=2, UDP=174
+    |   arp targets : 10.14.0.2, 10.14.0.3
+    |   10.14.0.2 -> 10.14.0.3 proto=UDP frames=93
+    |   10.14.0.3 -> 10.14.0.2 proto=UDP frames=81
+    |   10.14.0.2 -> 10.14.0.3 proto=ICMP frames=2
+PASS  guest-a: booted the measured image and ran the packaged tunneld
+PASS  guest-a: no writable path in the image is executable
+PASS  guest-a: read the author key from inside the launch measurement
+PASS  guest-a: read the reference value set and chain from the config device
+PASS  guest-b: booted the measured image and ran the packaged tunneld
+PASS  guest-b: no writable path in the image is executable
+PASS  guest-b: read the author key from inside the launch measurement
+PASS  guest-b: read the reference value set and chain from the config device
+PASS  guest-a: acquired its own evidence from the platform
+PASS  guest-a: bundled the chain provisioned on its config device, not the platform's
+PASS  guest-a: is listening
+PASS  guest-b: acquired its own evidence from the platform
+PASS  guest-b: bundled the chain provisioned on its config device, not the platform's
+PASS  guest-b: is listening
+PASS  guest-a printed the digest of the set on its own config device
+PASS  guest-b printed the digest of the set on its own config device, which is what A's value names
+PASS  guest-a's value names a policy, so it reports nothing unconstrained
+PASS  guest-b's value names none, and says so once, per value
+PASS  guest-a admitted guest-b, whose policy digest its value names
+PASS  guest-b admitted guest-a
+PASS  neither guest refused the other
+PASS  and neither did the other
+PASS  guest-a admitted at least one peer
+PASS  guest-b established a tunnel
+PASS  guest-b exchanged over it, warm
+PASS  guest-b ran concurrent exchanges on one tunnel
+PASS  guest-a answered guest-b's exchanges
+PASS  guest-b's exercise completed
+PASS  the exchange went through the relay
+PASS  the relay found no plaintext on the wire
+    tunneld: LATENCY pass=1 peer=guest-a kind=establish ms=294.168 attempts=1 verifier_calls=1
+
+### policy-mismatch: guest B's value names a policy digest nobody presents
+PASS  policy-mismatch: re-signing with the key whose public half is inside the launch measurement
+    the digest guest B's value will name: sha256("not the policy guest A presents")
+    = 4ece55849cd4a4a4ad97965b4f58fc8336abab4d50958aadddd185ccede035d6
+    | author public key: 3f27c388b8c18afb53cce0214c3a9c7650290073d23ceffe09042c8d017dec72
+    | wrote /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/ticket18-run/policy-mismatch/refvals-b/reference-values.json and /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/ticket18-run/policy-mismatch/refvals-b/reference-values.json.sig (loads back through attest.LoadReferenceValueSetFile)
+    | admits peer policy: 4ece55849cd4a4a4ad97965b4f58fc8336abab4d50958aadddd185ccede035d6
+    | policy digest: 85c03a8250025c1a75408718993027e3576e6dd3f3a71a9f87c98be1815bf1e7
+    | author public key: 3f27c388b8c18afb53cce0214c3a9c7650290073d23ceffe09042c8d017dec72
+    | wrote /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/ticket18-run/policy-mismatch/refvals-a/reference-values.json and /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/ticket18-run/policy-mismatch/refvals-a/reference-values.json.sig (loads back through attest.LoadReferenceValueSetFile)
+    | admits peer policy: 85c03a8250025c1a75408718993027e3576e6dd3f3a71a9f87c98be1815bf1e7
+    | policy digest: 8bf8b2a3f22de6b5ab4e154c22cddb1f7677679c7502eeccec4f261518afcf0b
+PASS  the digest emit-refvals printed for guest A's set is the digest of the document it wrote
+PASS  the digest emit-refvals printed for guest B's set is the digest of the document it wrote
+    # ticket 18, policy-mismatch: the policy digests this scenario turns on.
+    #
+    # A policy digest is SHA-256 over the bytes a reference value set's author
+    # signed, so it is not sha256sum of reference-values.json. Each number below
+    # was printed by emit-refvals when it wrote the set, checked against
+    # 'emit-refvals -digest-of' on the document as delivered, and checked again
+    # against the line the guest holding that set printed at start.
+    
+    launch measurement, both guests : a60effdeb1668a5c19c2116797d30d5b3213e4559b5a8e0c7b795934ab3c5a8d4bdba150ab16eb21d226576e884750b2
+    D_A, guest A's own policy       : 8bf8b2a3f22de6b5ab4e154c22cddb1f7677679c7502eeccec4f261518afcf0b
+        the digest of set-a.json, which is on guest A's config device
+    D_B, guest B's own policy       : 85c03a8250025c1a75408718993027e3576e6dd3f3a71a9f87c98be1815bf1e7
+        the digest of set-b.json, which is on guest B's config device
+    
+    set-a.json's value admits policy : 85c03a8250025c1a75408718993027e3576e6dd3f3a71a9f87c98be1815bf1e7   (guest B's, so A admits B)
+    set-b.json's value admits policy : 4ece55849cd4a4a4ad97965b4f58fc8336abab4d50958aadddd185ccede035d6
+        = sha256 of the ASCII string "not the policy guest A presents", with no
+        trailing newline. It is the digest of no document: guest A presents D_A,
+        so B refuses A as a policy mismatch and names D_A when it does.
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config device written to /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/ticket18-run/policy-mismatch/config-a.img (94a854a65e321626…, not measured)
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config device written to /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/ticket18-run/policy-mismatch/config-b.img (e145a750b045d793…, not measured)
+spooled /home/pniroula/Projects/gvisor/docs/snp/root-spool/tunnel-763157-policy-mismatch.job; waiting up to 540s for the runner
+policy-mismatch finished, rc=0
+    | guest A qemu exited 0
+    | guest B qemu exited 0
+relay:
+    | l2relay: RELAYED a_to_b_frames=1250 b_to_a_frames=975 a_to_b_bytes=1231387 b_to_a_bytes=787163 tampered=0
+    | l2relay: MARKER not found hits=0 marker='attested-tunnel-plaintext-marker' in 2225 frames carrying 2018550 bytes
+    | l2relay: what was on the segment:
+    |   ethertypes : IPv4=2198, ARP=8, IPv6=19
+    |   ip protocols: ICMP=30, UDP=2168
+    |   arp targets : 10.14.0.2, 10.14.0.3
+    |   10.14.0.2 -> 10.14.0.3 proto=UDP frames=1210
+    |   10.14.0.3 -> 10.14.0.2 proto=UDP frames=958
+    |   10.14.0.2 -> 10.14.0.3 proto=ICMP frames=26
+    |   10.14.0.3 -> 10.14.0.2 proto=ICMP frames=4
+PASS  guest-a: booted the measured image and ran the packaged tunneld
+PASS  guest-a: no writable path in the image is executable
+PASS  guest-a: read the author key from inside the launch measurement
+PASS  guest-a: read the reference value set and chain from the config device
+PASS  guest-b: booted the measured image and ran the packaged tunneld
+PASS  guest-b: no writable path in the image is executable
+PASS  guest-b: read the author key from inside the launch measurement
+PASS  guest-b: read the reference value set and chain from the config device
+PASS  guest-a: acquired its own evidence from the platform
+PASS  guest-a: bundled the chain provisioned on its config device, not the platform's
+PASS  guest-a: is listening
+PASS  guest-b: acquired its own evidence from the platform
+PASS  guest-b: bundled the chain provisioned on its config device, not the platform's
+PASS  guest-b: is listening
+PASS  guest-a printed the digest of the set on its own config device
+PASS  guest-b printed the digest of the set on its own config device
+PASS  guest-a's value names a policy, so it reports nothing unconstrained
+PASS  guest-b's value names a policy too, so neither guest is admitting any
+PASS  guest-a admitted guest-b's evidence, whose policy digest its value names
+PASS  guest-a refused nothing
+PASS  guest-b refused guest-a as a policy mismatch
+PASS  and the refusal names the digest guest-a presented
+    guest-b verified guest-a's evidence 116 time(s) and refused the policy 116 time(s)
+PASS  guest-b refused guest-a's policy on every verification, and never for anything else
+PASS  nothing below the policy refused guest-a: evidence, image and platform were all admitted there
+PASS  guest-b's dial of guest-a got no tunnel
+PASS  guest-a's dial of guest-b got no tunnel either, though A admits B
+PASS  guest-a's exercise failed
+PASS  guest-b's exercise failed
+PASS  nothing was exchanged in either direction
+PASS  nor in the other
+PASS  the relay found no plaintext on the wire
+
+=== latency, as the guests measured it ===
+  LATENCY pass=1 peer=guest-a kind=establish ms=1133.538 attempts=1 verifier_calls=1
+  LATENCY pass=1 peer=guest-a kind=warm_exchange n=20 min_ms=2.014 p50_ms=2.538 p90_ms=2.949 max_ms=17.069 mean_ms=3.244 answered_by="guest-a"
+  LATENCY pass=1 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=23.866 min_ms=3.406 p50_ms=5.416 p90_ms=6.934 max_ms=7.280 mean_ms=5.629
+  LATENCY pass=2 peer=guest-a kind=establish ms=0.017 attempts=1 verifier_calls=0
+  LATENCY pass=2 peer=guest-a kind=warm_exchange n=20 min_ms=2.598 p50_ms=3.429 p90_ms=4.417 max_ms=4.572 mean_ms=3.487 answered_by="guest-a"
+  LATENCY pass=2 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=24.453 min_ms=3.314 p50_ms=6.039 p90_ms=8.408 max_ms=8.647 mean_ms=6.033
+  LATENCY pass=3 peer=guest-a kind=establish ms=0.021 attempts=1 verifier_calls=0
+  LATENCY pass=3 peer=guest-a kind=warm_exchange n=20 min_ms=3.009 p50_ms=3.794 p90_ms=5.737 max_ms=5.831 mean_ms=4.013 answered_by="guest-a"
+  LATENCY pass=3 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=32.476 min_ms=5.124 p50_ms=7.964 p90_ms=10.994 max_ms=11.042 mean_ms=8.509
+  LATENCY pass=4 peer=guest-a kind=establish ms=0.018 attempts=1 verifier_calls=0
+  LATENCY pass=4 peer=guest-a kind=warm_exchange n=20 min_ms=2.553 p50_ms=3.697 p90_ms=4.579 max_ms=4.799 mean_ms=3.588 answered_by="guest-a"
+  LATENCY pass=4 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=16.467 min_ms=3.411 p50_ms=4.840 p90_ms=5.972 max_ms=5.983 mean_ms=4.544
+  LATENCY pass=5 peer=guest-a kind=establish ms=0.016 attempts=1 verifier_calls=0
+  LATENCY pass=5 peer=guest-a kind=warm_exchange n=20 min_ms=2.923 p50_ms=3.544 p90_ms=4.569 max_ms=5.747 mean_ms=3.640 answered_by="guest-a"
+  LATENCY pass=5 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=22.195 min_ms=3.975 p50_ms=6.392 p90_ms=7.792 max_ms=8.092 mean_ms=6.276
+  LATENCY pass=6 peer=guest-a kind=establish ms=0.018 attempts=1 verifier_calls=0
+  LATENCY pass=6 peer=guest-a kind=warm_exchange n=20 min_ms=3.171 p50_ms=4.184 p90_ms=5.294 max_ms=9.755 mean_ms=4.381 answered_by="guest-a"
+  LATENCY pass=6 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=42.869 min_ms=6.295 p50_ms=10.372 p90_ms=20.486 max_ms=20.706 mean_ms=12.290
+  LATENCY pass=7 peer=guest-a kind=establish ms=0.018 attempts=1 verifier_calls=0
+  LATENCY pass=7 peer=guest-a kind=warm_exchange n=20 min_ms=2.737 p50_ms=3.470 p90_ms=4.542 max_ms=12.866 mean_ms=3.938 answered_by="guest-a"
+  LATENCY pass=7 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=21.049 min_ms=4.367 p50_ms=6.028 p90_ms=7.227 max_ms=7.231 mean_ms=6.138
+  LATENCY pass=8 peer=guest-a kind=establish ms=0.017 attempts=1 verifier_calls=0
+  LATENCY pass=8 peer=guest-a kind=warm_exchange n=20 min_ms=2.764 p50_ms=3.527 p90_ms=4.868 max_ms=5.354 mean_ms=3.659 answered_by="guest-a"
+  LATENCY pass=8 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=31.942 min_ms=4.147 p50_ms=7.324 p90_ms=9.798 max_ms=11.969 mean_ms=7.692
+  LATENCY pass=9 peer=guest-a kind=establish ms=0.019 attempts=1 verifier_calls=0
+  LATENCY pass=9 peer=guest-a kind=warm_exchange n=20 min_ms=2.732 p50_ms=3.936 p90_ms=5.992 max_ms=12.329 mean_ms=4.432 answered_by="guest-a"
+  LATENCY pass=9 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=28.662 min_ms=4.737 p50_ms=5.702 p90_ms=10.164 max_ms=10.362 mean_ms=6.731
+  LATENCY pass=10 peer=guest-a kind=establish ms=0.017 attempts=1 verifier_calls=0
+  LATENCY pass=10 peer=guest-a kind=warm_exchange n=20 min_ms=2.015 p50_ms=3.083 p90_ms=3.655 max_ms=3.896 mean_ms=2.963 answered_by="guest-a"
+  LATENCY pass=10 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=20.384 min_ms=3.007 p50_ms=4.992 p90_ms=7.360 max_ms=7.384 mean_ms=5.051
+  LATENCY pass=1 peer=guest-a kind=establish ms=294.168 attempts=1 verifier_calls=1
+  LATENCY pass=1 peer=guest-a kind=warm_exchange n=20 min_ms=2.849 p50_ms=3.744 p90_ms=4.504 max_ms=15.079 mean_ms=4.156 answered_by="guest-a"
+  LATENCY pass=1 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=29.717 min_ms=3.680 p50_ms=5.370 p90_ms=13.790 max_ms=17.405 mean_ms=6.767
+
+=== 96 passed, 0 failed ===

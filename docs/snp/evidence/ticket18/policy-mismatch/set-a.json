@@ -1,0 +1,29 @@
+{
+  "format": "gvisor.dev/gvisor/attest/reference-value-set",
+  "version": 3,
+  "egress": {
+    "version": 1,
+    "unattested": false
+  },
+  "reference_values": [
+    {
+      "vendor": "amd-sev-snp",
+      "policy_digest": "85c03a8250025c1a75408718993027e3576e6dd3f3a71a9f87c98be1815bf1e7",
+      "launch_measurement": "a60effdeb1668a5c19c2116797d30d5b3213e4559b5a8e0c7b795934ab3c5a8d4bdba150ab16eb21d226576e884750b2",
+      "minimum_tcb": {
+        "bootloader": 9,
+        "tee": 0,
+        "snp": 23,
+        "microcode": 72
+      },
+      "guest_policy": {
+        "abi_major": 0,
+        "abi_minor": 0,
+        "allow_smt": true,
+        "allow_migration_agent": false,
+        "allow_debug": false,
+        "require_single_socket": false
+      }
+    }
+  ]
+}

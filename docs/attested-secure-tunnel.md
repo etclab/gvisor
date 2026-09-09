@@ -150,6 +150,7 @@ allow-list and the rest of the document does not change when it does.
 
 | Field | Meaning |
 |---|---|
+| `vendor` | whose evidence this value admits, and whose the fields below are: `amd-sev-snp` or `intel-tdx` |
 | `measurement` | expected launch measurement |
 | `min_tcb` | minimum acceptable TCB (bootloader, TEE, SNP, microcode) |
 | `policy` | required guest policy bits (debug disabled, SMT, migration) |

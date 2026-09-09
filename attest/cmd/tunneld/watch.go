@@ -38,7 +38,8 @@ import (
 // it can see is enough:
 //
 //   - the caller-supplied bytes, which are H(peer's public key ‖ binding
-//     context) (ADR-0002) and therefore name the key without carrying it;
+//     context ‖ policy digest) (ADR-0002 and its amendment) and therefore
+//     name the key without carrying it;
 //   - the certificate chain, which is issued per chip and per TCB (ADR-0005),
 //     so two peers with different chains are on different chips and two with
 //     the same chain are on one;

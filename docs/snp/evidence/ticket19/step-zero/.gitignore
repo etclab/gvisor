@@ -1,0 +1,10 @@
+# What probe-tdx-initrd.sh brings back that does not belong in the tree.
+#
+# bootstate.tar snapshots are 65-132 MB each and unpacked/ is the same bytes
+# again; they stay on the workstation, and pre-boot-state.txt beside each one
+# lists the sha256 of every file grub reads, which is what a later run has to
+# agree with. acquire-evidence is a built binary, and the bundle tarball is
+# recoverable from the transcript.
+*.tar
+unpacked/
+acquire-evidence

@@ -1,51 +1,72 @@
 # A policy bound into the evidence
 
-Ticket 18. A sandbox's policy is its own signed reference value set; its digest is folded into
-the hardware evidence under ADR-0002's binding version 2, and every verifier checks that
-digest against a per-entry allow-list of measurement and policy pairs before it recomputes the
-binding. All of it lands above the vendor seam: neither `verify/snp.go` nor `verify/tdx.go`
-changed, and nothing under `attest/tsm/`, `pkg/` or `runsc/` did either. It builds on ticket
-14 (`docs/two-guests-on-hardware.md`), whose image and harness this run rebuilds, and on
-ticket 17 (`docs/tdx-verifier.md`), whose vendor-tagged document is the version this one
-extends. Proven live once, on that harness's two SEV-SNP guests. No cloud, no TDX hardware.
+Tickets 18 and 19. A sandbox's policy is a signed document delivered on its config device; its
+digest is folded into the hardware evidence under ADR-0002's binding version 2, and every
+verifier checks that digest against a per-entry allow-list of measurement and policy pairs
+before it recomputes the binding. All of it lands above the vendor seam: neither `verify/snp.go`
+nor `verify/tdx.go` changed, and nothing under `attest/tsm/`, `pkg/` or `runsc/` did either. It
+builds on ticket 14 (`docs/two-guests-on-hardware.md`), whose image and harness both runs
+rebuild, and on ticket 17 (`docs/tdx-verifier.md`), whose vendor-tagged document is the version
+this extends. Proven live twice, on that harness's two SEV-SNP guests. No cloud, no TDX
+hardware.
 
-**In one sentence:** two guests booting one measured image, differing in nothing but which
-policy digest their reference value names, admit and refuse each other exactly as their sets
-say — and what the ticket found is that the most constrained pair this design can express is
-one that admits nothing in either direction, because the policy a set names is the digest of a
-document that would have to contain it.
+**In one sentence:** ticket 18 made the policy the sandbox's own signed reference value set and
+its run proved that could not stand — a set that is also a policy has a digest taken over a
+document that names peers' digests, so two peers can never both pin each other — and ticket 19
+split the policy into its own document, `policy.json`, after which two guests differing in
+nothing but which policy digest their reference value names admit each other in both directions
+at once.
 
 ---
 
 ## What was built
 
-**The document is a policy** (format version 3, `attest/refvalsfile.go`). A reference value
-set gains a required top-level `egress` section — `{"version": 1, "unattested": false}` — and
-that is what makes the file a statement about behaviour rather than only a guest list. Both
-fields are required: a document that does not say whether unattested egress is permitted has
-not said it is forbidden, and a loader supplying the answer would be deciding policy on the
-author's behalf. A document claiming `"unattested": true` is refused on load, because nothing
-here enforces permitting it and a digest a peer vouches for should not vouch for a promise no
-code keeps. The section versions separately from the document, since ticket 19 is what grows
-it. Version 2 documents are refused with a sentence saying to add the section and sign again —
-the same treatment version 1 got for its missing vendor tag, and for the same reason.
+**The policy is its own signed document** (`policy.json`, format version 1,
+`attest/policyfile.go`). It carries a top-level `egress` section — `{"version": 1, "unattested":
+false}` — and `forward_to`, the launch measurements this sandbox will dial. The egress section
+is what makes the file a statement about behaviour rather than a list. Both its fields are
+required: a document that does not say whether unattested egress is permitted has not said it is
+forbidden, and a loader supplying the answer would be deciding policy on the author's behalf. A
+document claiming `"unattested": true` is refused on load, because nothing here enforces
+permitting it and a digest a peer vouches for should not vouch for a promise no code keeps. The
+section versions separately from the document around it, since it is what a netfilter allow-list
+would grow.
+
+`forward_to` names measurements and never digests, and the absence of digests is the whole
+point of the file. Empty means the sandbox dials nobody, which is a legitimate deployment;
+absent does not load, because an author who said nothing has not said "nobody". It is signed
+with the reference value author's key under its own domain separation prefix
+(`gvisor.dev/gvisor/attest policy signature v1\0`), so a signature over a set can never be
+presented as a signature over a policy or the reverse, and the digest of the same bytes differs
+between the two domains.
+
+**The set is the allow-list and nothing else** (format version 4, `attest/refvalsfile.go`).
+Version 3 gave a reference value an optional `policy_digest` — the policy a peer running the
+named image must present — and also gave the document an `egress` section, on the theory that
+the set was the sandbox's own policy as well as its guest list. Version 4 keeps the pairs and
+takes the section back out. A version 3 document is refused with a sentence saying to move the
+section into `policy.json` and re-emit, and so is a version 4 document that still carries one:
+the strict decode would refuse the field anyway, as unknown, but the sentence an author needs
+says where the section went rather than that a parser met something it did not recognise.
+Version 2 documents, which could name no policy at all, are refused as before.
 
 **Its digest is over the signed bytes** (`attest.PolicyDigestOf`). A policy digest is SHA-256
-over exactly the region the author's signature covers: the domain separation prefix and the
-document. It names what somebody authorised rather than what is on disk, and the consequence
+over exactly the region the author's signature covers: the policy's domain separation prefix and
+the document. It names what somebody authorised rather than what is on disk, and the consequence
 is worth saying out loud because it would otherwise be discovered by hand — `sha256sum
-reference-values.json` is a different number and the wrong one. `emit-refvals -digest-of PATH`
-exists so that nobody computes it another way; it needs no key and does not load the set.
+policy.json` is a different number and the wrong one. `emit-refvals -digest-of PATH` exists so
+that nobody computes it another way; it needs no key and does not load the policy.
 
 **The binding carries it** (ADR-0002's amendment, `attest/binding.go`). `report_data` under
-binding context v2 is `SHA-512(pubkey ‖ ctx ‖ policy_digest)`, where `ctx` is version byte
-`0x02` and fifteen zero bytes. The context is the same sixteen bytes wide it always was: the
-digest travels *beside* it in the certificate payload rather than inside it, because widening
-the context would move a byte a v1 reader already reads. The payload is version 2 for the same
-reason, and its new field is `OPTIONAL` for exactly one: a v1 payload is five fields where
-this reader wants six, and it must parse far enough to be refused on its version rather than
+binding context v2 is `SHA-512(pubkey ‖ ctx ‖ policy_digest)`, where `ctx` is version byte `0x02`
+and fifteen zero bytes. The context is the same sixteen bytes wide it always was: the digest
+travels *beside* it in the certificate payload rather than inside it, because widening the
+context would move a byte a v1 reader already reads. The payload is version 2 for the same
+reason, and its new field is `OPTIONAL` for exactly one: a v1 payload is five fields where this
+reader wants six, and it must parse far enough to be refused on its version rather than
 complained about as DER. `ratls.NewIdentityForContext` is still the seam a later version grows
-through — ticket 18 is only its first caller to pass something other than the zero context.
+through. None of this changed in ticket 19 — the split is about which document the digest names,
+not about how it travels.
 
 v1 is now refused, and that is the amendment's substantive decision. ADR-0002 wrote its
 consequence about a version from the *future*, which may bind something a verifier cannot see.
@@ -80,35 +101,53 @@ existed, including every one under `docs/snp` — and it is deliberately loud:
 `ReferenceValueSet.Unconstrained` lists those entries and `cmd/tunneld` prints one line per
 entry at every start.
 
-**What an operator does.** A tunneld loads one set, which is both the guest list it enforces
-and the policy it presents, and prints that set's digest at start on the serial console, the
-only diagnostic surface a measured guest has (user story 48):
+**And one check that is not the verifier's** (`attest/tunneld/tunneld.go`,
+`ratls.WithAdmission`). `forward_to` is enforced by the side that *dials*, after the peer's
+evidence has verified and its policy digest has been admitted: the peer's launch measurement —
+the one the verifier's claims name — must be in this sandbox's own policy, or the dial is
+refused as a `PolicyMismatch` whose detail says `not in forward_to`. Only the client
+configuration is built with the hook; a listening tunneld holds no opinion about who calls it.
+The asymmetry is the point. Whether a peer may be dialed is a fact about the dialer's policy, so
+no allow-list entry of the peer's could carry it and no verifier could decide it.
+
+**What an operator does.** A tunneld loads two documents off the config device — the set it
+enforces and the policy it presents — and prints the policy's digest at start on the serial
+console, the only diagnostic surface a measured guest has (user story 48):
 
 ```
-tunneld: policy digest c7294dec…e1b4 (sha256 over the signed reference value set; put it in a
-peer's policy_digest)
+tunneld: policy digest ee222553…de74 (sha256 over the signed policy; put it in a peer's
+policy_digest)
 ```
 
-That number is what goes into a peer's `policy_digest`. `emit-refvals -policy-digest` writes
-one into a set, `build-image.sh` takes `PEER_POLICY_DIGEST` and records both the emitted set's
-own digest and the peer policy it admits in the image manifest, and `verify-evidence` gained
-`-policy-digest` so a bundle can still be judged from outside the guest that produced it. The
-harness does not trust any single one of them: for every set it authors it asserts that the
-digest `emit-refvals` printed when it wrote the document equals `emit-refvals -digest-of` on
-the document as delivered, and equals the line the guest holding that set printed at start.
-Those three agreeing is the operator's workflow closed end to end.
+That number is what goes into a peer's `policy_digest`. It is followed by one line per
+measurement the policy forwards to, or by a line saying it forwards to nobody. `emit-refvals
+-emit-policy -forward-to HEX…` writes a policy and prints its digest, `emit-refvals
+-policy-digest HEX` writes one into a set, `build-image.sh` emits both documents beside the
+image and records the policy's digest in the manifest, and `verify-evidence` still takes
+`-policy-digest` so a bundle can be judged from outside the guest that produced it. The harness
+does not trust any single one of them: for every policy it authors it asserts that the digest
+`emit-refvals` printed when it wrote the document equals `emit-refvals -digest-of` on the
+document as delivered, and equals the line the guest holding that policy printed at start. Those
+three agreeing is the operator's workflow closed end to end.
 
 The memo is updated where it describes any of this: `report_data`, the reference value fields,
-the verification list, and open question 2 — "binding runsc's configuration to the evidence" —
-which this ticket answers rather than defers.
+the new policy section, the verification list, and open question 2 — "binding runsc's
+configuration to the evidence" — which these tickets answer rather than defer.
 
 ## What the tests proved
 
 | claim | test |
 |---|---|
-| a version 2 document, carrying no egress section, is refused and told what to add | `TestAVersionTwoDocumentIsRefusedAsCarryingNoEgressSection` |
+| a signed policy loads and says what its author wrote: the egress section, and the images it will dial | `TestASignedPolicyLoadsAndSaysWhatItsAuthorWrote` |
 | an egress section that is missing, of another version, or permissive is refused | `TestAnEgressSectionThatIsNotAPolicyIsRefused` |
-| the loaded set's digest is over the signed bytes and not over the file | `TestALoadedSetCarriesTheDigestOfTheBytesItsAuthorSigned` |
+| a policy of a version this loader does not read is refused, and told to re-emit | `TestAPolicyOfAnUnknownVersionIsRefused` |
+| an empty `forward_to` dials nobody; an absent one does not load; an entry that names no image is refused | `TestAPolicyForwardingToNobodyLoadsAndForwardsToNobody`, `TestAPolicyThatDoesNotSayWhomItForwardsToIsRefused`, `TestAForwardToEntryThatNamesNoImageIsRefused` |
+| the loaded policy's digest is over the signed bytes and not over the file | `TestALoadedPolicyCarriesTheDigestOfTheBytesItsAuthorSigned` |
+| the two documents are separated by domain: neither signature verifies as the other's, and neither digest is the other's over the same bytes | `TestAPolicyDigestIsNotASetDigestOverTheSameBytes`, `TestAReferenceValueSetPresentedAsAPolicyIsRefusedByName` |
+| a policy is parsed as strictly as a set, renders back to a document that loads, and loads off disk with its signature beside it | `TestAPolicyIsAsStrictlyParsedAsASet`, `TestAPolicyRendersBackToADocumentThatLoads`, `TestAPolicyOnDiskLoadsFromItsDocumentAndSignature`, `TestAPolicySignatureOfTheWrongShapeIsRefused` |
+| a version 2 document, which can name no policy, is refused | `TestAVersionTwoDocumentIsRefusedAsNamingNoPolicy` |
+| a version 3 document, which was its own policy, is refused and told where the egress section went | `TestAVersionThreeDocumentIsRefusedAsBeingItsOwnPolicy` |
+| a version 4 set still carrying an egress section is refused by name | `TestASetStillCarryingAnEgressSectionIsRefused` |
 | `policy_digest` survives the document, and one of the wrong shape is refused | `TestAPolicyDigestOnAValueSurvivesTheDocument`, `TestAPolicyDigestOfTheWrongShapeIsRefused` |
 | a listed digest is admitted; an unlisted one refuses as `PolicyMismatch` naming what was presented; an entry listing none admits any | `TestAPeerPresentingAListedPolicyIsAccepted`, `TestAPeerPresentingAnUnlistedPolicyIsRefused`, `TestAnEntryWithNoPolicyDigestAdmitsAnyPolicy` |
 | a digest swapped in flight, with both policies listed so the peer reaches the binding, refuses as `BindingMismatch` | `TestAPolicyDigestSwappedInFlightIsRefusedAsABindingMismatch` |
@@ -116,6 +155,10 @@ which this ticket answers rather than defers.
 | the same allow-list at the second vendor, with nothing in `verify/tdx.go` knowing a policy exists | `TestATDXPeerIsAdmittedOnlyByASetListingItsPolicy` |
 | genuine recorded AMD evidence over a genuine v1 binding is refused today, with the v1-speaking stand-in as its control | `TestARecordingMadeBeforeBindingVersionTwoIsRefusedAsAnUnknownContext` |
 | one dialer and two listeners differing in nothing but which digest they name | `TestATunneldAdmitsAPeerOnlyIfItsSetListsThatPeersPolicy` |
+| **two tunnelds whose sets each name only the other's policy, neither unconstrained, both admitting and exchanging in both directions** | `TestTwoTunneldsPinningEachOtherBothAdmit` |
+| a peer whose measurement is not in the dialer's `forward_to` is refused by the dialer, with a control on the same wiring that carries traffic | `TestAPeerNotInForwardToIsRefusedOnTheDialingSide` |
+| a sandbox whose policy forwards to nobody dials nobody, and still answers those who dial it | `TestASandboxThatForwardsToNobodyDialsNobody` |
+| a tunneld starts with neither document missing, refused or swapped for the other | `TestRefusesToStartWithoutAnAcceptedSetOrPolicy` |
 
 Both vendors are covered, and which artefact carries which half is not the split the ticket
 expected. AMD's acceptance path is `snpfake`, ticket 02's platform, which can be handed any
@@ -126,15 +169,20 @@ refusal, and it shows two — a recorded TDX quote presented with any key is a b
 and the recorded SEV-SNP bundle from ticket 05, acquired over a real v1 binding, is now
 refused as an unrecognised context with the v1-speaking stand-in beside it as the control.
 
-## The live run
+## The live runs
 
-The image is ticket 14's, rebuilt around the new tunneld: same build script, same author key
-`3f27c388…ec72` whose public half is inside the measurement, same TCB floor `9,0,23,72` and
-the same guest policy bits. A different binary is a different measurement, so the launch
-measurement is now `a60effde…50b2` where ticket 14's was `06c6007a…`, predicted offline from
-the build inputs and never read off a guest (`predicted-measurement.txt`, `manifest.txt`). The
-set the build emitted beside it lists no `policy_digest` and its own digest is
-`c7294dec…e1b4`, the number every guest carrying that stock set prints at start.
+Two images, one per ticket, both ticket 14's build around a new tunneld: same build script, same
+author key `3f27c388…ec72` whose public half is inside the measurement, same TCB floor `9,0,23,72`
+and the same guest policy bits. A different binary is a different measurement, so ticket 18's
+image measured `a60effde…50b2` where ticket 14's was `06c6007a…`, and ticket 19's measures
+`a234bfa3…7723` — each predicted offline from the build inputs and never read off a guest
+(`predicted-measurement.txt`, `manifest.txt`).
+
+### Ticket 18, on the image measuring `a60effde…50b2`
+
+The set the build emitted lists no `policy_digest` and its own digest is `c7294dec…e1b4`, the
+number every guest carrying that stock set printed at start. There was no `policy.json` on those
+config devices: a guest's policy was the set it held.
 
 | scenario | what the consoles say |
 |---|---|
@@ -150,32 +198,68 @@ judges A in both directions, while A only ever reached B's certificate on its ow
 TLS 1.3 puts the server's certificate first, so B refuses and aborts before A is asked for
 anything.
 
-The whole run is 96 assertions and no failures (`tunnel-run.txt`), with `relay-selftest.sh`'s
-5 of 5 as the control on the relay. `policy-pinned` is the positive control between the plain
-`live` run and the refusal, and `policy-mismatch` carries its own local control in that A
-admits B on the same handshake B refuses A on, so the wiring is demonstrably intact at the
-moment of the refusal. Unlike ticket 14 this list does not end with a second `live`.
+That run is 96 assertions and no failures (`evidence/ticket18/tunnel-run.txt`), with
+`relay-selftest.sh`'s 5 of 5 as the control on the relay. `policy-pinned` is the positive
+control between the plain `live` run and the refusal, and `policy-mismatch` carries its own
+local control in that A admits B on the same handshake B refuses A on, so the wiring is
+demonstrably intact at the moment of the refusal.
 
-## What this run found
+### Ticket 19, on the image measuring `a234bfa3…7723`
 
-**A sandbox's policy is its own signed set, so two peers cannot both pin each other: A's set
-would have to name the digest of B's set while B's names the digest of A's, and each digest is
-taken over a document that would then already have to contain it.** Nobody can author that
-pair, on this design or on any other that makes a policy the digest of the document stating
-it. Constrained admission is therefore one-directional per pair — one side pins, and the entry
-the other side holds is unconstrained, which is exactly what `policy-pinned` is and why the
+The set the build emitted lists no `policy_digest`; the policy it emitted beside it forwards to
+the image's own measurement and its digest is `ee222553…de74`. The `mutual` scenario authors four
+documents of its own with the image's author key, and both config devices carry a set and a
+policy.
+
+| scenario | what the consoles say |
+|---|---|
+| `mutual` | `D_A = ee222553…de74`, `D_B = 5410bc5b…abe3`. A's value names `D_B` and no other; B's value names `D_A` and no other; neither guest reports an unconstrained value. Both guests printed the digest of the policy on their own config device and one `policy forward_to` line per measurement in it. Both dial. **Both admit each other** — `PEER SEEN … times=2` on each console, `PEERS verifier_calls=2 accepted=2 refused=0` on each, and neither guest logged a single `REFUSED`. Tunnels established in both directions, warm and concurrent exchanges both ways, `answered_by="guest-b"` on A's console and `answered_by="guest-a"` on B's, `EXIT status=0` on both. Ten passes each over 300 s, of which one apiece cost a verification. 2,975 frames through the relay, 368,719 bytes, and no plaintext in any of them. Cold establish 76.624 ms on A and 251.632 ms on B. |
+
+The two digests differ because the two policies do, and they differ in the only way that is also
+true: `policy-a.json` forwards to the image's measurement, `policy-b.json` forwards to that and
+also to `7426bf87…ea5b`, which is sha384 of the ASCII string `an image this sandbox would also
+dial, which nothing on this segment boots`. It is a launch measurement of the right width naming
+no image anybody has, so guest B's policy is a different document from guest A's while both still
+say the true thing about this segment: each guest will dial the image the other is running.
+Guest A's policy is byte-identical to the one the image build emitted, which is why `D_A` is the
+image's own policy digest.
+
+`D_A` and `D_B` were each written by `emit-refvals`, read back off the delivered document by
+`emit-refvals -digest-of`, and read a third time off the console of the guest holding it — the
+three-way agreement the harness asserts for every document it authors, now on the policy rather
+than on the set. The run is 41 assertions and no failures (`evidence/ticket18/mutual/tunnel-run.txt`),
+with `relay-selftest.sh`'s 5 of 5 as the control on the relay
+(`evidence/ticket18/mutual/relay-selftest.txt`). Unlike ticket 18's run this one has no separate
+positive control, and does not need one: `mutual` *is* the positive result, and every assertion
+about a refusal in it is an assertion that there was none.
+
+## What the ticket 18 run found, and what was done about it
+
+**A sandbox's policy was its own signed set, so two peers could not both pin each other: A's set
+would have to name the digest of B's set while B's named the digest of A's, and each digest is
+taken over a document that would then already have to contain it.** Nobody can author that pair,
+on that design or on any other that makes a policy the digest of the document stating it.
+Constrained admission was therefore one-directional per pair — one side pins, and the entry the
+other side holds is unconstrained, which is exactly what `policy-pinned` is and why the
 unconstrained line on B's console is the price of it. A pair in which *both* entries name a
-digest can only ever name at least one digest nobody presents, so `policy-mismatch` is not one
-scenario among many: it is the shape of every fully constrained pair, and it admits nothing in
+digest could only ever name at least one digest nobody presents, so `policy-mismatch` was not one
+scenario among many: it was the shape of every fully constrained pair, and it admits nothing in
 either direction. That is why the ticket's own sentence, "B dials A and is admitted", is a
-statement about A's verdict on B's evidence and not about a connection. A admits B, B refuses
-A, and the handshake carrying both fails. Both guests dial in that scenario so the record says
-so from both ends rather than leaving it to be inferred from one. The limitation is named here
-and the decision left to the author; nothing in this ticket redesigns around it.
+statement about A's verdict on B's evidence and not about a connection. A admits B, B refuses A,
+and the handshake carrying both fails.
+
+**That finding is the whole reason for the split.** The cycle is not a bug in the format; it is
+what happens when one document has to be both the thing whose digest is fixed and the thing that
+names other digests. Ticket 19 takes the policy out into a document that names no digests at
+all — measurements only — so the two digests in a pair are fixed independently and neither has
+to exist before the other. The `mutual` scenario is that pair, running: both entries name a real
+policy, neither is unconstrained, and both sides admit. Nothing else about the design moved. The
+binding, the payload, the check and its position in the order are exactly what ticket 18
+shipped.
 
 **The `PEERS` counter counts the vendor seam, which is below the policy check.** `cmd/tunneld`
 wraps `attest.Verifier` — step 3 — with a recorder, and the policy digest is checked at step 4
-on the certificate payload, not in the report. So guest B's console reads `PEERS
+on the certificate payload, not in the report. So guest B's console read `PEERS
 verifier_calls=116 accepted=116 refused=0` in the scenario where it refused every one of those
 peers: what `accepted` means there is that A's evidence was genuine, its image was the one B's
 set names and its platform was above B's floor — everything the platform can vouch for was
@@ -183,38 +267,42 @@ right. The harness therefore does not assert that the counter reports refusals. 
 that B's verification count equals its policy refusal count and that its accepted count equals
 both, which is the positive statement that the policy and nothing below it was what refused.
 `modified` and `tcbfloor` in ticket 14 are the contrast: there the same counter does report
-refusals, because what was wrong was something the reference value set could see.
+refusals, because what was wrong was something the reference value set could see. The
+`forward_to` check sits one step further out still — above `attest.Verification` entirely — so
+it is invisible to the counter for the same reason and more so.
 
-**Cold establish was 294.168 ms, and ticket 14's caveat applies to it.** It is one figure,
-from the first dial after a cold boot, and ticket 14 measured that same handshake anywhere
-between 16.312 ms and 252.785 ms with the attestation work identical in all of them; what
-differs is address resolution, what the transport retransmitted, and what else the host was
-doing. The `live` scenario's own first dial in this run cost 1,133.538 ms for the same reason.
-No run here outlives the fifteen-minute maximum age, so unlike ticket 14 there is no second
-cold figure with nothing but attestation behind it, and none of these numbers should be quoted
-as the cost of verifying a policy. What the policy check adds is a 32-byte comparison against
-a list already in memory.
+**Cold establish figures are one figure each, and ticket 14's caveat applies to all of them.**
+Ticket 18's `policy-pinned` cost 294.168 ms from the first dial after a cold boot, and ticket 14
+measured that same handshake anywhere between 16.312 ms and 252.785 ms with the attestation work
+identical in all of them; what differs is address resolution, what the transport retransmitted,
+and what else the host was doing. No run here outlives the fifteen-minute maximum age, so there
+is no second cold figure with nothing but attestation behind it, and none of these numbers
+should be quoted as the cost of verifying a policy. What the policy check adds is a 32-byte
+comparison against a list already in memory, and what `forward_to` adds is a walk of a list with
+one or two entries in it.
 
-## What the version bump cost
+## What the version bumps cost
 
-Every bundle recorded under `docs/snp` predates v2, and a recording whose report data can no
-longer be recomputed is a recording nobody can check again. So `BindingContextV1` stays
+Every bundle recorded under `docs/snp` predates binding v2, and a recording whose report data can
+no longer be recomputed is a recording nobody can check again. So `BindingContextV1` stays
 exported and still hashes two inputs rather than three, and `verify-evidence` gained
 `-binding-version` (default 2) to judge those bundles. Asking for a policy digest at binding
 version 1 is an error rather than a silently ignored flag, since a v1 binding covers no policy
 and pretending otherwise would compute bytes no platform ever echoed.
 
-Two recorded documents no longer load at all: `evidence/ticket14/reference-values.json` is
-format version 1 and `evidence/tdx/refvals/reference-values.v20260826.json` is version 2, and
-neither carries an egress section. The tests that read them re-author them in process under a
-test key and say so. Nothing was regenerated to hide this, and the live guests are unaffected
-because the image build emits their set every time it builds an image.
+Recorded documents no longer load. `evidence/ticket14/reference-values.json` is format version 1
+and `evidence/tdx/refvals/reference-values.v20260826.json` is version 2; ticket 18's own four
+recorded sets, under `evidence/ticket18`, are version 3 and are refused by the loader ticket 19
+ships. The tests that read the first two re-author them in process under a test key and say so.
+Nothing was regenerated to hide any of it, and the live guests are unaffected because the image
+build emits their documents every time it builds an image.
 
-`attest/tsm/tsm_test.go` changed by two lines: its binding fixture now claims v2 and carries a
-digest, because the control test at the end of that file drives `Verification` and would
-otherwise be refused for speaking a version this verifier dropped. What package `tsm` does is
-unchanged — the acquirer writes the 64 bytes it is handed and reads back what the platform
-echoed — and no production file under `attest/tsm/`, `pkg/` or `runsc/` was touched.
+`attest/tsm/tsm_test.go` changed by two lines in ticket 18: its binding fixture claims v2 and
+carries a digest, because the control test at the end of that file drives `Verification` and
+would otherwise be refused for speaking a version this verifier dropped. What package `tsm` does
+is unchanged — the acquirer writes the 64 bytes it is handed and reads back what the platform
+echoed — and no production file under `attest/tsm/`, `pkg/` or `runsc/` was touched by either
+ticket.
 
 ## Running it
 
@@ -232,18 +320,31 @@ The live half needs the operator's runner, once, in a tmux session, exactly as t
 sudo bash docs/snp/root-runner.sh        # in the primary checkout, not a worktree
 ```
 
-Then, unprivileged:
+Then, unprivileged. The image directory is per ticket, because a second image run into the first
+one's directory would overwrite a record of a different measurement, and the author key is named
+explicitly because `package-tunneld.sh` clears its own working directory and would otherwise
+generate a fresh one — which would move the measurement for a reason that has nothing to do with
+the code:
 
 ```sh
-docs/snp/image/package-tunneld.sh        # guard, build, measure, emit the set and its digest
-docs/snp/relay-selftest.sh
-docs/snp/tunnel-on-two-guests.sh -run-for 300 -capture docs/snp/evidence/ticket18 \
-    -scenario live -scenario policy-pinned -scenario policy-mismatch
+export STACK=<primary checkout>/.scratch/attested-secure-tunnel/host-stack
+OUT=$STACK/image-ticket19 AUTHOR_KEY=$STACK/image-ticket14-packaging/author.key \
+    docs/snp/image/package-tunneld.sh   # guard, build, measure, emit both documents
+IMAGE=$STACK/image-ticket19 docs/snp/relay-selftest.sh
+IMAGE=$STACK/image-ticket19 docs/snp/tunnel-on-two-guests.sh -run-for 300 \
+    -scenario mutual -capture <somewhere>
 ```
 
-`PEER_POLICY_DIGEST` on `build-image.sh` puts a peer's digest into the image's own emitted
-set; the ticket 18 image was built without it, so its set is unconstrained and the two policy
-scenarios author their own sets with the image's author key.
+`-capture` writes one directory per scenario plus the transcript and the image's own records.
+The ticket 19 run was captured into a scratch directory and its `mutual/` contents copied flat
+into `docs/snp/evidence/ticket18/mutual/`, so that ticket 18's three recorded scenarios and its
+own transcript are left exactly as that run produced them.
+
+`PEER_POLICY_DIGEST` on `build-image.sh` puts a peer's digest into the image's own emitted set,
+and `FORWARD_TO` puts measurements into its emitted policy; the ticket 19 image was built with
+neither, so its set is unconstrained and its policy forwards to the image's own measurement,
+which is what lets two guests booted from it call each other. The `mutual` scenario authors its
+own four documents with the image's author key.
 
 ## What this does not establish
 
@@ -252,15 +353,16 @@ scenarios author their own sets with the image's author key.
   or a network between two hosts.
 - **A TDX peer presenting a policy on real hardware.** The second vendor is unit tests over
   the fake TDX platform and the recorded quotes. No TDX guest has ever presented a policy
-  digest, and ticket 19 is where the acquirer's two SEV-SNP-only shortcuts still live.
+  digest, and the acquirer's two SEV-SNP-only shortcuts still live where ticket 17 left them.
 - **That the egress section does anything.** `unattested: false` is required, refused when
   permissive, and covered by the digest a peer checks — but no code stops a sandbox sending
-  traffic anywhere. Until ticket 19 grows the section into a netfilter allow-list and enforces
+  traffic anywhere. Until the section grows into a netfilter allow-list and something enforces
   it, it is a statement the author signed and the verifier checked, not a control.
+- **That `forward_to` stops traffic at the network layer.** It stops this tunneld dialing a peer
+  whose image its policy does not name, which is a refusal at the handshake and is tested in
+  both the live run and the unit tests. It is not a filter: a sandbox with another way onto the
+  network is not constrained by it, which is the same gap the egress section has.
 - **A policy that changes under a live tunnel.** No run here outlives the maximum age, so
   nothing shows a peer being re-verified against a policy that moved after it was admitted.
 - **Key custody.** The reference value author key is still the throwaway ticket 14's packaging
-  script generated, and both guests' sets — and both policy digests — are signed with it.
-- **That mutual pinning is possible.** It is not, for the reason above, and this ticket only
-  names it. Whether one-directional constraint is enough, or whether the policy should be a
-  document other than the set that names peers, is a decision this record leaves open.
+  script generated, and both guests' sets and both policies are signed with it.

@@ -1,0 +1,54 @@
+=== package-tunneld: 2026-09-10T19:47:39Z on shs1
+repo 979d9f7aaba08d5c1c4233313db97d795ddb9268 on tdx-attested-tunnel
+go   go version go1.26.3 linux/amd64
+
+=== 1. the guard, BEFORE anything is built or measured
+$ go test ./cmd/tunneld
+=== RUN   TestPackagedImportGraphExcludesTestSupport
+--- PASS: TestPackagedImportGraphExcludesTestSupport (0.30s)
+=== RUN   TestPackageImportGraphExcludesTestSupport
+--- PASS: TestPackageImportGraphExcludesTestSupport (0.24s)
+=== RUN   TestPackagedBinaryIsStaticAndFreeOfTestSupport
+--- PASS: TestPackagedBinaryIsStaticAndFreeOfTestSupport (1.97s)
+=== RUN   TestRunConfigLoads
+--- PASS: TestRunConfigLoads (0.00s)
+=== RUN   TestRunConfigRefusals
+--- PASS: TestRunConfigRefusals (0.00s)
+=== RUN   TestPeerTableLoads
+--- PASS: TestPeerTableLoads (0.00s)
+=== RUN   TestMaximumAgeIsClampedButMayBeShortened
+--- PASS: TestMaximumAgeIsClampedButMayBeShortened (0.00s)
+PASS
+ok  	gvisor.dev/gvisor/attest/cmd/tunneld	2.558s
+guard passed: the packaged graph reaches no fake platform and no test support
+
+=== 2. the binary
+$ CGO_ENABLED=0 go build -trimpath -buildvcs=false -o /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket19-packaging/tunneld ./cmd/tunneld
+/home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket19-packaging/tunneld: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, Go BuildID=BbfBaPtgC3t985zXU3cc/ZHpZXRJKKyVVS5jNNM8E/XOwsJ7kiDVchUjYx_KnT/KTk91ena-CrTpJ6rSLMx, BuildID[sha1]=32627fb23ba1f4982b3b739611cb184fe3cb3a1c, with debug_info, not stripped
+tunneld sha256: ddd0fccc87c9a799c8059970677d047a3b672320a7791dd46f62296b55a01370
+tunneld bytes : 16726722
+
+=== 3. the image, with TUNNELD set and nothing else
+author public key: 3f27c388b8c18afb53cce0214c3a9c7650290073d23ceffe09042c8d017dec72
+wrote /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket19/reference-values.json and /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket19/reference-values.json.sig (loads back through attest.LoadReferenceValueSetFile)
+admits any peer policy (no -policy-digest given; the guest logs one line per unconstrained value)
+author public key: 3f27c388b8c18afb53cce0214c3a9c7650290073d23ceffe09042c8d017dec72
+wrote /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket19/policy.json and /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket19/policy.json.sig (loads back through attest.LoadPolicyFile)
+forwards to: a234bfa378d30bbde9c5cc3b3c7649c35ea8a7abf783fe95f22a44b0aeb0fc38cae92689256a5dd42197dfa1b87f7723
+policy digest: ee2225534af9014bf0dc4c347473a4df91cdf6bbd733073b87100b2893cede74
+
+image in /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket19:
+-rw------- 1 pniroula 253477      195 Sep 10 15:47 cmdline.txt
+-rw------- 1 pniroula 253477  1507234 Sep 10 15:47 initrd.img
+-rw------- 1 pniroula 253477     4753 Sep 10 15:47 manifest.txt
+-rw------- 1 pniroula 253477  4194304 Sep 10 15:47 OVMF.fd
+-rw------- 1 pniroula 253477      253 Sep 10 15:47 policy.json
+-rw------- 1 pniroula 253477      129 Sep 10 15:47 policy.json.sig
+-rw------- 1 pniroula 253477     1233 Sep 10 15:47 predicted-measurement.txt
+-rw------- 1 pniroula 253477     2499 Sep 10 15:47 reference-values.inputs.txt
+-rw------- 1 pniroula 253477      613 Sep 10 15:47 reference-values.json
+-rw------- 1 pniroula 253477      129 Sep 10 15:47 reference-values.json.sig
+-rw------- 1 pniroula 253477  9416704 Sep 10 15:47 rootfs.img
+-rw------- 1 pniroula 253477 12825088 Sep 10 15:47 vmlinuz
+command line: console=ttyS0 earlyprintk=serial panic=-1 rdinit=/init verity.roothash=67210d92d21c7551f0616477cb594851b5e97e6d660043451b616bf6e0108c93 verity.salt=- verity.datablocks=2280 verity.hashstart=2280
+predicted launch measurement: a234bfa378d30bbde9c5cc3b3c7649c35ea8a7abf783fe95f22a44b0aeb0fc38cae92689256a5dd42197dfa1b87f7723

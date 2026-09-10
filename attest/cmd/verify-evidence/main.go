@@ -88,7 +88,7 @@ func run(args []string, out *os.File) int {
 	tdxCollateralDir := fs.String("tdx-collateral-dir", "", "directory holding Intel's provisioned TCB info, quoting-enclave identity and revocation lists; required to verify Intel TDX evidence, and never fetched (ADR-0005)")
 	tdxRoot := fs.String("tdx-root", "", "PEM file holding the Intel SGX Root CA; empty uses the Intel root embedded in the verification library, which is the production path")
 	bindingVersion := fs.Int("binding-version", 2, "the ADR-0002 binding version the bundle was acquired under: 2, or 1 for a bundle recorded before the policy digest existed")
-	policyDigest := fs.String("policy-digest", "", "the policy digest the bundle is bound to, hex; empty is 32 zero bytes. Meaningless with -binding-version 1, which had no such field")
+	policyDigest := fs.String("policy-digest", "", "the policy digest the bundle is bound to, hex — sha256 over the bytes the author signed over the peer's policy.json, which emit-refvals -digest-of prints; empty is 32 zero bytes. Meaningless with -binding-version 1, which had no such field")
 	if err := fs.Parse(args); err != nil {
 		return exitFailed
 	}

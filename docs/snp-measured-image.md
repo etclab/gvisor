@@ -175,6 +175,8 @@ serial `attested-config`, mounted by the initrd at `/config` with `ro,noexec,nos
 |---|---|---|
 | `reference-values.json` | the reference value set, `attest/README.md` format | ticket 07 emits, operator places |
 | `reference-values.json.sig` | its detached Ed25519 signature, hex, one line (ADR-0006) | same |
+| `policy.json` | the sandbox's own signed policy: its egress section and the measurements it will dial (ticket 19, `docs/policy-binding.md`) | ticket 19's build emits, operator places |
+| `policy.json.sig` | its detached signature, the same author key under its own domain prefix | same |
 | `peers.json` | the peer table | tunneld defines its contents |
 | `certificate-chain.bin` | the provisioned certificate chain as an AMD certificate table (VCEK, ASK, ARK), written by `attest/cmd/provision-chain` | ticket 15 |
 | `certificate-chain.json` | chip identity and TCB the chain was fetched for, so staleness is detectable (ADR-0005) | ticket 15 |

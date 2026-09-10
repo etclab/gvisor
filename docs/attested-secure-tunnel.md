@@ -104,7 +104,8 @@ it is the entire cost of a second vendor later.
 **Identity, per sandbox.** The supervisor generates an Ed25519 key at sandbox start with
 `report_data = SHA-512(pubkey ‖ ctx ‖ policy_digest)`, and **never persists it**. `ctx` is the
 16-byte versioned binding context of ADR-0002, version 2 since ticket 18, and `policy_digest`
-names the sandbox's own signed reference value set — the policy it presents. Both travel in
+names the sandbox's own signed policy — `policy.json`, the document beside the reference value
+set, which since ticket 19 is where the policy lives. Both travel in
 the certificate payload beside the evidence, at payload version 2, because a 16-byte context
 has no room for a 32-byte digest and widening it would move a byte an older reader already
 reads. A verifier checks the digest against its allow-list first and recomputes these bytes
@@ -140,13 +141,9 @@ refetches. The certificates are public; the cache needs no protection, only a lo
 
 ## Reference values
 
-No list of enrolled keys. Each supervisor holds a reference value set, and since document
-version 3 that set is also the sandbox's policy rather than only its guest list: a required
-top-level `egress` section (`version: 1`, `unattested: false`) says that traffic to a peer
-nothing judged is refused. A document omitting the section has not said egress is forbidden,
-and is refused rather than read with a default supplied on the author's behalf. The section
-versions separately from the document, because ticket 19 grows it with the netfilter
-allow-list and the rest of the document does not change when it does.
+No list of enrolled keys. Each supervisor holds two signed documents: a reference value set,
+which is whom it admits, and a policy, which is what it is. They were one document at version 3
+and are two since version 4, for the reason the policy section below gives.
 
 | Field | Meaning |
 |---|---|
@@ -158,16 +155,32 @@ allow-list and the rest of the document does not change when it does.
 | `id_key_digest` | *(optional)* image-signing key, if using SNP ID blocks |
 
 A `policy_digest` is SHA-256 over exactly the bytes the author's signature covers in the
-peer's own set, so it names the signed region rather than the file. An entry carrying one
+peer's own policy, so it names the signed region rather than the file. An entry carrying one
 admits that image only under that policy and refuses anything else as a policy mismatch
 naming the digest presented; an entry carrying none admits any policy, and the guest prints
 one line per such entry at start, because an unconstrained entry should not be something an
-operator discovers by reading a file they did not write. One consequence follows from the
-policy being the sandbox's own set: two peers cannot both pin each other's digest, since A's
-set would have to contain the digest of B's set while B's contains the digest of A's, and
-each digest would then be computed over a document that already contains it. Constrained
-admission is therefore one-directional per pair — one side pins the other, and the entry the
-other side holds is unconstrained.
+operator discovers by reading a file they did not write.
+
+## The policy
+
+A second signed document, `policy.json`, under the same author key and its own domain prefix:
+
+| Field | Meaning |
+|---|---|
+| `egress` | `{"version": 1, "unattested": false}` — traffic to a peer nothing judged is refused. Both fields are required, because a policy a verifier vouches for is one its author wrote down, and a document claiming `"unattested": true` is refused because nothing here enforces permitting it. The section versions separately from the document, because it is what grows with the netfilter allow-list. |
+| `forward_to` | the launch measurements this sandbox will dial, and no digests. Empty means it dials nobody; absent does not load. |
+
+It is a separate document because it cannot be the set. If a sandbox's policy is its own
+allow-list, then two peers can never both pin each other: A's set would have to contain the
+digest of B's set while B's contains the digest of A's, and each digest is computed over a
+document that would already have to contain it. Ticket 18 proved that on hardware and ticket 19
+split the two (`docs/policy-binding.md`). The policy names no digests, so the two digests in a
+pair are fixed independently and mutual pinning is ordinary.
+
+`forward_to` is enforced by the side that dials, after the peer's evidence has verified and its
+digest has been admitted: a peer this sandbox would answer may still be one its policy does not
+say it calls. A verifier cannot decide that — it is a fact about the dialer — so it is a check
+the dialing side adds rather than one the reference value set carries.
 
 Membership is therefore "runs the measured image", and "under a policy this set lists"
 wherever an entry names one — otherwise anyone who launches it joins. That is correct if the
@@ -232,6 +245,10 @@ each with a control showing legitimate traffic still works.
 - A guest below `min_tcb` is refused.
 - A guest presenting a policy digest no reference value for its measurement lists is refused,
   naming the digest.
+- Two guests whose reference values each name the other's policy digest, and only that, both
+  admit each other and exchange in both directions.
+- A peer whose measurement is not in the dialer's own `forward_to` is refused by the dialer,
+  after the peer's evidence has verified.
 - A non-confidential VM presenting no evidence is refused.
 - An agent attempting to reach the network other than through the tunnel fails.
 - A MITM relays datagrams and reads nothing.

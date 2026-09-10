@@ -47,7 +47,7 @@ iteration of unproven code.
 
 | Package   | What it is |
 |-----------|------------|
-| `attest`  | The public surface: the vendor seam, the reference value vocabulary, the signed reference value set format and its loader, the binding of ADR-0002, the refusal taxonomy, and `Verification.Verify`. |
+| `attest`  | The public surface: the vendor seam, the reference value vocabulary, the signed reference value set format and the signed policy format with their loaders, the binding of ADR-0002, the refusal taxonomy, and `Verification.Verify`. |
 | `verify`  | The SEV-SNP verifier. Wraps `go-sev-guest` (ADR-0003) and keeps that library's API shape from reaching anywhere else. |
 | `tsm`     | Ticket 04: evidence acquisition from real hardware, through the kernel's vendor-neutral report interface at `/sys/kernel/config/tsm/report`. Writes the caller-supplied bytes, reads the evidence back, and bundles the chain the config device holds — never the platform's, which is empty here, and never the network's (ADR-0005). Procedure: `docs/evidence-acquisition.md`. |
 | `cmd/acquire-evidence` | The command over `tsm`, run inside a guest: generate a key, acquire evidence bound to it, bundle the chain, print what the platform said. |
@@ -57,7 +57,7 @@ iteration of unproven code.
 | `cmd/verify-evidence` | Ticket 05: the command that takes a verdict on a bundle from outside the guest that produced it — load the signed set, wire it to the verifier, exit 0 on acceptance and 2 on refusal. Procedure: `docs/verification-on-hardware.md`. |
 | `ratls`   | The certificate as a serialization envelope: a versioned payload (version 2) under a private arc carrying the evidence, the chain, the binding context and the peer's policy digest, and the handshake callback that runs `Verification.Verify` on the peer's. Nothing else in the certificate is read. |
 | `tunnel`  | The transport: QUIC with TLS 1.3, early data refused on both ends, one exchange per stream, the establishment round trip, and the cache that holds at most one tunnel per peer under an idle timeout and a maximum age (`Limits`). Knows nothing about attestation. |
-| `tunneld` | The composition root and the public API: `New` with a `Config`, `Peer(name)` yielding a `Channel`, `Channel.Exchange`. One `tunnel.Cache` per tunneld, built from its one identity, under `Config.Limits`; a `Channel` is a handle on a peer rather than a holder of a connection. |
+| `tunneld` | The composition root and the public API: `New` with a `Config`, `Peer(name)` yielding a `Channel`, `Channel.Exchange`. It loads the set and the policy, presents the policy's digest as its identity, and enforces `forward_to` on the peers it dials. One `tunnel.Cache` per tunneld, built from its one identity, under `Config.Limits`; a `Channel` is a handle on a peer rather than a holder of a connection. |
 
 `verify`, `snpfake`, `ratls` and `tunnel` have no test files of their own, and that is the design
 rather than a gap. There are two seams, one per layer. Below tunneld the seam is this module's
@@ -211,14 +211,14 @@ measurement.
 ```json
 {
   "format": "gvisor.dev/gvisor/attest/reference-value-set",
-  "version": 3,
-  "egress": {"version": 1, "unattested": false},
+  "version": 4,
   "reference_values": [
     {
       "vendor": "amd-sev-snp",
       "launch_measurement": "1111…",
       "minimum_tcb": {"bootloader": 9, "tee": 0, "snp": 23, "microcode": 72},
-      "guest_policy": {"allow_smt": true}
+      "guest_policy": {"allow_smt": true},
+      "policy_digest": "ee22…"
     },
     {
       "vendor": "intel-tdx",
@@ -235,14 +235,21 @@ measurement.
 
 Six things about it are decided rather than incidental:
 
-- **The document is the sandbox's policy, and the egress section is what makes it one** (format
-  version 3). `egress` says what leaves the sandbox; today it says that unattested egress is
-  refused, and both its `version` and its `unattested` field are required, because a policy a
-  verifier vouches for is one its author wrote down. The document's digest — SHA-256 over exactly
-  the bytes the signature covers, `attest.PolicyDigestOf` — is what a peer folds into its evidence
-  under ADR-0002's binding version 2 and what a verifier checks against an entry's optional
-  `policy_digest`. Version 2 documents carried no egress section and are refused with a sentence
-  saying to add one and sign it again.
+- **A value names the image it admits and the policy that image must be running under** (format
+  version 3 for `policy_digest`, version 4 for the set being only that). `policy_digest` is the
+  digest of the peer's own signed policy, which the peer folded into its evidence under ADR-0002's
+  binding version 2; a verifier checks it before recomputing the binding. Absent means
+  unconstrained — this value admits the named image under any policy — which is the one place this
+  format reads an absent field the weaker way, and a tunneld prints one line per such entry at
+  every start.
+
+  Version 3 documents also carried a top-level `egress` section, on the theory that the set was the
+  sandbox's own policy as well as its guest list. It is not, and cannot be: a set whose digest is
+  its sandbox's policy would have to contain the digest of a peer's set that already contains
+  it, so no two peers could pin each other (`docs/policy-binding.md`). Version 4 is version 3 with
+  the section removed, and a document that still carries one is refused with a sentence saying to
+  move it into `policy.json` and sign both again. Version 2 documents carried no `policy_digest`
+  at all and are refused likewise.
 
 - **Every value names its vendor, and one file holds both** (format version 2, ADR-0006's
   addendum). The rest of a value's fields are that vendor's, and a field belonging to the other
@@ -274,3 +281,35 @@ Six things about it are decided rather than incidental:
 A launch measurement's width is deliberately checked nowhere: it belongs to the hardware vendor,
 and one of them baked in here would sit above the seam that makes a second vendor tractable. A
 measurement of the wrong width matches nothing, which fails closed.
+
+## The signed policy
+
+The second document a tunneld loads, beside the set and under the same author key. It is what a
+sandbox *is*, where the set is whom it admits, and its digest is the number a peer names in
+`policy_digest`.
+
+```json
+{
+  "format": "gvisor.dev/gvisor/attest/policy",
+  "version": 1,
+  "egress": {"version": 1, "unattested": false},
+  "forward_to": ["a234…"]
+}
+```
+
+- **It names measurements and never digests**, which is the whole reason it is a separate file.
+  A policy that named policies would put its own digest inside the document that fixes it, and two
+  peers could not both pin each other — the finding ticket 18's live run produced and ticket 19
+  acted on (`docs/policy-binding.md`).
+- **`egress` says what leaves the sandbox.** Today it says unattested egress is refused, and both
+  its `version` and its `unattested` field are required, because a policy a verifier vouches for
+  is one its author wrote down. A document claiming `"unattested": true` is refused on load:
+  nothing here enforces permitting it, and a digest that vouched for it would vouch for a promise
+  no code keeps. The section versions separately from the document around it.
+- **`forward_to` is the images this sandbox will dial**, enforced by the dialing side after a
+  peer's evidence has verified and its policy has been admitted. Empty means it dials nobody;
+  absent does not load, because an author who said nothing has not said "nobody".
+- **The signature is the set's scheme under its own domain prefix**, so a signature over one
+  document can never be presented as a signature over the other, and the digest of the same bytes
+  differs between the two. `attest.PolicyDigestOf` computes it over the signed region, so
+  `sha256sum policy.json` is a different number and the wrong one.

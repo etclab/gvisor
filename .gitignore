@@ -15,3 +15,7 @@
 
 # Agent scratch space (local markdown issue tracker)
 .scratch/
+
+# Built binaries beside their sources under docs/snp/image (build outputs, never committed)
+/docs/snp/image/emit-refvals/emit-refvals
+/docs/snp/image/report-evidence/report-evidence

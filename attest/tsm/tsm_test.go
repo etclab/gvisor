@@ -54,6 +54,32 @@ var (
 // it.
 const capturedDir = "../../docs/snp/evidence"
 
+// And the Intel one: a quote a Google Cloud TDX VM produced, read out of the
+// same report interface by docs/snp/cloud/tdx/guest-evidence-tdx.sh. That
+// script writes the same 00 01 02 … 3f to inblob that ticket 01 wrote on AMD,
+// so the recording replays through the acquisition sequence with
+// [capturedCallerSupplied] and the binding self-check is a real check rather
+// than a restatement of the fixture.
+const capturedTDXQuote = capturedDir + "/tdx/eventlog/quote.bin"
+
+// tdxInterface is a report interface answering as the Intel guest driver with
+// the captured quote. The kernel on that guest exposes no auxblob at all
+// (docs/snp/evidence/tdx/mutate/baseline/guest-evidence.txt says so in as many
+// words), which the fake reproduces, because an acquirer that treated a
+// missing certificate table as a failure would refuse every TDX guest.
+func tdxInterface(t *testing.T) (*tsm.FakeReportInterface, []byte) {
+	t.Helper()
+	quote, err := os.ReadFile(capturedTDXQuote)
+	if err != nil {
+		t.Skipf("no quote captured from a TDX guest: %v", err)
+	}
+	return &tsm.FakeReportInterface{
+		Provider:            "tdx_guest",
+		Evidence:            func([]byte) ([]byte, error) { return quote, nil },
+		CertificateTableErr: os.ErrNotExist,
+	}, quote
+}
+
 // capturedCallerSupplied is what ticket 01 wrote to inblob: 00 01 02 … 3f. The
 // captured report carries exactly those bytes back, which is the mechanism
 // ADR-0002's binding rides on, so a test replaying that report asks for them.
@@ -319,9 +345,116 @@ func TestAMissingChainFailsClosedAndNothingIsFetched(t *testing.T) {
 	}
 
 	// And an acquirer with nowhere to read a chain from cannot be built at
-	// all, so the failure lands at startup rather than at the first peer.
-	if _, err := tsm.New(tsm.Options{}); err == nil || !strings.Contains(err.Error(), "ADR-0005") {
-		t.Errorf("an acquirer with no chain directory was built: %v", err)
+	// all, so the failure lands at startup rather than at the first peer. The
+	// platform is probed first, because only one of the two vendors wants a
+	// chain, so this is checked against an interface that answers as AMD's
+	// driver rather than against no interface at all.
+	if _, err := tsm.NewOnFake(tsm.Options{}, reportInterfaceOf(p)); err == nil || !strings.Contains(err.Error(), "ADR-0005") {
+		t.Errorf("an acquirer was built for an SEV-SNP guest with no chain directory: %v", err)
+	}
+}
+
+// TestATDXGuestsQuoteIsBundledWithNoChain is the Intel half of the acquisition
+// sequence: the same four steps against the same interface, and one step fewer
+// at the end. A version-4 quote carries the PCK certificate chain that roots it
+// inside its own signed data, so there is nothing on a config device for this
+// vendor to bundle and [attest.Evidence.Chain] stays empty — filling it would
+// describe something attest/verify/tdx.go does not read.
+func TestATDXGuestsQuoteIsBundledWithNoChain(t *testing.T) {
+	iface, quote := tdxInterface(t)
+	a, err := tsm.NewOnFake(tsm.Options{}, iface)
+	if err != nil {
+		t.Fatalf("an acquirer could not be built on a TDX guest: %v", err)
+	}
+	if a.Vendor() != attest.VendorIntelTDX {
+		t.Errorf("acquirer speaks for %q; want %q", a.Vendor(), attest.VendorIntelTDX)
+	}
+
+	want := capturedCallerSupplied()
+	ev, err := a.Acquire(context.Background(), want)
+	if err != nil {
+		t.Fatalf("Acquire on a TDX guest: %v", err)
+	}
+	if ev.Vendor != attest.VendorIntelTDX {
+		t.Errorf("evidence is %q; want %q", ev.Vendor, attest.VendorIntelTDX)
+	}
+	if !bytes.Equal(ev.Bytes, quote) {
+		t.Error("the bundle does not carry the quote the guest produced, verbatim")
+	}
+	if len(ev.Chain) != 0 {
+		t.Errorf("%d bytes of certificate chain were bundled with a TDX quote, which carries its own", len(ev.Chain))
+	}
+
+	// One write, of exactly the caller-supplied bytes, to inblob and nothing
+	// else — the same acceptance criterion as on AMD, because it is the
+	// kernel's interface that is being driven and not the vendor's.
+	if len(iface.Writes) != 1 || iface.Writes[0].Attr != "inblob" || !bytes.Equal(iface.Writes[0].Data, want[:]) {
+		t.Errorf("the platform was written to as %+v; want one write of the caller-supplied bytes to inblob", iface.Writes)
+	}
+
+	o, ok := a.LastObservation()
+	if !ok {
+		t.Fatal("no observation was recorded")
+	}
+	if o.Provider != "tdx_guest" || o.Vendor != attest.VendorIntelTDX || o.EvidenceBytes != len(quote) || o.Writes != 1 {
+		t.Errorf("observation is %+v", o)
+	}
+	if o.ChainBytes != 0 || o.ChainDir != "" || o.ChainChipID != "" || o.ChainTCB != (attest.TCB{}) {
+		t.Errorf("a TDX observation describes a chain: %+v", o)
+	}
+	// This kernel exposes no auxblob, which is recorded and is not a failure,
+	// exactly as an empty one is on AMD.
+	if o.CertificateTableError == "" {
+		t.Error("a report interface with no certificate table at all was not recorded")
+	}
+	if line := o.String(); !strings.Contains(line, "carries the one that roots it") {
+		t.Errorf("the operator line does not say why no chain was bundled:\n  %s", line)
+	}
+}
+
+// TestATDXAcquisitionNeverReachesProvisioning: the chain step is skipped
+// rather than made to succeed. The config device here holds the AMD chain
+// ticket 15 provisioned, which LoadFor would refuse for a TDX quote — so an
+// acquisition that consults it at all fails, and one that does not, does not.
+func TestATDXAcquisitionNeverReachesProvisioning(t *testing.T) {
+	iface, _ := tdxInterface(t)
+	a, err := tsm.NewOnFake(tsm.Options{ChainDir: capturedDir}, iface)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ev, err := a.Acquire(context.Background(), capturedCallerSupplied())
+	if err != nil {
+		t.Fatalf("a TDX acquisition consulted the config device: %v", err)
+	}
+	if len(ev.Chain) != 0 {
+		t.Errorf("a TDX acquisition bundled %d bytes from the config device", len(ev.Chain))
+	}
+	if o, _ := a.LastObservation(); o.ChainDir != "" {
+		t.Errorf("a TDX observation names a chain directory it never read: %+v", o)
+	}
+}
+
+// TestATDXPlatformThatDoesNotEchoTheCallerSuppliedBytesIsRefused. The binding
+// is the same mechanism on both vendors — the platform copying those bytes into
+// the evidence verbatim — and it is read back out of the same recording, from
+// the TD report's REPORTDATA instead of an SEV-SNP report's REPORT_DATA.
+func TestATDXPlatformThatDoesNotEchoTheCallerSuppliedBytesIsRefused(t *testing.T) {
+	iface, quote := tdxInterface(t)
+	a, err := tsm.NewOnFake(tsm.Options{}, iface)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The captured quote is over 00 01 02 … 3f; this asks for a real binding's
+	// bytes, which it cannot be carrying.
+	if _, err := a.Acquire(context.Background(), bindingFor(t).CallerSuppliedBytes()); err == nil || !strings.Contains(err.Error(), "binds nothing") {
+		t.Fatalf("a quote over other bytes was accepted: %v", err)
+	}
+
+	// And bytes that are not a quote at all are refused as unreadable rather
+	// than parsed at a guess.
+	iface.Evidence = func([]byte) ([]byte, error) { return bytes.Repeat([]byte{0xFF}, len(quote)), nil }
+	if _, err := a.Acquire(context.Background(), capturedCallerSupplied()); err == nil || !strings.Contains(err.Error(), "do not parse as a TDX quote") {
+		t.Fatalf("bytes that are not a quote were accepted: %v", err)
 	}
 }
 
@@ -396,9 +529,11 @@ func TestARacingWriterIsRefused(t *testing.T) {
 // parser becomes an attack surface.
 func TestAnUnimplementedPlatformIsRefusedAtStartup(t *testing.T) {
 	iface := reportInterfaceOf(platform(t, platformTCB))
-	iface.Provider = "tdx_guest"
+	// Arm CCA's guest driver, which the kernel exposes through the same
+	// interface and whose evidence nothing in this module can read.
+	iface.Provider = "cca_guest"
 	_, err := tsm.NewOnFake(tsm.Options{ChainDir: t.TempDir()}, iface)
-	if err == nil || !strings.Contains(err.Error(), "tdx_guest") {
+	if err == nil || !strings.Contains(err.Error(), "cca_guest") {
 		t.Fatalf("an acquirer was built for a platform it cannot read: %v", err)
 	}
 }

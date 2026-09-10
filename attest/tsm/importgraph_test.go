@@ -51,10 +51,16 @@ func TestAcquisitionImportsNoWayToReachTheKeyDistributionService(t *testing.T) {
 		"fmt": true, "io/fs": true, "os": true, "path/filepath": true,
 		"strconv": true, "strings": true, "sync": true, "syscall": true,
 
-		// The vendor seam and the vendor's own report format, which is what
-		// reading the caller-supplied bytes back needs (ADR-0003).
-		"gvisor.dev/gvisor/attest":           true,
-		"github.com/google/go-sev-guest/abi": true,
+		// The vendor seam and each vendor's own report format, which is what
+		// reading the caller-supplied bytes back needs (ADR-0003). Intel's
+		// takes two: the parser, and the generated structures it parses into.
+		// Neither reaches a network of its own — the fetching half of
+		// go-tdx-guest is its verify and pcs packages, which are the
+		// verifier's and are not here.
+		"gvisor.dev/gvisor/attest":                 true,
+		"github.com/google/go-sev-guest/abi":       true,
+		"github.com/google/go-tdx-guest/abi":       true,
+		"github.com/google/go-tdx-guest/proto/tdx": true,
 
 		// The consumer half of provisioning: load the chain from the config
 		// device, refuse a missing or stale one, never fetch (ADR-0005).

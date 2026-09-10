@@ -27,10 +27,10 @@
 // vendor's, which is why this package is named for the interface rather than
 // for AMD.
 //
-// Three things here are AMD-specific and all three stay behind
-// [attest.Acquirer]: the provider name the kernel reports for the SEV-SNP
-// guest driver, the knowledge that the bytes are an SEV-SNP report, and
-// reading the caller-supplied field back out of one to confirm the platform
+// Three things here are vendor-specific and all three stay behind
+// [attest.Acquirer]: the provider name the kernel reports for each platform's
+// guest driver, the knowledge of what the bytes that come back are, and
+// reading the caller-supplied field back out of them to confirm the platform
 // returned what it was handed. Nothing above this package learns what a report
 // is.
 //
@@ -51,6 +51,13 @@
 // refusal to acquire, not a reason to reach AMD's key distribution service: a
 // silent fallback would reinstate exactly the dependency ADR-0005 removes, and
 // would do it invisibly.
+//
+// All of that is AMD's half. On Intel TDX there is no chain to bundle: a
+// version-4 quote carries the PCK certificate chain that roots it inside its
+// own signed data, so [attest.Evidence.Chain] stays empty and a verifier reads
+// the chain out of the quote instead (attest/verify/tdx.go). The chain step is
+// the one place this package's sequence differs by vendor, and the certificate
+// directory is required only of the vendor that has something to read from it.
 package tsm
 
 import (
@@ -68,6 +75,8 @@ import (
 	"syscall"
 
 	"github.com/google/go-sev-guest/abi"
+	tdxabi "github.com/google/go-tdx-guest/abi"
+	tdxpb "github.com/google/go-tdx-guest/proto/tdx"
 	"gvisor.dev/gvisor/attest"
 	"gvisor.dev/gvisor/attest/provision"
 )
@@ -88,17 +97,31 @@ const (
 	attrPrivlevelFloor = "privlevel_floor"
 )
 
-// providerSEVGuest is what the kernel calls the AMD SEV-SNP guest driver. It
-// is the only provider this acquirer implements; see [vendorOf].
-const providerSEVGuest = "sev_guest"
+// The provider names the kernel reports for the guest drivers this acquirer
+// implements; see [vendorOf]. Each driver names its tsm_ops after its own
+// module — drivers/virt/coco/sev-guest/sev-guest.c and
+// drivers/virt/coco/tdx-guest/tdx-guest.c both set .name = KBUILD_MODNAME — so
+// the attribute reads with the module's underscore and not the directory's
+// dash. Every TDX quote recorded under docs/snp/evidence/tdx was read from a
+// request whose provider said "tdx_guest".
+const (
+	providerSEVGuest = "sev_guest"
+	providerTDXGuest = "tdx_guest"
+)
 
 // Options configures an [Acquirer].
 type Options struct {
 	// ChainDir is the directory on the config device holding the certificate
 	// chain provisioned for this platform — certificate-chain.bin and
 	// certificate-chain.json, written by cmd/provision-chain (ADR-0005). It is
-	// required: an acquirer with nowhere to read a chain from could only fail
-	// at its first acquisition or fetch one, and neither is acceptable.
+	// required on AMD SEV-SNP: an acquirer with nowhere to read a chain from
+	// could only fail at its first acquisition or fetch one, and neither is
+	// acceptable. On Intel TDX it is unused and may be empty, because the
+	// quote carries its own chain and there is nothing to provision.
+	//
+	// Which of those applies is not the caller's to declare. [New] probes the
+	// platform first and asks for a chain directory only if the vendor that
+	// answered needs one, so the requirement still lands at startup.
 	ChainDir string
 
 	// ReportDir is the kernel's report interface. Empty means
@@ -148,7 +171,8 @@ type Observation struct {
 	CertificateTableError string
 
 	// ChainDir, ChainBytes, ChainChipID and ChainTCB describe the provisioned
-	// chain that was bundled with the evidence.
+	// chain that was bundled with the evidence. They stay empty on Intel TDX,
+	// where nothing is bundled because the quote carries its own chain.
 	ChainDir    string
 	ChainBytes  int
 	ChainChipID string
@@ -163,11 +187,14 @@ func (o Observation) String() string {
 	if o.CertificateTableError != "" {
 		table = fmt.Sprintf("its own certificate table could not be read (auxblob: %s)", o.CertificateTableError)
 	}
-	return fmt.Sprintf("tsm: provider %q (%s) returned %d bytes of evidence over %d write(s); %s, "+
-		"which is the expected state on this host and not an error; "+
-		"bundled the %d-byte chain provisioned in %s for chip %s at %s (ADR-0005)",
-		o.Provider, o.Vendor, o.EvidenceBytes, o.Writes, table,
+	chain := fmt.Sprintf("bundled the %d-byte chain provisioned in %s for chip %s at %s (ADR-0005)",
 		o.ChainBytes, o.ChainDir, abbreviate(o.ChainChipID), tcbString(o.ChainTCB))
+	if o.Vendor == attest.VendorIntelTDX {
+		chain = "bundled no certificate chain, because the quote carries the one that roots it"
+	}
+	return fmt.Sprintf("tsm: provider %q (%s) returned %d bytes of evidence over %d write(s); %s, "+
+		"which is the expected state on this host and not an error; %s",
+		o.Provider, o.Vendor, o.EvidenceBytes, o.Writes, table, chain)
 }
 
 // An Acquirer obtains evidence from this platform. It implements
@@ -199,11 +226,10 @@ func New(opts Options) (*Acquirer, error) {
 	return newOn(opts, configfs{root: opts.ReportDir})
 }
 
-// prepare fills in the defaults and refuses the one option that has none.
+// prepare fills in the defaults. The one option with no default — ChainDir —
+// is checked in [newOn] instead, once the platform has said which vendor it is
+// and therefore whether a chain is wanted at all.
 func (o *Options) prepare() error {
-	if o.ChainDir == "" {
-		return errors.New("tsm: no certificate chain directory: evidence is bundled with the chain provisioned on the config device and this acquirer never fetches one (ADR-0005)")
-	}
 	if o.ReportDir == "" {
 		o.ReportDir = DefaultReportDir
 	}
@@ -234,6 +260,9 @@ func newOn(opts Options, iface reportInterface) (*Acquirer, error) {
 	vendor, err := vendorOf(provider)
 	if err != nil {
 		return nil, err
+	}
+	if vendor == attest.VendorAMDSEVSNP && opts.ChainDir == "" {
+		return nil, errors.New("tsm: no certificate chain directory: evidence is bundled with the chain provisioned on the config device and this acquirer never fetches one (ADR-0005)")
 	}
 	a.vendor = vendor
 	return a, nil
@@ -290,8 +319,9 @@ func (a *Acquirer) LastObservation() (Observation, bool) {
 //  6. Confirm the generation counter advanced by exactly the one write this
 //     acquisition made, so that a racing writer is detected rather than
 //     silently answered.
-//  7. Load the chain the config device holds for this platform's current
-//     report, refusing a missing or stale one (ADR-0005).
+//  7. On AMD, load the chain the config device holds for this platform's
+//     current report, refusing a missing or stale one (ADR-0005). On Intel
+//     there is no seventh step: the quote carries its own chain.
 func (a *Acquirer) Acquire(ctx context.Context, callerSupplied [attest.CallerSuppliedBytesSize]byte) (ev attest.Evidence, err error) {
 	if err := ctx.Err(); err != nil {
 		return attest.Evidence{}, fmt.Errorf("tsm: %w", err)
@@ -343,7 +373,6 @@ func (a *Acquirer) Acquire(ctx context.Context, callerSupplied [attest.CallerSup
 		Vendor:                a.vendor,
 		EvidenceBytes:         len(evidence),
 		CertificateTableBytes: len(table),
-		ChainDir:              a.opts.ChainDir,
 	}
 	if tableErr != nil {
 		observation.CertificateTableError = tableErr.Error()
@@ -364,32 +393,63 @@ func (a *Acquirer) Acquire(ctx context.Context, callerSupplied [attest.CallerSup
 		return attest.Evidence{}, err
 	}
 
-	// The chain, from the config device and from nowhere else. LoadFor refuses
-	// a chain that is missing, that does not describe itself, that belongs to
-	// another chip, or that was issued for a TCB this platform has moved off.
-	chain, err := provision.LoadFor(a.opts.ChainDir, evidence)
+	chain, err := a.bundleChain(evidence, &observation)
 	if err != nil {
 		return attest.Evidence{}, err
 	}
-	observation.ChainBytes = len(chain.Bytes)
-	observation.ChainChipID = hex.EncodeToString(chain.ChipID)
-	observation.ChainTCB = chain.TCB
 
 	a.mu.Lock()
 	a.last = &observation
 	a.mu.Unlock()
 
-	return attest.Evidence{Vendor: a.vendor, Bytes: evidence, Chain: chain.Bytes}, nil
+	return attest.Evidence{Vendor: a.vendor, Bytes: evidence, Chain: chain}, nil
+}
+
+// bundleChain is the chain to carry with this platform's evidence, and it is
+// the one step of the acquisition sequence that differs by vendor.
+//
+// On AMD SEV-SNP it comes from the config device and from nowhere else.
+// LoadFor refuses a chain that is missing, that does not describe itself, that
+// belongs to another chip, or that was issued for a TCB this platform has
+// moved off.
+//
+// On Intel TDX there is nothing to bundle and nothing to refuse: the PCK chain
+// that roots a version-4 quote is inside the quote, so a verifier reads it out
+// of [attest.Evidence.Bytes] and never looks at Chain. An acquirer that filled
+// Chain here would be describing something no consumer reads. The Intel
+// collateral the quote is judged against is provisioned for the verifier
+// (ADR-0007), not carried by the producer.
+func (a *Acquirer) bundleChain(evidence []byte, o *Observation) ([]byte, error) {
+	switch a.vendor {
+	case attest.VendorAMDSEVSNP:
+		chain, err := provision.LoadFor(a.opts.ChainDir, evidence)
+		if err != nil {
+			return nil, err
+		}
+		o.ChainDir = a.opts.ChainDir
+		o.ChainBytes = len(chain.Bytes)
+		o.ChainChipID = hex.EncodeToString(chain.ChipID)
+		o.ChainTCB = chain.TCB
+		return chain.Bytes, nil
+	case attest.VendorIntelTDX:
+		return nil, nil
+	default:
+		return nil, fmt.Errorf("tsm: no way to tell what certificate chain %s evidence is bundled with", a.vendor)
+	}
 }
 
 // vendorProvider is the provider name this acquirer's vendor is behind. It is
 // the inverse of [vendorOf] and exists only so that a provider that changes
 // underneath a running acquirer is caught.
 func (a *Acquirer) vendorProvider() string {
-	if a.vendor == attest.VendorAMDSEVSNP {
+	switch a.vendor {
+	case attest.VendorAMDSEVSNP:
 		return providerSEVGuest
+	case attest.VendorIntelTDX:
+		return providerTDXGuest
+	default:
+		return ""
 	}
-	return ""
 }
 
 // confirmEcho checks that the platform copied the caller-supplied bytes into
@@ -413,6 +473,24 @@ func (a *Acquirer) confirmEcho(evidence []byte, callerSupplied [attest.CallerSup
 			return fmt.Errorf("tsm: the platform returned evidence over %x, not over the %x it was handed; "+
 				"evidence that does not carry the caller-supplied bytes binds nothing",
 				report.GetReportData(), callerSupplied[:])
+		}
+		return nil
+	case attest.VendorIntelTDX:
+		parsed, err := tdxabi.QuoteToProto(evidence)
+		if err != nil {
+			return fmt.Errorf("tsm: the platform returned %d bytes that do not parse as a TDX quote: %w", len(evidence), err)
+		}
+		quote, ok := parsed.(*tdxpb.QuoteV4)
+		if !ok {
+			return fmt.Errorf("tsm: the platform returned a %T, and this acquirer reads version 4 quotes", parsed)
+		}
+		// The TD report's REPORTDATA: the field the caller-supplied bytes are
+		// written into, and the one a verifier reads them back out of
+		// (attest/verify/tdx.go's claimsOf).
+		if data := quote.GetTdQuoteBody().GetReportData(); !bytes.Equal(data, callerSupplied[:]) {
+			return fmt.Errorf("tsm: the platform returned evidence over %x, not over the %x it was handed; "+
+				"evidence that does not carry the caller-supplied bytes binds nothing",
+				data, callerSupplied[:])
 		}
 		return nil
 	default:
@@ -474,6 +552,8 @@ func vendorOf(provider string) (attest.Vendor, error) {
 	switch provider {
 	case providerSEVGuest:
 		return attest.VendorAMDSEVSNP, nil
+	case providerTDXGuest:
+		return attest.VendorIntelTDX, nil
 	default:
 		return "", fmt.Errorf("tsm: the report interface is provided by %q, which this acquirer does not implement; "+
 			"a second vendor adds a case here and an implementation of attest.Verifier, and touches nothing else", provider)

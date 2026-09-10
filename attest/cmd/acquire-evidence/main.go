@@ -13,11 +13,16 @@
 // limitations under the License.
 
 // acquire-evidence runs inside a confidential guest and produces one bundle:
-// evidence from the platform, bound to a key generated a moment earlier, and
-// the certificate chain provisioned on the config device that a verifier needs
-// to check it (ADR-0002, ADR-0005).
+// evidence from the platform, bound to a key generated a moment earlier, and,
+// on AMD SEV-SNP, the certificate chain provisioned on the config device that a
+// verifier needs to check it (ADR-0002, ADR-0005).
 //
-//	acquire-evidence -chain-dir DIR [-out DIR] [-report-dir DIR] [-base64]
+//	acquire-evidence [-chain-dir DIR] [-out DIR] [-report-dir DIR] [-base64]
+//
+// -chain-dir is required on AMD and unused on Intel TDX, where the quote
+// carries the chain that roots it and there is nothing to provision. Which one
+// this guest is is the platform's answer and not a flag, so the acquirer probes
+// first and asks for the directory only if the vendor that answered wants one.
 //
 // It is what a tunneld does at startup, with the tunnel left out: generate a
 // key, bind evidence to it, keep the pair. Here the private key is discarded
@@ -56,7 +61,7 @@ func main() {
 
 func run(args []string) error {
 	fs := flag.NewFlagSet("acquire-evidence", flag.ExitOnError)
-	chainDir := fs.String("chain-dir", "", "directory holding the provisioned certificate chain (the config device)")
+	chainDir := fs.String("chain-dir", "", "directory holding the provisioned certificate chain (the config device); required on AMD SEV-SNP, unused on Intel TDX")
 	reportDir := fs.String("report-dir", tsm.DefaultReportDir, "the kernel's vendor-neutral report interface")
 	out := fs.String("out", "", "directory to write the bundle to; empty writes nothing")
 	b64 := fs.Bool("base64", false, "print the bundle base64-encoded, for recovery from a serial console")
@@ -68,13 +73,15 @@ func run(args []string) error {
 	if err != nil {
 		return err
 	}
-	if *chainDir == "" {
-		fs.Usage()
-		return fmt.Errorf("no -chain-dir: evidence is bundled with the chain provisioned on the config device, and this never fetches one (ADR-0005)")
-	}
-
+	// No check on -chain-dir here. Whether one is wanted depends on the vendor,
+	// which is the platform's to say: the acquirer probes the report interface
+	// and refuses at startup, naming ADR-0005, if it finds an SEV-SNP guest with
+	// nowhere to read a chain from.
 	acquirer, err := tsm.New(tsm.Options{ChainDir: *chainDir, ReportDir: *reportDir, RequestName: "acquire-evidence"})
 	if err != nil {
+		if *chainDir == "" {
+			fs.Usage()
+		}
 		return err
 	}
 
@@ -110,8 +117,16 @@ func run(args []string) error {
 	fmt.Printf("caller-supplied     : %x\n", callerSupplied[:])
 	fmt.Printf("  = SHA-512(public key ‖ binding context ‖ policy digest), the whole 64-byte field (ADR-0002)\n")
 	fmt.Printf("evidence            : %d bytes\n", len(ev.Bytes))
-	fmt.Printf("certificate chain   : %d bytes, from %s (ADR-0005)\n", len(ev.Chain), *chainDir)
-	fmt.Printf("platform's own table: %d bytes — empty, as expected on this host\n", observation.CertificateTableBytes)
+	if len(ev.Chain) > 0 {
+		fmt.Printf("certificate chain   : %d bytes, from %s (ADR-0005)\n", len(ev.Chain), *chainDir)
+	} else {
+		fmt.Printf("certificate chain   : none bundled; %s evidence carries the chain that roots it\n", ev.Vendor)
+	}
+	if observation.CertificateTableError != "" {
+		fmt.Printf("platform's own table: not exposed by this kernel — %s\n", observation.CertificateTableError)
+	} else {
+		fmt.Printf("platform's own table: %d bytes — empty, as expected on this host\n", observation.CertificateTableBytes)
+	}
 
 	if *out != "" {
 		files := []struct {
@@ -119,11 +134,19 @@ func run(args []string) error {
 			data []byte
 		}{
 			{"evidence.bin", ev.Bytes},
-			{"certificate-chain.bin", ev.Chain},
 			{"public-key.der", spki},
 			{"caller-supplied.bin", callerSupplied[:]},
 			{"policy-digest.bin", append([]byte(nil), binding.PolicyDigest[:]...)},
 			{"observation.txt", []byte(observation.String() + "\n")},
+		}
+		// Only where there is one. An empty certificate-chain.bin beside a TDX
+		// quote would read as a chain that failed to load rather than as one
+		// that was never wanted.
+		if len(ev.Chain) > 0 {
+			files = append(files, struct {
+				name string
+				data []byte
+			}{"certificate-chain.bin", ev.Chain})
 		}
 		if err := os.MkdirAll(*out, 0o755); err != nil {
 			return err
@@ -139,7 +162,9 @@ func run(args []string) error {
 
 	if *b64 {
 		dump("evidence.bin", ev.Bytes)
-		dump("certificate-chain.bin", ev.Chain)
+		if len(ev.Chain) > 0 {
+			dump("certificate-chain.bin", ev.Chain)
+		}
 		dump("public-key.der", spki)
 	}
 	return nil

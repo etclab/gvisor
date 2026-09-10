@@ -291,9 +291,8 @@ version 1 is an error rather than a silently ignored flag, since a v1 binding co
 and pretending otherwise would compute bytes no platform ever echoed.
 
 Recorded documents no longer load. `evidence/ticket14/reference-values.json` is format version 1
-and `evidence/tdx/refvals/reference-values.v20260826.json` is version 2; ticket 18's own four
-recorded sets, under `evidence/ticket18`, are version 3 and are refused by the loader ticket 19
-ships. The tests that read the first two re-author them in process under a test key and say so.
+and `evidence/tdx/refvals/reference-values.v20260826.json` is version 2; the five sets ticket 18
+recorded under `evidence/ticket18` are version 3, and are refused by the loader ticket 19 ships. The tests that read the first two re-author them in process under a test key and say so.
 Nothing was regenerated to hide any of it, and the live guests are unaffected because the image
 build emits their documents every time it builds an image.
 

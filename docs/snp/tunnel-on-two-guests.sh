@@ -1,5 +1,6 @@
 #!/bin/bash
-# Two attested guests, live: ticket 14's harness, and ticket 18's policy scenarios.
+# Two attested guests, live: ticket 14's harness, and the policy scenarios of
+# tickets 18 and 19.
 #
 #   tunnel-on-two-guests.sh [-image DIR] [-out DIR] [-scenario NAME]...
 #                           [-no-snp] [-run-for SECONDS] [-quick]
@@ -28,12 +29,16 @@
 #             not at. It fails closed before it presents anything.
 #   policy-pinned  (ticket 18) guest A holding a set that names guest B's
 #             policy digest and no other. B presents that digest, A admits it,
-#             and the exchange completes. The positive control for the two
-#             below it, and the strongest admitted shape this design has.
+#             and the exchange completes.
 #   policy-mismatch (ticket 18) the same pair, with guest B's set naming a
 #             policy digest nobody presents. A admits B and B refuses A as a
 #             policy mismatch, whichever side dials, so no tunnel completes in
 #             either direction.
+#   mutual    (ticket 19) each guest's set names the other's policy digest and
+#             no other, and neither entry is unconstrained. Both admit, the
+#             tunnel is established and exchanged over in both directions. This
+#             is the shape ticket 18 could not author at all, and it is the
+#             strongest admitted pair this design has.
 #
 # The topology is the evidence for two of the criteria on its own, so it is
 # worth stating plainly. The guests' only network is
@@ -62,9 +67,9 @@
 #   chain AMD issued for this chip one TCB level down, which the stalechain
 #   scenario needs and which cannot be manufactured (docs/verification-on-hardware.md)
 #   $STACK/image-ticket14-packaging/author.key — the key that signed the image's
-#   reference value set. The tcbfloor and policy scenarios re-sign a set with
-#   it, and a different key would need a different image, since the public half
-#   is inside the measurement. package-tunneld.sh leaves it there when it
+#   reference value set and its policy. The tcbfloor and policy scenarios
+#   re-sign both with it, and a different key would need a different image,
+#   since the public half is inside the measurement. package-tunneld.sh leaves it there when it
 #   generated one; an image built by reusing an older key has it wherever that
 #   key is kept, and AUTHOR_KEY names it. Either way this script checks the
 #   public half against the image before signing anything with it.
@@ -153,14 +158,16 @@ echo "mode        : $([ "$SNP" = 1 ] && echo 'SEV-SNP (privileged, through the s
 echo "scenarios   : ${SCENARIOS[*]}"
 echo
 
-for f in OVMF.fd vmlinuz initrd.img cmdline.txt rootfs.img reference-values.json reference-values.json.sig manifest.txt; do
+for f in OVMF.fd vmlinuz initrd.img cmdline.txt rootfs.img reference-values.json reference-values.json.sig \
+         policy.json policy.json.sig manifest.txt; do
   [ -f "$IMAGE/$f" ] || { echo "missing $IMAGE/$f — run docs/snp/image/package-tunneld.sh first" >&2; exit 1; }
 done
 MEASUREMENT=$(sed -n 's/^launch_measurement: //p' "$IMAGE/manifest.txt")
 echo "predicted launch measurement of the image both guests boot:"
 echo "  $MEASUREMENT"
 echo "the reference value set on both config devices names exactly that, signed by the"
-echo "author key baked into the image at /etc/attested-tunnel/author.pub (ADR-0004)."
+echo "author key baked into the image at /etc/attested-tunnel/author.pub (ADR-0004),"
+echo "and the policy beside it is signed by the same key under its own domain."
 echo
 
 # ---- the spool ------------------------------------------------------------
@@ -229,19 +236,28 @@ spool_run() {
 # exactly as it appears under /config. Nothing on it is measured, which is why
 # two guests booted from one image can differ at all.
 #
-#   make_config DIR SANDBOX ADDRESS PEER_NAME PEER_ADDRESS RUN_JSON [-stale] [-refvals DIR]
+#   make_config DIR SANDBOX ADDRESS PEER_NAME PEER_ADDRESS RUN_JSON \
+#               [-stale] [-refvals DIR] [-policy DIR]
+#
+# The device carries two signed documents since ticket 19: the set, which says
+# whom this guest admits, and the policy, which says what it is. They default to
+# the image's own emitted pair and are overridden separately, because every
+# scenario below changes exactly one of them.
 make_config() {
   local dir="$1" sandbox="$2" address="$3" peer="$4" peeraddr="$5" runjson="$6"; shift 6
-  local refvals="$IMAGE" chainsrc="$CHAIN" chainbin="certificate-chain.bin" chainjson="certificate-chain.json"
+  local refvals="$IMAGE" policysrc="" chainsrc="$CHAIN" chainbin="certificate-chain.bin" chainjson="certificate-chain.json"
   while [ -n "${1:-}" ]; do
     case "$1" in
       -stale)   chainsrc="$STALE"; chainbin="certificate-chain-stale.bin"; chainjson="certificate-chain-stale.json"; shift ;;
       -refvals) refvals="$2"; shift 2 ;;
+      -policy)  policysrc="$2"; shift 2 ;;
       *) echo "make_config: unknown option $1" >&2; exit 2 ;;
     esac
   done
+  [ -n "$policysrc" ] || policysrc="$IMAGE"
   rm -rf "$dir"; mkdir -p "$dir"
   cp "$refvals/reference-values.json" "$refvals/reference-values.json.sig" "$dir/"
+  cp "$policysrc/policy.json" "$policysrc/policy.json.sig" "$dir/"
   cp "$chainsrc/$chainbin"  "$dir/certificate-chain.bin"
   cp "$chainsrc/$chainjson" "$dir/certificate-chain.json"
   printf '{"peers": {"%s": "%s"}}\n' "$peer" "$peeraddr" > "$dir/peers.json"
@@ -372,46 +388,65 @@ assert_attested() { # CONSOLE SANDBOX
 peer_field() { sed -n "s/.*PEER SEEN .*$2=\([0-9a-f]*\).*/\1/p" "$1" | head -1; }
 accepted_count() { sed -n 's/.*PEERS verifier_calls=[0-9]* accepted=\([0-9]*\).*/\1/p' "$1" | tail -1; }
 
-# ---- sets this script authors itself (ticket 18) --------------------------
-# Two of the scenarios below need reference value sets that differ from the
-# image's own in one field, and only in that field: the same measurement, the
-# same author, the same TCB floor and the same launch policy, with a
-# policy_digest naming a peer's policy or naming none. The floor and the policy
-# are read out of the record the build wrote beside its own set rather than
-# repeated here, because a second copy of them here is a second thing to keep
-# in step with build-image.sh, and a set that differed in two fields would make
-# every verdict below ambiguous.
+# ---- documents this script authors itself (tickets 18 and 19) -------------
+# The policy scenarios below need documents that differ from the image's own in
+# one field, and only in that field.
+#
+# A set: the same measurement, the same author, the same TCB floor and the same
+# launch policy, with a policy_digest naming a peer's policy or naming none. The
+# floor and the policy are read out of the record the build wrote beside its own
+# set rather than repeated here, because a second copy of them here is a second
+# thing to keep in step with build-image.sh, and a set that differed in two
+# fields would make every verdict below ambiguous.
+#
+# A policy: the egress section, which is not a parameter, and forward_to. Since
+# ticket 19 that document is what a policy digest names, and the two are
+# separate files for the reason docs/policy-binding.md gives — while a set was
+# also a policy, no two peers could pin each other.
 AUTHOR_KEY_PATH="${AUTHOR_KEY:-$IMAGE-packaging/author.key}"
 EMIT="$OUT/emit-refvals"
 build_emit_refvals() { [ -x "$EMIT" ] || (cd "$HERE/image/emit-refvals" && go build -o "$EMIT" .); }
 image_tcb_floor()     { sed -n 's/^tcb floor (authoring choice): \([0-9,]*\).*/\1/p' "$IMAGE/reference-values.inputs.txt"; }
 image_launch_policy() { sed -n 's/^launch policy: *//p' "$IMAGE/reference-values.inputs.txt"; }
 
-# author_set DIR [-policy-digest HEX] — emit and sign one set into DIR and
-# print its own policy digest, which is the number a peer puts in its
-# policy_digest to admit a guest holding this set. It is SHA-256 over the bytes
-# the author signed and not over the file, so it comes from the tool that knows
-# that; this script never computes it.
+# author_set DIR [-policy-digest HEX] — emit and sign one reference value set
+# into DIR. It prints nothing a caller reads: a set has no digest of its own any
+# more, and the number a peer needs comes from the policy beside it.
 author_set() {
   local dir="$1"; shift
   mkdir -p "$dir"
   if ! "$EMIT" -measurement "$MEASUREMENT" -key "$AUTHOR_KEY_PATH" -out "$dir" \
-        -tcb "$(image_tcb_floor)" -policy "$(image_launch_policy)" "$@" > "$dir/emit.txt" 2>&1; then
-    sed 's/^/    | /' "$dir/emit.txt" >&2
+        -tcb "$(image_tcb_floor)" -policy "$(image_launch_policy)" "$@" > "$dir/emit-set.txt" 2>&1; then
+    sed 's/^/    | /' "$dir/emit-set.txt" >&2
     return 1
   fi
-  sed 's/^/    | /' "$dir/emit.txt" >&2
-  sed -n 's/^policy digest: //p' "$dir/emit.txt"
+  sed 's/^/    | /' "$dir/emit-set.txt" >&2
 }
 
-# digest_of FILE — the same number read back off a document already written,
+# author_policy DIR [-forward-to HEX]... — emit and sign one policy into DIR and
+# print its digest, which is the number a peer puts in its policy_digest to
+# admit a guest holding this policy. It is SHA-256 over the bytes the author
+# signed and not over the file, so it comes from the tool that knows that; this
+# script never computes it.
+author_policy() {
+  local dir="$1"; shift
+  mkdir -p "$dir"
+  if ! "$EMIT" -emit-policy -key "$AUTHOR_KEY_PATH" -out "$dir" "$@" > "$dir/emit-policy.txt" 2>&1; then
+    sed 's/^/    | /' "$dir/emit-policy.txt" >&2
+    return 1
+  fi
+  sed 's/^/    | /' "$dir/emit-policy.txt" >&2
+  sed -n 's/^policy digest: //p' "$dir/emit-policy.txt"
+}
+
+# digest_of FILE — the same number read back off a policy already written,
 # without a key and without loading it. This is the operator's half of the
 # workflow the ticket describes: a digest read off a document, put in a peer's
 # allow-list, and then seen again on that guest's console at start.
 digest_of() { "$EMIT" -digest-of "$1" | sed -n 's/^policy digest: //p'; }
 
 # console_policy_digest CONSOLE — the digest a guest printed at start, which is
-# the digest of the set it actually loaded off its own config device.
+# the digest of the policy it actually loaded off its own config device.
 console_policy_digest() { sed -n 's/.*tunneld: policy digest \([0-9a-f]\{64\}\).*/\1/p' "$1" | head -1; }
 
 # unconstrained_lines CONSOLE — how many values the guest reported as admitting
@@ -443,14 +478,17 @@ require_author_key() {
   return 0
 }
 
-# keep_sets WORK — copy the two authored sets, as signed, next to the consoles
-# they explain, so the captured evidence carries the documents and not only
-# their digests.
+# keep_sets WORK — copy the authored documents, as signed, next to the consoles
+# they explain, so the captured evidence carries them and not only their
+# digests. Four files a side since ticket 19: the set, the policy, and a
+# signature each.
 keep_sets() {
   local work="$1" side
   for side in a b; do
     cp "$work/refvals-$side/reference-values.json"     "$work/set-$side.json"     2>/dev/null || true
     cp "$work/refvals-$side/reference-values.json.sig" "$work/set-$side.json.sig" 2>/dev/null || true
+    cp "$work/policy-$side/policy.json"                "$work/policy-$side.json"     2>/dev/null || true
+    cp "$work/policy-$side/policy.json.sig"            "$work/policy-$side.json.sig" 2>/dev/null || true
   done
 }
 
@@ -697,54 +735,74 @@ scenario_tamper() {
   check "and the attacker still read nothing" in_file "$work/relay.txt" "MARKER not found"
 }
 
-# ---- the two policy scenarios (ticket 18) ---------------------------------
+# ---- the policy scenarios (tickets 18 and 19) -----------------------------
 # What shape two peers can be in at all, which is the thing to understand
-# before reading either scenario's verdicts.
+# before reading any of these verdicts.
 #
 # Every handshake here verifies both ways: each guest judges the other's
-# evidence against its own set, and a guest's policy *is* its own signed set —
-# its digest is SHA-256 over that set's signed bytes. So a pair in which A's
-# set names (M, digest of B's set) and B's set names (M, digest of A's set)
-# cannot be authored: each digest would have to be fixed before the other, and
-# the two sets are a hash cycle. Nobody can build it, on this design or any
-# other that binds a policy to its own digest.
+# evidence against its own set. Under ticket 18 a guest's policy *was* its own
+# signed set — its digest was SHA-256 over that set's signed bytes — so a pair in
+# which A's set named (M, digest of B's set) and B's named (M, digest of A's set)
+# could not be authored: each digest would have to be fixed before the other, and
+# the two sets were a hash cycle. That is what ticket 19 split. The policy is now
+# its own document, naming measurements and no digests at all, so the two digests
+# are fixed independently and the cycle is gone.
 #
-# That leaves exactly two admitted shapes and one refused one, and both
-# scenarios below are worth having because between them they are all three:
+# The three scenarios below are the before, the impossible-then, and the after:
 #
-#   policy-pinned    A's value names B's digest; B's value names nothing and
-#                    admits any policy. Both directions succeed. This is the
-#                    most constrained pair that can complete a tunnel, and the
-#                    unconstrained line on B's console is what that costs.
-#   policy-mismatch  A's value names B's digest; B's value names a digest
-#                    nobody holds. A admits B and B refuses A, whichever side
-#                    dials, and no tunnel completes in either direction.
+#   policy-pinned    A's value names B's policy digest; B's value names nothing
+#                    and admits any policy. Both directions succeed. This was
+#                    the most constrained pair ticket 18 could complete a tunnel
+#                    with, and the unconstrained line on B's console is what it
+#                    cost.
+#   policy-mismatch  A's value names B's digest; B's value names a digest nobody
+#                    holds. A admits B and B refuses A, whichever side dials, and
+#                    no tunnel completes in either direction. Under ticket 18
+#                    this was the shape of *every* fully constrained pair.
+#   mutual           A's value names B's policy digest and B's names A's, both
+#                    real, neither unconstrained. Both admit. This is the pair
+#                    ticket 18 could not author, and it is the point of the
+#                    split.
 #
-# The ticket's sentence "B dials A and is admitted" is therefore a statement
-# about A's verdict on B's evidence and not about a connection: A admits B, B
-# refuses A, and the handshake that carries both fails. Both guests dial in the
-# policy-mismatch scenario so that the record says so from both ends rather
-# than leaving it to be inferred from one.
+# The two policies in a pair have to differ, or the two digests are one number
+# and "each names the other's" says nothing. They differ in the truthful way:
+# forward_to. Both guests boot the same image, so both policies must name that
+# image's measurement or neither could dial; one of them also names a second
+# measurement nothing on this segment boots, which is a policy an operator might
+# really write for a sandbox that also calls a peer elsewhere, and which is
+# enough to make the two documents — and therefore the two digests — different.
 
-# write_digests WORK KIND D_A D_B [WRONG] — the three numbers the scenario
-# turns on, beside the consoles that show two of them being printed by the
-# guests themselves.
+# fictitious_measurement — a launch measurement of the right width that names no
+# image anybody has. It is what the second entry in one policy of each pair is,
+# so that the pair's two policy digests differ without either document saying
+# anything untrue about the guests on this segment.
+#
+# sha384 because an SEV-SNP launch measurement is 384 bits; of a sentence,
+# because the record should say where 96 hexadecimal characters came from rather
+# than showing them from nowhere.
+FICTITIOUS_IMAGE_TEXT='an image this sandbox would also dial, which nothing on this segment boots'
+fictitious_measurement() { printf '%s' "$FICTITIOUS_IMAGE_TEXT" | sha384sum | cut -d' ' -f1; }
+
+# write_digests WORK KIND D_A D_B [WRONG] — the numbers the scenario turns on,
+# beside the consoles that show two of them being printed by the guests
+# themselves.
 write_digests() {
   local work="$1" kind="$2" d_a="$3" d_b="$4" wrong="${5:-}"
   {
-    echo "# ticket 18, $kind: the policy digests this scenario turns on."
+    echo "# $kind: the policy digests this scenario turns on."
     echo "#"
-    echo "# A policy digest is SHA-256 over the bytes a reference value set's author"
-    echo "# signed, so it is not sha256sum of reference-values.json. Each number below"
-    echo "# was printed by emit-refvals when it wrote the set, checked against"
+    echo "# A policy digest is SHA-256 over the bytes a policy's author signed, so it is"
+    echo "# not sha256sum of policy.json, and since ticket 19 it is the digest of the"
+    echo "# policy and not of the reference value set beside it. Each number below was"
+    echo "# printed by emit-refvals when it wrote the document, checked against"
     echo "# 'emit-refvals -digest-of' on the document as delivered, and checked again"
-    echo "# against the line the guest holding that set printed at start."
+    echo "# against the line the guest holding that document printed at start."
     echo
     echo "launch measurement, both guests : $MEASUREMENT"
     echo "D_A, guest A's own policy       : $d_a"
-    echo "    the digest of set-a.json, which is on guest A's config device"
+    echo "    the digest of policy-a.json, which is on guest A's config device"
     echo "D_B, guest B's own policy       : $d_b"
-    echo "    the digest of set-b.json, which is on guest B's config device"
+    echo "    the digest of policy-b.json, which is on guest B's config device"
     echo
     case "$kind" in
       policy-mismatch)
@@ -757,9 +815,27 @@ write_digests() {
       policy-pinned)
         echo "set-a.json's value admits policy : $d_b   (guest B's, and no other)"
         echo "set-b.json's value admits policy : any — it lists no policy_digest, which"
-        echo "    guest B reports at start as one unconstrained value. It cannot name D_A:"
-        echo "    D_A is the digest of a set that names D_B, and a set naming the digest of"
-        echo "    a set that names it does not exist."
+        echo "    guest B reports at start as one unconstrained value. This is ticket 18's"
+        echo "    shape kept as a control: it is what a pair had to look like while a"
+        echo "    sandbox's policy was its own allow-list."
+        ;;
+      mutual)
+        echo "set-a.json's value admits policy : $d_b   (guest B's, and no other)"
+        echo "set-b.json's value admits policy : $d_a   (guest A's, and no other)"
+        echo "    Neither value is unconstrained, and each names a policy the other guest"
+        echo "    really presents. Under ticket 18 this pair could not be authored: D_A was"
+        echo "    the digest of a document that would have had to contain D_B, and D_B the"
+        echo "    digest of one containing D_A."
+        echo
+        echo "why the two digests differ, given that both guests boot one image:"
+        echo "    policy-a.json forwards to $MEASUREMENT"
+        echo "    policy-b.json forwards to that and also to"
+        echo "      $(fictitious_measurement)"
+        echo "    = sha384 of the ASCII string \"$FICTITIOUS_IMAGE_TEXT\","
+        echo "    with no trailing newline. It is a launch measurement of the right width"
+        echo "    naming no image anybody has, so guest B's policy is a different document"
+        echo "    from guest A's while both still say the true thing about this segment:"
+        echo "    each guest will dial the image the other is running."
         ;;
     esac
   } > "$work/digests.txt"
@@ -777,18 +853,27 @@ scenario_policy_pinned() {
 
   # B's set is authored first because A's names it, and B's names nothing: the
   # cycle argument above says it cannot name A's.
+  # The two policies first, because the sets name their digests. They differ in
+  # forward_to and in nothing else; guest B's names one image more, which is
+  # what makes D_A and D_B two numbers.
   local d_b d_a
-  d_b=$(author_set "$work/refvals-b")                  || { fail "policy-pinned: could not author guest B's set"; return; }
-  d_a=$(author_set "$work/refvals-a" -policy-digest "$d_b") || { fail "policy-pinned: could not author guest A's set"; return; }
+  d_a=$(author_policy "$work/policy-a" -forward-to "$MEASUREMENT") \
+      || { fail "policy-pinned: could not author guest A's policy"; return; }
+  d_b=$(author_policy "$work/policy-b" -forward-to "$MEASUREMENT" -forward-to "$(fictitious_measurement)") \
+      || { fail "policy-pinned: could not author guest B's policy"; return; }
+  author_set "$work/refvals-b"                       || { fail "policy-pinned: could not author guest B's set"; return; }
+  author_set "$work/refvals-a" -policy-digest "$d_b" || { fail "policy-pinned: could not author guest A's set"; return; }
   keep_sets "$work"
-  check "the digest emit-refvals printed for guest A's set is the digest of the document it wrote" \
-        test -n "$d_a" -a "$d_a" = "$(digest_of "$work/set-a.json")"
-  check "the digest emit-refvals printed for guest B's set is the digest of the document it wrote" \
-        test -n "$d_b" -a "$d_b" = "$(digest_of "$work/set-b.json")"
+  check "guest A's two policies have distinct digests, so each names one document" \
+        test -n "$d_a" -a -n "$d_b" -a "$d_a" != "$d_b"
+  check "the digest emit-refvals printed for guest A's policy is the digest of the document it wrote" \
+        test -n "$d_a" -a "$d_a" = "$(digest_of "$work/policy-a.json")"
+  check "the digest emit-refvals printed for guest B's policy is the digest of the document it wrote" \
+        test -n "$d_b" -a "$d_b" = "$(digest_of "$work/policy-b.json")"
   write_digests "$work" policy-pinned "$d_a" "$d_b"
 
-  make_config "$work/config-a" guest-a 10.14.0.2 guest-b 10.14.0.3:4433 "$(answerer_json guest-a 10.14.0.2 240s)" -refvals "$work/refvals-a"
-  make_config "$work/config-b" guest-b 10.14.0.3 guest-a 10.14.0.2:4433 "$(dialer_json guest-b 10.14.0.3 guest-a 0s 90s)" -refvals "$work/refvals-b"
+  make_config "$work/config-a" guest-a 10.14.0.2 guest-b 10.14.0.3:4433 "$(answerer_json guest-a 10.14.0.2 240s)" -refvals "$work/refvals-a" -policy "$work/policy-a"
+  make_config "$work/config-b" guest-b 10.14.0.3 guest-a 10.14.0.2:4433 "$(dialer_json guest-b 10.14.0.3 guest-a 0s 90s)" -refvals "$work/refvals-b" -policy "$work/policy-b"
   boot_pair "$work" "$IMAGE" "$IMAGE" 360 1
 
   local a="$work/console-a.txt" b="$work/console-b.txt"
@@ -799,9 +884,9 @@ scenario_policy_pinned() {
 
   # The operator's workflow, closed: the number written into A's allow-list is
   # the number B prints off the file B loaded.
-  check "guest-a printed the digest of the set on its own config device" \
+  check "guest-a printed the digest of the policy on its own config device" \
         test "$(console_policy_digest "$a")" = "$d_a"
-  check "guest-b printed the digest of the set on its own config device, which is what A's value names" \
+  check "guest-b printed the digest of the policy on its own config device, which is what A's value names" \
         test "$(console_policy_digest "$b")" = "$d_b"
   check "guest-a's value names a policy, so it reports nothing unconstrained" \
         test "$(unconstrained_lines "$a")" = "0"
@@ -842,21 +927,27 @@ scenario_policy_mismatch() {
   echo "    = $wrong"
 
   local d_b d_a
-  d_b=$(author_set "$work/refvals-b" -policy-digest "$wrong") || { fail "policy-mismatch: could not author guest B's set"; return; }
-  d_a=$(author_set "$work/refvals-a" -policy-digest "$d_b")   || { fail "policy-mismatch: could not author guest A's set"; return; }
+  d_a=$(author_policy "$work/policy-a" -forward-to "$MEASUREMENT") \
+      || { fail "policy-mismatch: could not author guest A's policy"; return; }
+  d_b=$(author_policy "$work/policy-b" -forward-to "$MEASUREMENT" -forward-to "$(fictitious_measurement)") \
+      || { fail "policy-mismatch: could not author guest B's policy"; return; }
+  author_set "$work/refvals-b" -policy-digest "$wrong" || { fail "policy-mismatch: could not author guest B's set"; return; }
+  author_set "$work/refvals-a" -policy-digest "$d_b"   || { fail "policy-mismatch: could not author guest A's set"; return; }
   keep_sets "$work"
-  check "the digest emit-refvals printed for guest A's set is the digest of the document it wrote" \
-        test -n "$d_a" -a "$d_a" = "$(digest_of "$work/set-a.json")"
-  check "the digest emit-refvals printed for guest B's set is the digest of the document it wrote" \
-        test -n "$d_b" -a "$d_b" = "$(digest_of "$work/set-b.json")"
+  check "the two policies have distinct digests, so each names one document" \
+        test -n "$d_a" -a -n "$d_b" -a "$d_a" != "$d_b"
+  check "the digest emit-refvals printed for guest A's policy is the digest of the document it wrote" \
+        test -n "$d_a" -a "$d_a" = "$(digest_of "$work/policy-a.json")"
+  check "the digest emit-refvals printed for guest B's policy is the digest of the document it wrote" \
+        test -n "$d_b" -a "$d_b" = "$(digest_of "$work/policy-b.json")"
   write_digests "$work" policy-mismatch "$d_a" "$d_b" "$wrong"
 
   # Both guests dial, in one boot, so that the record carries the verdicts from
   # both ends of the segment. The verdicts do not depend on who dialled — the
   # handshake verifies both ways either way — and this says so rather than
   # asserting it.
-  make_config "$work/config-a" guest-a 10.14.0.2 guest-b 10.14.0.3:4433 "$(dialer_json guest-a 10.14.0.2 guest-b 0s 60s)" -refvals "$work/refvals-a"
-  make_config "$work/config-b" guest-b 10.14.0.3 guest-a 10.14.0.2:4433 "$(dialer_json guest-b 10.14.0.3 guest-a 0s 60s)" -refvals "$work/refvals-b"
+  make_config "$work/config-a" guest-a 10.14.0.2 guest-b 10.14.0.3:4433 "$(dialer_json guest-a 10.14.0.2 guest-b 0s 60s)" -refvals "$work/refvals-a" -policy "$work/policy-a"
+  make_config "$work/config-b" guest-b 10.14.0.3 guest-a 10.14.0.2:4433 "$(dialer_json guest-b 10.14.0.3 guest-a 0s 60s)" -refvals "$work/refvals-b" -policy "$work/policy-b"
   boot_pair "$work" "$IMAGE" "$IMAGE" 300 1
 
   local a="$work/console-a.txt" b="$work/console-b.txt"
@@ -865,9 +956,9 @@ scenario_policy_mismatch() {
   if [ "$SNP" = 0 ]; then note "control boot: nothing attests, no policy to mismatch"; return; fi
   assert_attested "$a" "guest-a"; assert_attested "$b" "guest-b"
 
-  check "guest-a printed the digest of the set on its own config device" \
+  check "guest-a printed the digest of the policy on its own config device" \
         test "$(console_policy_digest "$a")" = "$d_a"
-  check "guest-b printed the digest of the set on its own config device" \
+  check "guest-b printed the digest of the policy on its own config device" \
         test "$(console_policy_digest "$b")" = "$d_b"
   check "guest-a's value names a policy, so it reports nothing unconstrained" \
         test "$(unconstrained_lines "$a")" = "0"
@@ -914,6 +1005,96 @@ scenario_policy_mismatch() {
   check "the relay found no plaintext on the wire"  in_file "$work/relay.txt" "MARKER not found"
 }
 
+# ---- scenario: two guests that pin each other (ticket 19) ------------------
+# The pair ticket 18 could not author. Each guest's value names the other's
+# policy digest and no other, neither value is unconstrained, and both guests
+# dial — so what the record shows is two verdicts and two tunnels, not one
+# verdict with the other inferred from it.
+scenario_mutual() {
+  local work="$OUT/mutual" seconds="${1:-300}"
+  echo
+  echo "### mutual: each guest's value names the other's policy digest, and both admit"
+  mkdir -p "$work"
+  require_author_key mutual || return
+  build_emit_refvals
+
+  # Both policies first. Neither names a digest — that is what makes the pair
+  # authorable at all — so their order does not matter and neither has to exist
+  # before the other.
+  local d_a d_b
+  d_a=$(author_policy "$work/policy-a" -forward-to "$MEASUREMENT") \
+      || { fail "mutual: could not author guest A's policy"; return; }
+  d_b=$(author_policy "$work/policy-b" -forward-to "$MEASUREMENT" -forward-to "$(fictitious_measurement)") \
+      || { fail "mutual: could not author guest B's policy"; return; }
+  check "the two policies have distinct digests, so 'each names the other' is two numbers" \
+        test -n "$d_a" -a -n "$d_b" -a "$d_a" != "$d_b"
+
+  # Then the two sets, each naming the other guest's policy and nothing else.
+  author_set "$work/refvals-a" -policy-digest "$d_b" || { fail "mutual: could not author guest A's set"; return; }
+  author_set "$work/refvals-b" -policy-digest "$d_a" || { fail "mutual: could not author guest B's set"; return; }
+  keep_sets "$work"
+  check "the digest emit-refvals printed for guest A's policy is the digest of the document it wrote" \
+        test -n "$d_a" -a "$d_a" = "$(digest_of "$work/policy-a.json")"
+  check "the digest emit-refvals printed for guest B's policy is the digest of the document it wrote" \
+        test -n "$d_b" -a "$d_b" = "$(digest_of "$work/policy-b.json")"
+  write_digests "$work" mutual "$d_a" "$d_b"
+
+  # Both guests dial, in one boot, so the record carries both directions.
+  make_config "$work/config-a" guest-a 10.14.0.2 guest-b 10.14.0.3:4433 "$(dialer_json guest-a 10.14.0.2 guest-b "${seconds}s" 90s)" -refvals "$work/refvals-a" -policy "$work/policy-a"
+  make_config "$work/config-b" guest-b 10.14.0.3 guest-a 10.14.0.2:4433 "$(dialer_json guest-b 10.14.0.3 guest-a "${seconds}s" 90s)" -refvals "$work/refvals-b" -policy "$work/policy-b"
+  boot_pair "$work" "$IMAGE" "$IMAGE" "$((seconds + 240))" 1
+
+  local a="$work/console-a.txt" b="$work/console-b.txt"
+  [ -f "$a" ] && [ -f "$b" ] || { fail "mutual: one of the guests left no console"; return; }
+  assert_booted "$a" "guest-a"; assert_booted "$b" "guest-b"
+  if [ "$SNP" = 0 ]; then note "control boot: nothing attests, no policy to pin"; return; fi
+  assert_attested "$a" "guest-a"; assert_attested "$b" "guest-b"
+
+  # The operator's workflow, closed in both directions at once: the number
+  # written into each guest's allow-list is the number the other guest prints
+  # off the file it loaded.
+  check "guest-a printed the digest of the policy on its own config device" \
+        test "$(console_policy_digest "$a")" = "$d_a"
+  check "guest-b printed the digest of the policy on its own config device" \
+        test "$(console_policy_digest "$b")" = "$d_b"
+  check "guest-a's value names a policy, so it reports nothing unconstrained" \
+        test "$(unconstrained_lines "$a")" = "0"
+  check "guest-b's value names a policy too, so neither guest admits any policy at all" \
+        test "$(unconstrained_lines "$b")" = "0"
+
+  # Each guest says whom its own policy will dial, and each list holds the image
+  # the other is running.
+  check "guest-a's policy says it forwards to the image on this segment" \
+        grep -q "policy forward_to: measurement ${MEASUREMENT:0:16}" "$a"
+  check "guest-b's policy says the same" \
+        grep -q "policy forward_to: measurement ${MEASUREMENT:0:16}" "$b"
+
+  check "guest-a admitted guest-b, whose policy digest its value names" in_file "$a" "tunneld: PEER key="
+  check "guest-b admitted guest-a, whose policy digest its value names" in_file "$b" "tunneld: PEER key="
+  check "guest-a refused nothing"                 not_in_file "$a" "tunneld: REFUSED"
+  check "and neither did guest-b"                 not_in_file "$b" "tunneld: REFUSED"
+  check "guest-a admitted at least one peer"      test "$(accepted_count "$a")" -ge 1
+  check "guest-b admitted at least one peer"      test "$(accepted_count "$b")" -ge 1
+
+  check "guest-a established a tunnel"            in_file "$a" "kind=establish"
+  check "guest-b established one too"             in_file "$b" "kind=establish"
+  check "guest-a exchanged over it, warm"         in_file "$a" "kind=warm_exchange"
+  check "guest-b exchanged over it, warm"         in_file "$b" "kind=warm_exchange"
+  check "guest-b answered guest-a's exchanges"    in_file "$a" 'answered_by="guest-b"'
+  check "guest-a answered guest-b's exchanges"    in_file "$b" 'answered_by="guest-a"'
+  check "guest-a's exercise completed"            in_file "$a" "tunneld: EXIT status=0"
+  check "guest-b's exercise completed"            in_file "$b" "tunneld: EXIT status=0"
+
+  check "the exchange went through the relay"     grep -q "a_to_b_frames=[1-9]" "$work/relay.txt"
+  check "the relay found no plaintext on the wire" in_file "$work/relay.txt" "MARKER not found"
+  local targets bad
+  targets=$(sed -n 's/.*arp targets : //p' "$work/relay.txt" | head -1)
+  bad=$(printf '%s' "$targets" | tr ',' '\n' | tr -d ' ' | grep -v '^$' | grep -vE '^10\.14\.0\.(2|3)$' || true)
+  echo "    addresses resolved on the segment: ${targets:-none}"
+  check "no guest looked for a gateway or anything else off the segment" test -z "$bad"
+  grep -h "LATENCY .*kind=establish" "$a" "$b" | sed 's/^/    /' || true
+}
+
 # ---- run them -------------------------------------------------------------
 for s in "${SCENARIOS[@]}"; do
   case "$s" in
@@ -926,6 +1107,7 @@ for s in "${SCENARIOS[@]}"; do
     stalechain) scenario_stalechain ;;
     policy-pinned)   scenario_policy_pinned ;;
     policy-mismatch) scenario_policy_mismatch ;;
+    mutual)          scenario_mutual "$RUN_FOR" ;;
     *) echo "unknown scenario: $s" >&2; exit 2 ;;
   esac
 done
@@ -945,9 +1127,12 @@ if [ -n "$CAPTURE" ]; then
     mkdir -p "$CAPTURE/$n"
     cp "$d"/console-*.txt "$d"/relay.txt "$d"/segment.pcap "$d"/boot.job \
        "$d"/mutated-measurement.txt "$d"/digests.txt "$d"/set-a.json "$d"/set-a.json.sig \
-       "$d"/set-b.json "$d"/set-b.json.sig "$CAPTURE/$n/" 2>/dev/null || true
+       "$d"/set-b.json "$d"/set-b.json.sig \
+       "$d"/policy-a.json "$d"/policy-a.json.sig "$d"/policy-b.json "$d"/policy-b.json.sig \
+       "$CAPTURE/$n/" 2>/dev/null || true
   done
   cp "$IMAGE/manifest.txt" "$IMAGE/reference-values.json" "$IMAGE/reference-values.json.sig" \
+     "$IMAGE/policy.json" "$IMAGE/policy.json.sig" \
      "$IMAGE/predicted-measurement.txt" "$IMAGE/packaging.txt" "$CAPTURE/" 2>/dev/null || true
   echo "captured into $CAPTURE"
 fi

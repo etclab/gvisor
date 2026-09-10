@@ -24,7 +24,8 @@
 #
 # It emits, in OUT: the image (OVMF.fd, vmlinuz, initrd.img, cmdline.txt,
 # rootfs.img), the predicted launch measurement, the signed reference value set
-# for it, the manifest, and packaging.txt recording what went in.
+# and the signed policy for it, the manifest, and packaging.txt recording what
+# went in.
 #
 # Environment:
 #   OUT         output directory (default $STACK/image-ticket14)
@@ -108,6 +109,8 @@ echo "=== packaged"
 M=$(sed -n 's/^launch_measurement: //p' "$OUT/manifest.txt")
 echo "predicted launch measurement: $M"
 echo "reference value set:          $OUT/reference-values.json (+ .sig)"
+echo "policy:                       $OUT/policy.json (+ .sig)"
+echo "policy digest:                $(sed -n 's/^policy_digest: //p' "$OUT/manifest.txt")"
 echo "author public key:            $(cat "$OUT/build/author.pub" 2>/dev/null || echo '?')"
 echo "author key:                   $AUTHOR_KEY (keep it: re-signing a set needs it)"
 echo "packaged binary:              $OUT/tunneld (the copy inside rootfs.img is what is measured)"

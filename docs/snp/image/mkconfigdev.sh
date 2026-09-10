@@ -9,6 +9,9 @@
 #
 #   reference-values.json       the reference value set (attest/README.md)
 #   reference-values.json.sig   its detached Ed25519 signature (ADR-0006)
+#   policy.json                 this sandbox's own signed policy: what leaves it,
+#                               and the measurements it will dial (ticket 19)
+#   policy.json.sig             its detached signature, same key, own domain
 #   peers.json                  the peer table
 #   certificate-chain.bin       the provisioned certificate chain as an AMD
 #                               certificate table, VCEK, ASK, ARK (ADR-0005;
@@ -23,7 +26,7 @@ set -eu
 SRC="${1:?SRCDIR}"; OUT="${2:?OUT.img}"
 SIZE_MB="${SIZE_MB:-16}"
 
-for f in reference-values.json reference-values.json.sig peers.json certificate-chain.bin certificate-chain.json; do
+for f in reference-values.json reference-values.json.sig policy.json policy.json.sig peers.json certificate-chain.bin certificate-chain.json; do
   [ -f "$SRC/$f" ] && echo "config: $f" || echo "config: $f  (absent)"
 done
 find "$SRC" -type f -perm /111 -print | sed 's/^/config: WARNING executable bit (ignored: mounted noexec): /' || true

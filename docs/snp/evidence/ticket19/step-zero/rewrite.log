@@ -1,0 +1,21 @@
+--- what changed ---
+--- /tmp/grub.cfg.orig^I2026-09-10 20:07:47.911506224 +0000$
++++ /tmp/grub.cfg.new^I2026-09-10 20:07:47.937538721 +0000$
+@@ -163,6 +163,7 @@$
+ ^Ielse$
+ ^I^Iecho^I'GRUB_FORCE_PARTUUID set, attempting initrdless boot.'$
+ ^I^Ilinux^I/vmlinuz-6.17.0-1022-gcp root=PARTUUID=fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7 ro  console=ttyS0,115200 panic=-1$
++^I^Iinitrd^I/initrd.img-6.17.0-1022-gcp$
+ ^Ifi$
+ ^Iinitrdfail$
+ }$
+apt-daily.timer
+Disabling 'apt-daily-upgrade.service', but its triggering units are still active:
+apt-daily-upgrade.timer
+--- installed ---
+----i---------e------- /boot/grub/grub.cfg
+30b0f8521f23e208def12f64d07af082babfca760fc92da7d1f50e1cfb1fe0db  /boot/grub/grub.cfg
+99b0dcc93aca6499b4c222ef751d0384db3403246a1c3c7a728e1e06573d477c  /boot/initrd.img-6.17.0-1022-gcp
+/boot/grub/grub.cfg 7568 bytes
+/boot/initrd.img-6.17.0-1022-gcp 31155953 bytes
+GRUB_FORCE_PARTUUID: commented out

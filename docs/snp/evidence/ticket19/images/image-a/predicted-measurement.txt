@@ -1,0 +1,64 @@
+predict-rtmr2: RTMR2 computed from the image, nothing booted
+source              : $SCRATCH/image-a/disk.raw
+partitions          : gpt1 at byte 1074790400 (ext), gpt14 at byte 1048576 (unknown fs), gpt15 at byte 5242880 (vfat), gpt16 at byte 116391936 (ext)
+ESP / EFI directory : partition 15, /EFI/ubuntu
+note                : grubx64.efi: 124 modules built in, embedded prefix '/EFI/ubuntu'
+model inputs        : grub_platform=efi, feature_menuentry_id=y, feature_all_video_module=y, feature_timeout_style=y
+                      boot config measured 2 times, fwsetup --is-supported=0,
+                      shim mirrors vendor dbx into MokListX: False
+records predicted   : 25
+
+  0  a 053357ea65185f010b8caa1fc265cfd5e80c7cc781254fa3f1e5ea9d345a87003cf761472a2f0423f15297f55cfe248f  MokList
+        <- shimx64.efi .vendor_cert vendor_authorized, 1080 bytes of DER, wrapped by shim in one EFI_SIGNATURE_LIST (EFI_CERT_X509_GUID, owner SHIM_LOCK_GUID)
+  1  c 80ee2571334a57bf90238d21964447e542079d4805fa87887817a97dcb720906683a09b1ac634c76c0c0be1177f76110  MokListX
+        <- shim's empty-key-database placeholder: one EFI_SIGNATURE_LIST (EFI_CERT_SHA256_GUID, owner SHIM_LOCK_GUID) over 32 zero bytes. Ubuntu's shim 15.8-0ubuntu1 removes .addend/.addend_size from the MokListX entry, so the 8921-byte vendor dbx in .vendor_cert is never mirrored
+  2  c 8d2ce87d86f55fcfab770a047b090da23270fa206832dfea7e0c946fff451f819add242374be551b0d6318ed6c7d41d8  MokListTrusted
+        <- MOK_VARIABLE_INVERSE: no MokListTrusted variable in NVRAM, so shim mirrors the single byte 0x01
+  3  a b662589ce02c97161afbe058f2a5f2ce9bc110b6d6b9ce2daefdd35024b3226ce60481895d6f39395202f958adc54ba2  (hd0,gpt15)/EFI/ubuntu/grub.cfg
+        <- /EFI/ubuntu/grub.cfg in gpt15 at byte 5242880 (vfat), 112 bytes; the boot config, opened by `normal`
+  4  a b662589ce02c97161afbe058f2a5f2ce9bc110b6d6b9ce2daefdd35024b3226ce60481895d6f39395202f958adc54ba2  (hd0,gpt15)/EFI/ubuntu/grub.cfg
+        <- /EFI/ubuntu/grub.cfg in gpt15 at byte 5242880 (vfat), 112 bytes; the boot config, opened by `normal`
+  5  b 1b53acb6b136112626f76a642b553c8f8f854c8a981a3e3ccfa13e0baa32eca59a675c7d61c4f6c73d23dcdd2e2ef3a2  grub_cmd: search.fs_uuid b4f9057b-66e6-4f5a-bbba-a8086989e88f root
+        <- (hd0,gpt15)/EFI/ubuntu/grub.cfg line 1
+  6  b 3998b46aa4561c52c3e3b07e57c03127a4acc2b65a72764f9ee9daf3ae0edc64cee435a0bc1254e074d86e0e7e68e59c  grub_cmd: set prefix=(hd0,gpt16)/grub
+        <- (hd0,gpt15)/EFI/ubuntu/grub.cfg line 2
+  7  a eb772b276dc07ee8822910ff74ee3d36d2af0a66c0202046ec5aed537bcdd2373e7468c6dda47c1e38cc6a6b70b3673c  (hd0,gpt16)/grub/x86_64-efi/command.lst
+        <- /grub/x86_64-efi/command.lst in gpt16 at byte 116391936 (ext), 3707 bytes; read by normal.mod's $prefix hook (read_lists)
+  8  a 73e17c3ea36dea576f107728630b937f74006954f2be9143eb124b76706173d7d9a68c32e7c90f74b0ff5ced89603914  (hd0,gpt16)/grub/x86_64-efi/fs.lst
+        <- /grub/x86_64-efi/fs.lst in gpt16 at byte 116391936 (ext), 219 bytes; read by normal.mod's $prefix hook (read_lists)
+  9  a c7d01ae51404411a65b0d26a601a01d63b914e7477825d5ecd87840a36434c6bd956725441b82a66b6581c36bd38fad4  (hd0,gpt16)/grub/x86_64-efi/crypto.lst
+        <- /grub/x86_64-efi/crypto.lst in gpt16 at byte 116391936 (ext), 936 bytes; read by normal.mod's $prefix hook (read_lists)
+ 10  a 800824fd124df10eeafd6bba36c596c33afbb527e3006b58c19fadced47b03c8ae92f89ef3caef2346b3bd545cfdd8de  (hd0,gpt16)/grub/x86_64-efi/terminal.lst
+        <- /grub/x86_64-efi/terminal.lst in gpt16 at byte 116391936 (ext), 162 bytes; read by normal.mod's $prefix hook (read_lists)
+ 11  b 35976c7215488f26b8f07c250919cecdb5ddaaba8a27d7402e30533488152e7a8392bebdd55f401b2d12554f6a6e7d96  grub_cmd: configfile (hd0,gpt16)/grub/grub.cfg
+        <- (hd0,gpt15)/EFI/ubuntu/grub.cfg line 3
+ 12  a fcac73869c2dfd651bf2c3ca70c6d08b07235df3bb06daf27f978090dc494040944be19b4efd6f66c5cdc469ca351ced  (hd0,gpt16)/grub/grub.cfg
+        <- /grub/grub.cfg in gpt16 at byte 116391936 (ext), 272 bytes; read by `configfile`
+ 13  b 6bf6242f8eb0ca7217c6e3a5d4c6a62e5858440264e84696cd67306ef2db8cf625952d5fd9061daadefd181039479740  grub_cmd: set default=0
+        <- (hd0,gpt16)/grub/grub.cfg line 1
+ 14  b 54836d3465339db08f1fc8c7cc2630918a486ca4447f416dd5a267e337308f07b898c6dd7a2586a382ac40917f1ac222  grub_cmd: set timeout=0
+        <- (hd0,gpt16)/grub/grub.cfg line 2
+ 15  b 8e88847f94e58cd1a0c3020971772963b8ee5c281b0d990bc68f77309d567601ab675f7a0bed486beee6aa8841c458a0  grub_cmd: menuentry attested-tunnel {\n\tinsmod part_gpt\n\tinsmod ext2\n\tsearch --no-floppy --fs-uuid --set=root b4f9057b-66e6-4f5a-bbba-a8086989...
+        <- (hd0,gpt16)/grub/grub.cfg line 3
+ 16  b 733c064fb90c1ce413aef2456df0fd27603ff20113d6188c93819823f17d07c58e50e0b761dc7e8dc3aaaea1b02c53be  grub_cmd: setparams attested-tunnel
+        <- (hd0,gpt16)/grub/grub.cfg line 3
+ 17  b cac0f0b93ee7eaa45e36cda3faf3d0a5f5fc92ec4d24c3af4ad9584669598f34b603c211b220e56be52bdbc3a2f74ffb  grub_cmd: insmod part_gpt
+        <- (hd0,gpt16)/grub/grub.cfg line 4
+ 18  b e142a594d988fda5a65b1424a4a48c2cf4b036dd779d4ae299af45b7d33b0bfe07a4a969d3c0da72c2ba53f9eeeaf7a6  grub_cmd: insmod ext2
+        <- (hd0,gpt16)/grub/grub.cfg line 5
+ 19  b 271d094f506e9e0c5283ef62b714edfbea2178083c7e5e874e272f3e833d8c699b1f123e63b74f4457cd2c56587f8690  grub_cmd: search --no-floppy --fs-uuid --set=root b4f9057b-66e6-4f5a-bbba-a8086989e88f
+        <- (hd0,gpt16)/grub/grub.cfg line 6
+ 20  b bac8f96f89a6a3866f4e4e6734ed7f5d991ee75b01b7f222e6878bb59921b0c9aeb3a0d9193e204d1b5389038e407c0a  grub_cmd: linux /vmlinuz-6.17.0-1022-gcp console=ttyS0,115200 panic=-1 rdinit=/init
+        <- (hd0,gpt16)/grub/grub.cfg line 7
+ 21  a d0bc4df3c4439be584307ae86186919b9ede90997265a74236b7885295cb4b068608611991c087204fc17e482ace8cb8  /vmlinuz-6.17.0-1022-gcp
+        <- /vmlinuz-6.17.0-1022-gcp in gpt16 at byte 116391936 (ext), 16775240 bytes; the kernel, opened by `linux`
+ 22  b a0781e40843779580f49f163a1d16d8e4903bdc254def227be685de587154b09cde3b2835c715bf32bfd110f6b78aa71  kernel_cmdline: /vmlinuz-6.17.0-1022-gcp console=ttyS0,115200 panic=-1 rdinit=/init
+        <- the argv of the `linux` command, measured again by grub's kernel-command-line verifier
+ 23  b c4af497d6861be0ffa10ddb94a430ec35bcac3a24bdc8c909d1041fdf48979e03958de7b2783540e421a05041994a7c7  grub_cmd: initrd /initrd.img-attested
+        <- (hd0,gpt16)/grub/grub.cfg line 8
+ 24  a daa4f1c47f61718dcfc230e9cc26b7244cdfbc93039d01fc86ba2ef21c67316eaf65445b8fea74beb40ff89a07e8805b  /initrd.img-attested
+        <- /initrd.img-attested in gpt16 at byte 116391936 (ext), 10446197 bytes; an initrd, opened by `initrd`
+
+RTMR2 predicted     : d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+
+RESULT: 25 records, RTMR2 d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d (nothing to compare against)

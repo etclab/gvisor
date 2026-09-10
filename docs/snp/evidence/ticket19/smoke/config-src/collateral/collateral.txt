@@ -1,0 +1,36 @@
+What this directory is, and what it says about the recorded platform
+=====================================================================
+
+The Intel collateral a verifier needs beside a TDX quote, fetched once (FETCH.txt) for
+the one platform family every quote on this branch came from, and provisioned onto the
+config device in exactly this shape. It is the only collateral the tests use.
+
+The quotes it answers for (every TDX quote under docs/snp/evidence/tdx/):
+
+  quote                                          FMSPC         PCK CA     CPUSVN                             PCESVN  QE ISVSVN
+  eventlog/, eventlog-wrongmap/, mutate/*/,
+  predict/upgrade/*/, predict/upgrade-kernel/*/  00806f050000  platform   09090202040100060000000000000000   11      6
+
+(read with go-tdx-guest's pcs.PckCertificateExtensions from the PCK leaf certificate each
+quote carries; two distinct PCK certificates appear across the eight quotes — two hosts —
+with identical FMSPC and TCB.)
+
+How the TCB info resolves this platform, by Intel's algorithm (README in go-tdx-guest's
+testing/testdata): the first TCB level whose SGX components, PCESVN and TDX components are all
+<= the platform's. tcbinfo-00806f050000: version 3, id TDX, issued 2026-09-08T19:20:02Z,
+nextUpdate 2026-10-08T19:20:02Z, tcbEvaluationDataNumber 20, six levels:
+
+  pcesvn  sgx components (first 8)  tdx components (first 4)  tcbDate     status
+  11      9 9 2 2 4 1 0 6           5 0 9 0                   2025-08-13  UpToDate     <- matches
+  11      8 8 2 2 4 1 0 6           5 0 8 0                   2025-05-14  OutOfDate
+  11      7 7 2 2 3 1 0 3           5 0 7 0                   2024-03-13  OutOfDate
+  11      6 6 2 2 3 1 0 3           3 0 6 0                   2023-08-09  OutOfDate
+  11      5 5 2 2 3 1 0 3           3 0 5 0                   2023-02-15  OutOfDate
+  5       5 5 2 2 3 1 0 3           3 0 5 0                   2018-01-04  OutOfDate
+
+The platform's TEE_TCB_SVN is 0f010a00…: TDX components 15, 1, 10, 0 against 5, 0, 9, 0; its
+CPUSVN 09 09 02 02 04 01 00 06 against the first row; PCESVN 11 against 11. So the recorded
+platform is UpToDate at evaluation number 20, and the QE (ISVSVN 6) is UpToDate under
+qeidentity (one level, isvsvn 4, UpToDate; issued 2026-09-08T19:25:05Z, nextUpdate
+2026-10-08T19:25:05Z). Both documents expire on 2026-10-08; after that date this directory
+refuses every TDX peer until it is re-provisioned (ADR-0007).

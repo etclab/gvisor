@@ -1,0 +1,67 @@
+# Attested tunnel guest image for Google Cloud TDX. Built 2026-09-10T21:24:38Z on shs1.
+# label: b
+
+## The measurement
+predicted_rtmr2: 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7
+records:         25 (predict-rtmr2.py --raw, offline; no machine was asked)
+policy_digest:   a642ab1aca91e3b00f86c6b31a22c016d33c85117319e51b8774a91db3fd885e (sha256 over the bytes the author signed over policy.json,
+                 which is not sha256sum of the file; a peer names this in its policy_digest)
+
+## Every input the measurement covers
+base_image:      $SCRATCH/img/base-disk.raw d0b2b2c29a0bcc42c9dc414706b2b45af99fabf375150afaabcd59cd0785474f
+disk.raw:        0ac99bd493eb6cc3ad2c9b8398023eef17cf0130c39bba3d57ad54bca022ade2
+grub.cfg:        bc00eff83f2685727c689b202800e39276117870d897cf7772611865704277b3 (271 bytes), installed at /boot/grub/grub.cfg, immutable flag set
+kernel:          vmlinuz-7.0.0-1011-gcp d99d5fe55b545db18594e22b72f9c1430ef61af0bd3ff479830b489107678b09 (installed from the package unpacked at $SCRATCH/kernel7/x)
+initrd:          /initrd.img-attested e0fd6cc9476a1d29c3857d8bff4123fec4c7d4c5d3da19fb0a5cbf1fa05360e4 (10457552 bytes)
+kernel cmdline:  console=ttyS0,115200 panic=-1 rdinit=/init
+boot fs uuid:    b4f9057b-66e6-4f5a-bbba-a8086989e88f
+
+## What was NOT changed, checked byte for byte after the rewrite
+esp (gpt15):     917fa42848b63601d35ca66a75e49c32e42b8515e2b0e0ff949415c5750c5323
+root (gpt1):     e8fd5d72634f58d772b4b85d04608173e1ee7937518d4fd987dcca80f1c7de03  (Ubuntu's root; never mounted, by this build or by the guest)
+gpt:             a5fb8e097e42ade5161b074b8dd0fc953d090b7844d4895175c21a4866a36163   (no partition added, moved or resized, so RTMR1 keeps its two values)
+
+## update-grub cannot move grub.cfg's bytes
+There is no userspace in this image that could run it: grub loads the initrd and the initrd
+is the guest, so Ubuntu's /sbin/init never executes. The immutable flag on the inode is the
+second line of defence, not the first. The configuration itself reads grubenv nowhere --
+no load_env, no save_env, no recordfail, no initrdfail -- so RTMR2 does not depend on how
+any previous boot ended, which is the one way docs/tdx-rtmr2-prediction.md found for a
+pristine image's RTMR2 to move.
+
+## Initrd contents (path sha256 mode size)
+/init            e2f03c3791385f428a928f2d9affcc4e790e0c974d14541406090afc08745229 0755 13842
+/bin/busybox     dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 0755 2124608  (busybox-static 1:1.36.1-6ubuntu3.1)
+/usr/bin/tunneld 92f0e86c7455a10b5f1f41aecc64af487dc9aea8d71d337a0f7c677a94e5d805 0755 17397536
+/etc/attested-tunnel/author.pub 85b1aa0902ea83ed840bd558bd288b3db57e0a453fd777bac85e2f6f886f47a2 0444 65
+/lib/modules/gve.ko             8e5302e193b4d22871a181215482b91c60322c76a69f9d312ede0fc9f8c8ffb5 0444 355745
+/lib/modules/nf_reject_ipv4.ko  289c3d6686cb8b670ba2a55042529aae7cec82de743e7df96605c9b606e80231 0444 20025
+/lib/modules/nf_reject_ipv6.ko  77456e90add689e5dec27e9f75beca2e2ece33b97cf6051ad5a5984ad881fc2e 0444 25137
+/lib/modules/nf_tables.ko       d3654c4139698d8748d846408a896cbd9cd7da8d1aeab64a450138a3a76fd45f 0444 804785
+/lib/modules/nft_reject_inet.ko 9efad760f1628e6c7660a27ead0275d81ef57c1f5c9bf01b81753891c914db9d 0444 15665
+/lib/modules/nft_reject.ko      fde2a4b08d3ba0de699befa64aa57cbc6bbf973835061c34a235d992a385e222 0444 16657
+/lib/modules/tdx-guest.ko       998a6df3295a5e9628100c82f69eb6069c660b75319e5705b1b99351a5b9225e 0444 24673
+applets (symlinks to busybox): sh mount insmod cat echo printf sleep sync uname dmesg grep sed cut sort tr dd od find stat sha256sum ip poweroff
+
+## The two signed documents (they ship on the config device, outside the measurement)
+reference-values.json sha256: 6208465378c8dada634c46a0e26d491285d9f2dc5e10c9add08ebc1cb199ac3f
+policy.json sha256:           dac21417365de23fac9dfac88d9db286b8d468ed8e0f770a2190fdda61b77757
+signed by author key:         665053d10032f5b9a46394a65b022c0bd7007392b8f445fe4ace5b0e5ed4c5a2 (also at /etc/attested-tunnel/author.pub, inside RTMR2)
+admits measurement:           640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7 (this image itself)
+admits peer policy:           a642ab1aca91e3b00f86c6b31a22c016d33c85117319e51b8774a91db3fd885e (the policy this build emitted, so a guest booting this image admits itself)
+forwards to:                  640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7
+provider constants pinned:    mrtd c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+                              rtmr0 c0b8b19ca6f51dc37435da45a61ab417e59253cd31cc2eeb3e833e8b8979679fe5a65387e0014831fe7b3ec4be51896d
+                              rtmr1 02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b (first boot)
+                              rtmr1 3a446943925fef7f1682fd54e1b6697df864692e28592ec373860d1868582ac14ca3029c48282eb964868a785bafd691 (every boot after)
+tcb floor:                    UpToDate, evaluation 20
+
+## Toolchain
+go:        go version go1.26.3 linux/amd64
+debugfs:   debugfs 1.47.0 (5-Feb-2023)
+e2fsck:    e2fsck 1.47.0 (5-Feb-2023)
+gzip:      gzip 1.12
+python3:   Python 3.12.3
+mkcpio.py: ad87fc6e88b0d3d7c219a6f879c9ce5107f50e5442712bed9edbd3eabad2eacb
+init.tdx:  e2f03c3791385f428a928f2d9affcc4e790e0c974d14541406090afc08745229
+repo:      d813519f95f064ecdf13c86fb559e6851300f62e

@@ -67,6 +67,15 @@
 #   BASE_IMAGE    the pinned raw disk image (default $OUT/../base-disk.raw)
 #   BASE_SHA256   what BASE_IMAGE must hash to; the build refuses otherwise
 #   KERNEL_RELEASE  which kernel in the image to boot (default: the only one)
+#   KERNEL_SOURCE an unpacked Ubuntu kernel package -- a directory with
+#                 ./boot/vmlinuz-<release> and ./lib/modules/<release>/ under
+#                 it, as `dpkg-deb -x linux-image-<release>-gcp.deb` and
+#                 `dpkg-deb -x linux-modules-<release>-gcp.deb` produce. Set it
+#                 to build the same guest on a different kernel, which is a
+#                 different RTMR2 and nothing else: scenario three needs two
+#                 images that differ only in the kernel they name and load.
+#                 Left unset the build uses the kernel the provider's image
+#                 already carries and writes no new file to /boot.
 #   BUSYBOX       static busybox for the initrd (default /usr/bin/busybox)
 #   TUNNELD       a prebuilt static tunneld; default is to build it here, after
 #                 running its guards, exactly as docs/snp/image/package-tunneld.sh
@@ -170,11 +179,23 @@ echo
 
 # ---- 1. what the provider's image supplies --------------------------------
 echo "=== 1. the kernel and the modules, taken out of the image itself"
-KERNEL_RELEASE="${KERNEL_RELEASE:-$(debugfs -R "ls -p /" "$BASE_IMAGE?offset=$BOOT_OFF" 2>/dev/null |
-  awk -F/ '$6 ~ /^vmlinuz-/ {print substr($6, 9)}' | sort | tail -1)}"
-[ -n "$KERNEL_RELEASE" ] || { echo "no vmlinuz-* on the /boot partition" >&2; exit 1; }
-echo "kernel release $KERNEL_RELEASE"
-debugfs -R "dump /vmlinuz-$KERNEL_RELEASE $B/vmlinuz" "$BASE_IMAGE?offset=$BOOT_OFF" 2>/dev/null
+KERNEL_SOURCE="${KERNEL_SOURCE:-}"
+if [ -n "$KERNEL_SOURCE" ]; then
+  KERNEL_SOURCE="$(readlink -f "$KERNEL_SOURCE")"
+  KERNEL_RELEASE="${KERNEL_RELEASE:-$(ls "$KERNEL_SOURCE/boot" | sed -n 's/^vmlinuz-//p' | sort | tail -1)}"
+  [ -n "$KERNEL_RELEASE" ] || { echo "no boot/vmlinuz-* under $KERNEL_SOURCE" >&2; exit 1; }
+  [ -d "$KERNEL_SOURCE/lib/modules/$KERNEL_RELEASE" ] \
+    || { echo "no lib/modules/$KERNEL_RELEASE under $KERNEL_SOURCE" >&2; exit 1; }
+  cp "$KERNEL_SOURCE/boot/vmlinuz-$KERNEL_RELEASE" "$B/vmlinuz"
+  echo "kernel release $KERNEL_RELEASE, from the package unpacked at $KERNEL_SOURCE"
+  echo "  it is installed into /boot as a new file; the image's own kernel is left where it is"
+else
+  KERNEL_RELEASE="${KERNEL_RELEASE:-$(debugfs -R "ls -p /" "$BASE_IMAGE?offset=$BOOT_OFF" 2>/dev/null |
+    awk -F/ '$6 ~ /^vmlinuz-/ {print substr($6, 9)}' | sort | tail -1)}"
+  [ -n "$KERNEL_RELEASE" ] || { echo "no vmlinuz-* on the /boot partition" >&2; exit 1; }
+  echo "kernel release $KERNEL_RELEASE, the one the provider's image carries"
+  debugfs -R "dump /vmlinuz-$KERNEL_RELEASE $B/vmlinuz" "$BASE_IMAGE?offset=$BOOT_OFF" 2>/dev/null
+fi
 KERNEL_SHA=$(sha256sum "$B/vmlinuz" | cut -d' ' -f1)
 echo "vmlinuz-$KERNEL_RELEASE $KERNEL_SHA ($(stat -c %s "$B/vmlinuz") bytes)"
 
@@ -182,26 +203,45 @@ echo "vmlinuz-$KERNEL_RELEASE $KERNEL_SHA ($(stat -c %s "$B/vmlinuz") bytes)"
 # THIS image's /lib/modules and never from the build host: a module built for
 # another kernel does not load, and a module from another kernel is not what a
 # verifier reading this image would find there.
-debugfs -R "dump /lib/modules/$KERNEL_RELEASE/modules.dep $B/modules.dep" "$BASE_IMAGE?offset=$ROOT_OFF" 2>/dev/null
-debugfs -R "dump /lib/modules/$KERNEL_RELEASE/modules.builtin $B/modules.builtin" "$BASE_IMAGE?offset=$ROOT_OFF" 2>/dev/null
-[ -s "$B/modules.dep" ] || { echo "no modules.dep for $KERNEL_RELEASE on the root partition" >&2; exit 1; }
+if [ -n "$KERNEL_SOURCE" ]; then
+  # A kernel package carries no modules.dep -- depmod writes that at install
+  # time -- so the modules are found by path instead. modules.builtin is in the
+  # package and is still the thing that says which of them are not there
+  # because they are already in vmlinuz.
+  cp "$KERNEL_SOURCE/lib/modules/$KERNEL_RELEASE/modules.builtin" "$B/modules.builtin"
+  : > "$B/modules.dep"
+else
+  debugfs -R "dump /lib/modules/$KERNEL_RELEASE/modules.dep $B/modules.dep" "$BASE_IMAGE?offset=$ROOT_OFF" 2>/dev/null
+  debugfs -R "dump /lib/modules/$KERNEL_RELEASE/modules.builtin $B/modules.builtin" "$BASE_IMAGE?offset=$ROOT_OFF" 2>/dev/null
+  [ -s "$B/modules.dep" ] || { echo "no modules.dep for $KERNEL_RELEASE on the root partition" >&2; exit 1; }
+fi
 
 # In dependency order: insmod resolves nothing and there is no modprobe in the
 # guest. tdx-guest is the report interface's vendor driver, gve is the NIC, and
 # the four netfilter modules are what an inet table with a reject rule needs.
 WANTED_MODULES="tdx-guest gve nf_tables nf_reject_ipv4 nf_reject_ipv6 nft_reject nft_reject_inet"
 for m in $WANTED_MODULES; do
-  path=$(sed -n "s#^\(kernel/.*/$m\.ko\(\.zst\)\?\):.*#\1#p" "$B/modules.dep" | head -1)
+  if [ -n "$KERNEL_SOURCE" ]; then
+    full=$(find "$KERNEL_SOURCE/lib/modules/$KERNEL_RELEASE/kernel" -name "$m.ko" -o -name "$m.ko.zst" | head -1)
+    path="${full#"$KERNEL_SOURCE/lib/modules/$KERNEL_RELEASE/"}"
+  else
+    path=$(sed -n "s#^\(kernel/.*/$m\.ko\(\.zst\)\?\):.*#\1#p" "$B/modules.dep" | head -1)
+    full=""
+  fi
   if [ -z "$path" ]; then
     if grep -q "/$m\.ko" "$B/modules.builtin"; then
       echo "  $m: built into this kernel, nothing to carry"
       continue
     fi
-    echo "  $m: NOT FOUND in modules.dep or modules.builtin for $KERNEL_RELEASE" >&2
+    echo "  $m: NOT FOUND for $KERNEL_RELEASE" >&2
     exit 1
   fi
-  debugfs -R "dump /lib/modules/$KERNEL_RELEASE/$path $B/modules/$(basename "$path")" \
-    "$BASE_IMAGE?offset=$ROOT_OFF" 2>/dev/null
+  if [ -n "$full" ]; then
+    cp "$full" "$B/modules/$(basename "$path")"
+  else
+    debugfs -R "dump /lib/modules/$KERNEL_RELEASE/$path $B/modules/$(basename "$path")" \
+      "$BASE_IMAGE?offset=$ROOT_OFF" 2>/dev/null
+  fi
   case "$path" in
     *.zst) unzstd -q -f "$B/modules/$(basename "$path")" -o "$B/modules/$m.ko" ;;
     *)     mv "$B/modules/$(basename "$path")" "$B/modules/$m.ko" ;;
@@ -320,6 +360,22 @@ dd if="$OUT/disk.raw" of="$B/boot.img" bs="$SECTOR" skip="$PART16_START" count="
 OLDFLAGS=$(debugfs -R "stat /grub/grub.cfg" "$B/boot.img" 2>/dev/null | sed -n 's/.*Flags: 0x\([0-9a-f]*\).*/\1/p' | head -1)
 NEWFLAGS=$(printf '0x%x' $(( 0x$OLDFLAGS | 0x10 )))
 echo "grub.cfg inode flags 0x$OLDFLAGS -> $NEWFLAGS (immutable set)"
+# When the kernel came out of a package rather than out of the image, it has to
+# be put where grub.cfg says it is. It is a new file beside the provider's own
+# kernel rather than a replacement for it: nothing reads the provider's any
+# more, and leaving it alone is one less byte changed.
+INSTALL_KERNEL_CMDS=""
+if [ -n "$KERNEL_SOURCE" ]; then
+  INSTALL_KERNEL_CMDS="write $B/vmlinuz vmlinuz-$KERNEL_RELEASE
+sif vmlinuz-$KERNEL_RELEASE mode 0100400
+sif vmlinuz-$KERNEL_RELEASE uid 0
+sif vmlinuz-$KERNEL_RELEASE gid 0
+sif vmlinuz-$KERNEL_RELEASE atime @0
+sif vmlinuz-$KERNEL_RELEASE mtime @0
+sif vmlinuz-$KERNEL_RELEASE ctime @0
+sif vmlinuz-$KERNEL_RELEASE crtime @0"
+  debugfs -w -R "rm /vmlinuz-$KERNEL_RELEASE" "$B/boot.img" >/dev/null 2>&1 || true
+fi
 cat > "$B/debugfs.cmds" <<EOF
 rm /grub/grub.cfg
 cd /grub
@@ -333,6 +389,7 @@ sif grub.cfg mtime @0
 sif grub.cfg ctime @0
 sif grub.cfg crtime @0
 cd /
+$INSTALL_KERNEL_CMDS
 write $OUT/initrd.img $INITRD_NAME
 sif $INITRD_NAME mode 0100444
 sif $INITRD_NAME uid 0
@@ -448,7 +505,7 @@ fi
   echo "base_image:      $BASE_IMAGE $BASE_SHA256"
   echo "disk.raw:        $DISK_SHA"
   echo "grub.cfg:        $GRUBCFG_SHA ($(stat -c %s "$B/grub.cfg") bytes), installed at /boot/grub/grub.cfg, immutable flag set"
-  echo "kernel:          vmlinuz-$KERNEL_RELEASE $KERNEL_SHA (the provider's, untouched)"
+  echo "kernel:          vmlinuz-$KERNEL_RELEASE $KERNEL_SHA ${KERNEL_SOURCE:+(installed from the package unpacked at $KERNEL_SOURCE)}"
   echo "initrd:          /$INITRD_NAME $INITRD_SHA ($(stat -c %s "$OUT/initrd.img") bytes)"
   echo "kernel cmdline:  $CMDLINE"
   echo "boot fs uuid:    $BOOT_UUID"

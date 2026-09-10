@@ -1,0 +1,28 @@
+{
+  "format": "gvisor.dev/gvisor/attest/reference-value-set",
+  "version": 4,
+  "reference_values": [
+    {
+      "vendor": "intel-tdx",
+      "policy_digest": "a642ab1aca91e3b00f86c6b31a22c016d33c85117319e51b8774a91db3fd885e",
+      "observed_mrtd": [
+        "c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5"
+      ],
+      "observed_rtmr0": [
+        "c0b8b19ca6f51dc37435da45a61ab417e59253cd31cc2eeb3e833e8b8979679fe5a65387e0014831fe7b3ec4be51896d"
+      ],
+      "observed_rtmr1": [
+        "02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b",
+        "3a446943925fef7f1682fd54e1b6697df864692e28592ec373860d1868582ac14ca3029c48282eb964868a785bafd691"
+      ],
+      "predicted_rtmr2": "640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7",
+      "td_attributes_policy": {
+        "allow_debug": false
+      },
+      "minimum_tcb": {
+        "status": "UpToDate",
+        "tcb_evaluation_data_number": 20
+      }
+    }
+  ]
+}

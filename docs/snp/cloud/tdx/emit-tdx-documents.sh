@@ -62,7 +62,7 @@ while [ $# -gt 0 ]; do
     *) echo "unknown argument $1" >&2; exit 2 ;;
   esac
 done
-: "${OUT:?-out DIR}"; : "${KEY:?-key author.key.pem}"; : "${ADMIT:?-admit HEX (the peer's predicted RTMR2)}"
+: "${OUT:?-out DIR}"; : "${KEY:?-key author.key.pem}"; : "${ADMIT:?-admit HEX, the predicted RTMR2 of the peer this guest admits}"
 mkdir -p "$OUT"
 W=$(mktemp -d); trap 'rm -rf "$W"' EXIT
 (cd "$REPO/docs/snp/image/emit-refvals" && GOPROXY=off go build -o "$W/emit-refvals" .)

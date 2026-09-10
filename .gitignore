@@ -23,3 +23,10 @@
 
 # Python bytecode from importing predict-rtmr2.py's helpers.
 /docs/snp/cloud/tdx/__pycache__/
+
+# Ticket 19 build outputs: disk and config-device images, and the initrd that
+# goes inside one. The manifests, the documents and the consoles are the record;
+# these are gigabytes of bytes a rebuild reproduces.
+/docs/snp/evidence/ticket19/**/disk.raw
+/docs/snp/evidence/ticket19/**/config.raw
+/docs/snp/evidence/ticket19/**/initrd.img

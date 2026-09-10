@@ -1,0 +1,78 @@
+=== build-tdx-image: 2026-09-10T21:22:08Z on shs1
+repo d813519f95f064ecdf13c86fb559e6851300f62e on tdx-attested-tunnel
+go   go version go1.26.3 linux/amd64
+out  $SCRATCH/image-b
+
+=== 0. the base image, pinned by hash
+$SCRATCH/img/base-disk.raw d0b2b2c29a0bcc42c9dc414706b2b45af99fabf375150afaabcd59cd0785474f (10737418240 bytes)
+GPT PMBR size mismatch (8388607 != 20971519) will be corrected by write.
+The backup GPT table is not on the end of the device.
+partitions: root at byte 1074790400, ESP at byte 5242880, /boot at byte 116391936
+/boot filesystem UUID b4f9057b-66e6-4f5a-bbba-a8086989e88f (what grub's `search --fs-uuid` will resolve)
+
+=== 1. the kernel and the modules, taken out of the image itself
+kernel release 7.0.0-1011-gcp, from the package unpacked at $SCRATCH/kernel7/x
+  it is installed into /boot as a new file; the image's own kernel is left where it is
+vmlinuz-7.0.0-1011-gcp d99d5fe55b545db18594e22b72f9c1430ef61af0bd3ff479830b489107678b09 (17160584 bytes)
+  tdx-guest.ko 998a6df3295a5e9628100c82f69eb6069c660b75319e5705b1b99351a5b9225e 24673 bytes from kernel/drivers/virt/coco/tdx-guest/tdx-guest.ko.zst
+  gve.ko 8e5302e193b4d22871a181215482b91c60322c76a69f9d312ede0fc9f8c8ffb5 355745 bytes from kernel/drivers/net/ethernet/google/gve/gve.ko.zst
+  nf_tables.ko d3654c4139698d8748d846408a896cbd9cd7da8d1aeab64a450138a3a76fd45f 804785 bytes from kernel/net/netfilter/nf_tables.ko.zst
+  nf_reject_ipv4.ko 289c3d6686cb8b670ba2a55042529aae7cec82de743e7df96605c9b606e80231 20025 bytes from kernel/net/ipv4/netfilter/nf_reject_ipv4.ko.zst
+  nf_reject_ipv6.ko 77456e90add689e5dec27e9f75beca2e2ece33b97cf6051ad5a5984ad881fc2e 25137 bytes from kernel/net/ipv6/netfilter/nf_reject_ipv6.ko.zst
+  nft_reject.ko fde2a4b08d3ba0de699befa64aa57cbc6bbf973835061c34a235d992a385e222 16657 bytes from kernel/net/netfilter/nft_reject.ko.zst
+  nft_reject_inet.ko 9efad760f1628e6c7660a27ead0275d81ef57c1f5c9bf01b81753891c914db9d 15665 bytes from kernel/net/netfilter/nft_reject_inet.ko.zst
+
+=== 2. tunneld, checked before it is built and built before it is measured
+$ go test ./cmd/tunneld
+ok  	gvisor.dev/gvisor/attest/cmd/tunneld	2.761s
+guard passed: the packaged graph reaches no fake platform and no test support
+$ CGO_ENABLED=0 go build -trimpath -buildvcs=false -o $SCRATCH/image-b/build/tunneld ./cmd/tunneld
+$SCRATCH/image-b/build/tunneld: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, Go BuildID=uxl0u_QBTB3LrG-N5Xih/qKxAin25tCD_Qn90kZsS/TGlvBTVXjOV2hkypQSkA/TXxN5QPSHzv5X7wDHH4V, BuildID[sha1]=accbb49b9b04ed9c5756d7439fb62535053b14d8, with debug_info, not stripped
+tunneld 92f0e86c7455a10b5f1f41aecc64af487dc9aea8d71d337a0f7c677a94e5d805 (17397536 bytes)
+busybox /usr/bin/busybox dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 (busybox-static 1:1.36.1-6ubuntu3.1)
+
+=== 3. author public key 665053d10032f5b9a46394a65b022c0bd7007392b8f445fe4ace5b0e5ed4c5a2 (goes into the initrd, and therefore into RTMR2)
+
+=== 4. the initrd: the whole guest, in one file grub measures
+initrd.img e0fd6cc9476a1d29c3857d8bff4123fec4c7d4c5d3da19fb0a5cbf1fa05360e4 (10457552 bytes, from 49 entries)
+
+=== 5. the fixed boot configuration
+  set default=0
+  set timeout=0
+  menuentry 'attested-tunnel' {
+  	insmod part_gpt
+  	insmod ext2
+  	search --no-floppy --fs-uuid --set=root b4f9057b-66e6-4f5a-bbba-a8086989e88f
+  	linux	/vmlinuz-7.0.0-1011-gcp console=ttyS0,115200 panic=-1 rdinit=/init
+  	initrd	/initrd.img-attested
+  }
+grub.cfg bc00eff83f2685727c689b202800e39276117870d897cf7772611865704277b3 (271 bytes)
+
+=== 6. the image: two files changed on the /boot partition, nothing else
+grub.cfg inode flags 0x80000 -> 0x80010 (immutable set)
+Pass 5: Checking group summary information
+BOOT: 602/58496 files (0.3% non-contiguous), 31910/233728 blocks
+disk.raw 0ac99bd493eb6cc3ad2c9b8398023eef17cf0130c39bba3d57ad54bca022ade2 (10737418240 bytes)
+ESP unchanged (917fa42848b63601d35ca66a75e49c32e42b8515e2b0e0ff949415c5750c5323); Ubuntu's root partition unchanged (e8fd5d72634f58d772b4b85d04608173e1ee7937518d4fd987dcca80f1c7de03)
+GPT unchanged (a5fb8e097e42ade5161b074b8dd0fc953d090b7844d4895175c21a4866a36163); RTMR1 keeps the two values the reference value pins
+
+=== 7. RTMR2, predicted from the image just built and from nothing else
+predicted RTMR2 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7 over 25 records
+
+=== 8. the policy and the reference value set
+author public key: 665053d10032f5b9a46394a65b022c0bd7007392b8f445fe4ace5b0e5ed4c5a2
+wrote $SCRATCH/image-b/policy.json and $SCRATCH/image-b/policy.json.sig (loads back through attest.LoadPolicyFile)
+forwards to: 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7
+policy digest: a642ab1aca91e3b00f86c6b31a22c016d33c85117319e51b8774a91db3fd885e
+author public key: 665053d10032f5b9a46394a65b022c0bd7007392b8f445fe4ace5b0e5ed4c5a2
+admits peer policy: a642ab1aca91e3b00f86c6b31a22c016d33c85117319e51b8774a91db3fd885e
+wrote $SCRATCH/image-b/reference-values.json and $SCRATCH/image-b/reference-values.json.sig (loads back through attest.LoadReferenceValueSetFile)
+
+=== built
+image:                   $SCRATCH/image-b/disk.raw (0ac99bd493eb6cc3ad2c9b8398023eef17cf0130c39bba3d57ad54bca022ade2)
+predicted RTMR2:         640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7
+policy digest:           a642ab1aca91e3b00f86c6b31a22c016d33c85117319e51b8774a91db3fd885e
+reference value set:     $SCRATCH/image-b/reference-values.json (+ .sig)
+policy:                  $SCRATCH/image-b/policy.json (+ .sig)
+manifest:                $SCRATCH/image-b/manifest.txt
+packaging record:        $SCRATCH/image-b/packaging.txt

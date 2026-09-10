@@ -18,6 +18,7 @@ import (
 	"context"
 	"crypto/ed25519"
 	"crypto/rand"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
@@ -83,7 +84,17 @@ func performSelfCheck(ctx context.Context, acquirer attest.Acquirer, verifier at
 	if err != nil {
 		return fmt.Errorf("generating the throwaway key the evidence binds to: %w", err)
 	}
-	binding := attest.Binding{PublicKey: pub, Context: attest.BindingContextV2, PolicyDigest: policyDigest}
+	// The SubjectPublicKeyInfo encoding, because that is what ratls presents at
+	// a handshake and therefore what every other tool in this module writes
+	// into a binding. [attest.Binding] takes the key "exactly as presented", so
+	// the encoding is free as long as both sides use one — and the side that
+	// re-checks this on a workstation is attest/cmd/verify-evidence, which
+	// reads a DER SubjectPublicKeyInfo out of a file.
+	spki, err := x509.MarshalPKIXPublicKey(pub)
+	if err != nil {
+		return fmt.Errorf("encoding the throwaway key: %w", err)
+	}
+	binding := attest.Binding{PublicKey: spki, Context: attest.BindingContextV2, PolicyDigest: policyDigest}
 
 	acquireCtx, cancel := context.WithTimeout(ctx, selfCheckTimeout)
 	defer cancel()
@@ -129,7 +140,9 @@ func performSelfCheck(ctx context.Context, acquirer attest.Acquirer, verifier at
 		encoded = encoded[n:]
 	}
 	logf("SELFCHECK EVIDENCE END")
-	logf("SELFCHECK PUBLIC KEY %s (throwaway; the evidence is bound to it and to nothing else)", hex.EncodeToString(pub))
+	logf("SELFCHECK PUBLIC KEY %s", hex.EncodeToString(spki))
+	logf("SELFCHECK (that is a DER SubjectPublicKeyInfo, %d bytes; write it to a file and pass it as verify-evidence -key. "+
+		"It is a throwaway: the evidence is bound to it and to nothing else, so it can establish no tunnel)", len(spki))
 	return verr
 }
 

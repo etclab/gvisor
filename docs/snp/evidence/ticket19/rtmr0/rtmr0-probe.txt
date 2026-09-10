@@ -1,0 +1,11 @@
+=== RTMR0 probe (ticket 19): 2026-09-10T21:34:16Z ===
+project nsf-2348130-428843 zone us-central1-a image ubuntu-2404-noble-amd64-v20260826
+second disk from image attested-config-tdx-smoke-a-20260910211919
+
+############ creating tdx-rtmr0 at 2026-09-10T21:34Z, with one disk ############
+Created [https://www.googleapis.com/compute/beta/projects/nsf-2348130-428843/zones/us-central1-a/instances/tdx-rtmr0].
+WARNING: Some requests generated warnings:
+ - Disk size: '20 GB' is larger than image size: '10 GB'. You might need to resize the root repartition manually if the operating system does not support automatic resizing. See https://cloud.google.com/compute/docs/disks/add-persistent-disk#resize_pd for details.
+ - The resource 'projects/ubuntu-os-cloud/global/images/ubuntu-2404-noble-amd64-v20260826' is deprecated. A suggested replacement is 'projects/ubuntu-os-cloud/global/images/ubuntu-2404-noble-amd64-v20260906'.
+
+tdx-rtmr0	us-central1-a	c3-standard-4	RUNNING

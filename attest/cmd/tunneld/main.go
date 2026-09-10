@@ -126,6 +126,12 @@ const (
 	exitOK             = 0
 	exitRefusedToStart = 1
 	exitExerciseFailed = 2
+
+	// exitEgressLeaked is the one this binary reports when an -egress probe
+	// reached something the policy forbids. It is its own status because a
+	// guest whose egress policy did not hold has to stop, and a harness reading
+	// a console should not have to tell that apart from a failed exchange.
+	exitEgressLeaked = 3
 )
 
 func main() {
@@ -143,6 +149,9 @@ func run(args []string, out io.Writer) int {
 	reportDir := fs.String("report-dir", tsm.DefaultReportDir, "the kernel's vendor-neutral report interface")
 	runPath := fs.String("run", "", "the run configuration; empty means <config>/"+runConfigName)
 	tdxCollateralDir := fs.String("tdx-collateral-dir", "", "directory holding Intel's provisioned TCB info, quoting-enclave identity and revocation lists; empty means this tunneld admits no Intel TDX peers. Never fetched (ADR-0005)")
+	egressMode := fs.String("egress", "", "instead of serving: "+egressModePrint+" the netfilter rule set this sandbox's signed policy implies, "+egressModeInstall+" it in the kernel and read it back, or "+egressModeProbe+" it by attempting the egress the policy forbids")
+	egressProbeExtra := fs.String("egress-probe", "", "with -egress "+egressModeProbe+": extra targets to attempt, comma separated, each tcp:ADDR:PORT or udp:ADDR:PORT")
+	selfCheck := fs.Bool("self-check", false, "after starting, ask this platform for evidence and judge it with this sandbox's own reference value set, so the console says whether the set admits the machine it is on before any peer arrives")
 	if err := fs.Parse(args); err != nil {
 		return exitRefusedToStart
 	}
@@ -171,6 +180,15 @@ func run(args []string, out io.Writer) int {
 	logf("author key %s (%s, inside the launch measurement)", abbreviate(hex.EncodeToString(author)), *authorPath)
 	for _, name := range sortedKeys(peers) {
 		logf("peer table: %s = %s", name, peers[name])
+	}
+
+	// The egress modes end here: they read the same three documents a serving
+	// tunneld reads, do one thing to the kernel or to the network, and exit.
+	// They are modes of this binary rather than a second one because the rule
+	// set is generated from the signed policy, and the author key that judges
+	// that signature is the one baked into this image (egress.go).
+	if *egressMode != "" {
+		return runEgressMode(*egressMode, *egressProbeExtra, *configDir, cfg, peers, author, logf, out)
 	}
 
 	if cfg.Link != nil {
@@ -291,6 +309,12 @@ func run(args []string, out io.Writer) int {
 
 	logf("listening on %s as %q; idle %s, maximum age %s",
 		td.Addr(), td.SandboxID(), limits.IdleTimeout, limits.MaxAge)
+
+	if *selfCheck {
+		if err := performSelfCheck(ctx, acquirer, routed, filepath.Join(*configDir, referenceValueSetName), author, td.PolicyDigest(), logf); err != nil {
+			logf("SELFCHECK FAILED %v", err)
+		}
+	}
 
 	code := exitOK
 	if cfg.Exercise != nil {

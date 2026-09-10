@@ -30,7 +30,18 @@
 //	                 -rtmr0 HEX [-rtmr0 HEX …] \
 //	                 -rtmr1 HEX [-rtmr1 HEX …] \
 //	                 -tcb-evaluation N [-tcb-status UpToDate|SWHardeningNeeded] \
-//	                 [-allow-debug] -key author.key.pem -out DIR
+//	                 [-policy-digest HEX] [-allow-debug] -key author.key.pem -out DIR
+//
+// # -policy-digest is what makes admission constrained
+//
+// A reference value naming no policy digest admits a peer running the named
+// image under *any* policy, which is the weaker reading and the one every set
+// authored before ticket 18 has. Naming one admits that image only when the
+// peer presents that policy, which is the pairing docs/policy-binding.md
+// describes: the digest is over the bytes the author signed over the peer's
+// policy.json, and the peer's own tunneld prints it at start. It is optional
+// here and not defaulted, because "any policy" has to be something an author
+// wrote down rather than something a tool assumed.
 //
 // # -rtmr2 must be the predicted value, never one read from a quote
 //
@@ -81,21 +92,23 @@ func main() {
 	flag.Var(&evaluation, "tcb-evaluation", "lowest tcbEvaluationDataNumber the provisioned Intel TCB info may carry (required)")
 	rtmr2 := flag.String("rtmr2", "", "PREDICTED RTMR2, hex: the value predict-rtmr2.py printed, never one read from a quote")
 	status := flag.String("tcb-status", string(attest.TDXTCBUpToDate), "lowest Intel TCB status admitted: UpToDate or SWHardeningNeeded")
+	policyDigest := flag.String("policy-digest", "", "the peer policy this reference value admits, hex; empty leaves the value unconstrained, which admits any policy")
 	allowDebug := flag.Bool("allow-debug", false, "permit a TD created with TD_ATTRIBUTES.DEBUG, which lets the host read its memory")
 	keyPath := flag.String("key", "", "reference value author's Ed25519 private key, PKCS#8 PEM (openssl genpkey -algorithm ed25519)")
 	out := flag.String("out", "", "output directory for reference-values.json and reference-values.json.sig")
 	flag.Parse()
 
 	if err := run(options{
-		mrtd:       mrtd,
-		rtmr0:      rtmr0,
-		rtmr1:      rtmr1,
-		rtmr2:      *rtmr2,
-		status:     *status,
-		evaluation: evaluation,
-		allowDebug: *allowDebug,
-		keyPath:    *keyPath,
-		out:        *out,
+		mrtd:         mrtd,
+		rtmr0:        rtmr0,
+		rtmr1:        rtmr1,
+		rtmr2:        *rtmr2,
+		status:       *status,
+		evaluation:   evaluation,
+		allowDebug:   *allowDebug,
+		policyDigest: *policyDigest,
+		keyPath:      *keyPath,
+		out:          *out,
 	}); err != nil {
 		fmt.Fprintln(os.Stderr, "emit-tdx-refvals:", err)
 		os.Exit(1)
@@ -108,6 +121,7 @@ type options struct {
 	status             string
 	evaluation         optionalUint
 	allowDebug         bool
+	policyDigest       string
 	keyPath, out       string
 }
 
@@ -155,8 +169,14 @@ func run(o options) error {
 		return fmt.Errorf("-out is required")
 	}
 
+	admitted, err := parsePolicyDigest(o.policyDigest)
+	if err != nil {
+		return err
+	}
+
 	set := attest.ReferenceValueSet{Values: []attest.ReferenceValue{{
-		Vendor: attest.VendorIntelTDX,
+		Vendor:       attest.VendorIntelTDX,
+		PolicyDigest: admitted,
 		TDX: &attest.TDXReferenceValue{
 			ObservedMRTD:   observed["-mrtd"],
 			ObservedRTMR0:  observed["-rtmr0"],
@@ -194,9 +214,40 @@ func run(o options) error {
 		!bytes.Equal(loaded.Values[0].TDX.PredictedRTMR2, predicted) {
 		return fmt.Errorf("the emitted set loaded back naming a different RTMR2")
 	}
+	if admitted == nil {
+		if loaded.Values[0].PolicyDigest != nil {
+			return fmt.Errorf("the emitted set loaded back naming a policy digest nobody asked for")
+		}
+	} else if loaded.Values[0].PolicyDigest == nil || *loaded.Values[0].PolicyDigest != *admitted {
+		return fmt.Errorf("the emitted set loaded back naming a different policy digest")
+	}
 	fmt.Printf("author public key: %s\n", hex.EncodeToString(pub))
+	if admitted == nil {
+		fmt.Printf("admits peer policy: any (this value lists no policy_digest, which is the weaker reading)\n")
+	} else {
+		fmt.Printf("admits peer policy: %s\n", admitted)
+	}
 	fmt.Printf("wrote %s and %s (loads back through attest.LoadReferenceValueSetFile)\n", docPath, docPath+attest.SignatureFileSuffix)
 	return nil
+}
+
+// parsePolicyDigest reads -policy-digest: absent means unconstrained, and a
+// present one has to be a whole SHA-256. There is no third state -- a partial
+// digest would compare equal to nothing and refuse every peer silently.
+func parsePolicyDigest(spec string) (*attest.PolicyDigest, error) {
+	if spec == "" {
+		return nil, nil
+	}
+	raw, err := hex.DecodeString(spec)
+	if err != nil {
+		return nil, fmt.Errorf("-policy-digest is not hexadecimal: %v", err)
+	}
+	var digest attest.PolicyDigest
+	if len(raw) != len(digest) {
+		return nil, fmt.Errorf("-policy-digest is %d bytes; a policy digest is %d", len(raw), len(digest))
+	}
+	copy(digest[:], raw)
+	return &digest, nil
 }
 
 // decodeRegisters decodes one repeatable register flag's values.

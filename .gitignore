@@ -20,3 +20,6 @@
 /docs/snp/image/emit-refvals/emit-refvals
 /docs/snp/image/report-evidence/report-evidence
 /docs/snp/cloud/tdx/emit-tdx-refvals/emit-tdx-refvals
+
+# Python bytecode from importing predict-rtmr2.py's helpers.
+/docs/snp/cloud/tdx/__pycache__/

@@ -1,5 +1,5 @@
-=== build-tdx-image: 2026-09-10T21:08:06Z on shs1
-repo d813519f95f064ecdf13c86fb559e6851300f62e on tdx-attested-tunnel
+=== build-tdx-image: 2026-09-10T21:39:25Z on shs1
+repo ef0ce05dad0ba651c2c118cdb2f26ba8a1a25f5e on tdx-attested-tunnel
 go   go version go1.26.3 linux/amd64
 out  $SCRATCH/image-a
 
@@ -11,7 +11,7 @@ partitions: root at byte 1074790400, ESP at byte 5242880, /boot at byte 11639193
 /boot filesystem UUID b4f9057b-66e6-4f5a-bbba-a8086989e88f (what grub's `search --fs-uuid` will resolve)
 
 === 1. the kernel and the modules, taken out of the image itself
-kernel release 6.17.0-1022-gcp
+kernel release 6.17.0-1022-gcp, the one the provider's image carries
 vmlinuz-6.17.0-1022-gcp ddd8198f9bdca634295d6a35b6135ca9a30db8b5e3f8e91cf08b776bfd11e6be (16775240 bytes)
   tdx-guest.ko 808e90f676fed82d040190b0aca2cb78192043e227d1e1f86ba9d9ac18f779d6 25673 bytes from kernel/drivers/virt/coco/tdx-guest/tdx-guest.ko.zst
   gve.ko 710a1fd65e546d0895b1b8890f284a5e1048b75d06a7e53e2e9c843ebe25b3fa 357145 bytes from kernel/drivers/net/ethernet/google/gve/gve.ko.zst
@@ -23,7 +23,7 @@ vmlinuz-6.17.0-1022-gcp ddd8198f9bdca634295d6a35b6135ca9a30db8b5e3f8e91cf08b776b
 
 === 2. tunneld, checked before it is built and built before it is measured
 $ go test ./cmd/tunneld
-ok  	gvisor.dev/gvisor/attest/cmd/tunneld	3.426s
+ok  	gvisor.dev/gvisor/attest/cmd/tunneld	2.737s
 guard passed: the packaged graph reaches no fake platform and no test support
 $ CGO_ENABLED=0 go build -trimpath -buildvcs=false -o $SCRATCH/image-a/build/tunneld ./cmd/tunneld
 $SCRATCH/image-a/build/tunneld: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, Go BuildID=uxl0u_QBTB3LrG-N5Xih/qKxAin25tCD_Qn90kZsS/TGlvBTVXjOV2hkypQSkA/TXxN5QPSHzv5X7wDHH4V, BuildID[sha1]=accbb49b9b04ed9c5756d7439fb62535053b14d8, with debug_info, not stripped
@@ -51,7 +51,7 @@ grub.cfg aacf982e03961d45266db8c79df10495fe36e2fc06167a2eb11535d8e79731b1 (272 b
 grub.cfg inode flags 0x80000 -> 0x80010 (immutable set)
 Pass 5: Checking group summary information
 BOOT: 601/58496 files (0.3% non-contiguous), 27717/233728 blocks
-disk.raw 7b3025a91357b99990f6b42199a84e17b45cde7bfec0dc8e88e381bddc1b1fe0 (10737418240 bytes)
+disk.raw 5a80e143fb0db8be974193d337e3f34f8c56f6fe8ab54dfeb492cba42149cfe2 (10737418240 bytes)
 ESP unchanged (917fa42848b63601d35ca66a75e49c32e42b8515e2b0e0ff949415c5750c5323); Ubuntu's root partition unchanged (e8fd5d72634f58d772b4b85d04608173e1ee7937518d4fd987dcca80f1c7de03)
 GPT unchanged (a5fb8e097e42ade5161b074b8dd0fc953d090b7844d4895175c21a4866a36163); RTMR1 keeps the two values the reference value pins
 
@@ -68,7 +68,7 @@ admits peer policy: d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075ae
 wrote $SCRATCH/image-a/reference-values.json and $SCRATCH/image-a/reference-values.json.sig (loads back through attest.LoadReferenceValueSetFile)
 
 === built
-image:                   $SCRATCH/image-a/disk.raw (7b3025a91357b99990f6b42199a84e17b45cde7bfec0dc8e88e381bddc1b1fe0)
+image:                   $SCRATCH/image-a/disk.raw (5a80e143fb0db8be974193d337e3f34f8c56f6fe8ab54dfeb492cba42149cfe2)
 predicted RTMR2:         d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
 policy digest:           d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b
 reference value set:     $SCRATCH/image-a/reference-values.json (+ .sig)

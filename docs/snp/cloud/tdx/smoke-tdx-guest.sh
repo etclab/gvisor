@@ -148,7 +148,7 @@ cat > "$D/tunneld.json" <<EOF
   "limits": {"idle_timeout": "60s", "max_age": "15m"},
   "start_timeout": "60s",
   "exercise": {"dial": ["self"], "wait": "3s", "exchanges": 3, "timeout": "90s"},
-  "hold": "20s"
+  "hold": "60s"
 }
 EOF
 cat > "$D/network.conf" <<EOF
@@ -194,20 +194,33 @@ echo
 
 # ---- the console -----------------------------------------------------------
 echo "############ watching the serial console ############"
-# The fetch goes to a scratch file and only replaces the capture when it came
-# back with something. Compute Engine returns an empty body for an instance
-# that has stopped, and a loop that redirected straight onto the capture would
-# erase the transcript at the exact moment the guest finished producing it.
-# That is not hypothetical: it happened on this ticket's first run.
+# The console is fetched INCREMENTALLY and appended, never re-fetched whole and
+# never redirected straight onto the capture.
+#
+# Two things go wrong with the obvious loop. Compute Engine returns an empty
+# body for an instance that has stopped, so a loop that redirected onto the
+# capture erases the transcript at the exact moment the guest finishes
+# producing it; and a guest that boots, runs and powers itself off inside one
+# poll interval leaves nothing behind at all. Both happened on this ticket
+# before this loop was written this way. --start takes a byte offset and gcloud
+# prints the next one on stderr, so each pass appends only what is new and the
+# file only ever grows.
+: > "$OUT/console.txt"
 started=$(date +%s)
-while :; do
-  gcloud compute instances get-serial-port-output "$VM" --zone "$ZONE" --port 1 \
-    > "$OUT/console.new" 2>/dev/null || true
-  if [ -s "$OUT/console.new" ]; then
-    mv "$OUT/console.new" "$OUT/console.txt"
-  else
-    rm -f "$OUT/console.new"
+start=0
+fetch() {
+  gcloud compute instances get-serial-port-output "$VM" --zone "$ZONE" --port 1 --start="$start" \
+    > "$OUT/console.chunk" 2> "$OUT/console.hint" || true
+  if [ -s "$OUT/console.chunk" ]; then
+    cat "$OUT/console.chunk" >> "$OUT/console.txt"
   fi
+  local next
+  next=$(sed -n 's/.*--start=\([0-9]\{1,\}\).*/\1/p' "$OUT/console.hint" | tail -1)
+  [ -n "$next" ] && start="$next"
+  rm -f "$OUT/console.chunk" "$OUT/console.hint"
+}
+while :; do
+  fetch
   if grep -q '^initrd: EXIT status=' "$OUT/console.txt" 2>/dev/null; then
     echo "the guest finished: $(grep -h '^initrd: EXIT status=' "$OUT/console.txt" | tail -1)"
     break
@@ -218,7 +231,8 @@ while :; do
   fi
   state=$(gcloud compute instances describe "$VM" --zone "$ZONE" --format='value(status)' 2>/dev/null || echo UNKNOWN)
   if [ "$state" != RUNNING ] && [ "$state" != STAGING ] && [ "$state" != PROVISIONING ]; then
-    echo "the instance is $state; the guest powered itself off. Taking the console as last read."
+    fetch
+    echo "the instance is $state; the guest powered itself off"
     break
   fi
   now=$(date +%s)

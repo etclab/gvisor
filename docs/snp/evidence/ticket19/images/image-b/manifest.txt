@@ -1,4 +1,4 @@
-# Attested tunnel guest image for Google Cloud TDX. Built 2026-09-10T21:24:38Z on shs1.
+# Attested tunnel guest image for Google Cloud TDX. Built 2026-09-10T21:54:59Z on shs1.
 # label: b
 
 ## The measurement
@@ -9,7 +9,7 @@ policy_digest:   a642ab1aca91e3b00f86c6b31a22c016d33c85117319e51b8774a91db3fd885
 
 ## Every input the measurement covers
 base_image:      $SCRATCH/img/base-disk.raw d0b2b2c29a0bcc42c9dc414706b2b45af99fabf375150afaabcd59cd0785474f
-disk.raw:        0ac99bd493eb6cc3ad2c9b8398023eef17cf0130c39bba3d57ad54bca022ade2
+disk.raw:        cacccafd7039e4fab65f43a917e813da1f1371c7668a7fff232c409363d5b478
 grub.cfg:        bc00eff83f2685727c689b202800e39276117870d897cf7772611865704277b3 (271 bytes), installed at /boot/grub/grub.cfg, immutable flag set
 kernel:          vmlinuz-7.0.0-1011-gcp d99d5fe55b545db18594e22b72f9c1430ef61af0bd3ff479830b489107678b09 (installed from the package unpacked at $SCRATCH/kernel7/x)
 initrd:          /initrd.img-attested e0fd6cc9476a1d29c3857d8bff4123fec4c7d4c5d3da19fb0a5cbf1fa05360e4 (10457552 bytes)
@@ -44,14 +44,14 @@ pristine image's RTMR2 to move.
 applets (symlinks to busybox): sh mount insmod cat echo printf sleep sync uname dmesg grep sed cut sort tr dd od find stat sha256sum ip poweroff
 
 ## The two signed documents (they ship on the config device, outside the measurement)
-reference-values.json sha256: 6208465378c8dada634c46a0e26d491285d9f2dc5e10c9add08ebc1cb199ac3f
+reference-values.json sha256: 64cbb335c9592a40c6a6b0e91813be9c3a907b4ffb3d1e8f97ba7493dc6f2698
 policy.json sha256:           dac21417365de23fac9dfac88d9db286b8d468ed8e0f770a2190fdda61b77757
 signed by author key:         665053d10032f5b9a46394a65b022c0bd7007392b8f445fe4ace5b0e5ed4c5a2 (also at /etc/attested-tunnel/author.pub, inside RTMR2)
 admits measurement:           640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7 (this image itself)
 admits peer policy:           a642ab1aca91e3b00f86c6b31a22c016d33c85117319e51b8774a91db3fd885e (the policy this build emitted, so a guest booting this image admits itself)
 forwards to:                  640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7
 provider constants pinned:    mrtd c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
-                              rtmr0 c0b8b19ca6f51dc37435da45a61ab417e59253cd31cc2eeb3e833e8b8979679fe5a65387e0014831fe7b3ec4be51896d
+                              rtmr0 c2fc12a52db868515eff7c657e42ce04b0b7363fa6ddf7c1cca87aa8e6a061a11f9981924a600ad6d2232f75182a850a
                               rtmr1 02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b (first boot)
                               rtmr1 3a446943925fef7f1682fd54e1b6697df864692e28592ec373860d1868582ac14ca3029c48282eb964868a785bafd691 (every boot after)
 tcb floor:                    UpToDate, evaluation 20
@@ -64,4 +64,4 @@ gzip:      gzip 1.12
 python3:   Python 3.12.3
 mkcpio.py: ad87fc6e88b0d3d7c219a6f879c9ce5107f50e5442712bed9edbd3eabad2eacb
 init.tdx:  e2f03c3791385f428a928f2d9affcc4e790e0c974d14541406090afc08745229
-repo:      d813519f95f064ecdf13c86fb559e6851300f62e
+repo:      ef0ce05dad0ba651c2c118cdb2f26ba8a1a25f5e

@@ -1,0 +1,31 @@
+evidence            : /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/smoke/quote.bin, 8000 bytes
+vendor              : intel-tdx
+certificate chain   : carried inside the quote
+public key (SPKI)   : /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/smoke/public-key.der, 44 bytes, 302a300506032b6570032100aeffd1ef2df597ef7aedbaa4d6f154be09540132d5d138c0d51600a72d2838b4
+binding context     : v2, 02000000000000000000000000000000
+policy digest       : d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b
+intel collateral    : /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/tdx/collateral (provisioned, ADR-0005)
+intel root          : the Intel root embedded in the verification library — no fetch, no file
+reference value set : /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/smoke/reference-values.json, 1 value(s), author 665053d10032f5b9a46394a65b022c0bd7007392b8f445fe4ace5b0e5ed4c5a2
+  [0] intel-tdx predicted RTMR2 d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+      observed MRTD      c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+      observed RTMR0     c2fc12a52db868515eff7c657e42ce04b0b7363fa6ddf7c1cca87aa8e6a061a11f9981924a600ad6d2232f75182a850a
+      observed RTMR1     02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b | 3a446943925fef7f1682fd54e1b6697df864692e28592ec373860d1868582ac14ca3029c48282eb964868a785bafd691
+      minimum TCB        status=UpToDate evaluation_data_number=20
+      TD policy          debug=false
+      admits policy      d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b
+WARN : 2026/09/10 17:51:38.033791 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 17:51:38.036166 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 17:51:38.037404 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+
+ACCEPTED
+  vendor            : intel-tdx
+  RTMR2             : d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+  MRTD              : c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+  RTMR0             : c2fc12a52db868515eff7c657e42ce04b0b7363fa6ddf7c1cca87aa8e6a061a11f9981924a600ad6d2232f75182a850a
+  RTMR1             : 02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b
+  TD attributes     : 0000001000000000 (debug=false)
+  Intel TCB         : status=UpToDate evaluation_data_number=20 fmspc=00806f050000
+  caller-supplied   : 7ecf137de827af7aeca385829aaa05f96a9398648f4e9bf62372727a2712e1d251fd3b26704d2f42f7e70608122ed2d33e0cb1fb8238682449b35b790bac487d
+    = SHA-512(public key ‖ binding context ‖ policy digest), recomputed from the key above (ADR-0002, v2)
+  satisfied         : reference value with predicted RTMR2 d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d

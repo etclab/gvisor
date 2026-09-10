@@ -11,30 +11,30 @@ BOOT_IMAGE=/vmlinuz-6.17.0-1022-gcp root=PARTUUID=fcf50dcd-5e7d-459a-b19d-5ca4a4
 [    0.000000] tdx: Guest detected
 [    0.000000] tdx: Attributes: SEPT_VE_DISABLE
 [    0.000000] tdx: TD_CTLS: PENDING_VE_DISABLE ENUM_TOPOLOGY VIRT_CPUID2 REDUCE_VE
-[    1.477809] process: using TDX aware idle routine
-[    1.477809] Memory Encryption Features active: Intel TDX
-[    1.477809] smpboot: CPU0: Intel TDX (family: 0x6, model: 0x8f, stepping: 0x8)
-[    3.748385] systemd[1]: Detected confidential virtualization tdx.
+[    0.942058] process: using TDX aware idle routine
+[    0.942058] Memory Encryption Features active: Intel TDX
+[    0.942058] smpboot: CPU0: Intel TDX (family: 0x6, model: 0x8f, stepping: 0x8)
+[    2.932582] systemd[1]: Detected confidential virtualization tdx.
 --- CPUID leaf 0x21 signature (TDX module reports 'IntelTDX    ') ---
   \0  \0  \0  \0  \0  \0  \0  \0  \0  \0  \0  \0  \0  \0  \0  \0
 --- guest device nodes ---
 ls: cannot access '/dev/tdx-guest': No such file or directory
 ls: cannot access '/dev/sev-guest': No such file or directory
-crw------- 1 root root 10, 262 Sep 10 21:35 /dev/tdx_guest
+crw------- 1 root root 10, 262 Sep 10 21:36 /dev/tdx_guest
 
 ############ 2. report interface ############
 --- configfs tsm tree ---
 total 0
-drwxr-xr-x 2 root root 0 Sep 10 21:35 report
+drwxr-xr-x 2 root root 0 Sep 10 21:36 report
 total 0
 
 ############ 3. acquire evidence ############
 --- attributes exposed by this kernel ---
 total 0
--r--r--r-- 1 root root 4096 Sep 10 21:35 generation
---w------- 1 root root    0 Sep 10 21:35 inblob
--r--r--r-- 1 root root    0 Sep 10 21:35 outblob
--r--r--r-- 1 root root 4096 Sep 10 21:35 provider
+-r--r--r-- 1 root root 4096 Sep 10 21:37 generation
+--w------- 1 root root    0 Sep 10 21:37 inblob
+-r--r--r-- 1 root root    0 Sep 10 21:37 outblob
+-r--r--r-- 1 root root 4096 Sep 10 21:37 provider
 inblob written (64 bytes, single write)
 provider   : tdx_guest
 generation : 1
@@ -50,18 +50,18 @@ BAACAIEAAAAAAAAAk5pyM/ecTKmUCg2zlX8GBwAAAAAAAAAAAAAAAAAAAAAAAAAADwEKAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAADnAgYAAAAAAMHunBbjr8UGz+BCxbhGo2hSjzs3YY6vsnRpvBFM+RTpIiyRYYRw5/Ky
 isNgloJwpQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHccmU/z326hqQDOauZ1byuKsa4w
 lwsrME18C5R8ItqqP5plbaePHaIxupq3TV6ZuAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AMC4sZym9R3DdDXaRaYatBflklPNMcwu6z6DPouJeWef5aZTh+ABSDH+ez7EvlGJbQLH8ZyGKz2uFZLHNzWNm7E/jwo007Pspnw5
-v3lBoSw0djW4opHWjZys5FsW7CWRO+zJk1hh66jkeBfBB2FGhSWvbfd2+i+idnvl1tFSpa46Ytp7dQ3zPYBpx/+broEd+QAAAAAA
+AKXjmydwkig6VbPTa5NltfB2JPJSkM919UyKfgJj6U83bUE0RRB1ISiGJ3RgrZ4reTpEaUOSX+9/FoL9VOG2aX34ZGkuKFkuw3OG
+DRhoWCrBTKMCnEgoLrlkhop4W6/WkezJk1hh66jkeBfBB2FGhSWvbfd2+i+idnvl1tFSpa46Ytp7dQ3zPYBpx/+broEd+QAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZGhscHR4f
-ICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj/PEAAAj9kgZKeZCqIxd4jnZVWVMfmfbODsTvhzYSFTwJYOFDE1660NBdRd
-pXxjDUQAAJ/LdpTBFccxTGUPo3/wCk7G8ZvWLvJ1cf8BoboQvlsvIPy6cHbjMu8Yz4BRB6+O12UbZr2xy3210BskhQlt8x1NMxRG
+ICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj/PEAAA3ToY7e3O3Gxew5muAj3liFZXm/rJix27Lq+4pHasYdaAQAYnIjKC
+bJCgYDl5yDSaBD8DYqPV2yV/LoRB8/TiT5vWLvJ1cf8BoboQvlsvIPy6cHbjMu8Yz4BRB6+O12UbZr2xy3210BskhQlt8x1NMxRG
 h8YJcluGSOeX+jop1F8GAEkQAAAKCv8bBv8ABgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVAAAAAAAA
 AOcAAAAAAAAA5aOntdgwwpU7mFNMbFmjo0/cNOkz9/WJjwqFzwiEa8oAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANye
 KnxvlI8XR040p/xD7QMPfBVj8bq932NAyC4OVKjFAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAGAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAffAGRkSB7Y3DAhR3DmeaFV/SBwYWo083zzS69wh0BNAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAScGFL53/MFkCH5gbnzIwedpxEoFu5QrhkohZdHPcGy06SmMcFVmag/QL2Dc4Y
-Rw+sr9hK38zLsIc8rp0RyxW6IAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUAYQ4AAC0tLS0tQkVHSU4gQ0VSVElG
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8g9qXxTe+xHDiw3kglFJVmjIFtdZrP6dRIrIwWgZ05BhxsjFhGTB/FPdQdmIU
+O7bIXw65UPij2iw+V+Ze2RR0IAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUAYQ4AAC0tLS0tQkVHSU4gQ0VSVElG
 SUNBVEUtLS0tLQpNSUlFOGpDQ0JKZWdBd0lCQWdJVkFNK2VaM0lhNW5sTml3ZnRYMzVsVHNUd3dHTUtNQW9HQ0NxR1NNNDlCQU1D
 Ck1IQXhJakFnQmdOVkJBTU1HVWx1ZEdWc0lGTkhXQ0JRUTBzZ1VHeGhkR1p2Y20wZ1EwRXhHakFZQmdOVkJBb00KRVVsdWRHVnNJ
 RU52Y25CdmNtRjBhVzl1TVJRd0VnWURWUVFIREF0VFlXNTBZU0JEYkdGeVlURUxNQWtHQTFVRQpDQXdDUTBFeEN6QUpCZ05WQkFZ

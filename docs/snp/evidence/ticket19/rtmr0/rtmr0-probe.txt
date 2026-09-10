@@ -9,3 +9,39 @@ WARNING: Some requests generated warnings:
  - The resource 'projects/ubuntu-os-cloud/global/images/ubuntu-2404-noble-amd64-v20260826' is deprecated. A suggested replacement is 'projects/ubuntu-os-cloud/global/images/ubuntu-2404-noble-amd64-v20260906'.
 
 tdx-rtmr0	us-central1-a	c3-standard-4	RUNNING
+--- one-disk ---
+  mrtd                : c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+  rtmr0               : c0b8b19ca6f51dc37435da45a61ab417e59253cd31cc2eeb3e833e8b8979679fe5a65387e0014831fe7b3ec4be51896d
+  rtmr1               : 02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b
+  rtmr2               : ecc9935861eba8e47817c10761468525af6df776fa2fa2767be5d6d152a5ae3a62da7b750df33d8069c7ff9bae811df9
+
+############ attaching a second disk and rebooting ############
+Created [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/zones/us-central1-a/disks/tdx-rtmr0-probe-config].
+WARNING: Some requests generated warnings:
+ - Disk size: '10 GB' is larger than image size: '1 GB'. You might need to resize the root repartition manually if the operating system does not support automatic resizing. See https://cloud.google.com/compute/docs/disks/add-persistent-disk#resize_pd for details.
+
+tdx-rtmr0-probe-config	10
+Updated [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/zones/us-central1-a/instances/tdx-rtmr0].
+  boot_id 85197a1b-aab9-4c78-95c2-075ab2104be1 -> a9bc52e8-3259-4e2b-9624-7b1d285da752 (barrier crossed on attempt 4)
+--- two-disks ---
+  mrtd                : c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+  rtmr0               : a5e39b277092283a55b3d36b9365b5f07624f25290cf75f54c8a7e0263e94f376d4134451075212886277460ad9e2b79
+  rtmr1               : 3a446943925fef7f1682fd54e1b6697df864692e28592ec373860d1868582ac14ca3029c48282eb964868a785bafd691
+  rtmr2               : ecc9935861eba8e47817c10761468525af6df776fa2fa2767be5d6d152a5ae3a62da7b750df33d8069c7ff9bae811df9
+
+rtmr0, one disk : c0b8b19ca6f51dc37435da45a61ab417e59253cd31cc2eeb3e833e8b8979679fe5a65387e0014831fe7b3ec4be51896d
+rtmr0, two disks: a5e39b277092283a55b3d36b9365b5f07624f25290cf75f54c8a7e0263e94f376d4134451075212886277460ad9e2b79
+rtmr1, one disk : 02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b
+rtmr1, two disks: 3a446943925fef7f1682fd54e1b6697df864692e28592ec373860d1868582ac14ca3029c48282eb964868a785bafd691
+RTMR0 MOVES when a second disk is attached: c0b8b19ca6f51dc37435da45a61ab417e59253cd31cc2eeb3e833e8b8979679fe5a65387e0014831fe7b3ec4be51896d -> a5e39b277092283a55b3d36b9365b5f07624f25290cf75f54c8a7e0263e94f376d4134451075212886277460ad9e2b79
+
+deleting tdx-rtmr0
+Deleted [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/zones/us-central1-a/instances/tdx-rtmr0].
+
+############ for docs/snp/cloud/tdx/RESOURCES.md ############
+| created | name | type | purpose | state |
+|---|---|---|---|---|
+| 2026-09-10T21:34Z | tdx-rtmr0 (+ disk tdx-rtmr0-probe-config) | c3-standard-4 TDX, us-central1-a, 20GB pd-balanced, stock image `ubuntu-2404-noble-amd64-v20260826` | ticket 19: does attaching a second disk move RTMR0? two boots of one instance, one disk then two | **deleted 2026-09-10T21:38Z** |
+
+verdict: RTMR0 MOVES when a second disk is attached: c0b8b19ca6f51dc37435da45a61ab417e59253cd31cc2eeb3e833e8b8979679fe5a65387e0014831fe7b3ec4be51896d -> a5e39b277092283a55b3d36b9365b5f07624f25290cf75f54c8a7e0263e94f376d4134451075212886277460ad9e2b79
+=== done 2026-09-10T21:38:19Z, exit 0 ===

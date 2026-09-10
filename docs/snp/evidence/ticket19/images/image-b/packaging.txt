@@ -1,5 +1,5 @@
-=== build-tdx-image: 2026-09-10T21:22:08Z on shs1
-repo d813519f95f064ecdf13c86fb559e6851300f62e on tdx-attested-tunnel
+=== build-tdx-image: 2026-09-10T21:52:26Z on shs1
+repo ef0ce05dad0ba651c2c118cdb2f26ba8a1a25f5e on tdx-attested-tunnel
 go   go version go1.26.3 linux/amd64
 out  $SCRATCH/image-b
 
@@ -24,7 +24,7 @@ vmlinuz-7.0.0-1011-gcp d99d5fe55b545db18594e22b72f9c1430ef61af0bd3ff479830b48910
 
 === 2. tunneld, checked before it is built and built before it is measured
 $ go test ./cmd/tunneld
-ok  	gvisor.dev/gvisor/attest/cmd/tunneld	2.761s
+ok  	gvisor.dev/gvisor/attest/cmd/tunneld	2.574s
 guard passed: the packaged graph reaches no fake platform and no test support
 $ CGO_ENABLED=0 go build -trimpath -buildvcs=false -o $SCRATCH/image-b/build/tunneld ./cmd/tunneld
 $SCRATCH/image-b/build/tunneld: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, Go BuildID=uxl0u_QBTB3LrG-N5Xih/qKxAin25tCD_Qn90kZsS/TGlvBTVXjOV2hkypQSkA/TXxN5QPSHzv5X7wDHH4V, BuildID[sha1]=accbb49b9b04ed9c5756d7439fb62535053b14d8, with debug_info, not stripped
@@ -52,7 +52,7 @@ grub.cfg bc00eff83f2685727c689b202800e39276117870d897cf7772611865704277b3 (271 b
 grub.cfg inode flags 0x80000 -> 0x80010 (immutable set)
 Pass 5: Checking group summary information
 BOOT: 602/58496 files (0.3% non-contiguous), 31910/233728 blocks
-disk.raw 0ac99bd493eb6cc3ad2c9b8398023eef17cf0130c39bba3d57ad54bca022ade2 (10737418240 bytes)
+disk.raw cacccafd7039e4fab65f43a917e813da1f1371c7668a7fff232c409363d5b478 (10737418240 bytes)
 ESP unchanged (917fa42848b63601d35ca66a75e49c32e42b8515e2b0e0ff949415c5750c5323); Ubuntu's root partition unchanged (e8fd5d72634f58d772b4b85d04608173e1ee7937518d4fd987dcca80f1c7de03)
 GPT unchanged (a5fb8e097e42ade5161b074b8dd0fc953d090b7844d4895175c21a4866a36163); RTMR1 keeps the two values the reference value pins
 
@@ -69,7 +69,7 @@ admits peer policy: a642ab1aca91e3b00f86c6b31a22c016d33c85117319e51b8774a91db3fd
 wrote $SCRATCH/image-b/reference-values.json and $SCRATCH/image-b/reference-values.json.sig (loads back through attest.LoadReferenceValueSetFile)
 
 === built
-image:                   $SCRATCH/image-b/disk.raw (0ac99bd493eb6cc3ad2c9b8398023eef17cf0130c39bba3d57ad54bca022ade2)
+image:                   $SCRATCH/image-b/disk.raw (cacccafd7039e4fab65f43a917e813da1f1371c7668a7fff232c409363d5b478)
 predicted RTMR2:         640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7
 policy digest:           a642ab1aca91e3b00f86c6b31a22c016d33c85117319e51b8774a91db3fd885e
 reference value set:     $SCRATCH/image-b/reference-values.json (+ .sig)

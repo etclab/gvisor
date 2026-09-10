@@ -116,8 +116,21 @@ INITRD_NAME="${INITRD_NAME:-initrd.img-attested}"
 # one value on a VM's first boot, before the root partition is grown, and
 # another on every boot after; a set naming one would refuse its own peer after
 # a reboot, so both are pinned.
+#
+# RTMR0 IS A FUNCTION OF THE MACHINE'S SHAPE, not only of the provider's
+# firmware, and this ticket found that out the hard way. Every RTMR0 recorded
+# before it -- five boots across four VMs -- was c0b8b19c…896d, and every one of
+# those VMs had exactly one disk. The first guest with a config device attached
+# reported c2fc12a5…850a instead, and its reference value refused it.
+# docs/snp/cloud/tdx/probe-tdx-rtmr0.sh then changed one thing on one instance,
+# attaching a second disk and rebooting, and watched RTMR0 move
+# (docs/snp/evidence/ticket19/rtmr0/). The value below is therefore the one a
+# guest of THIS shape reports -- c3-standard-4, one 20GB boot disk and one 10GB
+# config disk -- and an author who changes the shape has to observe it again.
+# It is a comma separated list, because a set may legitimately admit more than
+# one observed value the way it already does for RTMR1.
 MRTD="${MRTD:-c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5}"
-RTMR0="${RTMR0:-c0b8b19ca6f51dc37435da45a61ab417e59253cd31cc2eeb3e833e8b8979679fe5a65387e0014831fe7b3ec4be51896d}"
+RTMR0="${RTMR0:-c2fc12a52db868515eff7c657e42ce04b0b7363fa6ddf7c1cca87aa8e6a061a11f9981924a600ad6d2232f75182a850a}"
 RTMR1_FIRST="${RTMR1_FIRST:-02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b}"
 RTMR1_LATER="${RTMR1_LATER:-3a446943925fef7f1682fd54e1b6697df864692e28592ec373860d1868582ac14ca3029c48282eb964868a785bafd691}"
 TCB_STATUS="${TCB_STATUS:-UpToDate}"
@@ -475,8 +488,11 @@ if [ -z "${PEER_POLICY_DIGEST+set}" ]; then
 elif [ -n "$PEER_POLICY_DIGEST" ]; then
   DIGEST_ARGS=(-policy-digest "$PEER_POLICY_DIGEST")
 fi
+RTMR0_ARGS=()
+IFS=',' read -r -a RTMR0_LIST <<< "$RTMR0"
+for r in "${RTMR0_LIST[@]}"; do [ -n "$r" ] && RTMR0_ARGS+=(-rtmr0 "$r"); done
 EMITTED_SET=$("$B/emit-tdx-refvals" "${MEASUREMENT_ARGS[@]}" \
-  -mrtd "$MRTD" -rtmr0 "$RTMR0" -rtmr1 "$RTMR1_FIRST" -rtmr1 "$RTMR1_LATER" \
+  -mrtd "$MRTD" "${RTMR0_ARGS[@]}" -rtmr1 "$RTMR1_FIRST" -rtmr1 "$RTMR1_LATER" \
   -tcb-status "$TCB_STATUS" -tcb-evaluation "$TCB_EVALUATION" \
   "${DIGEST_ARGS[@]}" -key "$AUTHOR_KEY" -out "$OUT")
 printf '%s\n' "$EMITTED_SET"
@@ -542,7 +558,7 @@ fi
   echo "admits peer policy:           $ADMITS_POLICY"
   echo "forwards to:                  $(printf '%s\n' "$EMITTED_POLICY" | sed -n 's/^forwards to: //p' | paste -sd, -)"
   echo "provider constants pinned:    mrtd $MRTD"
-  echo "                              rtmr0 $RTMR0"
+  for r in "${RTMR0_LIST[@]}"; do echo "                              rtmr0 $r"; done
   echo "                              rtmr1 $RTMR1_FIRST (first boot)"
   echo "                              rtmr1 $RTMR1_LATER (every boot after)"
   echo "tcb floor:                    $TCB_STATUS, evaluation $TCB_EVALUATION"

@@ -1,0 +1,1037 @@
+[2J[01;01H[=3h[2J[01;01H[2J[01;01H[=3h[2J[01;01HBdsDxe: loading Boot0003 "Ubuntu" from PciRoot(0x0)/Pci(0x4,0x0)/NVMe(0x1,00-00-00-00-00-00-00-00)/HD(15,GPT,6A0A967B-F814-468B-AF0C-F6BF6538EF09,0x2800,0x35000)/\EFI\ubuntu\shimx64.efi
+
+BdsDxe: starting Boot0003 "Ubuntu" from PciRoot(0x0)/Pci(0x4,0x0)/NVMe(0x1,00-00-00-00-00-00-00-00)/HD(15,GPT,6A0A967B-F814-468B-AF0C-F6BF6538EF09,0x2800,0x35000)/\EFI\ubuntu\shimx64.efi
+
+UEFI: Attempting to start image.
+Description: Ubuntu
+FilePath: PciRoot(0x0)/Pci(0x4,0x0)/NVMe(0x1,00-00-00-00-00-00-00-00)/HD(15,GPT,6A0A967B-F814-468B-AF0C-F6BF6538EF09,0x2800,0x35000)/\EFI\ubuntu\shimx64.efi
+OptionNumber: 3.
+
+
+[    0.000000] tdx: Guest detected
+[    0.000000] tdx: Attributes: SEPT_VE_DISABLE
+[    0.000000] tdx: TD_CTLS: PENDING_VE_DISABLE ENUM_TOPOLOGY VIRT_CPUID2 REDUCE_VE
+[    0.000000] Linux version 6.17.0-1022-gcp (buildd@lcy02-amd64-073) (x86_64-linux-gnu-gcc-13 (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, GNU ld (GNU Binutils for Ubuntu) 2.42) #25-Ubuntu SMP Sat Jul 25 01:12:40 UTC 2026 (Ubuntu 6.17.0-1022.25-gcp 6.17.13)
+[    0.000000] Command line: BOOT_IMAGE=/vmlinuz-6.17.0-1022-gcp console=ttyS0,115200 panic=-1 rdinit=/init
+[    0.000000] KERNEL supported cpus:
+[    0.000000]   Intel GenuineIntel
+[    0.000000]   AMD AuthenticAMD
+[    0.000000]   Hygon HygonGenuine
+[    0.000000]   Centaur CentaurHauls
+[    0.000000]   zhaoxin   Shanghai  
+[    0.000000] x86/split lock detection: #DB: warning on user-space bus_locks
+[    0.000000] BIOS-provided physical RAM map:
+[    0.000000] BIOS-e820: [mem 0x0000000000000000-0x000000000080bfff] usable
+[    0.000000] BIOS-e820: [mem 0x000000000080c000-0x000000000080cfff] ACPI NVS
+[    0.000000] BIOS-e820: [mem 0x000000000080d000-0x00000000015fffff] usable
+[    0.000000] BIOS-e820: [mem 0x0000000001600000-0x000000000161ffff] reserved
+[    0.000000] BIOS-e820: [mem 0x0000000001620000-0x00000000bd43afff] usable
+[    0.000000] BIOS-e820: [mem 0x00000000bd43b000-0x00000000bd442fff] ACPI data
+[    0.000000] BIOS-e820: [mem 0x00000000bd443000-0x00000000bf2ecfff] usable
+[    0.000000] BIOS-e820: [mem 0x00000000bf2ed000-0x00000000bf4ecfff] reserved
+[    0.000000] BIOS-e820: [mem 0x00000000bf4ed000-0x00000000bf56ffff] usable
+[    0.000000] BIOS-e820: [mem 0x00000000bf570000-0x00000000bf57efff] ACPI data
+[    0.000000] BIOS-e820: [mem 0x00000000bf57f000-0x00000000bf5fefff] ACPI NVS
+[    0.000000] BIOS-e820: [mem 0x00000000bf5ff000-0x00000000bffdffff] usable
+[    0.000000] BIOS-e820: [mem 0x00000000bffe0000-0x00000000bfffffff] reserved
+[    0.000000] BIOS-e820: [mem 0x00000000ffe00000-0x000000043fffffff] usable
+[    0.000000] NX (Execute Disable) protection: active
+[    0.000000] APIC: Static calls initialized
+[    0.000000] efi: EFI v2.7 by EDK II
+[    0.000000] efi: CCFinalLog=0xbf5b7000 ACPI=0xbf57e000 ACPI 2.0=0xbf57e014 TPMFinalLog=0xbf5af000 SMBIOS=0xbf3ca000 MEMATTR=0xbd445018 MOKvar=0xbf3c8000 INITRD=0xbd448418 TPMEventLog=0xbd43b018 
+[    0.000000] SMBIOS 2.4 present.
+[    0.000000] DMI: Google Google Compute Engine/Google Compute Engine, BIOS Google 07/08/2026
+[    0.000000] DMI: Memory slots populated: 1/1
+[    0.000000] secureboot: Secure boot disabled
+[    0.000000] Hypervisor detected: KVM
+[    0.000000] last_pfn = 0x100000 max_arch_pfn = 0x10000000000
+[    0.000000] tsc: Detected 2700.000 MHz processor
+[    0.000023] last_pfn = 0x440000 max_arch_pfn = 0x10000000000
+[    0.000026] MTRR map: 1 entries (0 fixed + 1 variable; max 2), built from 1 variable MTRRs
+[    0.000028] MTRRs set to read-only
+[    0.000030] x86/PAT: Configuration [0-7]: WB  WC  UC- UC  WB  WP  UC- WT  
+[    0.000048] x2apic: enabled by BIOS, switching to x2apic ops
+[    0.000067] last_pfn = 0x100000 max_arch_pfn = 0x10000000000
+[    0.008711] software IO TLB: SWIOTLB bounce buffer size adjusted to 982MB
+[    0.008729] Using GB pages for direct mapping
+[    0.009474] secureboot: Secure boot disabled
+[    0.009475] RAMDISK: [mem 0xbc37c000-0xbcd72fff]
+[    0.009479] ACPI: Early table checksum verification disabled
+[    0.009483] ACPI: RSDP 0x00000000BF57E014 000024 (v02 Google)
+[    0.009488] ACPI: XSDT 0x00000000BF57D0E8 000064 (v01 Google GOOGFACP 00000001      01000013)
+[    0.009495] ACPI: FACP 0x00000000BF577000 0000F4 (v02 Google GOOGFACP 00000001 GOOG 00000001)
+[    0.009503] ACPI: DSDT 0x00000000BF578000 001A93 (v01 Google GOOGDSDT 00000001 GOOG 00000001)
+[    0.009507] ACPI: FACS 0x00000000BF5AA000 000040
+[    0.009510] ACPI: CCEL 0x00000000BF57C000 000038 (v01 INTEL  EDK2     00000002      01000013)
+[    0.009514] ACPI: SSDT 0x00000000BF57B000 000316 (v02 GOOGLE Tpm2Tabl 00001000 INTL 20250807)
+[    0.009518] ACPI: TPM2 0x00000000BF57A000 000034 (v04 GOOGLE          00000001 GOOG 00000001)
+[    0.009522] ACPI: SRAT 0x00000000BF576000 0000E8 (v03 Google GOOGSRAT 00000001 GOOG 00000001)
+[    0.009526] ACPI: SSDT 0x00000000BF574000 000A42 (v01 Google GOOGSSDT 00000001 GOOG 00000001)
+[    0.009529] ACPI: WAET 0x00000000BF573000 000028 (v01 Google GOOGWAET 00000001 GOOG 00000001)
+[    0.009533] ACPI: APIC 0x00000000BF572000 000096 (v05 Google GOOGAPIC 00000001 GOOG 00000001)
+[    0.009536] ACPI: Reserving FACP table memory at [mem 0xbf577000-0xbf5770f3]
+[    0.009537] ACPI: Reserving DSDT table memory at [mem 0xbf578000-0xbf579a92]
+[    0.009538] ACPI: Reserving FACS table memory at [mem 0xbf5aa000-0xbf5aa03f]
+[    0.009539] ACPI: Reserving CCEL table memory at [mem 0xbf57c000-0xbf57c037]
+[    0.009540] ACPI: Reserving SSDT table memory at [mem 0xbf57b000-0xbf57b315]
+[    0.009541] ACPI: Reserving TPM2 table memory at [mem 0xbf57a000-0xbf57a033]
+[    0.009542] ACPI: Reserving SRAT table memory at [mem 0xbf576000-0xbf5760e7]
+[    0.009543] ACPI: Reserving SSDT table memory at [mem 0xbf574000-0xbf574a41]
+[    0.009544] ACPI: Reserving WAET table memory at [mem 0xbf573000-0xbf573027]
+[    0.009545] ACPI: Reserving APIC table memory at [mem 0xbf572000-0xbf572095]
+[    0.009658] APIC: Switched APIC routing to: cluster x2apic
+[    0.009718] ACPI: SRAT: Node 0 PXM 0 [mem 0x00000000-0x0009ffff]
+[    0.009720] ACPI: SRAT: Node 0 PXM 0 [mem 0x00100000-0xbfffffff]
+[    0.009722] ACPI: SRAT: Node 0 PXM 0 [mem 0x100000000-0x43fffffff]
+[    0.009725] NUMA: Node 0 [mem 0x00001000-0x0009ffff] + [mem 0x00100000-0xbfffffff] -> [mem 0x00001000-0xbfffffff]
+[    0.009728] NUMA: Node 0 [mem 0x00001000-0xbfffffff] + [mem 0x100000000-0x43fffffff] -> [mem 0x00001000-0x43fffffff]
+[    0.009740] NODE_DATA(0) allocated [mem 0x43ffd42c0-0x43fffefff]
+[    0.010107] Zone ranges:
+[    0.010108]   DMA      [mem 0x0000000000001000-0x0000000000ffffff]
+[    0.010110]   DMA32    [mem 0x0000000001000000-0x00000000ffffffff]
+[    0.010112]   Normal   [mem 0x0000000100000000-0x000000043fffffff]
+[    0.010114]   Device   empty
+[    0.010115] Movable zone start for each node
+[    0.010118] Early memory node ranges
+[    0.010118]   node   0: [mem 0x0000000000001000-0x000000000009ffff]
+[    0.010120]   node   0: [mem 0x0000000000100000-0x000000000080bfff]
+[    0.010121]   node   0: [mem 0x000000000080d000-0x00000000015fffff]
+[    0.010122]   node   0: [mem 0x0000000001620000-0x00000000bd43afff]
+[    0.010123]   node   0: [mem 0x00000000bd443000-0x00000000bf2ecfff]
+[    0.010124]   node   0: [mem 0x00000000bf4ed000-0x00000000bf56ffff]
+[    0.010125]   node   0: [mem 0x00000000bf5ff000-0x00000000bffdffff]
+[    0.010126]   node   0: [mem 0x00000000ffe00000-0x000000043fffffff]
+[    0.010129] Initmem setup node 0 [mem 0x0000000000001000-0x000000043fffffff]
+[    0.010137] On node 0, zone DMA: 1 pages in unavailable ranges
+[    0.010153] On node 0, zone DMA: 96 pages in unavailable ranges
+[    0.010169] On node 0, zone DMA: 1 pages in unavailable ranges
+[    0.016341] On node 0, zone DMA32: 32 pages in unavailable ranges
+[    0.016406] On node 0, zone DMA32: 8 pages in unavailable ranges
+[    0.016411] On node 0, zone DMA32: 512 pages in unavailable ranges
+[    0.016433] On node 0, zone DMA32: 143 pages in unavailable ranges
+[    0.016696] On node 0, zone DMA32: 32288 pages in unavailable ranges
+[    0.044749] ACPI: PM-Timer IO Port: 0xb008
+[    0.044796] ACPI: LAPIC_NMI (acpi_id[0xff] dfl dfl lint[0x1])
+[    0.044952] IOAPIC[0]: apic_id 0, version 17, address 0xfec00000, GSI 0-23
+[    0.044956] ACPI: INT_SRC_OVR (bus 0 bus_irq 5 global_irq 5 high level)
+[    0.044958] ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 9 high level)
+[    0.044960] ACPI: INT_SRC_OVR (bus 0 bus_irq 10 global_irq 10 high level)
+[    0.044962] ACPI: INT_SRC_OVR (bus 0 bus_irq 11 global_irq 11 high level)
+[    0.044969] APIC: wakeup_secondary_cpu_64() replaced with acpi_wakeup_cpu()
+[    0.044976] ACPI: Using ACPI (MADT) for SMP configuration information
+[    0.044982] CPU topo: Max. logical packages:   1
+[    0.044983] CPU topo: Max. logical dies:       1
+[    0.044983] CPU topo: Max. dies per package:   1
+[    0.044988] CPU topo: Max. threads per core:   2
+[    0.044989] CPU topo: Num. cores per package:     2
+[    0.044990] CPU topo: Num. threads per package:   4
+[    0.044991] CPU topo: Allowing 4 present CPUs plus 0 hotplug CPUs
+[    0.045076] PM: hibernation: Registered nosave memory: [mem 0x00000000-0x00000fff]
+[    0.045079] PM: hibernation: Registered nosave memory: [mem 0x000a0000-0x000fffff]
+[    0.045081] PM: hibernation: Registered nosave memory: [mem 0x0080c000-0x0080cfff]
+[    0.045082] PM: hibernation: Registered nosave memory: [mem 0x01600000-0x0161ffff]
+[    0.045084] PM: hibernation: Registered nosave memory: [mem 0xbd43b000-0xbd442fff]
+[    0.045086] PM: hibernation: Registered nosave memory: [mem 0xbf2ed000-0xbf4ecfff]
+[    0.045088] PM: hibernation: Registered nosave memory: [mem 0xbf570000-0xbf5fefff]
+[    0.045090] PM: hibernation: Registered nosave memory: [mem 0xbffe0000-0xffdfffff]
+[    0.045092] [mem 0xc0000000-0xffdfffff] available for PCI devices
+[    0.045093] Booting paravirtualized kernel on KVM
+[    0.045096] clocksource: refined-jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 1910969940391419 ns
+[    0.045105] setup_percpu: NR_CPUS:8192 nr_cpumask_bits:4 nr_cpu_ids:4 nr_node_ids:1
+[    0.045453] percpu: Embedded 84 pages/cpu s221184 r8192 d114688 u524288
+[    0.045536] kvm-guest: PV spinlocks enabled
+[    0.045540] PV qspinlock hash table entries: 256 (order: 0, 4096 bytes, linear)
+[    0.045544] Kernel command line: BOOT_IMAGE=/vmlinuz-6.17.0-1022-gcp console=ttyS0,115200 panic=-1 rdinit=/init
+[    0.045607] random: crng init done
+[    0.045608] printk: log buffer data + meta data: 262144 + 917504 = 1179648 bytes
+[    0.047640] Dentry cache hash table entries: 2097152 (order: 12, 16777216 bytes, linear)
+[    0.048664] Inode-cache hash table entries: 1048576 (order: 11, 8388608 bytes, linear)
+[    0.048767] software IO TLB: area num 4.
+[    0.048768] software IO TLB: SWIOTLB bounce buffer size roundup to 1024MB
+[    0.315676] Fallback order for Node 0: 0 
+[    0.315681] Built 1 zonelists, mobility grouping on.  Total pages: 4193991
+[    0.315682] Policy zone: Normal
+[    0.315691] mem auto-init: stack:all(zero), heap alloc:on, heap free:off
+[    0.355502] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=4, Nodes=1
+[    0.370694] ftrace: allocating 62261 entries in 244 pages
+[    0.370697] ftrace: allocated 244 pages with 5 groups
+[    0.370908] rcu: Hierarchical RCU implementation.
+[    0.370909] rcu: 	RCU restricting CPUs from NR_CPUS=8192 to nr_cpu_ids=4.
+[    0.370911] 	Rude variant of Tasks RCU enabled.
+[    0.370911] 	Tracing variant of Tasks RCU enabled.
+[    0.370912] rcu: RCU calculated value of scheduler-enlistment delay is 100 jiffies.
+[    0.370913] rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=4
+[    0.370924] RCU Tasks Rude: Setting shift to 2 and lim to 1 rcu_task_cb_adjust=1 rcu_task_cpu_ids=4.
+[    0.370926] RCU Tasks Trace: Setting shift to 2 and lim to 1 rcu_task_cb_adjust=1 rcu_task_cpu_ids=4.
+[    0.375364] NR_IRQS: 524544, nr_irqs: 456, preallocated irqs: 16
+[    0.375749] rcu: srcu_init: Setting srcu_struct sizes based on contention.
+[    0.376143] Console: colour dummy device 80x25
+[    0.376301] printk: legacy console [ttyS0] enabled
+[    0.900293] ACPI: Core revision 20250404
+[    0.902371] ACPI BIOS Warning (bug): Incorrect checksum in table [APIC] - 0xDC, should be 0x17 (20250404/utcksum-58)
+[    0.907872] APIC: Switch to symmetric I/O mode setup
+[    0.915933] APIC: Switched APIC routing to: physical x2apic
+[    0.927116] clocksource: tsc-early: mask: 0xffffffffffffffff max_cycles: 0x26eb3e3cc63, max_idle_ns: 440795236593 ns
+[    0.932584] Calibrating delay loop (skipped), value calculated using timer frequency.. 5400.00 BogoMIPS (lpj=2700000)
+[    0.933581] x86/cpu: User Mode Instruction Prevention (UMIP) activated
+[    0.933581] Last level iTLB entries: 4KB 0, 2MB 0, 4MB 0
+[    0.933581] Last level dTLB entries: 4KB 0, 2MB 0, 4MB 0, 1GB 0
+[    0.933581] process: using TDX aware idle routine
+[    0.933581] mitigations: Enabled attack vectors: user_kernel, user_user, guest_host, guest_guest, SMT mitigations: auto
+[    0.933581] Speculative Store Bypass: Mitigation: Speculative Store Bypass disabled via prctl
+[    0.933581] Spectre V2 : Mitigation: Enhanced / Automatic IBRS
+[    0.933581] Spectre V1 : Mitigation: usercopy/swapgs barriers and __user pointer sanitization
+[    0.933581] Spectre V2 : Spectre v2 / PBRSB-eIBRS: Retire a single CALL on VMEXIT
+[    0.933581] Spectre V2 : mitigation: Enabling conditional Indirect Branch Prediction Barrier
+[    0.933581] x86/fpu: Supporting XSAVE feature 0x001: 'x87 floating point registers'
+[    0.933581] x86/fpu: Supporting XSAVE feature 0x002: 'SSE registers'
+[    0.933581] x86/fpu: Supporting XSAVE feature 0x004: 'AVX registers'
+[    0.933581] x86/fpu: Supporting XSAVE feature 0x020: 'AVX-512 opmask'
+[    0.933581] x86/fpu: Supporting XSAVE feature 0x040: 'AVX-512 Hi256'
+[    0.933581] x86/fpu: Supporting XSAVE feature 0x080: 'AVX-512 ZMM_Hi256'
+[    0.933581] x86/fpu: Supporting XSAVE feature 0x200: 'Protection Keys User registers'
+[    0.933581] x86/fpu: Supporting XSAVE feature 0x20000: 'AMX Tile config'
+[    0.933581] x86/fpu: Supporting XSAVE feature 0x40000: 'AMX Tile data'
+[    0.933581] x86/fpu: xstate_offset[2]:  576, xstate_sizes[2]:  256
+[    0.933581] x86/fpu: xstate_offset[5]:  832, xstate_sizes[5]:   64
+[    0.933581] x86/fpu: xstate_offset[6]:  896, xstate_sizes[6]:  512
+[    0.933581] x86/fpu: xstate_offset[7]: 1408, xstate_sizes[7]: 1024
+[    0.933581] x86/fpu: xstate_offset[9]: 2432, xstate_sizes[9]:    8
+[    0.933581] x86/fpu: xstate_offset[17]: 2496, xstate_sizes[17]:   64
+[    0.933581] x86/fpu: xstate_offset[18]: 2560, xstate_sizes[18]: 8192
+[    0.933581] x86/fpu: Enabled xstate features 0x602e7, context size is 10752 bytes, using 'compacted' format.
+[    0.933581] Freeing SMP alternatives memory: 52K
+
+[    0.933581] Memory Encryption Features active: Intel TDX
+[    0.933581] pid_max: default: 32768 minimum: 301
+[    0.933581] LSM: initializing lsm=lockdown,capability,landlock,yama,apparmor,ima,evm
+[    0.933581] landlock: Up and running.
+[    0.933581] Yama: becoming mindful.
+[    0.933581] AppArmor: AppArmor initialized
+[    0.933581] Mount-cache hash table entries: 32768 (order: 6, 262144 bytes, linear)
+[    0.933581] Mountpoint-cache hash table entries: 32768 (order: 6, 262144 bytes, linear)
+[    0.933581] smpboot: CPU0: Intel TDX (family: 0x6, model: 0x8f, stepping: 0x8)
+[    0.933821] Performance Events: unsupported CPU family 6 model 143 no PMU driver, software events only.
+[    0.934614] signal: max sigframe size: 11952
+[    0.935621] rcu: Hierarchical SRCU implementation.
+[    0.936582] rcu: 	Max phase no-delay instances is 400.
+[    0.938594] Timer migration: 1 hierarchy levels; 8 children per group; 1 crossnode level
+[    0.939896] NMI watchdog: Perf NMI watchdog permanently disabled
+[    0.940646] smp: Bringing up secondary CPUs ...
+[    0.941584] smpboot: Parallel CPU startup disabled by the platform
+[    0.942715] smpboot: x86: Booting SMP configuration:
+[    0.943584] .... node  #0, CPUs:      #1 #2 #3
+[    0.946644] smp: Brought up 1 node, 4 CPUs
+[    0.948582] smpboot: Total of 4 processors activated (21600.00 BogoMIPS)
+[    0.950753] Memory: 15349192K/16775964K available (22310K kernel code, 4681K rwdata, 15692K rodata, 5416K init, 6080K bss, 1418416K reserved, 0K cma-reserved)
+[    0.952648] devtmpfs: initialized
+[    0.953632] x86/mm: Memory block size: 128MB
+[    0.955873] ACPI: PM: Registering ACPI NVS region [mem 0x0080c000-0x0080cfff] (4096 bytes)
+[    0.956595] ACPI: PM: Registering ACPI NVS region [mem 0xbf57f000-0xbf5fefff] (524288 bytes)
+[    0.957656] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 1911260446275000 ns
+[    0.958593] posixtimers hash table entries: 2048 (order: 3, 32768 bytes, linear)
+[    0.959593] futex hash table entries: 1024 (65536 bytes on 1 NUMA nodes, total 64 KiB, linear).
+[    0.960653] pinctrl core: initialized pinctrl subsystem
+[    0.961903] PM: RTC time: 23:19:16, date: 2026-09-10
+[    0.964055] NET: Registered PF_NETLINK/PF_ROUTE protocol family
+[    0.966588] DMA: preallocated 2048 KiB GFP_KERNEL pool for atomic allocations
+[    0.968586] DMA: preallocated 2048 KiB GFP_KERNEL|GFP_DMA pool for atomic allocations
+[    0.970585] DMA: preallocated 2048 KiB GFP_KERNEL|GFP_DMA32 pool for atomic allocations
+[    0.971593] audit: initializing netlink subsys (disabled)
+[    0.973604] audit: type=2000 audit(1789082348.041:1): state=initialized audit_enabled=0 res=1
+[    0.973715] thermal_sys: Registered thermal governor 'fair_share'
+[    0.974585] thermal_sys: Registered thermal governor 'bang_bang'
+[    0.975582] thermal_sys: Registered thermal governor 'step_wise'
+[    0.977582] thermal_sys: Registered thermal governor 'user_space'
+[    0.978582] thermal_sys: Registered thermal governor 'power_allocator'
+[    0.979600] cpuidle: using governor ladder
+[    0.981594] cpuidle: using governor menu
+[    0.982731] acpiphp: ACPI Hot Plug PCI Controller Driver version: 0.5
+[    0.984790] PCI: Using configuration type 1 for base access
+[    0.986614] kprobes: kprobe jump-optimization is enabled. All kprobes are optimized if possible.
+[    0.988756] HugeTLB: registered 1.00 GiB page size, pre-allocated 0 pages
+[    0.989582] HugeTLB: 16380 KiB vmemmap can be freed for a 1.00 GiB page
+[    0.990582] HugeTLB: registered 2.00 MiB page size, pre-allocated 0 pages
+[    0.991582] HugeTLB: 28 KiB vmemmap can be freed for a 2.00 MiB page
+[    0.996152] ACPI: Added _OSI(Module Device)
+[    1.000582] ACPI: Added _OSI(Processor Device)
+[    1.004583] ACPI: Added _OSI(Processor Aggregator Device)
+[    1.011788] ACPI: 3 ACPI AML tables successfully acquired and loaded
+[    1.019866] ACPI: Interpreter enabled
+[    1.020594] ACPI: PM: (supports S0 S3 S4 S5)
+[    1.021583] ACPI: Using IOAPIC for interrupt routing
+[    1.022699] PCI: Using host bridge windows from ACPI; if necessary, use "pci=nocrs" and report a bug
+[    1.023582] PCI: Ignoring E820 reservations for host bridge windows
+[    1.025950] ACPI: Enabled 16 GPEs in block 00 to 0F
+[    1.029797] ACPI: PCI Root Bridge [PCI0] (domain 0000 [bus 00-ff])
+[    1.030585] acpi PNP0A03:00: _OSC: OS supports [ASPM ClockPM Segments MSI EDR HPX-Type3]
+[    1.031582] acpi PNP0A03:00: _OSC: not requesting OS control; OS requires [ExtendedConfig ASPM ClockPM MSI]
+[    1.032589] acpi PNP0A03:00: fail to add MMCONFIG information, can't access extended configuration space under this bridge
+[    1.035634] PCI host bridge to bus 0000:00
+[    1.036584] pci_bus 0000:00: root bus resource [io  0x0000-0x0cf7 window]
+[    1.037582] pci_bus 0000:00: root bus resource [io  0x0d00-0xffff window]
+[    1.038582] pci_bus 0000:00: root bus resource [mem 0x000a0000-0x000bffff window]
+[    1.039582] pci_bus 0000:00: root bus resource [mem 0xc0000000-0xfebfefff window]
+[    1.040583] pci_bus 0000:00: root bus resource [bus 00-ff]
+[    1.041687] pci 0000:00:00.0: [8086:1237] type 00 class 0x060000 conventional PCI endpoint
+[    1.044450] pci 0000:00:01.0: [8086:7110] type 00 class 0x060100 conventional PCI endpoint
+[    1.046392] pci 0000:00:01.3: [8086:7113] type 00 class 0x068000 conventional PCI endpoint
+[    1.049817] pci 0000:00:01.3: quirk: [io  0xb000-0xb03f] claimed by PIIX4 ACPI
+[    1.053648] pci 0000:00:03.0: [1ae0:0042] type 00 class 0x020000 conventional PCI endpoint
+[    1.057612] pci 0000:00:03.0: BAR 0 [mem 0xc0202000-0xc0202fff]
+[    1.058604] pci 0000:00:03.0: BAR 1 [mem 0xc0200000-0xc02000ff]
+[    1.059604] pci 0000:00:03.0: BAR 2 [mem 0xc0100000-0xc01fffff]
+[    1.062341] pci 0000:00:04.0: [1ae0:001f] type 00 class 0x010802 conventional PCI endpoint
+[    1.064636] pci 0000:00:04.0: BAR 0 [mem 0xc0000000-0xc0003fff 64bit]
+[    1.065649] pci 0000:00:04.0: BAR 4 [mem 0xc0201000-0xc020103f]
+[    1.133436] ACPI: PCI: Interrupt link LNKA configured for IRQ 10
+[    1.134635] ACPI: PCI: Interrupt link LNKB configured for IRQ 10
+[    1.136668] ACPI: PCI: Interrupt link LNKC configured for IRQ 11
+[    1.138678] ACPI: PCI: Interrupt link LNKD configured for IRQ 11
+[    1.140602] ACPI: PCI: Interrupt link LNKS configured for IRQ 9
+[    1.142156] iommu: Default domain type: Translated
+[    1.142583] iommu: DMA domain TLB invalidation policy: lazy mode
+[    1.144712] SCSI subsystem initialized
+[    1.145616] ACPI: bus type USB registered
+[    1.146593] usbcore: registered new interface driver usbfs
+[    1.147586] usbcore: registered new interface driver hub
+[    1.148586] usbcore: registered new device driver usb
+[    1.149596] pps_core: LinuxPPS API ver. 1 registered
+[    1.150582] pps_core: Software ver. 5.3.6 - Copyright 2005-2007 Rodolfo Giometti <giometti@linux.it>
+[    1.151585] PTP clock support registered
+[    1.152618] EDAC MC: Ver: 3.0.0
+[    1.163323] efivars: Registered efivars operations
+[    1.164838] NetLabel: Initializing
+[    1.165582] NetLabel:  domain hash size = 128
+[    1.166582] NetLabel:  protocols = UNLABELED CIPSOv4 CALIPSO
+[    1.167595] NetLabel:  unlabeled traffic allowed by default
+[    1.168615] mctp: management component transport protocol core
+[    1.169582] NET: Registered PF_MCTP protocol family
+[    1.170591] PCI: Using ACPI for IRQ routing
+[    1.171863] vgaarb: loaded
+[    1.172678] clocksource: Switched to clocksource tsc-early
+[    1.178475] VFS: Disk quotas dquot_6.6.0
+[    1.182570] VFS: Dquot-cache hash table entries: 512 (order 0, 4096 bytes)
+[    1.189918] AppArmor: AppArmor Filesystem Enabled
+[    1.194813] pnp: PnP ACPI init
+[    1.198623] pnp: PnP ACPI: found 7 devices
+[    1.213864] clocksource: acpi_pm: mask: 0xffffff max_cycles: 0xffffff, max_idle_ns: 2085701024 ns
+[    1.222935] NET: Registered PF_INET protocol family
+[    1.228238] IP idents hash table entries: 262144 (order: 9, 2097152 bytes, linear)
+[    1.251780] tcp_listen_portaddr_hash hash table entries: 8192 (order: 5, 131072 bytes, linear)
+[    1.260612] Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+[    1.268599] TCP established hash table entries: 131072 (order: 8, 1048576 bytes, linear)
+[    1.277061] TCP bind hash table entries: 65536 (order: 9, 2097152 bytes, linear)
+[    1.284755] TCP: Hash tables configured (established 131072 bind 65536)
+[    1.291665] MPTCP token hash table entries: 16384 (order: 7, 393216 bytes, linear)
+[    1.299480] UDP hash table entries: 8192 (order: 7, 524288 bytes, linear)
+[    1.306532] UDP-Lite hash table entries: 8192 (order: 7, 524288 bytes, linear)
+[    1.313986] NET: Registered PF_UNIX/PF_LOCAL protocol family
+[    1.319798] NET: Registered PF_XDP protocol family
+[    1.324742] pci_bus 0000:00: resource 4 [io  0x0000-0x0cf7 window]
+[    1.331073] pci_bus 0000:00: resource 5 [io  0x0d00-0xffff window]
+[    1.337419] pci_bus 0000:00: resource 6 [mem 0x000a0000-0x000bffff window]
+[    1.344457] pci_bus 0000:00: resource 7 [mem 0xc0000000-0xfebfefff window]
+[    1.351504] pci 0000:00:00.0: Limiting direct PCI/PCI transfers
+[    1.357696] PCI: CLS 0 bytes, default 64
+[    1.361899] PCI-DMA: Using software bounce buffering for IO (SWIOTLB)
+[    1.361969] Trying to unpack rootfs image as initramfs...
+[    1.368490] software IO TLB: mapped [mem 0x000000007bdff000-0x00000000bbdff000] (1024MB)
+[    1.368519] clocksource: tsc: mask: 0xffffffffffffffff max_cycles: 0x26eb3e3cc63, max_idle_ns: 440795236593 ns
+[    1.392495] clocksource: Switched to clocksource tsc
+[    1.405205] Initialise system trusted keyrings
+[    1.409821] Key type blacklist registered
+[    1.414103] workingset: timestamp_bits=36 max_order=22 bucket_order=0
+[    1.420994] squashfs: version 4.0 (2009/01/31) Phillip Lougher
+[    1.427186] fuse: init (API version 7.44)
+[    1.431658] integrity: Platform Keyring initialized
+[    1.436697] integrity: Machine keyring initialized
+[    1.449412] Key type asymmetric registered
+[    1.453657] Asymmetric key parser 'x509' registered
+[    1.458695] Block layer SCSI generic (bsg) driver version 0.4 loaded (major 242)
+[    1.466352] io scheduler mq-deadline registered
+[    1.472064] ledtrig-cpu: registered to indicate activity on CPUs
+[    1.478352] input: Power Button as /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
+[    1.486016] ACPI: button: Power Button [PWRF]
+[    1.490579] input: Sleep Button as /devices/LNXSYSTM:00/LNXSLPBN:00/input/input1
+[    1.494448] Freeing initrd memory: 10204K
+[    1.498193] ACPI: button: Sleep Button [SLPF]
+[    1.507439] Serial: 8250/16550 driver, 32 ports, IRQ sharing enabled
+[    1.539003] 00:03: ttyS0 at I/O 0x3f8 (irq = 4, base_baud = 115200) is a 16550A
+[    1.567076] 00:04: ttyS1 at I/O 0x2f8 (irq = 3, base_baud = 115200) is a 16550A
+[    1.595018] 00:05: ttyS2 at I/O 0x3e8 (irq = 6, base_baud = 115200) is a 16550A
+[    1.622944] 00:06: ttyS3 at I/O 0x2e8 (irq = 7, base_baud = 115200) is a 16550A
+[    1.629048] Linux agpgart interface v0.103
+[    1.640596] tpm_tis MSFT0101:00: 2.0 TPM (device-id 0x9009, rev-id 0)
+[    1.655037] loop: module loaded
+[    1.656665] Key type psk registered
+[    1.658828] ACPI: bus type drm_connector registered
+[    1.658922] nvme nvme0: pci function 0000:00:04.0
+[    1.661073] tun: Universal TUN/TAP device driver, 1.6
+[    1.664411] ACPI: \_SB_.LNKD: Enabled at IRQ 11
+[    1.666411] PPP generic driver version 2.4.2
+[    1.670286] i8042: PNP: PS/2 Controller [PNP0303:KBD,PNP0f13:MOU] at 0x60,0x64 irq 1,12
+[    1.673965] i8042: Warning: Keylock active
+[    1.677675] serio: i8042 KBD port at 0x60,0x64 irq 1
+[    1.679848] serio: i8042 AUX port at 0x60,0x64 irq 12
+[    1.682178] mousedev: PS/2 mouse device common for all mice
+[    1.684757] rtc_cmos 00:00: RTC can wake from S4
+[    1.688346] rtc_cmos 00:00: registered as rtc0
+[    1.689156] software IO TLB: Memory encryption is active and system is using DMA bounce buffers
+[    1.690644] rtc_cmos 00:00: setting system clock to 2026-09-10T23:19:17 UTC (1789082357)
+[    1.697796] rtc_cmos 00:00: alarms up to one day, 114 bytes nvram
+[    1.700433] i2c_dev: i2c /dev entries driver
+[    1.702312] device-mapper: core: CONFIG_IMA_DISABLE_HTABLE is disabled. Duplicate IMA measurements will not be recorded in the IMA log.
+[    1.707586] device-mapper: uevent: version 1.0.3
+[    1.709745] device-mapper: ioctl: 4.50.0-ioctl (2025-04-28) initialised: dm-devel@lists.linux.dev
+[    1.713580] intel_pstate: CPU model not supported
+[    1.715692] drop_monitor: Initializing network drop monitor service
+[    1.718974] NET: Registered PF_INET6 protocol family
+[    1.721721] Segment Routing with IPv6
+[    1.723422] In-situ OAM (IOAM) with IPv6
+[    1.725163] NET: Registered PF_PACKET protocol family
+[    1.727505] Key type dns_resolver registered
+[    1.729312] mce: Unable to init MCE device (rc: -5)
+[    1.731583] IPI shorthand broadcast: enabled
+[    1.734856] sched_clock: Marking stable (1178013947, 556529468)->(9541883359, -7807339944)
+[    1.738707] registered taskstats version 1
+[    1.739879] nvme nvme0: 2/0/0 default/read/poll queues
+[    1.743301] Loading compiled-in X.509 certificates
+[    1.746051] Loaded X.509 cert 'Build time autogenerated kernel key: 8bf700b70a5c57ec8a5f67210ff11e5fa3a44628'
+[    1.747328] GPT:Primary header thinks Alt. header is not at the end of the disk.
+[    1.750641] Loaded X.509 cert 'Canonical Ltd. Live Patch Signing 2025 Kmod: d541cef61dc7e793b7eb7e899970a2eef0b5dc8c'
+[    1.753464] GPT:8388607 != 41943039
+[    1.758312] Loaded X.509 cert 'Canonical Ltd. Live Patch Signing: 14df34d1a87cf37625abec039ef2bf521249b969'
+[    1.759469] GPT:Alternate GPT header not at the end of the disk.
+[    1.764051] Loaded X.509 cert 'Canonical Ltd. Kernel Module Signing 2025 Kmod: 4627603d2357a2a3f81006370894c221175893e9'
+[    1.766275] GPT:8388607 != 41943039
+[    1.766276] GPT: Use GNU Parted to correct GPT errors.
+[    1.766281]  nvme0n1: p1 p14 p15 p16
+[    1.776640] Loaded X.509 cert 'Canonical Ltd. Kernel Module Signing: 88f752e560a1e0737e31163a466ad7b70a850c19'
+[    1.780854] blacklist: Loading compiled-in revocation X.509 certificates
+[    1.783739] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing: 61482aa2830d0ab2ad5af10b7250da9033ddcef0'
+[    1.787923] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (2017): 242ade75ac4a15e50d50c84b0d45ff3eae707a03'
+[    1.792392] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (ESM 2018): 365188c1d374d6b07c3c8f240f8ef722433d6a8b'
+[    1.796931] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (2019): c0746fd6c5da3ae827864651ad66ae47fe24b3e8'
+[    1.801321] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (2021 v1): a8d54bbb3825cfb94fa13c9f8a594a195c107b8d'
+[    1.805902] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (2021 v2): 4cf046892d6fd3c9a5b03f98d845f90851dc6a8c'
+[    1.810463] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (2021 v3): 100437bb6de6e469b581e61cd66bce3ef4ed53af'
+[    1.815003] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (Ubuntu Core 2019): c1d57b8f6b743f23ee41f4f7ee292f06eecadfb9'
+[    1.822792] Demotion targets for Node 0: null
+[    1.824856] Key type .fscrypt registered
+[    1.826681] Key type fscrypt-provisioning registered
+[    1.828939] Key type big_key registered
+[    1.830685] Key type trusted registered
+[    1.833779] Key type encrypted registered
+[    1.835583] AppArmor: AppArmor sha256 policy hashing enabled
+[    1.865132] integrity: Loading X.509 certificate: UEFI:db
+[    1.867571] integrity: Loaded X.509 cert 'Microsoft Corporation UEFI CA 2011: 13adbf4309bd82709c8cd54f316ed522988a1bd4'
+[    1.872277] integrity: Loading X.509 certificate: UEFI:db
+[    1.874697] integrity: Loaded X.509 cert 'Microsoft Windows Production PCA 2011: a92902398e16c49778cd90f99e4f9ae17c55af53'
+[    1.879479] integrity: Loading X.509 certificate: UEFI:db
+[    1.881908] integrity: Loaded X.509 cert 'Microsoft Corporation: Windows UEFI CA 2023: aefc5fbbbe055d8f8daa585473499417ab5a5272'
+[    1.886871] integrity: Loading X.509 certificate: UEFI:db
+[    1.889291] integrity: Loaded X.509 cert 'Microsoft UEFI CA 2023: 81aa6b3244c935bce0d6628af39827421e32497d'
+[    1.894251] input: AT Translated Set 2 keyboard as /devices/platform/i8042/serio0/input/input2
+[    1.911617] integrity: Revoking X.509 certificate: UEFI:dbx
+[    1.914134] blacklist: Revoked X.509 cert 'Canonical Ltd. Secure Boot Signing: 61482aa2830d0ab2ad5af10b7250da9033ddcef0'
+[    1.918827] integrity: Revoking X.509 certificate: UEFI:dbx
+[    1.921299] blacklist: Revoked X.509 cert 'Cisco: Virtual UEFI SubCA: 13df2e3f54ebf347dcaecebf21d3cbb2355a4c9a'
+[    1.925752] integrity: Revoking X.509 certificate: UEFI:dbx
+[    1.928181] blacklist: Revoked X.509 cert 'Debian Secure Boot Signer: 00a7468def'
+[    1.931860] Loading compiled-in module X.509 certificates
+[    1.934664] Loaded X.509 cert 'Build time autogenerated kernel key: 8bf700b70a5c57ec8a5f67210ff11e5fa3a44628'
+[    1.938965] ima: Allocated hash algorithm: sha256
+[    1.962763] ima: No architecture policies found
+[    1.964786] evm: Initialising EVM extended attributes:
+[    1.966987] evm: security.selinux
+[    1.968411] evm: security.SMACK64
+[    1.969852] evm: security.SMACK64EXEC
+[    1.971445] evm: security.SMACK64TRANSMUTE
+[    1.973211] evm: security.SMACK64MMAP
+[    1.974795] evm: security.apparmor
+[    1.976273] evm: security.ima
+[    1.977578] evm: security.capability
+[    1.979132] evm: HMAC attrs: 0x1
+[    1.980828] PM:   Magic number: 10:482:352
+[    1.983677] RAS: Correctable Errors collector initialized.
+[    1.998318] clk: Disabling unused clocks
+[    2.000065] PM: genpd: Disabling unused power domains
+[    2.014048] Freeing unused decrypted memory: 2028K
+[    2.016028] Freeing unused kernel image (initmem) memory: 5416K
+[    2.016994] Write protecting the kernel read-only data: 38912k
+[    2.018323] Freeing unused kernel image (text/rodata gap) memory: 216K
+[    2.019676] Freeing unused kernel image (rodata/data gap) memory: 692K
+[    2.030600] x86/mm: Checked W+X mappings: passed, no W+X pages found.
+[    2.031680] Run /init as init process
+initrd: ======== attested tunnel guest, in the initrd grub measured ========
+initrd: kernel  6.17.0-1022-gcp x86_64
+initrd: cmdline BOOT_IMAGE=/vmlinuz-6.17.0-1022-gcp console=ttyS0,115200 panic=-1 rdinit=/init
+initrd: dmesg: [    0.000000] tdx: Guest detected
+initrd: dmesg: [    0.000000] tdx: Attributes: SEPT_VE_DISABLE
+initrd: dmesg: [    0.000000] tdx: TD_CTLS: PENDING_VE_DISABLE ENUM_TOPOLOGY VIRT_CPUID2 REDUCE_VE
+initrd: dmesg: [    0.933581] process: using TDX aware idle routine
+initrd: dmesg: [    0.933581] Memory Encryption Features active: Intel TDX
+initrd: dmesg: [    0.933581] smpboot: CPU0: Intel TDX (family: 0x6, model: 0x8f, stepping: 0x8)
+initrd: dmesg: [    1.689156] software IO TLB: Memory encryption is active and system is using DMA bounce buffers
+initrd: loaded tdx-guest
+[    2.062385] ACPI: \_SB_.LNKC: Enabled at IRQ 10
+[    2.073602] gve 0000:00:03.0: Driver is running with DQO RDA queue format.
+[    2.074700] gve 0000:00:03.0: MAC addr: 42:01:0a:80:00:29
+[    2.075578] gve 0000:00:03.0: BUFFER SIZES device option enabled with max_rx_buffer_size of 4096, header_buf_size of 128.
+[    2.077298] gve 0000:00:03.0: FLOW STEERING device option enabled with max rule limit of 20000.
+[    2.078703] gve 0000:00:03.0: TX queues 4, RX queues 4
+[    2.079552] gve 0000:00:03.0: Max TX queues 4, Max RX queues 4
+[    2.089728] gve 0000:00:03.0: GVE version 1.0.0
+[    2.090460] gve 0000:00:03.0: GVE queue format 3
+initrd: loaded gve
+initrd: loaded nf_tables
+initrd: loaded nf_reject_ipv4
+initrd: loaded nf_reject_ipv6
+initrd: loaded nft_reject
+initrd: loaded nft_reject_inet
+initrd: modules now resident: gve nf_reject_ipv4 nf_reject_ipv6 nf_tables nft_reject nft_reject_inet tdx_guest 
+initrd: report interface present at /sys/kernel/config/tsm/report
+initrd: block devices, as this kernel presents them with no udev running:
+initrd:   /dev/nvme0n1 sectors=41943040 serial='nvme_card-pd' wwid='nvme.1ae0-6e766d655f636172642d7064-6e766d655f636172642d7064-00000001'
+initrd:     partition nvme0n1p1 sectors=6289375
+initrd:     partition nvme0n1p14 sectors=8192
+initrd:     partition nvme0n1p15 sectors=217088
+initrd:     partition nvme0n1p16 sectors=1869825
+initrd:   /dev/nvme0n2 sectors=20971520 serial='nvme_card-pd' wwid='nvme.1ae0-6e766d655f636172642d7064-6e766d655f636172642d7064-00000002'
+initrd:   nvme controller nvme0: serial='nvme_card-pd' model='nvme_card-[    2.117053] EXT4-fs (nvme0n2): Supports (experimental) DIO atomic writes awu_min: 4096, awu_max: 4096
+pd'
+initrd: config device /dev/nvme0n2 found by[    2.119121] EXT4-fs (nvme0n2): mounted filesystem 3a2a6cd2-8207-46c6-b89e-d8cc291c4e98 ro without journal. Quota mode: none.
+ the ext4 label
+initrd: config device mounted at /config (ro,noexec,nosuid,nodev); it holds:
+initrd:   collateral/FETCH.txt  1805 bytes  8ab6bb6e39ae50fe…
+initrd:   collateral/collateral.txt  2430 bytes  251a7fcc0661499c…
+initrd:   collateral/pckcrl-platform.body  3356 bytes  3bf7fa8fb2c2f313…
+initrd:   collateral/pckcrl-platform.headers  2200 bytes  3a5c226003991583…
+initrd:   collateral/qeidentity.body  624 bytes  550f110a50541821…
+initrd:   collateral/qeidentity.headers  2186 bytes  1854cd99f67bf538…
+initrd:   collateral/rootcrl.body  294 bytes  c114be5d5ca7aab2…
+initrd:   collateral/rootcrl.headers  531 bytes  a52a1a2982c8819b…
+initrd:   collateral/tcbinfo-00806f050000.body  7953 bytes  857fc7e41a832a59…
+initrd:   collateral/tcbinfo-00806f050000.headers  2175 bytes  b555e197c3899317…
+initrd:   network.conf  290 bytes  c860983b2e25e713…
+initrd:   peers.json  114 bytes  82064b82ebab8340…
+initrd:   policy.json  357 bytes  66348e6934166669…
+initrd:   policy.json.sig  129 bytes  ce43fc3f233bfa09…
+initrd:   reference-values.json  1070 bytes  facc7c3e74454279…
+initrd:   reference-values.json.sig  129 bytes  3ceeafb8822ced2c…
+initrd:   tunneld.json  345 bytes  35f9eae63920867f…
+initrd: loopback up (the kernel delivers a rule's refusal to the local socket over it)
+[    2.269783] gve 0000:00:03.0 eth0: Device link is up.
+initrd: link eth0 up: 10.128.0.41/32 mtu 1460, gateway 10.128.0.1
+initrd: addr: 1: lo    inet 127.0.0.1/8 scope host lo\       valid_lft forever preferred_lft forever
+initrd: addr: 1: lo    inet6 ::1/128 scope host \       valid_lft forever preferred_lft forever
+initrd: addr: 2: eth0    inet 10.128.0.41/32 scope global eth0\       valid_lft forever preferred_lft forever
+initrd: addr: 2: eth0    inet6 fe80::4001:aff:fe80:29/64 scope link tentative \       valid_lft forever preferred_lft forever
+initrd: route: default via 10.128.0.1 dev eth0 
+initrd: route: 10.128.0.1 dev eth0 scope link 
+initrd: installing the egress rule set the signed policy implies:
+tunneld: sandbox "guest-b"
+tunneld: author key 665053d10032f5b9… (/etc/attested-tunnel/author.pub, inside the launch measurement)
+tunneld: peer table: guest-a = 10.128.0.40:4433
+tunneld: policy /config/policy.json loaded under the author key; digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28
+tunneld: policy egress: version 1, unattested egress permitted: false
+tunneld: sandbox "guest-b" listens on udp/4433; 1 peer(s) in the table
+tunneld: EGRESS RULES as the signed policy and the peer table imply them:
+table inet attested_tunnel {
+	chain input {
+		type filter hook input priority 0; policy drop;
+		iif "lo" accept
+		meta nfproto ipv4 ip saddr 10.128.0.40 meta l4proto udp udp sport 4433 accept   # peer "guest-a" answering
+		meta nfproto ipv4 ip saddr 10.128.0.40 meta l4proto udp udp dport 4433 accept   # peer "guest-a" dialing this sandbox's listener
+	}
+	chain output {
+		type filter hook output priority 0; policy drop;
+		oif "lo" accept
+		meta nfproto ipv4 ip daddr 10.128.0.40 meta l4proto udp udp dport 4433 accept   # dial peer "guest-a"
+		meta nfproto ipv4 ip daddr 10.128.0.40 meta l4proto udp udp sport 4433 accept   # answer peer "guest-a" from this sandbox's listener
+		meta l4proto tcp reject with tcp reset        # so that connect() fails now rather than in a minute
+		reject with icmpx admin-prohibited            # everything else the policy did not permit
+	}
+	chain forward {
+		type filter hook forward priority 0; policy drop;
+	}
+}
+tunneld: EGRESS RULES INSTALLED; as the kernel holds them:
+table inet attested_tunnel {
+	chain forward {
+		type filter hook forward priority 0; policy drop;
+	}
+	chain input {
+		type filter hook input priority 0; policy drop;
+		iif "lo" accept   # handle 2
+		meta nfproto ipv4 ip saddr 10.128.0.40 meta l4proto udp sport 4433 accept   # handle 3
+		meta nfproto ipv4 ip saddr 10.128.0.40 meta l4proto udp dport 4433 accept   # handle 4
+	}
+	chain output {
+		type filter hook output priority 0; policy drop;
+		oif "lo" accept   # handle 6
+		meta nfproto ipv4 ip daddr 10.128.0.40 meta l4proto udp dport 4433 accept   # handle 7
+		meta nfproto ipv4 ip daddr 10.128.0.40 meta l4proto udp sport 4433 accept   # handle 8
+		meta l4proto tcp reject with tcp reset   # handle 9
+		reject with icmpx code 3   # handle 10
+	}
+}
+tunneld: EXIT status=0
+initrd: proving the egress rule set holds, from inside the guest:
+tunneld: sandbox "guest-b"
+tunneld: author key 665053d10032f5b9… (/etc/attested-tunnel/author.pub, inside the launch measurement)
+tunneld: peer table: guest-a = 10.128.0.40:4433
+tunneld: policy /config/policy.json loaded under the author key; digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28
+tunneld: policy egress: version 1, unattested egress permitted: false
+tunneld: EGRESS PROBE: 5 attempt(s) at addresses this policy permits nothing to reach
+tunneld: EGRESS REFUSED tcp/169.254.169.254:80: dial tcp 169.254.169.254:80: connect: connection refused (the provider's metadata server) — the netfilter rule refused it
+tunneld: EGRESS REFUSED tcp/8.8.8.8:53: dial tcp 8.8.8.8:53: connect: connection refused (a public resolver, over TCP) — the netfilter rule refused it
+tunneld: EGRESS REFUSED udp/8.8.8.8:53: write udp 10.128.0.41:49068->8.8.8.8:53: write: operation not permitted (a public resolver, over UDP) — the netfilter rule refused it
+tunneld: EGRESS REFUSED udp/10.128.0.1:53: write udp 10.128.0.41:36771->10.128.0.1:53: write: operation not permitted (named by -egress-probe) — the netfilter rule refused it
+tunneld: EGRESS REFUSED tcp/10.128.0.1:80: dial tcp 10.128.0.1:80: connect: connection refused (named by -egress-probe) — the netfilter rule refused it
+tunneld: EGRESS PROBE PASSED: every attempt was refused before it left
+tunneld: EXIT status=0
+initrd: the initramfs is remounted read-only
+initrd: mount: rootfs / rootfs ro,size=7678772k,nr_inodes=1919693,inode64 0 0
+initrd: mount: devtmpfs /dev devtmpfs rw,nosuid,noexec,relatime,size=7678772k,nr_inodes=1919693,mode=755,inode64 0 0
+initrd: mount: proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+initrd: mount: sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+initrd: mount: tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,inode64 0 0
+initrd: mount: tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,inode64 0 0
+initrd: mount: configfs /sys/kernel/config configfs rw,nosuid,nodev,noexec,relatime 0 0
+initrd: mount: /dev/nvme0n2 /config ext4 ro,nosuid,nodev,noexec,relatime 0 0
+initrd: starting tunneld
+tunneld: sandbox "guest-b"
+tunneld: author key 665053d10032f5b9… (/etc/attested-tunnel/author.pub, inside the launch measurement)
+tunneld: peer table: guest-a = 10.128.0.40:4433
+tunneld: report interface /sys/kernel/config/tsm/report: present, 0 request(s) outstanding; a platform driver that does not answer it is what a non-confidential VM looks like from inside
+tunneld: intel tdx collateral /config/collateral (provisioned, never fetched — ADR-0005)
+tunneld: verifying evidence from amd-sev-snp+intel-tdx
+tunneld: tsm: provider "tdx_guest" (intel-tdx) returned 8000 bytes of evidence over 1 write(s); its own certificate table could not be read (auxblob: open /sys/kernel/config/tsm/report/tunneld-270-1/auxblob: no such file or directory), which is the expected state on this host and not an error; bundled no certificate chain, because the quote carries the one that roots it
+tunneld: policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28 (sha256 over the signed policy; put it in a peer's policy_digest)
+tunneld: policy forward_to: measurement d5ddcc423b1aed53…
+tunneld: policy forward_to: measurement d79409ccd2bdca0b…
+tunneld: listening on 10.128.0.41:4433 as "guest-b"; idle 1m0s, maximum age 15m0s
+tunneld: SELFCHECK acquired 8000 bytes of intel-tdx evidence in 44ms, bound to a throwaway key and to policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28
+WARN : 2026/09/10 23:19:18.221225 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:18.222064 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:18.222612 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: SELFCHECK VERDICT REFUSED reason=guest policy or policy digest not permitted by the reference value: attest: verification failed
+tunneld: SELFCHECK (unverified, read straight out of the quote's bytes) mrtd  c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+tunneld: SELFCHECK (unverified) rtmr0 c2fc12a52db868515eff7c657e42ce04b0b7363fa6ddf7c1cca87aa8e6a061a11f9981924a600ad6d2232f75182a850a
+tunneld: SELFCHECK (unverified) rtmr1 02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b
+tunneld: SELFCHECK (unverified) rtmr2 d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+tunneld: SELFCHECK EVIDENCE BEGIN (base64 of 8000 bytes; feed it to attest/cmd/verify-evidence)
+tunneld: SELFCHECK EVIDENCE BAACAIEAAAAAAAAAk5pyM/ecTKmUCg2zlX8GBwAAAAAAAAAAAAAAAAAAAAAAAAAADwEKAAAAAAAAAAAAAAAAAKtiVhoXOsvRjuUP
+tunneld: SELFCHECK EVIDENCE 83dQ20QYTGz16IbfdCR8xXXhY7BMNLnhg3R1fCNa/6YU1BJ/awAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAADnAgYAAAAAAMHunBbjr8UGz+BCxbhGo2hSjzs3YY6vsnRpvBFM+RTpIiyRYYRw5/Ky
+tunneld: SELFCHECK EVIDENCE isNgloJwpQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAALSamHP54zNiGcx9NIgfzEb5UMSv
+tunneld: SELFCHECK EVIDENCE Thv8a91Wn3m8458Wvg/UqOABLai9MVtWMh/GJgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AML8EqUtuGhRXv98ZX5CzgSwtzY/pt33wcyoeqjmoGGhH5mBkkpgCtbSIy91GCqFCgLH8ZyGKz2uFZLHNzWNm7E/jwo007Pspnw5
+tunneld: SELFCHECK EVIDENCE v3lBoSw0djW4opHWjZys5FsW7CWRO9XdzEI7Gu1TAjemxDswBdMXRkqUIX3ZR38RMAc3nb8Px2AcrI+mm7SKTv1DIsc+DQAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANDkvT1np/XfBWFwHeEFhfNgeCV8n81YOZJ7GxzqYPZS
+tunneld: SELFCHECK EVIDENCE gknLXyIxNdOU8MkUr+HxTui67F9byXLe6y2lhLTA5WDPEAAA45iJzmvenljfrqDhZ9MAGifHYS5/ESB3bB3pm5DZMqzMR6bJchhV
+tunneld: SELFCHECK EVIDENCE ETc5Y0YQJPhLnvFRJfjk2XBSqJM2BUsVWpvWLvJ1cf8BoboQvlsvIPy6cHbjMu8Yz4BRB6+O12UbZr2xy3210BskhQlt8x1NMxRG
+tunneld: SELFCHECK EVIDENCE h8YJcluGSOeX+jop1F8GAEkQAAAKCv8bBv8ABgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AOcAAAAAAAAA5aOntdgwwpU7mFNMbFmjo0/cNOkz9/WJjwqFzwiEa8oAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANye
+tunneld: SELFCHECK EVIDENCE KnxvlI8XR040p/xD7QMPfBVj8bq932NAyC4OVKjFAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAGAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAffAGRkSB7Y3DAhR3DmeaFV/SBwYWo083zzS69wh0BNAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAN60DEPMqDcwTLkGnmWfkUiq48xnBsGAJZKuKSP4yjkBJX+4MRAe+3puuCfNyo
+tunneld: SELFCHECK EVIDENCE OBWKmDjyo51Yk0qlYTLhYjVDIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUAYQ4AAC0tLS0tQkVHSU4gQ0VSVElG
+tunneld: SELFCHECK EVIDENCE SUNBVEUtLS0tLQpNSUlFOGpDQ0JKZWdBd0lCQWdJVkFNK2VaM0lhNW5sTml3ZnRYMzVsVHNUd3dHTUtNQW9HQ0NxR1NNNDlCQU1D
+tunneld: SELFCHECK EVIDENCE Ck1IQXhJakFnQmdOVkJBTU1HVWx1ZEdWc0lGTkhXQ0JRUTBzZ1VHeGhkR1p2Y20wZ1EwRXhHakFZQmdOVkJBb00KRVVsdWRHVnNJ
+tunneld: SELFCHECK EVIDENCE RU52Y25CdmNtRjBhVzl1TVJRd0VnWURWUVFIREF0VFlXNTBZU0JEYkdGeVlURUxNQWtHQTFVRQpDQXdDUTBFeEN6QUpCZ05WQkFZ
+tunneld: SELFCHECK EVIDENCE VEFsVlRNQjRYRFRJMk1EZ3dNekUyTXpnMU9Gb1hEVE16TURnd016RTJNemcxCk9Gb3djREVpTUNBR0ExVUVBd3daU1c1MFpXd2dV
+tunneld: SELFCHECK EVIDENCE MGRZSUZCRFN5QkRaWEowYVdacFkyRjBaVEVhTUJnR0ExVUUKQ2d3UlNXNTBaV3dnUTI5eWNHOXlZWFJwYjI0eEZEQVNCZ05WQkFj
+tunneld: SELFCHECK EVIDENCE TUMxTmhiblJoSUVOc1lYSmhNUXN3Q1FZRApWUVFJREFKRFFURUxNQWtHQTFVRUJoTUNWVk13V1RBVEJnY3Foa2pPUFFJQkJnZ3Fo
+tunneld: SELFCHECK EVIDENCE a2pPUFFNQkJ3TkNBQVN6CkV3ams2eHY5R3prWHdMaWFndlNTZkpxVnVyOElrbEZlZ201YktISzhGVEhvVnZUMFpHRUladEx2QS9S
+tunneld: SELFCHECK EVIDENCE TnBjNGsKTU81NmxnVDZYblRFS3ZtVWFvYVBvNElERERDQ0F3Z3dId1lEVlIwakJCZ3dGb0FVbFc5ZHpiMGI0ZWxBU2NuVQo5RFBP
+tunneld: SELFCHECK EVIDENCE QVZjTDNsUXdhd1lEVlIwZkJHUXdZakJnb0Y2Z1hJWmFhSFIwY0hNNkx5OWhjR2t1ZEhKMWMzUmxaSE5sCmNuWnBZMlZ6TG1sdWRH
+tunneld: SELFCHECK EVIDENCE VnNMbU52YlM5elozZ3ZZMlZ5ZEdsbWFXTmhkR2x2Ymk5Mk5DOXdZMnRqY213L1kyRTkKY0d4aGRHWnZjbTBtWlc1amIyUnBibWM5
+tunneld: SELFCHECK EVIDENCE WkdWeU1CMEdBMVVkRGdRV0JCVGYxQ1RUUlRwNWswa3JQSElsWm9PMgpldGNTMnpBT0JnTlZIUThCQWY4RUJBTUNCc0F3REFZRFZS
+tunneld: SELFCHECK EVIDENCE MFRBUUgvQkFJd0FEQ0NBamtHQ1NxR1NJYjRUUUVOCkFRU0NBaW93Z2dJbU1CNEdDaXFHU0liNFRRRU5BUUVFRUQ3Si8yZEhuQ000
+tunneld: SELFCHECK EVIDENCE aFlHY2VOODllUk13Z2dGakJnb3EKaGtpRytFMEJEUUVDTUlJQlV6QVFCZ3NxaGtpRytFMEJEUUVDQVFJQkNUQVFCZ3NxaGtpRytF
+tunneld: SELFCHECK EVIDENCE MEJEUUVDQWdJQgpDVEFRQmdzcWhraUcrRTBCRFFFQ0F3SUJBakFRQmdzcWhraUcrRTBCRFFFQ0JBSUJBakFRQmdzcWhraUcrRTBC
+tunneld: SELFCHECK EVIDENCE CkRRRUNCUUlCQkRBUUJnc3Foa2lHK0UwQkRRRUNCZ0lCQVRBUUJnc3Foa2lHK0UwQkRRRUNCd0lCQURBUUJnc3EKaGtpRytFMEJE
+tunneld: SELFCHECK EVIDENCE UUVDQ0FJQkJqQVFCZ3NxaGtpRytFMEJEUUVDQ1FJQkFEQVFCZ3NxaGtpRytFMEJEUUVDQ2dJQgpBREFRQmdzcWhraUcrRTBCRFFF
+tunneld: SELFCHECK EVIDENCE Q0N3SUJBREFRQmdzcWhraUcrRTBCRFFFQ0RBSUJBREFRQmdzcWhraUcrRTBCCkRRRUNEUUlCQURBUUJnc3Foa2lHK0UwQkRRRUNE
+tunneld: SELFCHECK EVIDENCE Z0lCQURBUUJnc3Foa2lHK0UwQkRRRUNEd0lCQURBUUJnc3EKaGtpRytFMEJEUUVDRUFJQkFEQVFCZ3NxaGtpRytFMEJEUUVDRVFJ
+tunneld: SELFCHECK EVIDENCE QkN6QWZCZ3NxaGtpRytFMEJEUUVDRWdRUQpDUWtDQWdRQkFBWUFBQUFBQUFBQUFEQVFCZ29xaGtpRytFMEJEUUVEQkFJQUFEQVVC
+tunneld: SELFCHECK EVIDENCE Z29xaGtpRytFMEJEUUVFCkJBWUFnRzhGQUFBd0R3WUtLb1pJaHZoTkFRMEJCUW9CQVRBZUJnb3Foa2lHK0UwQkRRRUdCQkF3UGFl
+tunneld: SELFCHECK EVIDENCE MGcwSDQKa3ZZYk5TU3NDSDVuTUVRR0NpcUdTSWI0VFFFTkFRY3dOakFRQmdzcWhraUcrRTBCRFFFSEFRRUIvekFRQmdzcQpoa2lH
+tunneld: SELFCHECK EVIDENCE K0UwQkRRRUhBZ0VCQURBUUJnc3Foa2lHK0UwQkRRRUhBd0VCL3pBS0JnZ3Foa2pPUFFRREFnTkpBREJHCkFpRUE1TTVBaVB5elpv
+tunneld: SELFCHECK EVIDENCE ZmppczJ0MlpoMGhEaWRjaklNK3JVOW5td29EbDNGL0pjQ0lRRFRWeHVHM3ltSnh5WlIKVytXa3BRZjNVZWdBRjdOQXlSZndoN1dr
+tunneld: SELFCHECK EVIDENCE UFA5Tk9BPT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQotLS0tLUJFR0lOIENFUlRJRklDQVRFLS0tLS0KTUlJQ2xqQ0NBajJn
+tunneld: SELFCHECK EVIDENCE QXdJQkFnSVZBSlZ2WGMyOUcrSHBRRW5KMVBRenpnRlhDOTVVTUFvR0NDcUdTTTQ5QkFNQwpNR2d4R2pBWUJnTlZCQU1NRVVsdWRH
+tunneld: SELFCHECK EVIDENCE VnNJRk5IV0NCU2IyOTBJRU5CTVJvd0dBWURWUVFLREJGSmJuUmxiQ0JECmIzSndiM0poZEdsdmJqRVVNQklHQTFVRUJ3d0xVMkZ1
+tunneld: SELFCHECK EVIDENCE ZEdFZ1EyeGhjbUV4Q3pBSkJnTlZCQWdNQWtOQk1Rc3cKQ1FZRFZRUUdFd0pWVXpBZUZ3MHhPREExTWpFeE1EVXdNVEJhRncwek16
+tunneld: SELFCHECK EVIDENCE QTFNakV4TURVd01UQmFNSEF4SWpBZwpCZ05WQkFNTUdVbHVkR1ZzSUZOSFdDQlFRMHNnVUd4aGRHWnZjbTBnUTBFeEdqQVlCZ05W
+tunneld: SELFCHECK EVIDENCE QkFvTUVVbHVkR1ZzCklFTnZjbkJ2Y21GMGFXOXVNUlF3RWdZRFZRUUhEQXRUWVc1MFlTQkRiR0Z5WVRFTE1Ba0dBMVVFQ0F3Q1Ew
+tunneld: SELFCHECK EVIDENCE RXgKQ3pBSkJnTlZCQVlUQWxWVE1Ga3dFd1lIS29aSXpqMENBUVlJS29aSXpqMERBUWNEUWdBRU5TQi83dDIxbFhTTwoyQ3V6cHh3
+tunneld: SELFCHECK EVIDENCE NzRlSkI3MkV5REdnVzVyWEN0eDJ0VlRMcTZoS2s2eitVaVJaQ25xUjdwc092Z3FGZVN4bG1UbEpsCmVUbWkyV1l6M3FPQnV6Q0J1
+tunneld: SELFCHECK EVIDENCE REFmQmdOVkhTTUVHREFXZ0JRaVpReldXcDAwaWZPRHRKVlN2MUFiT1NjR3JEQlMKQmdOVkhSOEVTekJKTUVlZ1JhQkRoa0ZvZEhS
+tunneld: SELFCHECK EVIDENCE d2N6b3ZMMk5sY25ScFptbGpZWFJsY3k1MGNuVnpkR1ZrYzJWeQpkbWxqWlhNdWFXNTBaV3d1WTI5dEwwbHVkR1ZzVTBkWVVtOXZk
+tunneld: SELFCHECK EVIDENCE RU5CTG1SbGNqQWRCZ05WSFE0RUZnUVVsVzlkCnpiMGI0ZWxBU2NuVTlEUE9BVmNMM2xRd0RnWURWUjBQQVFIL0JBUURBZ0VHTUJJ
+tunneld: SELFCHECK EVIDENCE R0ExVWRFd0VCL3dRSU1BWUIKQWY4Q0FRQXdDZ1lJS29aSXpqMEVBd0lEUndBd1JBSWdYc1ZraTB3K2k2VllHVzNVRi8yMnVhWGUw
+tunneld: SELFCHECK EVIDENCE WUpEajFVZQpuQStUakQxYWk1Y0NJQ1liMVNBbUQ1eGtmVFZwdm80VW95aVNZeHJEV0xtVVI0Q0k5Tkt5ZlBOKwotLS0tLUVORCBD
+tunneld: SELFCHECK EVIDENCE RVJUSUZJQ0FURS0tLS0tCi0tLS0tQkVHSU4gQ0VSVElGSUNBVEUtLS0tLQpNSUlDanpDQ0FqU2dBd0lCQWdJVUltVU0xbHFkTklu
+tunneld: SELFCHECK EVIDENCE emc3U1ZVcjlRR3prbkJxd3dDZ1lJS29aSXpqMEVBd0l3CmFERWFNQmdHQTFVRUF3d1JTVzUwWld3Z1UwZFlJRkp2YjNRZ1EwRXhH
+tunneld: SELFCHECK EVIDENCE akFZQmdOVkJBb01FVWx1ZEdWc0lFTnYKY25CdmNtRjBhVzl1TVJRd0VnWURWUVFIREF0VFlXNTBZU0JEYkdGeVlURUxNQWtHQTFV
+tunneld: SELFCHECK EVIDENCE RUNBd0NRMEV4Q3pBSgpCZ05WQkFZVEFsVlRNQjRYRFRFNE1EVXlNVEV3TkRVeE1Gb1hEVFE1TVRJek1USXpOVGsxT1Zvd2FERWFN
+tunneld: SELFCHECK EVIDENCE QmdHCkExVUVBd3dSU1c1MFpXd2dVMGRZSUZKdmIzUWdRMEV4R2pBWUJnTlZCQW9NRVVsdWRHVnNJRU52Y25CdmNtRjAKYVc5dU1S
+tunneld: SELFCHECK EVIDENCE UXdFZ1lEVlFRSERBdFRZVzUwWVNCRGJHRnlZVEVMTUFrR0ExVUVDQXdDUTBFeEN6QUpCZ05WQkFZVApBbFZUTUZrd0V3WUhLb1pJ
+tunneld: SELFCHECK EVIDENCE emowQ0FRWUlLb1pJemowREFRY0RRZ0FFQzZuRXdNRElZWk9qL2lQV3NDemFFS2k3CjFPaU9TTFJGaFdHamJuQlZKZlZua1k0dTNJ
+tunneld: SELFCHECK EVIDENCE amtEWVlMME14TzRtcXN5WWpsQmFsVFZZeEZQMnNKQks1emxLT0IKdXpDQnVEQWZCZ05WSFNNRUdEQVdnQlFpWlF6V1dwMDBpZk9E
+tunneld: SELFCHECK EVIDENCE dEpWU3YxQWJPU2NHckRCU0JnTlZIUjhFU3pCSgpNRWVnUmFCRGhrRm9kSFJ3Y3pvdkwyTmxjblJwWm1sallYUmxjeTUwY25WemRH
+tunneld: SELFCHECK EVIDENCE VmtjMlZ5ZG1salpYTXVhVzUwClpXd3VZMjl0TDBsdWRHVnNVMGRZVW05dmRFTkJMbVJsY2pBZEJnTlZIUTRFRmdRVUltVU0xbHFk
+tunneld: SELFCHECK EVIDENCE Tkluemc3U1YKVXI5UUd6a25CcXd3RGdZRFZSMFBBUUgvQkFRREFnRUdNQklHQTFVZEV3RUIvd1FJTUFZQkFmOENBUUV3Q2dZSQpL
+tunneld: SELFCHECK EVIDENCE b1pJemowRUF3SURTUUF3UmdJaEFPVy81UWtSK1M5Q2lTRGNOb293THVQUkxzV0dmL1lpN0dTWDk0Qmd3VHdnCkFpRUE0SjBsckhv
+tunneld: SELFCHECK EVIDENCE TXMrWG81by9zWDZPOVFXeEhSQXZaVUdPZFJRN2N2cVJYYXFJPQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCgAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+tunneld: SELFCHECK EVIDENCE END
+tunneld: SELFCHECK PUBLIC KEY 302a300506032b65700321001e2f405c93ecf795e7906d1ebce3f71566654d2c0ce8c0f29d4250f3f598d82e
+tunneld: SELFCHECK (that is a DER SubjectPublicKeyInfo, 44 bytes; write it to a file and pass it as verify-evidence -key. It is a throwaway: the evidence is bound to it and to nothing else, so it can establish no tunnel)
+tunneld: SELFCHECK FAILED attest: verification failed
+tunneld: exercise: dialing guest-a; 3 warm exchanges, 8 concurrent × 1 rounds, marker "attested-tunnel-plaintext-marker"
+
+WARN : 2026/09/10 23:19:19.825391 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:19.826183 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:19.826976 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: PEER key=15576ede988e8b67… chain=none measurement=d5ddcc423b1aed53… vendor=intel-tdx mrtd=c1ee9c16e3afc506… rtmr2=d5ddcc423b1aed53… tcb=UpToDate,evaluation=20
+tunneld: exercise: pass=1 peer=guest-a not up yet, retrying until 1m30s elapses (tunneld: tunnel not established: "guest-a" at 10.128.0.40:4433: tunnel: dialing 10.128.0.40:4433: CRYPTO_ERROR 0x12a (remote): tls: bad certificate)
+WARN : 2026/09/10 23:19:20.861411 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:20.864147 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:20.866709 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:21.878807 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:21.879445 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:21.880317 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:22.890533 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:22.891348 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:22.892175 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:23.913235 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:23.914025 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:23.914743 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:24.937889 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:24.938530 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:24.939245 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:25.958875 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:25.959672 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:25.960761 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+
+WARN : 2026/09/10 23:19:26.979155 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:26.980284 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:26.980885 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:27.990985 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:27.991582 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:27.992386 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:29.012042 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:29.012674 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:29.013825 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:30.025566 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:30.026284 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:30.026825 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:31.036511 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:31.037342 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:31.038112 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:32.048493 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:32.049140 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:32.049601 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+
+WARN : 2026/09/10 23:19:33.066306 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:33.067397 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:33.068252 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:34.090147 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:34.091239 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:34.092088 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:35.100853 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:35.101494 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:35.102027 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:36.112017 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:36.112787 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:36.113384 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:37.123421 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:37.124226 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:37.124782 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:38.133988 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:38.134795 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:38.135386 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+
+WARN : 2026/09/10 23:19:39.144225 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:39.144989 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:39.145455 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:40.155000 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:40.155605 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:40.156117 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:41.166873 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:41.167792 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:41.168276 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:42.177302 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:42.178232 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:42.178678 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:43.189696 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:43.190491 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:43.191074 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:44.200696 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:44.201368 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:44.201817 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:45.212002 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:45.212688 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:45.213185 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+
+WARN : 2026/09/10 23:19:46.222816 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:46.223481 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:46.224009 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:47.232838 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:47.233748 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:47.234214 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:48.243866 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:48.244785 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:48.245288 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:49.254193 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:49.255081 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:49.255523 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:50.265342 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:50.266078 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:50.266533 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:51.275615 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:51.276282 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:51.276746 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+
+WARN : 2026/09/10 23:19:52.286755 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:52.287591 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:52.288166 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:53.298700 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:53.299803 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:53.300726 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:54.310165 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:54.310783 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:54.311306 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:55.320410 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:55.321149 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:55.321615 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:56.331374 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:56.332512 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:56.333360 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:57.342518 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:57.343327 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:57.343883 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+
+WARN : 2026/09/10 23:19:58.353726 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:58.354367 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:58.354817 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:59.364927 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:59.365550 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:59.366075 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:00.377006 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:00.377758 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:00.378366 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:01.388205 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:01.389034 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:01.389595 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:02.399667 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:02.400456 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:02.401036 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:03.409884 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:03.410526 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:03.411006 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:04.421240 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:04.421976 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:04.422431 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+
+WARN : 2026/09/10 23:20:05.431307 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:05.432209 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:05.432666 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:06.443251 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:06.443969 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:06.444474 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:07.454836 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:07.455758 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:07.456241 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:08.466643 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:08.467375 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:08.467827 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:09.477539 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:09.478200 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:09.478691 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:10.489967 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:10.490674 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:10.491171 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+
+WARN : 2026/09/10 23:20:11.500546 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:11.501466 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:11.501960 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:12.513317 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:12.513987 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:12.514453 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:13.524019 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:13.524965 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:13.525414 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:14.536584 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:14.537693 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:14.538551 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:15.549094 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:15.549698 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:15.550217 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:16.560952 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:16.561720 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:16.562305 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+
+WARN : 2026/09/10 23:20:17.571074 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:17.571679 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:17.572173 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:18.582400 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:18.583076 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:18.583525 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:19.593874 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:19.594784 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:19.595287 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:20.605256 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:20.605876 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:20.606367 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:21.616797 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:21.617613 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:21.618100 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:22.628096 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:22.629004 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:22.629451 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:23.638209 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:23.638987 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:23.639548 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+
+WARN : 2026/09/10 23:20:24.650344 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:24.651000 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:24.651775 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:25.661746 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:25.662684 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:25.663165 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:26.674608 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:26.675791 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:26.676257 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:27.687301 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:27.688018 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:27.688507 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:28.697735 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:28.698864 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:28.699716 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:29.711462 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:29.712242 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:29.712821 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+
+WARN : 2026/09/10 23:20:30.723426 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:30.724138 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:30.724634 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:31.734630 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:31.735415 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:31.736011 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:32.746687 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:32.747498 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:32.748070 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:33.759282 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:33.760371 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:33.761252 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:34.771805 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:34.772660 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:34.773248 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:35.784252 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:35.785131 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:35.785579 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:36.795639 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:36.796308 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:36.796800 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+
+WARN : 2026/09/10 23:20:37.806549 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:37.807344 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:37.807890 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:38.816875 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:38.817658 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:38.818258 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:39.828203 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:39.828928 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:39.829384 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:40.838364 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:40.839140 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:40.839702 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:41.850299 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:41.850931 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:41.851386 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:42.860483 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:42.861113 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:42.861616 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+
+WARN : 2026/09/10 23:20:43.871807 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:43.872549 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:43.873016 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:44.883263 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:44.884207 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:44.884657 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:45.894850 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:45.895500 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:45.895991 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:46.905947 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:46.906821 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:46.907301 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:47.918111 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:47.918981 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:47.919423 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:48.928443 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:48.929167 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:48.929649 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: exercise: pass=1 peer=guest-a FAILED: after 89 attempt(s) over 1m30s: tunneld: tunnel not established: "guest-a" at 10.128.0.40:4433: tunnel: dialing 10.128.0.40:4433: CRYPTO_ERROR 0x12a (remote): tls: bad certificate
+tunneld: exercise failed: pass 1, peer guest-a: after 89 attempt(s) over 1m30s: tunneld: tunnel not established: "guest-a" at 10.128.0.40:4433: tunnel: dialing 10.128.0.40:4433: CRYPTO_ERROR 0x12a (remote): tls: bad certificate
+tunneld: holding for 1m0s so that peers still dialing can finish
+
+
+
+
+
+
+
+
+
+tunneld: PEERS verifier_calls=89 accepted=89 refused=0 distinct_keys=1 distinct_chains=1
+tunneld: PEER SEEN key=15576ede988e8b677b4e1e9827e727c4d963d7e524bab2af48e69b514b10fd8d62776e2d7062269ff712db11d297f5f71e00fb72b24e089098b1d3e58c7a2fc8 chain=none measurement=d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d times=89
+tunneld: EXIT status=2
+initrd: EXIT status=2
+

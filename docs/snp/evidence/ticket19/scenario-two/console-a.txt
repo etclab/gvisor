@@ -1,0 +1,1496 @@
+
+[2J[01;01H[=3h[2J[01;01H[2J[01;01H[=3h[2J[01;01HBdsDxe: loading Boot0003 "Ubuntu" from PciRoot(0x0)/Pci(0x4,0x0)/NVMe(0x1,00-00-00-00-00-00-00-00)/HD(15,GPT,6A0A967B-F814-468B-AF0C-F6BF6538EF09,0x2800,0x35000)/\EFI\ubuntu\shimx64.efi
+BdsDxe: starting Boot0003 "Ubuntu" from PciRoot(0x0)/Pci(0x4,0x0)/NVMe(0x1,00-00-00-00-00-00-00-00)/HD(15,GPT,6A0A967B-F814-468B-AF0C-F6BF6538EF09,0x2800,0x35000)/\EFI\ubuntu\shimx64.efi
+
+UEFI: Attempting to start image.
+Description: Ubuntu
+FilePath: PciRoot(0x0)/Pci(0x4,0x0)/NVMe(0x1,00-00-00-00-00-00-00-00)/HD(15,GPT,6A0A967B-F814-468B-AF0C-F6BF6538EF09,0x2800,0x35000)/\EFI\ubuntu\shimx64.efi
+OptionNumber: 3.
+
+
+[    0.000000] tdx: Guest detected
+[    0.000000] tdx: Attributes: SEPT_VE_DISABLE
+[    0.000000] tdx: TD_CTLS: PENDING_VE_DISABLE ENUM_TOPOLOGY VIRT_CPUID2 REDUCE_VE
+[    0.000000] Linux version 6.17.0-1022-gcp (buildd@lcy02-amd64-073) (x86_64-linux-gnu-gcc-13 (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, GNU ld (GNU Binutils for Ubuntu) 2.42) #25-Ubuntu SMP Sat Jul 25 01:12:40 UTC 2026 (Ubuntu 6.17.0-1022.25-gcp 6.17.13)
+[    0.000000] Command line: BOOT_IMAGE=/vmlinuz-6.17.0-1022-gcp console=ttyS0,115200 panic=-1 rdinit=/init
+[    0.000000] KERNEL supported cpus:
+[    0.000000]   Intel GenuineIntel
+[    0.000000]   AMD AuthenticAMD
+[    0.000000]   Hygon HygonGenuine
+[    0.000000]   Centaur CentaurHauls
+[    0.000000]   zhaoxin   Shanghai  
+[    0.000000] x86/split lock detection: #DB: warning on user-space bus_locks
+[    0.000000] BIOS-provided physical RAM map:
+[    0.000000] BIOS-e820: [mem 0x0000000000000000-0x000000000080bfff] usable
+[    0.000000] BIOS-e820: [mem 0x000000000080c000-0x000000000080cfff] ACPI NVS
+[    0.000000] BIOS-e820: [mem 0x000000000080d000-0x00000000015fffff] usable
+[    0.000000] BIOS-e820: [mem 0x0000000001600000-0x000000000161ffff] reserved
+[    0.000000] BIOS-e820: [mem 0x0000000001620000-0x00000000bd43afff] usable
+[    0.000000] BIOS-e820: [mem 0x00000000bd43b000-0x00000000bd442fff] ACPI data
+[    0.000000] BIOS-e820: [mem 0x00000000bd443000-0x00000000bf2ecfff] usable
+[    0.000000] BIOS-e820: [mem 0x00000000bf2ed000-0x00000000bf4ecfff] reserved
+[    0.000000] BIOS-e820: [mem 0x00000000bf4ed000-0x00000000bf56ffff] usable
+[    0.000000] BIOS-e820: [mem 0x00000000bf570000-0x00000000bf57efff] ACPI data
+[    0.000000] BIOS-e820: [mem 0x00000000bf57f000-0x00000000bf5fefff] ACPI NVS
+[    0.000000] BIOS-e820: [mem 0x00000000bf5ff000-0x00000000bffdffff] usable
+[    0.000000] BIOS-e820: [mem 0x00000000bffe0000-0x00000000bfffffff] reserved
+[    0.000000] BIOS-e820: [mem 0x00000000ffe00000-0x000000043fffffff] usable
+[    0.000000] NX (Execute Disable) protection: active
+[    0.000000] APIC: Static calls initialized
+[    0.000000] efi: EFI v2.7 by EDK II
+[    0.000000] efi: CCFinalLog=0xbf5b7000 ACPI=0xbf57e000 ACPI 2.0=0xbf57e014 TPMFinalLog=0xbf5af000 SMBIOS=0xbf3ca000 MEMATTR=0xbd445018 MOKvar=0xbf3c8000 INITRD=0xbd448418 TPMEventLog=0xbd43b018 
+[    0.000000] SMBIOS 2.4 present.
+[    0.000000] DMI: Google Google Compute Engine/Google Compute Engine, BIOS Google 07/08/2026
+[    0.000000] DMI: Memory slots populated: 1/1
+[    0.000000] secureboot: Secure boot disabled
+[    0.000000] Hypervisor detected: KVM
+[    0.000000] last_pfn = 0x100000 max_arch_pfn = 0x10000000000
+[    0.000000] tsc: Detected 2700.000 MHz processor
+[    0.000022] last_pfn = 0x440000 max_arch_pfn = 0x10000000000
+[    0.000025] MTRR map: 1 entries (0 fixed + 1 variable; max 2), built from 1 variable MTRRs
+[    0.000026] MTRRs set to read-only
+[    0.000028] x86/PAT: Configuration [0-7]: WB  WC  UC- UC  WB  WP  UC- WT  
+[    0.000047] x2apic: enabled by BIOS, switching to x2apic ops
+[    0.000066] last_pfn = 0x100000 max_arch_pfn = 0x10000000000
+[    0.009117] software IO TLB: SWIOTLB bounce buffer size adjusted to 982MB
+[    0.009136] Using GB pages for direct mapping
+[    0.009814] secureboot: Secure boot disabled
+[    0.009814] RAMDISK: [mem 0xbc37c000-0xbcd72fff]
+[    0.009818] ACPI: Early table checksum verification disabled
+[    0.009822] ACPI: RSDP 0x00000000BF57E014 000024 (v02 Google)
+[    0.009827] ACPI: XSDT 0x00000000BF57D0E8 000064 (v01 Google GOOGFACP 00000001      01000013)
+[    0.009835] ACPI: FACP 0x00000000BF577000 0000F4 (v02 Google GOOGFACP 00000001 GOOG 00000001)
+[    0.009842] ACPI: DSDT 0x00000000BF578000 001A93 (v01 Google GOOGDSDT 00000001 GOOG 00000001)
+[    0.009847] ACPI: FACS 0x00000000BF5AA000 000040
+[    0.009850] ACPI: CCEL 0x00000000BF57C000 000038 (v01 INTEL  EDK2     00000002      01000013)
+[    0.009854] ACPI: SSDT 0x00000000BF57B000 000316 (v02 GOOGLE Tpm2Tabl 00001000 INTL 20250807)
+[    0.009858] ACPI: TPM2 0x00000000BF57A000 000034 (v04 GOOGLE          00000001 GOOG 00000001)
+[    0.009862] ACPI: SRAT 0x00000000BF576000 0000E8 (v03 Google GOOGSRAT 00000001 GOOG 00000001)
+[    0.009866] ACPI: SSDT 0x00000000BF574000 000A42 (v01 Google GOOGSSDT 00000001 GOOG 00000001)
+[    0.009870] ACPI: WAET 0x00000000BF573000 000028 (v01 Google GOOGWAET 00000001 GOOG 00000001)
+[    0.009874] ACPI: APIC 0x00000000BF572000 000096 (v05 Google GOOGAPIC 00000001 GOOG 00000001)
+[    0.009876] ACPI: Reserving FACP table memory at [mem 0xbf577000-0xbf5770f3]
+[    0.009878] ACPI: Reserving DSDT table memory at [mem 0xbf578000-0xbf579a92]
+[    0.009879] ACPI: Reserving FACS table memory at [mem 0xbf5aa000-0xbf5aa03f]
+[    0.009880] ACPI: Reserving CCEL table memory at [mem 0xbf57c000-0xbf57c037]
+[    0.009881] ACPI: Reserving SSDT table memory at [mem 0xbf57b000-0xbf57b315]
+[    0.009882] ACPI: Reserving TPM2 table memory at [mem 0xbf57a000-0xbf57a033]
+[    0.009883] ACPI: Reserving SRAT table memory at [mem 0xbf576000-0xbf5760e7]
+[    0.009884] ACPI: Reserving SSDT table memory at [mem 0xbf574000-0xbf574a41]
+[    0.009885] ACPI: Reserving WAET table memory at [mem 0xbf573000-0xbf573027]
+[    0.009886] ACPI: Reserving APIC table memory at [mem 0xbf572000-0xbf572095]
+[    0.009999] APIC: Switched APIC routing to: cluster x2apic
+[    0.010059] ACPI: SRAT: Node 0 PXM 0 [mem 0x00000000-0x0009ffff]
+[    0.010061] ACPI: SRAT: Node 0 PXM 0 [mem 0x00100000-0xbfffffff]
+[    0.010063] ACPI: SRAT: Node 0 PXM 0 [mem 0x100000000-0x43fffffff]
+[    0.010067] NUMA: Node 0 [mem 0x00001000-0x0009ffff] + [mem 0x00100000-0xbfffffff] -> [mem 0x00001000-0xbfffffff]
+[    0.010070] NUMA: Node 0 [mem 0x00001000-0xbfffffff] + [mem 0x100000000-0x43fffffff] -> [mem 0x00001000-0x43fffffff]
+[    0.010080] NODE_DATA(0) allocated [mem 0x43ffd42c0-0x43fffefff]
+[    0.010459] Zone ranges:
+[    0.010460]   DMA      [mem 0x0000000000001000-0x0000000000ffffff]
+[    0.010462]   DMA32    [mem 0x0000000001000000-0x00000000ffffffff]
+[    0.010464]   Normal   [mem 0x0000000100000000-0x000000043fffffff]
+[    0.010466]   Device   empty
+[    0.010467] Movable zone start for each node
+[    0.010470] Early memory node ranges
+[    0.010470]   node   0: [mem 0x0000000000001000-0x000000000009ffff]
+[    0.010472]   node   0: [mem 0x0000000000100000-0x000000000080bfff]
+[    0.010473]   node   0: [mem 0x000000000080d000-0x00000000015fffff]
+[    0.010474]   node   0: [mem 0x0000000001620000-0x00000000bd43afff]
+[    0.010475]   node   0: [mem 0x00000000bd443000-0x00000000bf2ecfff]
+[    0.010476]   node   0: [mem 0x00000000bf4ed000-0x00000000bf56ffff]
+[    0.010477]   node   0: [mem 0x00000000bf5ff000-0x00000000bffdffff]
+[    0.010478]   node   0: [mem 0x00000000ffe00000-0x000000043fffffff]
+[    0.010481] Initmem setup node 0 [mem 0x0000000000001000-0x000000043fffffff]
+[    0.010489] On node 0, zone DMA: 1 pages in unavailable ranges
+[    0.010507] On node 0, zone DMA: 96 pages in unavailable ranges
+[    0.010525] On node 0, zone DMA: 1 pages in unavailable ranges
+[    0.017262] On node 0, zone DMA32: 32 pages in unavailable ranges
+[    0.017334] On node 0, zone DMA32: 8 pages in unavailable ranges
+[    0.017341] On node 0, zone DMA32: 512 pages in unavailable ranges
+[    0.017365] On node 0, zone DMA32: 143 pages in unavailable ranges
+[    0.017670] On node 0, zone DMA32: 32288 pages in unavailable ranges
+[    0.048801] ACPI: PM-Timer IO Port: 0xb008
+[    0.048849] ACPI: LAPIC_NMI (acpi_id[0xff] dfl dfl lint[0x1])
+[    0.049001] IOAPIC[0]: apic_id 0, version 17, address 0xfec00000, GSI 0-23
+[    0.049006] ACPI: INT_SRC_OVR (bus 0 bus_irq 5 global_irq 5 high level)
+[    0.049008] ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 9 high level)
+[    0.049010] ACPI: INT_SRC_OVR (bus 0 bus_irq 10 global_irq 10 high level)
+[    0.049011] ACPI: INT_SRC_OVR (bus 0 bus_irq 11 global_irq 11 high level)
+[    0.049018] APIC: wakeup_secondary_cpu_64() replaced with acpi_wakeup_cpu()
+[    0.049024] ACPI: Using ACPI (MADT) for SMP configuration information
+[    0.049030] CPU topo: Max. logical packages:   1
+[    0.049031] CPU topo: Max. logical dies:       1
+[    0.049032] CPU topo: Max. dies per package:   1
+[    0.049037] CPU topo: Max. threads per core:   2
+[    0.049038] CPU topo: Num. cores per package:     2
+[    0.049039] CPU topo: Num. threads per package:   4
+[    0.049039] CPU topo: Allowing 4 present CPUs plus 0 hotplug CPUs
+[    0.049122] PM: hibernation: Registered nosave memory: [mem 0x00000000-0x00000fff]
+[    0.049124] PM: hibernation: Registered nosave memory: [mem 0x000a0000-0x000fffff]
+[    0.049126] PM: hibernation: Registered nosave memory: [mem 0x0080c000-0x0080cfff]
+[    0.049128] PM: hibernation: Registered nosave memory: [mem 0x01600000-0x0161ffff]
+[    0.049130] PM: hibernation: Registered nosave memory: [mem 0xbd43b000-0xbd442fff]
+[    0.049132] PM: hibernation: Registered nosave memory: [mem 0xbf2ed000-0xbf4ecfff]
+[    0.049133] PM: hibernation: Registered nosave memory: [mem 0xbf570000-0xbf5fefff]
+[    0.049135] PM: hibernation: Registered nosave memory: [mem 0xbffe0000-0xffdfffff]
+[    0.049137] [mem 0xc0000000-0xffdfffff] available for PCI devices
+[    0.049138] Booting paravirtualized kernel on KVM
+[    0.049141] clocksource: refined-jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 1910969940391419 ns
+[    0.049150] setup_percpu: NR_CPUS:8192 nr_cpumask_bits:4 nr_cpu_ids:4 nr_node_ids:1
+[    0.049512] percpu: Embedded 84 pages/cpu s221184 r8192 d114688 u524288
+[    0.049638] kvm-guest: PV spinlocks enabled
+[    0.049642] PV qspinlock hash table entries: 256 (order: 0, 4096 bytes, linear)
+[    0.049646] Kernel command line: BOOT_IMAGE=/vmlinuz-6.17.0-1022-gcp console=ttyS0,115200 panic=-1 rdinit=/init
+[    0.049710] random: crng init done
+[    0.049711] printk: log buffer data + meta data: 262144 + 917504 = 1179648 bytes
+[    0.051976] Dentry cache hash table entries: 2097152 (order: 12, 16777216 bytes, linear)
+[    0.053126] Inode-cache hash table entries: 1048576 (order: 11, 8388608 bytes, linear)
+[    0.053225] software IO TLB: area num 4.
+[    0.053226] software IO TLB: SWIOTLB bounce buffer size roundup to 1024MB
+[    0.342443] Fallback order for Node 0: 0 
+[    0.342449] Built 1 zonelists, mobility grouping on.  Total pages: 4193991
+[    0.342451] Policy zone: Normal
+[    0.342460] mem auto-init: stack:all(zero), heap alloc:on, heap free:off
+[    0.383507] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=4, Nodes=1
+[    0.398682] ftrace: allocating 62261 entries in 244 pages
+[    0.398685] ftrace: allocated 244 pages with 5 groups
+[    0.398898] rcu: Hierarchical RCU implementation.
+[    0.398899] rcu: 	RCU restricting CPUs from NR_CPUS=8192 to nr_cpu_ids=4.
+[    0.398901] 	Rude variant of Tasks RCU enabled.
+[    0.398901] 	Tracing variant of Tasks RCU enabled.
+[    0.398902] rcu: RCU calculated value of scheduler-enlistment delay is 100 jiffies.
+[    0.398903] rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=4
+[    0.398915] RCU Tasks Rude: Setting shift to 2 and lim to 1 rcu_task_cb_adjust=1 rcu_task_cpu_ids=4.
+[    0.398917] RCU Tasks Trace: Setting shift to 2 and lim to 1 rcu_task_cb_adjust=1 rcu_task_cpu_ids=4.
+[    0.403343] NR_IRQS: 524544, nr_irqs: 456, preallocated irqs: 16
+[    0.403722] rcu: srcu_init: Setting srcu_struct sizes based on contention.
+[    0.404108] Console: colour dummy device 80x25
+[    0.404236] printk: legacy console [ttyS0] enabled
+[    0.923720] ACPI: Core revision 20250404
+[    0.925822] ACPI BIOS Warning (bug): Incorrect checksum in table [APIC] - 0xDC, should be 0x17 (20250404/utcksum-58)
+[    0.931330] APIC: Switch to symmetric I/O mode setup
+[    0.939276] APIC: Switched APIC routing to: physical x2apic
+[    0.950358] clocksource: tsc-early: mask: 0xffffffffffffffff max_cycles: 0x26eb3e3cc63, max_idle_ns: 440795236593 ns
+[    0.955740] Calibrating delay loop (skipped), value calculated using timer frequency.. 5400.00 BogoMIPS (lpj=2700000)
+[    0.956736] x86/cpu: User Mode Instruction Prevention (UMIP) activated
+[    0.956736] Last level iTLB entries: 4KB 0, 2MB 0, 4MB 0
+[    0.956736] Last level dTLB entries: 4KB 0, 2MB 0, 4MB 0, 1GB 0
+[    0.956736] process: using TDX aware idle routine
+[    0.956736] mitigations: Enabled attack vectors: user_kernel, user_user, guest_host, guest_guest, SMT mitigations: auto
+[    0.956736] Speculative Store Bypass: Mitigation: Speculative Store Bypass disabled via prctl
+[    0.956736] Spectre V2 : Mitigation: Enhanced / Automatic IBRS
+[    0.956736] Spectre V1 : Mitigation: usercopy/swapgs barriers and __user pointer sanitization
+[    0.956736] Spectre V2 : Spectre v2 / PBRSB-eIBRS: Retire a single CALL on VMEXIT
+[    0.956736] Spectre V2 : mitigation: Enabling conditional Indirect Branch Prediction Barrier
+[    0.956736] x86/fpu: Supporting XSAVE feature 0x001: 'x87 floating point registers'
+[    0.956736] x86/fpu: Supporting XSAVE feature 0x002: 'SSE registers'
+[    0.956736] x86/fpu: Supporting XSAVE feature 0x004: 'AVX registers'
+[    0.956736] x86/fpu: Supporting XSAVE feature 0x020: 'AVX-512 opmask'
+[    0.956736] x86/fpu: Supporting XSAVE feature 0x040: 'AVX-512 Hi256'
+[    0.956736] x86/fpu: Supporting XSAVE feature 0x080: 'AVX-512 ZMM_Hi256'
+[    0.956736] x86/fpu: Supporting XSAVE feature 0x200: 'Protection Keys User registers'
+[    0.956736] x86/fpu: Supporting XSAVE feature 0x20000: 'AMX Tile config'
+[    0.956736] x86/fpu: Supporting XSAVE feature 0x40000: 'AMX Tile data'
+[    0.956736] x86/fpu: xstate_offset[2]:  576, xstate_sizes[2]:  256
+[    0.956736] x86/fpu: xstate_offset[5]:  832, xstate_sizes[5]:   64
+[    0.956736] x86/fpu: xstate_offset[6]:  896, xstate_sizes[6]:  512
+[    0.956736] x86/fpu: xstate_offset[7]: 1408, xstate_sizes[7]: 1024
+[    0.956736] x86/fpu: xstate_offset[9]: 2432, xstate_sizes[9]:    8
+[    0.956736] x86/fpu: xstate_offset[17]: 2496, xstate_sizes[17]:   64
+[    0.956736] x86/fpu: xstate_offset[18]: 2560, xstate_sizes[18]: 8192
+[    0.956736] x86/fpu: Enabled xstate features 0x602e7, context size is 10752 bytes, using 'compacted' format.
+[    0.956736] Freeing SMP alternatives memory: 52K
+
+[    0.956736] Memory Encryption Features active: Intel TDX
+[    0.956736] pid_max: default: 32768 minimum: 301
+[    0.956736] LSM: initializing lsm=lockdown,capability,landlock,yama,apparmor,ima,evm
+[    0.956736] landlock: Up and running.
+[    0.956736] Yama: becoming mindful.
+[    0.956736] AppArmor: AppArmor initialized
+[    0.956736] Mount-cache hash table entries: 32768 (order: 6, 262144 bytes, linear)
+[    0.956736] Mountpoint-cache hash table entries: 32768 (order: 6, 262144 bytes, linear)
+[    0.956736] smpboot: CPU0: Intel TDX (family: 0x6, model: 0x8f, stepping: 0x8)
+[    0.956971] Performance Events: unsupported CPU family 6 model 143 no PMU driver, software events only.
+[    0.957773] signal: max sigframe size: 11952
+[    0.958770] rcu: Hierarchical SRCU implementation.
+[    0.959738] rcu: 	Max phase no-delay instances is 400.
+[    0.960801] Timer migration: 1 hierarchy levels; 8 children per group; 1 crossnode level
+[    0.962049] NMI watchdog: Perf NMI watchdog permanently disabled
+[    0.962819] smp: Bringing up secondary CPUs ...
+[    0.963739] smpboot: Parallel CPU startup disabled by the platform
+[    0.964867] smpboot: x86: Booting SMP configuration:
+[    0.965739] .... node  #0, CPUs:      #1 #2 #3
+[    0.967802] smp: Brought up 1 node, 4 CPUs
+[    0.969738] smpboot: Total of 4 processors activated (21600.00 BogoMIPS)
+[    0.971849] Memory: 15349252K/16775964K available (22310K kernel code, 4681K rwdata, 15692K rodata, 5416K init, 6080K bss, 1418412K reserved, 0K cma-reserved)
+[    0.973790] devtmpfs: initialized
+[    0.974789] x86/mm: Memory block size: 128MB
+[    0.976856] ACPI: PM: Registering ACPI NVS region [mem 0x0080c000-0x0080cfff] (4096 bytes)
+[    0.977738] ACPI: PM: Registering ACPI NVS region [mem 0xbf57f000-0xbf5fefff] (524288 bytes)
+[    0.978802] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 1911260446275000 ns
+[    0.979760] posixtimers hash table entries: 2048 (order: 3, 32768 bytes, linear)
+[    0.980748] futex hash table entries: 1024 (65536 bytes on 1 NUMA nodes, total 64 KiB, linear).
+[    0.981818] pinctrl core: initialized pinctrl subsystem
+[    0.983057] PM: RTC time: 23:19:17, date: 2026-09-10
+[    0.985039] NET: Registered PF_NETLINK/PF_ROUTE protocol family
+[    0.986742] DMA: preallocated 2048 KiB GFP_KERNEL pool for atomic allocations
+[    0.989740] DMA: preallocated 2048 KiB GFP_KERNEL|GFP_DMA pool for atomic allocations
+[    0.991741] DMA: preallocated 2048 KiB GFP_KERNEL|GFP_DMA32 pool for atomic allocations
+[    0.992749] audit: initializing netlink subsys (disabled)
+[    0.994760] audit: type=2000 audit(1789082349.039:1): state=initialized audit_enabled=0 res=1
+[    0.994875] thermal_sys: Registered thermal governor 'fair_share'
+[    0.995751] thermal_sys: Registered thermal governor 'bang_bang'
+[    0.996742] thermal_sys: Registered thermal governor 'step_wise'
+[    0.997737] thermal_sys: Registered thermal governor 'user_space'
+[    0.998737] thermal_sys: Registered thermal governor 'power_allocator'
+[    0.999755] cpuidle: using governor ladder
+[    1.001749] cpuidle: using governor menu
+[    1.002888] acpiphp: ACPI Hot Plug PCI Controller Driver version: 0.5
+[    1.003987] PCI: Using configuration type 1 for base access
+[    1.004810] kprobes: kprobe jump-optimization is enabled. All kprobes are optimized if possible.
+[    1.006771] HugeTLB: registered 1.00 GiB page size, pre-allocated 0 pages
+[    1.007738] HugeTLB: 16380 KiB vmemmap can be freed for a 1.00 GiB page
+[    1.008739] HugeTLB: registered 2.00 MiB page size, pre-allocated 0 pages
+[    1.009738] HugeTLB: 28 KiB vmemmap can be freed for a 2.00 MiB page
+[    1.014164] ACPI: Added _OSI(Module Device)
+[    1.014738] ACPI: Added _OSI(Processor Device)
+[    1.015738] ACPI: Added _OSI(Processor Aggregator Device)
+[    1.018805] ACPI: 3 ACPI AML tables successfully acquired and loaded
+[    1.021993] ACPI: Interpreter enabled
+[    1.022749] ACPI: PM: (supports S0 S3 S4 S5)
+[    1.023738] ACPI: Using IOAPIC for interrupt routing
+[    1.024855] PCI: Using host bridge windows from ACPI; if necessary, use "pci=nocrs" and report a bug
+[    1.025738] PCI: Ignoring E820 reservations for host bridge windows
+[    1.027141] ACPI: Enabled 16 GPEs in block 00 to 0F
+[    1.031489] ACPI: PCI Root Bridge [PCI0] (domain 0000 [bus 00-ff])
+[    1.031740] acpi PNP0A03:00: _OSC: OS supports [ASPM ClockPM Segments MSI EDR HPX-Type3]
+[    1.032738] acpi PNP0A03:00: _OSC: not requesting OS control; OS requires [ExtendedConfig ASPM ClockPM MSI]
+[    1.033746] acpi PNP0A03:00: fail to add MMCONFIG information, can't access extended configuration space under this bridge
+[    1.036275] PCI host bridge to bus 0000:00
+[    1.036739] pci_bus 0000:00: root bus resource [io  0x0000-0x0cf7 window]
+[    1.037737] pci_bus 0000:00: root bus resource [io  0x0d00-0xffff window]
+[    1.038737] pci_bus 0000:00: root bus resource [mem 0x000a0000-0x000bffff window]
+[    1.039737] pci_bus 0000:00: root bus resource [mem 0xc0000000-0xfebfefff window]
+[    1.040738] pci_bus 0000:00: root bus resource [bus 00-ff]
+[    1.041842] pci 0000:00:00.0: [8086:1237] type 00 class 0x060000 conventional PCI endpoint
+[    1.044109] pci 0000:00:01.0: [8086:7110] type 00 class 0x060100 conventional PCI endpoint
+[    1.047028] pci 0000:00:01.3: [8086:7113] type 00 class 0x068000 conventional PCI endpoint
+[    1.051020] pci 0000:00:01.3: quirk: [io  0xb000-0xb03f] claimed by PIIX4 ACPI
+[    1.055484] pci 0000:00:03.0: [1ae0:0042] type 00 class 0x020000 conventional PCI endpoint
+[    1.058768] pci 0000:00:03.0: BAR 0 [mem 0xc0202000-0xc0202fff]
+[    1.059759] pci 0000:00:03.0: BAR 1 [mem 0xc0200000-0xc02000ff]
+[    1.060765] pci 0000:00:03.0: BAR 2 [mem 0xc0100000-0xc01fffff]
+[    1.063133] pci 0000:00:04.0: [1ae0:001f] type 00 class 0x010802 conventional PCI endpoint
+[    1.066787] pci 0000:00:04.0: BAR 0 [mem 0xc0000000-0xc0003fff 64bit]
+[    1.067803] pci 0000:00:04.0: BAR 4 [mem 0xc0201000-0xc020103f]
+[    1.134513] ACPI: PCI: Interrupt link LNKA configured for IRQ 10
+[    1.135825] ACPI: PCI: Interrupt link LNKB configured for IRQ 10
+[    1.137599] ACPI: PCI: Interrupt link LNKC configured for IRQ 11
+[    1.138750] ACPI: PCI: Interrupt link LNKD configured for IRQ 11
+[    1.140754] ACPI: PCI: Interrupt link LNKS configured for IRQ 9
+[    1.142282] iommu: Default domain type: Translated
+[    1.142738] iommu: DMA domain TLB invalidation policy: lazy mode
+[    1.144814] SCSI subsystem initialized
+[    1.146772] ACPI: bus type USB registered
+[    1.147747] usbcore: registered new interface driver usbfs
+[    1.148743] usbcore: registered new interface driver hub
+[    1.149741] usbcore: registered new device driver usb
+[    1.150752] pps_core: LinuxPPS API ver. 1 registered
+[    1.151737] pps_core: Software ver. 5.3.6 - Copyright 2005-2007 Rodolfo Giometti <giometti@linux.it>
+[    1.152739] PTP clock support registered
+[    1.154767] EDAC MC: Ver: 3.0.0
+[    1.165022] efivars: Registered efivars operations
+[    1.166748] NetLabel: Initializing
+[    1.167737] NetLabel:  domain hash size = 128
+[    1.168738] NetLabel:  protocols = UNLABELED CIPSOv4 CALIPSO
+[    1.169751] NetLabel:  unlabeled traffic allowed by default
+[    1.170777] mctp: management component transport protocol core
+[    1.171738] NET: Registered PF_MCTP protocol family
+[    1.172746] PCI: Using ACPI for IRQ routing
+[    1.174004] vgaarb: loaded
+[    1.174878] clocksource: Switched to clocksource tsc-early
+[    1.181141] VFS: Disk quotas dquot_6.6.0
+[    1.185354] VFS: Dquot-cache hash table entries: 512 (order 0, 4096 bytes)
+[    1.192777] AppArmor: AppArmor Filesystem Enabled
+[    1.197675] pnp: PnP ACPI init
+[    1.201482] pnp: PnP ACPI: found 7 devices
+[    1.215268] clocksource: acpi_pm: mask: 0xffffff max_cycles: 0xffffff, max_idle_ns: 2085701024 ns
+[    1.224341] NET: Registered PF_INET protocol family
+[    1.229647] IP idents hash table entries: 262144 (order: 9, 2097152 bytes, linear)
+[    1.253142] tcp_listen_portaddr_hash hash table entries: 8192 (order: 5, 131072 bytes, linear)
+[    1.261953] Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+[    1.269923] TCP established hash table entries: 131072 (order: 8, 1048576 bytes, linear)
+[    1.278358] TCP bind hash table entries: 65536 (order: 9, 2097152 bytes, linear)
+[    1.286049] TCP: Hash tables configured (established 131072 bind 65536)
+[    1.292902] MPTCP token hash table entries: 16384 (order: 7, 393216 bytes, linear)
+[    1.300702] UDP hash table entries: 8192 (order: 7, 524288 bytes, linear)
+[    1.307774] UDP-Lite hash table entries: 8192 (order: 7, 524288 bytes, linear)
+[    1.315219] NET: Registered PF_UNIX/PF_LOCAL protocol family
+[    1.321040] NET: Registered PF_XDP protocol family
+[    1.325987] pci_bus 0000:00: resource 4 [io  0x0000-0x0cf7 window]
+[    1.332316] pci_bus 0000:00: resource 5 [io  0x0d00-0xffff window]
+[    1.338643] pci_bus 0000:00: resource 6 [mem 0x000a0000-0x000bffff window]
+[    1.345679] pci_bus 0000:00: resource 7 [mem 0xc0000000-0xfebfefff window]
+[    1.352746] pci 0000:00:00.0: Limiting direct PCI/PCI transfers
+[    1.358949] PCI: CLS 0 bytes, default 64
+[    1.363152] PCI-DMA: Using software bounce buffering for IO (SWIOTLB)
+[    1.363245] Trying to unpack rootfs image as initramfs...
+[    1.369756] software IO TLB: mapped [mem 0x000000007bdff000-0x00000000bbdff000] (1024MB)
+[    1.369794] clocksource: tsc: mask: 0xffffffffffffffff max_cycles: 0x26eb3e3cc63, max_idle_ns: 440795236593 ns
+[    1.393918] clocksource: Switched to clocksource tsc
+[    1.406473] Initialise system trusted keyrings
+[    1.411097] Key type blacklist registered
+[    1.415396] workingset: timestamp_bits=36 max_order=22 bucket_order=0
+[    1.422432] squashfs: version 4.0 (2009/01/31) Phillip Lougher
+[    1.428675] fuse: init (API version 7.44)
+[    1.433178] integrity: Platform Keyring initialized
+[    1.438239] integrity: Machine keyring initialized
+[    1.457586] Key type asymmetric registered
+[    1.461834] Asymmetric key parser 'x509' registered
+[    1.466903] Block layer SCSI generic (bsg) driver version 0.4 loaded (major 242)
+[    1.474557] io scheduler mq-deadline registered
+[    1.479833] ledtrig-cpu: registered to indicate activity on CPUs
+[    1.485385] Freeing initrd memory: 10204K
+[    1.486214] input: Power Button as /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
+[    1.497919] ACPI: button: Power Button [PWRF]
+[    1.502456] input: Sleep Button as /devices/LNXSYSTM:00/LNXSLPBN:00/input/input1
+[    1.510100] ACPI: button: Sleep Button [SLPF]
+[    1.515181] Serial: 8250/16550 driver, 32 ports, IRQ sharing enabled
+[    1.546658] 00:03: ttyS0 at I/O 0x3f8 (irq = 4, base_baud = 115200) is a 16550A
+[    1.574616] 00:04: ttyS1 at I/O 0x2f8 (irq = 3, base_baud = 115200) is a 16550A
+[    1.602494] 00:05: ttyS2 at I/O 0x3e8 (irq = 6, base_baud = 115200) is a 16550A
+[    1.630312] 00:06: ttyS3 at I/O 0x2e8 (irq = 7, base_baud = 115200) is a 16550A
+[    1.636498] Linux agpgart interface v0.103
+[    1.644154] tpm_tis MSFT0101:00: 2.0 TPM (device-id 0x9009, rev-id 0)
+[    1.658634] loop: module loaded
+[    1.660249] Key type psk registered
+[    1.662275] ACPI: bus type drm_connector registered
+[    1.662395] nvme nvme0: pci function 0000:00:04.0
+[    1.664573] tun: Universal TUN/TAP device driver, 1.6
+[    1.668060] ACPI: \_SB_.LNKD: Enabled at IRQ 11
+[    1.669949] PPP generic driver version 2.4.2
+[    1.674008] i8042: PNP: PS/2 Controller [PNP0303:KBD,PNP0f13:MOU] at 0x60,0x64 irq 1,12
+[    1.677620] i8042: Warning: Keylock active
+[    1.681304] serio: i8042 KBD port at 0x60,0x64 irq 1
+[    1.683494] serio: i8042 AUX port at 0x60,0x64 irq 12
+[    1.685814] mousedev: PS/2 mouse device common for all mice
+[    1.688477] rtc_cmos 00:00: RTC can wake from S4
+[    1.692151] rtc_cmos 00:00: registered as rtc0
+[    1.693001] software IO TLB: Memory encryption is active and system is using DMA bounce buffers
+[    1.694444] rtc_cmos 00:00: setting system clock to 2026-09-10T23:19:18 UTC (1789082358)
+[    1.701637] rtc_cmos 00:00: alarms up to one day, 114 bytes nvram
+[    1.704312] i2c_dev: i2c /dev entries driver
+[    1.706278] device-mapper: core: CONFIG_IMA_DISABLE_HTABLE is disabled. Duplicate IMA measurements will not be recorded in the IMA log.
+[    1.711510] device-mapper: uevent: version 1.0.3
+[    1.713542] device-mapper: ioctl: 4.50.0-ioctl (2025-04-28) initialised: dm-devel@lists.linux.dev
+[    1.717307] intel_pstate: CPU model not supported
+[    1.719390] drop_monitor: Initializing network drop monitor service
+[    1.722642] NET: Registered PF_INET6 protocol family
+[    1.725295] Segment Routing with IPv6
+[    1.726928] In-situ OAM (IOAM) with IPv6
+[    1.728747] NET: Registered PF_PACKET protocol family
+[    1.731289] Key type dns_resolver registered
+[    1.733114] mce: Unable to init MCE device (rc: -5)
+[    1.735456] IPI shorthand broadcast: enabled
+[    1.737287] nvme nvme0: 2/0/0 default/read/poll queues
+[    1.739106] sched_clock: Marking stable (1187015377, 551714128)->(9732955048, -7994225543)
+[    1.743792] registered taskstats version 1
+[    1.746152] Loading compiled-in X.509 certificates
+[    1.749023] Loaded X.509 cert 'Build time autogenerated kernel key: 8bf700b70a5c57ec8a5f67210ff11e5fa3a44628'
+[    1.753683] Loaded X.509 cert 'Canonical Ltd. Live Patch Signing 2025 Kmod: d541cef61dc7e793b7eb7e899970a2eef0b5dc8c'
+[    1.758657] Loaded X.509 cert 'Canonical Ltd. Live Patch Signing: 14df34d1a87cf37625abec039ef2bf521249b969'
+[    1.763222] GPT:Primary header thinks Alt. header is not at the end of the disk.
+[    1.763245] Loaded X.509 cert 'Canonical Ltd. Kernel Module Signing 2025 Kmod: 4627603d2357a2a3f81006370894c221175893e9'
+[    1.766194] GPT:8388607 != 41943039
+[    1.771037] Loaded X.509 cert 'Canonical Ltd. Kernel Module Signing: 88f752e560a1e0737e31163a466ad7b70a850c19'
+[    1.772125] GPT:Alternate GPT header not at the end of the disk.
+[    1.776116] blacklist: Loading compiled-in revocation X.509 certificates
+[    1.778553] GPT:8388607 != 41943039
+[    1.781327] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing: 61482aa2830d0ab2ad5af10b7250da9033ddcef0'
+[    1.782773] GPT: Use GNU Parted to correct GPT errors.
+[    1.786749] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (2017): 242ade75ac4a15e50d50c84b0d45ff3eae707a03'
+[    1.788840]  nvme0n1: p1 p14 p15 p16
+[    1.793042] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (ESM 2018): 365188c1d374d6b07c3c8f240f8ef722433d6a8b'
+[    1.799201] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (2019): c0746fd6c5da3ae827864651ad66ae47fe24b3e8'
+[    1.803699] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (2021 v1): a8d54bbb3825cfb94fa13c9f8a594a195c107b8d'
+[    1.808429] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (2021 v2): 4cf046892d6fd3c9a5b03f98d845f90851dc6a8c'
+[    1.813043] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (2021 v3): 100437bb6de6e469b581e61cd66bce3ef4ed53af'
+[    1.817645] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (Ubuntu Core 2019): c1d57b8f6b743f23ee41f4f7ee292f06eecadfb9'
+[    1.825474] Demotion targets for Node 0: null
+[    1.827601] Key type .fscrypt registered
+[    1.829327] Key type fscrypt-provisioning registered
+[    1.831547] Key type big_key registered
+[    1.833259] Key type trusted registered
+[    1.836283] Key type encrypted registered
+[    1.838104] AppArmor: AppArmor sha256 policy hashing enabled
+[    1.867238] integrity: Loading X.509 certificate: UEFI:db
+[    1.869649] integrity: Loaded X.509 cert 'Microsoft Corporation UEFI CA 2011: 13adbf4309bd82709c8cd54f316ed522988a1bd4'
+[    1.874357] integrity: Loading X.509 certificate: UEFI:db
+[    1.876687] integrity: Loaded X.509 cert 'Microsoft Windows Production PCA 2011: a92902398e16c49778cd90f99e4f9ae17c55af53'
+[    1.881427] integrity: Loading X.509 certificate: UEFI:db
+[    1.883782] integrity: Loaded X.509 cert 'Microsoft Corporation: Windows UEFI CA 2023: aefc5fbbbe055d8f8daa585473499417ab5a5272'
+[    1.888734] integrity: Loading X.509 certificate: UEFI:db
+[    1.891117] integrity: Loaded X.509 cert 'Microsoft UEFI CA 2023: 81aa6b3244c935bce0d6628af39827421e32497d'
+[    1.893326] input: AT Translated Set 2 keyboard as /devices/platform/i8042/serio0/input/input2
+[    1.913276] integrity: Revoking X.509 certificate: UEFI:dbx
+[    1.915708] blacklist: Revoked X.509 cert 'Canonical Ltd. Secure Boot Signing: 61482aa2830d0ab2ad5af10b7250da9033ddcef0'
+[    1.920476] integrity: Revoking X.509 certificate: UEFI:dbx
+[    1.922948] blacklist: Revoked X.509 cert 'Cisco: Virtual UEFI SubCA: 13df2e3f54ebf347dcaecebf21d3cbb2355a4c9a'
+[    1.927289] integrity: Revoking X.509 certificate: UEFI:dbx
+[    1.929717] blacklist: Revoked X.509 cert 'Debian Secure Boot Signer: 00a7468def'
+[    1.933312] Loading compiled-in module X.509 certificates
+[    1.936083] Loaded X.509 cert 'Build time autogenerated kernel key: 8bf700b70a5c57ec8a5f67210ff11e5fa3a44628'
+[    1.940366] ima: Allocated hash algorithm: sha256
+[    1.965027] ima: No architecture policies found
+[    1.967042] evm: Initialising EVM extended attributes:
+[    1.969293] evm: security.selinux
+[    1.970765] evm: security.SMACK64
+[    1.972266] evm: security.SMACK64EXEC
+[    1.973882] evm: security.SMACK64TRANSMUTE
+[    1.975696] evm: security.SMACK64MMAP
+[    1.977303] evm: security.apparmor
+[    1.978830] evm: security.ima
+[    1.980222] evm: security.capability
+[    1.981808] evm: HMAC attrs: 0x1
+[    1.983539] PM:   Magic number: 10:482:352
+[    1.986359] RAS: Correctable Errors collector initialized.
+[    2.001071] clk: Disabling unused clocks
+[    2.002799] PM: genpd: Disabling unused power domains
+[    2.016764] Freeing unused decrypted memory: 2028K
+[    2.018695] Freeing unused kernel image (initmem) memory: 5416K
+[    2.019780] Write protecting the kernel read-only data: 38912k
+[    2.021121] Freeing unused kernel image (text/rodata gap) memory: 216K
+[    2.022456] Freeing unused kernel image (rodata/data gap) memory: 692K
+[    2.033231] x86/mm: Checked W+X mappings: passed, no W+X pages found.
+[    2.034270] Run /init as init process
+initrd: ======== attested tunnel guest, in the initrd grub measured ========
+initrd: kernel  6.17.0-1022-gcp x86_64
+initrd: cmdline BOOT_IMAGE=/vmlinuz-6.17.0-1022-gcp console=ttyS0,115200 panic=-1 rdinit=/init
+initrd: dmesg: [    0.000000] tdx: Guest detected
+initrd: dmesg: [    0.000000] tdx: Attributes: SEPT_VE_DISABLE
+initrd: dmesg: [    0.000000] tdx: TD_CTLS: PENDING_VE_DISABLE ENUM_TOPOLOGY VIRT_CPUID2 REDUCE_VE
+initrd: dmesg: [    0.956736] process: using TDX aware idle routine
+initrd: dmesg: [    0.956736] Memory Encryption Features active: Intel TDX
+initrd: dmesg: [    0.956736] smpboot: CPU0: Intel TDX (family: 0x6, model: 0x8f, stepping: 0x8)
+initrd: dmesg: [    1.693001] software IO TLB: Memory encryption is active and system is using DMA bounce buffers
+initrd: loaded tdx-guest
+[    2.063118] ACPI: \_SB_.LNKC: Enabled at IRQ 10
+[    2.077156] gve 0000:00:03.0: Driver is running with DQO RDA queue format.
+[    2.078244] gve 0000:00:03.0: MAC addr: 42:01:0a:80:00:28
+[    2.079100] gve 0000:00:03.0: BUFFER SIZES device option enabled with max_rx_buffer_size of 4096, header_buf_size of 128.
+[    2.080817] gve 0000:00:03.0: FLOW STEERING device option enabled with max rule limit of 20000.
+[    2.082177] gve 0000:00:03.0: TX queues 4, RX queues 4
+[    2.082981] gve 0000:00:03.0: Max TX queues 4, Max RX queues 4
+[    2.113079] gve 0000:00:03.0: GVE version 1.0.0
+[    2.113842] gve 0000:00:03.0: GVE queue format 3
+initrd: loaded gve
+initrd: loaded nf_tables
+initrd: loaded nf_reject_ipv4
+initrd: loaded nf_reject_ipv6
+initrd: loaded nft_reject
+initrd: loaded nft_reject_inet
+initrd: modules now resident: gve nf_reject_ipv4 nf_reject_ipv6 nf_tables nft_reject nft_reject_inet tdx_guest 
+initrd: report interface present at /sys/kernel/config/tsm/report
+initrd: block devices, as this kernel presents them with no udev running:
+initrd:   /dev/nvme0n1 sectors=41943040 serial='nvme_card-pd' wwid='nvme.1ae0-6e766d655f636172642d7064-6e766d655f636172642d7064-00000001'
+initrd:     partition nvme0n1p1 sectors=6289375
+initrd:     partition nvme0n1p14 sectors=8192
+initrd:     partition nvme0n1p15 sectors=217088
+initrd:     partition nvme0n1p16 sectors=1869825
+initrd:   /dev/nvme0n2 sectors=20971520 serial='nvme_card-pd' wwid='nvme.1ae0-6e766d655f636172642d7[    2.137889] EXT4-fs (nvme0n2): Supports (experimental) DIO atomic writes awu_min: 4096, awu_max: 4096
+064-6e766d655f636172642d7064-00000002'
+initrd: [    2.140179] EXT4-fs (nvme0n2): mounted filesystem 75e007e7-ced3-4828-b3bb-6a6836cdf4d5 ro without journal. Quota mode: none.
+  nvme controller nvme0: serial='nvme_card-pd' model='nvme_card-pd'
+initrd: config device /dev/nvme0n2 found by the ext4 label
+initrd: config device mounted at /config (ro,noexec,nosuid,nodev); it holds:
+initrd:   collateral/FETCH.txt  1805 bytes  8ab6bb6e39ae50fe…
+initrd:   collateral/collateral.txt  2430 bytes  251a7fcc0661499c…
+initrd:   collateral/pckcrl-platform.body  3356 bytes  3bf7fa8fb2c2f313…
+initrd:   collateral/pckcrl-platform.headers  2200 bytes  3a5c226003991583…
+initrd:   collateral/qeidentity.body  624 bytes  550f110a50541821…
+initrd:   collateral/qeidentity.headers  2186 bytes  1854cd99f67bf538…
+initrd:   collateral/rootcrl.body  294 bytes  c114be5d5ca7aab2…
+initrd:   collateral/rootcrl.headers  531 bytes  a52a1a2982c8819b…
+initrd:   collateral/tcbinfo-00806f050000.body  7953 bytes  857fc7e41a832a59…
+initrd:   collateral/tcbinfo-00806f050000.headers  2175 bytes  b555e197c3899317…
+initrd:   network.conf  290 bytes  f62ce12ab98cfaf4…
+initrd:   peers.json  114 bytes  4ff5f243997be0fb…
+initrd:   policy.json  253 bytes  6930dd1c2f17a988…
+initrd:   policy.json.sig  129 bytes  8b48e4b4786e4861…
+initrd:   reference-values.json  1070 bytes  facc7c3e74454279…
+initrd:   reference-values.json.sig  129 bytes  3ceeafb8822ced2c…
+initrd:   tunneld.json  345 bytes  c4852307e217072f…
+initrd: loopback up (the kernel delivers a rule's refusal to the local socket over it)
+[    2.299115] gve 0000:00:03.0 eth0: Device link is up.
+initrd: link eth0 up: 10.128.0.40/32 mtu 1460, gateway 10.128.0.1
+initrd: addr: 1: lo    inet 127.0.0.1/8 scope host lo\       valid_lft forever preferred_lft forever
+initrd: addr: 1: lo    inet6 ::1/128 scope host \       valid_lft forever preferred_lft forever
+initrd: addr: 2: eth0    inet 10.128.0.40/32 scope global eth0\       valid_lft forever preferred_lft forever
+initrd: addr: 2: eth0    inet6 fe80::4001:aff:fe80:28/64 scope link tentative \       valid_lft forever preferred_lft forever
+initrd: route: default via 10.128.0.1 dev eth0 
+initrd: route: 10.128.0.1 dev eth0 scope link 
+initrd: installing the egress rule set the signed policy implies:
+tunneld: sandbox "guest-a"
+tunneld: author key 665053d10032f5b9… (/etc/attested-tunnel/author.pub, inside the launch measurement)
+tunneld: peer table: guest-b = 10.128.0.41:4433
+tunneld: policy /config/policy.json loaded under the author key; digest d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b
+tunneld: policy egress: version 1, unattested egress permitted: false
+tunneld: sandbox "guest-a" listens on udp/4433; 1 peer(s) in the table
+tunneld: EGRESS RULES as the signed policy and the peer table imply them:
+table inet attested_tunnel {
+	chain input {
+		type filter hook input priority 0; policy drop;
+		iif "lo" accept
+		meta nfproto ipv4 ip saddr 10.128.0.41 meta l4proto udp udp sport 4433 accept   # peer "guest-b" answering
+		meta nfproto ipv4 ip saddr 10.128.0.41 meta l4proto udp udp dport 4433 accept   # peer "guest-b" dialing this sandbox's listener
+	}
+	chain output {
+		type filter hook output priority 0; policy drop;
+		oif "lo" accept
+		meta nfproto ipv4 ip daddr 10.128.0.41 meta l4proto udp udp dport 4433 accept   # dial peer "guest-b"
+		meta nfproto ipv4 ip daddr 10.128.0.41 meta l4proto udp udp sport 4433 accept   # answer peer "guest-b" from this sandbox's listener
+		meta l4proto tcp reject with tcp reset        # so that connect() fails now rather than in a minute
+		reject with icmpx admin-prohibited            # everything else the policy did not permit
+	}
+	chain forward {
+		type filter hook forward priority 0; policy drop;
+	}
+}
+tunneld: EGRESS RULES INSTALLED; as the kernel holds them:
+table inet attested_tunnel {
+	chain forward {
+		type filter hook forward priority 0; policy drop;
+	}
+	chain input {
+		type filter hook input priority 0; policy drop;
+		iif "lo" accept   # handle 2
+		meta nfproto ipv4 ip saddr 10.128.0.41 meta l4proto udp sport 4433 accept   # handle 3
+		meta nfproto ipv4 ip saddr 10.128.0.41 meta l4proto udp dport 4433 accept   # handle 4
+	}
+	chain output {
+		type filter hook output priority 0; policy drop;
+		oif "lo" accept   # handle 6
+		meta nfproto ipv4 ip daddr 10.128.0.41 meta l4proto udp dport 4433 accept   # handle 7
+		meta nfproto ipv4 ip daddr 10.128.0.41 meta l4proto udp sport 4433 accept   # handle 8
+		meta l4proto tcp reject with tcp reset   # handle 9
+		reject with icmpx code 3   # handle 10
+	}
+}
+tunneld: EXIT status=0
+initrd: proving the egress rule set holds, from inside the guest:
+tunneld: sandbox "guest-a"
+tunneld: author key 665053d10032f5b9… (/etc/attested-tunnel/author.pub, inside the launch measurement)
+tunneld: peer table: guest-b = 10.128.0.41:4433
+tunneld: policy /config/policy.json loaded under the author key; digest d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b
+tunneld: policy egress: version 1, unattested egress permitted: false
+tunneld: EGRESS PROBE: 5 attempt(s) at addresses this policy permits nothing to reach
+tunneld: EGRESS REFUSED tcp/169.254.169.254:80: dial tcp 169.254.169.254:80: connect: connection refused (the provider's metadata server) — the netfilter rule refused it
+tunneld: EGRESS REFUSED tcp/8.8.8.8:53: dial tcp 8.8.8.8:53: connect: connection refused (a public resolver, over TCP) — the netfilter rule refused it
+tunneld: EGRESS REFUSED udp/8.8.8.8:53: write udp 10.128.0.40:51258->8.8.8.8:53: write: operation not permitted (a public resolver, over UDP) — the netfilter rule refused it
+tunneld: EGRESS REFUSED udp/10.128.0.1:53: write udp 10.128.0.40:36904->10.128.0.1:53: write: operation not permitted (named by -egress-probe) — the netfilter rule refused it
+tunneld: EGRESS REFUSED tcp/10.128.0.1:80: dial tcp 10.128.0.1:80: connect: connection refused (named by -egress-probe) — the netfilter rule refused it
+tunneld: EGRESS PROBE PASSED: every attempt was refused before it left
+tunneld: EXIT status=0
+initrd: the initramfs is remounted read-only
+initrd: mount: rootfs / rootfs ro,size=7678776k,nr_inodes=1919694,inode64 0 0
+initrd: mount: devtmpfs /dev devtmpfs rw,nosuid,noexec,relatime,size=7678776k,nr_inodes=1919694,mode=755,inode64 0 0
+initrd: mount: proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+initrd: mount: sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+initrd: mount: tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,inode64 0 0
+initrd: mount: tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,inode64 0 0
+initrd: mount: configfs /sys/kernel/config configfs rw,nosuid,nodev,noexec,relatime 0 0
+initrd: mount: /dev/nvme0n2 /config ext4 ro,nosuid,nodev,noexec,relatime 0 0
+initrd: starting tunneld
+tunneld: sandbox "guest-a"
+tunneld: author key 665053d10032f5b9… (/etc/attested-tunnel/author.pub, inside the launch measurement)
+tunneld: peer table: guest-b = 10.128.0.41:4433
+tunneld: report interface /sys/kernel/config/tsm/report: present, 0 request(s) outstanding; a platform driver that does not answer it is what a non-confidential VM looks like from inside
+tunneld: intel tdx collateral /config/collateral (provisioned, never fetched — ADR-0005)
+tunneld: verifying evidence from amd-sev-snp+intel-tdx
+tunneld: tsm: provider "tdx_guest" (intel-tdx) returned 8000 bytes of evidence over 1 write(s); its own certificate table could not be read (auxblob: open /sys/kernel/config/tsm/report/tunneld-267-1/auxblob: no such file or directory), which is the expected state on this host and not an error; bundled no certificate chain, because the quote carries the one that roots it
+tunneld: policy digest d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b (sha256 over the signed policy; put it in a peer's policy_digest)
+tunneld: policy forward_to: measurement d5ddcc423b1aed53…
+tunneld: listening on 10.128.0.40:4433 as "guest-a"; idle 1m0s, maximum age 15m0s
+tunneld: SELFCHECK acquired 8000 bytes of intel-tdx evidence in 45ms, bound to a throwaway key and to policy digest d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b
+WARN : 2026/09/10 23:19:19.243707 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:19.244423 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:19.245001 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: SELFCHECK VERDICT ADMITTED: this platform satisfies this sandbox's own reference value set
+tunneld: SELFCHECK measurement d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+tunneld: SELFCHECK mrtd  c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+tunneld: SELFCHECK rtmr0 c2fc12a52db868515eff7c657e42ce04b0b7363fa6ddf7c1cca87aa8e6a061a11f9981924a600ad6d2232f75182a850a
+tunneld: SELFCHECK rtmr1 02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b
+tunneld: SELFCHECK rtmr2 d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+tunneld: SELFCHECK tcb   status=UpToDate evaluation=20 fmspc=00806f050000 attributes=0000001000000000
+tunneld: SELFCHECK EVIDENCE BEGIN (base64 of 8000 bytes; feed it to attest/cmd/verify-evidence)
+tunneld: SELFCHECK EVIDENCE BAACAIEAAAAAAAAAk5pyM/ecTKmUCg2zlX8GBwAAAAAAAAAAAAAAAAAAAAAAAAAADwEKAAAAAAAAAAAAAAAAAKtiVhoXOsvRjuUP
+tunneld: SELFCHECK EVIDENCE 83dQ20QYTGz16IbfdCR8xXXhY7BMNLnhg3R1fCNa/6YU1BJ/awAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAADnAgYAAAAAAMHunBbjr8UGz+BCxbhGo2hSjzs3YY6vsnRpvBFM+RTpIiyRYYRw5/Ky
+tunneld: SELFCHECK EVIDENCE isNgloJwpQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGVGROu35hjES4bmKoHNJ7Lse1vU
+tunneld: SELFCHECK EVIDENCE yUS1H8MFWjON8yWDqeHKn3DlMJD3QTM1DyCy8wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AML8EqUtuGhRXv98ZX5CzgSwtzY/pt33wcyoeqjmoGGhH5mBkkpgCtbSIy91GCqFCgLH8ZyGKz2uFZLHNzWNm7E/jwo007Pspnw5
+tunneld: SELFCHECK EVIDENCE v3lBoSw0djW4opHWjZys5FsW7CWRO9XdzEI7Gu1TAjemxDswBdMXRkqUIX3ZR38RMAc3nb8Px2AcrI+mm7SKTv1DIsc+DQAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEUlSpeaU7ipJzvBKugYnQA92UjDeN16ttXUsP29T1vI
+tunneld: SELFCHECK EVIDENCE aWmCJNusvWuERbp/ovlNtz8nINcQbecsWwaAWq63mufLEAAAFu5eW8rdpqoDfwJ3xqi+XO/mNyW/Y4nOw5YgD99PP6wv1kpH08Kb
+tunneld: SELFCHECK EVIDENCE BmLls3vaCVufuJ3XgWlB9ksVBTv69pXJf8hxIke978QvnOWghmp6ssJos1X/t4ta9pE3sWCpshehzZgwuTK48xw/k6R7aflRRQw8
+tunneld: SELFCHECK EVIDENCE Ej/0HtVeCmnsRm9T4O4GAEUQAAAKCv8bBv8ABgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AOcAAAAAAAAA5aOntdgwwpU7mFNMbFmjo0/cNOkz9/WJjwqFzwiEa8oAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANye
+tunneld: SELFCHECK EVIDENCE KnxvlI8XR040p/xD7QMPfBVj8bq932NAyC4OVKjFAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAGAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHYr8Hivwa5Cl6FUr9rAOL25RRlJv0ybr9VIKtnY+5nXAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC4e/tQwI+0UXyABq/i7rSy0K1nCU9drWpA0TWA/5rXBtbru9MjUP/INLHnjIDq
+tunneld: SELFCHECK EVIDENCE H7w9IAduJnJVYTrlDKnb5QnDIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUAXQ4AAC0tLS0tQkVHSU4gQ0VSVElG
+tunneld: SELFCHECK EVIDENCE SUNBVEUtLS0tLQpNSUlFOFRDQ0JKZWdBd0lCQWdJVkFQM3dTM0ZtYkJPVTBOckREUEQwRy9WUmE5U0FNQW9HQ0NxR1NNNDlCQU1D
+tunneld: SELFCHECK EVIDENCE Ck1IQXhJakFnQmdOVkJBTU1HVWx1ZEdWc0lGTkhXQ0JRUTBzZ1VHeGhkR1p2Y20wZ1EwRXhHakFZQmdOVkJBb00KRVVsdWRHVnNJ
+tunneld: SELFCHECK EVIDENCE RU52Y25CdmNtRjBhVzl1TVJRd0VnWURWUVFIREF0VFlXNTBZU0JEYkdGeVlURUxNQWtHQTFVRQpDQXdDUTBFeEN6QUpCZ05WQkFZ
+tunneld: SELFCHECK EVIDENCE VEFsVlRNQjRYRFRJMk1EY3lPVEV6TURVeE5Wb1hEVE16TURjeU9URXpNRFV4Ck5Wb3djREVpTUNBR0ExVUVBd3daU1c1MFpXd2dV
+tunneld: SELFCHECK EVIDENCE MGRZSUZCRFN5QkRaWEowYVdacFkyRjBaVEVhTUJnR0ExVUUKQ2d3UlNXNTBaV3dnUTI5eWNHOXlZWFJwYjI0eEZEQVNCZ05WQkFj
+tunneld: SELFCHECK EVIDENCE TUMxTmhiblJoSUVOc1lYSmhNUXN3Q1FZRApWUVFJREFKRFFURUxNQWtHQTFVRUJoTUNWVk13V1RBVEJnY3Foa2pPUFFJQkJnZ3Fo
+tunneld: SELFCHECK EVIDENCE a2pPUFFNQkJ3TkNBQVI1CjNuVlBodjVKZ0JlQUtCK3d0UnV6YXUzKzNCWW9FT1N2NlRJQVBZY1paejVtUmp5VGpZRWkxRGxIL1g1
+tunneld: SELFCHECK EVIDENCE YjFSY3EKcWNtWkJUTXNwcjQvU2pvRjg5SUNvNElERERDQ0F3Z3dId1lEVlIwakJCZ3dGb0FVbFc5ZHpiMGI0ZWxBU2NuVQo5RFBP
+tunneld: SELFCHECK EVIDENCE QVZjTDNsUXdhd1lEVlIwZkJHUXdZakJnb0Y2Z1hJWmFhSFIwY0hNNkx5OWhjR2t1ZEhKMWMzUmxaSE5sCmNuWnBZMlZ6TG1sdWRH
+tunneld: SELFCHECK EVIDENCE VnNMbU52YlM5elozZ3ZZMlZ5ZEdsbWFXTmhkR2x2Ymk5Mk5DOXdZMnRqY213L1kyRTkKY0d4aGRHWnZjbTBtWlc1amIyUnBibWM5
+tunneld: SELFCHECK EVIDENCE WkdWeU1CMEdBMVVkRGdRV0JCUVpqMEswY1NGeHpsbEZmRnpUNVhUNAo0V3FyM1RBT0JnTlZIUThCQWY4RUJBTUNCc0F3REFZRFZS
+tunneld: SELFCHECK EVIDENCE MFRBUUgvQkFJd0FEQ0NBamtHQ1NxR1NJYjRUUUVOCkFRU0NBaW93Z2dJbU1CNEdDaXFHU0liNFRRRU5BUUVFRUoyL1J6aGZZNndl
+tunneld: SELFCHECK EVIDENCE ak9HaXVLaXBGSjh3Z2dGakJnb3EKaGtpRytFMEJEUUVDTUlJQlV6QVFCZ3NxaGtpRytFMEJEUUVDQVFJQkNUQVFCZ3NxaGtpRytF
+tunneld: SELFCHECK EVIDENCE MEJEUUVDQWdJQgpDVEFRQmdzcWhraUcrRTBCRFFFQ0F3SUJBakFRQmdzcWhraUcrRTBCRFFFQ0JBSUJBakFRQmdzcWhraUcrRTBC
+tunneld: SELFCHECK EVIDENCE CkRRRUNCUUlCQkRBUUJnc3Foa2lHK0UwQkRRRUNCZ0lCQVRBUUJnc3Foa2lHK0UwQkRRRUNCd0lCQURBUUJnc3EKaGtpRytFMEJE
+tunneld: SELFCHECK EVIDENCE UUVDQ0FJQkJqQVFCZ3NxaGtpRytFMEJEUUVDQ1FJQkFEQVFCZ3NxaGtpRytFMEJEUUVDQ2dJQgpBREFRQmdzcWhraUcrRTBCRFFF
+tunneld: SELFCHECK EVIDENCE Q0N3SUJBREFRQmdzcWhraUcrRTBCRFFFQ0RBSUJBREFRQmdzcWhraUcrRTBCCkRRRUNEUUlCQURBUUJnc3Foa2lHK0UwQkRRRUNE
+tunneld: SELFCHECK EVIDENCE Z0lCQURBUUJnc3Foa2lHK0UwQkRRRUNEd0lCQURBUUJnc3EKaGtpRytFMEJEUUVDRUFJQkFEQVFCZ3NxaGtpRytFMEJEUUVDRVFJ
+tunneld: SELFCHECK EVIDENCE QkN6QWZCZ3NxaGtpRytFMEJEUUVDRWdRUQpDUWtDQWdRQkFBWUFBQUFBQUFBQUFEQVFCZ29xaGtpRytFMEJEUUVEQkFJQUFEQVVC
+tunneld: SELFCHECK EVIDENCE Z29xaGtpRytFMEJEUUVFCkJBWUFnRzhGQUFBd0R3WUtLb1pJaHZoTkFRMEJCUW9CQVRBZUJnb3Foa2lHK0UwQkRRRUdCQkRWV1NZ
+tunneld: SELFCHECK EVIDENCE NzMvNWEKZFpGVlRrTXBzRWNtTUVRR0NpcUdTSWI0VFFFTkFRY3dOakFRQmdzcWhraUcrRTBCRFFFSEFRRUIvekFRQmdzcQpoa2lH
+tunneld: SELFCHECK EVIDENCE K0UwQkRRRUhBZ0VCQURBUUJnc3Foa2lHK0UwQkRRRUhBd0VCL3pBS0JnZ3Foa2pPUFFRREFnTklBREJGCkFpQUt0b01zbHZKNDZJ
+tunneld: SELFCHECK EVIDENCE cjM1ZmpQVTNYdkdCU0dlLzdRNkU0WGY0M0g1K2dzVXdJaEFJeGk4MzkyZ3dzTDhtdTMKdEJKM3NjM29US3RhOFlkWUh5Q0ZyYXhO
+tunneld: SELFCHECK EVIDENCE dFRjeQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCi0tLS0tQkVHSU4gQ0VSVElGSUNBVEUtLS0tLQpNSUlDbGpDQ0FqMmdBd0lC
+tunneld: SELFCHECK EVIDENCE QWdJVkFKVnZYYzI5RytIcFFFbkoxUFF6emdGWEM5NVVNQW9HQ0NxR1NNNDlCQU1DCk1HZ3hHakFZQmdOVkJBTU1FVWx1ZEdWc0lG
+tunneld: SELFCHECK EVIDENCE TkhXQ0JTYjI5MElFTkJNUm93R0FZRFZRUUtEQkZKYm5SbGJDQkQKYjNKd2IzSmhkR2x2YmpFVU1CSUdBMVVFQnd3TFUyRnVkR0Vn
+tunneld: SELFCHECK EVIDENCE UTJ4aGNtRXhDekFKQmdOVkJBZ01Ba05CTVFzdwpDUVlEVlFRR0V3SlZVekFlRncweE9EQTFNakV4TURVd01UQmFGdzB6TXpBMU1q
+tunneld: SELFCHECK EVIDENCE RXhNRFV3TVRCYU1IQXhJakFnCkJnTlZCQU1NR1VsdWRHVnNJRk5IV0NCUVEwc2dVR3hoZEdadmNtMGdRMEV4R2pBWUJnTlZCQW9N
+tunneld: SELFCHECK EVIDENCE RVVsdWRHVnMKSUVOdmNuQnZjbUYwYVc5dU1SUXdFZ1lEVlFRSERBdFRZVzUwWVNCRGJHRnlZVEVMTUFrR0ExVUVDQXdDUTBFeApD
+tunneld: SELFCHECK EVIDENCE ekFKQmdOVkJBWVRBbFZUTUZrd0V3WUhLb1pJemowQ0FRWUlLb1pJemowREFRY0RRZ0FFTlNCLzd0MjFsWFNPCjJDdXpweHc3NGVK
+tunneld: SELFCHECK EVIDENCE QjcyRXlER2dXNXJYQ3R4MnRWVExxNmhLazZ6K1VpUlpDbnFSN3BzT3ZncUZlU3hsbVRsSmwKZVRtaTJXWXozcU9CdXpDQnVEQWZC
+tunneld: SELFCHECK EVIDENCE Z05WSFNNRUdEQVdnQlFpWlF6V1dwMDBpZk9EdEpWU3YxQWJPU2NHckRCUwpCZ05WSFI4RVN6QkpNRWVnUmFCRGhrRm9kSFJ3Y3pv
+tunneld: SELFCHECK EVIDENCE dkwyTmxjblJwWm1sallYUmxjeTUwY25WemRHVmtjMlZ5CmRtbGpaWE11YVc1MFpXd3VZMjl0TDBsdWRHVnNVMGRZVW05dmRFTkJM
+tunneld: SELFCHECK EVIDENCE bVJsY2pBZEJnTlZIUTRFRmdRVWxXOWQKemIwYjRlbEFTY25VOURQT0FWY0wzbFF3RGdZRFZSMFBBUUgvQkFRREFnRUdNQklHQTFV
+tunneld: SELFCHECK EVIDENCE ZEV3RUIvd1FJTUFZQgpBZjhDQVFBd0NnWUlLb1pJemowRUF3SURSd0F3UkFJZ1hzVmtpMHcraTZWWUdXM1VGLzIydWFYZTBZSkRq
+tunneld: SELFCHECK EVIDENCE MVVlCm5BK1RqRDFhaTVjQ0lDWWIxU0FtRDV4a2ZUVnB2bzRVb3lpU1l4ckRXTG1VUjRDSTlOS3lmUE4rCi0tLS0tRU5EIENFUlRJ
+tunneld: SELFCHECK EVIDENCE RklDQVRFLS0tLS0KLS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNqekNDQWpTZ0F3SUJBZ0lVSW1VTTFscWROSW56ZzdT
+tunneld: SELFCHECK EVIDENCE VlVyOVFHemtuQnF3d0NnWUlLb1pJemowRUF3SXcKYURFYU1CZ0dBMVVFQXd3UlNXNTBaV3dnVTBkWUlGSnZiM1FnUTBFeEdqQVlC
+tunneld: SELFCHECK EVIDENCE Z05WQkFvTUVVbHVkR1ZzSUVOdgpjbkJ2Y21GMGFXOXVNUlF3RWdZRFZRUUhEQXRUWVc1MFlTQkRiR0Z5WVRFTE1Ba0dBMVVFQ0F3
+tunneld: SELFCHECK EVIDENCE Q1EwRXhDekFKCkJnTlZCQVlUQWxWVE1CNFhEVEU0TURVeU1URXdORFV4TUZvWERUUTVNVEl6TVRJek5UazFPVm93YURFYU1CZ0cK
+tunneld: SELFCHECK EVIDENCE QTFVRUF3d1JTVzUwWld3Z1UwZFlJRkp2YjNRZ1EwRXhHakFZQmdOVkJBb01FVWx1ZEdWc0lFTnZjbkJ2Y21GMAphVzl1TVJRd0Vn
+tunneld: SELFCHECK EVIDENCE WURWUVFIREF0VFlXNTBZU0JEYkdGeVlURUxNQWtHQTFVRUNBd0NRMEV4Q3pBSkJnTlZCQVlUCkFsVlRNRmt3RXdZSEtvWkl6ajBD
+tunneld: SELFCHECK EVIDENCE QVFZSUtvWkl6ajBEQVFjRFFnQUVDNm5Fd01ESVlaT2ovaVBXc0N6YUVLaTcKMU9pT1NMUkZoV0dqYm5CVkpmVm5rWTR1M0lqa0RZ
+tunneld: SELFCHECK EVIDENCE WUwwTXhPNG1xc3lZamxCYWxUVll4RlAyc0pCSzV6bEtPQgp1ekNCdURBZkJnTlZIU01FR0RBV2dCUWlaUXpXV3AwMGlmT0R0SlZT
+tunneld: SELFCHECK EVIDENCE djFBYk9TY0dyREJTQmdOVkhSOEVTekJKCk1FZWdSYUJEaGtGb2RIUndjem92TDJObGNuUnBabWxqWVhSbGN5NTBjblZ6ZEdWa2My
+tunneld: SELFCHECK EVIDENCE VnlkbWxqWlhNdWFXNTAKWld3dVkyOXRMMGx1ZEdWc1UwZFlVbTl2ZEVOQkxtUmxjakFkQmdOVkhRNEVGZ1FVSW1VTTFscWROSW56
+tunneld: SELFCHECK EVIDENCE ZzdTVgpVcjlRR3prbkJxd3dEZ1lEVlIwUEFRSC9CQVFEQWdFR01CSUdBMVVkRXdFQi93UUlNQVlCQWY4Q0FRRXdDZ1lJCktvWkl6
+tunneld: SELFCHECK EVIDENCE ajBFQXdJRFNRQXdSZ0loQU9XLzVRa1IrUzlDaVNEY05vb3dMdVBSTHNXR2YvWWk3R1NYOTRCZ3dUd2cKQWlFQTRKMGxySG9NcytY
+tunneld: SELFCHECK EVIDENCE bzVvL3NYNk85UVd4SFJBdlpVR09kUlE3Y3ZxUlhhcUk9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0KAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+tunneld: SELFCHECK EVIDENCE END
+tunneld: SELFCHECK PUBLIC KEY 302a300506032b65700321001806101a166c9c4b688bf14e2ae16474508a3fe63c2bc490ce9c4d9e5c972f28
+tunneld: SELFCHECK (that is a DER SubjectPublicKeyInfo, 44 bytes; write it to a file and pass it as verify-evidence -key. It is a throwaway: the evidence is bound to it and to nothing else, so it can establish no tunnel)
+tunneld: exercise: dialing guest-b; 3 warm exchanges, 8 concurrent × 1 rounds, marker "attested-tunnel-plaintext-marker"
+WARN : 2026/09/10 23:19:19.484605 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:19.485225 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:19.485860 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: PEER key=37b5fc86d3a7dcac… chain=none measurement=d5ddcc423b1aed53… vendor=intel-tdx mrtd=c1ee9c16e3afc506… rtmr2=d5ddcc423b1aed53… tcb=UpToDate,evaluation=20
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+tunneld: exercise: pass=1 peer=guest-b not up yet, retrying until 1m30s elapses (tunneld: tunnel not established: "guest-b" at 10.128.0.41:4433: tunnel: dialing 10.128.0.41:4433: CRYPTO_ERROR 0x12a (local): attest: verification failed)
+WARN : 2026/09/10 23:19:19.504306 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:19.507471 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:19.510050 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:20.494494 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:20.495120 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:20.495736 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:20.531165 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:20.531974 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:20.532732 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:21.503852 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:21.507122 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:21.509674 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:21.542954 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:21.543733 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:21.544504 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:22.521456 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:22.522187 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:22.522778 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:22.555440 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:22.558607 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:22.560993 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:23.527593 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:23.528209 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:23.528741 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:23.580434 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:23.583584 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:23.586238 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:24.533863 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:24.536304 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:24.538563 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:24.602864 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:24.605674 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:24.608166 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:25.549923 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:25.550701 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:25.551481 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:25.623492 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:25.626064 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:25.628355 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+
+WARN : 2026/09/10 23:19:26.556807 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:26.557444 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:26.558105 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:26.644273 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:26.645058 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:26.645880 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:27.564900 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:27.565544 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:27.565994 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:27.655454 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:27.658619 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:27.661306 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:28.570761 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:28.571424 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:28.572015 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:28.678131 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:28.678931 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:28.679631 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:29.577803 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:29.578631 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:29.579545 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:29.689343 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:29.689969 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:29.690463 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:30.585828 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:30.586481 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:30.587018 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:30.701378 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:30.702140 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:30.702724 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:31.591436 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:31.592041 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:31.592825 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:31.712383 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:31.714868 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:31.717368 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+
+WARN : 2026/09/10 23:19:32.598762 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:32.599400 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:32.600058 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:32.732813 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:32.735727 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:32.738108 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:33.604815 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:33.605467 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:33.605920 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:33.755046 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:33.755697 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:33.756139 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:34.611787 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:34.612477 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:34.612920 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:34.764438 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:34.765058 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:34.765520 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:35.618363 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:35.618961 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:35.619520 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:35.776494 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:35.777270 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:35.777852 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:36.624665 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:36.625330 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:36.625810 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:36.787425 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:36.788034 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:36.788502 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:37.631360 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:37.632046 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:37.632551 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:37.798033 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:37.798671 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:37.799125 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:38.639612 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:38.640484 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:38.640934 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:38.808528 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:38.809320 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:38.809867 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+
+WARN : 2026/09/10 23:19:39.646513 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:39.647193 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:39.647713 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:39.820040 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:39.820838 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:39.821422 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:40.653420 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:40.654022 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:40.654554 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:40.830780 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:40.831695 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:40.832152 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:41.660373 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:41.660990 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:41.661539 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:41.841852 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:41.842643 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:41.843186 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:42.667837 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:42.669146 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:42.669620 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:42.854312 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:42.855074 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:42.855651 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:43.675255 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:43.676139 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:43.676622 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:43.865382 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:43.866241 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:43.866739 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:44.681692 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:44.682651 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:44.683109 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:44.876328 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:44.877246 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:44.877721 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+
+WARN : 2026/09/10 23:19:45.688773 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:45.689481 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:45.689925 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:45.886481 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:45.887146 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:45.887618 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:46.695136 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:46.695833 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:46.696276 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:46.896866 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:46.897571 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:46.898014 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:47.702093 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:47.702960 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:47.703515 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:47.907743 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:47.908607 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:47.909055 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:48.710019 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:48.710783 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:48.711361 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:48.918765 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:48.919541 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:48.920099 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:49.718781 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:49.719562 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:49.720113 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:49.929787 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:49.930578 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:49.931122 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:50.725400 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:50.726189 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:50.726796 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:50.940184 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:50.940895 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:50.941361 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:51.732809 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:51.733604 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:51.734151 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+
+WARN : 2026/09/10 23:19:51.952044 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:51.952764 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:51.953226 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:52.739465 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:52.740564 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:52.741414 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:52.963712 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:52.964361 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:52.964798 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:53.747720 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:53.748350 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:53.748861 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:53.974393 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:53.975154 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:53.975716 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:54.755075 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:54.755786 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:54.756239 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:54.984240 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:54.984968 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:54.985433 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:55.762381 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:55.763232 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:55.763739 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:55.996318 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:55.997013 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:55.997477 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:56.769880 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:56.770675 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:56.771226 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:57.007409 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:57.008134 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:57.008613 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:57.776247 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:57.777196 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:57.777677 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:58.017960 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:58.019085 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:58.019946 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+
+WARN : 2026/09/10 23:19:58.783003 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:58.784091 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:58.784948 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:59.028783 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:59.029677 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:59.030135 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:19:59.790321 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:59.790908 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:19:59.791431 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:00.041549 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:00.042344 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:00.042894 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:00.797149 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:00.798049 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:00.798519 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:01.052195 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:01.052902 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:01.053364 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:01.805343 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:01.806089 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:01.806674 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:02.063736 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:02.064605 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:02.065056 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:02.811758 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:02.812391 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:02.812869 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:03.074332 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:03.074959 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:03.075432 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:03.818803 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:03.819615 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:03.820165 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:04.085072 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:04.085736 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:04.086175 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+
+WARN : 2026/09/10 23:20:04.826085 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:04.826951 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:04.827430 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:05.095429 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:05.096052 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:05.096515 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:05.832133 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:05.832849 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:05.833356 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:06.107567 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:06.108346 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:06.108905 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:06.838872 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:06.839711 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:06.840258 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:07.119474 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:07.120142 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:07.120621 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:07.846563 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:07.847323 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:07.847879 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:08.130386 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:08.131238 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:08.131699 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:08.854546 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:08.855607 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:08.856449 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:09.141252 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:09.142110 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:09.142573 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:09.860842 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:09.861568 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:09.862012 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:10.154624 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:10.155240 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:10.155714 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:10.867537 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:10.868148 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:10.868661 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+
+WARN : 2026/09/10 23:20:11.165327 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:11.166717 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:11.167341 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:11.873847 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:11.874577 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:11.875044 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:12.176973 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:12.177843 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:12.178313 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:12.880644 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:12.881359 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:12.881815 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:13.188682 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:13.189474 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:13.190037 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:13.886621 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:13.887320 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:13.887793 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:14.202816 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:14.203616 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:14.204177 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:14.892916 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:14.893567 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:14.894050 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:15.213251 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:15.214358 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:15.215178 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:15.899959 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:15.901011 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:15.901721 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:16.224896 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:16.225776 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:16.226225 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:16.907894 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:16.908525 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:16.908967 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:17.235239 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:17.236250 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:17.236848 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+
+WARN : 2026/09/10 23:20:17.914303 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:17.914905 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:17.915409 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:18.247167 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:18.248237 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:18.249093 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:18.920570 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:18.921187 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:18.921750 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:19.257838 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:19.258729 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:19.259178 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:19.928070 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:19.929156 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:19.930011 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:20.269341 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:20.270406 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:20.271251 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:20.936779 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:20.937570 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:20.938131 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:21.280561 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:21.281252 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:21.281738 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:21.943136 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:21.943848 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:21.944332 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:22.292177 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:22.292890 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:22.293350 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:22.950506 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:22.951248 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:22.951827 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:23.303321 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:23.304026 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:23.304498 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:23.957407 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:23.958189 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:23.958784 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+
+WARN : 2026/09/10 23:20:24.315259 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:24.316050 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:24.316629 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:24.964121 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:24.964996 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:24.965470 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:25.326399 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:25.327475 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:25.328322 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:25.971145 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:25.971764 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:25.972239 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:26.339552 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:26.340621 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:26.341465 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:26.978015 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:26.978896 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:26.979398 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:27.351053 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:27.351768 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:27.352209 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:27.984861 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:27.985494 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:27.985981 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:28.363729 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:28.364607 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:28.365055 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:28.991880 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:28.992601 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:28.993070 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:29.376271 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:29.377200 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:29.377710 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:29.998605 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:29.999465 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:29.999971 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:30.387177 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:30.387878 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:30.388337 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+
+WARN : 2026/09/10 23:20:31.006009 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:31.006769 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:31.007334 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:31.399169 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:31.400247 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:31.401095 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:32.013712 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:32.014350 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:32.014805 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:32.411273 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:32.412072 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:32.412640 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:33.020196 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:33.020904 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:33.021410 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:33.425483 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:33.426244 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:33.426812 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:34.025956 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:34.026830 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:34.027336 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:34.437078 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:34.437865 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:34.438448 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:35.032999 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:35.033646 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:35.034085 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:35.448773 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:35.449565 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:35.450110 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:36.040222 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:36.040840 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:36.041331 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:36.459767 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:36.460557 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:36.461097 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:37.047510 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:37.048115 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:37.048611 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+
+WARN : 2026/09/10 23:20:37.470685 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:37.471558 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:37.472008 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:38.054328 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:38.055009 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:38.055514 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:38.480854 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:38.481751 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:38.482196 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:39.060534 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:39.061192 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:39.061682 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:39.491977 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:39.492688 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:39.493129 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:40.066422 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:40.067090 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:40.067597 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:40.502871 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:40.503684 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:40.504227 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:41.073831 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:41.074628 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:41.075175 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:41.514169 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:41.514818 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:41.515269 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:42.080916 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:42.081571 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:42.082035 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:42.524584 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:42.525366 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:42.525924 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:43.087499 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:43.088104 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:43.088621 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+
+WARN : 2026/09/10 23:20:43.536366 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:43.537496 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:43.538172 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:44.093821 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:44.094478 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:44.094945 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:44.547476 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:44.548095 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:44.548574 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:45.101756 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:45.102549 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:45.103113 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:45.558985 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:45.559774 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:45.560360 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:46.109428 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:46.110178 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:46.110971 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:46.570548 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:46.571335 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:46.571893 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:47.116141 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:47.116793 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:47.117235 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:47.582120 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:47.582818 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:47.583271 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:48.122796 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:48.123685 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:48.124150 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:48.592995 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:48.593873 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:48.594341 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+WARN : 2026/09/10 23:20:49.128759 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:49.129382 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:49.129862 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+
+WARN : 2026/09/10 23:20:50.134906 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:50.135555 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:20:50.136660 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+tunneld: exercise: pass=1 peer=guest-b FAILED: after 91 attempt(s) over 1m30s: tunneld: tunnel not established: "guest-b" at 10.128.0.41:4433: tunnel: dialing 10.128.0.41:4433: CRYPTO_ERROR 0x12a (local): attest: verification failed
+tunneld: exercise failed: pass 1, peer guest-b: after 91 attempt(s) over 1m30s: tunneld: tunnel not established: "guest-b" at 10.128.0.41:4433: tunnel: dialing 10.128.0.41:4433: CRYPTO_ERROR 0x12a (local): attest: verification failed
+tunneld: holding for 1m0s so that peers still dialing can finish
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

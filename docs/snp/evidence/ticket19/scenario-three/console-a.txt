@@ -1,0 +1,1392 @@
+[2J[01;01H[=3h[2J[01;01H[2J[01;01H[=3h[2J[01;01HBdsDxe: loading Boot0003 "Ubuntu" from PciRoot(0x0)/Pci(0x4,0x0)/NVMe(0x1,00-00-00-00-00-00-00-00)/HD(15,GPT,6A0A967B-F814-468B-AF0C-F6BF6538EF09,0x2800,0x35000)/\EFI\ubuntu\shimx64.efi
+BdsDxe: starting Boot0003 "Ubuntu" from PciRoot(0x0)/Pci(0x4,0x0)/NVMe(0x1,00-00-00-00-00-00-00-00)/HD(15,GPT,6A0A967B-F814-468B-AF0C-F6BF6538EF09,0x2800,0x35000)/\EFI\ubuntu\shimx64.efi
+
+UEFI: Attempting to start image.
+Description: Ubuntu
+FilePath: PciRoot(0x0)/Pci(0x4,0x0)/NVMe(0x1,00-00-00-00-00-00-00-00)/HD(15,GPT,6A0A967B-F814-468B-AF0C-F6BF6538EF09,0x2800,0x35000)/\EFI\ubuntu\shimx64.efi
+OptionNumber: 3.
+
+
+
+[    0.000000] tdx: Guest detected
+[    0.000000] tdx: Attributes: SEPT_VE_DISABLE
+[    0.000000] tdx: TD_CTLS: PENDING_VE_DISABLE ENUM_TOPOLOGY VIRT_CPUID2 REDUCE_VE
+[    0.000000] Linux version 6.17.0-1022-gcp (buildd@lcy02-amd64-073) (x86_64-linux-gnu-gcc-13 (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, GNU ld (GNU Binutils for Ubuntu) 2.42) #25-Ubuntu SMP Sat Jul 25 01:12:40 UTC 2026 (Ubuntu 6.17.0-1022.25-gcp 6.17.13)
+[    0.000000] Command line: BOOT_IMAGE=/vmlinuz-6.17.0-1022-gcp console=ttyS0,115200 panic=-1 rdinit=/init
+[    0.000000] KERNEL supported cpus:
+[    0.000000]   Intel GenuineIntel
+[    0.000000]   AMD AuthenticAMD
+[    0.000000]   Hygon HygonGenuine
+[    0.000000]   Centaur CentaurHauls
+[    0.000000]   zhaoxin   Shanghai  
+[    0.000000] x86/split lock detection: #DB: warning on user-space bus_locks
+[    0.000000] BIOS-provided physical RAM map:
+[    0.000000] BIOS-e820: [mem 0x0000000000000000-0x000000000080bfff] usable
+[    0.000000] BIOS-e820: [mem 0x000000000080c000-0x000000000080cfff] ACPI NVS
+[    0.000000] BIOS-e820: [mem 0x000000000080d000-0x00000000015fffff] usable
+[    0.000000] BIOS-e820: [mem 0x0000000001600000-0x000000000161ffff] reserved
+[    0.000000] BIOS-e820: [mem 0x0000000001620000-0x00000000bd43afff] usable
+[    0.000000] BIOS-e820: [mem 0x00000000bd43b000-0x00000000bd442fff] ACPI data
+[    0.000000] BIOS-e820: [mem 0x00000000bd443000-0x00000000bf2ecfff] usable
+[    0.000000] BIOS-e820: [mem 0x00000000bf2ed000-0x00000000bf4ecfff] reserved
+[    0.000000] BIOS-e820: [mem 0x00000000bf4ed000-0x00000000bf56ffff] usable
+[    0.000000] BIOS-e820: [mem 0x00000000bf570000-0x00000000bf57efff] ACPI data
+[    0.000000] BIOS-e820: [mem 0x00000000bf57f000-0x00000000bf5fefff] ACPI NVS
+[    0.000000] BIOS-e820: [mem 0x00000000bf5ff000-0x00000000bffdffff] usable
+[    0.000000] BIOS-e820: [mem 0x00000000bffe0000-0x00000000bfffffff] reserved
+[    0.000000] BIOS-e820: [mem 0x00000000ffe00000-0x000000043fffffff] usable
+[    0.000000] NX (Execute Disable) protection: active
+[    0.000000] APIC: Static calls initialized
+[    0.000000] efi: EFI v2.7 by EDK II
+[    0.000000] efi: CCFinalLog=0xbf5b7000 ACPI=0xbf57e000 ACPI 2.0=0xbf57e014 TPMFinalLog=0xbf5af000 SMBIOS=0xbf3ca000 MEMATTR=0xbd445018 MOKvar=0xbf3c8000 INITRD=0xbd448418 TPMEventLog=0xbd43b018 
+[    0.000000] SMBIOS 2.4 present.
+[    0.000000] DMI: Google Google Compute Engine/Google Compute Engine, BIOS Google 07/08/2026
+[    0.000000] DMI: Memory slots populated: 1/1
+[    0.000000] secureboot: Secure boot disabled
+[    0.000000] Hypervisor detected: KVM
+[    0.000000] last_pfn = 0x100000 max_arch_pfn = 0x10000000000
+[    0.000000] tsc: Detected 2700.000 MHz processor
+[    0.000023] last_pfn = 0x440000 max_arch_pfn = 0x10000000000
+[    0.000025] MTRR map: 1 entries (0 fixed + 1 variable; max 2), built from 1 variable MTRRs
+[    0.000027] MTRRs set to read-only
+[    0.000028] x86/PAT: Configuration [0-7]: WB  WC  UC- UC  WB  WP  UC- WT  
+[    0.000047] x2apic: enabled by BIOS, switching to x2apic ops
+[    0.000066] last_pfn = 0x100000 max_arch_pfn = 0x10000000000
+[    0.008715] software IO TLB: SWIOTLB bounce buffer size adjusted to 982MB
+[    0.008734] Using GB pages for direct mapping
+[    0.009203] secureboot: Secure boot disabled
+[    0.009203] RAMDISK: [mem 0xbc37c000-0xbcd72fff]
+[    0.009207] ACPI: Early table checksum verification disabled
+[    0.009212] ACPI: RSDP 0x00000000BF57E014 000024 (v02 Google)
+[    0.009216] ACPI: XSDT 0x00000000BF57D0E8 000064 (v01 Google GOOGFACP 00000001      01000013)
+[    0.009224] ACPI: FACP 0x00000000BF577000 0000F4 (v02 Google GOOGFACP 00000001 GOOG 00000001)
+[    0.009232] ACPI: DSDT 0x00000000BF578000 001A93 (v01 Google GOOGDSDT 00000001 GOOG 00000001)
+[    0.009237] ACPI: FACS 0x00000000BF5AA000 000040
+[    0.009240] ACPI: CCEL 0x00000000BF57C000 000038 (v01 INTEL  EDK2     00000002      01000013)
+[    0.009244] ACPI: SSDT 0x00000000BF57B000 000316 (v02 GOOGLE Tpm2Tabl 00001000 INTL 20250807)
+[    0.009248] ACPI: TPM2 0x00000000BF57A000 000034 (v04 GOOGLE          00000001 GOOG 00000001)
+[    0.009252] ACPI: SRAT 0x00000000BF576000 0000E8 (v03 Google GOOGSRAT 00000001 GOOG 00000001)
+[    0.009256] ACPI: SSDT 0x00000000BF574000 000A42 (v01 Google GOOGSSDT 00000001 GOOG 00000001)
+[    0.009260] ACPI: WAET 0x00000000BF573000 000028 (v01 Google GOOGWAET 00000001 GOOG 00000001)
+[    0.009263] ACPI: APIC 0x00000000BF572000 000096 (v05 Google GOOGAPIC 00000001 GOOG 00000001)
+[    0.009266] ACPI: Reserving FACP table memory at [mem 0xbf577000-0xbf5770f3]
+[    0.009267] ACPI: Reserving DSDT table memory at [mem 0xbf578000-0xbf579a92]
+[    0.009268] ACPI: Reserving FACS table memory at [mem 0xbf5aa000-0xbf5aa03f]
+[    0.009270] ACPI: Reserving CCEL table memory at [mem 0xbf57c000-0xbf57c037]
+[    0.009271] ACPI: Reserving SSDT table memory at [mem 0xbf57b000-0xbf57b315]
+[    0.009271] ACPI: Reserving TPM2 table memory at [mem 0xbf57a000-0xbf57a033]
+[    0.009272] ACPI: Reserving SRAT table memory at [mem 0xbf576000-0xbf5760e7]
+[    0.009273] ACPI: Reserving SSDT table memory at [mem 0xbf574000-0xbf574a41]
+[    0.009274] ACPI: Reserving WAET table memory at [mem 0xbf573000-0xbf573027]
+[    0.009275] ACPI: Reserving APIC table memory at [mem 0xbf572000-0xbf572095]
+[    0.009382] APIC: Switched APIC routing to: cluster x2apic
+[    0.009463] ACPI: SRAT: Node 0 PXM 0 [mem 0x00000000-0x0009ffff]
+[    0.009466] ACPI: SRAT: Node 0 PXM 0 [mem 0x00100000-0xbfffffff]
+[    0.009467] ACPI: SRAT: Node 0 PXM 0 [mem 0x100000000-0x43fffffff]
+[    0.009472] NUMA: Node 0 [mem 0x00001000-0x0009ffff] + [mem 0x00100000-0xbfffffff] -> [mem 0x00001000-0xbfffffff]
+[    0.009475] NUMA: Node 0 [mem 0x00001000-0xbfffffff] + [mem 0x100000000-0x43fffffff] -> [mem 0x00001000-0x43fffffff]
+[    0.009487] NODE_DATA(0) allocated [mem 0x43ffd42c0-0x43fffefff]
+[    0.009873] Zone ranges:
+[    0.009874]   DMA      [mem 0x0000000000001000-0x0000000000ffffff]
+[    0.009876]   DMA32    [mem 0x0000000001000000-0x00000000ffffffff]
+[    0.009878]   Normal   [mem 0x0000000100000000-0x000000043fffffff]
+[    0.009880]   Device   empty
+[    0.009881] Movable zone start for each node
+[    0.009883] Early memory node ranges
+[    0.009884]   node   0: [mem 0x0000000000001000-0x000000000009ffff]
+[    0.009886]   node   0: [mem 0x0000000000100000-0x000000000080bfff]
+[    0.009887]   node   0: [mem 0x000000000080d000-0x00000000015fffff]
+[    0.009888]   node   0: [mem 0x0000000001620000-0x00000000bd43afff]
+[    0.009889]   node   0: [mem 0x00000000bd443000-0x00000000bf2ecfff]
+[    0.009890]   node   0: [mem 0x00000000bf4ed000-0x00000000bf56ffff]
+[    0.009891]   node   0: [mem 0x00000000bf5ff000-0x00000000bffdffff]
+[    0.009892]   node   0: [mem 0x00000000ffe00000-0x000000043fffffff]
+[    0.009895] Initmem setup node 0 [mem 0x0000000000001000-0x000000043fffffff]
+[    0.009904] On node 0, zone DMA: 1 pages in unavailable ranges
+[    0.009922] On node 0, zone DMA: 96 pages in unavailable ranges
+[    0.009940] On node 0, zone DMA: 1 pages in unavailable ranges
+[    0.016624] On node 0, zone DMA32: 32 pages in unavailable ranges
+[    0.016709] On node 0, zone DMA32: 8 pages in unavailable ranges
+[    0.016718] On node 0, zone DMA32: 512 pages in unavailable ranges
+[    0.016742] On node 0, zone DMA32: 143 pages in unavailable ranges
+[    0.017027] On node 0, zone DMA32: 32288 pages in unavailable ranges
+[    0.047925] ACPI: PM-Timer IO Port: 0xb008
+[    0.047972] ACPI: LAPIC_NMI (acpi_id[0xff] dfl dfl lint[0x1])
+[    0.048124] IOAPIC[0]: apic_id 0, version 17, address 0xfec00000, GSI 0-23
+[    0.048128] ACPI: INT_SRC_OVR (bus 0 bus_irq 5 global_irq 5 high level)
+[    0.048131] ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 9 high level)
+[    0.048133] ACPI: INT_SRC_OVR (bus 0 bus_irq 10 global_irq 10 high level)
+[    0.048134] ACPI: INT_SRC_OVR (bus 0 bus_irq 11 global_irq 11 high level)
+[    0.048140] APIC: wakeup_secondary_cpu_64() replaced with acpi_wakeup_cpu()
+[    0.048147] ACPI: Using ACPI (MADT) for SMP configuration information
+[    0.048154] CPU topo: Max. logical packages:   1
+[    0.048155] CPU topo: Max. logical dies:       1
+[    0.048155] CPU topo: Max. dies per package:   1
+[    0.048160] CPU topo: Max. threads per core:   2
+[    0.048161] CPU topo: Num. cores per package:     2
+[    0.048162] CPU topo: Num. threads per package:   4
+[    0.048163] CPU topo: Allowing 4 present CPUs plus 0 hotplug CPUs
+[    0.048247] PM: hibernation: Registered nosave memory: [mem 0x00000000-0x00000fff]
+[    0.048249] PM: hibernation: Registered nosave memory: [mem 0x000a0000-0x000fffff]
+[    0.048251] PM: hibernation: Registered nosave memory: [mem 0x0080c000-0x0080cfff]
+[    0.048253] PM: hibernation: Registered nosave memory: [mem 0x01600000-0x0161ffff]
+[    0.048255] PM: hibernation: Registered nosave memory: [mem 0xbd43b000-0xbd442fff]
+[    0.048257] PM: hibernation: Registered nosave memory: [mem 0xbf2ed000-0xbf4ecfff]
+[    0.048259] PM: hibernation: Registered nosave memory: [mem 0xbf570000-0xbf5fefff]
+[    0.048261] PM: hibernation: Registered nosave memory: [mem 0xbffe0000-0xffdfffff]
+[    0.048263] [mem 0xc0000000-0xffdfffff] available for PCI devices
+[    0.048264] Booting paravirtualized kernel on KVM
+[    0.048267] clocksource: refined-jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 1910969940391419 ns
+[    0.048276] setup_percpu: NR_CPUS:8192 nr_cpumask_bits:4 nr_cpu_ids:4 nr_node_ids:1
+[    0.048637] percpu: Embedded 84 pages/cpu s221184 r8192 d114688 u524288
+[    0.048724] kvm-guest: PV spinlocks enabled
+[    0.048727] PV qspinlock hash table entries: 256 (order: 0, 4096 bytes, linear)
+[    0.048731] Kernel command line: BOOT_IMAGE=/vmlinuz-6.17.0-1022-gcp console=ttyS0,115200 panic=-1 rdinit=/init
+[    0.048796] random: crng init done
+[    0.048797] printk: log buffer data + meta data: 262144 + 917504 = 1179648 bytes
+[    0.051022] Dentry cache hash table entries: 2097152 (order: 12, 16777216 bytes, linear)
+[    0.052140] Inode-cache hash table entries: 1048576 (order: 11, 8388608 bytes, linear)
+[    0.052240] software IO TLB: area num 4.
+[    0.052241] software IO TLB: SWIOTLB bounce buffer size roundup to 1024MB
+[    0.320076] Fallback order for Node 0: 0 
+[    0.320081] Built 1 zonelists, mobility grouping on.  Total pages: 4193991
+[    0.320083] Policy zone: Normal
+[    0.320091] mem auto-init: stack:all(zero), heap alloc:on, heap free:off
+[    0.361080] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=4, Nodes=1
+[    0.376253] ftrace: allocating 62261 entries in 244 pages
+[    0.376255] ftrace: allocated 244 pages with 5 groups
+[    0.376487] rcu: Hierarchical RCU implementation.
+[    0.376488] rcu: 	RCU restricting CPUs from NR_CPUS=8192 to nr_cpu_ids=4.
+[    0.376490] 	Rude variant of Tasks RCU enabled.
+[    0.376490] 	Tracing variant of Tasks RCU enabled.
+[    0.376491] rcu: RCU calculated value of scheduler-enlistment delay is 100 jiffies.
+[    0.376492] rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=4
+[    0.376504] RCU Tasks Rude: Setting shift to 2 and lim to 1 rcu_task_cb_adjust=1 rcu_task_cpu_ids=4.
+[    0.376506] RCU Tasks Trace: Setting shift to 2 and lim to 1 rcu_task_cb_adjust=1 rcu_task_cpu_ids=4.
+[    0.380954] NR_IRQS: 524544, nr_irqs: 456, preallocated irqs: 16
+[    0.381339] rcu: srcu_init: Setting srcu_struct sizes based on contention.
+[    0.381735] Console: colour dummy device 80x25
+[    0.381859] printk: legacy console [ttyS0] enabled
+[    0.899783] ACPI: Core revision 20250404
+[    0.901874] ACPI BIOS Warning (bug): Incorrect checksum in table [APIC] - 0xDC, should be 0x17 (20250404/utcksum-58)
+[    0.907321] APIC: Switch to symmetric I/O mode setup
+[    0.915266] APIC: Switched APIC routing to: physical x2apic
+[    0.926322] clocksource: tsc-early: mask: 0xffffffffffffffff max_cycles: 0x26eb3e3cc63, max_idle_ns: 440795236593 ns
+[    0.931702] Calibrating delay loop (skipped), value calculated using timer frequency.. 5400.00 BogoMIPS (lpj=2700000)
+[    0.932699] x86/cpu: User Mode Instruction Prevention (UMIP) activated
+[    0.932699] Last level iTLB entries: 4KB 0, 2MB 0, 4MB 0
+[    0.932699] Last level dTLB entries: 4KB 0, 2MB 0, 4MB 0, 1GB 0
+[    0.932699] process: using TDX aware idle routine
+[    0.932699] mitigations: Enabled attack vectors: user_kernel, user_user, guest_host, guest_guest, SMT mitigations: auto
+[    0.932699] Speculative Store Bypass: Mitigation: Speculative Store Bypass disabled via prctl
+[    0.932699] Spectre V2 : Mitigation: Enhanced / Automatic IBRS
+[    0.932699] Spectre V1 : Mitigation: usercopy/swapgs barriers and __user pointer sanitization
+[    0.932699] Spectre V2 : Spectre v2 / PBRSB-eIBRS: Retire a single CALL on VMEXIT
+[    0.932699] Spectre V2 : mitigation: Enabling conditional Indirect Branch Prediction Barrier
+[    0.932699] x86/fpu: Supporting XSAVE feature 0x001: 'x87 floating point registers'
+[    0.932699] x86/fpu: Supporting XSAVE feature 0x002: 'SSE registers'
+[    0.932699] x86/fpu: Supporting XSAVE feature 0x004: 'AVX registers'
+[    0.932699] x86/fpu: Supporting XSAVE feature 0x020: 'AVX-512 opmask'
+[    0.932699] x86/fpu: Supporting XSAVE feature 0x040: 'AVX-512 Hi256'
+[    0.932699] x86/fpu: Supporting XSAVE feature 0x080: 'AVX-512 ZMM_Hi256'
+[    0.932699] x86/fpu: Supporting XSAVE feature 0x200: 'Protection Keys User registers'
+[    0.932699] x86/fpu: Supporting XSAVE feature 0x20000: 'AMX Tile config'
+[    0.932699] x86/fpu: Supporting XSAVE feature 0x40000: 'AMX Tile data'
+[    0.932699] x86/fpu: xstate_offset[2]:  576, xstate_sizes[2]:  256
+[    0.932699] x86/fpu: xstate_offset[5]:  832, xstate_sizes[5]:   64
+[    0.932699] x86/fpu: xstate_offset[6]:  896, xstate_sizes[6]:  512
+[    0.932699] x86/fpu: xstate_offset[7]: 1408, xstate_sizes[7]: 1024
+[    0.932699] x86/fpu: xstate_offset[9]: 2432, xstate_sizes[9]:    8
+[    0.932699] x86/fpu: xstate_offset[17]: 2496, xstate_sizes[17]:   64
+[    0.932699] x86/fpu: xstate_offset[18]: 2560, xstate_sizes[18]: 8192
+[    0.932699] x86/fpu: Enabled xstate features 0x602e7, context size is 10752 bytes, using 'compacted' format.
+[    0.932699] Freeing SMP alternatives memory: 52K
+
+[    0.932699] Memory Encryption Features active: Intel TDX
+[    0.932699] pid_max: default: 32768 minimum: 301
+[    0.932699] LSM: initializing lsm=lockdown,capability,landlock,yama,apparmor,ima,evm
+[    0.932699] landlock: Up and running.
+[    0.932699] Yama: becoming mindful.
+[    0.932699] AppArmor: AppArmor initialized
+[    0.932699] Mount-cache hash table entries: 32768 (order: 6, 262144 bytes, linear)
+[    0.932699] Mountpoint-cache hash table entries: 32768 (order: 6, 262144 bytes, linear)
+[    0.932699] smpboot: CPU0: Intel TDX (family: 0x6, model: 0x8f, stepping: 0x8)
+[    0.932932] Performance Events: unsupported CPU family 6 model 143 no PMU driver, software events only.
+[    0.933734] signal: max sigframe size: 11952
+[    0.934730] rcu: Hierarchical SRCU implementation.
+[    0.935700] rcu: 	Max phase no-delay instances is 400.
+[    0.936764] Timer migration: 1 hierarchy levels; 8 children per group; 1 crossnode level
+[    0.938015] NMI watchdog: Perf NMI watchdog permanently disabled
+[    0.938783] smp: Bringing up secondary CPUs ...
+[    0.939701] smpboot: Parallel CPU startup disabled by the platform
+[    0.940832] smpboot: x86: Booting SMP configuration:
+[    0.941702] .... node  #0, CPUs:      #1 #2 #3
+[    0.943784] smp: Brought up 1 node, 4 CPUs
+[    0.945701] smpboot: Total of 4 processors activated (21600.00 BogoMIPS)
+[    0.947853] Memory: 15349252K/16775964K available (22310K kernel code, 4681K rwdata, 15692K rodata, 5416K init, 6080K bss, 1418416K reserved, 0K cma-reserved)
+[    0.949758] devtmpfs: initialized
+[    0.950757] x86/mm: Memory block size: 128MB
+[    0.952874] ACPI: PM: Registering ACPI NVS region [mem 0x0080c000-0x0080cfff] (4096 bytes)
+[    0.953701] ACPI: PM: Registering ACPI NVS region [mem 0xbf57f000-0xbf5fefff] (524288 bytes)
+[    0.954778] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 1911260446275000 ns
+[    0.955721] posixtimers hash table entries: 2048 (order: 3, 32768 bytes, linear)
+[    0.956712] futex hash table entries: 1024 (65536 bytes on 1 NUMA nodes, total 64 KiB, linear).
+[    0.957774] pinctrl core: initialized pinctrl subsystem
+[    0.959020] PM: RTC time: 23:07:38, date: 2026-09-10
+[    0.961120] NET: Registered PF_NETLINK/PF_ROUTE protocol family
+[    0.963705] DMA: preallocated 2048 KiB GFP_KERNEL pool for atomic allocations
+[    0.965703] DMA: preallocated 2048 KiB GFP_KERNEL|GFP_DMA pool for atomic allocations
+[    0.967703] DMA: preallocated 2048 KiB GFP_KERNEL|GFP_DMA32 pool for atomic allocations
+[    0.968712] audit: initializing netlink subsys (disabled)
+[    0.970738] audit: type=2000 audit(1789081650.039:1): state=initialized audit_enabled=0 res=1
+[    0.970894] thermal_sys: Registered thermal governor 'fair_share'
+[    0.971705] thermal_sys: Registered thermal governor 'bang_bang'
+[    0.973700] thermal_sys: Registered thermal governor 'step_wise'
+[    0.974700] thermal_sys: Registered thermal governor 'user_space'
+[    0.975700] thermal_sys: Registered thermal governor 'power_allocator'
+[    0.976717] cpuidle: using governor ladder
+[    0.978712] cpuidle: using governor menu
+[    0.979890] acpiphp: ACPI Hot Plug PCI Controller Driver version: 0.5
+[    0.980953] PCI: Using configuration type 1 for base access
+[    0.981781] kprobes: kprobe jump-optimization is enabled. All kprobes are optimized if possible.
+[    0.984776] HugeTLB: registered 1.00 GiB page size, pre-allocated 0 pages
+[    0.991701] HugeTLB: 16380 KiB vmemmap can be freed for a 1.00 GiB page
+[    0.998702] HugeTLB: registered 2.00 MiB page size, pre-allocated 0 pages
+[    1.005700] HugeTLB: 28 KiB vmemmap can be freed for a 2.00 MiB page
+[    1.015444] ACPI: Added _OSI(Module Device)
+[    1.019701] ACPI: Added _OSI(Processor Device)
+[    1.024700] ACPI: Added _OSI(Processor Aggregator Device)
+[    1.031072] ACPI: 3 ACPI AML tables successfully acquired and loaded
+[    1.039918] ACPI: Interpreter enabled
+[    1.043716] ACPI: PM: (supports S0 S3 S4 S5)
+[    1.047701] ACPI: Using IOAPIC for interrupt routing
+[    1.052823] PCI: Using host bridge windows from ACPI; if necessary, use "pci=nocrs" and report a bug
+[    1.062700] PCI: Ignoring E820 reservations for host bridge windows
+[    1.069123] ACPI: Enabled 16 GPEs in block 00 to 0F
+[    1.077365] ACPI: PCI Root Bridge [PCI0] (domain 0000 [bus 00-ff])
+[    1.083703] acpi PNP0A03:00: _OSC: OS supports [ASPM ClockPM Segments MSI EDR HPX-Type3]
+[    1.091701] acpi PNP0A03:00: _OSC: not requesting OS control; OS requires [ExtendedConfig ASPM ClockPM MSI]
+[    1.101710] acpi PNP0A03:00: fail to add MMCONFIG information, can't access extended configuration space under this bridge
+[    1.114213] PCI host bridge to bus 0000:00
+[    1.117702] pci_bus 0000:00: root bus resource [io  0x0000-0x0cf7 window]
+[    1.124700] pci_bus 0000:00: root bus resource [io  0x0d00-0xffff window]
+[    1.131700] pci_bus 0000:00: root bus resource [mem 0x000a0000-0x000bffff window]
+[    1.139700] pci_bus 0000:00: root bus resource [mem 0xc0000000-0xfebfefff window]
+[    1.146702] pci_bus 0000:00: root bus resource [bus 00-ff]
+[    1.152808] pci 0000:00:00.0: [8086:1237] type 00 class 0x060000 conventional PCI endpoint
+[    1.163084] pci 0000:00:01.0: [8086:7110] type 00 class 0x060100 conventional PCI endpoint
+[    1.173046] pci 0000:00:01.3: [8086:7113] type 00 class 0x068000 conventional PCI endpoint
+[    1.183951] pci 0000:00:01.3: quirk: [io  0xb000-0xb03f] claimed by PIIX4 ACPI
+[    1.194887] pci 0000:00:03.0: [1ae0:0042] type 00 class 0x020000 conventional PCI endpoint
+[    1.203733] pci 0000:00:03.0: BAR 0 [mem 0xc0202000-0xc0202fff]
+[    1.210725] pci 0000:00:03.0: BAR 1 [mem 0xc0200000-0xc02000ff]
+[    1.216723] pci 0000:00:03.0: BAR 2 [mem 0xc0100000-0xc01fffff]
+[    1.224311] pci 0000:00:04.0: [1ae0:001f] type 00 class 0x010802 conventional PCI endpoint
+[    1.235724] pci 0000:00:04.0: BAR 0 [mem 0xc0000000-0xc0003fff 64bit]
+[    1.241767] pci 0000:00:04.0: BAR 4 [mem 0xc0201000-0xc020103f]
+[    1.314903] ACPI: PCI: Interrupt link LNKA configured for IRQ 10
+[    1.320792] ACPI: PCI: Interrupt link LNKB configured for IRQ 10
+[    1.328797] ACPI: PCI: Interrupt link LNKC configured for IRQ 11
+[    1.336787] ACPI: PCI: Interrupt link LNKD configured for IRQ 11
+[    1.343720] ACPI: PCI: Interrupt link LNKS configured for IRQ 9
+[    1.351722] iommu: Default domain type: Translated
+[    1.355701] iommu: DMA domain TLB invalidation policy: lazy mode
+[    1.362847] SCSI subsystem initialized
+[    1.366737] ACPI: bus type USB registered
+[    1.370718] usbcore: registered new interface driver usbfs
+[    1.376704] usbcore: registered new interface driver hub
+[    1.381705] usbcore: registered new device driver usb
+[    1.387718] pps_core: LinuxPPS API ver. 1 registered
+[    1.392700] pps_core: Software ver. 5.3.6 - Copyright 2005-2007 Rodolfo Giometti <giometti@linux.it>
+[    1.401702] PTP clock support registered
+[    1.405734] EDAC MC: Ver: 3.0.0
+[    1.418702] efivars: Registered efivars operations
+[    1.424019] NetLabel: Initializing
+[    1.427701] NetLabel:  domain hash size = 128
+[    1.431700] NetLabel:  protocols = UNLABELED CIPSOv4 CALIPSO
+[    1.437713] NetLabel:  unlabeled traffic allowed by default
+[    1.443728] mctp: management component transport protocol core
+[    1.449701] NET: Registered PF_MCTP protocol family
+[    1.454728] PCI: Using ACPI for IRQ routing
+[    1.459706] vgaarb: loaded
+[    1.462701] clocksource: Switched to clocksource tsc-early
+[    1.468986] VFS: Disk quotas dquot_6.6.0
+[    1.473091] VFS: Dquot-cache hash table entries: 512 (order 0, 4096 bytes)
+[    1.480484] AppArmor: AppArmor Filesystem Enabled
+[    1.485384] pnp: PnP ACPI init
+[    1.489208] pnp: PnP ACPI: found 7 devices
+[    1.503173] clocksource: acpi_pm: mask: 0xffffff max_cycles: 0xffffff, max_idle_ns: 2085701024 ns
+[    1.512242] NET: Registered PF_INET protocol family
+[    1.517561] IP idents hash table entries: 262144 (order: 9, 2097152 bytes, linear)
+[    1.541245] tcp_listen_portaddr_hash hash table entries: 8192 (order: 5, 131072 bytes, linear)
+[    1.550104] Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+[    1.558100] TCP established hash table entries: 131072 (order: 8, 1048576 bytes, linear)
+[    1.566516] TCP bind hash table entries: 65536 (order: 9, 2097152 bytes, linear)
+[    1.574208] TCP: Hash tables configured (established 131072 bind 65536)
+[    1.581128] MPTCP token hash table entries: 16384 (order: 7, 393216 bytes, linear)
+[    1.588936] UDP hash table entries: 8192 (order: 7, 524288 bytes, linear)
+[    1.595986] UDP-Lite hash table entries: 8192 (order: 7, 524288 bytes, linear)
+[    1.603430] NET: Registered PF_UNIX/PF_LOCAL protocol family
+[    1.609250] NET: Registered PF_XDP protocol family
+[    1.614197] pci_bus 0000:00: resource 4 [io  0x0000-0x0cf7 window]
+[    1.620529] pci_bus 0000:00: resource 5 [io  0x0d00-0xffff window]
+[    1.626855] pci_bus 0000:00: resource 6 [mem 0x000a0000-0x000bffff window]
+[    1.633887] pci_bus 0000:00: resource 7 [mem 0xc0000000-0xfebfefff window]
+[    1.640937] pci 0000:00:00.0: Limiting direct PCI/PCI transfers
+[    1.647157] PCI: CLS 0 bytes, default 64
+[    1.651363] PCI-DMA: Using software bounce buffering for IO (SWIOTLB)
+[    1.651432] Trying to unpack rootfs image as initramfs...
+[    1.657959] software IO TLB: mapped [mem 0x000000007bdff000-0x00000000bbdff000] (1024MB)
+[    1.657992] clocksource: tsc: mask: 0xffffffffffffffff max_cycles: 0x26eb3e3cc63, max_idle_ns: 440795236593 ns
+[    1.682214] clocksource: Switched to clocksource tsc
+[    1.695187] Initialise system trusted keyrings
+[    1.699795] Key type blacklist registered
+[    1.704144] workingset: timestamp_bits=36 max_order=22 bucket_order=0
+[    1.711191] squashfs: version 4.0 (2009/01/31) Phillip Lougher
+[    1.717497] fuse: init (API version 7.44)
+[    1.722029] integrity: Platform Keyring initialized
+[    1.727087] integrity: Machine keyring initialized
+[    1.746130] Key type asymmetric registered
+[    1.750406] Asymmetric key parser 'x509' registered
+[    1.755495] Block layer SCSI generic (bsg) driver version 0.4 loaded (major 242)
+[    1.763228] io scheduler mq-deadline registered
+[    1.771229] ledtrig-cpu: registered to indicate activity on CPUs
+[    1.774196] Freeing initrd memory: 10204K
+[    1.777605] input: Power Button as /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
+[    1.789301] ACPI: button: Power Button [PWRF]
+[    1.793840] input: Sleep Button as /devices/LNXSYSTM:00/LNXSLPBN:00/input/input1
+[    1.801462] ACPI: button: Sleep Button [SLPF]
+[    1.806645] Serial: 8250/16550 driver, 32 ports, IRQ sharing enabled
+[    1.838178] 00:03: ttyS0 at I/O 0x3f8 (irq = 4, base_baud = 115200) is a 16550A
+[    1.866177] 00:04: ttyS1 at I/O 0x2f8 (irq = 3, base_baud = 115200) is a 16550A
+[    1.894134] 00:05: ttyS2 at I/O 0x3e8 (irq = 6, base_baud = 115200) is a 16550A
+[    1.922046] 00:06: ttyS3 at I/O 0x2e8 (irq = 7, base_baud = 115200) is a 16550A
+[    1.927587] Linux agpgart interface v0.103
+[    1.938865] tpm_tis MSFT0101:00: 2.0 TPM (device-id 0x9009, rev-id 0)
+[    1.953201] loop: module loaded
+[    1.954799] Key type psk registered
+[    1.956902] ACPI: bus type drm_connector registered
+[    1.957012] nvme nvme0: pci function 0000:00:04.0
+[    1.959300] tun: Universal TUN/TAP device driver, 1.6
+[    1.962504] ACPI: \_SB_.LNKD: Enabled at IRQ 11
+[    1.964497] PPP generic driver version 2.4.2
+[    1.968439] i8042: PNP: PS/2 Controller [PNP0303:KBD,PNP0f13:MOU] at 0x60,0x64 irq 1,12
+[    1.972161] i8042: Warning: Keylock active
+[    1.981522] serio: i8042 KBD port at 0x60,0x64 irq 1
+[    1.981820] software IO TLB: Memory encryption is active and system is using DMA bounce buffers
+[    1.983741] serio: i8042 AUX port at 0x60,0x64 irq 12
+[    1.989805] mousedev: PS/2 mouse device common for all mice
+[    1.992460] rtc_cmos 00:00: RTC can wake from S4
+[    1.995989] rtc_cmos 00:00: registered as rtc0
+[    1.998243] rtc_cmos 00:00: setting system clock to 2026-09-10T23:07:39 UTC (1789081659)
+[    2.001790] rtc_cmos 00:00: alarms up to one day, 114 bytes nvram
+[    2.004383] i2c_dev: i2c /dev entries driver
+[    2.006269] device-mapper: core: CONFIG_IMA_DISABLE_HTABLE is disabled. Duplicate IMA measurements will not be recorded in the IMA log.
+[    2.011385] device-mapper: uevent: version 1.0.3
+[    2.013495] device-mapper: ioctl: 4.50.0-ioctl (2025-04-28) initialised: dm-devel@lists.linux.dev
+[    2.017262] intel_pstate: CPU model not supported
+[    2.019356] drop_monitor: Initializing network drop monitor service
+[    2.022758] NET: Registered PF_INET6 protocol family
+[    2.025619] Segment Routing with IPv6
+[    2.026923] nvme nvme0: 2/0/0 default/read/poll queues
+[    2.027402] In-situ OAM (IOAM) with IPv6
+[    2.031351] NET: Registered PF_PACKET protocol family
+[    2.033732] Key type dns_resolver registered
+[    2.035590] GPT:Primary header thinks Alt. header is not at the end of the disk.
+[    2.035611] mce: Unable to init MCE device (rc: -5)
+[    2.038834] GPT:8388607 != 41943039
+[    2.041120] IPI shorthand broadcast: enabled
+[    2.042497] GPT:Alternate GPT header not at the end of the disk.
+[    2.042498] GPT:8388607 != 41943039
+[    2.042498] GPT: Use GNU Parted to correct GPT errors.
+[    2.042504]  nvme0n1: p1 p14 p15 p16
+[    2.053633] sched_clock: Marking stable (1503014976, 550060287)->(9392183797, -7339108534)
+[    2.057395] registered taskstats version 1
+[    2.059625] Loading compiled-in X.509 certificates
+[    2.062335] Loaded X.509 cert 'Build time autogenerated kernel key: 8bf700b70a5c57ec8a5f67210ff11e5fa3a44628'
+[    2.067274] Loaded X.509 cert 'Canonical Ltd. Live Patch Signing 2025 Kmod: d541cef61dc7e793b7eb7e899970a2eef0b5dc8c'
+[    2.072537] Loaded X.509 cert 'Canonical Ltd. Live Patch Signing: 14df34d1a87cf37625abec039ef2bf521249b969'
+[    2.077099] Loaded X.509 cert 'Canonical Ltd. Kernel Module Signing 2025 Kmod: 4627603d2357a2a3f81006370894c221175893e9'
+[    2.082141] Loaded X.509 cert 'Canonical Ltd. Kernel Module Signing: 88f752e560a1e0737e31163a466ad7b70a850c19'
+[    2.086420] blacklist: Loading compiled-in revocation X.509 certificates
+[    2.089301] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing: 61482aa2830d0ab2ad5af10b7250da9033ddcef0'
+[    2.093488] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (2017): 242ade75ac4a15e50d50c84b0d45ff3eae707a03'
+[    2.098003] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (ESM 2018): 365188c1d374d6b07c3c8f240f8ef722433d6a8b'
+[    2.102623] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (2019): c0746fd6c5da3ae827864651ad66ae47fe24b3e8'
+[    2.107140] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (2021 v1): a8d54bbb3825cfb94fa13c9f8a594a195c107b8d'
+[    2.111749] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (2021 v2): 4cf046892d6fd3c9a5b03f98d845f90851dc6a8c'
+[    2.116355] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (2021 v3): 100437bb6de6e469b581e61cd66bce3ef4ed53af'
+[    2.120953] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (Ubuntu Core 2019): c1d57b8f6b743f23ee41f4f7ee292f06eecadfb9'
+[    2.128956] Demotion targets for Node 0: null
+[    2.131036] Key type .fscrypt registered
+[    2.132925] Key type fscrypt-provisioning registered
+[    2.135141] Key type big_key registered
+[    2.136789] Key type trusted registered
+[    2.139767] Key type encrypted registered
+[    2.141548] AppArmor: AppArmor sha256 policy hashing enabled
+[    2.170778] integrity: Loading X.509 certificate: UEFI:db
+[    2.173153] integrity: Loaded X.509 cert 'Microsoft Corporation UEFI CA 2011: 13adbf4309bd82709c8cd54f316ed522988a1bd4'
+[    2.177765] integrity: Loading X.509 certificate: UEFI:db
+[    2.180118] integrity: Loaded X.509 cert 'Microsoft Windows Production PCA 2011: a92902398e16c49778cd90f99e4f9ae17c55af53'
+[    2.184821] integrity: Loading X.509 certificate: UEFI:db
+[    2.187160] integrity: Loaded X.509 cert 'Microsoft Corporation: Windows UEFI CA 2023: aefc5fbbbe055d8f8daa585473499417ab5a5272'
+[    2.192214] integrity: Loading X.509 certificate: UEFI:db
+[    2.194533] integrity: Loaded X.509 cert 'Microsoft UEFI CA 2023: 81aa6b3244c935bce0d6628af39827421e32497d'
+[    2.196701] input: AT Translated Set 2 keyboard as /devices/platform/i8042/serio0/input/input2
+[    2.217245] integrity: Revoking X.509 certificate: UEFI:dbx
+[    2.219695] blacklist: Revoked X.509 cert 'Canonical Ltd. Secure Boot Signing: 61482aa2830d0ab2ad5af10b7250da9033ddcef0'
+[    2.224321] integrity: Revoking X.509 certificate: UEFI:dbx
+[    2.226759] blacklist: Revoked X.509 cert 'Cisco: Virtual UEFI SubCA: 13df2e3f54ebf347dcaecebf21d3cbb2355a4c9a'
+[    2.231036] integrity: Revoking X.509 certificate: UEFI:dbx
+[    2.233466] blacklist: Revoked X.509 cert 'Debian Secure Boot Signer: 00a7468def'
+[    2.237033] Loading compiled-in module X.509 certificates
+[    2.239762] Loaded X.509 cert 'Build time autogenerated kernel key: 8bf700b70a5c57ec8a5f67210ff11e5fa3a44628'
+[    2.243980] ima: Allocated hash algorithm: sha256
+[    2.270509] ima: No architecture policies found
+[    2.272544] evm: Initialising EVM extended attributes:
+[    2.274815] evm: security.selinux
+[    2.276298] evm: security.SMACK64
+[    2.277814] evm: security.SMACK64EXEC
+[    2.279462] evm: security.SMACK64TRANSMUTE
+[    2.281280] evm: security.SMACK64MMAP
+[    2.282902] evm: security.apparmor
+[    2.284425] evm: security.ima
+[    2.285753] evm: security.capability
+[    2.287320] evm: HMAC attrs: 0x1
+[    2.289102] PM:   Magic number: 10:276:150
+[    2.292056] RAS: Correctable Errors collector initialized.
+[    2.307255] clk: Disabling unused clocks
+[    2.309029] PM: genpd: Disabling unused power domains
+[    2.322928] Freeing unused decrypted memory: 2028K
+[    2.324868] Freeing unused kernel image (initmem) memory: 5416K
+[    2.325878] Write protecting the kernel read-only data: 38912k
+[    2.327163] Freeing unused kernel image (text/rodata gap) memory: 216K
+[    2.328460] Freeing unused kernel image (rodata/data gap) memory: 692K
+[    2.339239] x86/mm: Checked W+X mappings: passed, no W+X pages found.
+[    2.340283] Run /init as init process
+initrd: ======== attested tunnel guest, in the initrd grub measured ========
+initrd: kernel  6.17.0-1022-gcp x86_64
+initrd: cmdline BOOT_IMAGE=/vmlinuz-6.17.0-1022-gcp console=ttyS0,115200 panic=-1 rdinit=/init
+initrd: dmesg: [    0.000000] tdx: Guest detected
+initrd: dmesg: [    0.000000] tdx: Attributes: SEPT_VE_DISABLE
+initrd: dmesg: [    0.000000] tdx: TD_CTLS: PENDING_VE_DISABLE ENUM_TOPOLOGY VIRT_CPUID2 REDUCE_VE
+initrd: dmesg: [    0.932699] process: using TDX aware idle routine
+initrd: dmesg: [    0.932699] Memory Encryption Features active: Intel TDX
+initrd: dmesg: [    0.932699] smpboot: CPU0: Intel TDX (family: 0x6, model: 0x8f, stepping: 0x8)
+initrd: dmesg: [    1.981820] software IO TLB: Memory encryption is active and system is using DMA bounce buffers
+initrd: loaded tdx-guest
+[    2.379361] ACPI: \_SB_.LNKC: Enabled at IRQ 10
+[    2.395315] gve 0000:00:03.0: Driver is running with DQO RDA queue format.
+[    2.396415] gve 0000:00:03.0: MAC addr: 42:01:0a:80:00:28
+[    2.397286] gve 0000:00:03.0: BUFFER SIZES device option enabled with max_rx_buffer_size of 4096, header_buf_size of 128.
+[    2.399027] gve 0000:00:03.0: FLOW STEERING device option enabled with max rule limit of 20000.
+[    2.400417] gve 0000:00:03.0: TX queues 4, RX queues 4
+[    2.401266] gve 0000:00:03.0: Max TX queues 4, Max RX queues 4
+[    2.411550] gve 0000:00:03.0: GVE version 1.0.0
+[    2.412302] gve 0000:00:03.0: GVE queue format 3
+initrd: loaded gve
+initrd: loaded nf_tables
+initrd: loaded nf_reject_ipv4
+initrd: loaded nf_reject_ipv6
+initrd: loaded nft_reject
+initrd: loaded nft_reject_inet
+initrd: modules now resident: gve nf_reject_ipv4 nf_reject_ipv6 nf_tables nft_reject nft_reject_inet tdx_guest 
+initrd: report interface present at /sys/kernel/config/tsm/report
+initrd: block devices, as this kernel presents them with no udev running:
+initrd:   /dev/nvme0n1 sectors=41943040 serial='nvme_card-pd' wwid='nvme.1ae0-6e766d655f636172642d7064-6e766d655f636172642d7064-00000001'
+initrd:     partition nvme0n1p1 sectors=6289375
+initrd:     partition nvme0n1p14 sectors=8192
+initrd:     partition nvme0n1p15 sectors=217088
+initrd:     partition nvme0n1p16 sectors=1869825
+initrd:   /dev/nvme0n2 sectors=20971520 serial='nvme_card-pd' wwid='nvme.1ae0-6e766d655f636172642d7064-6e766d655f636172642d7064-00000002'
+initrd:   nvme controller nvme0: serial='nvme_card-pd' model='nvme_card-pd'
+initrd: config device /dev/nvme0n2 found by the ext4 label
+[    2.442687] EXT4-fs (nvme0n2): Supports (experimental) DIO atomic writes awu_min: 4096, awu_max: 4096
+[    2.444732] EXT4-fs (nvme0n2): mounted filesystem 759c3566-2316-4823-8404-61944370a422 ro without journal. Quota mode: none.
+initrd: config device mounted at /config (ro,noexec,nosuid,nodev); it holds:
+initrd:   collateral/FETCH.txt  1805 bytes  8ab6bb6e39ae50fe…
+initrd:   collateral/collateral.txt  2430 bytes  251a7fcc0661499c…
+initrd:   collateral/pckcrl-platform.body  3356 bytes  3bf7fa8fb2c2f313…
+initrd:   collateral/pckcrl-platform.headers  2200 bytes  3a5c226003991583…
+initrd:   collateral/qeidentity.body  624 bytes  550f110a50541821…
+initrd:   collateral/qeidentity.headers  2186 bytes  1854cd99f67bf538…
+initrd:   collateral/rootcrl.body  294 bytes  c114be5d5ca7aab2…
+initrd:   collateral/rootcrl.headers  531 bytes  a52a1a2982c8819b…
+initrd:   collateral/tcbinfo-00806f050000.body  7953 bytes  857fc7e41a832a59…
+initrd:   collateral/tcbinfo-00806f050000.headers  2175 bytes  b555e197c3899317…
+initrd:   network.conf  290 bytes  f62ce12ab98cfaf4…
+initrd:   peers.json  146 bytes  a836bf4fd9b0cd3b…
+initrd:   policy.json  253 bytes  6930dd1c2f17a988…
+initrd:   policy.json.sig  129 bytes  8b48e4b4786e4861…
+initrd:   reference-values.json  1070 bytes  6a37796d8e15fd70…
+initrd:   reference-values.json.sig  129 bytes  183083b58a7bb4d0…
+initrd:   tunneld.json  357 bytes  64d587ded1f6d3ab…
+initrd: loopback up (the kernel delivers a rule's refusal to the local socket over it)
+[    2.644187] gve 0000:00:03.0 eth0: Device link is up.
+initrd: link eth0 up: 10.128.0.40/32 mtu 1460, gateway 10.128.0.1
+initrd: addr: 1: lo    inet 127.0.0.1/8 scope host lo\       valid_lft forever preferred_lft forever
+initrd: addr: 1: lo    inet6 ::1/128 scope host \       valid_lft forever preferred_lft forever
+initrd: addr: 2: eth0    inet 10.128.0.40/32 scope global eth0\       valid_lft forever preferred_lft forever
+initrd: addr: 2: eth0    inet6 fe80::4001:aff:fe80:28/64 scope link tentative \       valid_lft forever preferred_lft forever
+initrd: route: default via 10.128.0.1 dev eth0 
+initrd: route: 10.128.0.1 dev eth0 scope link 
+initrd: installing the egress rule set the signed policy implies:
+tunneld: sandbox "guest-a"
+tunneld: author key 665053d10032f5b9… (/etc/attested-tunnel/author.pub, inside the launch measurement)
+tunneld: peer table: guest-b = 10.128.0.41:4433
+tunneld: peer table: outsider = 10.128.0.42:4433
+tunneld: policy /config/policy.json loaded under the author key; digest d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b
+tunneld: policy egress: version 1, unattested egress permitted: false
+tunneld: sandbox "guest-a" listens on udp/4433; 2 peer(s) in the table
+tunneld: EGRESS RULES as the signed policy and the peer table imply them:
+table inet attested_tunnel {
+	chain input {
+		type filter hook input priority 0; policy drop;
+		iif "lo" accept
+		meta nfproto ipv4 ip saddr 10.128.0.41 meta l4proto udp udp sport 4433 accept   # peer "guest-b" answering
+		meta nfproto ipv4 ip saddr 10.128.0.41 meta l4proto udp udp dport 4433 accept   # peer "guest-b" dialing this sandbox's listener
+		meta nfproto ipv4 ip saddr 10.128.0.42 meta l4proto udp udp sport 4433 accept   # peer "outsider" answering
+		meta nfproto ipv4 ip saddr 10.128.0.42 meta l4proto udp udp dport 4433 accept   # peer "outsider" dialing this sandbox's listener
+	}
+	chain output {
+		type filter hook output priority 0; policy drop;
+		oif "lo" accept
+		meta nfproto ipv4 ip daddr 10.128.0.41 meta l4proto udp udp dport 4433 accept   # dial peer "guest-b"
+		meta nfproto ipv4 ip daddr 10.128.0.41 meta l4proto udp udp sport 4433 accept   # answer peer "guest-b" from this sandbox's listener
+		meta nfproto ipv4 ip daddr 10.128.0.42 meta l4proto udp udp dport 4433 accept   # dial peer "outsider"
+		meta nfproto ipv4 ip daddr 10.128.0.42 meta l4proto udp udp sport 4433 accept   # answer peer "outsider" from this sandbox's listener
+		meta l4proto tcp reject with tcp reset        # so that connect() fails now rather than in a minute
+		reject with icmpx admin-prohibited            # everything else the policy did not permit
+	}
+	chain forward {
+		type filter hook forward priority 0; policy drop;
+	}
+}
+tunneld: EGRESS RULES INSTALLED; as the kernel holds them:
+table inet attested_tunnel {
+	chain forward {
+		type filter hook forward priority 0; policy drop;
+	}
+	chain input {
+		type filter hook input priority 0; policy drop;
+		iif "lo" accept   # handle 2
+		meta nfproto ipv4 ip saddr 10.128.0.41 meta l4proto udp sport 4433 accept   # handle 3
+		meta nfproto ipv4 ip saddr 10.128.0.41 meta l4proto udp dport 4433 accept   # handle 4
+		meta nfproto ipv4 ip saddr 10.128.0.42 meta l4proto udp sport 4433 accept   # handle 5
+		meta nfproto ipv4 ip saddr 10.128.0.42 meta l4proto udp dport 4433 accept   # handle 6
+	}
+	chain output {
+		type filter hook output priority 0; policy drop;
+		oif "lo" accept   # handle 8
+		meta nfproto ipv4 ip daddr 10.128.0.41 meta l4proto udp dport 4433 accept   # handle 9
+		meta nfproto ipv4 ip daddr 10.128.0.41 meta l4proto udp sport 4433 accept   # handle 10
+		meta nfproto ipv4 ip daddr 10.128.0.42 meta l4proto udp dport 4433 accept   # handle 11
+		meta nfproto ipv4 ip daddr 10.128.0.42 meta l4proto udp sport 4433 accept   # handle 12
+		meta l4proto tcp reject with tcp reset   # handle 13
+		reject with icmpx code 3   # handle 14
+	}
+}
+tunneld: EXIT status=0
+initrd: proving the egress rule set holds, from inside the guest:
+tunneld: sandbox "guest-a"
+tunneld: author key 665053d10032f5b9… (/etc/attested-tunnel/author.pub, inside the launch measurement)
+tunneld: peer table: guest-b = 10.128.0.41:4433
+tunneld: peer table: outsider = 10.128.0.42:4433
+tunneld: policy /config/policy.json loaded under the author key; digest d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b
+tunneld: policy egress: version 1, unattested egress permitted: false
+tunneld: EGRESS PROBE: 5 attempt(s) at addresses this policy permits nothing to reach
+tunneld: EGRESS REFUSED tcp/169.254.169.254:80: dial tcp 169.254.169.254:80: connect: connection refused (the provider's metadata server) — the netfilter rule refused it
+tunneld: EGRESS REFUSED tcp/8.8.8.8:53: dial tcp 8.8.8.8:53: connect: connection refused (a public resolver, over TCP) — the netfilter rule refused it
+tunneld: EGRESS REFUSED udp/8.8.8.8:53: write udp 10.128.0.40:42817->8.8.8.8:53: write: operation not permitted (a public resolver, over UDP) — the netfilter rule refused it
+tunneld: EGRESS REFUSED udp/10.128.0.1:53: write udp 10.128.0.40:38242->10.128.0.1:53: write: operation not permitted (named by -egress-probe) — the netfilter rule refused it
+tunneld: EGRESS REFUSED tcp/10.128.0.1:80: dial tcp 10.128.0.1:80: connect: connection refused (named by -egress-probe) — the netfilter rule refused it
+tunneld: EGRESS PROBE PASSED: every attempt was refused before it left
+tunneld: EXIT status=0
+initrd: the initramfs is remounted read-only
+initrd: mount: rootfs / rootfs ro,size=7678772k,nr_inodes=1919693,inode64 0 0
+initrd: mount: devtmpfs /dev devtmpfs rw,nosuid,noexec,relatime,size=7678772k,nr_inodes=1919693,mode=755,inode64 0 0
+initrd: mount: proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+initrd: mount: sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+initrd: mount: tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,inode64 0 0
+initrd: mount: tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,inode64 0 0
+initrd: mount: configfs /sys/kernel/config configfs rw,nosuid,nodev,noexec,relatime 0 0
+initrd: mount: /dev/nvme0n2 /config ext4 ro,nosuid,nodev,noexec,relatime 0 0
+initrd: starting tunneld
+tunneld: sandbox "guest-a"
+tunneld: author key 665053d10032f5b9… (/etc/attested-tunnel/author.pub, inside the launch measurement)
+tunneld: peer table: guest-b = 10.128.0.41:4433
+tunneld: peer table: outsider = 10.128.0.42:4433
+tunneld: report interface /sys/kernel/config/tsm/report: present, 0 request(s) outstanding; a platform driver that does not answer it is what a non-confidential VM looks like from inside
+tunneld: intel tdx collateral /config/collateral (provisioned, never fetched — ADR-0005)
+tunneld: verifying evidence from amd-sev-snp+intel-tdx
+tunneld: tsm: provider "tdx_guest" (intel-tdx) returned 8000 bytes of evidence over 1 write(s); its own certificate table could not be read (auxblob: open /sys/kernel/config/tsm/report/tunneld-268-1/auxblob: no such file or directory), which is the expected state on this host and not an error; bundled no certificate chain, because the quote carries the one that roots it
+tunneld: policy digest d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b (sha256 over the signed policy; put it in a peer's policy_digest)
+tunneld: policy forward_to: measurement d5ddcc423b1aed53…
+tunneld: listening on 10.128.0.40:4433 as "guest-a"; idle 1m0s, maximum age 15m0s
+tunneld: SELFCHECK acquired 8000 bytes of intel-tdx evidence in 43ms, bound to a throwaway key and to policy digest d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b
+WARN : 2026/09/10 23:07:40.352020 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:40.352796 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:40.353926 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: SELFCHECK VERDICT REFUSED reason=guest policy or policy digest not permitted by the reference value: attest: verification failed
+tunneld: SELFCHECK (unverified, read straight out of the quote's bytes) mrtd  c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+tunneld: SELFCHECK (unverified) rtmr0 c2fc12a52db868515eff7c657e42ce04b0b7363fa6ddf7c1cca87aa8e6a061a11f9981924a600ad6d2232f75182a850a
+tunneld: SELFCHECK (unverified) rtmr1 02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b
+tunneld: SELFCHECK (unverified) rtmr2 d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+tunneld: SELFCHECK EVIDENCE BEGIN (base64 of 8000 bytes; feed it to attest/cmd/verify-evidence)
+tunneld: SELFCHECK EVIDENCE BAACAIEAAAAAAAAAk5pyM/ecTKmUCg2zlX8GBwAAAAAAAAAAAAAAAAAAAAAAAAAADwEKAAAAAAAAAAAAAAAAAKtiVhoXOsvRjuUP
+tunneld: SELFCHECK EVIDENCE 83dQ20QYTGz16IbfdCR8xXXhY7BMNLnhg3R1fCNa/6YU1BJ/awAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAADnAgYAAAAAAMHunBbjr8UGz+BCxbhGo2hSjzs3YY6vsnRpvBFM+RTpIiyRYYRw5/Ky
+tunneld: SELFCHECK EVIDENCE isNgloJwpQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADw2ikbLkf+kkZQa/0pRGy/p3XCv
+tunneld: SELFCHECK EVIDENCE Syo/TMPwN0pIzq4W94YaY4ZVz6vWBvrYkDXm4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AML8EqUtuGhRXv98ZX5CzgSwtzY/pt33wcyoeqjmoGGhH5mBkkpgCtbSIy91GCqFCgLH8ZyGKz2uFZLHNzWNm7E/jwo007Pspnw5
+tunneld: SELFCHECK EVIDENCE v3lBoSw0djW4opHWjZys5FsW7CWRO9XdzEI7Gu1TAjemxDswBdMXRkqUIX3ZR38RMAc3nb8Px2AcrI+mm7SKTv1DIsc+DQAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADs8lhavbP/SwArzYqBxPsc5X0E+ISyTIonE0wmx5vLS
+tunneld: SELFCHECK EVIDENCE tGZCeWWSpz7X6icxCDM9THvcqeqSRC7jVaHvLQEl85TLEAAATM2/0eYs3baJSU07vxumC6YoVGb9LXeH0vUoB3Bd0xhYEGgrOyZe
+tunneld: SELFCHECK EVIDENCE GuQjMcLvrTxmOkRqLnssVTALGhZRGFdIZchxIke978QvnOWghmp6ssJos1X/t4ta9pE3sWCpshehzZgwuTK48xw/k6R7aflRRQw8
+tunneld: SELFCHECK EVIDENCE Ej/0HtVeCmnsRm9T4O4GAEUQAAAKCv8bBv8ABgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AOcAAAAAAAAA5aOntdgwwpU7mFNMbFmjo0/cNOkz9/WJjwqFzwiEa8oAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANye
+tunneld: SELFCHECK EVIDENCE KnxvlI8XR040p/xD7QMPfBVj8bq932NAyC4OVKjFAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAGAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHYr8Hivwa5Cl6FUr9rAOL25RRlJv0ybr9VIKtnY+5nXAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAply0BZciAvyGDxmvsoHoSftv46uMMMOJD6GAN7UJ6AuEbp8ehkQBmrBr85neg
+tunneld: SELFCHECK EVIDENCE tdRDPKHVHzAmCTHgYrYcN6tZIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUAXQ4AAC0tLS0tQkVHSU4gQ0VSVElG
+tunneld: SELFCHECK EVIDENCE SUNBVEUtLS0tLQpNSUlFOFRDQ0JKZWdBd0lCQWdJVkFQM3dTM0ZtYkJPVTBOckREUEQwRy9WUmE5U0FNQW9HQ0NxR1NNNDlCQU1D
+tunneld: SELFCHECK EVIDENCE Ck1IQXhJakFnQmdOVkJBTU1HVWx1ZEdWc0lGTkhXQ0JRUTBzZ1VHeGhkR1p2Y20wZ1EwRXhHakFZQmdOVkJBb00KRVVsdWRHVnNJ
+tunneld: SELFCHECK EVIDENCE RU52Y25CdmNtRjBhVzl1TVJRd0VnWURWUVFIREF0VFlXNTBZU0JEYkdGeVlURUxNQWtHQTFVRQpDQXdDUTBFeEN6QUpCZ05WQkFZ
+tunneld: SELFCHECK EVIDENCE VEFsVlRNQjRYRFRJMk1EY3lPVEV6TURVeE5Wb1hEVE16TURjeU9URXpNRFV4Ck5Wb3djREVpTUNBR0ExVUVBd3daU1c1MFpXd2dV
+tunneld: SELFCHECK EVIDENCE MGRZSUZCRFN5QkRaWEowYVdacFkyRjBaVEVhTUJnR0ExVUUKQ2d3UlNXNTBaV3dnUTI5eWNHOXlZWFJwYjI0eEZEQVNCZ05WQkFj
+tunneld: SELFCHECK EVIDENCE TUMxTmhiblJoSUVOc1lYSmhNUXN3Q1FZRApWUVFJREFKRFFURUxNQWtHQTFVRUJoTUNWVk13V1RBVEJnY3Foa2pPUFFJQkJnZ3Fo
+tunneld: SELFCHECK EVIDENCE a2pPUFFNQkJ3TkNBQVI1CjNuVlBodjVKZ0JlQUtCK3d0UnV6YXUzKzNCWW9FT1N2NlRJQVBZY1paejVtUmp5VGpZRWkxRGxIL1g1
+tunneld: SELFCHECK EVIDENCE YjFSY3EKcWNtWkJUTXNwcjQvU2pvRjg5SUNvNElERERDQ0F3Z3dId1lEVlIwakJCZ3dGb0FVbFc5ZHpiMGI0ZWxBU2NuVQo5RFBP
+tunneld: SELFCHECK EVIDENCE QVZjTDNsUXdhd1lEVlIwZkJHUXdZakJnb0Y2Z1hJWmFhSFIwY0hNNkx5OWhjR2t1ZEhKMWMzUmxaSE5sCmNuWnBZMlZ6TG1sdWRH
+tunneld: SELFCHECK EVIDENCE VnNMbU52YlM5elozZ3ZZMlZ5ZEdsbWFXTmhkR2x2Ymk5Mk5DOXdZMnRqY213L1kyRTkKY0d4aGRHWnZjbTBtWlc1amIyUnBibWM5
+tunneld: SELFCHECK EVIDENCE WkdWeU1CMEdBMVVkRGdRV0JCUVpqMEswY1NGeHpsbEZmRnpUNVhUNAo0V3FyM1RBT0JnTlZIUThCQWY4RUJBTUNCc0F3REFZRFZS
+tunneld: SELFCHECK EVIDENCE MFRBUUgvQkFJd0FEQ0NBamtHQ1NxR1NJYjRUUUVOCkFRU0NBaW93Z2dJbU1CNEdDaXFHU0liNFRRRU5BUUVFRUoyL1J6aGZZNndl
+tunneld: SELFCHECK EVIDENCE ak9HaXVLaXBGSjh3Z2dGakJnb3EKaGtpRytFMEJEUUVDTUlJQlV6QVFCZ3NxaGtpRytFMEJEUUVDQVFJQkNUQVFCZ3NxaGtpRytF
+tunneld: SELFCHECK EVIDENCE MEJEUUVDQWdJQgpDVEFRQmdzcWhraUcrRTBCRFFFQ0F3SUJBakFRQmdzcWhraUcrRTBCRFFFQ0JBSUJBakFRQmdzcWhraUcrRTBC
+tunneld: SELFCHECK EVIDENCE CkRRRUNCUUlCQkRBUUJnc3Foa2lHK0UwQkRRRUNCZ0lCQVRBUUJnc3Foa2lHK0UwQkRRRUNCd0lCQURBUUJnc3EKaGtpRytFMEJE
+tunneld: SELFCHECK EVIDENCE UUVDQ0FJQkJqQVFCZ3NxaGtpRytFMEJEUUVDQ1FJQkFEQVFCZ3NxaGtpRytFMEJEUUVDQ2dJQgpBREFRQmdzcWhraUcrRTBCRFFF
+tunneld: SELFCHECK EVIDENCE Q0N3SUJBREFRQmdzcWhraUcrRTBCRFFFQ0RBSUJBREFRQmdzcWhraUcrRTBCCkRRRUNEUUlCQURBUUJnc3Foa2lHK0UwQkRRRUNE
+tunneld: SELFCHECK EVIDENCE Z0lCQURBUUJnc3Foa2lHK0UwQkRRRUNEd0lCQURBUUJnc3EKaGtpRytFMEJEUUVDRUFJQkFEQVFCZ3NxaGtpRytFMEJEUUVDRVFJ
+tunneld: SELFCHECK EVIDENCE QkN6QWZCZ3NxaGtpRytFMEJEUUVDRWdRUQpDUWtDQWdRQkFBWUFBQUFBQUFBQUFEQVFCZ29xaGtpRytFMEJEUUVEQkFJQUFEQVVC
+tunneld: SELFCHECK EVIDENCE Z29xaGtpRytFMEJEUUVFCkJBWUFnRzhGQUFBd0R3WUtLb1pJaHZoTkFRMEJCUW9CQVRBZUJnb3Foa2lHK0UwQkRRRUdCQkRWV1NZ
+tunneld: SELFCHECK EVIDENCE NzMvNWEKZFpGVlRrTXBzRWNtTUVRR0NpcUdTSWI0VFFFTkFRY3dOakFRQmdzcWhraUcrRTBCRFFFSEFRRUIvekFRQmdzcQpoa2lH
+tunneld: SELFCHECK EVIDENCE K0UwQkRRRUhBZ0VCQURBUUJnc3Foa2lHK0UwQkRRRUhBd0VCL3pBS0JnZ3Foa2pPUFFRREFnTklBREJGCkFpQUt0b01zbHZKNDZJ
+tunneld: SELFCHECK EVIDENCE cjM1ZmpQVTNYdkdCU0dlLzdRNkU0WGY0M0g1K2dzVXdJaEFJeGk4MzkyZ3dzTDhtdTMKdEJKM3NjM29US3RhOFlkWUh5Q0ZyYXhO
+tunneld: SELFCHECK EVIDENCE dFRjeQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCi0tLS0tQkVHSU4gQ0VSVElGSUNBVEUtLS0tLQpNSUlDbGpDQ0FqMmdBd0lC
+tunneld: SELFCHECK EVIDENCE QWdJVkFKVnZYYzI5RytIcFFFbkoxUFF6emdGWEM5NVVNQW9HQ0NxR1NNNDlCQU1DCk1HZ3hHakFZQmdOVkJBTU1FVWx1ZEdWc0lG
+tunneld: SELFCHECK EVIDENCE TkhXQ0JTYjI5MElFTkJNUm93R0FZRFZRUUtEQkZKYm5SbGJDQkQKYjNKd2IzSmhkR2x2YmpFVU1CSUdBMVVFQnd3TFUyRnVkR0Vn
+tunneld: SELFCHECK EVIDENCE UTJ4aGNtRXhDekFKQmdOVkJBZ01Ba05CTVFzdwpDUVlEVlFRR0V3SlZVekFlRncweE9EQTFNakV4TURVd01UQmFGdzB6TXpBMU1q
+tunneld: SELFCHECK EVIDENCE RXhNRFV3TVRCYU1IQXhJakFnCkJnTlZCQU1NR1VsdWRHVnNJRk5IV0NCUVEwc2dVR3hoZEdadmNtMGdRMEV4R2pBWUJnTlZCQW9N
+tunneld: SELFCHECK EVIDENCE RVVsdWRHVnMKSUVOdmNuQnZjbUYwYVc5dU1SUXdFZ1lEVlFRSERBdFRZVzUwWVNCRGJHRnlZVEVMTUFrR0ExVUVDQXdDUTBFeApD
+tunneld: SELFCHECK EVIDENCE ekFKQmdOVkJBWVRBbFZUTUZrd0V3WUhLb1pJemowQ0FRWUlLb1pJemowREFRY0RRZ0FFTlNCLzd0MjFsWFNPCjJDdXpweHc3NGVK
+tunneld: SELFCHECK EVIDENCE QjcyRXlER2dXNXJYQ3R4MnRWVExxNmhLazZ6K1VpUlpDbnFSN3BzT3ZncUZlU3hsbVRsSmwKZVRtaTJXWXozcU9CdXpDQnVEQWZC
+tunneld: SELFCHECK EVIDENCE Z05WSFNNRUdEQVdnQlFpWlF6V1dwMDBpZk9EdEpWU3YxQWJPU2NHckRCUwpCZ05WSFI4RVN6QkpNRWVnUmFCRGhrRm9kSFJ3Y3pv
+tunneld: SELFCHECK EVIDENCE dkwyTmxjblJwWm1sallYUmxjeTUwY25WemRHVmtjMlZ5CmRtbGpaWE11YVc1MFpXd3VZMjl0TDBsdWRHVnNVMGRZVW05dmRFTkJM
+tunneld: SELFCHECK EVIDENCE bVJsY2pBZEJnTlZIUTRFRmdRVWxXOWQKemIwYjRlbEFTY25VOURQT0FWY0wzbFF3RGdZRFZSMFBBUUgvQkFRREFnRUdNQklHQTFV
+tunneld: SELFCHECK EVIDENCE ZEV3RUIvd1FJTUFZQgpBZjhDQVFBd0NnWUlLb1pJemowRUF3SURSd0F3UkFJZ1hzVmtpMHcraTZWWUdXM1VGLzIydWFYZTBZSkRq
+tunneld: SELFCHECK EVIDENCE MVVlCm5BK1RqRDFhaTVjQ0lDWWIxU0FtRDV4a2ZUVnB2bzRVb3lpU1l4ckRXTG1VUjRDSTlOS3lmUE4rCi0tLS0tRU5EIENFUlRJ
+tunneld: SELFCHECK EVIDENCE RklDQVRFLS0tLS0KLS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNqekNDQWpTZ0F3SUJBZ0lVSW1VTTFscWROSW56ZzdT
+tunneld: SELFCHECK EVIDENCE VlVyOVFHemtuQnF3d0NnWUlLb1pJemowRUF3SXcKYURFYU1CZ0dBMVVFQXd3UlNXNTBaV3dnVTBkWUlGSnZiM1FnUTBFeEdqQVlC
+tunneld: SELFCHECK EVIDENCE Z05WQkFvTUVVbHVkR1ZzSUVOdgpjbkJ2Y21GMGFXOXVNUlF3RWdZRFZRUUhEQXRUWVc1MFlTQkRiR0Z5WVRFTE1Ba0dBMVVFQ0F3
+tunneld: SELFCHECK EVIDENCE Q1EwRXhDekFKCkJnTlZCQVlUQWxWVE1CNFhEVEU0TURVeU1URXdORFV4TUZvWERUUTVNVEl6TVRJek5UazFPVm93YURFYU1CZ0cK
+tunneld: SELFCHECK EVIDENCE QTFVRUF3d1JTVzUwWld3Z1UwZFlJRkp2YjNRZ1EwRXhHakFZQmdOVkJBb01FVWx1ZEdWc0lFTnZjbkJ2Y21GMAphVzl1TVJRd0Vn
+tunneld: SELFCHECK EVIDENCE WURWUVFIREF0VFlXNTBZU0JEYkdGeVlURUxNQWtHQTFVRUNBd0NRMEV4Q3pBSkJnTlZCQVlUCkFsVlRNRmt3RXdZSEtvWkl6ajBD
+tunneld: SELFCHECK EVIDENCE QVFZSUtvWkl6ajBEQVFjRFFnQUVDNm5Fd01ESVlaT2ovaVBXc0N6YUVLaTcKMU9pT1NMUkZoV0dqYm5CVkpmVm5rWTR1M0lqa0RZ
+tunneld: SELFCHECK EVIDENCE WUwwTXhPNG1xc3lZamxCYWxUVll4RlAyc0pCSzV6bEtPQgp1ekNCdURBZkJnTlZIU01FR0RBV2dCUWlaUXpXV3AwMGlmT0R0SlZT
+tunneld: SELFCHECK EVIDENCE djFBYk9TY0dyREJTQmdOVkhSOEVTekJKCk1FZWdSYUJEaGtGb2RIUndjem92TDJObGNuUnBabWxqWVhSbGN5NTBjblZ6ZEdWa2My
+tunneld: SELFCHECK EVIDENCE VnlkbWxqWlhNdWFXNTAKWld3dVkyOXRMMGx1ZEdWc1UwZFlVbTl2ZEVOQkxtUmxjakFkQmdOVkhRNEVGZ1FVSW1VTTFscWROSW56
+tunneld: SELFCHECK EVIDENCE ZzdTVgpVcjlRR3prbkJxd3dEZ1lEVlIwUEFRSC9CQVFEQWdFR01CSUdBMVVkRXdFQi93UUlNQVlCQWY4Q0FRRXdDZ1lJCktvWkl6
+tunneld: SELFCHECK EVIDENCE ajBFQXdJRFNRQXdSZ0loQU9XLzVRa1IrUzlDaVNEY05vb3dMdVBSTHNXR2YvWWk3R1NYOTRCZ3dUd2cKQWlFQTRKMGxySG9NcytY
+tunneld: SELFCHECK EVIDENCE bzVvL3NYNk85UVd4SFJBdlpVR09kUlE3Y3ZxUlhhcUk9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0KAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+tunneld: SELFCHECK EVIDENCE END
+tunneld: SELFCHECK PUBLIC KEY 302a300506032b65700321007db559c5ba8a94e77b1cffabe4acd980890a1cdc24f6ed7d295bf846ad19b716
+tunneld: SELFCHECK (that is a DER SubjectPublicKeyInfo, 44 bytes; write it to a file and pass it as verify-evidence -key. It is a throwaway: the evidence is bound to it and to nothing else, so it can establish no tunnel)
+tunneld: SELFCHECK FAILED attest: verification failed
+tunneld: exercise: dialing guest-b, outsider; 3 warm exchanges, 8 concurrent × 1 rounds, marker "attested-tunnel-plaintext-marker"
+WARN : 2026/09/10 23:07:40.570268 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:40.571098 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:40.571650 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+tunneld: exercise: pass=1 peer=guest-b not up yet, retrying until 1m0s elapses (tunneld: tunnel not established: "guest-b" at 10.128.0.41:4433: tunnel: dialing 10.128.0.41:4433: CRYPTO_ERROR 0x12a (local): attest: verification failed)
+WARN : 2026/09/10 23:07:40.777737 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:40.778530 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:40.779332 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:07:41.579047 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:41.581764 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:41.584240 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:07:41.789907 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:41.790667 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:41.791742 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:07:42.597585 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:42.598237 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:42.599130 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+
+WARN : 2026/09/10 23:07:42.802386 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:42.805023 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:42.807476 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:07:43.604932 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:43.605680 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:43.606429 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:07:43.826385 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:43.827054 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:43.827592 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:07:44.612350 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:44.612977 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:44.613632 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:07:44.837186 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:44.837985 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:44.838549 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:07:45.620621 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:45.621454 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:45.622091 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:07:45.854917 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:45.855677 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:45.856240 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:07:46.629342 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:46.630172 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:46.630719 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:07:46.866053 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:46.868731 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:46.871274 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:07:47.635903 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:47.636664 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:47.637236 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:07:47.889022 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:47.889781 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:47.890354 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:07:48.642957 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:48.643563 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:48.644361 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:07:48.901499 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:48.902360 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:48.903116 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+
+WARN : 2026/09/10 23:07:49.649756 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:49.650411 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:49.651200 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:07:49.920949 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:49.924004 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:49.926468 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:07:50.657563 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:50.658328 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:50.659192 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:07:50.942694 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:50.943354 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:50.943944 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:07:51.664459 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:51.665099 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:51.665686 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:07:51.954931 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:51.957541 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:51.960005 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:07:52.670995 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:52.671604 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:52.672408 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:07:52.976441 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:52.977113 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:52.977683 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:07:53.678254 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:53.679213 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:53.679914 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:07:53.988632 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:53.989327 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:53.989769 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:07:54.686305 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:54.687020 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:54.687495 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:07:54.999945 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:55.000804 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:55.001268 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+
+WARN : 2026/09/10 23:07:55.692962 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:55.693881 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:55.694338 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:07:56.012560 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:56.013468 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:56.013961 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:07:56.699538 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:56.700437 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:56.700922 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:07:57.024969 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:57.025652 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:57.026152 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:07:57.708127 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:57.708930 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:57.709482 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:07:58.037009 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:58.037643 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:58.038103 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:07:58.714880 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:58.715486 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:58.716725 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:07:59.047284 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:59.048060 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:59.048602 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:07:59.722607 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:59.723700 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:07:59.724545 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:00.059441 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:00.060184 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:00.060628 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:00.730858 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:00.731614 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:00.732194 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:01.071404 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:01.072184 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:01.072740 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:01.738210 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:01.738863 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:01.739322 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+
+WARN : 2026/09/10 23:08:02.081950 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:02.082814 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:02.083270 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:02.745307 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:02.746178 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:02.746629 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:03.092540 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:03.093319 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:03.093892 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:03.751502 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:03.752125 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:03.752575 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:04.103492 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:04.104180 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:04.104624 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:04.758020 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:04.759105 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:04.759962 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:05.114969 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:05.115598 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:05.116063 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:05.765681 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:05.766780 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:05.767659 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:06.126405 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:06.127056 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:06.127493 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:06.773127 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:06.773801 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:06.774298 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:07.139974 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:07.140616 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:07.141111 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:07.779643 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:07.780280 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:07.780739 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:08.149675 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:08.150580 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:08.151042 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+
+WARN : 2026/09/10 23:08:08.786736 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:08.787450 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:08.787969 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:09.161236 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:09.162134 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:09.162583 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:09.793372 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:09.794004 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:09.794484 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:10.172140 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:10.172762 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:10.173237 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:10.799608 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:10.800235 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:10.800673 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:11.183925 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:11.184695 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:11.185273 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:11.805916 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:11.806781 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:11.807280 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:12.195621 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:12.196413 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:12.196997 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:12.813355 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:12.814012 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:12.814497 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:13.206362 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:13.207019 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:13.207459 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:13.821586 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:13.822383 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:13.822962 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:14.216418 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:14.217062 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:14.217515 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:14.827943 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:14.828548 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:14.829094 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+
+WARN : 2026/09/10 23:08:15.228611 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:15.229289 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:15.229733 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:15.834236 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:15.834867 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:15.835375 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:16.239651 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:16.241035 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:16.241747 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:16.840148 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:16.841084 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:16.841546 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:17.251953 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:17.252577 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:17.253071 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:17.846487 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:17.847152 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:17.847614 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:18.262283 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:18.263073 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:18.263614 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:18.853983 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:18.854585 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:18.855090 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:19.271904 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:19.272603 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:19.273100 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:19.861057 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:19.861662 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:19.862156 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:20.284771 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:20.285595 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:20.286179 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:20.867592 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:20.868469 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:20.868932 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:21.296315 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:21.297151 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:21.297700 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+
+WARN : 2026/09/10 23:08:21.876097 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:21.876827 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:21.877439 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:22.307935 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:22.309014 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:22.309867 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:22.882401 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:22.883464 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:22.884301 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:23.319100 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:23.319713 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:23.320233 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:23.889598 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:23.890227 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:23.890663 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:24.330279 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:24.330936 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:24.331386 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:24.896753 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:24.897711 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:24.898306 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:25.340106 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:25.340725 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:25.341204 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:25.904179 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:25.906001 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:25.906472 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:26.351992 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:26.352762 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:26.353348 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:26.911815 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:26.912742 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:26.913213 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:27.364434 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:27.365166 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:27.365609 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:27.918237 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:27.918976 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:27.919467 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+
+WARN : 2026/09/10 23:08:28.376045 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:28.376803 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:28.377383 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:28.925710 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:28.926441 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:28.926975 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:29.386356 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:29.387146 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:29.387693 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:29.932114 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:29.932775 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:29.933290 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:30.400271 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:30.401062 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:30.401604 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:30.938190 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:30.938793 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:30.939336 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:31.411509 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:31.412329 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:31.412926 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:31.943806 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:31.944689 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:31.945178 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:32.423738 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:32.424467 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:32.424939 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:32.951502 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:32.952113 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:32.952565 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:33.434537 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:33.435653 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:33.436559 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:33.958108 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:33.959189 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:33.960041 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:34.448051 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:34.449142 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:34.449993 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+
+WARN : 2026/09/10 23:08:34.965253 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:34.965894 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:34.966401 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:35.459880 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:35.460495 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:35.460958 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:35.971974 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:35.972709 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:35.973330 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:36.471187 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:36.471971 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:36.472513 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:36.979321 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:36.980143 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:36.980691 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:37.482386 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:37.483065 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:37.483510 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:37.985992 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:37.986658 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:37.987168 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:38.494903 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:38.495592 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:38.496086 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:38.992972 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:38.993711 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:38.994283 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:39.505958 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:39.506745 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:39.507318 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:39.999972 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:40.000884 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:40.001330 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:40.517343 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:40.518080 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:40.518525 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:41.007735 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:41.009109 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:41.009648 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference val
+ue predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+tunneld: exercise: pass=1 peer=guest-b FAILED: after 61 attempt(s) over 1m0s: tunneld: tunnel not established: "guest-b" at 10.128.0.41:4433: tunnel: dialing 10.128.0.41:4433: CRYPTO_ERROR 0x12a (local): attest: verification failed
+WARN : 2026/09/10 23:08:41.529339 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:41.530243 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:41.530691 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:42.539649 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:42.540409 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:42.540894 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:43.550645 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:43.551467 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:43.552064 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:44.562004 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:44.562792 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:44.563426 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:45.573786 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:45.574693 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:45.575176 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+tunneld: exercise: pass=1 peer=outsider not up yet, retrying until 1m0s elapses (tunneld: tunnel not established: "outsider" at 10.128.0.42:4433: tunnel: dialing 10.128.0.42:4433: timeout: no recent network activity)
+WARN : 2026/09/10 23:08:46.586267 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:46.587124 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:46.587669 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+
+WARN : 2026/09/10 23:08:47.597938 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:47.598578 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:47.599108 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:48.607933 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:48.608581 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:48.609115 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:49.619080 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:49.620222 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:49.621076 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:50.631257 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:50.632109 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:50.632660 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:51.642602 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:51.643445 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:51.644038 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:52.654500 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:52.655328 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:52.655868 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:53.664977 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:53.665760 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:53.666374 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+
+WARN : 2026/09/10 23:08:54.675327 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:54.676689 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:54.677278 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:55.687379 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:55.688068 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:55.688511 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:56.698175 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:56.698820 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:56.699346 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:57.710394 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:57.711506 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:57.712360 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:58.722091 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:58.723034 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:58.723488 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:08:59.733874 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:59.734589 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:08:59.735119 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+
+WARN : 2026/09/10 23:09:00.744956 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:09:00.745608 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:09:00.746101 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:09:01.755745 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:09:01.756580 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:09:01.757168 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:09:02.767017 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:09:02.767803 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:09:02.768396 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:09:03.778774 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:09:03.779759 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:09:03.780241 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:09:04.790139 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:09:04.790786 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:09:04.791265 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:09:05.801215 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:09:05.802271 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:09:05.802986 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:09:06.813377 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:09:06.814225 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:09:06.814769 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+
+WARN : 2026/09/10 23:09:07.824312 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:09:07.825175 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:09:07.825729 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:09:08.835681 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:09:08.836521 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:09:08.837105 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:09:09.847457 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:09:09.848303 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:09:09.848876 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+WARN : 2026/09/10 23:09:10.858684 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:09:10.859462 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:09:10.859957 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's RTMR2 is 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7, and this reference value predicts d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+
+
+
+
+
+tunneld: exercise: pass=1 peer=outsider FAILED: after 11 attempt(s) over 1m0s: tunneld: tunnel not established: "outsider" at 10.128.0.42:4433: tunnel: dialing 10.128.0.42:4433: timeout: no recent network activity
+tunneld: exercise failed: pass 1, peer guest-b: after 61 attempt(s) over 1m0s: tunneld: tunnel not established: "guest-b" at 10.128.0.41:4433: tunnel: dialing 10.128.0.41:4433: CRYPTO_ERROR 0x12a (local): attest: verification failed; pass 1, peer outsider: after 11 attempt(s) over 1m0s: tunneld: tunnel not established: "outsider" at 10.128.0.42:4433: tunnel: dialing 10.128.0.42:4433: timeout: no recent network activity
+tunneld: holding for 1m0s so that peers still dialing can finish
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

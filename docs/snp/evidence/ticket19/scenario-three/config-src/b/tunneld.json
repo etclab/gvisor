@@ -1,0 +1,10 @@
+{
+  "format": "gvisor.dev/gvisor/attest/tunneld-run",
+  "version": 1,
+  "sandbox_id": "guest-b",
+  "listen": "10.128.0.41:4433",
+  "limits": {"idle_timeout": "60s", "max_age": "15m"},
+  "start_timeout": "60s",
+  "exercise": {"dial": ["guest-a"], "wait": "90s", "exchanges": 3, "concurrency": 8, "rounds": 1, "timeout": "30s"},
+  "hold": "60s"
+}

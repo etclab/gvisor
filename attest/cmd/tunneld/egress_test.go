@@ -61,6 +61,7 @@ func TestEgressRuleSetRendersWhatThePolicyImplies(t *testing.T) {
 		"meta nfproto ipv4 ip daddr 10.128.0.41 meta l4proto udp udp sport 4433 accept",
 		"meta nfproto ipv4 ip daddr 10.128.0.42 meta l4proto udp udp dport 5555 accept",
 		"meta nfproto ipv4 ip daddr 10.128.0.42 meta l4proto udp udp sport 4433 accept",
+		"meta l4proto tcp reject with tcp reset",
 		"reject with icmpx admin-prohibited",
 		"chain forward {",
 		"type filter hook forward priority 0; policy drop;",
@@ -94,8 +95,10 @@ func TestEgressRuleSetWithNoPeersPermitsOnlyLoopback(t *testing.T) {
 	if strings.Count(got, "accept") != 2 {
 		t.Errorf("a peerless guest should accept on loopback and nowhere else; got:\n%s", got)
 	}
-	if !strings.Contains(got, "reject with icmpx admin-prohibited") {
-		t.Errorf("a peerless guest's output chain must still end in a reject; got:\n%s", got)
+	for _, want := range []string{"meta l4proto tcp reject with tcp reset", "reject with icmpx admin-prohibited"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("a peerless guest's output chain must still end in %q; got:\n%s", want, got)
+		}
 	}
 }
 

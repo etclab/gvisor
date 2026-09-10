@@ -66,17 +66,22 @@ import (
 //
 // # Reject rather than drop, on the way out
 //
-// The output chain ends in `reject with icmpx admin-prohibited` rather than
-// relying on its drop policy. A dropped packet on the way out is indisputable
-// but silent: the local socket learns nothing and the caller sees a timeout,
-// which is what a black hole, a lost route and a firewall all look like. A
-// reject makes netfilter build an ICMP "communication administratively
-// prohibited" for the local socket, and the kernel turns that into EACCES on
-// the connect or the send — immediately, and distinguishably from
-// ENETUNREACH, which is what "no route" looks like. The point of the egress
-// proof is to show the *rule* refused rather than the routing table, so the
-// rule is made to say so out loud. The input chain keeps a plain drop policy:
-// there is nobody on the other end to tell.
+// The output chain ends in rejects rather than relying on its drop policy. A
+// dropped packet on the way out is indisputable but silent: the local socket
+// learns nothing and the caller sees a timeout, which is what a black hole, a
+// lost route and a firewall all look like. A reject makes netfilter build a
+// refusal addressed back at the local socket, and the kernel turns that into an
+// errno — immediately, and distinguishably from ENETUNREACH, which is what "no
+// route" looks like. The point of the egress proof is to show the *rule*
+// refused rather than the routing table, so the rule is made to say so out
+// loud. The input chain keeps a plain drop policy: there is nobody on the other
+// end to tell.
+//
+// The refusal netfilter builds is delivered to the local socket over the
+// loopback interface, which is why the guest's init brings `lo` up before it
+// does anything else with the network (docs/snp/cloud/tdx/init.tdx). With lo
+// down the refusal is dropped on the way back and every probe times out
+// instead, which proves nothing.
 const (
 	// egressTableName is the nftables table this sandbox owns. Nothing else
 	// runs in the guest, so the ruleset is flushed before it is installed and
@@ -215,8 +220,24 @@ func buildEgressRuleSet(policy attest.Policy, peers map[string]string, listen st
 		)
 	}
 
+	// Two refusals rather than one, because the kernel turns them into an
+	// answer at the socket by two different routes and only one of them works
+	// for TCP. A dropped or ICMP-rejected SYN leaves connect() waiting: the
+	// error ip_local_out returns is swallowed by tcp_connect, which ignores
+	// everything but ECONNREFUSED and lets the retransmit timer take over, and
+	// the ICMP that nf_reject builds arrives too late to matter. A reset does
+	// reach it, because a RST on a socket in SYN_SENT is exactly the thing TCP
+	// is listening for. UDP needs no such help: a datagram dropped in the
+	// output hook fails the sendmsg with EPERM there and then.
 	output.rules = append(output.rules, egressRule{
-		text: "reject with icmpx admin-prohibited            # everything the policy did not permit",
+		text: "meta l4proto tcp reject with tcp reset        # so that connect() fails now rather than in a minute",
+		exprs: []expr.Any{
+			&expr.Meta{Key: expr.MetaKeyL4PROTO, Register: 1},
+			&expr.Cmp{Op: expr.CmpOpEq, Register: 1, Data: []byte{unix.IPPROTO_TCP}},
+			&expr.Reject{Type: unix.NFT_REJECT_TCP_RST},
+		},
+	}, egressRule{
+		text: "reject with icmpx admin-prohibited            # everything else the policy did not permit",
 		exprs: []expr.Any{
 			&expr.Reject{Type: unix.NFT_REJECT_ICMPX_UNREACH, Code: unix.NFT_REJECT_ICMPX_ADMIN_PROHIBITED},
 		},
@@ -513,7 +534,14 @@ func renderExprs(exprs []expr.Any) string {
 				add("verdict %d", v.Kind)
 			}
 		case *expr.Reject:
-			add("reject with icmpx code %d (type %d)", v.Code, v.Type)
+			switch v.Type {
+			case unix.NFT_REJECT_TCP_RST:
+				add("reject with tcp reset")
+			case unix.NFT_REJECT_ICMPX_UNREACH:
+				add("reject with icmpx code %d", v.Code)
+			default:
+				add("reject type %d code %d", v.Type, v.Code)
+			}
 		case *expr.Counter:
 			add("counter packets %d bytes %d", v.Packets, v.Bytes)
 		default:
@@ -656,7 +684,7 @@ func classifyEgressError(err error) string {
 	var errno syscall.Errno
 	if errors.As(err, &errno) {
 		switch errno {
-		case unix.EACCES, unix.EPERM:
+		case unix.EACCES, unix.EPERM, unix.ECONNREFUSED:
 			return "REFUSED"
 		case unix.ENETUNREACH, unix.EHOSTUNREACH:
 			return "UNROUTED"

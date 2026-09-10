@@ -1,0 +1,885 @@
+[2J[01;01H[=3h[2J[01;01H[2J[01;01H[=3h[2J[01;01H
+BdsDxe: loading Boot0003 "Ubuntu" from PciRoot(0x0)/Pci(0x4,0x0)/NVMe(0x1,00-00-00-00-00-00-00-00)/HD(15,GPT,6A0A967B-F814-468B-AF0C-F6BF6538EF09,0x2800,0x35000)/\EFI\ubuntu\shimx64.efi
+BdsDxe: starting Boot0003 "Ubuntu" from PciRoot(0x0)/Pci(0x4,0x0)/NVMe(0x1,00-00-00-00-00-00-00-00)/HD(15,GPT,6A0A967B-F814-468B-AF0C-F6BF6538EF09,0x2800,0x35000)/\EFI\ubuntu\shimx64.efi
+
+UEFI: Attempting to start image.
+Description: Ubuntu
+FilePath: PciRoot(0x0)/Pci(0x4,0x0)/NVMe(0x1,00-00-00-00-00-00-00-00)/HD(15,GPT,6A0A967B-F814-468B-AF0C-F6BF6538EF09,0x2800,0x35000)/\EFI\ubuntu\shimx64.efi
+OptionNumber: 3.
+
+
+[    0.000000] tdx: Guest detected
+[    0.000000] tdx: Attributes: SEPT_VE_DISABLE
+[    0.000000] tdx: TD_CTLS: PENDING_VE_DISABLE ENUM_TOPOLOGY VIRT_CPUID2 REDUCE_VE
+[    0.000000] Linux version 6.17.0-1022-gcp (buildd@lcy02-amd64-073) (x86_64-linux-gnu-gcc-13 (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, GNU ld (GNU Binutils for Ubuntu) 2.42) #25-Ubuntu SMP Sat Jul 25 01:12:40 UTC 2026 (Ubuntu 6.17.0-1022.25-gcp 6.17.13)
+[    0.000000] Command line: BOOT_IMAGE=/vmlinuz-6.17.0-1022-gcp console=ttyS0,115200 panic=-1 rdinit=/init
+[    0.000000] KERNEL supported cpus:
+[    0.000000]   Intel GenuineIntel
+[    0.000000]   AMD AuthenticAMD
+[    0.000000]   Hygon HygonGenuine
+[    0.000000]   Centaur CentaurHauls
+[    0.000000]   zhaoxin   Shanghai  
+[    0.000000] x86/split lock detection: #DB: warning on user-space bus_locks
+[    0.000000] BIOS-provided physical RAM map:
+[    0.000000] BIOS-e820: [mem 0x0000000000000000-0x000000000080bfff] usable
+[    0.000000] BIOS-e820: [mem 0x000000000080c000-0x000000000080cfff] ACPI NVS
+[    0.000000] BIOS-e820: [mem 0x000000000080d000-0x00000000015fffff] usable
+[    0.000000] BIOS-e820: [mem 0x0000000001600000-0x000000000161ffff] reserved
+[    0.000000] BIOS-e820: [mem 0x0000000001620000-0x00000000bd43afff] usable
+[    0.000000] BIOS-e820: [mem 0x00000000bd43b000-0x00000000bd442fff] ACPI data
+[    0.000000] BIOS-e820: [mem 0x00000000bd443000-0x00000000bf2ecfff] usable
+[    0.000000] BIOS-e820: [mem 0x00000000bf2ed000-0x00000000bf4ecfff] reserved
+[    0.000000] BIOS-e820: [mem 0x00000000bf4ed000-0x00000000bf56ffff] usable
+[    0.000000] BIOS-e820: [mem 0x00000000bf570000-0x00000000bf57efff] ACPI data
+[    0.000000] BIOS-e820: [mem 0x00000000bf57f000-0x00000000bf5fefff] ACPI NVS
+[    0.000000] BIOS-e820: [mem 0x00000000bf5ff000-0x00000000bffdffff] usable
+[    0.000000] BIOS-e820: [mem 0x00000000bffe0000-0x00000000bfffffff] reserved
+[    0.000000] BIOS-e820: [mem 0x00000000ffe00000-0x000000043fffffff] usable
+[    0.000000] NX (Execute Disable) protection: active
+[    0.000000] APIC: Static calls initialized
+[    0.000000] efi: EFI v2.7 by EDK II
+[    0.000000] efi: CCFinalLog=0xbf5b7000 ACPI=0xbf57e000 ACPI 2.0=0xbf57e014 TPMFinalLog=0xbf5af000 SMBIOS=0xbf3ca000 MEMATTR=0xbd445018 MOKvar=0xbf3c8000 INITRD=0xbd448418 TPMEventLog=0xbd43b018 
+[    0.000000] SMBIOS 2.4 present.
+[    0.000000] DMI: Google Google Compute Engine/Google Compute Engine, BIOS Google 07/08/2026
+[    0.000000] DMI: Memory slots populated: 1/1
+[    0.000000] secureboot: Secure boot disabled
+[    0.000000] Hypervisor detected: KVM
+[    0.000000] last_pfn = 0x100000 max_arch_pfn = 0x10000000000
+[    0.000000] tsc: Detected 2700.000 MHz processor
+[    0.000023] last_pfn = 0x440000 max_arch_pfn = 0x10000000000
+[    0.000025] MTRR map: 1 entries (0 fixed + 1 variable; max 2), built from 1 variable MTRRs
+[    0.000027] MTRRs set to read-only
+[    0.000029] x86/PAT: Configuration [0-7]: WB  WC  UC- UC  WB  WP  UC- WT  
+[    0.000047] x2apic: enabled by BIOS, switching to x2apic ops
+[    0.000066] last_pfn = 0x100000 max_arch_pfn = 0x10000000000
+[    0.009078] software IO TLB: SWIOTLB bounce buffer size adjusted to 982MB
+[    0.009098] Using GB pages for direct mapping
+[    0.009801] secureboot: Secure boot disabled
+[    0.009802] RAMDISK: [mem 0xbc37c000-0xbcd72fff]
+[    0.009805] ACPI: Early table checksum verification disabled
+[    0.009810] ACPI: RSDP 0x00000000BF57E014 000024 (v02 Google)
+[    0.009815] ACPI: XSDT 0x00000000BF57D0E8 000064 (v01 Google GOOGFACP 00000001      01000013)
+[    0.009823] ACPI: FACP 0x00000000BF577000 0000F4 (v02 Google GOOGFACP 00000001 GOOG 00000001)
+[    0.009830] ACPI: DSDT 0x00000000BF578000 001A93 (v01 Google GOOGDSDT 00000001 GOOG 00000001)
+[    0.009834] ACPI: FACS 0x00000000BF5AA000 000040
+[    0.009838] ACPI: CCEL 0x00000000BF57C000 000038 (v01 INTEL  EDK2     00000002      01000013)
+[    0.009842] ACPI: SSDT 0x00000000BF57B000 000316 (v02 GOOGLE Tpm2Tabl 00001000 INTL 20250807)
+[    0.009846] ACPI: TPM2 0x00000000BF57A000 000034 (v04 GOOGLE          00000001 GOOG 00000001)
+[    0.009850] ACPI: SRAT 0x00000000BF576000 0000E8 (v03 Google GOOGSRAT 00000001 GOOG 00000001)
+[    0.009853] ACPI: SSDT 0x00000000BF574000 000A42 (v01 Google GOOGSSDT 00000001 GOOG 00000001)
+[    0.009857] ACPI: WAET 0x00000000BF573000 000028 (v01 Google GOOGWAET 00000001 GOOG 00000001)
+[    0.009861] ACPI: APIC 0x00000000BF572000 000096 (v05 Google GOOGAPIC 00000001 GOOG 00000001)
+[    0.009864] ACPI: Reserving FACP table memory at [mem 0xbf577000-0xbf5770f3]
+[    0.009865] ACPI: Reserving DSDT table memory at [mem 0xbf578000-0xbf579a92]
+[    0.009866] ACPI: Reserving FACS table memory at [mem 0xbf5aa000-0xbf5aa03f]
+[    0.009867] ACPI: Reserving CCEL table memory at [mem 0xbf57c000-0xbf57c037]
+[    0.009868] ACPI: Reserving SSDT table memory at [mem 0xbf57b000-0xbf57b315]
+[    0.009869] ACPI: Reserving TPM2 table memory at [mem 0xbf57a000-0xbf57a033]
+[    0.009870] ACPI: Reserving SRAT table memory at [mem 0xbf576000-0xbf5760e7]
+[    0.009871] ACPI: Reserving SSDT table memory at [mem 0xbf574000-0xbf574a41]
+[    0.009872] ACPI: Reserving WAET table memory at [mem 0xbf573000-0xbf573027]
+[    0.009873] ACPI: Reserving APIC table memory at [mem 0xbf572000-0xbf572095]
+[    0.009986] APIC: Switched APIC routing to: cluster x2apic
+[    0.010046] ACPI: SRAT: Node 0 PXM 0 [mem 0x00000000-0x0009ffff]
+[    0.010048] ACPI: SRAT: Node 0 PXM 0 [mem 0x00100000-0xbfffffff]
+[    0.010049] ACPI: SRAT: Node 0 PXM 0 [mem 0x100000000-0x43fffffff]
+[    0.010054] NUMA: Node 0 [mem 0x00001000-0x0009ffff] + [mem 0x00100000-0xbfffffff] -> [mem 0x00001000-0xbfffffff]
+[    0.010057] NUMA: Node 0 [mem 0x00001000-0xbfffffff] + [mem 0x100000000-0x43fffffff] -> [mem 0x00001000-0x43fffffff]
+[    0.010069] NODE_DATA(0) allocated [mem 0x43ffd42c0-0x43fffefff]
+[    0.010456] Zone ranges:
+[    0.010456]   DMA      [mem 0x0000000000001000-0x0000000000ffffff]
+[    0.010459]   DMA32    [mem 0x0000000001000000-0x00000000ffffffff]
+[    0.010460]   Normal   [mem 0x0000000100000000-0x000000043fffffff]
+[    0.010462]   Device   empty
+[    0.010463] Movable zone start for each node
+[    0.010466] Early memory node ranges
+[    0.010467]   node   0: [mem 0x0000000000001000-0x000000000009ffff]
+[    0.010468]   node   0: [mem 0x0000000000100000-0x000000000080bfff]
+[    0.010470]   node   0: [mem 0x000000000080d000-0x00000000015fffff]
+[    0.010471]   node   0: [mem 0x0000000001620000-0x00000000bd43afff]
+[    0.010472]   node   0: [mem 0x00000000bd443000-0x00000000bf2ecfff]
+[    0.010473]   node   0: [mem 0x00000000bf4ed000-0x00000000bf56ffff]
+[    0.010474]   node   0: [mem 0x00000000bf5ff000-0x00000000bffdffff]
+[    0.010475]   node   0: [mem 0x00000000ffe00000-0x000000043fffffff]
+[    0.010477] Initmem setup node 0 [mem 0x0000000000001000-0x000000043fffffff]
+[    0.010485] On node 0, zone DMA: 1 pages in unavailable ranges
+[    0.010502] On node 0, zone DMA: 96 pages in unavailable ranges
+[    0.010520] On node 0, zone DMA: 1 pages in unavailable ranges
+[    0.017198] On node 0, zone DMA32: 32 pages in unavailable ranges
+[    0.017269] On node 0, zone DMA32: 8 pages in unavailable ranges
+[    0.017275] On node 0, zone DMA32: 512 pages in unavailable ranges
+[    0.017299] On node 0, zone DMA32: 143 pages in unavailable ranges
+[    0.017603] On node 0, zone DMA32: 32288 pages in unavailable ranges
+[    0.048401] ACPI: PM-Timer IO Port: 0xb008
+[    0.048448] ACPI: LAPIC_NMI (acpi_id[0xff] dfl dfl lint[0x1])
+[    0.048601] IOAPIC[0]: apic_id 0, version 17, address 0xfec00000, GSI 0-23
+[    0.048605] ACPI: INT_SRC_OVR (bus 0 bus_irq 5 global_irq 5 high level)
+[    0.048607] ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 9 high level)
+[    0.048609] ACPI: INT_SRC_OVR (bus 0 bus_irq 10 global_irq 10 high level)
+[    0.048611] ACPI: INT_SRC_OVR (bus 0 bus_irq 11 global_irq 11 high level)
+[    0.048618] APIC: wakeup_secondary_cpu_64() replaced with acpi_wakeup_cpu()
+[    0.048624] ACPI: Using ACPI (MADT) for SMP configuration information
+[    0.048630] CPU topo: Max. logical packages:   1
+[    0.048631] CPU topo: Max. logical dies:       1
+[    0.048632] CPU topo: Max. dies per package:   1
+[    0.048637] CPU topo: Max. threads per core:   2
+[    0.048638] CPU topo: Num. cores per package:     2
+[    0.048639] CPU topo: Num. threads per package:   4
+[    0.048639] CPU topo: Allowing 4 present CPUs plus 0 hotplug CPUs
+[    0.048724] PM: hibernation: Registered nosave memory: [mem 0x00000000-0x00000fff]
+[    0.048726] PM: hibernation: Registered nosave memory: [mem 0x000a0000-0x000fffff]
+[    0.048728] PM: hibernation: Registered nosave memory: [mem 0x0080c000-0x0080cfff]
+[    0.048730] PM: hibernation: Registered nosave memory: [mem 0x01600000-0x0161ffff]
+[    0.048732] PM: hibernation: Registered nosave memory: [mem 0xbd43b000-0xbd442fff]
+[    0.048734] PM: hibernation: Registered nosave memory: [mem 0xbf2ed000-0xbf4ecfff]
+[    0.048735] PM: hibernation: Registered nosave memory: [mem 0xbf570000-0xbf5fefff]
+[    0.048737] PM: hibernation: Registered nosave memory: [mem 0xbffe0000-0xffdfffff]
+[    0.048739] [mem 0xc0000000-0xffdfffff] available for PCI devices
+[    0.048741] Booting paravirtualized kernel on KVM
+[    0.048743] clocksource: refined-jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 1910969940391419 ns
+[    0.048752] setup_percpu: NR_CPUS:8192 nr_cpumask_bits:4 nr_cpu_ids:4 nr_node_ids:1
+[    0.049112] percpu: Embedded 84 pages/cpu s221184 r8192 d114688 u524288
+[    0.049197] kvm-guest: PV spinlocks enabled
+[    0.049201] PV qspinlock hash table entries: 256 (order: 0, 4096 bytes, linear)
+[    0.049205] Kernel command line: BOOT_IMAGE=/vmlinuz-6.17.0-1022-gcp console=ttyS0,115200 panic=-1 rdinit=/init
+[    0.049269] random: crng init done
+[    0.049270] printk: log buffer data + meta data: 262144 + 917504 = 1179648 bytes
+[    0.051491] Dentry cache hash table entries: 2097152 (order: 12, 16777216 bytes, linear)
+[    0.052599] Inode-cache hash table entries: 1048576 (order: 11, 8388608 bytes, linear)
+[    0.052696] software IO TLB: area num 4.
+[    0.052697] software IO TLB: SWIOTLB bounce buffer size roundup to 1024MB
+[    0.341338] Fallback order for Node 0: 0 
+[    0.341343] Built 1 zonelists, mobility grouping on.  Total pages: 4193991
+[    0.341345] Policy zone: Normal
+[    0.341353] mem auto-init: stack:all(zero), heap alloc:on, heap free:off
+[    0.382344] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=4, Nodes=1
+[    0.397639] ftrace: allocating 62261 entries in 244 pages
+[    0.397642] ftrace: allocated 244 pages with 5 groups
+[    0.397854] rcu: Hierarchical RCU implementation.
+[    0.397855] rcu: 	RCU restricting CPUs from NR_CPUS=8192 to nr_cpu_ids=4.
+[    0.397857] 	Rude variant of Tasks RCU enabled.
+[    0.397857] 	Tracing variant of Tasks RCU enabled.
+[    0.397858] rcu: RCU calculated value of scheduler-enlistment delay is 100 jiffies.
+[    0.397859] rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=4
+[    0.397871] RCU Tasks Rude: Setting shift to 2 and lim to 1 rcu_task_cb_adjust=1 rcu_task_cpu_ids=4.
+[    0.397873] RCU Tasks Trace: Setting shift to 2 and lim to 1 rcu_task_cb_adjust=1 rcu_task_cpu_ids=4.
+[    0.402310] NR_IRQS: 524544, nr_irqs: 456, preallocated irqs: 16
+[    0.402690] rcu: srcu_init: Setting srcu_struct sizes based on contention.
+[    0.403085] Console: colour dummy device 80x25
+[    0.403212] printk: legacy console [ttyS0] enabled
+[    0.927827] ACPI: Core revision 20250404
+[    0.929931] ACPI BIOS Warning (bug): Incorrect checksum in table [APIC] - 0xDC, should be 0x17 (20250404/utcksum-58)
+[    0.935439] APIC: Switch to symmetric I/O mode setup
+[    0.943538] APIC: Switched APIC routing to: physical x2apic
+[    0.954808] clocksource: tsc-early: mask: 0xffffffffffffffff max_cycles: 0x26eb3e3cc63, max_idle_ns: 440795236593 ns
+[    0.960250] Calibrating delay loop (skipped), value calculated using timer frequency.. 5400.00 BogoMIPS (lpj=2700000)
+[    0.961247] x86/cpu: User Mode Instruction Prevention (UMIP) activated
+[    0.961247] Last level iTLB entries: 4KB 0, 2MB 0, 4MB 0
+[    0.961247] Last level dTLB entries: 4KB 0, 2MB 0, 4MB 0, 1GB 0
+[    0.961247] process: using TDX aware idle routine
+[    0.961247] mitigations: Enabled attack vectors: user_kernel, user_user, guest_host, guest_guest, SMT mitigations: auto
+[    0.961247] Speculative Store Bypass: Mitigation: Speculative Store Bypass disabled via prctl
+[    0.961247] Spectre V2 : Mitigation: Enhanced / Automatic IBRS
+[    0.961247] Spectre V1 : Mitigation: usercopy/swapgs barriers and __user pointer sanitization
+[    0.961247] Spectre V2 : Spectre v2 / PBRSB-eIBRS: Retire a single CALL on VMEXIT
+[    0.961247] Spectre V2 : mitigation: Enabling conditional Indirect Branch Prediction Barrier
+[    0.961247] x86/fpu: Supporting XSAVE feature 0x001: 'x87 floating point registers'
+[    0.961247] x86/fpu: Supporting XSAVE feature 0x002: 'SSE registers'
+[    0.961247] x86/fpu: Supporting XSAVE feature 0x004: 'AVX registers'
+[    0.961247] x86/fpu: Supporting XSAVE feature 0x020: 'AVX-512 opmask'
+[    0.961247] x86/fpu: Supporting XSAVE feature 0x040: 'AVX-512 Hi256'
+[    0.961247] x86/fpu: Supporting XSAVE feature 0x080: 'AVX-512 ZMM_Hi256'
+[    0.961247] x86/fpu: Supporting XSAVE feature 0x200: 'Protection Keys User registers'
+[    0.961247] x86/fpu: Supporting XSAVE feature 0x20000: 'AMX Tile config'
+[    0.961247] x86/fpu: Supporting XSAVE feature 0x40000: 'AMX Tile data'
+[    0.961247] x86/fpu: xstate_offset[2]:  576, xstate_sizes[2]:  256
+[    0.961247] x86/fpu: xstate_offset[5]:  832, xstate_sizes[5]:   64
+[    0.961247] x86/fpu: xstate_offset[6]:  896, xstate_sizes[6]:  512
+[    0.961247] x86/fpu: xstate_offset[7]: 1408, xstate_sizes[7]: 1024
+[    0.961247] x86/fpu: xstate_offset[9]: 2432, xstate_sizes[9]:    8
+[    0.961247] x86/fpu: xstate_offset[17]: 2496, xstate_sizes[17]:   64
+[    0.961247] x86/fpu: xstate_offset[18]: 2560, xstate_sizes[18]: 8192
+[    0.961247] x86/fpu: Enabled xstate features 0x602e7, context size is 10752 bytes, using 'compacted' format.
+[    0.961247] Freeing SMP alternatives memory: 52K
+
+[    0.961247] Memory Encryption Features active: Intel TDX
+[    0.961247] pid_max: default: 32768 minimum: 301
+[    0.961247] LSM: initializing lsm=lockdown,capability,landlock,yama,apparmor,ima,evm
+[    0.961247] landlock: Up and running.
+[    0.961247] Yama: becoming mindful.
+[    0.961247] AppArmor: AppArmor initialized
+[    0.961247] Mount-cache hash table entries: 32768 (order: 6, 262144 bytes, linear)
+[    0.961247] Mountpoint-cache hash table entries: 32768 (order: 6, 262144 bytes, linear)
+[    0.961247] smpboot: CPU0: Intel TDX (family: 0x6, model: 0x8f, stepping: 0x8)
+[    0.961482] Performance Events: unsupported CPU family 6 model 143 no PMU driver, software events only.
+[    0.962285] signal: max sigframe size: 11952
+[    0.963277] rcu: Hierarchical SRCU implementation.
+[    0.964248] rcu: 	Max phase no-delay instances is 400.
+[    0.965307] Timer migration: 1 hierarchy levels; 8 children per group; 1 crossnode level
+[    0.966557] NMI watchdog: Perf NMI watchdog permanently disabled
+[    0.967321] smp: Bringing up secondary CPUs ...
+[    0.968249] smpboot: Parallel CPU startup disabled by the platform
+[    0.969392] smpboot: x86: Booting SMP configuration:
+[    0.970249] .... node  #0, CPUs:      #1 #2 #3
+[    0.972311] smp: Brought up 1 node, 4 CPUs
+[    0.974248] smpboot: Total of 4 processors activated (21600.00 BogoMIPS)
+[    0.976348] Memory: 15349196K/16775964K available (22310K kernel code, 4681K rwdata, 15692K rodata, 5416K init, 6080K bss, 1418412K reserved, 0K cma-reserved)
+[    0.978304] devtmpfs: initialized
+[    0.979302] x86/mm: Memory block size: 128MB
+[    0.981349] ACPI: PM: Registering ACPI NVS region [mem 0x0080c000-0x0080cfff] (4096 bytes)
+[    0.982250] ACPI: PM: Registering ACPI NVS region [mem 0xbf57f000-0xbf5fefff] (524288 bytes)
+[    0.983314] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 1911260446275000 ns
+[    0.984269] posixtimers hash table entries: 2048 (order: 3, 32768 bytes, linear)
+[    0.985261] futex hash table entries: 1024 (65536 bytes on 1 NUMA nodes, total 64 KiB, linear).
+[    0.986327] pinctrl core: initialized pinctrl subsystem
+[    0.988247] PM: RTC time: 23:29:47, date: 2026-09-10
+[    0.989931] NET: Registered PF_NETLINK/PF_ROUTE protocol family
+[    0.992252] DMA: preallocated 2048 KiB GFP_KERNEL pool for atomic allocations
+[    0.995251] DMA: preallocated 2048 KiB GFP_KERNEL|GFP_DMA pool for atomic allocations
+[    0.997251] DMA: preallocated 2048 KiB GFP_KERNEL|GFP_DMA32 pool for atomic allocations
+[    0.998259] audit: initializing netlink subsys (disabled)
+[    0.999280] audit: type=2000 audit(1789082978.039:1): state=initialized audit_enabled=0 res=1
+[    0.999376] thermal_sys: Registered thermal governor 'fair_share'
+[    1.000261] thermal_sys: Registered thermal governor 'bang_bang'
+[    1.001252] thermal_sys: Registered thermal governor 'step_wise'
+[    1.002248] thermal_sys: Registered thermal governor 'user_space'
+[    1.003248] thermal_sys: Registered thermal governor 'power_allocator'
+[    1.004264] cpuidle: using governor ladder
+[    1.006260] cpuidle: using governor menu
+[    1.007397] acpiphp: ACPI Hot Plug PCI Controller Driver version: 0.5
+[    1.008499] PCI: Using configuration type 1 for base access
+[    1.009319] kprobes: kprobe jump-optimization is enabled. All kprobes are optimized if possible.
+[    1.010336] HugeTLB: registered 1.00 GiB page size, pre-allocated 0 pages
+[    1.018249] HugeTLB: 16380 KiB vmemmap can be freed for a 1.00 GiB page
+[    1.024249] HugeTLB: registered 2.00 MiB page size, pre-allocated 0 pages
+[    1.031249] HugeTLB: 28 KiB vmemmap can be freed for a 2.00 MiB page
+[    1.041277] ACPI: Added _OSI(Module Device)
+[    1.045248] ACPI: Added _OSI(Processor Device)
+[    1.050248] ACPI: Added _OSI(Processor Aggregator Device)
+[    1.056885] ACPI: 3 ACPI AML tables successfully acquired and loaded
+[    1.065554] ACPI: Interpreter enabled
+[    1.069261] ACPI: PM: (supports S0 S3 S4 S5)
+[    1.073248] ACPI: Using IOAPIC for interrupt routing
+[    1.078374] PCI: Using host bridge windows from ACPI; if necessary, use "pci=nocrs" and report a bug
+[    1.088249] PCI: Ignoring E820 reservations for host bridge windows
+[    1.095302] ACPI: Enabled 16 GPEs in block 00 to 0F
+[    1.103259] ACPI: PCI Root Bridge [PCI0] (domain 0000 [bus 00-ff])
+[    1.109250] acpi PNP0A03:00: _OSC: OS supports [ASPM ClockPM Segments MSI EDR HPX-Type3]
+[    1.117249] acpi PNP0A03:00: _OSC: not requesting OS control; OS requires [ExtendedConfig ASPM ClockPM MSI]
+[    1.127257] acpi PNP0A03:00: fail to add MMCONFIG information, can't access extended configuration space under this bridge
+[    1.140071] PCI host bridge to bus 0000:00
+[    1.144251] pci_bus 0000:00: root bus resource [io  0x0000-0x0cf7 window]
+[    1.151248] pci_bus 0000:00: root bus resource [io  0x0d00-0xffff window]
+[    1.158248] pci_bus 0000:00: root bus resource [mem 0x000a0000-0x000bffff window]
+[    1.165248] pci_bus 0000:00: root bus resource [mem 0xc0000000-0xfebfefff window]
+[    1.173248] pci_bus 0000:00: root bus resource [bus 00-ff]
+[    1.178355] pci 0000:00:00.0: [8086:1237] type 00 class 0x060000 conventional PCI endpoint
+[    1.188958] pci 0000:00:01.0: [8086:7110] type 00 class 0x060100 conventional PCI endpoint
+[    1.198872] pci 0000:00:01.3: [8086:7113] type 00 class 0x068000 conventional PCI endpoint
+[    1.209498] pci 0000:00:01.3: quirk: [io  0xb000-0xb03f] claimed by PIIX4 ACPI
+[    1.221343] pci 0000:00:03.0: [1ae0:0042] type 00 class 0x020000 conventional PCI endpoint
+[    1.231275] pci 0000:00:03.0: BAR 0 [mem 0xc0202000-0xc0202fff]
+[    1.238280] pci 0000:00:03.0: BAR 1 [mem 0xc0200000-0xc02000ff]
+[    1.244270] pci 0000:00:03.0: BAR 2 [mem 0xc0100000-0xc01fffff]
+[    1.251835] pci 0000:00:04.0: [1ae0:001f] type 00 class 0x010802 conventional PCI endpoint
+[    1.261297] pci 0000:00:04.0: BAR 0 [mem 0xc0000000-0xc0003fff 64bit]
+[    1.269270] pci 0000:00:04.0: BAR 4 [mem 0xc0201000-0xc020103f]
+[    1.342082] ACPI: PCI: Interrupt link LNKA configured for IRQ 10
+[    1.349140] ACPI: PCI: Interrupt link LNKB configured for IRQ 10
+[    1.355980] ACPI: PCI: Interrupt link LNKC configured for IRQ 11
+[    1.362333] ACPI: PCI: Interrupt link LNKD configured for IRQ 11
+[    1.368260] ACPI: PCI: Interrupt link LNKS configured for IRQ 9
+[    1.376349] iommu: Default domain type: Translated
+[    1.381248] iommu: DMA domain TLB invalidation policy: lazy mode
+[    1.387412] SCSI subsystem initialized
+[    1.391282] ACPI: bus type USB registered
+[    1.395259] usbcore: registered new interface driver usbfs
+[    1.401252] usbcore: registered new interface driver hub
+[    1.406252] usbcore: registered new device driver usb
+[    1.412265] pps_core: LinuxPPS API ver. 1 registered
+[    1.417248] pps_core: Software ver. 5.3.6 - Copyright 2005-2007 Rodolfo Giometti <giometti@linux.it>
+[    1.426249] PTP clock support registered
+[    1.430279] EDAC MC: Ver: 3.0.0
+[    1.443249] efivars: Registered efivars operations
+[    1.448541] NetLabel: Initializing
+[    1.452248] NetLabel:  domain hash size = 128
+[    1.456248] NetLabel:  protocols = UNLABELED CIPSOv4 CALIPSO
+[    1.462267] NetLabel:  unlabeled traffic allowed by default
+[    1.468276] mctp: management component transport protocol core
+[    1.474248] NET: Registered PF_MCTP protocol family
+[    1.479255] PCI: Using ACPI for IRQ routing
+[    1.483530] vgaarb: loaded
+[    1.486347] clocksource: Switched to clocksource tsc-early
+[    1.492555] VFS: Disk quotas dquot_6.6.0
+[    1.496641] VFS: Dquot-cache hash table entries: 512 (order 0, 4096 bytes)
+[    1.504007] AppArmor: AppArmor Filesystem Enabled
+[    1.508897] pnp: PnP ACPI init
+[    1.512742] pnp: PnP ACPI: found 7 devices
+[    1.528222] clocksource: acpi_pm: mask: 0xffffff max_cycles: 0xffffff, max_idle_ns: 2085701024 ns
+[    1.537323] NET: Registered PF_INET protocol family
+[    1.542619] IP idents hash table entries: 262144 (order: 9, 2097152 bytes, linear)
+[    1.566081] tcp_listen_portaddr_hash hash table entries: 8192 (order: 5, 131072 bytes, linear)
+[    1.574902] Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+[    1.582946] TCP established hash table entries: 131072 (order: 8, 1048576 bytes, linear)
+[    1.591398] TCP bind hash table entries: 65536 (order: 9, 2097152 bytes, linear)
+[    1.599090] TCP: Hash tables configured (established 131072 bind 65536)
+[    1.605931] MPTCP token hash table entries: 16384 (order: 7, 393216 bytes, linear)
+[    1.613732] UDP hash table entries: 8192 (order: 7, 524288 bytes, linear)
+[    1.620784] UDP-Lite hash table entries: 8192 (order: 7, 524288 bytes, linear)
+[    1.628223] NET: Registered PF_UNIX/PF_LOCAL protocol family
+[    1.634051] NET: Registered PF_XDP protocol family
+[    1.639017] pci_bus 0000:00: resource 4 [io  0x0000-0x0cf7 window]
+[    1.645347] pci_bus 0000:00: resource 5 [io  0x0d00-0xffff window]
+[    1.651673] pci_bus 0000:00: resource 6 [mem 0x000a0000-0x000bffff window]
+[    1.658704] pci_bus 0000:00: resource 7 [mem 0xc0000000-0xfebfefff window]
+[    1.665757] pci 0000:00:00.0: Limiting direct PCI/PCI transfers
+[    1.671942] PCI: CLS 0 bytes, default 64
+[    1.676156] PCI-DMA: Using software bounce buffering for IO (SWIOTLB)
+[    1.676233] Trying to unpack rootfs image as initramfs...
+[    1.682742] software IO TLB: mapped [mem 0x000000007bdff000-0x00000000bbdff000] (1024MB)
+[    1.682774] clocksource: tsc: mask: 0xffffffffffffffff max_cycles: 0x26eb3e3cc63, max_idle_ns: 440795236593 ns
+[    1.706762] clocksource: Switched to clocksource tsc
+[    1.719467] Initialise system trusted keyrings
+[    1.724076] Key type blacklist registered
+[    1.728376] workingset: timestamp_bits=36 max_order=22 bucket_order=0
+[    1.735301] squashfs: version 4.0 (2009/01/31) Phillip Lougher
+[    1.741485] fuse: init (API version 7.44)
+[    1.745913] integrity: Platform Keyring initialized
+[    1.750950] integrity: Machine keyring initialized
+[    1.763775] Key type asymmetric registered
+[    1.768022] Asymmetric key parser 'x509' registered
+[    1.773057] Block layer SCSI generic (bsg) driver version 0.4 loaded (major 242)
+[    1.780729] io scheduler mq-deadline registered
+[    1.786603] ledtrig-cpu: registered to indicate activity on CPUs
+[    1.792886] input: Power Button as /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
+[    1.800593] ACPI: button: Power Button [PWRF]
+[    1.805124] input: Sleep Button as /devices/LNXSYSTM:00/LNXSLPBN:00/input/input1
+[    1.808449] Freeing initrd memory: 10204K
+[    1.812923] ACPI: button: Sleep Button [SLPF]
+[    1.822155] Serial: 8250/16550 driver, 32 ports, IRQ sharing enabled
+[    1.853602] 00:03: ttyS0 at I/O 0x3f8 (irq = 4, base_baud = 115200) is a 16550A
+[    1.881538] 00:04: ttyS1 at I/O 0x2f8 (irq = 3, base_baud = 115200) is a 16550A
+[    1.909521] 00:05: ttyS2 at I/O 0x3e8 (irq = 6, base_baud = 115200) is a 16550A
+[    1.937475] 00:06: ttyS3 at I/O 0x2e8 (irq = 7, base_baud = 115200) is a 16550A
+[    1.942954] Linux agpgart interface v0.103
+[    1.953498] tpm_tis MSFT0101:00: 2.0 TPM (device-id 0x9009, rev-id 0)
+[    1.966816] loop: module loaded
+[    1.968378] Key type psk registered
+[    1.970441] ACPI: bus type drm_connector registered
+[    1.970550] nvme nvme0: pci function 0000:00:04.0
+[    1.972733] tun: Universal TUN/TAP device driver, 1.6
+[    1.975982] ACPI: \_SB_.LNKD: Enabled at IRQ 11
+[    1.977902] PPP generic driver version 2.4.2
+[    1.981898] i8042: PNP: PS/2 Controller [PNP0303:KBD,PNP0f13:MOU] at 0x60,0x64 irq 1,12
+[    1.985535] i8042: Warning: Keylock active
+[    1.989194] serio: i8042 KBD port at 0x60,0x64 irq 1
+[    1.991373] serio: i8042 AUX port at 0x60,0x64 irq 12
+[    1.993688] mousedev: PS/2 mouse device common for all mice
+[    1.996303] rtc_cmos 00:00: RTC can wake from S4
+[    1.999860] rtc_cmos 00:00: registered as rtc0
+[    2.002139] rtc_cmos 00:00: setting system clock to 2026-09-10T23:29:48 UTC (1789082988)
+[    2.003098] software IO TLB: Memory encryption is active and system is using DMA bounce buffers
+[    2.005775] rtc_cmos 00:00: alarms up to one day, 114 bytes nvram
+[    2.011977] i2c_dev: i2c /dev entries driver
+[    2.013906] device-mapper: core: CONFIG_IMA_DISABLE_HTABLE is disabled. Duplicate IMA measurements will not be recorded in the IMA log.
+[    2.019186] device-mapper: uevent: version 1.0.3
+[    2.021351] device-mapper: ioctl: 4.50.0-ioctl (2025-04-28) initialised: dm-devel@lists.linux.dev
+[    2.025180] intel_pstate: CPU model not supported
+[    2.027255] drop_monitor: Initializing network drop monitor service
+[    2.030880] NET: Registered PF_INET6 protocol family
+[    2.031728] nvme nvme0: 2/0/0 default/read/poll queues
+[    2.033497] Segment Routing with IPv6
+[    2.036951] In-situ OAM (IOAM) with IPv6
+[    2.038709] NET: Registered PF_PACKET protocol family
+[    2.041070] Key type dns_resolver registered
+[    2.041790] GPT:Primary header thinks Alt. header is not at the end of the disk.
+[    2.042977] mce: Unable to init MCE device (rc: -5)
+[    2.046118] GPT:8388607 != 41943039
+[    2.048339] IPI shorthand broadcast: enabled
+[    2.049885] GPT:Alternate GPT header not at the end of the disk.
+[    2.053162] sched_clock: Marking stable (1495013644, 557254573)->(9800449889, -7748181672)
+[    2.054356] GPT:8388607 != 41943039
+[    2.054357] GPT: Use GNU Parted to correct GPT errors.
+[    2.054362]  nvme0n1: p1 p14 p15 p16
+[    2.063456] registered taskstats version 1
+[    2.065738] Loading compiled-in X.509 certificates
+[    2.068445] Loaded X.509 cert 'Build time autogenerated kernel key: 8bf700b70a5c57ec8a5f67210ff11e5fa3a44628'
+[    2.073200] Loaded X.509 cert 'Canonical Ltd. Live Patch Signing 2025 Kmod: d541cef61dc7e793b7eb7e899970a2eef0b5dc8c'
+[    2.078195] Loaded X.509 cert 'Canonical Ltd. Live Patch Signing: 14df34d1a87cf37625abec039ef2bf521249b969'
+[    2.082700] Loaded X.509 cert 'Canonical Ltd. Kernel Module Signing 2025 Kmod: 4627603d2357a2a3f81006370894c221175893e9'
+[    2.087700] Loaded X.509 cert 'Canonical Ltd. Kernel Module Signing: 88f752e560a1e0737e31163a466ad7b70a850c19'
+[    2.091960] blacklist: Loading compiled-in revocation X.509 certificates
+[    2.094802] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing: 61482aa2830d0ab2ad5af10b7250da9033ddcef0'
+[    2.098982] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (2017): 242ade75ac4a15e50d50c84b0d45ff3eae707a03'
+[    2.103412] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (ESM 2018): 365188c1d374d6b07c3c8f240f8ef722433d6a8b'
+[    2.107956] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (2019): c0746fd6c5da3ae827864651ad66ae47fe24b3e8'
+[    2.112483] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (2021 v1): a8d54bbb3825cfb94fa13c9f8a594a195c107b8d'
+[    2.116976] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (2021 v2): 4cf046892d6fd3c9a5b03f98d845f90851dc6a8c'
+[    2.121591] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (2021 v3): 100437bb6de6e469b581e61cd66bce3ef4ed53af'
+[    2.126106] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (Ubuntu Core 2019): c1d57b8f6b743f23ee41f4f7ee292f06eecadfb9'
+[    2.133788] Demotion targets for Node 0: null
+[    2.135834] Key type .fscrypt registered
+[    2.137545] Key type fscrypt-provisioning registered
+[    2.139705] Key type big_key registered
+[    2.141370] Key type trusted registered
+[    2.144346] Key type encrypted registered
+[    2.146083] AppArmor: AppArmor sha256 policy hashing enabled
+[    2.174999] integrity: Loading X.509 certificate: UEFI:db
+[    2.177338] integrity: Loaded X.509 cert 'Microsoft Corporation UEFI CA 2011: 13adbf4309bd82709c8cd54f316ed522988a1bd4'
+[    2.181908] integrity: Loading X.509 certificate: UEFI:db
+[    2.184250] integrity: Loaded X.509 cert 'Microsoft Windows Production PCA 2011: a92902398e16c49778cd90f99e4f9ae17c55af53'
+[    2.188953] integrity: Loading X.509 certificate: UEFI:db
+[    2.191284] integrity: Loaded X.509 cert 'Microsoft Corporation: Windows UEFI CA 2023: aefc5fbbbe055d8f8daa585473499417ab5a5272'
+[    2.196167] integrity: Loading X.509 certificate: UEFI:db
+[    2.198548] integrity: Loaded X.509 cert 'Microsoft UEFI CA 2023: 81aa6b3244c935bce0d6628af39827421e32497d'
+[    2.200837] input: AT Translated Set 2 keyboard as /devices/platform/i8042/serio0/input/input2
+[    2.220254] integrity: Revoking X.509 certificate: UEFI:dbx
+[    2.222661] blacklist: Revoked X.509 cert 'Canonical Ltd. Secure Boot Signing: 61482aa2830d0ab2ad5af10b7250da9033ddcef0'
+[    2.227221] integrity: Revoking X.509 certificate: UEFI:dbx
+[    2.229614] blacklist: Revoked X.509 cert 'Cisco: Virtual UEFI SubCA: 13df2e3f54ebf347dcaecebf21d3cbb2355a4c9a'
+[    2.233853] integrity: Revoking X.509 certificate: UEFI:dbx
+[    2.236203] blacklist: Revoked X.509 cert 'Debian Secure Boot Signer: 00a7468def'
+[    2.239734] Loading compiled-in module X.509 certificates
+[    2.242408] Loaded X.509 cert 'Build time autogenerated kernel key: 8bf700b70a5c57ec8a5f67210ff11e5fa3a44628'
+[    2.246603] ima: Allocated hash algorithm: sha256
+[    2.270028] ima: No architecture policies found
+[    2.272002] evm: Initialising EVM extended attributes:
+[    2.274186] evm: security.selinux
+[    2.275657] evm: security.SMACK64
+[    2.277118] evm: security.SMACK64EXEC
+[    2.278684] evm: security.SMACK64TRANSMUTE
+[    2.280464] evm: security.SMACK64MMAP
+[    2.282047] evm: security.apparmor
+[    2.283566] evm: security.ima
+[    2.284841] evm: security.capability
+[    2.286375] evm: HMAC attrs: 0x1
+[    2.288062] PM:   Magic number: 10:138:504
+[    2.290880] RAS: Correctable Errors collector initialized.
+[    2.305528] clk: Disabling unused clocks
+[    2.307225] PM: genpd: Disabling unused power domains
+[    2.321169] Freeing unused decrypted memory: 2028K
+[    2.323145] Freeing unused kernel image (initmem) memory: 5416K
+[    2.324218] Write protecting the kernel read-only data: 38912k
+[    2.325540] Freeing unused kernel image (text/rodata gap) memory: 216K
+[    2.326832] Freeing unused kernel image (rodata/data gap) memory: 692K
+[    2.337615] x86/mm: Checked W+X mappings: passed, no W+X pages found.
+[    2.338667] Run /init as init process
+initrd: ======== attested tunnel guest, in the initrd grub measured ========
+initrd: kernel  6.17.0-1022-gcp x86_64
+initrd: cmdline BOOT_IMAGE=/vmlinuz-6.17.0-1022-gcp console=ttyS0,115200 panic=-1 rdinit=/init
+initrd: dmesg: [    0.000000] tdx: Guest detected
+initrd: dmesg: [    0.000000] tdx: Attributes: SEPT_VE_DISABLE
+initrd: dmesg: [    0.000000] tdx: TD_CTLS: PENDING_VE_DISABLE ENUM_TOPOLOGY VIRT_CPUID2 REDUCE_VE
+initrd: dmesg: [    0.961247] process: using TDX aware idle routine
+initrd: dmesg: [    0.961247] Memory Encryption Features active: Intel TDX
+initrd: dmesg: [    0.961247] smpboot: CPU0: Intel TDX (family: 0x6, model: 0x8f, stepping: 0x8)
+initrd: dmesg: [    2.003098] software IO TLB: Memory encryption is active and system is using DMA bounce buffers
+initrd: loaded tdx-guest
+[    2.358624] ACPI: \_SB_.LNKC: Enabled at IRQ 10
+[    2.399230] gve 0000:00:03.0: Driver is running with DQO RDA queue format.
+[    2.400303] gve 0000:00:03.0: MAC addr: 42:01:0a:80:00:29
+[    2.401164] gve 0000:00:03.0: BUFFER SIZES device option enabled with max_rx_buffer_size of 4096, header_buf_size of 128.
+[    2.402835] gve 0000:00:03.0: FLOW STEERING device option enabled with max rule limit of 20000.
+[    2.404249] gve 0000:00:03.0: TX queues 4, RX queues 4
+[    2.405118] gve 0000:00:03.0: Max TX queues 4, Max RX queues 4
+[    2.414725] gve 0000:00:03.0: GVE version 1.0.0
+[    2.415501] gve 0000:00:03.0: GVE queue format 3
+initrd: loaded gve
+initrd: loaded nf_tables
+initrd: loaded nf_reject_ipv4
+initrd: loaded nf_reject_ipv6
+initrd: loaded nft_reject
+initrd: loaded nft_reject_inet
+initrd: modules now resident: gve nf_reject_ipv4 nf_reject_ipv6 nf_tables nft_reject nft_reject_inet tdx_guest 
+initrd: report interface present at /sys/kernel/config/tsm/report
+initrd: block devices, as this kernel presents them with no udev running:
+initrd:   /dev/nvme0n1 sectors=41943040 serial='nvme_card-pd' wwid='nvme.1ae0-6e766d655f636172642d7064-6e766d655f636172642d7064-00000001'
+initrd:     partition nvme0n1p1 sectors=6289375
+initrd:     partition nvme0n1p14 sectors=8192
+initrd:     partition nvme0n1p15 sectors=217088
+initrd:     partition nvme0n1p16 sectors=1869825
+initrd:   /dev/nvme0n2 sectors=20971520 serial='nvme_card-pd' wwid='nvme.1ae0-6e766d655f636172642d7064-6e766d655f636172642d7064-00000002'
+initrd:   nvme controller nvme0: serial='nvme_card-pd' model='nvme_card-pd'
+initrd: config device /dev/nvme0n2 found by the ext4 label
+[    2.443594] EXT4-fs (nvme0n2): Supports (experimental) DIO atomic writes awu_min: 4096, awu_max: 4096
+[    2.445719] EXT4-fs (nvme0n2): mounted filesystem c3f74859-3386-4f4b-894d-cbb62913293f ro without journal. Quota mode: none.
+initrd: config device mounted at /config (ro,noexec,nosuid,nodev); it holds:
+initrd:   collateral/FETCH.txt  1805 bytes  8ab6bb6e39ae50fe…
+initrd:   collateral/collateral.txt  2430 bytes  251a7fcc0661499c…
+initrd:   collateral/pckcrl-platform.body  3356 bytes  3bf7fa8fb2c2f313…
+initrd:   collateral/pckcrl-platform.headers  2200 bytes  3a5c226003991583…
+initrd:   collateral/qeidentity.body  624 bytes  550f110a50541821…
+initrd:   collateral/qeidentity.headers  2186 bytes  1854cd99f67bf538…
+initrd:   collateral/rootcrl.body  294 bytes  c114be5d5ca7aab2…
+initrd:   collateral/rootcrl.headers  531 bytes  a52a1a2982c8819b…
+initrd:   collateral/tcbinfo-00806f050000.body  7953 bytes  857fc7e41a832a59…
+initrd:   collateral/tcbinfo-00806f050000.headers  2175 bytes  b555e197c3899317…
+initrd:   network.conf  290 bytes  c860983b2e25e713…
+initrd:   peers.json  114 bytes  82064b82ebab8340…
+initrd:   policy.json  357 bytes  66348e6934166669…
+initrd:   policy.json.sig  129 bytes  ce43fc3f233bfa09…
+initrd:   reference-values.json  1070 bytes  facc7c3e74454279…
+initrd:   reference-values.json.sig  129 bytes  3ceeafb8822ced2c…
+initrd:   tunneld.json  384 bytes  b77cfd19ed507bb2…
+initrd: loopback up (the kernel delivers a rule's refusal to the local socket over it)
+[    2.604555] gve 0000:00:03.0 eth0: Device link is up.
+initrd: link eth0 up: 10.128.0.41/32 mtu 1460, gateway 10.128.0.1
+initrd: addr: 1: lo    inet 127.0.0.1/8 scope host lo\       valid_lft forever preferred_lft forever
+initrd: addr: 1: lo    inet6 ::1/128 scope host \       valid_lft forever preferred_lft forever
+initrd: addr: 2: eth0    inet 10.128.0.41/32 scope global eth0\       valid_lft forever preferred_lft forever
+initrd: addr: 2: eth0    inet6 fe80::4001:aff:fe80:29/64 scope link tentative \       valid_lft forever preferred_lft forever
+initrd: route: default via 10.128.0.1 dev eth0 
+initrd: route: 10.128.0.1 dev eth0 scope link 
+initrd: installing the egress rule set the signed policy implies:
+tunneld: sandbox "guest-b"
+tunneld: author key 665053d10032f5b9… (/etc/attested-tunnel/author.pub, inside the launch measurement)
+tunneld: peer table: guest-a = 10.128.0.40:4433
+tunneld: policy /config/policy.json loaded under the author key; digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28
+tunneld: policy egress: version 1, unattested egress permitted: false
+tunneld: sandbox "guest-b" listens on udp/4433; 1 peer(s) in the table
+tunneld: EGRESS RULES as the signed policy and the peer table imply them:
+table inet attested_tunnel {
+	chain input {
+		type filter hook input priority 0; policy drop;
+		iif "lo" accept
+		meta nfproto ipv4 ip saddr 10.128.0.40 meta l4proto udp udp sport 4433 accept   # peer "guest-a" answering
+		meta nfproto ipv4 ip saddr 10.128.0.40 meta l4proto udp udp dport 4433 accept   # peer "guest-a" dialing this sandbox's listener
+	}
+	chain output {
+		type filter hook output priority 0; policy drop;
+		oif "lo" accept
+		meta nfproto ipv4 ip daddr 10.128.0.40 meta l4proto udp udp dport 4433 accept   # dial peer "guest-a"
+		meta nfproto ipv4 ip daddr 10.128.0.40 meta l4proto udp udp sport 4433 accept   # answer peer "guest-a" from this sandbox's listener
+		meta l4proto tcp reject with tcp reset        # so that connect() fails now rather than in a minute
+		reject with icmpx admin-prohibited            # everything else the policy did not permit
+	}
+	chain forward {
+		type filter hook forward priority 0; policy drop;
+	}
+}
+tunneld: EGRESS RULES INSTALLED; as the kernel holds them:
+table inet attested_tunnel {
+	chain forward {
+		type filter hook forward priority 0; policy drop;
+	}
+	chain input {
+		type filter hook input priority 0; policy drop;
+		iif "lo" accept   # handle 2
+		meta nfproto ipv4 ip saddr 10.128.0.40 meta l4proto udp sport 4433 accept   # handle 3
+		meta nfproto ipv4 ip saddr 10.128.0.40 meta l4proto udp dport 4433 accept   # handle 4
+	}
+	chain output {
+		type filter hook output priority 0; policy drop;
+		oif "lo" accept   # handle 6
+		meta nfproto ipv4 ip daddr 10.128.0.40 meta l4proto udp dport 4433 accept   # handle 7
+		meta nfproto ipv4 ip daddr 10.128.0.40 meta l4proto udp sport 4433 accept   # handle 8
+		meta l4proto tcp reject with tcp reset   # handle 9
+		reject with icmpx code 3   # handle 10
+	}
+}
+tunneld: EXIT status=0
+initrd: proving the egress rule set holds, from inside the guest:
+tunneld: sandbox "guest-b"
+tunneld: author key 665053d10032f5b9… (/etc/attested-tunnel/author.pub, inside the launch measurement)
+tunneld: peer table: guest-a = 10.128.0.40:4433
+tunneld: policy /config/policy.json loaded under the author key; digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28
+tunneld: policy egress: version 1, unattested egress permitted: false
+tunneld: EGRESS PROBE: 5 attempt(s) at addresses this policy permits nothing to reach
+tunneld: EGRESS REFUSED tcp/169.254.169.254:80: dial tcp 169.254.169.254:80: connect: connection refused (the provider's metadata server) — the netfilter rule refused it
+tunneld: EGRESS REFUSED tcp/8.8.8.8:53: dial tcp 8.8.8.8:53: connect: connection refused (a public resolver, over TCP) — the netfilter rule refused it
+tunneld: EGRESS REFUSED udp/8.8.8.8:53: write udp 10.128.0.41:34506->8.8.8.8:53: write: operation not permitted (a public resolver, over UDP) — the netfilter rule refused it
+tunneld: EGRESS REFUSED udp/10.128.0.1:53: write udp 10.128.0.41:48639->10.128.0.1:53: write: operation not permitted (named by -egress-probe) — the netfilter rule refused it
+tunneld: EGRESS REFUSED tcp/10.128.0.1:80: dial tcp 10.128.0.1:80: connect: connection refused (named by -egress-probe) — the netfilter rule refused it
+tunneld: EGRESS PROBE PASSED: every attempt was refused before it left
+tunneld: EXIT status=0
+initrd: the initramfs is remounted read-only
+initrd: mount: rootfs / rootfs ro,size=7678776k,nr_inodes=1919694,inode64 0 0
+initrd: mount: devtmpfs /dev devtmpfs rw,nosuid,noexec,relatime,size=7678776k,nr_inodes=1919694,mode=755,inode64 0 0
+initrd: mount: proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+initrd: mount: sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+initrd: mount: tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,inode64 0 0
+initrd: mount: tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,inode64 0 0
+initrd: mount: configfs /sys/kernel/config configfs rw,nosuid,nodev,noexec,relatime 0 0
+initrd: mount: /dev/nvme0n2 /config ext4 ro,nosuid,nodev,noexec,relatime 0 0
+initrd: starting tunneld
+tunneld: sandbox "guest-b"
+tunneld: author key 665053d10032f5b9… (/etc/attested-tunnel/author.pub, inside the launch measurement)
+tunneld: peer table: guest-a = 10.128.0.40:4433
+tunneld: report interface /sys/kernel/config/tsm/report: present, 0 request(s) outstanding; a platform driver that does not answer it is what a non-confidential VM looks like from inside
+tunneld: intel tdx collateral /config/collateral (provisioned, never fetched — ADR-0005)
+tunneld: verifying evidence from amd-sev-snp+intel-tdx
+tunneld: tsm: provider "tdx_guest" (intel-tdx) returned 8000 bytes of evidence over 1 write(s); its own certificate table could not be read (auxblob: open /sys/kernel/config/tsm/report/tunneld-267-1/auxblob: no such file or directory), which is the expected state on this host and not an error; bundled no certificate chain, because the quote carries the one that roots it
+tunneld: policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28 (sha256 over the signed policy; put it in a peer's policy_digest)
+tunneld: policy forward_to: measurement d5ddcc423b1aed53…
+tunneld: policy forward_to: measurement d79409ccd2bdca0b…
+tunneld: listening on 10.128.0.41:4433 as "guest-b"; idle 5m0s, maximum age 3m0s
+tunneld: SELFCHECK acquired 8000 bytes of intel-tdx evidence in 42ms, bound to a throwaway key and to policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28
+WARN : 2026/09/10 23:29:49.226712 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:29:49.227560 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:29:49.228338 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: SELFCHECK VERDICT REFUSED reason=guest policy or policy digest not permitted by the reference value: attest: verification failed
+tunneld: SELFCHECK (unverified, read straight out of the quote's bytes) mrtd  c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+tunneld: SELFCHECK (unverified) rtmr0 c2fc12a52db868515eff7c657e42ce04b0b7363fa6ddf7c1cca87aa8e6a061a11f9981924a600ad6d2232f75182a850a
+tunneld: SELFCHECK (unverified) rtmr1 02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b
+tunneld: SELFCHECK (unverified) rtmr2 d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+tunneld: SELFCHECK EVIDENCE BEGIN (base64 of 8000 bytes; feed it to attest/cmd/verify-evidence)
+tunneld: SELFCHECK EVIDENCE BAACAIEAAAAAAAAAk5pyM/ecTKmUCg2zlX8GBwAAAAAAAAAAAAAAAAAAAAAAAAAADwEKAAAAAAAAAAAAAAAAAKtiVhoXOsvRjuUP
+tunneld: SELFCHECK EVIDENCE 83dQ20QYTGz16IbfdCR8xXXhY7BMNLnhg3R1fCNa/6YU1BJ/awAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAADnAgYAAAAAAMHunBbjr8UGz+BCxbhGo2hSjzs3YY6vsnRpvBFM+RTpIiyRYYRw5/Ky
+tunneld: SELFCHECK EVIDENCE isNgloJwpQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADJ8KMOYmV/14VVuZqGGGzWj/ZOT
+tunneld: SELFCHECK EVIDENCE 0JKjVykukeisCPqAVcXc9ZPdOgf9BoivYQU/9AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AML8EqUtuGhRXv98ZX5CzgSwtzY/pt33wcyoeqjmoGGhH5mBkkpgCtbSIy91GCqFCgLH8ZyGKz2uFZLHNzWNm7E/jwo007Pspnw5
+tunneld: SELFCHECK EVIDENCE v3lBoSw0djW4opHWjZys5FsW7CWRO9XdzEI7Gu1TAjemxDswBdMXRkqUIX3ZR38RMAc3nb8Px2AcrI+mm7SKTv1DIsc+DQAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAALIkqExMrAMfIru+CpaWFEkC+J7B7Y9WeqVMb++0CvtN
+tunneld: SELFCHECK EVIDENCE RPjKBZpt86wbpp/HENtrpZJKWMJYJjF7RCMSAbxDwmXLEAAAObgmEUQTCJN93buZI+AOSCm9mkF5/FmGU7PC7cbbGz4o3uWp77VR
+tunneld: SELFCHECK EVIDENCE 9KGVJTn9hRg2gp2RPA6xXoJW8HZJakOxVshxIke978QvnOWghmp6ssJos1X/t4ta9pE3sWCpshehzZgwuTK48xw/k6R7aflRRQw8
+tunneld: SELFCHECK EVIDENCE Ej/0HtVeCmnsRm9T4O4GAEUQAAAKCv8bBv8ABgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AOcAAAAAAAAA5aOntdgwwpU7mFNMbFmjo0/cNOkz9/WJjwqFzwiEa8oAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANye
+tunneld: SELFCHECK EVIDENCE KnxvlI8XR040p/xD7QMPfBVj8bq932NAyC4OVKjFAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAGAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHYr8Hivwa5Cl6FUr9rAOL25RRlJv0ybr9VIKtnY+5nXAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACK6YFFs87bdc+basP2Nypyb7LvYFo3o0bBpvc7uO341UOhSXOEWe3GSTQXVhzQ
+tunneld: SELFCHECK EVIDENCE gIMAQD6AT90aajAhsLpNc640IAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUAXQ4AAC0tLS0tQkVHSU4gQ0VSVElG
+tunneld: SELFCHECK EVIDENCE SUNBVEUtLS0tLQpNSUlFOFRDQ0JKZWdBd0lCQWdJVkFQM3dTM0ZtYkJPVTBOckREUEQwRy9WUmE5U0FNQW9HQ0NxR1NNNDlCQU1D
+tunneld: SELFCHECK EVIDENCE Ck1IQXhJakFnQmdOVkJBTU1HVWx1ZEdWc0lGTkhXQ0JRUTBzZ1VHeGhkR1p2Y20wZ1EwRXhHakFZQmdOVkJBb00KRVVsdWRHVnNJ
+tunneld: SELFCHECK EVIDENCE RU52Y25CdmNtRjBhVzl1TVJRd0VnWURWUVFIREF0VFlXNTBZU0JEYkdGeVlURUxNQWtHQTFVRQpDQXdDUTBFeEN6QUpCZ05WQkFZ
+tunneld: SELFCHECK EVIDENCE VEFsVlRNQjRYRFRJMk1EY3lPVEV6TURVeE5Wb1hEVE16TURjeU9URXpNRFV4Ck5Wb3djREVpTUNBR0ExVUVBd3daU1c1MFpXd2dV
+tunneld: SELFCHECK EVIDENCE MGRZSUZCRFN5QkRaWEowYVdacFkyRjBaVEVhTUJnR0ExVUUKQ2d3UlNXNTBaV3dnUTI5eWNHOXlZWFJwYjI0eEZEQVNCZ05WQkFj
+tunneld: SELFCHECK EVIDENCE TUMxTmhiblJoSUVOc1lYSmhNUXN3Q1FZRApWUVFJREFKRFFURUxNQWtHQTFVRUJoTUNWVk13V1RBVEJnY3Foa2pPUFFJQkJnZ3Fo
+tunneld: SELFCHECK EVIDENCE a2pPUFFNQkJ3TkNBQVI1CjNuVlBodjVKZ0JlQUtCK3d0UnV6YXUzKzNCWW9FT1N2NlRJQVBZY1paejVtUmp5VGpZRWkxRGxIL1g1
+tunneld: SELFCHECK EVIDENCE YjFSY3EKcWNtWkJUTXNwcjQvU2pvRjg5SUNvNElERERDQ0F3Z3dId1lEVlIwakJCZ3dGb0FVbFc5ZHpiMGI0ZWxBU2NuVQo5RFBP
+tunneld: SELFCHECK EVIDENCE QVZjTDNsUXdhd1lEVlIwZkJHUXdZakJnb0Y2Z1hJWmFhSFIwY0hNNkx5OWhjR2t1ZEhKMWMzUmxaSE5sCmNuWnBZMlZ6TG1sdWRH
+tunneld: SELFCHECK EVIDENCE VnNMbU52YlM5elozZ3ZZMlZ5ZEdsbWFXTmhkR2x2Ymk5Mk5DOXdZMnRqY213L1kyRTkKY0d4aGRHWnZjbTBtWlc1amIyUnBibWM5
+tunneld: SELFCHECK EVIDENCE WkdWeU1CMEdBMVVkRGdRV0JCUVpqMEswY1NGeHpsbEZmRnpUNVhUNAo0V3FyM1RBT0JnTlZIUThCQWY4RUJBTUNCc0F3REFZRFZS
+tunneld: SELFCHECK EVIDENCE MFRBUUgvQkFJd0FEQ0NBamtHQ1NxR1NJYjRUUUVOCkFRU0NBaW93Z2dJbU1CNEdDaXFHU0liNFRRRU5BUUVFRUoyL1J6aGZZNndl
+tunneld: SELFCHECK EVIDENCE ak9HaXVLaXBGSjh3Z2dGakJnb3EKaGtpRytFMEJEUUVDTUlJQlV6QVFCZ3NxaGtpRytFMEJEUUVDQVFJQkNUQVFCZ3NxaGtpRytF
+tunneld: SELFCHECK EVIDENCE MEJEUUVDQWdJQgpDVEFRQmdzcWhraUcrRTBCRFFFQ0F3SUJBakFRQmdzcWhraUcrRTBCRFFFQ0JBSUJBakFRQmdzcWhraUcrRTBC
+tunneld: SELFCHECK EVIDENCE CkRRRUNCUUlCQkRBUUJnc3Foa2lHK0UwQkRRRUNCZ0lCQVRBUUJnc3Foa2lHK0UwQkRRRUNCd0lCQURBUUJnc3EKaGtpRytFMEJE
+tunneld: SELFCHECK EVIDENCE UUVDQ0FJQkJqQVFCZ3NxaGtpRytFMEJEUUVDQ1FJQkFEQVFCZ3NxaGtpRytFMEJEUUVDQ2dJQgpBREFRQmdzcWhraUcrRTBCRFFF
+tunneld: SELFCHECK EVIDENCE Q0N3SUJBREFRQmdzcWhraUcrRTBCRFFFQ0RBSUJBREFRQmdzcWhraUcrRTBCCkRRRUNEUUlCQURBUUJnc3Foa2lHK0UwQkRRRUNE
+tunneld: SELFCHECK EVIDENCE Z0lCQURBUUJnc3Foa2lHK0UwQkRRRUNEd0lCQURBUUJnc3EKaGtpRytFMEJEUUVDRUFJQkFEQVFCZ3NxaGtpRytFMEJEUUVDRVFJ
+tunneld: SELFCHECK EVIDENCE QkN6QWZCZ3NxaGtpRytFMEJEUUVDRWdRUQpDUWtDQWdRQkFBWUFBQUFBQUFBQUFEQVFCZ29xaGtpRytFMEJEUUVEQkFJQUFEQVVC
+tunneld: SELFCHECK EVIDENCE Z29xaGtpRytFMEJEUUVFCkJBWUFnRzhGQUFBd0R3WUtLb1pJaHZoTkFRMEJCUW9CQVRBZUJnb3Foa2lHK0UwQkRRRUdCQkRWV1NZ
+tunneld: SELFCHECK EVIDENCE NzMvNWEKZFpGVlRrTXBzRWNtTUVRR0NpcUdTSWI0VFFFTkFRY3dOakFRQmdzcWhraUcrRTBCRFFFSEFRRUIvekFRQmdzcQpoa2lH
+tunneld: SELFCHECK EVIDENCE K0UwQkRRRUhBZ0VCQURBUUJnc3Foa2lHK0UwQkRRRUhBd0VCL3pBS0JnZ3Foa2pPUFFRREFnTklBREJGCkFpQUt0b01zbHZKNDZJ
+tunneld: SELFCHECK EVIDENCE cjM1ZmpQVTNYdkdCU0dlLzdRNkU0WGY0M0g1K2dzVXdJaEFJeGk4MzkyZ3dzTDhtdTMKdEJKM3NjM29US3RhOFlkWUh5Q0ZyYXhO
+tunneld: SELFCHECK EVIDENCE dFRjeQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCi0tLS0tQkVHSU4gQ0VSVElGSUNBVEUtLS0tLQpNSUlDbGpDQ0FqMmdBd0lC
+tunneld: SELFCHECK EVIDENCE QWdJVkFKVnZYYzI5RytIcFFFbkoxUFF6emdGWEM5NVVNQW9HQ0NxR1NNNDlCQU1DCk1HZ3hHakFZQmdOVkJBTU1FVWx1ZEdWc0lG
+tunneld: SELFCHECK EVIDENCE TkhXQ0JTYjI5MElFTkJNUm93R0FZRFZRUUtEQkZKYm5SbGJDQkQKYjNKd2IzSmhkR2x2YmpFVU1CSUdBMVVFQnd3TFUyRnVkR0Vn
+tunneld: SELFCHECK EVIDENCE UTJ4aGNtRXhDekFKQmdOVkJBZ01Ba05CTVFzdwpDUVlEVlFRR0V3SlZVekFlRncweE9EQTFNakV4TURVd01UQmFGdzB6TXpBMU1q
+tunneld: SELFCHECK EVIDENCE RXhNRFV3TVRCYU1IQXhJakFnCkJnTlZCQU1NR1VsdWRHVnNJRk5IV0NCUVEwc2dVR3hoZEdadmNtMGdRMEV4R2pBWUJnTlZCQW9N
+tunneld: SELFCHECK EVIDENCE RVVsdWRHVnMKSUVOdmNuQnZjbUYwYVc5dU1SUXdFZ1lEVlFRSERBdFRZVzUwWVNCRGJHRnlZVEVMTUFrR0ExVUVDQXdDUTBFeApD
+tunneld: SELFCHECK EVIDENCE ekFKQmdOVkJBWVRBbFZUTUZrd0V3WUhLb1pJemowQ0FRWUlLb1pJemowREFRY0RRZ0FFTlNCLzd0MjFsWFNPCjJDdXpweHc3NGVK
+tunneld: SELFCHECK EVIDENCE QjcyRXlER2dXNXJYQ3R4MnRWVExxNmhLazZ6K1VpUlpDbnFSN3BzT3ZncUZlU3hsbVRsSmwKZVRtaTJXWXozcU9CdXpDQnVEQWZC
+tunneld: SELFCHECK EVIDENCE Z05WSFNNRUdEQVdnQlFpWlF6V1dwMDBpZk9EdEpWU3YxQWJPU2NHckRCUwpCZ05WSFI4RVN6QkpNRWVnUmFCRGhrRm9kSFJ3Y3pv
+tunneld: SELFCHECK EVIDENCE dkwyTmxjblJwWm1sallYUmxjeTUwY25WemRHVmtjMlZ5CmRtbGpaWE11YVc1MFpXd3VZMjl0TDBsdWRHVnNVMGRZVW05dmRFTkJM
+tunneld: SELFCHECK EVIDENCE bVJsY2pBZEJnTlZIUTRFRmdRVWxXOWQKemIwYjRlbEFTY25VOURQT0FWY0wzbFF3RGdZRFZSMFBBUUgvQkFRREFnRUdNQklHQTFV
+tunneld: SELFCHECK EVIDENCE ZEV3RUIvd1FJTUFZQgpBZjhDQVFBd0NnWUlLb1pJemowRUF3SURSd0F3UkFJZ1hzVmtpMHcraTZWWUdXM1VGLzIydWFYZTBZSkRq
+tunneld: SELFCHECK EVIDENCE MVVlCm5BK1RqRDFhaTVjQ0lDWWIxU0FtRDV4a2ZUVnB2bzRVb3lpU1l4ckRXTG1VUjRDSTlOS3lmUE4rCi0tLS0tRU5EIENFUlRJ
+tunneld: SELFCHECK EVIDENCE RklDQVRFLS0tLS0KLS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNqekNDQWpTZ0F3SUJBZ0lVSW1VTTFscWROSW56ZzdT
+tunneld: SELFCHECK EVIDENCE VlVyOVFHemtuQnF3d0NnWUlLb1pJemowRUF3SXcKYURFYU1CZ0dBMVVFQXd3UlNXNTBaV3dnVTBkWUlGSnZiM1FnUTBFeEdqQVlC
+tunneld: SELFCHECK EVIDENCE Z05WQkFvTUVVbHVkR1ZzSUVOdgpjbkJ2Y21GMGFXOXVNUlF3RWdZRFZRUUhEQXRUWVc1MFlTQkRiR0Z5WVRFTE1Ba0dBMVVFQ0F3
+tunneld: SELFCHECK EVIDENCE Q1EwRXhDekFKCkJnTlZCQVlUQWxWVE1CNFhEVEU0TURVeU1URXdORFV4TUZvWERUUTVNVEl6TVRJek5UazFPVm93YURFYU1CZ0cK
+tunneld: SELFCHECK EVIDENCE QTFVRUF3d1JTVzUwWld3Z1UwZFlJRkp2YjNRZ1EwRXhHakFZQmdOVkJBb01FVWx1ZEdWc0lFTnZjbkJ2Y21GMAphVzl1TVJRd0Vn
+tunneld: SELFCHECK EVIDENCE WURWUVFIREF0VFlXNTBZU0JEYkdGeVlURUxNQWtHQTFVRUNBd0NRMEV4Q3pBSkJnTlZCQVlUCkFsVlRNRmt3RXdZSEtvWkl6ajBD
+tunneld: SELFCHECK EVIDENCE QVFZSUtvWkl6ajBEQVFjRFFnQUVDNm5Fd01ESVlaT2ovaVBXc0N6YUVLaTcKMU9pT1NMUkZoV0dqYm5CVkpmVm5rWTR1M0lqa0RZ
+tunneld: SELFCHECK EVIDENCE WUwwTXhPNG1xc3lZamxCYWxUVll4RlAyc0pCSzV6bEtPQgp1ekNCdURBZkJnTlZIU01FR0RBV2dCUWlaUXpXV3AwMGlmT0R0SlZT
+tunneld: SELFCHECK EVIDENCE djFBYk9TY0dyREJTQmdOVkhSOEVTekJKCk1FZWdSYUJEaGtGb2RIUndjem92TDJObGNuUnBabWxqWVhSbGN5NTBjblZ6ZEdWa2My
+tunneld: SELFCHECK EVIDENCE VnlkbWxqWlhNdWFXNTAKWld3dVkyOXRMMGx1ZEdWc1UwZFlVbTl2ZEVOQkxtUmxjakFkQmdOVkhRNEVGZ1FVSW1VTTFscWROSW56
+tunneld: SELFCHECK EVIDENCE ZzdTVgpVcjlRR3prbkJxd3dEZ1lEVlIwUEFRSC9CQVFEQWdFR01CSUdBMVVkRXdFQi93UUlNQVlCQWY4Q0FRRXdDZ1lJCktvWkl6
+tunneld: SELFCHECK EVIDENCE ajBFQXdJRFNRQXdSZ0loQU9XLzVRa1IrUzlDaVNEY05vb3dMdVBSTHNXR2YvWWk3R1NYOTRCZ3dUd2cKQWlFQTRKMGxySG9NcytY
+tunneld: SELFCHECK EVIDENCE bzVvL3NYNk85UVd4SFJBdlpVR09kUlE3Y3ZxUlhhcUk9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0KAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+tunneld: SELFCHECK EVIDENCE AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+tunneld: SELFCHECK EVIDENCE END
+tunneld: SELFCHECK PUBLIC KEY 302a300506032b6570032100ca57f78df765b2895a8764a5d50d2bf7c4de4856b60ddcac8e1b454f3613b2ae
+tunneld: SELFCHECK (that is a DER SubjectPublicKeyInfo, 44 bytes; write it to a file and pass it as verify-evidence -key. It is a throwaway: the evidence is bound to it and to nothing else, so it can establish no tunnel)
+tunneld: SELFCHECK FAILED attest: verification failed
+tunneld: exercise: dialing guest-a; 5 warm exchanges, 8 concurrent × 1 rounds, marker "attested-tunnel-plaintext-marker"
+WARN : 2026/09/10 23:29:49.345993 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:29:49.405468 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:29:49.406237 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: PEER key=6127250f6ac2cab8… chain=none measurement=d5ddcc423b1aed53… vendor=intel-tdx mrtd=c1ee9c16e3afc506… rtmr2=d5ddcc423b1aed53… tcb=UpToDate,evaluation=20
+WARN : 2026/09/10 23:29:49.465913 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:29:49.466739 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:29:49.467586 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: LATENCY pass=1 peer=guest-a kind=establish ms=70.848 attempts=1 verifier_calls=2
+tunneld: LATENCY pass=1 peer=guest-a kind=warm_exchange n=5 min_ms=0.240 p50_ms=0.322 p90_ms=4.624 max_ms=4.624 mean_ms=1.149 answered_by="guest-a"
+tunneld: LATENCY pass=1 peer=guest-a kind=concurrent streams=8 rounds=1 n=8 wall_ms=0.510 min_ms=0.289 p50_ms=0.353 p90_ms=0.405 max_ms=0.405 mean_ms=0.348
+
+
+
+
+
+
+
+tunneld: LATENCY pass=2 peer=guest-a kind=establish ms=0.007 attempts=1 verifier_calls=0
+tunneld: LATENCY pass=2 peer=guest-a kind=warm_exchange n=5 min_ms=0.222 p50_ms=0.374 p90_ms=1.948 max_ms=1.948 mean_ms=0.633 answered_by="guest-a"
+tunneld: LATENCY pass=2 peer=guest-a kind=concurrent streams=8 rounds=1 n=8 wall_ms=2.844 min_ms=2.549 p50_ms=2.713 p90_ms=2.816 max_ms=2.816 mean_ms=2.686
+
+
+
+
+
+
+
+tunneld: LATENCY pass=3 peer=guest-a kind=establish ms=0.007 attempts=1 verifier_calls=0
+tunneld: LATENCY pass=3 peer=guest-a kind=warm_exchange n=5 min_ms=0.216 p50_ms=0.603 p90_ms=1.381 max_ms=1.381 mean_ms=0.551 answered_by="guest-a"
+tunneld: LATENCY pass=3 peer=guest-a kind=concurrent streams=8 rounds=1 n=8 wall_ms=0.537 min_ms=0.255 p50_ms=0.339 p90_ms=0.379 max_ms=0.379 mean_ms=0.324
+
+
+
+
+
+
+
+tunneld: LATENCY pass=4 peer=guest-a kind=establish ms=0.008 attempts=1 verifier_calls=0
+tunneld: LATENCY pass=4 peer=guest-a kind=warm_exchange n=5 min_ms=0.220 p50_ms=0.501 p90_ms=1.056 max_ms=1.056 mean_ms=0.500 answered_by="guest-a"
+tunneld: LATENCY pass=4 peer=guest-a kind=concurrent streams=8 rounds=1 n=8 wall_ms=0.523 min_ms=0.374 p50_ms=0.422 p90_ms=0.466 max_ms=0.466 mean_ms=0.411
+
+
+
+
+
+
+
+WARN : 2026/09/10 23:32:49.525234 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:32:49.525941 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:32:49.526502 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:32:49.529025 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:32:49.529689 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:32:49.530307 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: LATENCY pass=5 peer=guest-a kind=establish ms=13.220 attempts=1 verifier_calls=2
+tunneld: LATENCY pass=5 peer=guest-a kind=warm_exchange n=5 min_ms=0.198 p50_ms=0.249 p90_ms=0.384 max_ms=0.384 mean_ms=0.259 answered_by="guest-a"
+tunneld: LATENCY pass=5 peer=guest-a kind=concurrent streams=8 rounds=1 n=8 wall_ms=0.470 min_ms=0.205 p50_ms=0.338 p90_ms=0.397 max_ms=0.397 mean_ms=0.314
+
+
+
+
+
+
+
+tunneld: LATENCY pass=6 peer=guest-a kind=establish ms=0.006 attempts=1 verifier_calls=0
+tunneld: LATENCY pass=6 peer=guest-a kind=warm_exchange n=5 min_ms=0.219 p50_ms=0.502 p90_ms=0.745 max_ms=0.745 mean_ms=0.406 answered_by="guest-a"
+tunneld: LATENCY pass=6 peer=guest-a kind=concurrent streams=8 rounds=1 n=8 wall_ms=0.687 min_ms=0.456 p50_ms=0.603 p90_ms=0.633 max_ms=0.633 mean_ms=0.578
+
+
+
+
+
+
+
+tunneld: LATENCY pass=7 peer=guest-a kind=establish ms=0.006 attempts=1 verifier_calls=0
+tunneld: LATENCY pass=7 peer=guest-a kind=warm_exchange n=5 min_ms=0.174 p50_ms=0.352 p90_ms=0.802 max_ms=0.802 mean_ms=0.358 answered_by="guest-a"
+tunneld: LATENCY pass=7 peer=guest-a kind=concurrent streams=8 rounds=1 n=8 wall_ms=0.471 min_ms=0.227 p50_ms=0.344 p90_ms=0.385 max_ms=0.385 mean_ms=0.319
+
+
+
+
+
+
+
+tunneld: LATENCY pass=8 peer=guest-a kind=establish ms=0.007 attempts=1 verifier_calls=0
+tunneld: LATENCY pass=8 peer=guest-a kind=warm_exchange n=5 min_ms=0.185 p50_ms=0.593 p90_ms=1.657 max_ms=1.657 mean_ms=0.604 answered_by="guest-a"
+tunneld: LATENCY pass=8 peer=guest-a kind=concurrent streams=8 rounds=1 n=8 wall_ms=0.483 min_ms=0.237 p50_ms=0.319 p90_ms=0.421 max_ms=0.421 mean_ms=0.312
+
+
+
+
+
+
+
+WARN : 2026/09/10 23:35:49.594533 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:35:49.595195 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:35:49.595639 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:35:49.598766 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:35:49.599465 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 23:35:49.599905 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+tunneld: LATENCY pass=9 peer=guest-a kind=establish ms=9.902 attempts=1 verifier_calls=2
+tunneld: LATENCY pass=9 peer=guest-a kind=warm_exchange n=5 min_ms=0.196 p50_ms=0.312 p90_ms=0.327 max_ms=0.327 mean_ms=0.268 answered_by="guest-a"
+tunneld: LATENCY pass=9 peer=guest-a kind=concurrent streams=8 rounds=1 n=8 wall_ms=0.455 min_ms=0.183 p50_ms=0.335 p90_ms=0.361 max_ms=0.361 mean_ms=0.315
+
+
+
+
+
+
+
+tunneld: LATENCY pass=10 peer=guest-a kind=establish ms=0.006 attempts=1 verifier_calls=0
+tunneld: LATENCY pass=10 peer=guest-a kind=warm_exchange n=5 min_ms=0.231 p50_ms=0.616 p90_ms=1.151 max_ms=1.151 mean_ms=0.552 answered_by="guest-a"
+tunneld: LATENCY pass=10 peer=guest-a kind=concurrent streams=8 rounds=1 n=8 wall_ms=0.488 min_ms=0.244 p50_ms=0.290 p90_ms=0.336 max_ms=0.336 mean_ms=0.281
+
+
+
+
+
+
+
+tunneld: LATENCY pass=11 peer=guest-a kind=establish ms=0.008 attempts=1 verifier_calls=0
+tunneld: LATENCY pass=11 peer=guest-a kind=warm_exchange n=5 min_ms=0.268 p50_ms=0.520 p90_ms=1.337 max_ms=1.337 mean_ms=0.559 answered_by="guest-a"
+tunneld: LATENCY pass=11 peer=guest-a kind=concurrent streams=8 rounds=1 n=8 wall_ms=0.704 min_ms=0.276 p50_ms=0.495 p90_ms=0.596 max_ms=0.596 mean_ms=0.453
+tunneld: holding for 1m0s so that peers still dialing can finish
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -225,7 +225,7 @@ snapshot() {
           echo '--- grubenv bytes ---';
           sudo base64 -w 100 /boot/grub/grubenv" > "$d/pre-boot-state.txt" 2>&1 || true
   gcloud compute scp --zone "$ZONE" --quiet "$VM:/tmp/bootstate.tar" "$d/bootstate.tar" >/dev/null 2>&1 || true
-  gcloud compute scp --zone "$ZONE" --quiet "$VM:/boot/grub/grub.cfg" "$d/grub.cfg" >/dev/null 2>&1 || true
+  ssh_vm 'sudo cat /boot/grub/grub.cfg' > "$d/grub.cfg" 2>/dev/null || true   # 0600 root: scp cannot read it
   echo "  snapshot for $1: $(stat -c %s "$d/bootstate.tar" 2>/dev/null || echo 0) bytes of tar, grub.cfg $(stat -c %s "$d/grub.cfg" 2>/dev/null || echo 0) bytes"
 }
 
@@ -257,7 +257,7 @@ gather baseline
 # What the predictor has to be told about this disk, asked of the disk rather
 # than assumed. The filesystem UUID is the one the default entry's `search`
 # names, which is the only one the interpreter resolves.
-DERIVED_UUID="$(ssh_vm "sed -n 's/.*--fs-uuid --set=root \\([0-9a-fA-F-]*\\).*/\\1/p' /boot/grub/grub.cfg | head -1" 2>/dev/null | tr -d '\r\n' || true)"
+DERIVED_UUID="$(ssh_vm "sudo sed -n 's/.*--fs-uuid --set=root \\([0-9a-fA-F-]*\\).*/\\1/p' /boot/grub/grub.cfg | head -1" 2>/dev/null | tr -d '\r\n' || true)"
 [ -n "$FS_UUID" ] || FS_UUID="$DERIVED_UUID"
 DERIVED_PARTS="$(ssh_vm "for m in / /boot /boot/efi; do printf '%s ' \"\$(findmnt -no SOURCE \$m | sed 's#.*[^0-9]\\([0-9][0-9]*\\)\$#\\1#')\"; done" 2>/dev/null | tr -d '\r\n' || true)"
 if [ "$(echo "$DERIVED_PARTS" | wc -w)" = 3 ]; then
@@ -278,7 +278,7 @@ echo
 echo "############ the rewrite: one initrd line into the branch that is taken ############"
 gcloud compute scp --zone "$ZONE" --quiet "$HERE/grubcfg-add-initrd.py" "$VM:/tmp/grubcfg-add-initrd.py" >/dev/null
 ssh_vm 'set -e
-  sudo cp /boot/grub/grub.cfg /tmp/grub.cfg.orig
+  sudo cat /boot/grub/grub.cfg > /tmp/grub.cfg.orig   # the file is 0600 root; the copy must be readable by the rewrite
   python3 /tmp/grubcfg-add-initrd.py /tmp/grub.cfg.orig /tmp/grub.cfg.new --boot-dir /boot
   echo "--- what changed ---"
   diff -u /tmp/grub.cfg.orig /tmp/grub.cfg.new | cat -A || true

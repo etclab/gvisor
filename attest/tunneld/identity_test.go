@@ -109,6 +109,7 @@ func startOnVM(t *testing.T, sandbox string, vm *snpfake.Platform, admits attest
 		Acquirer:              vm,
 		Verifier:              n.verifier,
 		ReferenceValueSetPath: writeSet(t, admits, authorPriv),
+		PolicyPath:            writePolicy(t, everyImage(), authorPriv),
 		AuthorPublicKey:       authorPub,
 		Peers:                 peers,
 		ListenAddr:            "127.0.0.1:0",

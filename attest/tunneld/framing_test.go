@@ -121,6 +121,7 @@ func startWith(t *testing.T, sandbox string, image []byte, admits attest.Referen
 		Acquirer:              p,
 		Verifier:              verifierFor(t, p),
 		ReferenceValueSetPath: writeSet(t, admits, authorPriv),
+		PolicyPath:            writePolicy(t, everyImage(), authorPriv),
 		AuthorPublicKey:       authorPub,
 		Peers:                 peers,
 		ListenAddr:            "127.0.0.1:0",

@@ -43,7 +43,6 @@ import (
 	"bytes"
 	"crypto/ed25519"
 	"crypto/rand"
-	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"io/fs"
@@ -71,8 +70,7 @@ const documentFormat = "gvisor.dev/gvisor/attest/reference-value-set"
 // numbers below are the same ones platformTCB and permittedPolicy hold in Go.
 const oneValueDocument = `{
   "format": "gvisor.dev/gvisor/attest/reference-value-set",
-  "version": 3,
-  "egress": {"version": 1, "unattested": false},
+  "version": 4,
   "reference_values": [
     {
       "vendor": "amd-sev-snp",
@@ -101,8 +99,7 @@ const oneValueDocument = `{
 // that neither deployment has to stop for the other.
 const twoValueDocument = `{
   "format": "gvisor.dev/gvisor/attest/reference-value-set",
-  "version": 3,
-  "egress": {"version": 1, "unattested": false},
+  "version": 4,
   "reference_values": [
     {
       "vendor": "amd-sev-snp",
@@ -126,8 +123,7 @@ const twoValueDocument = `{
 // canonical form to be in, so it loads and admits the same platform.
 const nonCanonicalDocument = `{"reference_values":[{"guest_policy":{"allow_smt":true},` +
 	`"minimum_tcb":{"microcode":72,"snp":23,"tee":0,"bootloader":9},` +
-	`"vendor":"amd-sev-snp","launch_measurement":"$MEASUREMENT"}],"version":3,` +
-	`"egress":{"unattested":false,"version":1},` +
+	`"vendor":"amd-sev-snp","launch_measurement":"$MEASUREMENT"}],"version":4,` +
 	`"format":"gvisor.dev/gvisor/attest/reference-value-set"}`
 
 // versionOneDocument is a set as it was authored and signed before this format
@@ -151,12 +147,11 @@ const versionOneDocument = `{
 `
 
 // versionTwoDocument is a set as it was authored and signed after the format
-// carried a vendor on every value and before it carried an egress section:
-// version 2, and a file that says whom this sandbox may talk to without saying
-// what may leave it.
+// carried a vendor on every value and before a value could name the policy it
+// admits: version 2, a guest list and nothing more.
 //
 // Documents of this shape exist and are signed — the ticket 14 harness shipped
-// one — which is why the loader has to refuse them out loud and say what to add.
+// one — which is why the loader has to refuse them out loud and say what to do.
 const versionTwoDocument = `{
   "format": "gvisor.dev/gvisor/attest/reference-value-set",
   "version": 2,
@@ -171,9 +166,27 @@ const versionTwoDocument = `{
 }
 `
 
-// egressSection is the egress section written on one line, for the documents
-// below that are assembled from constants rather than written out whole.
-const egressSection = `"egress": {"version": 1, "unattested": false}`
+// versionThreeDocument is a set as ticket 18 authored and signed one: an egress
+// section at the top, because the set was then the sandbox's own policy as well
+// as its guest list.
+//
+// Documents of this shape exist and are signed — the ticket 18 run shipped four
+// of them, and they are recorded under docs/snp/evidence/ticket18 — which is why
+// the loader has to refuse them out loud and say where the egress section went.
+const versionThreeDocument = `{
+  "format": "gvisor.dev/gvisor/attest/reference-value-set",
+  "version": 3,
+  "egress": {"version": 1, "unattested": false},
+  "reference_values": [
+    {
+      "vendor": "amd-sev-snp",
+      "launch_measurement": "$MEASUREMENT",
+      "minimum_tcb": {"bootloader": 9, "tee": 0, "snp": 23, "microcode": 72},
+      "guest_policy": {"allow_smt": true}
+    }
+  ]
+}
+`
 
 // The registers an Intel TDX reference value names. Each is a distinct repeated
 // byte, so a value read back out of a loaded set says which register it came
@@ -202,8 +215,7 @@ var (
 // value read back off the machine it is checking cannot fail.
 const tdxValueDocument = `{
   "format": "gvisor.dev/gvisor/attest/reference-value-set",
-  "version": 3,
-  "egress": {"version": 1, "unattested": false},
+  "version": 4,
   "reference_values": [
     {
       "vendor": "intel-tdx",
@@ -223,8 +235,7 @@ const tdxValueDocument = `{
 // carries a vendor rather than a verifier carrying a file of its own.
 const mixedDocument = `{
   "format": "gvisor.dev/gvisor/attest/reference-value-set",
-  "version": 3,
-  "egress": {"version": 1, "unattested": false},
+  "version": 4,
   "reference_values": [
     {
       "vendor": "amd-sev-snp",
@@ -538,8 +549,8 @@ func TestASetSignedByTheWrongKeyIsRefused(t *testing.T) {
 	// real author's own signature over it, so that the refusal is the invented
 	// field and nothing else. The key the loader trusts comes from inside the
 	// launch measurement and from nowhere else.
-	nominating := strings.Replace(permissive, `"version": 3,`,
-		`"version": 3,
+	nominating := strings.Replace(permissive, `"version": 4,`,
+		`"version": 4,
   "public_key": "`+hex.EncodeToString(host.public)+`",`, 1)
 	refusesToLoad(t, nominating, a.sign(t, nominating), a.public)
 }
@@ -559,7 +570,7 @@ func TestADocumentModifiedAfterSigningIsRefused(t *testing.T) {
 	for _, tc := range []struct{ name, modified string }{
 		{"a policy bit relaxed", strings.Replace(document, `"allow_debug": false`, `"allow_debug": true`, 1)},
 		{"the TCB floor lowered", strings.Replace(document, `"microcode": 72`, `"microcode": 0`, 1)},
-		{"whitespace only", strings.Replace(document, `"version": 3,`, `"version":3,`, 1)},
+		{"whitespace only", strings.Replace(document, `"version": 4,`, `"version":4,`, 1)},
 		{"a byte appended", document + " "},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -589,8 +600,8 @@ func TestAnUnknownFieldIsRefused(t *testing.T) {
 	for _, tc := range []struct{ name, from, to string }{
 		{
 			"at the top level",
-			`"version": 3,`,
-			`"version": 3,
+			`"version": 4,`,
+			`"version": 4,
   "allow_anything": true,`,
 		},
 		{
@@ -733,8 +744,8 @@ func TestADocumentOfTheWrongFormatOrVersionIsRefused(t *testing.T) {
 	for _, tc := range []struct{ name, from, to string }{
 		{"another format", `"format": "` + documentFormat + `"`, `"format": "example.com/some-other-file"`},
 		{"no format", `"format": "` + documentFormat + `",`, ``},
-		{"a later version", `"version": 3`, `"version": 4`},
-		{"no version", `"version": 3,`, ``},
+		{"a later version", `"version": 4`, `"version": 5`},
+		{"no version", `"version": 4,`, ``},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			modified := strings.Replace(document, tc.from, tc.to, 1)
@@ -763,7 +774,7 @@ func TestASetThatCannotMeanWhatItsAuthorIntendedDoesNotLoad(t *testing.T) {
 	f := newFixture(t, defaultConfig())
 
 	const (
-		head   = `{"format": "` + documentFormat + `", "version": 3, ` + egressSection + `, "reference_values": [`
+		head   = `{"format": "` + documentFormat + `", "version": 4, "reference_values": [`
 		vendor = `"vendor": "amd-sev-snp"`
 		policy = `"guest_policy": {"allow_smt": true}`
 		floor  = `"minimum_tcb": {"bootloader": 9, "tee": 0, "snp": 23, "microcode": 72}`
@@ -1032,43 +1043,71 @@ func TestAVersionOneDocumentIsRefusedAsCarryingNoVendorTag(t *testing.T) {
 	}
 }
 
-// TestAVersionTwoDocumentIsRefusedAsCarryingNoEgressSection is the same change
-// again, one version later.
+// TestAVersionTwoDocumentIsRefusedAsNamingNoPolicy is the same change again,
+// one version later.
 //
-// A version 2 document says whom a sandbox will talk to and nothing about what
-// leaves it. Its digest would therefore vouch for a policy that was never
-// written, which is worse than no digest at all: a peer checking an allow-list
-// entry would believe it had pinned a behaviour nobody stated. The document is
-// refused, and the refusal says what to add and that it must be signed again.
-func TestAVersionTwoDocumentIsRefusedAsCarryingNoEgressSection(t *testing.T) {
+// No value in a version 2 document can name the policy a peer running that
+// image must present, so every value in it admits any policy at all. That is
+// weaker than an author writing a set today means, and it is weaker silently:
+// the document loads, the peers connect, and nothing says the constraint the
+// author thought they had written is absent.
+func TestAVersionTwoDocumentIsRefusedAsNamingNoPolicy(t *testing.T) {
 	a := newAuthor(t)
 	f := newFixture(t, defaultConfig())
 
-	// Control: the same values with an egress section still admit the platform.
+	// Control: the same values at the version this loader reads still admit the
+	// platform. The refusal below is the version and nothing about these values.
 	admits(t, f, loads(t, a, theDocument()))
 
 	document := documentFor(versionTwoDocument, theMeasurement)
 	refusesToLoad(t, document, a.sign(t, document), a.public)
 
 	_, err := attest.LoadReferenceValueSet([]byte(document), a.sign(t, document), a.public)
-	for _, want := range []string{"version 2", "egress", "unattested", "sign it again"} {
+	for _, want := range []string{"version 2", "policy", "sign it again"} {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("the refusal does not mention %q, so an operator reading it does not learn that the "+
-				"fix is to add the egress section and re-sign the set: %v", want, err)
+				"fix is to re-emit and re-sign the set: %v", want, err)
 		}
 	}
 }
 
-// TestAnEgressSectionThatIsNotAPolicyIsRefused covers every way the section can
-// fail to say what it exists to say.
+// TestAVersionThreeDocumentIsRefusedAsBeingItsOwnPolicy is ticket 19's version
+// bump, and the refusal carries the reason for the split.
 //
-// The permissive case is the one worth reading twice. "unattested": true is
-// well-formed, deliberate, and refused, because nothing in this build enforces
-// it: a document claiming a capability no code implements is weaker than it
-// reads, and the whole value of a policy digest is that what it names is what
-// is enforced. Ticket 19 is what grows this section; until then a policy that
-// permits is a policy that does not load.
-func TestAnEgressSectionThatIsNotAPolicyIsRefused(t *testing.T) {
+// A version 3 set carried an egress section, which made it a statement about
+// behaviour as well as a guest list — and therefore made a sandbox's policy the
+// digest of the document that lists peers' policies. Two peers could not both
+// pin each other under that arrangement, because each set would have had to
+// contain the digest of the other. The section moves out into policy.json, and
+// the refusal says so rather than saying "unknown version".
+func TestAVersionThreeDocumentIsRefusedAsBeingItsOwnPolicy(t *testing.T) {
+	a := newAuthor(t)
+	f := newFixture(t, defaultConfig())
+
+	// Control: the same values without an egress section still admit the
+	// platform.
+	admits(t, f, loads(t, a, theDocument()))
+
+	document := documentFor(versionThreeDocument, theMeasurement)
+	refusesToLoad(t, document, a.sign(t, document), a.public)
+
+	_, err := attest.LoadReferenceValueSet([]byte(document), a.sign(t, document), a.public)
+	for _, want := range []string{"version 3", "egress", "policy.json", "re-emit"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("the refusal does not mention %q, so an operator reading it does not learn where the "+
+				"egress section went: %v", want, err)
+		}
+	}
+}
+
+// TestASetStillCarryingAnEgressSectionIsRefused is the same mistake made at the
+// right version: a document that says version 4 and still has the section in it.
+//
+// The strict decode would refuse it anyway, as an unknown field. It is refused
+// by name and one check earlier, because the sentence an author needs says where
+// the section went and that both documents have to be signed again — not that
+// this parser met a field it did not recognise.
+func TestASetStillCarryingAnEgressSectionIsRefused(t *testing.T) {
 	a := newAuthor(t)
 	f := newFixture(t, defaultConfig())
 	document := theDocument()
@@ -1076,21 +1115,20 @@ func TestAnEgressSectionThatIsNotAPolicyIsRefused(t *testing.T) {
 	// Control.
 	admits(t, f, loads(t, a, document))
 
-	for _, tc := range []struct{ name, from, to string }{
-		{"no egress section at all", `  "egress": {"version": 1, "unattested": false},` + "\n", ``},
-		{"an egress section of another version", `"egress": {"version": 1,`, `"egress": {"version": 2,`},
-		{"an egress section with no version", `"egress": {"version": 1, `, `"egress": {`},
-		{"nothing said about unattested egress", `, "unattested": false}`, `}`},
-		{"unattested egress permitted", `"unattested": false`, `"unattested": true`},
-		{"a field the section does not define", `"unattested": false`, `"unattested": false, "allow_anything": true`},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			modified := strings.Replace(document, tc.from, tc.to, 1)
-			if modified == document {
-				t.Fatalf("the document does not contain %q; the fixture has drifted", tc.from)
-			}
-			refusesToLoad(t, modified, a.sign(t, modified), a.public)
-		})
+	modified := strings.Replace(document,
+		`"version": 4,`,
+		`"version": 4,
+  "egress": {"version": 1, "unattested": false},`, 1)
+	if modified == document {
+		t.Fatal("the document has no version line; the fixture has drifted")
+	}
+	refusesToLoad(t, modified, a.sign(t, modified), a.public)
+
+	_, err := attest.LoadReferenceValueSet([]byte(modified), a.sign(t, modified), a.public)
+	for _, want := range []string{"egress", "policy.json", "sign"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("the refusal does not mention %q: %v", want, err)
+		}
 	}
 }
 
@@ -1198,53 +1236,6 @@ var (
 	theOtherListedPolicy = attest.PolicyDigest{0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7, 0xf8}
 )
 
-// TestALoadedSetCarriesTheDigestOfTheBytesItsAuthorSigned is what makes the
-// digest nameable by two parties who never meet.
-//
-// It is SHA-256 over the signed bytes — the domain separation prefix and the
-// document — and not over the file, so an operator running sha256sum on
-// reference-values.json gets a different number. That is stated here as a test
-// rather than only as a comment, because it is the mistake a harness makes
-// once.
-func TestALoadedSetCarriesTheDigestOfTheBytesItsAuthorSigned(t *testing.T) {
-	a := newAuthor(t)
-	document := theDocument()
-	set := loads(t, a, document)
-
-	want := attest.PolicyDigestOf([]byte(document))
-	if set.PolicyDigest != want {
-		t.Errorf("the loaded set names policy digest %s; the document's is %s", set.PolicyDigest, want)
-	}
-	if set.PolicyDigest == (attest.PolicyDigest{}) {
-		t.Error("the loaded set names the zero digest, which is what a set nobody loaded carries")
-	}
-	if got := sha256.Sum256([]byte(document)); attest.PolicyDigest(got) == set.PolicyDigest {
-		t.Error("the digest is over the file's bytes; it must be over the bytes the signature covers, " +
-			"or a peer and a verifier computing it from different sides get different numbers")
-	}
-
-	// Two documents that differ anywhere have different digests, including two
-	// that mean the same thing: the digest names bytes, not meaning.
-	same := loads(t, a, nonCanonicalDocumentFor(theMeasurement))
-	if same.PolicyDigest == set.PolicyDigest {
-		t.Error("two documents with different bytes have the same policy digest")
-	}
-	if len(same.Values) != len(set.Values) {
-		t.Fatal("the two documents do not hold the same set; the fixture has drifted")
-	}
-
-	// And the egress section survives loading, so what the digest names is
-	// inspectable rather than only hashed.
-	if set.Egress.Version != 1 || set.Egress.Unattested {
-		t.Errorf("the loaded egress section is %+v; want version 1 refusing unattested egress", set.Egress)
-	}
-}
-
-// nonCanonicalDocumentFor is nonCanonicalDocument with a measurement in it.
-func nonCanonicalDocumentFor(measurement []byte) string {
-	return documentFor(nonCanonicalDocument, measurement)
-}
-
 // TestAReferenceValueThatNamesNoVendorIsRefused: version 2 is not version 1
 // with an optional field. A value that does not say whose evidence it admits is
 // refused inside a version 2 document too, and so is one naming hardware no
@@ -1328,20 +1319,14 @@ func TestATDXReferenceValueLoadsAndSurvivesARoundTrip(t *testing.T) {
 	// so an author can read one out of the loader and hand it to the signer.
 	// The bytes are not expected to match: there is no canonical form, and the
 	// signature covers what was delivered rather than what a renderer produces.
-	// The policy digest is therefore not expected to match either — it names
-	// bytes — and it is compared separately below.
 	rendered, err := attest.MarshalReferenceValueSet(set)
 	if err != nil {
 		t.Fatalf("rendering a loaded TDX set: %v", err)
 	}
 	back := loads(t, a, string(rendered))
-	if !reflect.DeepEqual(back.Values, set.Values) || back.Egress != set.Egress {
+	if !reflect.DeepEqual(back.Values, set.Values) {
 		t.Errorf("the set does not survive a round trip through the document:\n got %+v\nwant %+v\n%s",
 			back.Values[0].TDX, set.Values[0].TDX, rendered)
-	}
-	if back.PolicyDigest == set.PolicyDigest {
-		t.Error("the re-rendered document has the same policy digest as the one that was delivered; " +
-			"the digest names bytes, and these are different bytes")
 	}
 }
 
@@ -1377,7 +1362,7 @@ func TestEachRequiredTDXFieldIsLoadBearing(t *testing.T) {
 	a := newAuthor(t)
 
 	const (
-		head     = `{"format": "` + documentFormat + `", "version": 3, ` + egressSection + `, "reference_values": [{"vendor": "intel-tdx", `
+		head     = `{"format": "` + documentFormat + `", "version": 4, "reference_values": [{"vendor": "intel-tdx", `
 		tail     = `}]}`
 		mrtd     = `"observed_mrtd": ["$MRTD"]`
 		rtmr0    = `"observed_rtmr0": ["$RTMR0"]`
@@ -1587,7 +1572,7 @@ func TestOneFileHoldsBothVendors(t *testing.T) {
 		t.Fatalf("rendering a mixed set: %v", err)
 	}
 	back := loads(t, a, string(rendered))
-	if !reflect.DeepEqual(back.Values, set.Values) || back.Egress != set.Egress {
+	if !reflect.DeepEqual(back.Values, set.Values) {
 		t.Errorf("a mixed set does not survive a round trip through the document:\n%s", rendered)
 	}
 }

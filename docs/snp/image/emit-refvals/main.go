@@ -4,49 +4,64 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
-// emit-refvals renders and signs the reference value set the image build
-// emits (ticket 07): one reference value whose launch measurement is the
-// offline prediction, with the TCB floor and guest policy the author chose.
 //
-// It is the author-side half of attest/refvalsfile.go and uses that package's
-// own MarshalReferenceValueSet and SignReferenceValueSet, so the document the
-// build ships and the document tunneld loads agree by construction rather
-// than by two implementations of one format. After writing both files it
-// loads them back through LoadReferenceValueSetFile with the public key
-// derived from the signing key — the same call tunneld makes — and fails if
-// that refuses.
+// emit-refvals renders and signs the two documents the image build emits: the
+// reference value set (ticket 07) and, since ticket 19, the sandbox's own
+// policy.
+//
+// It is the author-side half of attest/refvalsfile.go and attest/policyfile.go
+// and uses those packages' own Marshal and Sign calls, so the documents the
+// build ships and the documents tunneld loads agree by construction rather than
+// by two implementations of one format. After writing each pair it loads them
+// back through the same call tunneld makes and fails if that refuses.
 //
 //	emit-refvals -measurement HEX -key author.key.pem -out DIR \
 //	             [-tcb bootloader,tee,snp,microcode] [-policy 0x30000] \
 //	             [-policy-digest HEX]
+//	emit-refvals -emit-policy -key author.key.pem -out DIR \
+//	             [-forward-to HEX]...
 //	emit-refvals -digest-of PATH
 //
 // The measurement is an input. This program has no way to obtain one from a
 // platform, deliberately.
 //
-// -policy-digest is the peer policy this reference value admits: the digest of
-// the peer's own signed set, which that peer prints at startup. Left out, the
-// value is unconstrained and admits a peer running the named image under any
-// policy — which is what every set authored before ticket 18 says, and which
-// the guest that loads it logs one line about per value.
+// # The set and the policy are two documents
 //
-// After writing the pair, this prints the emitted document's own policy digest:
+// The default mode writes reference-values.json and its signature: whom this
+// sandbox admits. -policy-digest is the peer policy a reference value admits —
+// the digest of the peer's own signed policy, which that peer prints at
+// startup. Left out, the value is unconstrained and admits a peer running the
+// named image under any policy, which the guest that loads it logs one line
+// about per value.
+//
+// -emit-policy writes policy.json and its signature: what this sandbox is. It
+// carries the egress section and -forward-to, repeatable, naming each image
+// this sandbox will dial. No -forward-to at all writes "forward_to": [], which
+// is a sandbox that answers and never calls; that is a legitimate thing to
+// write and it is written explicitly rather than left out, because a policy
+// that says nothing has not said "nobody".
+//
+// A policy names measurements and never digests. That is the whole reason the
+// two documents are separate: while a sandbox's policy was its own allow-list,
+// two peers could not both pin each other, because each set would have had to
+// contain the digest of the other (docs/policy-binding.md).
+//
+// After writing a policy, this prints its digest:
 //
 //	policy digest: <64 hex characters>
 //
 // That is the number to put in a *peer's* -policy-digest, and it is SHA-256
 // over the bytes the signature covers rather than over the file, so sha256sum
-// of reference-values.json is a different number and the wrong one. -digest-of
-// prints the same line for a set that already exists, without a key and without
-// loading it, so a harness can read a digest off a document it did not emit.
+// of policy.json is a different number and the wrong one. -digest-of prints the
+// same line for a policy that already exists, without a key and without loading
+// it, so a harness can read a digest off a document it did not emit.
 package main
 
 import (
@@ -65,14 +80,28 @@ import (
 	"gvisor.dev/gvisor/attest"
 )
 
+// forwardTo collects the repeatable -forward-to flag. It is a list because a
+// sandbox may dial more than one image — an old one and a new one during a
+// rollout, exactly as a reference value set names two.
+type forwardTo []string
+
+func (f *forwardTo) String() string { return strings.Join(*f, ",") }
+func (f *forwardTo) Set(v string) error {
+	*f = append(*f, v)
+	return nil
+}
+
 func main() {
 	measurement := flag.String("measurement", "", "predicted launch measurement, hex")
 	keyPath := flag.String("key", "", "reference value author's Ed25519 private key, PKCS#8 PEM (openssl genpkey -algorithm ed25519)")
-	out := flag.String("out", "", "output directory for reference-values.json and reference-values.json.sig")
+	out := flag.String("out", "", "output directory for the documents and their signatures")
 	tcb := flag.String("tcb", "", "TCB floor as bootloader,tee,snp,microcode (all four required)")
 	policy := flag.String("policy", "0x30000", "SEV-SNP guest policy the guest is launched with; the emitted guest_policy permits exactly its bits")
 	policyDigest := flag.String("policy-digest", "", "the peer policy this reference value admits, hex; empty leaves the value unconstrained, which admits any policy")
-	digestOf := flag.String("digest-of", "", "print the policy digest of an existing reference value set and exit; emits nothing")
+	emitPolicy := flag.Bool("emit-policy", false, "write policy.json and its signature instead of a reference value set")
+	var forward forwardTo
+	flag.Var(&forward, "forward-to", "with -emit-policy: a launch measurement this sandbox will dial, hex; repeatable, and none at all means it dials nobody")
+	digestOf := flag.String("digest-of", "", "print the policy digest of an existing policy document and exit; emits nothing")
 	flag.Parse()
 	if *digestOf != "" {
 		if err := printDigestOf(*digestOf); err != nil {
@@ -81,7 +110,13 @@ func main() {
 		}
 		return
 	}
-	if err := run(*measurement, *keyPath, *out, *tcb, *policy, *policyDigest); err != nil {
+	var err error
+	if *emitPolicy {
+		err = runPolicy(*keyPath, *out, forward)
+	} else {
+		err = run(*measurement, *keyPath, *out, *tcb, *policy, *policyDigest)
+	}
+	if err != nil {
 		fmt.Fprintln(os.Stderr, "emit-refvals:", err)
 		os.Exit(1)
 	}
@@ -89,7 +124,7 @@ func main() {
 
 // printDigestOf prints the policy digest of a document already on disk.
 //
-// It does not load the set and does not want the author's public key: the
+// It does not load the policy and does not want the author's public key: the
 // digest is over bytes, and asking a harness to hold a key in order to learn
 // the name of a file it can already read would buy nothing. What it reads has
 // to be the document as delivered, which is the only thing a signature ever
@@ -101,6 +136,92 @@ func printDigestOf(path string) error {
 	}
 	fmt.Printf("policy digest: %s\n", attest.PolicyDigestOf(document))
 	return nil
+}
+
+// runPolicy writes the sandbox's own policy and prints its digest.
+//
+// The egress section is not a parameter. The only thing this build can honestly
+// say is that unattested egress is refused — nothing enforces permitting it —
+// so the zero value is rendered and there is no flag with which to write down
+// something untrue.
+func runPolicy(keyPath, out string, forward []string) error {
+	measurements, err := parseForwardTo(forward)
+	if err != nil {
+		return err
+	}
+	priv, err := loadKey(keyPath)
+	if err != nil {
+		return err
+	}
+	pub := priv.Public().(ed25519.PublicKey)
+	if out == "" {
+		return fmt.Errorf("-out is required")
+	}
+	doc, err := attest.MarshalPolicy(attest.Policy{ForwardTo: measurements})
+	if err != nil {
+		return err
+	}
+	sig, err := attest.SignPolicy(doc, priv)
+	if err != nil {
+		return err
+	}
+	docPath := filepath.Join(out, "policy.json")
+	if err := os.WriteFile(docPath, doc, 0o644); err != nil {
+		return err
+	}
+	if err := os.WriteFile(docPath+attest.SignatureFileSuffix, sig, 0o644); err != nil {
+		return err
+	}
+
+	// Ship what you signed: load the files back exactly as tunneld will.
+	loaded, err := attest.LoadPolicyFile(docPath, pub)
+	if err != nil {
+		return fmt.Errorf("the emitted policy does not load back: %w", err)
+	}
+	if len(loaded.ForwardTo) != len(measurements) {
+		return fmt.Errorf("the emitted policy loaded back forwarding to %d image(s), not %d", len(loaded.ForwardTo), len(measurements))
+	}
+	for i, m := range measurements {
+		if !bytes.Equal(loaded.ForwardTo[i], m) {
+			return fmt.Errorf("the emitted policy loaded back forwarding to a different image at position %d", i)
+		}
+	}
+	if loaded.Digest != attest.PolicyDigestOf(doc) {
+		return fmt.Errorf("the loader and this program disagree about the emitted policy's digest")
+	}
+
+	fmt.Printf("author public key: %s\n", hex.EncodeToString(pub))
+	fmt.Printf("wrote %s and %s (loads back through attest.LoadPolicyFile)\n", docPath, docPath+attest.SignatureFileSuffix)
+	if len(measurements) == 0 {
+		fmt.Printf("forwards to nobody (no -forward-to given; the guest says so once at start)\n")
+	}
+	for _, m := range measurements {
+		fmt.Printf("forwards to: %s\n", hex.EncodeToString(m))
+	}
+	// Last, and on its own line, because it is the line a harness reads: the
+	// name of the document just written, for a peer's -policy-digest.
+	fmt.Printf("policy digest: %s\n", loaded.Digest)
+	return nil
+}
+
+// parseForwardTo reads the measurements a policy will dial. A width is not
+// checked, deliberately: how wide a launch measurement is belongs to the
+// hardware vendor, and a measurement that matches nothing fails closed. What is
+// checked is that each is non-empty hexadecimal, because an entry that is
+// neither is a typo rather than a decision.
+func parseForwardTo(specs []string) ([][]byte, error) {
+	out := make([][]byte, 0, len(specs))
+	for i, s := range specs {
+		m, err := hex.DecodeString(s)
+		if err != nil {
+			return nil, fmt.Errorf("-forward-to #%d is not hexadecimal: %v", i+1, err)
+		}
+		if len(m) == 0 {
+			return nil, fmt.Errorf("-forward-to #%d is empty; a measurement of no bytes names no image", i+1)
+		}
+		out = append(out, m)
+	}
+	return out, nil
 }
 
 func run(measurementHex, keyPath, out, tcbSpec, policySpec, policyDigestHex string) error {
@@ -138,10 +259,9 @@ func run(measurementHex, keyPath, out, tcbSpec, policySpec, policyDigestHex stri
 	// every reference value says whose evidence it admits, and this program
 	// emits SEV-SNP values only (see the -measurement width check above).
 	//
-	// The egress section is not a parameter. Version 3 requires one, and the
-	// only thing this build can honestly say is that unattested egress is
-	// refused — nothing enforces permitting it — so the zero value is rendered
-	// and there is no flag with which to write down something untrue.
+	// Nothing about egress appears here. Since format version 4 the set is the
+	// guest list and only that; what this sandbox is belongs to the policy,
+	// which -emit-policy writes.
 	set := attest.ReferenceValueSet{Values: []attest.ReferenceValue{{
 		Vendor:            attest.VendorAMDSEVSNP,
 		LaunchMeasurement: m,
@@ -180,9 +300,6 @@ func run(measurementHex, keyPath, out, tcbSpec, policySpec, policyDigestHex stri
 	} else if loaded.Values[0].PolicyDigest == nil || *loaded.Values[0].PolicyDigest != *admitted {
 		return fmt.Errorf("the emitted set loaded back admitting a different policy")
 	}
-	if loaded.PolicyDigest != attest.PolicyDigestOf(doc) {
-		return fmt.Errorf("the loader and this program disagree about the emitted set's policy digest")
-	}
 
 	fmt.Printf("author public key: %s\n", hex.EncodeToString(pub))
 	fmt.Printf("wrote %s and %s (loads back through attest.LoadReferenceValueSetFile)\n", docPath, docPath+attest.SignatureFileSuffix)
@@ -191,9 +308,6 @@ func run(measurementHex, keyPath, out, tcbSpec, policySpec, policyDigestHex stri
 	} else {
 		fmt.Printf("admits peer policy: %s\n", admitted)
 	}
-	// Last, and on its own line, because it is the line a harness reads: the
-	// name of the document just written, for a peer's -policy-digest.
-	fmt.Printf("policy digest: %s\n", loaded.PolicyDigest)
 	return nil
 }
 

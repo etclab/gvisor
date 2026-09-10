@@ -45,6 +45,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/big"
@@ -144,12 +145,21 @@ type refusalNode struct {
 
 func startRefusalNode(t *testing.T, name string, acquirer attest.Acquirer, verifier attest.Verifier, admits attest.ReferenceValueSet, peers tunneld.PeerTable) *refusalNode {
 	t.Helper()
+	return startRefusalNodeUnder(t, name, acquirer, verifier, admits, everyImage(), peers)
+}
+
+// startRefusalNodeUnder is [startRefusalNode] with this node's own policy stated
+// rather than defaulted: the images it will dial, which decide its policy digest
+// and what its dials are allowed to reach.
+func startRefusalNodeUnder(t *testing.T, name string, acquirer attest.Acquirer, verifier attest.Verifier, admits attest.ReferenceValueSet, forwardTo [][]byte, peers tunneld.PeerTable) *refusalNode {
+	t.Helper()
 	n := &refusalNode{name: name, refusals: newRefusalRecorder()}
 	td, err := tunneld.New(context.Background(), tunneld.Config{
 		SandboxID:             name,
 		Acquirer:              acquirer,
 		Verifier:              verifier,
 		ReferenceValueSetPath: writeSet(t, admits, authorPriv),
+		PolicyPath:            writePolicy(t, forwardTo, authorPriv),
 		AuthorPublicKey:       authorPub,
 		Peers:                 peers,
 		ListenAddr:            "127.0.0.1:0", // ephemeral: the suite runs concurrently with itself
@@ -666,22 +676,27 @@ func TestEveryWayEvidenceCanFailRefusesTheTunnel(t *testing.T) {
 }
 
 // TestATunneldAdmitsAPeerOnlyIfItsSetListsThatPeersPolicy is ticket 18 through
-// the public API, in the shape the live run on two guests takes: one dialer,
+// the public API, in the shape that live run on two guests took: one dialer,
 // two listeners, and the only difference between them is which policy digest
 // their reference value names.
 //
-// The dialer presents the digest of its own signed set, which is the number its
-// start log prints and the number an operator copies. One listener has that
+// The dialer presents the digest of its own signed policy, which is the number
+// its start log prints and the number an operator copies. One listener has that
 // number in its allow-list and carries traffic; the other has somebody else's
 // and refuses, naming the digest the peer presented so that the operator can
 // see which of the two they got wrong. Everything else about the two listeners
 // is identical, so the verdicts cannot differ for any other reason.
 func TestATunneldAdmitsAPeerOnlyIfItsSetListsThatPeersPolicy(t *testing.T) {
-	// The dialer's own set: unconstrained, so it admits either listener
+	// The dialer's own set is unconstrained, so it admits either listener
 	// whatever policy that listener presents, and the verdicts under test are
 	// the listeners' alone.
 	dialerSet := refusalSet(imageA, platformTCB, permitted)
-	dialerPolicy := policyOf(t, dialerSet)
+	dialerForwards := [][]byte{imageA}
+	dialerPolicy := policyDigestOf(t, dialerForwards)
+	somebodyElse := policyDigestOf(t, [][]byte{imageB})
+	if dialerPolicy == somebodyElse {
+		t.Fatal("the two policies have the same digest; the fixture has drifted")
+	}
 
 	listening := func(t *testing.T, name string, admitted attest.PolicyDigest) *refusalNode {
 		t.Helper()
@@ -690,15 +705,15 @@ func TestATunneldAdmitsAPeerOnlyIfItsSetListsThatPeersPolicy(t *testing.T) {
 		return startRefusalNode(t, name, refusalGenuine(t), refusalFakeRoot(t), set, nil)
 	}
 	admitting := listening(t, "admitting", dialerPolicy)
-	refusing := listening(t, "refusing", policyOf(t, refusalSet(imageB, platformTCB, permitted)))
+	refusing := listening(t, "refusing", somebodyElse)
 
-	dialer := startRefusalNode(t, "dialer", refusalGenuine(t), refusalFakeRoot(t), dialerSet,
+	dialer := startRefusalNodeUnder(t, "dialer", refusalGenuine(t), refusalFakeRoot(t), dialerSet, dialerForwards,
 		tunneld.PeerTable{"admitting": admitting.Addr().String(), "refusing": refusing.Addr().String()})
 
-	// The digest the dialer presents is the digest of the document it loaded,
-	// which is what makes an operator able to compute it from the file.
+	// The digest the dialer presents is the digest of the policy document it
+	// loaded, which is what makes an operator able to compute it from the file.
 	if got := dialer.PolicyDigest(); got != dialerPolicy {
-		t.Fatalf("the dialer presents policy %s; its own set is %s", got, dialerPolicy)
+		t.Fatalf("the dialer presents policy %s; its own policy document is %s", got, dialerPolicy)
 	}
 	// And it says which of its own values admit any policy, since its set lists
 	// none.
@@ -743,19 +758,197 @@ func TestATunneldAdmitsAPeerOnlyIfItsSetListsThatPeersPolicy(t *testing.T) {
 	}
 }
 
-// policyOf is the policy digest a tunneld that loaded this set will present.
+// TestTwoTunneldsPinningEachOtherBothAdmit is what ticket 19 exists for, and it
+// is the test that could not have been written before the split.
 //
-// It renders the set the way writeSet renders it, which is the only way this
-// package writes one, so the two produce the same document and therefore the
-// same digest. That is asserted rather than assumed in the test above, which
-// compares this against what the running tunneld reports.
-func policyOf(t *testing.T, set attest.ReferenceValueSet) attest.PolicyDigest {
-	t.Helper()
-	doc, err := attest.MarshalReferenceValueSet(set)
-	if err != nil {
-		t.Fatalf("rendering a set: %v", err)
+// Each sandbox's set names exactly one measurement and exactly one policy: the
+// other's. Under ticket 18 that pair could not be authored at all — a set was
+// its own policy, so A's set would have had to contain the digest of B's set
+// while B's contained the digest of A's, and neither digest can be fixed before
+// the other. With the policy a separate document naming no digests, the two
+// digests are fixed independently and the cycle is gone.
+//
+// Both sides dial, so the record is not one verdict inferred from the other.
+// Neither entry is unconstrained, which is the shape the ticket 18 run could
+// only reach in the direction that admitted nobody.
+func TestTwoTunneldsPinningEachOtherBothAdmit(t *testing.T) {
+	// The two policies differ in exactly one thing — whom their sandbox will
+	// dial — which is enough to give them different digests, and is also the
+	// truth about each sandbox.
+	forwardsToB, forwardsToA := [][]byte{imageB}, [][]byte{imageA}
+	policyA, policyB := policyDigestOf(t, forwardsToB), policyDigestOf(t, forwardsToA)
+	if policyA == policyB {
+		t.Fatal("the two policies have the same digest, so this is not a test of two distinct policies")
 	}
-	return attest.PolicyDigestOf(doc)
+
+	// A admits the image B runs, under B's policy and no other. B admits A's,
+	// under A's and no other.
+	pinning := func(image []byte, policy attest.PolicyDigest) attest.ReferenceValueSet {
+		set := refusalSet(image, platformTCB, permitted)
+		set.Values[0].PolicyDigest = &policy
+		return set
+	}
+
+	// B is started first, so A can be given its address. B's peer table is
+	// filled in afterwards through the map it was handed, because the two
+	// addresses are only known once both are listening — on the live harness
+	// they are fixed in advance and both guests dial from the start.
+	bPeers := tunneld.PeerTable{}
+	b := startRefusalNodeUnder(t, "b", refusalPlatform(t, imageB, platformTCB, launched), refusalFakeRoot(t),
+		pinning(imageA, policyA), forwardsToA, bPeers)
+	a := startRefusalNodeUnder(t, "a", refusalPlatform(t, imageA, platformTCB, launched), refusalFakeRoot(t),
+		pinning(imageB, policyB), forwardsToB, tunneld.PeerTable{"b": b.Addr().String()})
+	bPeers["a"] = a.Addr().String()
+
+	if got := a.PolicyDigest(); got != policyA {
+		t.Fatalf("a presents policy %s; b's set names %s", got, policyA)
+	}
+	if got := b.PolicyDigest(); got != policyB {
+		t.Fatalf("b presents policy %s; a's set names %s", got, policyB)
+	}
+	if u := a.Unconstrained(); len(u) != 0 {
+		t.Errorf("a reports %+v as unconstrained; both sides are pinned here", u)
+	}
+	if u := b.Unconstrained(); len(u) != 0 {
+		t.Errorf("b reports %+v as unconstrained; both sides are pinned here", u)
+	}
+
+	for _, tc := range []struct {
+		from *refusalNode
+		peer string
+		want string
+	}{
+		{a, "b", "b:from-a"},
+		{b, "a", "a:from-b"},
+	} {
+		ch, err := tc.from.Peer(ctx(t), tc.peer)
+		if err != nil {
+			t.Fatalf("%s dialing %s, each pinning the other's policy: %v", tc.from.name, tc.peer, err)
+		}
+		defer ch.Close()
+		got, err := ch.Exchange(ctx(t), []byte("from-"+tc.from.name))
+		if err != nil {
+			t.Fatalf("%s exchanging with %s: %v", tc.from.name, tc.peer, err)
+		}
+		if string(got) != tc.want {
+			t.Errorf("%s got %q from %s; want %q", tc.from.name, got, tc.peer, tc.want)
+		}
+	}
+	for _, n := range []*refusalNode{a, b} {
+		if x := n.refusals.none(); len(x) != 0 {
+			t.Errorf("%s refused %d peers while both sides pinned each other: %v", n.name, len(x), x[0].LogString())
+		}
+	}
+}
+
+// TestAPeerNotInForwardToIsRefusedOnTheDialingSide is the other half of the
+// policy: not whom this sandbox admits, but whom it will call.
+//
+// The peer here is unimpeachable — authentic evidence, an image the dialer's set
+// names, a policy that set admits — and it is still refused, because the
+// dialer's own signed policy does not list the image it is running. The refusal
+// is the dialer's own and the listener never gets to have an opinion: TLS 1.3
+// puts the server's certificate first, so the dial aborts before the listener is
+// asked for anything.
+func TestAPeerNotInForwardToIsRefusedOnTheDialingSide(t *testing.T) {
+	// Both listeners are identical and both are admitted by the dialer's set.
+	// The only thing that differs is whether the dialer's policy names the
+	// image they run.
+	listener := func(t *testing.T, name string, image []byte) *refusalNode {
+		t.Helper()
+		return startRefusalNodeUnder(t, name, refusalPlatform(t, image, platformTCB, launched),
+			refusalFakeRoot(t), refusalSet(imageA, platformTCB, permitted), [][]byte{imageA}, nil)
+	}
+	reachable := listener(t, "reachable", imageB)
+	unreachable := listener(t, "unreachable", imageNone)
+
+	admits := attest.ReferenceValueSet{Values: []attest.ReferenceValue{
+		refusalSet(imageB, platformTCB, permitted).Values[0],
+		refusalSet(imageNone, platformTCB, permitted).Values[0],
+	}}
+	dialer := startRefusalNodeUnder(t, "dialer", refusalGenuine(t), refusalFakeRoot(t), admits,
+		[][]byte{imageB}, tunneld.PeerTable{
+			"reachable":   reachable.Addr().String(),
+			"unreachable": unreachable.Addr().String(),
+		})
+
+	if got := len(dialer.ForwardTo()); got != 1 {
+		t.Fatalf("the dialer's policy forwards to %d image(s); want 1", got)
+	}
+
+	// Control: the image forward_to names carries traffic, so the refusal below
+	// is forward_to and not the set, the floor or the platform.
+	ch, err := dialer.Peer(ctx(t), "reachable")
+	if err != nil {
+		t.Fatalf("a peer this sandbox's policy forwards to was refused: %v", err)
+	}
+	defer ch.Close()
+	if _, err := ch.Exchange(ctx(t), []byte("hello")); err != nil {
+		t.Fatalf("the exchange failed: %v", err)
+	}
+
+	// And the one it does not name is refused by the dialer itself.
+	if _, err := dialer.Peer(ctx(t), "unreachable"); err == nil {
+		t.Fatal("a peer this sandbox's policy does not forward to was dialed anyway")
+	}
+	r := dialer.refusals.next(t)
+	if r.Reason() != attest.ReasonPolicyMismatch {
+		t.Errorf("refused with %v; want %v (log: %s)", r.Reason(), attest.ReasonPolicyMismatch, r.LogString())
+	}
+	if !strings.Contains(r.LogString(), "not in forward_to") {
+		t.Errorf("the operator log does not say which half of the policy refused: %s", r.LogString())
+	}
+	if !strings.Contains(r.LogString(), hex.EncodeToString(imageNone)) {
+		t.Errorf("the operator log does not name the image the peer was running: %s", r.LogString())
+	}
+	if x := unreachable.refusals.none(); len(x) != 0 {
+		t.Errorf("the listener refused %d peers; the dial ends before it is asked anything", len(x))
+	}
+	if n := unreachable.served.Load(); n != 0 {
+		t.Errorf("%d exchanges were answered over a tunnel the dialer's own policy refused", n)
+	}
+}
+
+// TestASandboxThatForwardsToNobodyDialsNobody: an empty forward_to is a
+// deployment and not an oversight, and what it says is enforced. A tunneld
+// holding one still listens, and still admits the peers its set names.
+func TestASandboxThatForwardsToNobodyDialsNobody(t *testing.T) {
+	listener := startRefusalNode(t, "listener", refusalPlatform(t, imageB, platformTCB, launched),
+		refusalFakeRoot(t), refusalSet(imageA, platformTCB, permitted), nil)
+	// The silent sandbox's own set admits both images, so nothing below the
+	// policy can be what stops it dialing.
+	admitsBoth := attest.ReferenceValueSet{Values: []attest.ReferenceValue{
+		refusalSet(imageA, platformTCB, permitted).Values[0],
+		refusalSet(imageB, platformTCB, permitted).Values[0],
+	}}
+	silent := startRefusalNodeUnder(t, "silent", refusalGenuine(t), refusalFakeRoot(t),
+		admitsBoth, nil,
+		tunneld.PeerTable{"listener": listener.Addr().String()})
+
+	if got := silent.ForwardTo(); len(got) != 0 {
+		t.Fatalf("a policy naming nobody forwards to %x", got)
+	}
+	if _, err := silent.Peer(ctx(t), "listener"); err == nil {
+		t.Fatal("a sandbox whose policy forwards to nobody dialed somebody")
+	}
+	r := silent.refusals.next(t)
+	if !strings.Contains(r.LogString(), "not in forward_to") {
+		t.Errorf("the refusal is not the empty forward_to: %s", r.LogString())
+	}
+
+	// It is still a listener: the peer that dials *it* is admitted, because
+	// forward_to says nothing about who may call.
+	dialer := startRefusalNodeUnder(t, "dialer", refusalPlatform(t, imageA, platformTCB, launched),
+		refusalFakeRoot(t), refusalSet(imageA, platformTCB, permitted), [][]byte{imageA},
+		tunneld.PeerTable{"silent": silent.Addr().String()})
+	ch, err := dialer.Peer(ctx(t), "silent")
+	if err != nil {
+		t.Fatalf("a sandbox that dials nobody refused a peer that dialed it: %v", err)
+	}
+	defer ch.Close()
+	if _, err := ch.Exchange(ctx(t), []byte("hello")); err != nil {
+		t.Errorf("the exchange failed: %v", err)
+	}
 }
 
 // TestAPeerSpeakingAnUnrecognisedBindingContextIsRefused is ADR-0002's

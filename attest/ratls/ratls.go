@@ -34,6 +34,16 @@
 // 32-byte digest. The freshness challenge of Milestone 5 is a later payload
 // version, not a new protocol.
 //
+// # One more question, on the side that dials
+//
+// [WithAdmission] adds a check after verification, and only the client
+// configuration is built with one. It is where a sandbox's own `forward_to`
+// list is enforced: a peer may be perfectly authentic, running an image this
+// side admits, under a policy this side lists — and still be one this sandbox's
+// policy does not say it will dial. That is a fact about the dialer and not
+// about the peer, so it cannot live in the reference value set and it does not
+// live in [attest.Verification].
+//
 // # Refusals
 //
 // Every way a peer can fail aborts the handshake, so a peer that fails is never
@@ -102,12 +112,12 @@ type Identity struct {
 // certificate. The key never leaves the process: it is generated here and held
 // only in the returned Identity.
 //
-// policy is the digest of this sandbox's own signed reference value set
-// ([attest.ReferenceValueSet.PolicyDigest]). It is a parameter rather than
-// something this package computes because the set is loaded above it, and it is
-// not optional: a peer's allow-list is a list of measurement and policy pairs,
-// and a sandbox that presented no policy would be asking to be admitted on the
-// measurement alone.
+// policy is the digest of this sandbox's own signed policy document
+// ([attest.Policy.Digest]). It is a parameter rather than something this package
+// computes because the policy is loaded above it, and it is not optional: a
+// peer's allow-list is a list of measurement and policy pairs, and a sandbox
+// that presented no policy would be asking to be admitted on the measurement
+// alone.
 //
 // The binding context is [attest.BindingContextV2], which is what this version
 // of the protocol speaks. [NewIdentityForContext] is the seam versions grow
@@ -198,11 +208,31 @@ func randomSerial() *big.Int {
 // must be safe to call concurrently and must not block.
 type RefusalLog func(*attest.Refusal)
 
-// An Option adjusts a configuration this package builds. There is one today.
+// An Admission is asked about a peer this side has already found authentic:
+// evidence that verified, over a policy digest this side's reference value set
+// lists, bound to the key the handshake proved possession of. It returns a
+// refusal to abort the handshake anyway, or nil.
+//
+// It exists for the one question the reference value set cannot answer, because
+// the answer is not about the peer at all. `forward_to` in this sandbox's own
+// signed policy says which images it will dial; whether a peer is on that list
+// is a fact about the dialer's policy, and no allow-list entry of the peer's
+// could carry it. It is therefore a hook rather than a check inside
+// [attest.Verification]: the verification is the same on both sides, and the
+// side that dials asks one more thing.
+//
+// It runs after [attest.Verification.Verify] and never instead of it, so
+// whatever it reads has already been vouched for. A refusal it returns should
+// be an [attest.Refusal] carrying its own reason; anything else is filed the way
+// an untyped verifier error is.
+type Admission func(attest.Attested) error
+
+// An Option adjusts a configuration this package builds.
 type Option func(*options)
 
 type options struct {
-	log RefusalLog
+	log   RefusalLog
+	admit Admission
 }
 
 // WithRefusalLog sends every refusal to log. Without it a refusal still aborts
@@ -211,6 +241,14 @@ type options struct {
 // a destination for somebody else's logs.
 func WithRefusalLog(log RefusalLog) Option {
 	return func(o *options) { o.log = log }
+}
+
+// WithAdmission asks a of every peer whose evidence has already been accepted,
+// and refuses the peer if it says so. Without it nothing is asked, which is what
+// a listening side wants: whom this sandbox will *dial* is its own policy's
+// business, and holds no opinion about who dials it.
+func WithAdmission(a Admission) Option {
+	return func(o *options) { o.admit = a }
 }
 
 func collect(opts []Option) options {
@@ -286,8 +324,14 @@ func PeerVerifier(v *attest.Verification, opts ...Option) func(rawCerts [][]byte
 		if err != nil {
 			return refuse(err)
 		}
-		if _, err := v.Verify(context.Background(), ev, binding); err != nil {
+		attested, err := v.Verify(context.Background(), ev, binding)
+		if err != nil {
 			return refuse(err)
+		}
+		if o.admit != nil {
+			if err := o.admit(attested); err != nil {
+				return refuse(err)
+			}
 		}
 		return nil
 	}

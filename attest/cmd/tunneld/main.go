@@ -28,6 +28,10 @@
 //	                                   INSIDE the launch measurement (ADR-0004)
 //	/config/reference-values.json      the reference value set, outside it
 //	/config/reference-values.json.sig  its detached signature (ADR-0006)
+//	/config/policy.json                this sandbox's own signed policy: what
+//	                                   leaves it, and whom it will dial
+//	/config/policy.json.sig            its detached signature, under the same
+//	                                   author key and its own domain
 //	/config/peers.json                 the peer table
 //	/config/certificate-chain.bin      the chain provisioned for this chip and
 //	                                   TCB (ADR-0005)
@@ -109,6 +113,11 @@ const (
 	// beside it under attest.SignatureFileSuffix, and the loader finds it
 	// there rather than being told (ADR-0006).
 	referenceValueSetName = "reference-values.json"
+
+	// This sandbox's own policy, beside the set and signed the same way under
+	// its own domain. Two documents since ticket 19: the set says whom this
+	// sandbox admits, and this says what it is.
+	policyName = "policy.json"
 )
 
 // Exit statuses. A refusal to start and a failed exercise are different
@@ -129,7 +138,7 @@ func main() {
 func run(args []string, out io.Writer) int {
 	fs := flag.NewFlagSet("tunneld", flag.ContinueOnError)
 	fs.SetOutput(out)
-	configDir := fs.String("config", defaultConfigDir, "the read-only config device: reference value set, peer table, provisioned chain, run configuration")
+	configDir := fs.String("config", defaultConfigDir, "the read-only config device: reference value set, policy, peer table, provisioned chain, run configuration")
 	authorPath := fs.String("author", defaultAuthorKey, "the reference value author's public key, which is inside the launch measurement (ADR-0004)")
 	reportDir := fs.String("report-dir", tsm.DefaultReportDir, "the kernel's vendor-neutral report interface")
 	runPath := fs.String("run", "", "the run configuration; empty means <config>/"+runConfigName)
@@ -227,6 +236,7 @@ func run(args []string, out io.Writer) int {
 		Acquirer:              acquirer,
 		Verifier:              watched,
 		ReferenceValueSetPath: filepath.Join(*configDir, referenceValueSetName),
+		PolicyPath:            filepath.Join(*configDir, policyName),
 		AuthorPublicKey:       author,
 		Peers:                 tunneld.PeerTable(peers),
 		ListenAddr:            cfg.Listen,
@@ -252,12 +262,23 @@ func run(args []string, out io.Writer) int {
 	}
 	// The number a peer's operator needs, printed where the only diagnostic
 	// surface a measured guest has can carry it (spec, user story 48). It is
-	// SHA-256 over the bytes the reference value author signed, so it is not
-	// what sha256sum of reference-values.json prints; emit-refvals prints the
-	// same number at build time and this prints it at run time, from the file
-	// the guest actually loaded.
-	logf("policy digest %s (sha256 over the signed reference value set; put it in a peer's policy_digest)",
+	// SHA-256 over the bytes the reference value author signed over the policy,
+	// so it is not what sha256sum of policy.json prints; emit-refvals prints the
+	// same number when it writes the document and this prints it at run time,
+	// from the file the guest actually loaded.
+	logf("policy digest %s (sha256 over the signed policy; put it in a peer's policy_digest)",
 		td.PolicyDigest())
+
+	// And whom this sandbox's own policy says it will dial. An empty list is a
+	// sandbox that answers and never calls, which is a legitimate thing to
+	// deploy and an expensive thing to diagnose from a failed dial alone.
+	forward := td.ForwardTo()
+	if len(forward) == 0 {
+		logf("policy forward_to is empty: this sandbox dials nobody")
+	}
+	for _, m := range forward {
+		logf("policy forward_to: measurement %s", abbreviate(hex.EncodeToString(m)))
+	}
 
 	// And the entries that will admit any policy at all. This is the one place
 	// this design reads an absent field the weaker way, so it says so out loud,

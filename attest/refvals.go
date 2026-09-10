@@ -214,10 +214,14 @@ func cloneDigests(values [][]byte) [][]byte {
 }
 
 // A ReferenceValueSet is the collection of reference values one verifier will
-// accept, together with the egress section that makes the whole document a
-// sandbox's policy rather than only its guest list. Evidence satisfying any one
-// of the values is accepted, which is what lets a new image roll out while the
-// old one is still running.
+// accept: the sandbox's guest list, and since format version 4 nothing else.
+// Evidence satisfying any one of the values is accepted, which is what lets a
+// new image roll out while the old one is still running.
+//
+// What a sandbox *is*, rather than whom it admits, is the separate signed
+// [Policy] beside it. The two were one document in ticket 18 and the live run
+// showed why they cannot be: a set that is also a policy has a digest taken over
+// a document that names peers' digests, so no two peers can pin each other.
 //
 // Here the set is an in-memory value. The signed document a reference value
 // author writes, its detached signature and its loader are in refvalsfile.go,
@@ -225,51 +229,6 @@ func cloneDigests(values [][]byte) [][]byte {
 // it was read off the config device or built in a test.
 type ReferenceValueSet struct {
 	Values []ReferenceValue
-
-	// Egress is the document's egress section. It is a required part of a
-	// version 3 document; a set built in memory may leave it zero, and
-	// [MarshalReferenceValueSet] renders the zero value as the only egress
-	// section this version defines.
-	Egress Egress
-
-	// PolicyDigest is the digest of the document this set was loaded from:
-	// SHA-256 over exactly the bytes the author's signature covers.
-	// [LoadReferenceValueSet] and [LoadReferenceValueSetFile] fill it in; a set
-	// built in memory carries whatever its builder put here, which for a
-	// sandbox that is not presenting a policy is the zero digest.
-	//
-	// It is the value a peer folds into its binding under ADR-0002's version 2
-	// and the value a verifier checks against [ReferenceValue.PolicyDigest],
-	// so a tunneld's own set is both the guest list it enforces and the policy
-	// it presents.
-	PolicyDigest PolicyDigest
-}
-
-// Egress is what the policy says about traffic leaving the sandbox.
-//
-// It exists so that the signed document is a statement about behaviour and not
-// only about who may be talked to: a peer's policy digest is worth checking
-// only if the document it covers says something a verifier cares about. Today
-// it says one thing, and says it in the fail-closed direction.
-//
-// It is deliberately not checked by [ReferenceValueSet.validate]. The loader
-// refuses a document whose egress section is missing, of another version, or
-// permissive, because that document is a policy somebody signed; a set built in
-// memory by code that predates the section is not, and holding it to the same
-// rule would turn every in-memory set into a startup failure for a field its
-// author never had.
-type Egress struct {
-	// Version is the egress section's own version, which is 1 and nothing
-	// else. It versions separately from the document because ticket 19 grows
-	// this section and the rest of the document does not change when it does.
-	Version int
-
-	// Unattested says whether the sandbox may send traffic to a peer whose
-	// evidence nothing judged. Nothing here implements permitting it, so a
-	// loaded document claiming it is refused: a policy that claims a capability
-	// no code enforces is weaker than it reads, and the digest a peer checks
-	// would vouch for a promise nobody keeps.
-	Unattested bool
 }
 
 // TCB is a platform trusted computing base level, expressed as four separately

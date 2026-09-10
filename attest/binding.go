@@ -33,11 +33,11 @@ const BindingContextSize = 16
 //
 // v1 is every byte zero: the field reserved space and carried nothing. v2 is
 // version byte 2 and the rest zero, and it means the hash covers a third input
-// — the digest of the sandbox's policy. The reservation was made because
-// binding a sandbox's configuration into the evidence was deferred rather than
-// rejected, and retrofitting it onto H(pubkey) would have meant re-attesting
-// every deployed platform. Ticket 18 cashed it in, and the cliff was a version
-// bump.
+// — the digest of the sandbox's own signed policy document. The reservation was
+// made because binding a sandbox's configuration into the evidence was deferred
+// rather than rejected, and retrofitting it onto H(pubkey) would have meant
+// re-attesting every deployed platform. Ticket 18 cashed it in, and the cliff
+// was a version bump.
 type BindingContext [BindingContextSize]byte
 
 // BindingContextV1 is the context this verifier no longer admits: all zero, and
@@ -87,10 +87,9 @@ type Binding struct {
 	// Context is the versioned binding context the peer claims.
 	Context BindingContext
 
-	// PolicyDigest names the signed reference value set the peer presents as
-	// its policy: the digest of the document, not the document. It is hashed
-	// into the caller-supplied bytes under a v2 context and ignored under v1,
-	// which carried no such field.
+	// PolicyDigest names the signed policy the peer presents: the digest of the
+	// document, not the document. It is hashed into the caller-supplied bytes
+	// under a v2 context and ignored under v1, which carried no such field.
 	//
 	// It travels beside the context rather than inside it because the context
 	// is 16 bytes wide and a digest is 32, and widening the context would move

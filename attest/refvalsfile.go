@@ -78,26 +78,29 @@ import (
 // a guess about what an author meant, and this file is the one place in the
 // design where guessing is not allowed. Re-emit the set and sign it again.
 //
-// # The document is a policy, and its digest travels (version 3)
+// # A value names the policy it admits (version 3), and only that (version 4)
 //
-// A version 3 document carries a top-level "egress" section saying what leaves
-// the sandbox, which is what makes the file a policy rather than a guest list.
-// The section is required and its one field is required with it: a document
-// that does not say whether unattested egress is permitted has not said it is
-// forbidden, and a reader that supplied the answer would be deciding policy on
-// the author's behalf.
+// Version 3 gave a value an optional "policy_digest": the digest of the signed
+// policy a peer running the named image must present, folded into that peer's
+// evidence under ADR-0002's binding version 2 and checked here before the
+// binding is recomputed. It also gave the document a top-level "egress" section,
+// on the theory that the set was the sandbox's own policy as well as its guest
+// list.
 //
-// The whole document is then addressable: its policy digest is SHA-256 over
-// exactly the bytes the signature covers ([PolicyDigestOf]), a peer folds that
-// digest into its evidence under ADR-0002's binding version 2, and a verifier
-// checks it against the peer's reference value entry before recomputing the
-// binding. That is why the digest is over the signed bytes rather than over the
-// file: the signed region is the unambiguous one, and a digest over anything
-// else would name a document nobody authorised.
+// Version 4 takes the egress section back out, and the reason is what ticket
+// 18's live run found. If the set is the policy, then its digest is the digest
+// of a document that names peers' digests — so two sandboxes can never both pin
+// each other, because each set would have to contain the digest of the other,
+// which is taken over a document that already contains it. The policy is
+// therefore its own document (policyfile.go), naming no digests at all, and a
+// version 4 set is a version 3 set with the egress section removed. What stays
+// is the pair this file exists for: a measurement, and the policy a peer running
+// it must present.
 //
 // Version history, since a reader meeting an old file needs it in one place:
-// version 1 had no vendor on a value, version 2 had no egress section and no
-// per-entry policy digest, version 3 has both.
+// version 1 had no vendor on a value, version 2 had no per-entry policy digest,
+// version 3 had one and carried an egress section as well, version 4 has the
+// digest and leaves egress to the policy.
 //
 // # Order of operations
 //
@@ -140,53 +143,19 @@ const ReferenceValueSetFormat = "gvisor.dev/gvisor/attest/reference-value-set"
 // binding context: a reader that skips what it does not understand admits a
 // value weaker than its author intended.
 //
-// Version 2 added the per-value vendor field and version 3 the egress section
-// and the per-entry policy digest. Versions 1 and 2 are each refused with a
-// message saying what is missing and what to do about it, because reading
-// either on a best-effort basis would be this loader deciding what an author
-// did not write down (ADR-0006, addendum).
-const ReferenceValueSetVersion = 3
-
-// egressSectionVersion is the version of the egress section this loader reads,
-// and the only one it writes. It versions separately from the document because
-// the section is what ticket 19 grows, and a document that gains a field
-// elsewhere does not change what egress means.
-const egressSectionVersion = 1
-
-// A PolicyDigest names one signed reference value set: SHA-256 over exactly the
-// bytes the author's signature covers.
-//
-// It is the sandbox's policy reduced to something a peer can carry and a
-// verifier can compare. A peer folds it into the caller-supplied bytes of its
-// evidence (ADR-0002, version 2) and presents it beside the binding context; a
-// verifier holds the digests it will admit in [ReferenceValue.PolicyDigest].
-// Nothing about it is secret — it is a digest of a document delivered on an
-// untrusted device — so it is compared with plain equality.
-type PolicyDigest [sha256.Size]byte
-
-// String renders the digest as lowercase hexadecimal, which is the form an
-// operator copies out of a start log and into a peer's reference value set.
-func (d PolicyDigest) String() string { return hex.EncodeToString(d[:]) }
-
-// PolicyDigestOf is the digest of a reference value set document.
-//
-// It is defined over [signedBytes] rather than over the file's own bytes, so
-// that the digest names exactly the region the author's signature covers. A
-// consequence worth stating out loud: sha256sum of reference-values.json is
-// *not* this value, and a tool that wants a peer's digest must compute it here
-// or read it from something that did.
-//
-// It takes a document rather than a loaded set so that a tool can name a set it
-// is not going to load — a build emitting a peer's allow-list, a test computing
-// what a peer will present — without holding the author's public key.
-func PolicyDigestOf(document []byte) PolicyDigest {
-	return sha256.Sum256(signedBytes(document))
-}
+// Version 2 added the per-value vendor field, version 3 the per-entry policy
+// digest and an egress section, and version 4 moved that section into the
+// separate signed policy where it belongs. Versions 1, 2 and 3 are each refused
+// with a message saying what is wrong and what to do about it, because reading
+// any of them on a best-effort basis would be this loader deciding what an
+// author did not write down (ADR-0006, addendum).
+const ReferenceValueSetVersion = 4
 
 // SignatureFileSuffix is appended to a document's path to find its signature.
 // A set delivered on the config device is therefore two files —
 // reference-values.json and reference-values.json.sig — and a document with no
-// signature beside it is refused, not loaded.
+// signature beside it is refused, not loaded. The policy beside it is delivered
+// the same way, under the same suffix.
 const SignatureFileSuffix = ".sig"
 
 // signaturePrefix is prepended to the document before signing and before
@@ -198,7 +167,9 @@ const SignatureFileSuffix = ".sig"
 // separately, because a document that gains a field does not change how it is
 // signed.
 //
-// It is a constant, never negotiated and never read out of a file.
+// It is a constant, never negotiated and never read out of a file, and
+// [policySignaturePrefix] is its counterpart: the author's key signs a set and a
+// policy, and the two prefixes are what stop either signature being the other's.
 const signaturePrefix = "gvisor.dev/gvisor/attest reference-value-set signature v1\x00"
 
 // ErrSetRefused is what every failure to load a reference value set matches.
@@ -246,14 +217,9 @@ func MarshalReferenceValueSet(set ReferenceValueSet) ([]byte, error) {
 	if err := set.validate(); err != nil {
 		return nil, fmt.Errorf("attest: %w", err)
 	}
-	egress, err := egressSection(set.Egress)
-	if err != nil {
-		return nil, err
-	}
 	doc := wireDocument{
 		Format:  ReferenceValueSetFormat,
 		Version: ReferenceValueSetVersion,
-		Egress:  egress,
 	}
 	for i, rv := range set.Values {
 		// rv.vendor(), not rv.Vendor: an empty Vendor means SEV-SNP in memory,
@@ -310,29 +276,6 @@ func MarshalReferenceValueSet(set ReferenceValueSet) ([]byte, error) {
 	return append(out, '\n'), nil
 }
 
-// egressSection renders a set's egress section, refusing one this package's own
-// loader would not read back.
-//
-// A zero Version is written as [egressSectionVersion]: an in-memory set built
-// by code from before the section existed is rendered exactly as its version 3
-// equivalent would be, which is the same courtesy [MarshalReferenceValueSet]
-// extends to a value with no vendor tag. A set claiming unattested egress is
-// refused here rather than rendered, so that "sign what you wrote, ship what
-// you signed" cannot produce a document that does not load.
-func egressSection(e Egress) (wireEgressOut, error) {
-	version := e.Version
-	if version == 0 {
-		version = egressSectionVersion
-	}
-	if version != egressSectionVersion {
-		return wireEgressOut{}, fmt.Errorf("attest: the egress section is version %d; this package writes version %d", e.Version, egressSectionVersion)
-	}
-	if e.Unattested {
-		return wireEgressOut{}, errors.New("attest: the egress section permits unattested egress, which nothing here enforces; a document claiming it would not load back")
-	}
-	return wireEgressOut{Version: version, Unattested: e.Unattested}, nil
-}
-
 // SignReferenceValueSet signs a document with the reference value author's key,
 // returning the contents of the signature file that belongs beside it.
 //
@@ -362,7 +305,7 @@ func LoadReferenceValueSet(document, signature []byte, author ed25519.PublicKey)
 	if len(author) != ed25519.PublicKeySize {
 		return ReferenceValueSet{}, refuseSet("the reference value author public key is %d bytes, want an Ed25519 public key of %d", len(author), ed25519.PublicKeySize)
 	}
-	sig, err := parseSignature(signature)
+	sig, err := parseSignature(signature, refuseSet, "reference value set")
 	if err != nil {
 		return ReferenceValueSet{}, err
 	}
@@ -395,16 +338,31 @@ func LoadReferenceValueSetFile(path string, author ed25519.PublicKey) (Reference
 	return LoadReferenceValueSet(document, signature, author)
 }
 
-// signedBytes is what the author's key actually signs: the domain separation
-// prefix followed by the document's exact bytes. It is used by the signer and
-// the verifier, so the two cannot drift.
+// signedBytes is what the author's key actually signs over a reference value
+// set: the domain separation prefix followed by the document's exact bytes. It
+// is used by the signer and the verifier, so the two cannot drift.
 func signedBytes(document []byte) []byte {
-	msg := make([]byte, 0, len(signaturePrefix)+len(document))
-	msg = append(msg, signaturePrefix...)
+	return signedBytesUnder(signaturePrefix, document)
+}
+
+// signedBytesUnder is the shape both signed documents share, with the domain
+// separation prefix as the parameter. It is one function rather than two so
+// that a second document kind cannot be given a subtly different construction —
+// the prefix is the only thing that may differ between them.
+func signedBytesUnder(prefix string, document []byte) []byte {
+	msg := make([]byte, 0, len(prefix)+len(document))
+	msg = append(msg, prefix...)
 	return append(msg, document...)
 }
 
-// parseSignature reads the signature file: one hexadecimal Ed25519 signature,
+// A refuseFunc builds the refusal a document kind reports. There are two,
+// [refuseSet] and [refusePolicy], and the helpers below take one rather than
+// choosing so that the reference value set and the policy share a parser
+// without sharing a sentinel: a caller that asked for a policy and got
+// [ErrSetRefused] would have to read the text to find out what happened.
+type refuseFunc func(format string, args ...any) error
+
+// parseSignature reads a signature file: one hexadecimal Ed25519 signature,
 // with surrounding whitespace ignored so that a file written by an editor or by
 // a shell redirect both work.
 //
@@ -412,17 +370,17 @@ func signedBytes(document []byte) []byte {
 // signature check, so that the log says the signature was absent — which is a
 // provisioning mistake with a different fix from a signature that did not hold.
 // It is refused either way; only the sentence differs.
-func parseSignature(signature []byte) ([]byte, error) {
+func parseSignature(signature []byte, refuse refuseFunc, what string) ([]byte, error) {
 	text := strings.TrimSpace(string(signature))
 	if text == "" {
-		return nil, refuseSet("no signature was presented with the reference value set")
+		return nil, refuse("no signature was presented with the %s", what)
 	}
 	sig, err := hex.DecodeString(text)
 	if err != nil {
-		return nil, refuseSet("the signature is not hexadecimal: %v", err)
+		return nil, refuse("the signature is not hexadecimal: %v", err)
 	}
 	if len(sig) != ed25519.SignatureSize {
-		return nil, refuseSet("the signature is %d bytes, want an Ed25519 signature of %d", len(sig), ed25519.SignatureSize)
+		return nil, refuse("the signature is %d bytes, want an Ed25519 signature of %d", len(sig), ed25519.SignatureSize)
 	}
 	return sig, nil
 }
@@ -436,7 +394,7 @@ func parseSignature(signature []byte) ([]byte, error) {
 // is refused rather than resolved to the last one, because a reviewer reads the
 // first. Bytes after the document are refused rather than ignored.
 func parseReferenceValueSetDocument(document []byte) (ReferenceValueSet, error) {
-	if err := rejectRepeatedFields(document); err != nil {
+	if err := rejectRepeatedFields(document, refuseSet); err != nil {
 		return ReferenceValueSet{}, err
 	}
 
@@ -468,24 +426,38 @@ func parseReferenceValueSetDocument(document []byte) (ReferenceValueSet, error) 
 	}
 	if *doc.Version == 2 {
 		return ReferenceValueSet{}, refuseSet(
-			"the document is version 2 and this loader reads version %d: a version 2 document carries no "+
-				"egress section, so it says nothing about what leaves the sandbox, and a policy digest over "+
-				"it would vouch for a policy that was never written; "+
-				"add \"egress\": {\"version\": %d, \"unattested\": false} and sign it again",
-			ReferenceValueSetVersion, egressSectionVersion)
+			"the document is version 2 and this loader reads version %d: no value in a version 2 "+
+				"document can name the policy a peer running that image must present, so every value "+
+				"in it admits any policy at all, which is weaker than an author writing one today "+
+				"means; re-emit the set at version %d and sign it again",
+			ReferenceValueSetVersion, ReferenceValueSetVersion)
+	}
+	if *doc.Version == 3 {
+		return ReferenceValueSet{}, refuseSet(
+			"the document is version 3 and this loader reads version %d: a version 3 set carried an "+
+				"egress section and was therefore the sandbox's own policy as well as its guest list, "+
+				"and a policy that names peers' policies cannot be pinned in both directions "+
+				"(docs/policy-binding.md); move the egress section into policy.json, sign that, and "+
+				"re-emit this set at version %d",
+			ReferenceValueSetVersion, ReferenceValueSetVersion)
 	}
 	if *doc.Version != ReferenceValueSetVersion {
 		return ReferenceValueSet{}, refuseSet("the document is version %d, this loader reads version %d", *doc.Version, ReferenceValueSetVersion)
 	}
-	egress, err := doc.Egress.egress()
-	if err != nil {
-		return ReferenceValueSet{}, err
+	if doc.Egress != nil {
+		// Refused here, by name, rather than left to the strict decode's
+		// "unknown field egress". The author of this document wrote a policy
+		// down and it is not being enforced by anybody; the sentence they need
+		// says where it went, not that this parser did not recognise it.
+		return ReferenceValueSet{}, refuseSet(
+			"the document is version %d and still carries an egress section; since version %d the "+
+				"egress section belongs to the sandbox's own signed policy and not to its guest list, "+
+				"because a set that was also a policy could not be pinned in both directions "+
+				"(docs/policy-binding.md); move it into policy.json and sign both again",
+			ReferenceValueSetVersion, ReferenceValueSetVersion)
 	}
 
-	// The digest of the document, taken here so that every loaded set carries
-	// the name a peer will present for it. It is over the signed bytes, which
-	// is the region the signature just held over.
-	set := ReferenceValueSet{Egress: egress, PolicyDigest: PolicyDigestOf(document)}
+	var set ReferenceValueSet
 	for i, raw := range doc.ReferenceValues {
 		rv, err := parseReferenceValue(raw)
 		if err != nil {
@@ -508,60 +480,17 @@ func parseReferenceValueSetDocument(document []byte) (ReferenceValueSet, error) 
 // shapes under the same "minimum_tcb" key, so an entry is decoded once its
 // vendor is known and not before.
 type wireSet struct {
-	Format          *string           `json:"format"`
-	Version         *int              `json:"version"`
-	Egress          *wireEgress       `json:"egress"`
+	Format  *string `json:"format"`
+	Version *int    `json:"version"`
+
+	// Egress is a field this format no longer defines, kept in the struct so
+	// that a document still carrying one is refused with the sentence that
+	// says where it went rather than with a complaint about an unknown field.
+	// It is held unparsed because nothing here reads it: what matters is that
+	// it is there.
+	Egress json.RawMessage `json:"egress"`
+
 	ReferenceValues []json.RawMessage `json:"reference_values"`
-}
-
-// wireEgress is the egress section as it is read. Both fields are pointers for
-// the reason [wireSet]'s are: a section that forgot to say whether unattested
-// egress is permitted must not be read as having permitted nothing by accident.
-// The author of a policy says what the policy is.
-type wireEgress struct {
-	Version    *int  `json:"version"`
-	Unattested *bool `json:"unattested"`
-}
-
-// wireEgressOut is the egress section as it is written.
-type wireEgressOut struct {
-	Version    int  `json:"version"`
-	Unattested bool `json:"unattested"`
-}
-
-// egress reads the section, refusing every way it can fail to be a policy.
-//
-// The permissive case is refused for a reason worth separating from the others:
-// the section is well-formed and its author meant it, and nothing in this build
-// implements it. A verifier that admitted the document would hand a peer a
-// policy digest vouching for a capability no code enforces, which is exactly
-// the failure the digest exists to prevent.
-func (w *wireEgress) egress() (Egress, error) {
-	if w == nil {
-		return Egress{}, refuseSet(
-			"the document has no egress section; a version %d document says what leaves the sandbox as well as "+
-				"whom it may talk to, and one that says nothing has not said no; "+
-				"add \"egress\": {\"version\": %d, \"unattested\": false} and sign it again",
-			ReferenceValueSetVersion, egressSectionVersion)
-	}
-	if w.Version == nil {
-		return Egress{}, refuseSet("the egress section does not say what version it is; want %d", egressSectionVersion)
-	}
-	if *w.Version != egressSectionVersion {
-		return Egress{}, refuseSet("the egress section is version %d, this loader reads version %d", *w.Version, egressSectionVersion)
-	}
-	if w.Unattested == nil {
-		return Egress{}, refuseSet(
-			"the egress section does not say whether unattested egress is permitted; the field is required rather " +
-				"than defaulted, because a policy a verifier vouches for is one its author wrote down")
-	}
-	if *w.Unattested {
-		return Egress{}, refuseSet(
-			"the egress section permits unattested egress and nothing here enforces that permission; " +
-				"a policy claiming a capability no code implements is weaker than it reads, so it is refused rather " +
-				"than admitted with the claim quietly dropped")
-	}
-	return Egress{Version: *w.Version, Unattested: *w.Unattested}, nil
 }
 
 // wireDocument is the document as it is written, and is deliberately a
@@ -570,10 +499,9 @@ func (w *wireEgress) egress() (Egress, error) {
 // absent, repeated, or belong to the other vendor. Sharing one type between the
 // two jobs is how a renderer ends up defining the format.
 type wireDocument struct {
-	Format          string        `json:"format"`
-	Version         int           `json:"version"`
-	Egress          wireEgressOut `json:"egress"`
-	ReferenceValues []any         `json:"reference_values"`
+	Format          string `json:"format"`
+	Version         int    `json:"version"`
+	ReferenceValues []any  `json:"reference_values"`
 }
 
 // wireAMDOut and wireTDXOut are one rendered reference value each.
@@ -991,18 +919,19 @@ func (e *foldedField) Error() string { return "field name outside the format's a
 // author signed both, so the signature does not help. Only refusing does.
 //
 // This runs on a document whose signature has already held, so it is walking
-// the author's own bytes rather than an attacker's.
-func rejectRepeatedFields(document []byte) error {
+// the author's own bytes rather than an attacker's. Both signed documents this
+// package reads go through it, which is why the refusal is a parameter.
+func rejectRepeatedFields(document []byte, refuse refuseFunc) error {
 	dec := json.NewDecoder(bytes.NewReader(document))
 	dec.UseNumber()
 	err := walkForRepeats(dec, "")
 	var repeat *repeatedField
 	if errors.As(err, &repeat) {
-		return refuseSet("the document names %s twice; a reviewer reads the first occurrence and a parser takes the last", repeat.where)
+		return refuse("the document names %s twice; a reviewer reads the first occurrence and a parser takes the last", repeat.where)
 	}
 	var folded *foldedField
 	if errors.As(err, &folded) {
-		return refuseSet("the field name %s is not lowercase ASCII; the parser matches names case-insensitively, so a reviewer and a parser could read it as different fields", folded.where)
+		return refuse("the field name %s is not lowercase ASCII; the parser matches names case-insensitively, so a reviewer and a parser could read it as different fields", folded.where)
 	}
 	// Any other error means the document is not well-formed JSON. The strict
 	// decode that follows reports that with far better context than a token

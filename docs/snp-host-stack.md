@@ -567,6 +567,10 @@ Scripts, all under `docs/snp/`:
 | `qmon.py` | talk to the QEMU human monitor socket |
 | `root-runner.sh` | run privileged steps from a spool directory |
 
+*The three canary probes above — `host-read-guest-ram.py`, `canary-experiment.sh` and
+`canary-scan.py` — were removed in ticket 21; their last versions are
+`git show 205fd2154:docs/snp/<name>`.*
+
 `root-runner.sh` exists because this work was done from a session that could not type a
 sudo password. It runs as root inside a tmux session, watches a spool directory, and
 executes `*.job` files placed there. An operator at a terminal does not need it — run the

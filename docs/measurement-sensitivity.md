@@ -209,6 +209,9 @@ same reason. It acquires evidence exactly as `cmd/acquire-evidence` does (`attes
 chain from `/config`, a key generated a moment earlier and dropped at power-off), prints the
 bundle base64-encoded between marker lines, and exits.
 
+*`crosscheck-report.c` was removed in ticket 21; its last version is
+`git show 205fd2154:docs/snp/image/crosscheck-report.c`.*
+
 **It verifies nothing.** It does not read `reference-values.json`, it does not look at
 `/etc/attested-tunnel/author.pub`, and it has no opinion about the measurement it is carrying.
 A guest judging its own evidence would be judging a measurement it could not have influenced

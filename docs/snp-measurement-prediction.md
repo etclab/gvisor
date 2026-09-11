@@ -27,6 +27,10 @@ count, a wrong CPU model, a changed QEMU — and never to the reference value. N
 build reads `crosscheck.txt`, `console-snp.txt` or `report.bin`; the emitter (`emit-refvals`)
 takes the measurement as a command-line argument and has no other way to obtain one.
 
+*`crosscheck-compare.sh` and `crosscheck-report.c` were removed in ticket 21; their last versions
+are `git show 205fd2154:docs/snp/image/crosscheck-compare.sh` and
+`git show 205fd2154:docs/snp/image/crosscheck-report.c`.*
+
 Nobody should reintroduce the shortcut. The tell is any path from a report, a console log or
 a `tsm/report` directory into `reference-values.json`. There is none, and a review that
 finds one has found a regression.

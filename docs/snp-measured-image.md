@@ -194,6 +194,9 @@ directory `mkconfigdev.sh` packages). This ticket originally chose `chain/chain.
 `mkconfigdev.sh`'s comment block, `tunneld-placeholder.c`'s path constants and this table, and
 did not touch the measurement.
 
+*`tunneld-placeholder.c` was removed in ticket 21, and `build-image.sh` now requires `TUNNELD`;
+its last version is `git show 205fd2154:docs/snp/image/tunneld-placeholder.c`.*
+
 Updating any file on the device does not change M. The placeholder demonstrates the
 document-alone case ADR-0006 requires: a device with `reference-values.json` and no `.sig`
 beside it is reported with the same refusal sentinel as a device with neither.

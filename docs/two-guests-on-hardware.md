@@ -121,6 +121,10 @@ diagnostic surface a measured guest has (user story 48).
 | a latency table | below. |
 | the harness records its output for every property | `docs/snp/evidence/ticket14/`. |
 
+*`tunnel-in-stock-guest.sh` and the `unattested-peer/` directory were removed in ticket 21; their
+last versions are `git show 205fd2154:docs/snp/tunnel-in-stock-guest.sh` and
+`git show 205fd2154:docs/snp/unattested-peer`.*
+
 ## The latency table
 
 Measured by the dialing guest, over the relay, on the two-guest run recorded in

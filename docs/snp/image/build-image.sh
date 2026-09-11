@@ -59,16 +59,15 @@
 #                   recorded in the emitted artifact; not a build input.
 #   Every one of VCPUS, VCPU_TYPE and POLICY must match launch-measured-guest.sh
 #   (-smp, -cpu, policy=) or the prediction is for a different launch.
-#   TUNNELD         static binary to embed as /usr/bin/tunneld. Default: build
-#                   tunneld-placeholder.c. Ticket 14 sets this and nothing else:
+#   TUNNELD         required. Static binary to embed as /usr/bin/tunneld.
 #                   package-tunneld.sh checks the import graph and the built
 #                   artifact, builds attest/cmd/tunneld with CGO_ENABLED=0, and
 #                   calls this script with TUNNELD pointing at it. Run that
 #                   rather than setting this by hand — the checks have to
 #                   happen before the measurement is computed, and this script
-#                   computes it. The default is left as the placeholder so that
-#                   tickets 06-08's recorded images rebuild to the measurements
-#                   they recorded.
+#                   computes it. There is no default: ticket 21 removed the
+#                   placeholder this script used to build when TUNNELD was
+#                   empty, so a build now names the binary it measures.
 #   BUSYBOX         static busybox (default /bin/busybox from busybox-static)
 set -euo pipefail
 HERE="$(dirname "$(readlink -f "$0")")"
@@ -76,10 +75,10 @@ REPO="$(git -C "$HERE" rev-parse --show-toplevel)"
 STACK="${STACK:-$REPO/.scratch/attested-secure-tunnel/host-stack}"
 OUT="${OUT:-$STACK/image}"
 BUSYBOX="${BUSYBOX:-/bin/busybox}"
-TUNNELD="${TUNNELD:-}"
 VCPUS="${VCPUS:-4}"; VCPU_TYPE="${VCPU_TYPE:-EPYC-v4}"; POLICY="${POLICY:-0x30000}"
 TCB_FLOOR="${TCB_FLOOR:-9,0,23,72}"
 : "${AUTHOR_KEY:?set AUTHOR_KEY to the reference value author Ed25519 private key, PKCS8 PEM}"
+: "${TUNNELD:?set TUNNELD to the static binary to embed as /usr/bin/tunneld; docs/snp/image/package-tunneld.sh builds it and sets this}"
 export PATH="/usr/local/go/bin:$PATH"
 command -v go >/dev/null || { echo "go not found; attest/README.md says how" >&2; exit 1; }
 
@@ -122,11 +121,7 @@ cd "$B"
 # Tools built from the checked-in sources, statically.
 gcc -O2 -static -Wall -o veritymap "$HERE/veritymap.c"
 gcc -O2 -static -Wall -o gen_init_cpio "$GEN_INIT_CPIO_SRC"
-if [ -z "$TUNNELD" ]; then
-  gcc -O2 -static -Wall -o tunneld-placeholder "$HERE/tunneld-placeholder.c"
-  TUNNELD="$B/tunneld-placeholder"
-  echo "TUNNELD not set: embedding tunneld-placeholder"
-fi
+
 file "$TUNNELD" | grep -q 'statically linked' || { echo "TUNNELD $TUNNELD is not static" >&2; exit 1; }
 
 # The document emitter: the author-side half of attest/refvalsfile.go and
@@ -319,7 +314,7 @@ POLICY_DIGEST=$(printf '%s\n' "$EMITTED_POLICY" | sed -n 's/^policy digest: //p'
   done
 } > "$OUT/manifest.txt"
 
-cp "$HERE"/{build-image.sh,predict-measurement.sh,init.initrd,init.rootfs,veritymap.c,tunneld-placeholder.c} "$B/" 2>/dev/null || true
+cp "$HERE"/{build-image.sh,predict-measurement.sh,init.initrd,init.rootfs,veritymap.c} "$B/" 2>/dev/null || true
 echo
 echo "image in $OUT:"
 ls -l "$OUT" | grep -v '^d\|^total'

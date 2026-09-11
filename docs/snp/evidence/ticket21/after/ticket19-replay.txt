@@ -1,0 +1,118 @@
+# The ticket 19 TDX scenario, replayed at ticket 21's HEAD.
+#
+# No cloud, no hardware, no sudo.  Everything here reads bytes recorded in
+# ticket 19 under docs/snp/evidence/ticket19/ and docs/snp/evidence/tdx/.
+# The runbooks are docs/snp/cloud/tdx/SCENARIOS.md and docs/two-guests-on-tdx.md.
+# What SCENARIOS.md says is replayable on a workstation is the verdict:
+# the quote comes off the console and "is judged on the workstation exactly as
+# a peer would judge it", with `attest-tool verify` (SCENARIOS.md:169, the line
+# ticket 21 re-pointed from `cmd/verify-evidence`).
+#
+# Wall clock at replay: 2026-09-11T06:41Z.  The provisioned Intel collateral
+# under docs/snp/evidence/tdx/collateral expires 2026-10-08T19:20:02Z, so it is
+# live today; no recorded run pinned a time and none is pinned here, so no -now
+# was passed on either side.
+
+================================================================================
+1. The verdicts, recorded vs replayed
+================================================================================
+Tool: /usr/local/go/bin/go build -o attest-tool ./cmd/attest-tool  at HEAD,
+invoked as `attest-tool verify <the flags the transcripts show>`; the only
+change against the recorded command is the binary's name and the `verify`
+subcommand.  The invocations are the harness list
+verdict-invocations-v2.txt (docs/snp/evidence/ticket21/harness/).
+
+Compared: the verdict block of each transcript -- the ACCEPTED or REFUSED word
+and every indented line under it (reason, operator log, a caller learns; or
+vendor, RTMR2, MRTD, RTMR0, RTMR1, TD attributes, Intel TCB, caller-supplied,
+satisfied) -- plus the exit status.
+
+  recorded transcript                        invocation             verdict   exit  result
+  ------------------------------------------ ---------------------- --------- ----  ---------
+  scenario-one/verify-evidence-a.txt  §1      tdx-one-a-seta         REFUSED     2   identical
+  scenario-one/verify-evidence-a.txt  §2      tdx-one-a-setb         ACCEPTED    0   identical
+  scenario-one/verify-evidence-b.txt  §1      tdx-one-b-setb         REFUSED     2   identical
+  scenario-one/verify-evidence-b.txt  §2      tdx-one-b-seta         ACCEPTED    0   identical
+  scenario-two/verify-evidence-a.txt  §1      tdx-two-a-seta         ACCEPTED    0   identical
+  scenario-two/verify-evidence-a.txt  §2      tdx-two-a-setb         ACCEPTED    0   identical
+  scenario-two/verify-evidence-b.txt  §1      tdx-two-b-setb         REFUSED     2   identical
+  scenario-two/verify-evidence-b.txt  §2      tdx-two-b-seta         REFUSED     2   identical
+  scenario-three/verify-evidence-a.txt §1     tdx-three-a-seta       REFUSED     2   identical
+  scenario-three/verify-evidence-a.txt §2     tdx-three-a-setb       ACCEPTED    0   identical
+  scenario-three/verify-evidence-b.txt §1     tdx-three-b-setb       REFUSED     2   identical
+  scenario-three/verify-evidence-b.txt §2     tdx-three-b-seta       REFUSED     2   identical
+  smoke/verify-evidence.txt                   tdx-smoke              ACCEPTED    0   identical
+
+  13 of 13 verdict blocks are character-for-character what ticket 19 recorded,
+  including the refusal sentences:
+
+    "peer presents policy digest <hex>; no reference value for the measurement
+     it is running lists that policy"
+
+  and the accepted claims blocks with their RTMR2/MRTD/RTMR0/RTMR1 and the
+  caller-supplied SHA-512 recomputed from the key.
+
+  step-zero/verify-evidence.txt is NOT reproducible and was not counted.  The
+  recorded run read a bundle out of a session scratchpad that no longer exists
+  and a reference value set signed with "a throwaway key made for this check"
+  whose signature file was not kept (step-zero/README.txt,
+  reference-values.tcb-check.json has no .sig beside it).  That boot's quotes
+  are replayed anyway, under other reference values, as tdx-stepzero-baseline
+  and tdx-stepzero-initrd in the 64-invocation list, and both are byte-identical
+  to ticket 20's run.
+
+  Whole-transcript byte identity for these and the other 34 TDX invocations is
+  in verdict-diff.txt: 47 of the 64 live invocations read ticket 19 evidence,
+  and all 47 are byte-identical to the 205fd2154 run.
+
+================================================================================
+2. predict-rtmr2.py over the recorded boot state
+================================================================================
+Named by docs/two-guests-on-tdx.md:101 ("RTMR2 is predicted by ticket 16's
+predict-rtmr2.py from the disk just built, offline, no machine") and invoked by
+docs/snp/cloud/tdx/probe-tdx-initrd.sh:243.  Re-run here on the unpacked boot
+state recorded for both step-zero boots, with the same flags that script passes:
+
+  python3 docs/snp/cloud/tdx/predict-rtmr2.py --tree <boot>/unpacked \
+      --esp-part 15 --boot-part 16 --root-part 1 \
+      --fs-uuid 16=b4f9057b-66e6-4f5a-bbba-a8086989e88f \
+      --compare-quote <boot>/quote.bin --compare-ccel <boot>/ccel.bin
+
+  boot       exit  records predicted/recorded  RESULT   vs recorded predict.txt
+  ---------- ----  -------------------------- -------  -----------------------
+  baseline    0    86 / 86                    MATCH    byte-identical
+  initrd      0    86 / 86                    MATCH    byte-identical
+
+  Both outputs are `diff`-clean against the predict.txt recorded beside them,
+  all 20,347 and 20,854 bytes.  Ticket 21 changed no Python; this is the
+  control that says so.
+
+================================================================================
+3. replay-ccel.py
+================================================================================
+Not replayable on a workstation, and not a ticket 21 regression.  The script
+reads the live ACPI table at /sys/firmware/acpi/tables/data/CCEL
+(replay-ccel.py:38, CCEL_DATA) and takes no path for it; its only argument is an
+optional quote file.  Run here it prints
+
+  CCEL data table unreadable: [Errno 2] No such file or directory:
+    '/sys/firmware/acpi/tables/data/CCEL'
+  NO EVENT LOG: an RTMR from this platform is 48 opaque bytes.
+
+which is the guest-side tool refusing off a guest.  probe-tdx-eventlog.sh scp's
+it onto the VM for exactly that reason (probe-tdx-eventlog.sh:67).  Its recorded
+output is docs/snp/evidence/tdx/eventlog/replay.txt, and the recorded ccel.bin
+beside it is what predict-rtmr2.py reads above.
+
+================================================================================
+4. What was NOT replayed
+================================================================================
+- Anything needing a guest: the tunnel runs themselves (tunnel-run.txt), the
+  egress probes (egress/*.txt), the consoles, the re-attestations.  Those are
+  live-run evidence and ticket 21 has no way to remake them without cloud.
+- tunneld's own behaviour. Two non-test lines under cmd/tunneld changed in
+  ticket 21, both in cb35b7a49: sortedKeys took a type parameter and
+  sortedPeerKeys, its byte-for-byte copy over another value type, went. Same
+  insertion sort, same ascending order, same PEER SEEN lines. Everything else
+  under cmd/tunneld and tunneld/ that changed is a _test.go file: the two guard
+  tests' forbidden lists, and the tests moving onto internal/fixture.

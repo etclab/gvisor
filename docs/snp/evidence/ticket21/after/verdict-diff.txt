@@ -1,0 +1,88 @@
+# Verdict replay, ticket 21.
+#
+# Before: 111 transcripts recorded at 205fd2154 with cmd/verify-evidence
+#         ($S/before/verdicts), the same 111 invocations ticket 20 used.
+# After : the same list replayed at HEAD with the one workstation tool,
+#           go build -o attest-tool ./cmd/attest-tool
+#           REPLAY_LIST=verdict-invocations-v2.txt replay-verdicts.sh after attest-tool verify
+#         Line 1 of a transcript is the command, which differs by construction
+#         because the prefix differs; the verdict is everything from line 2 on.
+#
+# The list was split in ec299ac2e, when the -binding-version 1 replay branch
+# went: 64 invocations that carry no -binding-version flag (verdict-invocations-v2.txt)
+# and 47 that do (verdict-invocations-retired.txt).  64 + 47 = 111.
+
+================================================================================
+1. The 64 live invocations, before vs after, compared from line 2 on
+================================================================================
+  identical : 60
+  differing :  4   usage-noargs, usage-norefvals, usage-nobundle, usage-badflag
+  missing   :  0
+
+  Every one of the four is a usage dump, and every difference in all four is
+  the same two-part removal of the retired flag:
+
+    -  -binding-version int
+    -      the ADR-0002 binding version the bundle was acquired under: 2, or 1
+    -      for a bundle recorded before the policy digest existed (default 2)
+
+  and, on the -policy-digest line, the loss of its last sentence:
+
+    -  ... empty is 32 zero bytes. Meaningless with -binding-version 1, which
+    -      had no such field
+    +  ... empty is 32 zero bytes
+
+  Nothing else differs in any of the four: no verdict line, no refusal reason,
+  no exit status.  The exit-status histogram over the 64 is unchanged:
+  exit 0: 8, exit 1: 15, exit 2: 37, exit 3: 4.
+
+================================================================================
+2. The 47 retired invocations, replayed at HEAD
+================================================================================
+  47 of 47 print
+
+      flag provided but not defined: -binding-version
+
+  on stderr and exit 1.  That is the ticket's answer for them: a bundle
+  recorded before ticket 18 verifies with the binary of its era, named by the
+  commit in its manifest (docs/policy-binding.md).
+
+================================================================================
+3. The four usage diffs in full
+================================================================================
+--- usage-noargs ---
+6,7d5
+<   -binding-version int
+<     	the ADR-0002 binding version the bundle was acquired under: 2, or 1 for a bundle recorded before the policy digest existed (default 2)
+19c17
+<     	the policy digest the bundle is bound to, hex — sha256 over the bytes the author signed over the peer's policy.json, which emit-refvals -digest-of prints; empty is 32 zero bytes. Meaningless with -binding-version 1, which had no such field
+---
+>     	the policy digest the bundle is bound to, hex — sha256 over the bytes the author signed over the peer's policy.json, which emit-refvals -digest-of prints; empty is 32 zero bytes
+
+--- usage-norefvals ---
+6,7d5
+<   -binding-version int
+<     	the ADR-0002 binding version the bundle was acquired under: 2, or 1 for a bundle recorded before the policy digest existed (default 2)
+19c17
+<     	the policy digest the bundle is bound to, hex — sha256 over the bytes the author signed over the peer's policy.json, which emit-refvals -digest-of prints; empty is 32 zero bytes. Meaningless with -binding-version 1, which had no such field
+---
+>     	the policy digest the bundle is bound to, hex — sha256 over the bytes the author signed over the peer's policy.json, which emit-refvals -digest-of prints; empty is 32 zero bytes
+
+--- usage-nobundle ---
+6,7d5
+<   -binding-version int
+<     	the ADR-0002 binding version the bundle was acquired under: 2, or 1 for a bundle recorded before the policy digest existed (default 2)
+19c17
+<     	the policy digest the bundle is bound to, hex — sha256 over the bytes the author signed over the peer's policy.json, which emit-refvals -digest-of prints; empty is 32 zero bytes. Meaningless with -binding-version 1, which had no such field
+---
+>     	the policy digest the bundle is bound to, hex — sha256 over the bytes the author signed over the peer's policy.json, which emit-refvals -digest-of prints; empty is 32 zero bytes
+
+--- usage-badflag ---
+7,8d6
+<   -binding-version int
+<     	the ADR-0002 binding version the bundle was acquired under: 2, or 1 for a bundle recorded before the policy digest existed (default 2)
+20c18
+<     	the policy digest the bundle is bound to, hex — sha256 over the bytes the author signed over the peer's policy.json, which emit-refvals -digest-of prints; empty is 32 zero bytes. Meaningless with -binding-version 1, which had no such field
+---
+>     	the policy digest the bundle is bound to, hex — sha256 over the bytes the author signed over the peer's policy.json, which emit-refvals -digest-of prints; empty is 32 zero bytes
+

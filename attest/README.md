@@ -52,13 +52,15 @@ iteration of unproven code.
 | `tsm`     | Ticket 04: evidence acquisition from real hardware, through the kernel's vendor-neutral report interface at `/sys/kernel/config/tsm/report`. Writes the caller-supplied bytes, reads the evidence back, and bundles the chain the config device holds — never the platform's, which is empty here, and never the network's (ADR-0005). Procedure: `docs/evidence-acquisition.md`. |
 | `internal/snpfake` | A fake SEV-SNP platform built on `go-sev-guest`'s test signing. Implements the acquisition half of the seam for everything that must run without a confidential VM. Test support, but not a `_test` package, because tunneld's tests inject it through `tunneld.Config`. Under `internal/` since ticket 21, so that nothing outside this module can import it at all. |
 | `internal/tdxfake` | A fake Intel TDX platform: it re-signs the quote a real Google TDX VM produced, with every key replaced by a test key and every field a test wants to move, moved, and writes the four Intel collateral documents beside it. Same standing as `internal/snpfake`, and under `internal/` for the same reason. |
+| `internal/fixture` | Ticket 21: the platform, verifier, author and acceptance builders four test packages had each written for themselves. A package rather than a `_test.go` file because a helper declared in one package's test files is not reachable from another's; under `internal/` and named by the same two guards as the fakes, so it cannot reach the measured binary either. |
 | `provision` | Ticket 15: fetches the certificate chain for a platform's chip and TCB from AMD's key distribution service once, validates it through `verify`, and writes it beside the reference value set (ADR-0005); the consumer half loads it and refuses a missing or stale chain rather than fetching. Procedure: `docs/provisioning-certificate-chain.md`. |
 | `cmd/attest-tool` | Ticket 21: the one command over the packages above that is not the measured binary, one subcommand each. `acquire` runs inside a guest over `tsm`: generate a key, acquire evidence bound to it, bundle the chain, print what the platform said. `provision fetch` and `provision check` are the operator's half over `provision`. `verify` takes a verdict on a bundle from outside the guest that produced it — load the signed set, wire it to the verifier, exit 0 on acceptance and 2 on refusal. Procedures: `docs/evidence-acquisition.md`, `docs/provisioning-certificate-chain.md`, `docs/verification-on-hardware.md`. |
 | `ratls`   | The certificate as a serialization envelope: a versioned payload (version 2) under a private arc carrying the evidence, the chain, the binding context and the peer's policy digest, and the handshake callback that runs `Verification.Verify` on the peer's. Nothing else in the certificate is read. |
 | `tunnel`  | The transport: QUIC with TLS 1.3, early data refused on both ends, one exchange per stream, the establishment round trip, and the cache that holds at most one tunnel per peer under an idle timeout and a maximum age (`Limits`). Knows nothing about attestation. |
 | `tunneld` | The composition root and the public API: `New` with a `Config`, `Peer(name)` yielding a `Channel`, `Channel.Exchange`. It loads the set and the policy, presents the policy's digest as its identity, and enforces `forward_to` on the peers it dials. One `tunnel.Cache` per tunneld, built from its one identity, under `Config.Limits`; a `Channel` is a handle on a peer rather than a holder of a connection. |
 
-`verify`, `internal/snpfake`, `internal/tdxfake`, `ratls` and `tunnel` have no test files of their
+`verify`, `internal/snpfake`, `internal/tdxfake`, `internal/fixture`, `ratls` and `tunnel` have no
+test files of their
 own, and that is the design rather than a gap. There are two seams, one per layer. Below tunneld
 the seam is this module's public surface: every `attest` test drives `Verification.Verify` or the
 set loader and asserts on external behaviour — accepted, or refused with a given reason — and none
@@ -152,7 +154,7 @@ helpers, which import `testing` and register flags at init, and ticket 14 puts a
 launch measurement. The binary that goes in is `cmd/tunneld`, not package `tunneld`, and that is
 where the guard lives: `cmd/tunneld/importgraph_test.go` lists the non-test dependency graph of
 `gvisor.dev/gvisor/attest/cmd/tunneld` and fails if `internal/snpfake`, `internal/tdxfake`,
-`go-sev-guest/testing`, `go-tdx-guest/testing` or `testing` appears, and checks package
+`internal/fixture`, `go-sev-guest/testing`, `go-tdx-guest/testing` or `testing` appears, and checks package
 `tunneld`'s graph beside it so a failure names which of the two grew the dependency. The
 command's graph contains the package's, so one guard on the command is stronger than the guard
 that was in the package until ticket 14 moved it. The fake is injected only through `Config`,

@@ -1,0 +1,12 @@
+ok  	gvisor.dev/gvisor/attest	12.253s
+?   	gvisor.dev/gvisor/attest/cmd/attest-tool	[no test files]
+ok  	gvisor.dev/gvisor/attest/cmd/tunneld	3.122s
+?   	gvisor.dev/gvisor/attest/internal/fixture	[no test files]
+?   	gvisor.dev/gvisor/attest/internal/snpfake	[no test files]
+?   	gvisor.dev/gvisor/attest/internal/tdxfake	[no test files]
+ok  	gvisor.dev/gvisor/attest/provision	2.088s
+?   	gvisor.dev/gvisor/attest/ratls	[no test files]
+ok  	gvisor.dev/gvisor/attest/tsm	3.263s
+?   	gvisor.dev/gvisor/attest/tunnel	[no test files]
+ok  	gvisor.dev/gvisor/attest/tunneld	44.885s
+ok  	gvisor.dev/gvisor/attest/verify	0.050s

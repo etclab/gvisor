@@ -1,0 +1,84 @@
+# attest/ module counts, BEFORE ticket 21 ("shrink").
+# Worktree /home/pniroula/Projects/gvisor-tdx-work, branch tdx-attested-tunnel,
+# HEAD 205fd2154 (working tree clean apart from untracked .claude/session-log.md).
+# Go is /usr/local/go/bin/go. Every command below was run with cwd = attest/.
+# There is no vendor/ directory anywhere under attest/ (verified:
+#   find . -type d -name vendor   ->  0 hits), so every count is vendor-free.
+
+================================================================================
+1. Go packages under attest/
+   $ /usr/local/go/bin/go list ./...
+================================================================================
+  gvisor.dev/gvisor/attest
+  gvisor.dev/gvisor/attest/cmd/acquire-evidence
+  gvisor.dev/gvisor/attest/cmd/provision-chain
+  gvisor.dev/gvisor/attest/cmd/tunneld
+  gvisor.dev/gvisor/attest/cmd/verify-evidence
+  gvisor.dev/gvisor/attest/provision
+  gvisor.dev/gvisor/attest/ratls
+  gvisor.dev/gvisor/attest/snpfake
+  gvisor.dev/gvisor/attest/tdxfake
+  gvisor.dev/gvisor/attest/tsm
+  gvisor.dev/gvisor/attest/tunnel
+  gvisor.dev/gvisor/attest/tunneld
+  gvisor.dev/gvisor/attest/verify
+  ---
+  packages: 13
+
+================================================================================
+2. Exported top-level symbols in the root package `attest`
+   Method: go/ast, not `go doc`. A throwaway program (kept beside this file at
+   ./countsyms/) parses the non-test .go files of attest/ with
+   go/parser.ParseDir and counts every EXPORTED name bound by a top-level
+   declaration: each ValueSpec name under a const or var GenDecl, each exported
+   TypeSpec, and each exported FuncDecl WITHOUT a receiver. Methods (FuncDecl
+   with a receiver) are counted separately and are NOT in the total, since they
+   are not names the package binds at top level. Grouped `const (...)` blocks
+   therefore count once per name, which is why this does not agree with
+   `go doc -all | grep -c '^const'`.
+   $ cd countsyms && /usr/local/go/bin/go run . <worktree>/attest
+================================================================================
+  const    21  BindingContextSize CallerSuppliedBytesSize PolicyFormat 
+  PolicyVersion ReasonBindingMismatch ReasonChainNotRooted 
+  ReasonMalformedEvidence ReasonMeasurementNotInSet ReasonNoEvidence ReasonNone 
+  ReasonPolicyMismatch ReasonTCBBelowFloor ReasonUnknownBindingContext 
+  ReasonUnsupportedVendor ReferenceValueSetFormat ReferenceValueSetVersion 
+  SignatureFileSuffix TDXTCBSWHardeningNeeded TDXTCBUpToDate VendorAMDSEVSNP 
+  VendorIntelTDX
+  var       5  BindingContextV1 BindingContextV2 ErrPolicyRefused ErrRefused 
+  ErrSetRefused
+  type     24  Acquirer Attested Binding BindingContext Claims Egress Evidence 
+  GuestPolicy Policy PolicyDigest Reason ReferenceValue ReferenceValueSet 
+  Refusal TCB TDPolicy TDXClaims TDXReferenceValue TDXTCBFloor TDXTCBStatus 
+  UnconstrainedValue Vendor Verification Verifier
+  func     13  Dispatch LoadPolicy LoadPolicyFile LoadReferenceValueSet 
+  LoadReferenceValueSetFile MarshalPolicy MarshalReferenceValueSet New 
+  PolicyDigestOf ReasonOf Refuse SignPolicy SignReferenceValueSet
+  method   18  CallerSuppliedBytes Detail Error Error Error Forwards Is 
+  LogString Present Reason Recognised String String Unconstrained Vendor Verify 
+  Verify Version
+  top-level exported (const+var+type+func) = 63
+
+================================================================================
+3. Go lines under attest/, test vs non-test
+   $ find . -name '*_test.go'   -type f | xargs wc -l | tail -1      # test
+   $ find . -name '*.go' ! -name '*_test.go' -type f | xargs wc -l | tail -1
+   and the same two with `-path ./tsm -prune -o ... -print` to exclude
+   attest/tsm/, plus attest/tsm/ on its own and the root package alone
+   (non-recursive: ls *.go).
+================================================================================
+  scope                                 test nontest   total
+  ---------------------------------- ------- ------- -------
+  attest/ (all, vendor-free)           10345   11969   22314
+  attest/ minus attest/tsm/             9307   11302   20609
+  attest/tsm/ only                      1038     667    1705
+  root package attest (no subdirs)      4662    2947    7609
+
+  file counts: 24 test files, 33 non-test files (all of attest/)
+
+================================================================================
+4. Tests
+   $ cd attest && /usr/local/go/bin/go test -count=1 ./...
+   -> exit 0; full output in ../go-test.txt. 6 packages with tests all ok,
+   7 packages report [no test files]. Nothing needed sudo or hardware.
+================================================================================

@@ -11,8 +11,12 @@
 # signed, and every peer has been told what to admit.
 #
 #   1. go test ./cmd/tunneld   the import-graph guard and the artifact guard:
-#                              no snpfake, no go-sev-guest/testing, no testing,
-#                              nothing dynamically linked (attest/README.md).
+#                              no attest/internal/snpfake, no
+#                              attest/internal/tdxfake, no
+#                              attest/internal/fixture, no
+#                              go-sev-guest/testing, no go-tdx-guest/testing,
+#                              no testing, nothing dynamically linked
+#                              (attest/README.md).
 #   2. CGO_ENABLED=0 go build  the binary the image embeds. Confirmed static
 #                              again here with file(1), because the guard runs
 #                              on a build of its own and this is the file that

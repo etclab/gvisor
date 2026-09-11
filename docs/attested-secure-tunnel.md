@@ -272,5 +272,8 @@ each with a control showing legitimate traffic still works.
    accept a set during rollout, and for how long?
 4. **Attested ≠ correct.** A genuinely measured image with a logic bug attests perfectly.
    Nothing here addresses that and it should not pretend to.
-5. **Second vendor.** Whether the `tsm/` seam holds is only proven by implementing a TDX
-   verifier behind it.
+5. **Second vendor.** *Resolved by ticket 17, and exercised on hardware by ticket 19.* The seam
+   held: `verify/tdx.go` sits behind it and nothing above it changed to admit a TDX peer, while
+   the acquirer needed three vendor-conditional corrections and no new interface. Two Google
+   Cloud TDX guests then admitted each other over it, and refused each other on a measurement and
+   on a policy digest (`docs/two-guests-on-tdx.md`).

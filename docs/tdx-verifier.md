@@ -176,12 +176,24 @@ shaped the code:
   re-provisioned; before a TCB recovery is honoured the reference value's evaluation-number
   floor must be raised.
 - **Intel's root** is the one embedded in the library unless `-tdx-root` says otherwise.
+- **Correction, 2026-09-10 (ticket 19): RTMR0 is a constant per machine *shape*, not per
+  provider.** Every value in the bullet above was recorded on a VM with exactly one disk. The
+  first ticket 19 guest carried its reference value set on a second disk, reported RTMR0
+  `c2fc12a5…850a` instead, and was refused by its own set for it; a probe that attached a second
+  disk to a running stock-image instance and rebooted then watched RTMR0 move from
+  `c0b8b19c…896d` to a third value, `a5e39b27…2b79`
+  (`docs/snp/evidence/ticket19/rtmr0/`). Three shapes, three values — and since two of them have
+  two disks each, the disk count is not what names the value. What is stable is the shape:
+  `c2fc12a5…850a` on every boot of ticket 19's guests. A verifier must pin the RTMR0 that the
+  shape it deploys reports, and an author who copies a value recorded on another shape writes a
+  set that refuses its own guests (`docs/two-guests-on-tdx.md`).
 
 ## What this does not establish
 
 - **That a live tunnel can be built on it.** The acquirer has two SEV-SNP-only shortcuts
   (`attest/tsm/tsm.go:370` loads an AMD chain unconditionally; `:388` returns no provider name
-  for any other vendor), left for ticket 19 as the ticket directs.
+  for any other vendor), left for ticket 19 as the ticket directs. Ticket 19 built the tunnel and
+  found a third shortcut beside them (`docs/two-guests-on-tdx.md`).
 - **The policy hash in user data** as this verifier saw it when it was written. Ticket 18 has since
   made the binding version 2 and added the per-entry `policy_digest`, and ticket 19 has moved the
   policy into its own signed document — both above the seam and without touching `verify/tdx.go`:

@@ -349,19 +349,32 @@ own four documents with the image's author key.
 
 - **Anything in a cloud.** Both guests are on this host, one chip, one certificate chain,
   exactly as in ticket 14 and with the same consequences: nothing here exercises two platforms
-  or a network between two hosts.
+  or a network between two hosts. *Ticket 19 resolves the cloud half:* the same arrangement of
+  two signed documents ran on six Google Cloud TDX guests over a VPC, with no host in the middle
+  that this project controls (`docs/two-guests-on-tdx.md`). Two hosts remains unexercised there
+  too.
 - **A TDX peer presenting a policy on real hardware.** The second vendor is unit tests over
   the fake TDX platform and the recorded quotes. No TDX guest has ever presented a policy
   digest, and the acquirer's two SEV-SNP-only shortcuts still live where ticket 17 left them.
+  *Resolved by ticket 19:* TDX guests presented policy digests on Google Cloud and were admitted
+  and refused on them, and the shortcuts are gone — there were three, not two.
 - **That the egress section does anything.** `unattested: false` is required, refused when
   permissive, and covered by the digest a peer checks — but no code stops a sandbox sending
   traffic anywhere. Until the section grows into a netfilter allow-list and something enforces
-  it, it is a statement the author signed and the verifier checked, not a control.
+  it, it is a statement the author signed and the verifier checked, not a control. *Ticket 19
+  makes it a control, in part:* the section is now what makes tunneld install a default-drop
+  netfilter rule set at boot, and thirty attempts at forbidden egress across six guests were
+  refused before they left. What the section still does not decide is which addresses are
+  excepted — those come from the unsigned peer table, because `forward_to` names measurements
+  and a measurement is not an address (`docs/two-guests-on-tdx.md`).
 - **That `forward_to` stops traffic at the network layer.** It stops this tunneld dialing a peer
   whose image its policy does not name, which is a refusal at the handshake and is tested in
   both the live run and the unit tests. It is not a filter: a sandbox with another way onto the
   network is not constrained by it, which is the same gap the egress section has.
 - **A policy that changes under a live tunnel.** No run here outlives the maximum age, so
   nothing shows a peer being re-verified against a policy that moved after it was admitted.
+  Ticket 19's scenario one does outlive it and is re-attested twice, and that changes nothing
+  about this bullet: both guests presented the same policy on every handshake, and a
+  re-attestation is not a policy change.
 - **Key custody.** The reference value author key is still the throwaway ticket 14's packaging
   script generated, and both guests' sets and both policies are signed with it.

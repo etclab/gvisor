@@ -73,11 +73,7 @@ func run(args []string) error {
 	if err != nil {
 		return err
 	}
-	// No check on -chain-dir here. Whether one is wanted depends on the vendor,
-	// which is the platform's to say: the acquirer probes the report interface
-	// and refuses at startup, naming ADR-0005, if it finds an SEV-SNP guest with
-	// nowhere to read a chain from.
-	acquirer, err := tsm.New(tsm.Options{ChainDir: *chainDir, ReportDir: *reportDir, RequestName: "acquire-evidence"})
+	acquirer, err := newAcquirer(*chainDir, *reportDir)
 	if err != nil {
 		if *chainDir == "" {
 			fs.Usage()
@@ -108,17 +104,44 @@ func run(args []string) error {
 		return err
 	}
 	observation, _ := acquirer.LastObservation()
+	printBundle(observation, ev, binding, callerSupplied, *chainDir)
 
+	if *out != "" {
+		if err := writeBundle(*out, observation, ev, binding, callerSupplied); err != nil {
+			return err
+		}
+	}
+
+	if *b64 {
+		dumpBundle(ev, spki)
+	}
+	return nil
+}
+
+// newAcquirer opens this platform's report interface.
+//
+// No check on chainDir here. Whether one is wanted depends on the vendor,
+// which is the platform's to say: the acquirer probes the report interface
+// and refuses at startup, naming ADR-0005, if it finds an SEV-SNP guest with
+// nowhere to read a chain from.
+func newAcquirer(chainDir, reportDir string) (*tsm.Acquirer, error) {
+	return tsm.New(tsm.Options{ChainDir: chainDir, ReportDir: reportDir, RequestName: "acquire-evidence"})
+}
+
+// printBundle says what was acquired, in the order a reader of a serial console
+// meets it: what the report interface observed, then the binding, then the
+// evidence and whatever roots it.
+func printBundle(observation tsm.Observation, ev attest.Evidence, binding attest.Binding, callerSupplied [attest.CallerSuppliedBytesSize]byte, chainDir string) {
 	fmt.Println(observation)
 	fmt.Printf("vendor              : %s\n", ev.Vendor)
-	fmt.Printf("public key (SPKI)   : %d bytes, %x\n", len(spki), spki)
+	fmt.Printf("public key (SPKI)   : %d bytes, %x\n", len(binding.PublicKey), binding.PublicKey)
 	fmt.Printf("binding context     : v%d (version byte 0x%02x), %x\n", binding.Context.Version(), binding.Context.Version(), binding.Context[:])
 	fmt.Printf("policy digest       : %s\n", binding.PolicyDigest)
 	fmt.Printf("caller-supplied     : %x\n", callerSupplied[:])
 	fmt.Printf("  = SHA-512(public key ‖ binding context ‖ policy digest), the whole 64-byte field (ADR-0002)\n")
 	fmt.Printf("evidence            : %d bytes\n", len(ev.Bytes))
 	if len(ev.Chain) > 0 {
-		fmt.Printf("certificate chain   : %d bytes, from %s (ADR-0005)\n", len(ev.Chain), *chainDir)
+		fmt.Printf("certificate chain   : %d bytes, from %s (ADR-0005)\n", len(ev.Chain), chainDir)
 	} else {
 		fmt.Printf("certificate chain   : none bundled; %s evidence carries the chain that roots it\n", ev.Vendor)
 	}
@@ -127,47 +150,53 @@ func run(args []string) error {
 	} else {
 		fmt.Printf("platform's own table: %d bytes — empty, as expected on this host\n", observation.CertificateTableBytes)
 	}
+}
 
-	if *out != "" {
-		files := []struct {
+// writeBundle puts the bundle on disk under dir, one file per part, and names
+// each file as it goes so that a run recorded on a console and a run recorded
+// on a disk say the same thing.
+func writeBundle(dir string, observation tsm.Observation, ev attest.Evidence, binding attest.Binding, callerSupplied [attest.CallerSuppliedBytesSize]byte) error {
+	files := []struct {
+		name string
+		data []byte
+	}{
+		{"evidence.bin", ev.Bytes},
+		{"public-key.der", binding.PublicKey},
+		{"caller-supplied.bin", callerSupplied[:]},
+		{"policy-digest.bin", append([]byte(nil), binding.PolicyDigest[:]...)},
+		{"observation.txt", []byte(observation.String() + "\n")},
+	}
+	// Only where there is one. An empty certificate-chain.bin beside a TDX
+	// quote would read as a chain that failed to load rather than as one
+	// that was never wanted.
+	if len(ev.Chain) > 0 {
+		files = append(files, struct {
 			name string
 			data []byte
-		}{
-			{"evidence.bin", ev.Bytes},
-			{"public-key.der", spki},
-			{"caller-supplied.bin", callerSupplied[:]},
-			{"policy-digest.bin", append([]byte(nil), binding.PolicyDigest[:]...)},
-			{"observation.txt", []byte(observation.String() + "\n")},
-		}
-		// Only where there is one. An empty certificate-chain.bin beside a TDX
-		// quote would read as a chain that failed to load rather than as one
-		// that was never wanted.
-		if len(ev.Chain) > 0 {
-			files = append(files, struct {
-				name string
-				data []byte
-			}{"certificate-chain.bin", ev.Chain})
-		}
-		if err := os.MkdirAll(*out, 0o755); err != nil {
-			return err
-		}
-		for _, f := range files {
-			path := filepath.Join(*out, f.name)
-			if err := os.WriteFile(path, f.data, 0o644); err != nil {
-				return fmt.Errorf("writing %s: %w", path, err)
-			}
-			fmt.Printf("wrote %s (%d bytes)\n", path, len(f.data))
-		}
+		}{"certificate-chain.bin", ev.Chain})
 	}
-
-	if *b64 {
-		dump("evidence.bin", ev.Bytes)
-		if len(ev.Chain) > 0 {
-			dump("certificate-chain.bin", ev.Chain)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	for _, f := range files {
+		path := filepath.Join(dir, f.name)
+		if err := os.WriteFile(path, f.data, 0o644); err != nil {
+			return fmt.Errorf("writing %s: %w", path, err)
 		}
-		dump("public-key.der", spki)
+		fmt.Printf("wrote %s (%d bytes)\n", path, len(f.data))
 	}
 	return nil
+}
+
+// dumpBundle prints the parts that cannot be recovered from a console any other
+// way. The chain goes out only where there is one, for the reason writeBundle
+// gives.
+func dumpBundle(ev attest.Evidence, spki []byte) {
+	dump("evidence.bin", ev.Bytes)
+	if len(ev.Chain) > 0 {
+		dump("certificate-chain.bin", ev.Chain)
+	}
+	dump("public-key.der", spki)
 }
 
 func dump(name string, data []byte) {

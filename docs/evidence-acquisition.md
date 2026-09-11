@@ -5,6 +5,8 @@ generated, and where the certificate chain that travels with it comes from. The 
 ADR-0002 and ADR-0005; vocabulary is `CONTEXT.md`. The code is `attest/tsm`, and the command that
 runs it in a guest is `attest/cmd/acquire-evidence`.
 
+*`attest/cmd/acquire-evidence` became `attest-tool acquire` in ticket 21; its last version is `git show 205fd2154:attest/cmd/acquire-evidence/main.go`.*
+
 This is the producer half of the vendor seam ticket 02 defined from the consumer side, and the
 first place in this project where evidence comes from silicon rather than from a test signer.
 

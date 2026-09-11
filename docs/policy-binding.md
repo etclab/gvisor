@@ -130,6 +130,8 @@ does not trust any single one of them: for every policy it authors it asserts th
 document as delivered, and equals the line the guest holding that policy printed at start. Those
 three agreeing is the operator's workflow closed end to end.
 
+*`attest/cmd/verify-evidence` became `attest-tool verify` in ticket 21; its last version is `git show 205fd2154:attest/cmd/verify-evidence/main.go`.*
+
 The memo is updated where it describes any of this: `report_data`, the reference value fields,
 the new policy section, the verification list, and open question 2 — "binding runsc's
 configuration to the evidence" — which these tickets answer rather than defer.

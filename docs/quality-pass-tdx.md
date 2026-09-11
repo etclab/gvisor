@@ -9,6 +9,8 @@ Every edited symbol was checked against `git HEAD` with `--edit-check` and reads
 byte-identical; `go test ./...` in `attest/` passes uncached. The measurements are under
 `docs/snp/evidence/ticket20/{before,after}/`.
 
+*`attest/cmd/verify-evidence` and `attest/cmd/acquire-evidence` became `attest-tool verify` and `attest-tool acquire` in ticket 21; their last versions are `git show 205fd2154:attest/cmd/verify-evidence/main.go` and `git show 205fd2154:attest/cmd/acquire-evidence/main.go`.*
+
 ## The numbers
 
 | `ripwire attest --quality-delta=92658f502..HEAD` | before | after |

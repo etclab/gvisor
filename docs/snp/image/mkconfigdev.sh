@@ -15,7 +15,8 @@
 #   peers.json                  the peer table
 #   certificate-chain.bin       the provisioned certificate chain as an AMD
 #                               certificate table, VCEK, ASK, ARK (ADR-0005;
-#                               written by attest/cmd/provision-chain, ticket 15)
+#                               written by attest/cmd/attest-tool provision,
+#                               ticket 15)
 #   certificate-chain.json      the chip identity and TCB the chain was
 #                               fetched for, so staleness is detectable
 #

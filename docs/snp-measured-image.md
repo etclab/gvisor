@@ -181,6 +181,8 @@ serial `attested-config`, mounted by the initrd at `/config` with `ro,noexec,nos
 | `certificate-chain.bin` | the provisioned certificate chain as an AMD certificate table (VCEK, ASK, ARK), written by `attest/cmd/provision-chain` | ticket 15 |
 | `certificate-chain.json` | chip identity and TCB the chain was fetched for, so staleness is detectable (ADR-0005) | ticket 15 |
 
+*`attest/cmd/provision-chain` became `attest-tool provision` in ticket 21; its last version is `git show 205fd2154:attest/cmd/provision-chain/main.go`.*
+
 And inside the measurement, the one trust root:
 
 | Path | Contents |

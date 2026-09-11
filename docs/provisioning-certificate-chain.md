@@ -28,6 +28,8 @@ Two files, written into the config device's directory by `provision-chain`:
 | `certificate-chain.bin` | VCEK, ASK and ARK in AMD's certificate table format — the same bytes `auxblob` would have carried. An acquirer puts these into `Evidence.Chain` verbatim. |
 | `certificate-chain.json` | Which chip and TCB the chain was fetched for, so that staleness is detectable rather than inferred from a failure. |
 
+*`attest/cmd/provision-chain` became `attest-tool provision` in ticket 21; its last version is `git show 205fd2154:attest/cmd/provision-chain/main.go`.*
+
 ```json
 {
   "format": "gvisor.dev/gvisor/attest/certificate-chain",

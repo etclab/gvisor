@@ -8,7 +8,7 @@
 # config device as Compute Engine images, creates the VM, watches the serial
 # console until tunneld exits or the deadline passes, takes the guest's own
 # quote off the console and judges it on this workstation with
-# attest/cmd/verify-evidence, and deletes the instance. Everything it created is
+# attest/cmd/attest-tool verify, and deletes the instance. Everything it created is
 # printed as rows for docs/snp/cloud/tdx/RESOURCES.md; the ledger is written by
 # a person, because a script that edited it would be claiming an instance was
 # gone before the delete returned.
@@ -262,7 +262,7 @@ if [ -s "$OUT/quote.bin" ] && [ -n "$KEYHEX" ]; then
   cp "$IMAGE_DIR/reference-values.json" "$IMAGE_DIR/reference-values.json.sig" "$IMAGE_DIR/policy.json" "$IMAGE_DIR/policy.json.sig" "$OUT/"
   AUTHOR_PUB=$(sed -n 's/^signed by author key: *\([0-9a-f]\{64\}\).*/\1/p' "$IMAGE_DIR/manifest.txt")
   printf '%s\n' "$AUTHOR_PUB" > "$OUT/author.pub"
-  (cd "$REPO/attest" && GOPROXY=off go run ./cmd/verify-evidence \
+  (cd "$REPO/attest" && GOPROXY=off go run ./cmd/attest-tool verify \
       -vendor intel-tdx \
       -evidence "$OUT/quote.bin" \
       -key "$OUT/public-key.der" \

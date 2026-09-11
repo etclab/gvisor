@@ -46,7 +46,7 @@
 #      reported measurement equals that variant's own prediction, which is what
 #      makes this a demonstration rather than a readback: the expectation was
 #      written down before the guest existed.
-#   5. Every guest's evidence is put to cmd/verify-evidence against the
+#   5. Every guest's evidence is put to cmd/attest-tool verify against the
 #      BASELINE's signed set, in an empty network namespace. The baseline is
 #      ACCEPTED. Every mutant is REFUSED, and the internal reason names the
 #      launch measurement.
@@ -318,7 +318,7 @@ bash "$IMAGE_SCRIPTS/mkconfigdev.sh" "$CONFIG_SRC" "$WORK/config.img" | sed 's/^
 CONFIG="$WORK/config.img"
 note "the same $CONFIG is attached to all $(echo $VARIANTS | wc -w) boots and to the baseline's"
 note "nothing in the guest reads reference-values.json: report-evidence acquires and prints,"
-note "and the verdict is taken outside the guest by cmd/verify-evidence."
+note "and the verdict is taken outside the guest by cmd/attest-tool verify."
 
 ########################################################################
 say "5. What dm-verity catches at runtime, and what only the measurement catches"
@@ -425,13 +425,13 @@ done
 ########################################################################
 say "7. Recover each bundle from its console and take a verdict on it"
 ########################################################################
-go -C "$REPO/attest" build -o "$WORK/verify-evidence" ./cmd/verify-evidence || exit 1
+go -C "$REPO/attest" build -o "$WORK/attest-tool" ./cmd/attest-tool || exit 1
 AUTHOR_PUB="$WORK/author.pub"
 openssl pkey -in "$AUTHOR_KEY" -pubout -outform DER | tail -c 32 | xxd -p | tr -d '\n' > "$AUTHOR_PUB"
 echo >> "$AUTHOR_PUB"
 
 # recover DIR — pull the base64 blocks report-evidence printed out of a console
-# log and write them back as a bundle cmd/verify-evidence can read.
+# log and write them back as a bundle cmd/attest-tool verify can read.
 recover() {
   local d="$1" b="$1/bundle" f
   rm -rf "$b"; mkdir -p "$b"
@@ -461,7 +461,7 @@ done
 cat > "$WORK/inside-netns.sh" <<'INNER'
 set -u
 WORK="$1"; shift
-V="$WORK/verify-evidence"
+V="$WORK/attest-tool verify"
 SET="$WORK/base/reference-values.json"
 echo "--- this shell's network ---"
 ip -o link show; ip -o addr show

@@ -224,6 +224,8 @@ correction, reported again and not applied, because the places that would have t
 ADR and three documents outside this ticket's territory — including the sentence in the refusal
 above, which tells an operator to expect "malformed evidence" at their peers.
 
+*`attest/cmd/verify-evidence` became `attest-tool verify` in ticket 21; its last version is `git show 205fd2154:attest/cmd/verify-evidence/main.go`.*
+
 **And no firmware was rolled over.** The TCB-change criterion is satisfied by *simulation*: the
 stale chain is a real one, fetched from AMD's key distribution service for this same chip at
 microcode 71 during ticket 05, one level below what the platform reports. A real PSP firmware

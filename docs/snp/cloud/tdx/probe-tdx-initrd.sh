@@ -384,18 +384,18 @@ echo
 
 echo "############ the acquirer, on Intel, with no chain directory ############"
 echo "built from $(git -C "$REPO" rev-parse HEAD)"
-( cd "$REPO/attest" && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GOPROXY=off go build -o "$OUT/acquire-evidence" ./cmd/acquire-evidence )
-sha256sum "$OUT/acquire-evidence"
-gcloud compute scp --zone "$ZONE" --quiet "$OUT/acquire-evidence" "$VM:/tmp/acquire-evidence" >/dev/null
+( cd "$REPO/attest" && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GOPROXY=off go build -o "$OUT/attest-tool" ./cmd/attest-tool )
+sha256sum "$OUT/attest-tool"
+gcloud compute scp --zone "$ZONE" --quiet "$OUT/attest-tool" "$VM:/tmp/attest-tool" >/dev/null
 ssh_vm 'set -u
-  chmod +x /tmp/acquire-evidence
-  sha256sum /tmp/acquire-evidence
+  chmod +x /tmp/attest-tool
+  sha256sum /tmp/attest-tool
   echo "=== no -chain-dir at all: a TDX quote carries the chain that roots it ==="
-  sudo /tmp/acquire-evidence -out /tmp/bundle ; echo "exit status: $?"
+  sudo /tmp/attest-tool acquire -out /tmp/bundle ; echo "exit status: $?"
   echo
   echo "=== and with a -chain-dir that holds nothing, which must be ignored rather than read ==="
   mkdir -p /tmp/nochain
-  sudo /tmp/acquire-evidence -chain-dir /tmp/nochain ; echo "exit status: $?"
+  sudo /tmp/attest-tool acquire -chain-dir /tmp/nochain ; echo "exit status: $?"
   echo
   echo "=== the bundle ==="
   sudo ls -l /tmp/bundle 2>&1
@@ -445,8 +445,8 @@ produced.
                       /sys/block/*/serial, udevadm for the boot disk, ip -d link,
                       ip addr, ip route, and the metadata server's answer --
                       the provider facts ticket 19's own initrd has to rely on
-  acquire-evidence    the binary that was uploaded, built from this worktree
-  acquire-evidence.txt attest/cmd/acquire-evidence run on the guest's real
+  attest-tool         the binary that was uploaded, built from this worktree
+  acquire-evidence.txt attest/cmd/attest-tool acquire run on the guest's real
                       configfs-tsm, twice: with no -chain-dir, and with one
                       that holds nothing and must be ignored
   acquire-evidence-bundle.tar  what it wrote: evidence.bin (the quote), the

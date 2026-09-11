@@ -18,7 +18,7 @@
 // image has no shell, no writable storage that outlives the guest and no
 // network, so the only way a bundle gets out of it is the serial console.
 //
-// It does what cmd/acquire-evidence does, with the flags fixed to what the
+// It does what cmd/attest-tool acquire does, with the flags fixed to what the
 // image provides — the certificate chain provisioned on the config device at
 // /config (ADR-0005), the kernel's report interface at its default path — and
 // then prints the bundle base64-encoded between marker lines so the harness on
@@ -27,12 +27,12 @@
 // It VERIFIES NOTHING. It does not read the reference value set, it does not
 // look at /etc/attested-tunnel/author.pub, and it has no opinion about the
 // measurement it is carrying. The verdict is taken outside the guest by
-// cmd/verify-evidence, which is the whole point: a guest that judged its own
+// cmd/attest-tool verify, which is the whole point: a guest that judged its own
 // evidence would be judging a measurement it could not have influenced anyway,
 // and would prove nothing.
 //
 // The private key is generated here and discarded when the guest powers off,
-// exactly as in cmd/acquire-evidence: it exists so the binding is over a real
+// exactly as in cmd/attest-tool acquire: it exists so the binding is over a real
 // key rather than a constant.
 //
 // The binding is ADR-0002's version 2, which covers a policy digest as well as

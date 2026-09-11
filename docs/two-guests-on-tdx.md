@@ -209,6 +209,8 @@ guest's own quote off its console against the set the other guest carried, with 
 guests' machinery trusted: four verdicts per scenario, each matching the corresponding console
 (`scenario-*/verify-evidence-*.txt`).
 
+*`attest/cmd/verify-evidence` became `attest-tool verify` in ticket 21; its last version is `git show 205fd2154:attest/cmd/verify-evidence/main.go`.*
+
 **Three of the six pairs launched were superseded**, and are in the ledger anyway
 (`RESOURCES.md`): two to harness faults that changed no evidence, and one to an authoring mistake
 worth naming, because it is how a scenario like this fails silently. Guest A's set had been

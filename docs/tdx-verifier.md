@@ -54,6 +54,8 @@ and refuses an unknown one as `ReasonUnsupportedVendor`. `Verification` did not 
 one verifier, and the dispatcher is one. `tunneld` and `verify-evidence` build the TDX verifier
 when `-tdx-collateral-dir` is given and dispatch both; without it a tunneld admits no TDX peer.
 
+*`attest/cmd/verify-evidence` became `attest-tool verify` in ticket 21; its last version is `git show 205fd2154:attest/cmd/verify-evidence/main.go`.*
+
 **Collateral on the config device** (`verify/tdxcollateral.go`, ADR-0007). A directory of raw
 HTTP bodies and raw response headers, exactly as `curl -D` writes them, with names fixed by what
 they answer for:

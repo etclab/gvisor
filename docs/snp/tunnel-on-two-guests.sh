@@ -687,7 +687,7 @@ scenario_stalechain() {
   mkdir -p "$work"
   echo
   echo "the peer's verdict, on ticket 05's captured evidence with the stale chain:"
-  (cd "$REPO/attest" && go run ./cmd/verify-evidence \
+  (cd "$REPO/attest" && go run ./cmd/attest-tool verify \
       -evidence "$STALE/evidence.bin" -chain "$STALE/certificate-chain-stale.bin" \
       -key "$STALE/public-key.der" -refvals "$STALE/reference-values.json" \
       -author "$STALE/author.pub" 2>&1 | sed 's/^/    | /' ) || true

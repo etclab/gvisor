@@ -12,15 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// provision-chain fetches the certificate chain for the platform that produced
-// an SEV-SNP attestation report, validates it, and writes it to the config
-// device's directory — or checks that a provisioned chain is still the one for
-// a platform's current report (ADR-0005).
-//
-//	provision-chain fetch -report REPORT.bin -out DIR
-//	provision-chain check -report REPORT.bin -dir DIR
-//
-// The procedure this is part of is docs/provisioning-certificate-chain.md.
 package main
 
 import (
@@ -34,27 +25,39 @@ import (
 	"gvisor.dev/gvisor/attest/provision"
 )
 
-func main() {
-	if len(os.Args) < 2 {
-		usage()
+// runProvision fetches the certificate chain for the platform that produced
+// an SEV-SNP attestation report, validates it, and writes it to the config
+// device's directory — or checks that a provisioned chain is still the one for
+// a platform's current report (ADR-0005).
+//
+//	attest-tool provision fetch -report REPORT.bin -out DIR
+//	attest-tool provision check -report REPORT.bin -dir DIR
+//
+// The procedure this is part of is docs/provisioning-certificate-chain.md.
+func runProvision(args []string) {
+	if len(args) < 1 {
+		provisionUsage()
 	}
 	var err error
-	switch os.Args[1] {
+	switch args[0] {
 	case "fetch":
-		err = fetch(os.Args[2:])
+		err = fetch(args[1:])
 	case "check":
-		err = check(os.Args[2:])
+		err = check(args[1:])
 	default:
-		usage()
+		provisionUsage()
 	}
 	if err != nil {
+		// The error prefix is the name this program had before ticket 21
+		// folded it into attest-tool, for the reason the other two keep
+		// theirs: the transcripts of ticket 15 were recorded against it.
 		fmt.Fprintln(os.Stderr, "provision-chain:", err)
 		os.Exit(1)
 	}
 }
 
-func usage() {
-	fmt.Fprintln(os.Stderr, "usage:\n  provision-chain fetch -report REPORT.bin -out DIR\n  provision-chain check -report REPORT.bin -dir DIR")
+func provisionUsage() {
+	fmt.Fprintln(os.Stderr, "usage:\n  attest-tool provision fetch -report REPORT.bin -out DIR\n  attest-tool provision check -report REPORT.bin -dir DIR")
 	os.Exit(2)
 }
 

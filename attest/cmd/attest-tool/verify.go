@@ -12,35 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// verify-evidence produces a verdict on one evidence bundle, outside the guest
-// that produced it (ticket 05).
-//
-//	verify-evidence -bundle DIR -refvals PATH -author PATH \
-//	                [-policy-digest HEX] [-binding-version 1|2]
-//
-// It is what a tunneld does when it meets a peer, with the tunnel left out:
-// load the reference value set the author signed, wire it to a verifier, and
-// ask for a verdict on the evidence and the key it claims to be bound to.
-//
-// Everything it does is composition. The set is loaded by
-// attest.LoadReferenceValueSetFile, the verdict is
-// attest.Verification.Verify's, and the SEV-SNP answers behind it are
-// attest/verify's; there is no verification, no parsing and no policy here.
-// What this adds is a place to stand outside the guest, an exit status, and
-// output an operator can read.
-//
-// It reaches no network, and there is no flag that would let it. The chain
-// comes out of the bundle, having been provisioned onto the config device
-// ahead of use (ADR-0005), and the vendor root is either a local file or the
-// AMD roots embedded in the verification library. Ticket 05's harness runs it
-// inside an empty network namespace to show that this is a property of the
-// code and not of the machine it happens to run on.
-//
-// Exit status: 0 accepted, 2 refused, 3 the reference value set was refused,
-// 1 anything else. A refusal is not an error in this program's sense — it is
-// the answer — so it is a status of its own.
-//
-// The procedure this is part of is docs/verification-on-hardware.md.
 package main
 
 import (
@@ -68,11 +39,40 @@ const (
 	exitSetRefused = 3
 )
 
-func main() {
-	os.Exit(run(os.Args[1:], os.Stdout))
-}
-
-func run(args []string, out *os.File) int {
+// runVerify produces a verdict on one evidence bundle, outside the guest that
+// produced it (ticket 05).
+//
+//	attest-tool verify -bundle DIR -refvals PATH -author PATH \
+//	                   [-policy-digest HEX] [-binding-version 1|2]
+//
+// It is what a tunneld does when it meets a peer, with the tunnel left out:
+// load the reference value set the author signed, wire it to a verifier, and
+// ask for a verdict on the evidence and the key it claims to be bound to.
+//
+// Everything it does is composition. The set is loaded by
+// attest.LoadReferenceValueSetFile, the verdict is
+// attest.Verification.Verify's, and the SEV-SNP answers behind it are
+// attest/verify's; there is no verification, no parsing and no policy here.
+// What this adds is a place to stand outside the guest, an exit status, and
+// output an operator can read.
+//
+// It reaches no network, and there is no flag that would let it. The chain
+// comes out of the bundle, having been provisioned onto the config device
+// ahead of use (ADR-0005), and the vendor root is either a local file or the
+// AMD roots embedded in the verification library. Ticket 05's harness runs it
+// inside an empty network namespace to show that this is a property of the
+// code and not of the machine it happens to run on.
+//
+// Exit status: 0 accepted, 2 refused, 3 the reference value set was refused,
+// 1 anything else. A refusal is not an error in this program's sense — it is
+// the answer — so it is a status of its own.
+//
+// The procedure this is part of is docs/verification-on-hardware.md.
+func runVerify(args []string, out *os.File) int {
+	// The flag set keeps the name the program had before ticket 21 folded it
+	// into attest-tool: it is what -h prints and what an error line is prefixed
+	// with, and the transcripts recorded against it are the evidence for tickets
+	// 05, 08 and 19.
 	fs := flag.NewFlagSet("verify-evidence", flag.ContinueOnError)
 	bundle := fs.String("bundle", "", "directory holding the bundle acquire-evidence wrote")
 	evidencePath := fs.String("evidence", "", "the evidence; default <bundle>/evidence.bin")
@@ -501,18 +501,11 @@ func (o options) bindingFor(publicKey []byte) (attest.Binding, error) {
 		}
 		return attest.Binding{PublicKey: publicKey, Context: attest.BindingContextV1}, nil
 	case 2:
-		binding := attest.Binding{PublicKey: publicKey, Context: attest.BindingContextV2}
-		if o.policyDigest != "" {
-			raw, err := hex.DecodeString(o.policyDigest)
-			if err != nil {
-				return attest.Binding{}, fmt.Errorf("-policy-digest is not hexadecimal: %v", err)
-			}
-			if len(raw) != len(binding.PolicyDigest) {
-				return attest.Binding{}, fmt.Errorf("-policy-digest is %d bytes; a policy digest is %d", len(raw), len(binding.PolicyDigest))
-			}
-			copy(binding.PolicyDigest[:], raw)
+		digest, err := parsePolicyDigest(o.policyDigest)
+		if err != nil {
+			return attest.Binding{}, err
 		}
-		return binding, nil
+		return attest.Binding{PublicKey: publicKey, Context: attest.BindingContextV2, PolicyDigest: digest}, nil
 	default:
 		return attest.Binding{}, fmt.Errorf("-binding-version %d: this command speaks 1 and 2", o.bindingVersion())
 	}

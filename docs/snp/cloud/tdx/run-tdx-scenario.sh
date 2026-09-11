@@ -7,7 +7,7 @@
 # boot disk from a custom image whose initrd is the whole guest, one config
 # device, and nothing else — brought up together, watched on the serial console
 # until each powers itself off, and then judged here: the quote each guest
-# printed is taken off its console and put through attest/cmd/verify-evidence on
+# printed is taken off its console and put through attest/cmd/attest-tool verify on
 # this workstation, twice, once against its own signed set and once against the
 # set its peer holds. The transcript ends in a PASS/FAIL count, in the shape
 # docs/snp/tunnel-on-two-guests.sh writes on the bench.
@@ -236,7 +236,7 @@ TOOLS="$(mktemp -d)"
 (cd "$REPO/docs/snp/image/emit-refvals" && GOPROXY=off go build -o "$TOOLS/emit-refvals" .)
 # Built rather than `go run`: `go run` exits 1 whatever the program under it
 # exits with, and this run turns on telling a refusal (2) from a failure (1).
-(cd "$REPO/attest" && GOPROXY=off go build -o "$TOOLS/verify-evidence" ./cmd/verify-evidence)
+(cd "$REPO/attest" && GOPROXY=off go build -o "$TOOLS/attest-tool" ./cmd/attest-tool)
 
 # ---- 1. the four documents -------------------------------------------------
 # A policy names measurements and no digests; a set names a measurement and a
@@ -611,7 +611,7 @@ verify_one() { # WHICH REFVALS POLICYDIGEST LABEL OUTFILE
     echo "no quote on this guest's console; nothing to verify" >> "$outfile"
     return 1
   fi
-  "$TOOLS/verify-evidence" \
+  "$TOOLS/attest-tool" verify \
       -vendor intel-tdx \
       -evidence "$OUT/quote-$which.bin" \
       -key "$OUT/public-key-$which.der" \

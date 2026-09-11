@@ -135,11 +135,11 @@ ssh_vm x 'set -e
 tail -2 "$OUT/go-install.txt"
 gcloud compute scp --zone "$ZONE" --quiet --recurse "$REPO/attest" "$VM:/tmp/attest" >/dev/null 2>&1 || true
 ssh_vm x 'cd /tmp/attest && export PATH=$PATH:/usr/local/go/bin && export GOFLAGS=-mod=mod &&
-  echo "=== building attest/cmd/acquire-evidence on the TDX guest ===" &&
-  go build -o /tmp/acquire-evidence ./cmd/acquire-evidence 2>&1 | tail -20 &&
+  echo "=== building attest/cmd/attest-tool on the TDX guest ===" &&
+  go build -o /tmp/attest-tool ./cmd/attest-tool 2>&1 | tail -20 &&
   echo "=== built; running it against a directory that holds no chain ===" &&
   mkdir -p /tmp/nochain &&
-  sudo /tmp/acquire-evidence -chain-dir /tmp/nochain ; echo "exit status: $?"' > "$OUT/acquire-evidence.txt" 2>&1 || true
+  sudo /tmp/attest-tool acquire -chain-dir /tmp/nochain ; echo "exit status: $?"' > "$OUT/acquire-evidence.txt" 2>&1 || true
 cat "$OUT/acquire-evidence.txt"
 echo
 

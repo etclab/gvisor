@@ -166,7 +166,7 @@ awk '/SELFCHECK EVIDENCE BEGIN/{f=1;next} /SELFCHECK EVIDENCE END/{f=0} f' conso
 and is judged on the workstation exactly as a peer would judge it:
 
 ```sh
-cd attest && GOPROXY=off go run ./cmd/verify-evidence -vendor intel-tdx \
+cd attest && GOPROXY=off go run ./cmd/attest-tool verify -vendor intel-tdx \
     -evidence quote.bin -key public-key.der -refvals reference-values.json \
     -author <author public key hex> -policy-digest <the guest's policy digest> \
     -tdx-collateral-dir ../docs/snp/evidence/tdx/collateral

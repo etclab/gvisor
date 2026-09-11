@@ -173,6 +173,8 @@ REFUSED
   a caller learns   : attest: verification failed
 ```
 
+*`attest/cmd/verify-evidence` and `attest/cmd/acquire-evidence` became `attest-tool verify` and `attest-tool acquire` in ticket 21; their last versions are `git show 205fd2154:attest/cmd/verify-evidence/main.go` and `git show 205fd2154:attest/cmd/acquire-evidence/main.go`.*
+
 **6. The control was taken again after every refusal**, and the unmodified image was still
 accepted. A refusal test that would also pass with the whole path broken is not evidence.
 

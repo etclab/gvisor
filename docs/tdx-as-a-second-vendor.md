@@ -72,6 +72,8 @@ a second vendor adds a case here and an implementation of attest.Verifier, and t
 
 That sentence is half right, and the half that is wrong is below.
 
+*`attest/cmd/verify-evidence` and `attest/cmd/acquire-evidence` became `attest-tool verify` and `attest-tool acquire` in ticket 21; their last versions are `git show 205fd2154:attest/cmd/verify-evidence/main.go` and `git show 205fd2154:attest/cmd/acquire-evidence/main.go`.*
+
 One difference matters. On AMD at this provider `auxblob` held 4,763 bytes of VCEK, ASK and ARK.
 On TDX **the attribute is absent entirely**, which is a different fact from "empty" and a
 different fact again from the one ADR-0005 rests on.

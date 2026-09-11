@@ -393,11 +393,9 @@ func pckCA(chain []*x509.Certificate) (string, error) {
 // Intel's root, is the collateral Intel signed, and is nothing in the chain
 // revoked.
 //
-// Every failure is [attest.ReasonChainNotRooted], and the errors are not
-// inspected to say more. go-tdx-guest wraps everything with %v, so the reason a
-// caller could recover by matching strings would be a reason that changes when
-// the library changes its wording — and authenticity in the widest sense is one
-// question anyway: is any of this real.
+// Every failure is [attest.ReasonChainNotRooted], by way of [refuseUnrooted],
+// which is where the argument for not inspecting the library's error is
+// written down.
 //
 // Intel's own UpToDate-only TCB gate also lives inside this call, which is the
 // behaviour [TDX] documents at length.
@@ -411,10 +409,7 @@ func (t *TDX) checkAuthentic(quote *tdxpb.QuoteV4, collateral *TDXCollateral, no
 		Now:              now,
 		TrustedRoots:     t.roots,
 	}
-	if err := tdxverify.TdxQuote(quote, opts); err != nil {
-		return attest.Refuse(attest.ReasonChainNotRooted, "%v", err)
-	}
-	return nil
+	return refuseUnrooted(tdxverify.TdxQuote(quote, opts))
 }
 
 // claimsOf reads the platform facts out of an authentic quote.

@@ -280,10 +280,7 @@ func (s *SNP) checkAuthentic(ctx context.Context, att *spb.Attestation) error {
 		DisableCertFetching: true,
 		Getter:              offlineGetter{},
 	}
-	if err := sevverify.SnpAttestationContext(ctx, att, opts); err != nil {
-		return attest.Refuse(attest.ReasonChainNotRooted, "%v", err)
-	}
-	return nil
+	return refuseUnrooted(sevverify.SnpAttestationContext(ctx, att, opts))
 }
 
 // claimsOf reads the platform facts out of an authentic report.

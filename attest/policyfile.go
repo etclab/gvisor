@@ -106,6 +106,52 @@ type PolicyDigest [sha256.Size]byte
 // operator copies out of a start log and into a peer's reference value set.
 func (d PolicyDigest) String() string { return hex.EncodeToString(d[:]) }
 
+// ParsePolicyDigest reads a policy digest back out of that form: the digits a
+// -policy-digest flag carries, and the digits a reference value set names a
+// peer's policy with.
+//
+// subject is what the digits were read out of, and it begins the refusal,
+// because whoever reads one is looking for the flag or the field they typed
+// wrong. A digest of any other width is refused rather than padded or
+// truncated: it would name a policy no peer can present, and a binding or an
+// allow-list entry that matches nothing while looking as though it works is
+// worse than one that does not load at all.
+//
+// It is here, rather than in each of the three commands that read the flag and
+// the loader that reads the field, because a parser that admitted a short
+// digest in one of them would admit a policy nobody wrote.
+func ParsePolicyDigest(subject, digits string) (PolicyDigest, error) {
+	digest, n, err := decodePolicyDigest(digits)
+	if err != nil {
+		return PolicyDigest{}, fmt.Errorf("%s is not hexadecimal: %v", subject, err)
+	}
+	if n != len(digest) {
+		return PolicyDigest{}, fmt.Errorf("%s is %d bytes; a policy digest is %d", subject, n, len(digest))
+	}
+	return digest, nil
+}
+
+// decodePolicyDigest is the decode and the width with nothing said about
+// either: err is the hex package's own complaint, n is how many bytes digits
+// that did decode came to, and digest is filled only at the width of a policy
+// digest.
+//
+// The wording is split off because one caller's reader is not an operator at a
+// terminal. The reference value set loader refuses a field in a file its
+// author is holding, and tells that author what a digest of the wrong width
+// would have admitted; it says that itself and decodes here.
+func decodePolicyDigest(digits string) (digest PolicyDigest, n int, err error) {
+	raw, err := hex.DecodeString(digits)
+	if err != nil {
+		return PolicyDigest{}, 0, err
+	}
+	if len(raw) != len(digest) {
+		return PolicyDigest{}, len(raw), nil
+	}
+	copy(digest[:], raw)
+	return digest, len(raw), nil
+}
+
 // PolicyDigestOf is the digest of a policy document.
 //
 // It is defined over the signed bytes rather than over the file's own bytes, so

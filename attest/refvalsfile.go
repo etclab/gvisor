@@ -908,15 +908,13 @@ func (w wireValue) policyDigest() (*PolicyDigest, error) {
 	if w.PolicyDigest == nil {
 		return nil, nil
 	}
-	raw, err := hex.DecodeString(*w.PolicyDigest)
+	digest, n, err := decodePolicyDigest(*w.PolicyDigest)
 	if err != nil {
 		return nil, fmt.Errorf("policy_digest is not hexadecimal: %v", err)
 	}
-	if len(raw) != sha256.Size {
-		return nil, fmt.Errorf("policy_digest is %d bytes, want %d; a digest of the wrong width names no policy any peer can present", len(raw), sha256.Size)
+	if n != sha256.Size {
+		return nil, fmt.Errorf("policy_digest is %d bytes, want %d; a digest of the wrong width names no policy any peer can present", n, sha256.Size)
 	}
-	var digest PolicyDigest
-	copy(digest[:], raw)
 	return &digest, nil
 }
 

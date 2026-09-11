@@ -20,7 +20,6 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"encoding/base64"
-	"encoding/hex"
 	"flag"
 	"fmt"
 	"os"
@@ -206,17 +205,8 @@ func dump(name string, data []byte) {
 // acquired without one is verifiable but not admissible, which is the honest
 // state for a tool that holds no set.
 func parsePolicyDigest(spec string) (attest.PolicyDigest, error) {
-	var digest attest.PolicyDigest
 	if spec == "" {
-		return digest, nil
+		return attest.PolicyDigest{}, nil
 	}
-	raw, err := hex.DecodeString(spec)
-	if err != nil {
-		return digest, fmt.Errorf("-policy-digest is not hexadecimal: %v", err)
-	}
-	if len(raw) != len(digest) {
-		return digest, fmt.Errorf("-policy-digest is %d bytes; a policy digest is %d", len(raw), len(digest))
-	}
-	copy(digest[:], raw)
-	return digest, nil
+	return attest.ParsePolicyDigest("-policy-digest", spec)
 }

@@ -477,7 +477,15 @@ func abbreviate(s string) string {
 	return s[:16] + "…"
 }
 
-func sortedKeys(m map[string]string) []string {
+// sortedKeys is the order every table in this command is printed in: its keys,
+// ascending, so that two runs of the same tunneld write the same lines.
+//
+// The value type is a parameter because what is being ordered is the keys, and
+// the peer table a start log prints and the table of peers a run saw are the
+// same map of names to something. The sort is written out rather than called
+// for: these tables are a handful of peers, and a command that reads three
+// files and dials them owes its reader no more than that.
+func sortedKeys[V any](m map[string]V) []string {
 	names := make([]string, 0, len(m))
 	for k := range m {
 		names = append(names, k)

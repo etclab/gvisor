@@ -238,15 +238,10 @@ func parsePolicyDigest(spec string) (*attest.PolicyDigest, error) {
 	if spec == "" {
 		return nil, nil
 	}
-	raw, err := hex.DecodeString(spec)
+	digest, err := attest.ParsePolicyDigest("-policy-digest", spec)
 	if err != nil {
-		return nil, fmt.Errorf("-policy-digest is not hexadecimal: %v", err)
+		return nil, err
 	}
-	var digest attest.PolicyDigest
-	if len(raw) != len(digest) {
-		return nil, fmt.Errorf("-policy-digest is %d bytes; a policy digest is %d", len(raw), len(digest))
-	}
-	copy(digest[:], raw)
 	return &digest, nil
 }
 

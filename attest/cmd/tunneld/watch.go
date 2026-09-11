@@ -138,7 +138,7 @@ func (w *watchedVerifier) report(logf func(string, ...any)) {
 	// by their chains, and told to be running the image somebody predicted by
 	// their measurement — and a reader checking any of those against another
 	// document cannot do it with sixteen characters.
-	for _, key := range sortedPeerKeys(w.peers) {
+	for _, key := range sortedKeys(w.peers) {
 		p := w.peers[key]
 		logf("PEER SEEN key=%s chain=%s measurement=%s times=%d", p.key, p.chain, p.measurement, p.times)
 	}
@@ -150,19 +150,6 @@ func digest(b []byte) string {
 	}
 	sum := sha256.Sum256(b)
 	return hex.EncodeToString(sum[:])
-}
-
-func sortedPeerKeys(m map[string]peerSeen) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	for i := 1; i < len(keys); i++ {
-		for j := i; j > 0 && keys[j] < keys[j-1]; j-- {
-			keys[j], keys[j-1] = keys[j-1], keys[j]
-		}
-	}
-	return keys
 }
 
 // platformLine is the vendor-specific tail of the PEER line: the fields an

@@ -135,9 +135,79 @@ type options struct {
 }
 
 func verdict(fs *flag.FlagSet, out *os.File, o options) (int, error) {
+	p, err := o.present(fs)
+	if err != nil {
+		return exitFailed, err
+	}
+
+	fmt.Fprintf(out, "evidence            : %s, %d bytes\n", p.evidencePath, len(p.evidence))
+	fmt.Fprintf(out, "vendor              : %s\n", o.vendor)
+	switch {
+	case o.vendor == attest.VendorIntelTDX:
+		fmt.Fprintf(out, "certificate chain   : carried inside the quote\n")
+	case o.withoutChain:
+		fmt.Fprintf(out, "certificate chain   : none presented (-without-chain)\n")
+	default:
+		fmt.Fprintf(out, "certificate chain   : %s, %d bytes (provisioned, ADR-0005)\n", p.chainPath, len(p.chain))
+	}
+	fmt.Fprintf(out, "public key (SPKI)   : %s, %d bytes, %x\n", p.keyPath, len(p.publicKey), p.publicKey)
+	printBinding(out, o, p.binding)
+	printTrustRoots(out, o, p)
+
+	// The trust root. A set that is missing, unsigned, or signed by another
+	// key is refused here and there is nothing to fall back to.
+	set, err := attest.LoadReferenceValueSetFile(o.refvals, p.authorKey)
+	if err != nil {
+		fmt.Fprintf(out, "reference value set : %s — REFUSED\n", o.refvals)
+		fmt.Fprintf(out, "\nSET REFUSED\n  %v\n", err)
+		return exitSetRefused, nil
+	}
+	printReferenceValues(out, o, p, set)
+
+	verifier, verification, err := o.verifierFor(p, set)
+	if err != nil {
+		return exitFailed, err
+	}
+	ev := attest.Evidence{Vendor: o.vendor, Bytes: p.evidence, Chain: p.chain}
+	var attested attest.Attested
+	if o.bindingVersion() == 1 {
+		attested, err = verifyPreV2(verifier, set, ev, p.binding)
+	} else {
+		attested, err = verification.Verify(context.Background(), ev, p.binding)
+	}
+	if err != nil {
+		printRefusal(out, err)
+		return exitRefused, nil
+	}
+	printAccepted(out, o, attested)
+	return exitAccepted, nil
+}
+
+// presented is what the flags resolved to: the paths a bundle was taken apart
+// into, the bytes behind them, and the trust material the verdict is reached
+// with. It exists so that reading the invocation and reporting it are two
+// steps rather than one long one.
+type presented struct {
+	evidencePath string
+	chainPath    string
+	keyPath      string
+	evidence     []byte
+	publicKey    []byte
+	chain        []byte
+	binding      attest.Binding
+	authorKey    ed25519.PublicKey
+	at           time.Time
+	rootPEM      []byte
+	tdxRootPEM   []byte
+}
+
+// bundlePaths resolves the three paths a verdict needs, letting an explicit
+// flag stand in for any of them, and refuses an invocation that has named
+// neither a bundle nor enough of its parts to do without one.
+func (o options) bundlePaths(fs *flag.FlagSet) (evidencePath, chainPath, keyPath string, err error) {
 	if o.refvals == "" || o.author == "" {
 		fs.Usage()
-		return exitFailed, errors.New("-refvals and -author are both required: a verifier with no reference value set admits nobody, and one that would take an unsigned set is not this design")
+		return "", "", "", errors.New("-refvals and -author are both required: a verifier with no reference value set admits nobody, and one that would take an unsigned set is not this design")
 	}
 	inBundle := func(explicit, name string) string {
 		if explicit != "" {
@@ -148,104 +218,164 @@ func verdict(fs *flag.FlagSet, out *os.File, o options) (int, error) {
 		}
 		return filepath.Join(o.bundle, name)
 	}
-	evidencePath := inBundle(o.evidencePath, "evidence.bin")
-	chainPath := inBundle(o.chainPath, "certificate-chain.bin")
-	keyPath := inBundle(o.keyPath, "public-key.der")
+	evidencePath = inBundle(o.evidencePath, "evidence.bin")
+	chainPath = inBundle(o.chainPath, "certificate-chain.bin")
+	keyPath = inBundle(o.keyPath, "public-key.der")
 	if evidencePath == "" || keyPath == "" {
 		fs.Usage()
-		return exitFailed, errors.New("no -bundle, and no -evidence and -key to stand in for one")
+		return "", "", "", errors.New("no -bundle, and no -evidence and -key to stand in for one")
 	}
+	return evidencePath, chainPath, keyPath, nil
+}
 
-	evidence, err := os.ReadFile(evidencePath)
-	if err != nil {
-		return exitFailed, fmt.Errorf("reading the evidence: %w", err)
-	}
-	publicKey, err := os.ReadFile(keyPath)
-	if err != nil {
-		return exitFailed, fmt.Errorf("reading the public key the evidence is bound to: %w", err)
-	}
+// checkVendor refuses a vendor tag this command does not verify, and the
+// SEV-SNP chain flags when the vendor is Intel's.
+func (o options) checkVendor() error {
 	switch o.vendor {
 	case attest.VendorAMDSEVSNP, attest.VendorIntelTDX:
 	default:
-		return exitFailed, fmt.Errorf("-vendor %q: this command verifies %q and %q", o.vendor, attest.VendorAMDSEVSNP, attest.VendorIntelTDX)
+		return fmt.Errorf("-vendor %q: this command verifies %q and %q", o.vendor, attest.VendorAMDSEVSNP, attest.VendorIntelTDX)
+	}
+	if o.vendor != attest.VendorIntelTDX {
+		return nil
+	}
+	// A TDX quote carries its own PCK certificate chain, so there is no
+	// separate chain file to present or to withhold. Saying so is better
+	// than silently ignoring a path the operator typed.
+	if o.chainPath != "" || o.withoutChain {
+		return errors.New("-chain and -without-chain are SEV-SNP's: an Intel TDX quote carries its certificate chain inside itself")
+	}
+	if o.tdxDir == "" {
+		return errors.New("-tdx-collateral-dir is required for Intel TDX evidence: the collateral is provisioned, never fetched (ADR-0005)")
+	}
+	return nil
+}
+
+// present reads the invocation: the paths, the evidence, the key it claims to
+// be bound to, the chain or the deliberate absence of one, and the trust
+// material behind it. The order is the order the operator learns about a bad
+// invocation in, so it is the order of the checks and the reads themselves.
+func (o options) present(fs *flag.FlagSet) (presented, error) {
+	var p presented
+	var err error
+	if p.evidencePath, p.chainPath, p.keyPath, err = o.bundlePaths(fs); err != nil {
+		return presented{}, err
+	}
+	if p.evidence, err = os.ReadFile(p.evidencePath); err != nil {
+		return presented{}, fmt.Errorf("reading the evidence: %w", err)
+	}
+	if p.publicKey, err = os.ReadFile(p.keyPath); err != nil {
+		return presented{}, fmt.Errorf("reading the public key the evidence is bound to: %w", err)
+	}
+	if err = o.checkVendor(); err != nil {
+		return presented{}, err
 	}
 	if o.vendor == attest.VendorIntelTDX {
-		// A TDX quote carries its own PCK certificate chain, so there is no
-		// separate chain file to present or to withhold. Saying so is better
-		// than silently ignoring a path the operator typed.
-		if o.chainPath != "" || o.withoutChain {
-			return exitFailed, errors.New("-chain and -without-chain are SEV-SNP's: an Intel TDX quote carries its certificate chain inside itself")
-		}
-		if o.tdxDir == "" {
-			return exitFailed, errors.New("-tdx-collateral-dir is required for Intel TDX evidence: the collateral is provisioned, never fetched (ADR-0005)")
-		}
-		chainPath = ""
+		p.chainPath = ""
 	}
 
-	var chain []byte
 	switch {
 	case o.vendor == attest.VendorIntelTDX:
-		// Nothing to load: see above.
+		// Nothing to load: see checkVendor.
 	case o.withoutChain:
 		// Deliberately none. The acquirer will not produce a bundle without
 		// one — provision.LoadFor refuses first — so this is how a peer that
 		// skipped that step is modelled.
-	case chainPath == "":
-		return exitFailed, errors.New("no certificate chain path, and -without-chain was not asked for")
+	case p.chainPath == "":
+		return presented{}, errors.New("no certificate chain path, and -without-chain was not asked for")
 	default:
-		if chain, err = os.ReadFile(chainPath); err != nil {
-			return exitFailed, fmt.Errorf("reading the provisioned certificate chain: %w", err)
+		if p.chain, err = os.ReadFile(p.chainPath); err != nil {
+			return presented{}, fmt.Errorf("reading the provisioned certificate chain: %w", err)
 		}
 	}
 
-	binding, err := o.bindingFor(publicKey)
-	if err != nil {
-		return exitFailed, err
+	if err = o.readTrust(&p); err != nil {
+		return presented{}, err
 	}
-	authorKey, err := readAuthorKey(o.author)
-	if err != nil {
-		return exitFailed, err
+	return p, nil
+}
+
+// readTrust fills in what the verdict is reached against rather than what is
+// being judged: the binding the bundle claims, the author key the set must be
+// signed by, the instant validity is judged at, and the two vendor roots when
+// a file stands in for the embedded ones.
+func (o options) readTrust(p *presented) error {
+	var err error
+	if p.binding, err = o.bindingFor(p.publicKey); err != nil {
+		return err
 	}
-	var at time.Time
+	if p.authorKey, err = readAuthorKey(o.author); err != nil {
+		return err
+	}
 	if o.now != "" {
-		if at, err = time.Parse(time.RFC3339, o.now); err != nil {
-			return exitFailed, fmt.Errorf("-now: %w", err)
+		if p.at, err = time.Parse(time.RFC3339, o.now); err != nil {
+			return fmt.Errorf("-now: %w", err)
 		}
 	}
-	var rootPEM []byte
 	if o.vendorRoot != "" {
-		if rootPEM, err = os.ReadFile(o.vendorRoot); err != nil {
-			return exitFailed, fmt.Errorf("reading the vendor root: %w", err)
+		if p.rootPEM, err = os.ReadFile(o.vendorRoot); err != nil {
+			return fmt.Errorf("reading the vendor root: %w", err)
 		}
 	}
-	var tdxRootPEM []byte
 	if o.tdxRoot != "" {
-		if tdxRootPEM, err = os.ReadFile(o.tdxRoot); err != nil {
-			return exitFailed, fmt.Errorf("reading the Intel root: %w", err)
+		if p.tdxRootPEM, err = os.ReadFile(o.tdxRoot); err != nil {
+			return fmt.Errorf("reading the Intel root: %w", err)
 		}
 	}
+	return nil
+}
 
-	fmt.Fprintf(out, "evidence            : %s, %d bytes\n", evidencePath, len(evidence))
-	fmt.Fprintf(out, "vendor              : %s\n", o.vendor)
-	switch {
-	case o.vendor == attest.VendorIntelTDX:
-		fmt.Fprintf(out, "certificate chain   : carried inside the quote\n")
-	case o.withoutChain:
-		fmt.Fprintf(out, "certificate chain   : none presented (-without-chain)\n")
-	default:
-		fmt.Fprintf(out, "certificate chain   : %s, %d bytes (provisioned, ADR-0005)\n", chainPath, len(chain))
+// verifierFor wires one verifier per configured vendor and hands back both the
+// dispatching verifier and the verification built over it, since a v1 bundle is
+// judged by the first and a v2 bundle by the second.
+func (o options) verifierFor(p presented, set attest.ReferenceValueSet) (attest.Verifier, *attest.Verification, error) {
+	snp, err := verify.New(verify.Options{VendorRootPEM: p.rootPEM, ProductLine: o.productLine, Now: p.at})
+	if err != nil {
+		return nil, nil, err
 	}
-	fmt.Fprintf(out, "public key (SPKI)   : %s, %d bytes, %x\n", keyPath, len(publicKey), publicKey)
+	verifiers := []attest.Verifier{snp}
+	if o.tdxDir != "" {
+		tdx, err := verify.NewTDX(verify.TDXOptions{CollateralDir: o.tdxDir, VendorRootPEM: p.tdxRootPEM, Now: p.at})
+		if err != nil {
+			return nil, nil, err
+		}
+		verifiers = append(verifiers, tdx)
+	}
+	// One verifier per vendor, routed by the evidence's own tag. Evidence from
+	// a vendor that was not configured is refused as unsupported rather than
+	// offered to whoever might parse it.
+	verifier, err := attest.Dispatch(verifiers...)
+	if err != nil {
+		return nil, nil, err
+	}
+	verification, err := attest.New(verifier, set)
+	if err != nil {
+		return nil, nil, err
+	}
+	return verifier, verification, nil
+}
+
+// printBinding reports the binding the bundle claims to be bound to, and with
+// it the one thing a v1 bundle has to be read differently for: it commits to no
+// policy, so there is no policy digest line to print and a note saying why
+// stands in its place.
+func printBinding(out *os.File, o options, binding attest.Binding) {
 	fmt.Fprintf(out, "binding context     : v%d, %x\n", o.bindingVersion(), binding.Context[:])
 	if o.bindingVersion() == 1 {
 		fmt.Fprintf(out, "                      a pre-v2 bundle: its report data covers the key and the context and no policy,\n")
 		fmt.Fprintf(out, "                      so it is judged by the vendor's verifier plus the v1 binding rather than by\n")
 		fmt.Fprintf(out, "                      attest.Verification, which admits v2 alone\n")
-	} else {
-		fmt.Fprintf(out, "policy digest       : %s\n", binding.PolicyDigest)
+		return
 	}
+	fmt.Fprintf(out, "policy digest       : %s\n", binding.PolicyDigest)
+}
+
+// printTrustRoots reports where the vendor's root of trust came from, in the
+// vocabulary of whichever vendor produced the evidence. Both vendors say the
+// same thing about the production path: no fetch, no file (ADR-0005).
+func printTrustRoots(out *os.File, o options, p presented) {
 	if o.vendor == attest.VendorAMDSEVSNP {
-		if rootPEM == nil {
+		if p.rootPEM == nil {
 			fmt.Fprintf(out, "vendor root         : the AMD roots embedded in the verification library — no fetch, no file\n")
 		} else {
 			fmt.Fprintf(out, "vendor root         : %s (%s)\n", o.vendorRoot, o.productLine)
@@ -253,22 +383,20 @@ func verdict(fs *flag.FlagSet, out *os.File, o options) (int, error) {
 	}
 	if o.vendor == attest.VendorIntelTDX {
 		fmt.Fprintf(out, "intel collateral    : %s (provisioned, ADR-0005)\n", o.tdxDir)
-		if tdxRootPEM == nil {
+		if p.tdxRootPEM == nil {
 			fmt.Fprintf(out, "intel root          : the Intel root embedded in the verification library — no fetch, no file\n")
 		} else {
 			fmt.Fprintf(out, "intel root          : %s\n", o.tdxRoot)
 		}
 	}
+}
 
-	// The trust root. A set that is missing, unsigned, or signed by another
-	// key is refused here and there is nothing to fall back to.
-	set, err := attest.LoadReferenceValueSetFile(o.refvals, authorKey)
-	if err != nil {
-		fmt.Fprintf(out, "reference value set : %s — REFUSED\n", o.refvals)
-		fmt.Fprintf(out, "\nSET REFUSED\n  %v\n", err)
-		return exitSetRefused, nil
-	}
-	fmt.Fprintf(out, "reference value set : %s, %d value(s), author %x\n", o.refvals, len(set.Values), []byte(authorKey))
+// printReferenceValues lists what the author signed, one block per value, in
+// the vocabulary of the vendor that value is about: an Intel value names
+// registers and a TCB status, an AMD one a launch measurement and a guest
+// policy. Nothing here is a judgement; it is what the judgement is made of.
+func printReferenceValues(out *os.File, o options, p presented, set attest.ReferenceValueSet) {
+	fmt.Fprintf(out, "reference value set : %s, %d value(s), author %x\n", o.refvals, len(set.Values), []byte(p.authorKey))
 	for i, rv := range set.Values {
 		if rv.Vendor == attest.VendorIntelTDX && rv.TDX != nil {
 			fmt.Fprintf(out, "  [%d] %s predicted RTMR2 %x\n", i, rv.Vendor, rv.TDX.PredictedRTMR2)
@@ -287,69 +415,32 @@ func verdict(fs *flag.FlagSet, out *os.File, o options) (int, error) {
 			rv.MinimumTCB.Bootloader, rv.MinimumTCB.TEE, rv.MinimumTCB.SNP, rv.MinimumTCB.Microcode)
 		fmt.Fprintf(out, "      guest policy       %s\n", policyString(rv.GuestPolicy))
 	}
+}
 
-	snp, err := verify.New(verify.Options{VendorRootPEM: rootPEM, ProductLine: o.productLine, Now: at})
-	if err != nil {
-		return exitFailed, err
+// printRefusal is the whole of a refused verdict: the reason a caller may
+// branch on, the line an operator is meant to read, and the error itself.
+func printRefusal(out *os.File, err error) {
+	var refusal *attest.Refusal
+	errors.As(err, &refusal)
+	fmt.Fprintf(out, "\nREFUSED\n")
+	fmt.Fprintf(out, "  reason            : %v\n", attest.ReasonOf(err))
+	if refusal != nil {
+		fmt.Fprintf(out, "  operator log      : %s\n", refusal.LogString())
 	}
-	verifiers := []attest.Verifier{snp}
-	if o.tdxDir != "" {
-		tdx, err := verify.NewTDX(verify.TDXOptions{CollateralDir: o.tdxDir, VendorRootPEM: tdxRootPEM, Now: at})
-		if err != nil {
-			return exitFailed, err
-		}
-		verifiers = append(verifiers, tdx)
-	}
-	// One verifier per vendor, routed by the evidence's own tag. Evidence from
-	// a vendor that was not configured is refused as unsupported rather than
-	// offered to whoever might parse it.
-	verifier, err := attest.Dispatch(verifiers...)
-	if err != nil {
-		return exitFailed, err
-	}
-	verification, err := attest.New(verifier, set)
-	if err != nil {
-		return exitFailed, err
-	}
+	fmt.Fprintf(out, "  a caller learns   : %v\n", err)
+}
 
-	ev := attest.Evidence{Vendor: o.vendor, Bytes: evidence, Chain: chain}
-	var attested attest.Attested
-	if o.bindingVersion() == 1 {
-		attested, err = verifyPreV2(verifier, set, ev, binding)
-	} else {
-		attested, err = verification.Verify(context.Background(), ev, binding)
-	}
-	if err != nil {
-		var refusal *attest.Refusal
-		errors.As(err, &refusal)
-		fmt.Fprintf(out, "\nREFUSED\n")
-		fmt.Fprintf(out, "  reason            : %v\n", attest.ReasonOf(err))
-		if refusal != nil {
-			fmt.Fprintf(out, "  operator log      : %s\n", refusal.LogString())
-		}
-		fmt.Fprintf(out, "  a caller learns   : %v\n", err)
-		return exitRefused, nil
-	}
-
+// printAccepted is an accepted verdict: the claims in the producing vendor's
+// own vocabulary, then the two things every vendor's evidence is held to — the
+// caller-supplied bytes the binding recomputes, and the reference value that
+// admitted it.
+func printAccepted(out *os.File, o options, attested attest.Attested) {
 	fmt.Fprintf(out, "\nACCEPTED\n")
 	fmt.Fprintf(out, "  vendor            : %s\n", attested.Vendor)
 	if td := attested.Claims.TDX; td != nil {
-		// Intel's fields, in Intel's vocabulary. RTMR2 is the launch
-		// measurement for this vendor — the register that covers grub, the
-		// kernel and the command line — and MRTD, RTMR0 and RTMR1 are the
-		// provider's, printed so that an operator can see what was matched
-		// against the observed constants.
-		fmt.Fprintf(out, "  RTMR2             : %x\n", td.RTMR2)
-		fmt.Fprintf(out, "  MRTD              : %x\n", td.MRTD)
-		fmt.Fprintf(out, "  RTMR0             : %x\n", td.RTMR0)
-		fmt.Fprintf(out, "  RTMR1             : %x\n", td.RTMR1)
-		fmt.Fprintf(out, "  TD attributes     : %x (debug=%t)\n", td.TDAttributes, td.TDAttributes[0]&0x01 != 0)
-		fmt.Fprintf(out, "  Intel TCB         : status=%s evaluation_data_number=%d fmspc=%s\n",
-			td.TCBStatus, td.TCBEvaluationDataNumber, td.FMSPC)
+		printTDXClaims(out, td)
 	} else {
-		fmt.Fprintf(out, "  launch measurement: %x\n", attested.Claims.LaunchMeasurement)
-		fmt.Fprintf(out, "  reported TCB      : bootloader=%d tee=%d snp=%d microcode=%d\n",
-			attested.Claims.TCB.Bootloader, attested.Claims.TCB.TEE, attested.Claims.TCB.SNP, attested.Claims.TCB.Microcode)
+		printSNPClaims(out, attested.Claims)
 	}
 	fmt.Fprintf(out, "  caller-supplied   : %x\n", attested.Claims.CallerSuppliedBytes[:])
 	if o.bindingVersion() == 1 {
@@ -362,7 +453,29 @@ func verdict(fs *flag.FlagSet, out *os.File, o options) (int, error) {
 	} else {
 		fmt.Fprintf(out, "  satisfied         : reference value with launch measurement %x\n", attested.Satisfied.LaunchMeasurement)
 	}
-	return exitAccepted, nil
+}
+
+// printTDXClaims reports Intel's fields, in Intel's vocabulary. RTMR2 is the
+// launch measurement for this vendor — the register that covers grub, the
+// kernel and the command line — and MRTD, RTMR0 and RTMR1 are the provider's,
+// printed so that an operator can see what was matched against the observed
+// constants.
+func printTDXClaims(out *os.File, td *attest.TDXClaims) {
+	fmt.Fprintf(out, "  RTMR2             : %x\n", td.RTMR2)
+	fmt.Fprintf(out, "  MRTD              : %x\n", td.MRTD)
+	fmt.Fprintf(out, "  RTMR0             : %x\n", td.RTMR0)
+	fmt.Fprintf(out, "  RTMR1             : %x\n", td.RTMR1)
+	fmt.Fprintf(out, "  TD attributes     : %x (debug=%t)\n", td.TDAttributes, td.TDAttributes[0]&0x01 != 0)
+	fmt.Fprintf(out, "  Intel TCB         : status=%s evaluation_data_number=%d fmspc=%s\n",
+		td.TCBStatus, td.TCBEvaluationDataNumber, td.FMSPC)
+}
+
+// printSNPClaims reports AMD's fields, in AMD's vocabulary: the launch
+// measurement the platform signed over, and the TCB it says it was at.
+func printSNPClaims(out *os.File, claims attest.Claims) {
+	fmt.Fprintf(out, "  launch measurement: %x\n", claims.LaunchMeasurement)
+	fmt.Fprintf(out, "  reported TCB      : bootloader=%d tee=%d snp=%d microcode=%d\n",
+		claims.TCB.Bootloader, claims.TCB.TEE, claims.TCB.SNP, claims.TCB.Microcode)
 }
 
 // bindingVersion is -binding-version, defaulted for a zero value so that a

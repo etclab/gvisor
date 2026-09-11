@@ -59,7 +59,7 @@ import (
 // checked, so a parser that drops a field, reorders a key or normalises a
 // number cannot produce bytes that verify while meaning something else. This is
 // enforced by the shape of the API rather than by discipline: [SignReferenceValueSet]
-// and [LoadReferenceValueSet] both take the document as bytes, and there is no
+// and loadReferenceValueSet both take the document as bytes, and there is no
 // path from a parsed set back to a signature check.
 //
 // # Every value names its vendor (version 2)
@@ -104,7 +104,7 @@ import (
 //
 // # Order of operations
 //
-// [LoadReferenceValueSet] verifies before it parses. Everything in the document
+// loadReferenceValueSet verifies before it parses. Everything in the document
 // — its structure, its nesting depth, its field names — reaches the JSON parser
 // only after the author's signature over those exact bytes has held, so a host
 // that substitutes a document cannot reach the parser at all. The only thing
@@ -132,12 +132,12 @@ import (
 // comment. Nothing inside the measured image calls them: a guest holds the
 // author's public key and never its private key.
 
-// ReferenceValueSetFormat is the value of a document's format field. It names
+// referenceValueSetFormat is the value of a document's format field. It names
 // what the document is, so that a loader pointed at some other JSON refuses it
 // rather than interpreting whichever fields it happens to recognise.
-const ReferenceValueSetFormat = "gvisor.dev/gvisor/attest/reference-value-set"
+const referenceValueSetFormat = "gvisor.dev/gvisor/attest/reference-value-set"
 
-// ReferenceValueSetVersion is the document version this package writes and the
+// referenceValueSetVersion is the document version this package writes and the
 // only one it reads. A document claiming any other version is refused rather
 // than read on a best-effort basis, for the reason ADR-0002 gives about the
 // binding context: a reader that skips what it does not understand admits a
@@ -149,7 +149,7 @@ const ReferenceValueSetFormat = "gvisor.dev/gvisor/attest/reference-value-set"
 // with a message saying what is wrong and what to do about it, because reading
 // any of them on a best-effort basis would be this loader deciding what an
 // author did not write down (ADR-0006, addendum).
-const ReferenceValueSetVersion = 4
+const referenceValueSetVersion = 4
 
 // SignatureFileSuffix is appended to a document's path to find its signature.
 // A set delivered on the config device is therefore two files —
@@ -218,8 +218,8 @@ func MarshalReferenceValueSet(set ReferenceValueSet) ([]byte, error) {
 		return nil, fmt.Errorf("attest: %w", err)
 	}
 	doc := wireDocument{
-		Format:  ReferenceValueSetFormat,
-		Version: ReferenceValueSetVersion,
+		Format:  referenceValueSetFormat,
+		Version: referenceValueSetVersion,
 	}
 	for i, rv := range set.Values {
 		// rv.vendor(), not rv.Vendor: an empty Vendor means SEV-SNP in memory,
@@ -286,7 +286,7 @@ func SignReferenceValueSet(document []byte, key ed25519.PrivateKey) ([]byte, err
 	return signDocument(setDocumentKind, document, key)
 }
 
-// LoadReferenceValueSet verifies a document against the reference value
+// loadReferenceValueSet verifies a document against the reference value
 // author's public key and, only if that holds, parses it.
 //
 // Every way this can fail is a refusal matching [ErrSetRefused], and there is
@@ -294,7 +294,7 @@ func SignReferenceValueSet(document []byte, key ed25519.PrivateKey) ([]byte, err
 // load a document without a signature, and no way to ask for the document's
 // contents when its signature did not hold: a caller cannot fall back to an
 // unsigned set because this package offers nothing to fall back to.
-func LoadReferenceValueSet(document, signature []byte, author ed25519.PublicKey) (ReferenceValueSet, error) {
+func loadReferenceValueSet(document, signature []byte, author ed25519.PublicKey) (ReferenceValueSet, error) {
 	if err := verifySignedDocument(document, signature, author, setDocumentKind); err != nil {
 		return ReferenceValueSet{}, err
 	}
@@ -314,7 +314,7 @@ func LoadReferenceValueSetFile(path string, author ed25519.PublicKey) (Reference
 	if err != nil {
 		return ReferenceValueSet{}, err
 	}
-	return LoadReferenceValueSet(document, signature, author)
+	return loadReferenceValueSet(document, signature, author)
 }
 
 // signedBytes is what the author's key actually signs over a reference value
@@ -494,19 +494,19 @@ func parseReferenceValueSetDocument(document []byte) (ReferenceValueSet, error) 
 	}
 
 	if doc.Format == nil {
-		return ReferenceValueSet{}, refuseSet("the document does not say what format it is; want %q", ReferenceValueSetFormat)
+		return ReferenceValueSet{}, refuseSet("the document does not say what format it is; want %q", referenceValueSetFormat)
 	}
-	if *doc.Format != ReferenceValueSetFormat {
-		return ReferenceValueSet{}, refuseSet("the document is in format %q, this loader reads %q", *doc.Format, ReferenceValueSetFormat)
+	if *doc.Format != referenceValueSetFormat {
+		return ReferenceValueSet{}, refuseSet("the document is in format %q, this loader reads %q", *doc.Format, referenceValueSetFormat)
 	}
 	if doc.Version == nil {
-		return ReferenceValueSet{}, refuseSet("the document does not say what version it is; want %d", ReferenceValueSetVersion)
+		return ReferenceValueSet{}, refuseSet("the document does not say what version it is; want %d", referenceValueSetVersion)
 	}
 	if err := refuseSupersededSetVersion(*doc.Version); err != nil {
 		return ReferenceValueSet{}, err
 	}
-	if *doc.Version != ReferenceValueSetVersion {
-		return ReferenceValueSet{}, refuseSet("the document is version %d, this loader reads version %d", *doc.Version, ReferenceValueSetVersion)
+	if *doc.Version != referenceValueSetVersion {
+		return ReferenceValueSet{}, refuseSet("the document is version %d, this loader reads version %d", *doc.Version, referenceValueSetVersion)
 	}
 	if doc.Egress != nil {
 		// Refused here, by name, rather than left to the strict decode's
@@ -518,7 +518,7 @@ func parseReferenceValueSetDocument(document []byte) (ReferenceValueSet, error) 
 				"egress section belongs to the sandbox's own signed policy and not to its guest list, "+
 				"because a set that was also a policy could not be pinned in both directions "+
 				"(docs/policy-binding.md); move it into policy.json and sign both again",
-			ReferenceValueSetVersion, ReferenceValueSetVersion)
+			referenceValueSetVersion, referenceValueSetVersion)
 	}
 
 	var set ReferenceValueSet
@@ -553,14 +553,14 @@ func refuseSupersededSetVersion(version int) error {
 			"the document is version 1 and this loader reads version %d: a version 1 reference value "+
 				"carries no vendor tag, so it does not say whose evidence it admits, and reading one as "+
 				"SEV-SNP would be this loader deciding what its author did not write down; "+
-				"re-emit the set with a vendor on every value and sign it again", ReferenceValueSetVersion)
+				"re-emit the set with a vendor on every value and sign it again", referenceValueSetVersion)
 	case 2:
 		return refuseSet(
 			"the document is version 2 and this loader reads version %d: no value in a version 2 "+
 				"document can name the policy a peer running that image must present, so every value "+
 				"in it admits any policy at all, which is weaker than an author writing one today "+
 				"means; re-emit the set at version %d and sign it again",
-			ReferenceValueSetVersion, ReferenceValueSetVersion)
+			referenceValueSetVersion, referenceValueSetVersion)
 	case 3:
 		return refuseSet(
 			"the document is version 3 and this loader reads version %d: a version 3 set carried an "+
@@ -568,7 +568,7 @@ func refuseSupersededSetVersion(version int) error {
 				"and a policy that names peers' policies cannot be pinned in both directions "+
 				"(docs/policy-binding.md); move the egress section into policy.json, sign that, and "+
 				"re-emit this set at version %d",
-			ReferenceValueSetVersion, ReferenceValueSetVersion)
+			referenceValueSetVersion, referenceValueSetVersion)
 	}
 	return nil
 }

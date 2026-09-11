@@ -55,10 +55,11 @@ import (
 	"gvisor.dev/gvisor/attest"
 )
 
-// documentFormat is the format string spelled out rather than taken from
-// [attest.ReferenceValueSetFormat]. It is a wire constant: a document already
-// signed and shipped does not change when a Go identifier is renamed, so the
-// test hardcodes what is on disk and fails if the constant drifts from it.
+// documentFormat is the format string spelled out rather than taken from the
+// package's own referenceValueSetFormat constant. It is a wire constant: a
+// document already signed and shipped does not change when a Go identifier is
+// renamed, so the test hardcodes what is on disk and fails if the constant
+// drifts from it.
 const documentFormat = "gvisor.dev/gvisor/attest/reference-value-set"
 
 // oneValueDocument is a reference value set as an author writes it: one image,

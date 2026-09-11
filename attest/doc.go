@@ -54,10 +54,10 @@
 // authored as a JSON document a human reads and reviews, signed by the
 // reference value author with a detached Ed25519 signature, and delivered from
 // outside the launch measurement — only the author's public key lives inside it
-// (ADR-0004). [LoadReferenceValueSet] and [LoadReferenceValueSetFile] verify
-// before they parse, and a set whose signature is absent, invalid, or by
-// another key is refused outright: there is no unsigned set to fall back to and
-// no way to tell a missing set from an unverifiable one.
+// (ADR-0004). [LoadReferenceValueSetFile] verifies before it parses, and a set
+// whose signature is absent, invalid, or by another key is refused outright:
+// there is no unsigned set to fall back to and no way to tell a missing set
+// from an unverifiable one.
 //
 // # What this package does not do
 //

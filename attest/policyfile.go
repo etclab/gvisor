@@ -68,17 +68,17 @@ import (
 // sandbox on the peers it dials. A peer learns a policy's contents by holding
 // the same document, not by being sent one.
 
-// PolicyFormat is the value of a policy document's format field. It names what
+// policyFormat is the value of a policy document's format field. It names what
 // the document is, so that a loader pointed at some other JSON — the reference
 // value set beside it, most obviously — refuses it rather than interpreting
 // whichever fields it happens to recognise.
-const PolicyFormat = "gvisor.dev/gvisor/attest/policy"
+const policyFormat = "gvisor.dev/gvisor/attest/policy"
 
-// PolicyVersion is the policy version this package writes and the only one it
+// policyVersion is the policy version this package writes and the only one it
 // reads. A document claiming any other version is refused rather than read on a
 // best-effort basis: a reader that skips what it does not understand enforces
 // the part of a policy that already existed and vouches for the whole of it.
-const PolicyVersion = 1
+const policyVersion = 1
 
 // policySignaturePrefix is prepended to a policy document before signing and
 // before verifying.
@@ -146,7 +146,7 @@ func refusePolicy(format string, args ...any) error {
 // `forward_to` itself; it never holds a peer's policy document, only the digest
 // of one.
 type Policy struct {
-	// Version is the document's version, which is [PolicyVersion] and nothing
+	// Version is the document's version, which is policyVersion and nothing
 	// else. It is kept rather than discarded after the check so that a loaded
 	// policy says which version it was written at.
 	Version int
@@ -169,7 +169,7 @@ type Policy struct {
 
 	// Digest is the digest of the document this policy was loaded from:
 	// SHA-256 over exactly the bytes the author's signature covers.
-	// [LoadPolicy] and [LoadPolicyFile] fill it in; a policy built in memory
+	// loadPolicy and [LoadPolicyFile] fill it in; a policy built in memory
 	// carries whatever its builder put here, which for a sandbox that is not
 	// presenting one is the zero digest.
 	Digest PolicyDigest
@@ -232,10 +232,10 @@ func (p Policy) Forwards(measurement []byte) bool {
 func MarshalPolicy(p Policy) ([]byte, error) {
 	version := p.Version
 	if version == 0 {
-		version = PolicyVersion
+		version = policyVersion
 	}
-	if version != PolicyVersion {
-		return nil, fmt.Errorf("attest: the policy is version %d; this package writes version %d", p.Version, PolicyVersion)
+	if version != policyVersion {
+		return nil, fmt.Errorf("attest: the policy is version %d; this package writes version %d", p.Version, policyVersion)
 	}
 	egress, err := egressSection(p.Egress)
 	if err != nil {
@@ -246,7 +246,7 @@ func MarshalPolicy(p Policy) ([]byte, error) {
 		return nil, err
 	}
 	out, err := json.MarshalIndent(wirePolicyFileOut{
-		Format:    PolicyFormat,
+		Format:    policyFormat,
 		Version:   version,
 		Egress:    egress,
 		ForwardTo: forward,
@@ -308,14 +308,14 @@ func SignPolicy(document []byte, key ed25519.PrivateKey) ([]byte, error) {
 	return signDocument(policyDocumentKind, document, key)
 }
 
-// LoadPolicy verifies a policy document against the reference value author's
+// loadPolicy verifies a policy document against the reference value author's
 // public key and, only if that holds, parses it.
 //
 // Every way this can fail is a refusal matching [ErrPolicyRefused], and there
 // is no other outcome and no other entry point. In particular there is no way
 // to load a document without a signature, and no way to ask for the document's
 // contents when its signature did not hold.
-func LoadPolicy(document, signature []byte, author ed25519.PublicKey) (Policy, error) {
+func loadPolicy(document, signature []byte, author ed25519.PublicKey) (Policy, error) {
 	if err := verifySignedDocument(document, signature, author, policyDocumentKind); err != nil {
 		return Policy{}, err
 	}
@@ -335,7 +335,7 @@ func LoadPolicyFile(path string, author ed25519.PublicKey) (Policy, error) {
 	if err != nil {
 		return Policy{}, err
 	}
-	return LoadPolicy(document, signature, author)
+	return loadPolicy(document, signature, author)
 }
 
 // policySignedBytes is what the author's key actually signs: the policy domain
@@ -417,16 +417,16 @@ func parsePolicyDocument(document []byte) (Policy, error) {
 		return Policy{}, refusePolicy("the document does not parse: %v", err)
 	}
 	if kind.Format == nil {
-		return Policy{}, refusePolicy("the document does not say what format it is; want %q", PolicyFormat)
+		return Policy{}, refusePolicy("the document does not say what format it is; want %q", policyFormat)
 	}
-	if *kind.Format == ReferenceValueSetFormat {
+	if *kind.Format == referenceValueSetFormat {
 		return Policy{}, refusePolicy(
 			"the document is a reference value set, not a policy; since ticket 19 they are two " +
 				"documents — reference-values.json says whom this sandbox admits, and policy.json " +
 				"says what it is")
 	}
-	if *kind.Format != PolicyFormat {
-		return Policy{}, refusePolicy("the document is in format %q, this loader reads %q", *kind.Format, PolicyFormat)
+	if *kind.Format != policyFormat {
+		return Policy{}, refusePolicy("the document is in format %q, this loader reads %q", *kind.Format, policyFormat)
 	}
 
 	dec := json.NewDecoder(bytes.NewReader(document))
@@ -440,14 +440,14 @@ func parsePolicyDocument(document []byte) (Policy, error) {
 	}
 
 	if doc.Version == nil {
-		return Policy{}, refusePolicy("the document does not say what version it is; want %d", PolicyVersion)
+		return Policy{}, refusePolicy("the document does not say what version it is; want %d", policyVersion)
 	}
-	if *doc.Version != PolicyVersion {
+	if *doc.Version != policyVersion {
 		return Policy{}, refusePolicy(
 			"the policy is version %d and this loader reads version %d; a policy read on a best-effort "+
 				"basis is one a peer's digest vouches for and this sandbox only half enforces, "+
 				"so re-emit it at version %d and sign it again",
-			*doc.Version, PolicyVersion, PolicyVersion)
+			*doc.Version, policyVersion, policyVersion)
 	}
 	egress, err := doc.Egress.egress()
 	if err != nil {

@@ -39,9 +39,10 @@ import (
 	"gvisor.dev/gvisor/attest"
 )
 
-// policyFormat is the format string spelled out rather than taken from
-// [attest.PolicyFormat], for the reason documentFormat is: a document already
-// signed and shipped does not change when a Go identifier is renamed.
+// policyFormat is the format string spelled out rather than taken from the
+// package's own policyFormat constant, for the reason documentFormat is: a
+// document already signed and shipped does not change when a Go identifier is
+// renamed.
 const policyFormat = "gvisor.dev/gvisor/attest/policy"
 
 // aPolicyDocument is a policy as an author writes it: unattested egress

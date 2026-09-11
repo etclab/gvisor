@@ -46,7 +46,7 @@ type ReferenceValue struct {
 	//
 	// For an SEV-SNP value it must not be empty. A reference value naming no
 	// measurement matches every authentic platform, so both [New] and
-	// [LoadReferenceValueSet] refuse a set containing one.
+	// loadReferenceValueSet refuse a set containing one.
 	//
 	// Its width is deliberately checked nowhere. How wide a launch measurement
 	// is belongs to the hardware vendor. A measurement of the wrong width

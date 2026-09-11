@@ -26,7 +26,7 @@ import (
 // closedPolicy is what every policy this design will load looks like: an egress
 // section at the version the loader reads, and unattested egress refused.
 func closedPolicy() attest.Policy {
-	return attest.Policy{Version: attest.PolicyVersion, Egress: attest.Egress{Version: 1, Unattested: false}}
+	return attest.Policy{Egress: attest.Egress{Version: 1, Unattested: false}}
 }
 
 // The rendering is the artefact a reader judges the guest by, so it is pinned

@@ -39,7 +39,7 @@ type Verification struct {
 // The set is checked by [ReferenceValueSet.validate] for the two ways it can be
 // wrong in the dangerous direction, and both are refused at startup rather than
 // at the first peer. A set read off the config device has already been checked
-// the same way by [LoadReferenceValueSet]; it is checked again here because a
+// the same way by loadReferenceValueSet; it is checked again here because a
 // set can also be built in memory, and a trust root is worth refusing twice.
 //
 // The width of a launch measurement is the vendor's business and is not checked

@@ -47,6 +47,7 @@ import (
 	"testing"
 
 	"gvisor.dev/gvisor/attest"
+	"gvisor.dev/gvisor/attest/internal/fixture"
 	"gvisor.dev/gvisor/attest/verify"
 )
 
@@ -196,7 +197,7 @@ func TestOnlyTheUnmodifiedImageSatisfiesTheSetSignedForIt(t *testing.T) {
 			attested, err := v.Verify(context.Background(), g.evidence, g.binding)
 			if variant.accepted {
 				if err != nil {
-					t.Fatalf("the guest booted from an image with %s was refused: %s", variant.changed, detail(err))
+					t.Fatalf("the guest booted from an image with %s was refused: %s", variant.changed, fixture.Detail(err))
 				}
 				if got := hex.EncodeToString(attested.Claims.LaunchMeasurement); got != g.predicted {
 					t.Errorf("accepted measurement %s is not the predicted %s", got, g.predicted)
@@ -275,9 +276,5 @@ func baselineReferenceValues(t *testing.T) attest.ReferenceValueSet {
 // mustAccept verifies and returns the launch measurement of the verdict.
 func mustAccept(t *testing.T, v *preV2, g bootedGuest) []byte {
 	t.Helper()
-	attested, err := v.Verify(context.Background(), g.evidence, g.binding)
-	if err != nil {
-		t.Fatalf("evidence from a live confidential guest was refused: %s", detail(err))
-	}
-	return attested.Claims.LaunchMeasurement
+	return fixture.MustAccept(t, v, g.evidence, g.binding).Claims.LaunchMeasurement
 }

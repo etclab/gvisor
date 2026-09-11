@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"gvisor.dev/gvisor/attest"
+	"gvisor.dev/gvisor/attest/internal/fixture"
 	"gvisor.dev/gvisor/attest/internal/snpfake"
 	"gvisor.dev/gvisor/attest/verify"
 )
@@ -29,7 +30,7 @@ import (
 // TestEvidenceSatisfyingAReferenceValueIsAccepted is the control the whole file
 // rests on. If this fails, no refusal below is evidence of anything.
 func TestEvidenceSatisfyingAReferenceValueIsAccepted(t *testing.T) {
-	f := newFixture(t, defaultConfig())
+	f := newGuest(t, defaultConfig())
 	v := verification(t, f, defaultSet())
 
 	attested := accepts(t, v, f)
@@ -58,11 +59,11 @@ func TestASetAdmitsEvidenceMatchingAnyOneOfItsValues(t *testing.T) {
 	}}
 
 	// A platform running the first image is admitted.
-	first := newFixture(t, withMeasurement(defaultConfig(), otherMeasurement))
+	first := newGuest(t, withMeasurement(defaultConfig(), otherMeasurement))
 	accepts(t, verification(t, first, set), first)
 
 	// So is a platform running the second, without either being redeployed.
-	second := newFixture(t, defaultConfig())
+	second := newGuest(t, defaultConfig())
 	attested := accepts(t, verification(t, second, set), second)
 	if !bytes.Equal(attested.Satisfied.LaunchMeasurement, theMeasurement) {
 		t.Errorf("admitted by the reference value for %x; want the one for %x",
@@ -75,7 +76,7 @@ func TestASetAdmitsEvidenceMatchingAnyOneOfItsValues(t *testing.T) {
 // impostor takes: a well-formed report, a complete chain, and a root nobody
 // should trust.
 func TestEvidenceNotChainingToTheVendorRootIsRefused(t *testing.T) {
-	f := newFixture(t, defaultConfig())
+	f := newGuest(t, defaultConfig())
 
 	// Control: the same evidence, verified against the root that did sign it.
 	accepts(t, verification(t, f, defaultSet()), f)
@@ -83,7 +84,7 @@ func TestEvidenceNotChainingToTheVendorRootIsRefused(t *testing.T) {
 	// An empty VendorRootPEM means the AMD root certificates embedded in
 	// go-sev-guest — the production configuration, which no fake platform can
 	// chain to.
-	amdRooted, err := verify.New(verify.Options{Now: whenChainsAreValid})
+	amdRooted, err := verify.New(verify.Options{Now: fixture.WhenChainsAreValid})
 	if err != nil {
 		t.Fatalf("verify.New: %v", err)
 	}
@@ -99,7 +100,7 @@ func TestEvidenceNotChainingToTheVendorRootIsRefused(t *testing.T) {
 // covers the bytes presented, so the evidence is not authentic — the same
 // question, and therefore the same reason, as a chain that does not root.
 func TestEvidenceWithAForgedMeasurementIsRefused(t *testing.T) {
-	f := newFixture(t, defaultConfig())
+	f := newGuest(t, defaultConfig())
 
 	// Control: unforged evidence from the same platform is accepted.
 	accepts(t, verification(t, f, defaultSet()), f)
@@ -108,7 +109,7 @@ func TestEvidenceWithAForgedMeasurementIsRefused(t *testing.T) {
 	// measurement onto its genuine report. The measurement it now claims is the
 	// one the reference value set names, so a refusal here cannot be a
 	// measurement mismatch in disguise.
-	impostor := newFixture(t, withMeasurement(defaultConfig(), otherMeasurement))
+	impostor := newGuest(t, withMeasurement(defaultConfig(), otherMeasurement))
 	forged, err := impostor.platform.AcquireForged(context.Background(),
 		impostor.binding.CallerSuppliedBytes(), theMeasurement)
 	if err != nil {
@@ -122,7 +123,7 @@ func TestEvidenceWithAForgedMeasurementIsRefused(t *testing.T) {
 // out. The platform is genuine and its evidence is authentic; it is simply
 // running something the reference value author did not authorise.
 func TestLaunchMeasurementAbsentFromTheSetIsRefused(t *testing.T) {
-	f := newFixture(t, defaultConfig())
+	f := newGuest(t, defaultConfig())
 
 	// Control: the set that names this image admits it.
 	accepts(t, verification(t, f, defaultSet()), f)
@@ -140,7 +141,7 @@ func TestLaunchMeasurementAbsentFromTheSetIsRefused(t *testing.T) {
 // firmware level out. The image is the authorised one and the policy is
 // permitted; only the platform's patch level is short.
 func TestPlatformBelowTheTCBFloorIsRefused(t *testing.T) {
-	f := newFixture(t, defaultConfig())
+	f := newGuest(t, defaultConfig())
 
 	// Control: the floor this platform meets.
 	accepts(t, verification(t, f, defaultSet()), f)
@@ -160,12 +161,12 @@ func TestPlatformBelowTheTCBFloorIsRefused(t *testing.T) {
 func TestGuestPolicyNotPermittedIsRefused(t *testing.T) {
 	// Control: a guest launched without debugging, against a reference value
 	// that does not permit it, is admitted.
-	ok := newFixture(t, defaultConfig())
+	ok := newGuest(t, defaultConfig())
 	accepts(t, verification(t, ok, defaultSet()), ok)
 
 	debugging := defaultConfig()
 	debugging.Policy = attest.GuestPolicy{AllowSMT: true, AllowDebug: true}
-	f := newFixture(t, debugging)
+	f := newGuest(t, debugging)
 	refuses(t, verification(t, f, defaultSet()), f.evidence, f.binding, attest.ReasonPolicyMismatch)
 }
 
@@ -176,7 +177,7 @@ func TestGuestPolicyNotPermittedIsRefused(t *testing.T) {
 // The verdict names the entry that admitted it, which is what an operator reads
 // when two entries name one image during a policy rollout.
 func TestAPeerPresentingAListedPolicyIsAccepted(t *testing.T) {
-	f := newFixture(t, defaultConfig())
+	f := newGuest(t, defaultConfig())
 
 	attested := accepts(t, verification(t, f, setListingPolicies(thePolicy)), f)
 	if attested.Satisfied.PolicyDigest == nil || *attested.Satisfied.PolicyDigest != thePolicy {
@@ -204,7 +205,7 @@ func TestAPeerPresentingAListedPolicyIsAccepted(t *testing.T) {
 // names the digest the peer presented, because the operator's next move is to
 // decide whether to add it to the set or to ask the peer what it is running.
 func TestAPeerPresentingAnUnlistedPolicyIsRefused(t *testing.T) {
-	f := newFixture(t, defaultConfig())
+	f := newGuest(t, defaultConfig())
 
 	// Control: the same peer against a set that lists its policy.
 	accepts(t, verification(t, f, setListingPolicies(thePolicy)), f)
@@ -240,7 +241,7 @@ func TestAnEntryWithNoPolicyDigestAdmitsAnyPolicy(t *testing.T) {
 		t.Fatal("the default set constrains a policy; this test is about one that does not")
 	}
 	for _, policy := range []attest.PolicyDigest{thePolicy, otherPolicy, {}} {
-		f := newFixturePresenting(t, defaultConfig(), policy)
+		f := newGuestPresenting(t, defaultConfig(), policy)
 		accepts(t, verification(t, f, unconstrained), f)
 	}
 
@@ -264,7 +265,7 @@ func TestAnEntryWithNoPolicyDigestAdmitsAnyPolicy(t *testing.T) {
 // refused a step earlier as a policy mismatch, and this test would pass while
 // proving nothing about the binding.
 func TestAPolicyDigestSwappedInFlightIsRefusedAsABindingMismatch(t *testing.T) {
-	f := newFixture(t, defaultConfig())
+	f := newGuest(t, defaultConfig())
 	v := verification(t, f, setListingPolicies(thePolicy, otherPolicy))
 
 	// Control: presented honestly, against that same set, it is admitted.
@@ -296,7 +297,7 @@ func setListingPolicies(digests ...attest.PolicyDigest) attest.ReferenceValueSet
 // TestNoEvidenceIsRefused is a non-confidential VM: it has nothing to say, and
 // it must be refused rather than treated as unknown.
 func TestNoEvidenceIsRefused(t *testing.T) {
-	f := newFixture(t, defaultConfig())
+	f := newGuest(t, defaultConfig())
 	v := verification(t, f, defaultSet())
 
 	accepts(t, v, f)
@@ -309,13 +310,13 @@ func TestNoEvidenceIsRefused(t *testing.T) {
 // alongside a different public key. Without this check an attacker who
 // intercepts one peer's evidence could bind it to a key it holds.
 func TestCallerSuppliedBytesNotMatchingThePresentedKeyIsRefused(t *testing.T) {
-	f := newFixture(t, defaultConfig())
+	f := newGuest(t, defaultConfig())
 	v := verification(t, f, defaultSet())
 
 	accepts(t, v, f)
 
 	// The same evidence, presented with someone else's key.
-	other := newFixture(t, defaultConfig())
+	other := newGuest(t, defaultConfig())
 	refuses(t, v, f.evidence, other.binding, attest.ReasonBindingMismatch)
 }
 
@@ -324,7 +325,7 @@ func TestCallerSuppliedBytesNotMatchingThePresentedKeyIsRefused(t *testing.T) {
 // binding something into its evidence that this verifier cannot see, and
 // admitting it would make the reserved field worth nothing.
 func TestUnrecognisedBindingContextIsRefused(t *testing.T) {
-	f := newFixture(t, defaultConfig())
+	f := newGuest(t, defaultConfig())
 	v := verification(t, f, defaultSet())
 
 	// Control: v2 is understood and admitted.
@@ -356,7 +357,7 @@ func TestUnrecognisedBindingContextIsRefused(t *testing.T) {
 // The evidence here is genuine and genuinely bound under v1, which is what a
 // peer running yesterday's tunneld actually presents.
 func TestAVersionOneBindingContextIsNoLongerAdmitted(t *testing.T) {
-	f := newFixture(t, defaultConfig())
+	f := newGuest(t, defaultConfig())
 	v := verification(t, f, defaultSet())
 
 	// Control: the same platform speaking v2 is admitted.
@@ -386,7 +387,7 @@ func TestAVersionOneBindingContextIsNoLongerAdmitted(t *testing.T) {
 // only the version byte were checked, a peer could smuggle a value past a
 // verifier that never looked at it.
 func TestReservedBytesOfTheBindingContextAreNotIgnored(t *testing.T) {
-	f := newFixture(t, defaultConfig())
+	f := newGuest(t, defaultConfig())
 	v := verification(t, f, defaultSet())
 
 	accepts(t, v, f)
@@ -405,11 +406,11 @@ func TestReservedBytesOfTheBindingContextAreNotIgnored(t *testing.T) {
 // asked for: an attacker who can provoke refusals cannot walk the reference
 // value set one field at a time, because every refusal says the same thing.
 func TestEveryRefusalLooksTheSameToACaller(t *testing.T) {
-	f := newFixture(t, defaultConfig())
+	f := newGuest(t, defaultConfig())
 	debugging := defaultConfig()
 	debugging.Policy = attest.GuestPolicy{AllowSMT: true, AllowDebug: true}
-	debugger := newFixture(t, debugging)
-	other := newFixture(t, defaultConfig())
+	debugger := newGuest(t, debugging)
+	other := newGuest(t, defaultConfig())
 
 	unknownContext := attest.BindingContext{}
 	unknownContext[0] = 9
@@ -417,7 +418,7 @@ func TestEveryRefusalLooksTheSameToACaller(t *testing.T) {
 	cases := []struct {
 		name     string
 		set      attest.ReferenceValueSet
-		fixture  *fixture
+		guest    *guest
 		evidence attest.Evidence
 		binding  attest.Binding
 		want     attest.Reason
@@ -433,7 +434,7 @@ func TestEveryRefusalLooksTheSameToACaller(t *testing.T) {
 	seen := map[attest.Reason]bool{}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			v := verification(t, tc.fixture, tc.set)
+			v := verification(t, tc.guest, tc.set)
 			refuses(t, v, tc.evidence, tc.binding, tc.want)
 			seen[tc.want] = true
 		})
@@ -451,8 +452,8 @@ func TestEveryRefusalLooksTheSameToACaller(t *testing.T) {
 // authentic platform matches it — and that one does not announce itself: every
 // handshake succeeds and nothing looks wrong. Both are refused at startup.
 func TestASetThatCannotMeanWhatItsAuthorIntendedIsRejectedAtConstruction(t *testing.T) {
-	f := newFixture(t, defaultConfig())
-	verifier := verifierTrusting(t, f.platform)
+	f := newGuest(t, defaultConfig())
+	verifier := fixture.VerifierTrusting(t, f.platform)
 
 	if _, err := attest.New(verifier, attest.ReferenceValueSet{}); err == nil {
 		t.Error("an empty reference value set was accepted; want an error at construction")

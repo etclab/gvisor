@@ -74,6 +74,7 @@ import (
 	"time"
 
 	"gvisor.dev/gvisor/attest"
+	"gvisor.dev/gvisor/attest/internal/fixture"
 	"gvisor.dev/gvisor/attest/internal/snpfake"
 	"gvisor.dev/gvisor/attest/ratls"
 	"gvisor.dev/gvisor/attest/tunnel"
@@ -101,7 +102,7 @@ func startOnVM(t *testing.T, sandbox string, vm *snpfake.Platform, admits attest
 	t.Helper()
 	n := &vmNode{
 		name:     sandbox,
-		verifier: &counting{Verifier: verifierFor(t, vm)},
+		verifier: &counting{Verifier: fixture.VerifierTrusting(t, vm)},
 		refusals: newRefusalRecorder(),
 	}
 	td, err := tunneld.New(context.Background(), tunneld.Config{
@@ -156,7 +157,7 @@ func startWatchingPeer(t *testing.T, image []byte, admits attest.ReferenceValueS
 	if err != nil {
 		t.Fatalf("building the watching peer's identity: %v", err)
 	}
-	verification, err := attest.New(verifierFor(t, p), admits)
+	verification, err := attest.New(fixture.VerifierTrusting(t, p), admits)
 	if err != nil {
 		t.Fatalf("building the watching peer's verification: %v", err)
 	}

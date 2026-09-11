@@ -33,7 +33,7 @@ import (
 // parser before anything else does, and the parser is not a place to be
 // optimistic.
 func TestEvidenceThatDoesNotParseIsRefused(t *testing.T) {
-	f := newFixture(t, defaultConfig())
+	f := newGuest(t, defaultConfig())
 	v := verification(t, f, defaultSet())
 
 	accepts(t, v, f)
@@ -50,7 +50,7 @@ func TestEvidenceThatDoesNotParseIsRefused(t *testing.T) {
 // the format of evidence whose vendor it does not know has turned itself into
 // an attack surface for no benefit.
 func TestEvidenceFromAnUnimplementedVendorIsRefused(t *testing.T) {
-	f := newFixture(t, defaultConfig())
+	f := newGuest(t, defaultConfig())
 	v := verification(t, f, defaultSet())
 
 	accepts(t, v, f)
@@ -66,7 +66,7 @@ func TestEvidenceFromAnUnimplementedVendorIsRefused(t *testing.T) {
 // check that attacker would be admitted as attested while presenting nothing to
 // be attested about.
 func TestEvidenceBoundToNoPublicKeyIsRefused(t *testing.T) {
-	f := newFixture(t, defaultConfig())
+	f := newGuest(t, defaultConfig())
 	v := verification(t, f, defaultSet())
 
 	accepts(t, v, f)
@@ -95,7 +95,7 @@ func TestEvidenceBoundToNoPublicKeyIsRefused(t *testing.T) {
 // network access rather than from the absent chain, and the reason alone would
 // not tell the difference.
 func TestAMissingCertificateChainFailsClosedRatherThanFetching(t *testing.T) {
-	f := newFixture(t, defaultConfig())
+	f := newGuest(t, defaultConfig())
 	v := verification(t, f, defaultSet())
 
 	// Control: the same evidence with its provisioned chain is accepted, which

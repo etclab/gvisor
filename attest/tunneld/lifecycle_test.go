@@ -55,6 +55,7 @@ import (
 	"github.com/quic-go/quic-go"
 
 	"gvisor.dev/gvisor/attest"
+	"gvisor.dev/gvisor/attest/internal/fixture"
 	"gvisor.dev/gvisor/attest/ratls"
 	"gvisor.dev/gvisor/attest/tunnel"
 	"gvisor.dev/gvisor/attest/tunneld"
@@ -91,7 +92,7 @@ type lifecycleNode struct {
 func startLifecycle(t *testing.T, sandbox string, image []byte, admits attest.ReferenceValueSet, peers tunneld.PeerTable, limits tunneld.Limits, addr string) *lifecycleNode {
 	t.Helper()
 	p := platform(t, image)
-	n := &lifecycleNode{name: sandbox, verifier: &counting{Verifier: verifierFor(t, p)}}
+	n := &lifecycleNode{name: sandbox, verifier: &counting{Verifier: fixture.VerifierTrusting(t, p)}}
 	if addr == "" {
 		addr = "127.0.0.1:0"
 	}
@@ -549,7 +550,7 @@ func earlyDial(t *testing.T, addr string, admits attest.ReferenceValueSet, sessi
 	if err != nil {
 		t.Fatalf("building the peer: %v", err)
 	}
-	verification, err := attest.New(verifierFor(t, p), admits)
+	verification, err := attest.New(fixture.VerifierTrusting(t, p), admits)
 	if err != nil {
 		t.Fatalf("building the peer's verification: %v", err)
 	}

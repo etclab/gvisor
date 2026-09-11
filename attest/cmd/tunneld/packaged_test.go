@@ -63,13 +63,14 @@ func TestPackagedBinaryIsStaticAndFreeOfTestSupport(t *testing.T) {
 		t.Fatalf("reading the built binary: %v", err)
 	}
 	for _, forbidden := range []string{
+		"gvisor.dev/gvisor/attest/internal/fixture",
 		"gvisor.dev/gvisor/attest/internal/snpfake",
 		"github.com/google/go-sev-guest/testing",
 		"gvisor.dev/gvisor/attest/internal/tdxfake",
 		"github.com/google/go-tdx-guest/testing",
 	} {
 		if bytes.Contains(raw, []byte(forbidden)) {
-			t.Errorf("the packaged tunneld carries %q; the fake platform must not be inside the launch measurement", forbidden)
+			t.Errorf("the packaged tunneld carries %q; no test support may be inside the launch measurement", forbidden)
 		}
 	}
 	// The check is only worth anything if it read a binary that has this

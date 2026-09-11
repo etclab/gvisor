@@ -43,6 +43,7 @@ import (
 	"testing"
 
 	"gvisor.dev/gvisor/attest"
+	"gvisor.dev/gvisor/attest/internal/fixture"
 	"gvisor.dev/gvisor/attest/verify"
 )
 
@@ -165,8 +166,8 @@ func reauthoredSet(t *testing.T, path string) attest.ReferenceValueSet {
 	if err != nil {
 		t.Fatalf("rendering the recorded set from %s: %v", path, err)
 	}
-	a := newAuthor(t)
-	loaded, err := attest.LoadReferenceValueSet(document, a.sign(t, string(document)), a.public)
+	a := fixture.NewAuthor(t)
+	loaded, err := attest.LoadReferenceValueSet(document, a.Sign(t, string(document)), a.Public)
 	if err != nil {
 		t.Fatalf("the re-authored set from %s was refused: %v", path, err)
 	}
@@ -246,11 +247,7 @@ func (p *preV2) Verify(ctx context.Context, ev attest.Evidence, binding attest.B
 // accept is the control, and the milestone: this evidence, this set, accepted.
 func (g liveGuest) accept(t *testing.T, v *preV2) attest.Attested {
 	t.Helper()
-	attested, err := v.Verify(context.Background(), g.evidence, g.binding)
-	if err != nil {
-		t.Fatalf("a live confidential guest's evidence was refused: %s", detail(err))
-	}
-	return attested
+	return fixture.MustAccept(t, v, g.evidence, g.binding)
 }
 
 // TestARealPlatformsEvidenceVerifiesAgainstAMDsRoot is milestone 1, replayed.
@@ -364,8 +361,8 @@ func TestARealPlatformsEvidenceWithoutItsProvisionedChainIsRefused(t *testing.T)
 	refuses(t, v, unprovisioned, g.binding, attest.ReasonChainNotRooted)
 
 	_, err := v.Verify(context.Background(), unprovisioned, g.binding)
-	if strings.Contains(detail(err), "refusing to fetch") {
-		t.Errorf("verification tried to fetch a certificate: %s", detail(err))
+	if strings.Contains(fixture.Detail(err), "refusing to fetch") {
+		t.Errorf("verification tried to fetch a certificate: %s", fixture.Detail(err))
 	}
 }
 
@@ -402,8 +399,8 @@ func TestARealPlatformsEvidenceWithAStaleProvisionedChainIsRefused(t *testing.T)
 	refuses(t, v, staled, g.binding, attest.ReasonChainNotRooted)
 
 	_, err = v.Verify(context.Background(), staled, g.binding)
-	if strings.Contains(detail(err), "refusing to fetch") {
-		t.Errorf("verification tried to fetch a certificate: %s", detail(err))
+	if strings.Contains(fixture.Detail(err), "refusing to fetch") {
+		t.Errorf("verification tried to fetch a certificate: %s", fixture.Detail(err))
 	}
 }
 

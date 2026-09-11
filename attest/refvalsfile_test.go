@@ -42,17 +42,16 @@ package attest_test
 import (
 	"bytes"
 	"crypto/ed25519"
-	"crypto/rand"
 	"encoding/hex"
 	"errors"
 	"io/fs"
-	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
 
 	"gvisor.dev/gvisor/attest"
+	"gvisor.dev/gvisor/attest/internal/fixture"
 )
 
 // documentFormat is the format string spelled out rather than taken from the
@@ -304,37 +303,10 @@ func withRegisters(template string) string {
 func theTDXDocument() string   { return withRegisters(tdxValueDocument) }
 func theMixedDocument() string { return withRegisters(documentFor(mixedDocument, theMeasurement)) }
 
-// an author is a reference value author: the key pair whose public half a
-// measured image carries and whose private half authorises a set.
-type author struct {
-	public  ed25519.PublicKey
-	private ed25519.PrivateKey
-}
-
-func newAuthor(t *testing.T) author {
-	t.Helper()
-	pub, priv, err := ed25519.GenerateKey(rand.Reader)
-	if err != nil {
-		t.Fatalf("generating a reference value author key: %v", err)
-	}
-	return author{public: pub, private: priv}
-}
-
-// sign authorises a document, returning the contents of the file that belongs
-// beside it.
-func (a author) sign(t *testing.T, document string) []byte {
-	t.Helper()
-	signature, err := attest.SignReferenceValueSet([]byte(document), a.private)
-	if err != nil {
-		t.Fatalf("signing a reference value set: %v", err)
-	}
-	return signature
-}
-
 // loads asserts that a document and signature load, and returns the set.
-func loads(t *testing.T, a author, document string) attest.ReferenceValueSet {
+func loads(t *testing.T, a fixture.Author, document string) attest.ReferenceValueSet {
 	t.Helper()
-	set, err := attest.LoadReferenceValueSet([]byte(document), a.sign(t, document), a.public)
+	set, err := attest.LoadReferenceValueSet([]byte(document), a.Sign(t, document), a.Public)
 	if err != nil {
 		t.Fatalf("a well-formed signed set was refused: %v", err)
 	}
@@ -360,7 +332,7 @@ func refusesToLoad(t *testing.T, document string, signature []byte, public ed255
 // admits wires a loaded set to a verifier that trusts f's platform and asserts
 // the platform is admitted. This is what makes a loaded set evidence of
 // anything: the file decides who gets in, so the test asks who gets in.
-func admits(t *testing.T, f *fixture, set attest.ReferenceValueSet) attest.Attested {
+func admits(t *testing.T, f *guest, set attest.ReferenceValueSet) attest.Attested {
 	t.Helper()
 	return accepts(t, verification(t, f, set), f)
 }
@@ -369,8 +341,8 @@ func admits(t *testing.T, f *fixture, set attest.ReferenceValueSet) attest.Attes
 // on: a set an author wrote, signed and delivered admits the platform it names,
 // with the TCB floor and guest policy it named intact on the far side.
 func TestASignedSetLoadsAndDrivesVerification(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 
 	set := loads(t, a, theDocument())
 	attested := admits(t, f, set)
@@ -396,8 +368,8 @@ func TestASignedSetLoadsAndDrivesVerification(t *testing.T) {
 // loader that read three of the four names and defaulted the fourth, would pass
 // the control and fail here.
 func TestEachNamedTCBComponentIsLoadBearing(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 
 	// Control: the floor as written admits the platform.
 	admits(t, f, loads(t, a, theDocument()))
@@ -427,18 +399,18 @@ func TestEachNamedTCBComponentIsLoadBearing(t *testing.T) {
 // The list is what makes that expressible. A format that allowed a bare single
 // value would have made the common case shorter and this case a special one.
 func TestASetHoldingSeveralValuesAdmitsEvidenceMatchingAnyOne(t *testing.T) {
-	a := newAuthor(t)
+	a := fixture.NewAuthor(t)
 	set := loads(t, a, documentFor(twoValueDocument, otherMeasurement, theMeasurement))
 
 	// The image that is running.
-	running := newFixture(t, withMeasurement(defaultConfig(), otherMeasurement))
+	running := newGuest(t, withMeasurement(defaultConfig(), otherMeasurement))
 	if got := admits(t, running, set); !bytes.Equal(got.Satisfied.LaunchMeasurement, otherMeasurement) {
 		t.Errorf("admitted by the reference value for %x; want the one for %x",
 			got.Satisfied.LaunchMeasurement, otherMeasurement)
 	}
 
 	// The image being deployed, from the same file, with neither redeployed.
-	deploying := newFixture(t, defaultConfig())
+	deploying := newGuest(t, defaultConfig())
 	if got := admits(t, deploying, set); !bytes.Equal(got.Satisfied.LaunchMeasurement, theMeasurement) {
 		t.Errorf("admitted by the reference value for %x; want the one for %x",
 			got.Satisfied.LaunchMeasurement, theMeasurement)
@@ -448,14 +420,14 @@ func TestASetHoldingSeveralValuesAdmitsEvidenceMatchingAnyOne(t *testing.T) {
 // TestASetWithAnInvalidSignatureIsRefused is the untrusted delivery channel
 // doing its worst to the signature.
 func TestASetWithAnInvalidSignatureIsRefused(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 	document := theDocument()
 
 	// Control: the signature as the author produced it.
 	admits(t, f, loads(t, a, document))
 
-	good := a.sign(t, document)
+	good := a.Sign(t, document)
 	for _, tc := range []struct {
 		name      string
 		signature []byte
@@ -463,10 +435,10 @@ func TestASetWithAnInvalidSignatureIsRefused(t *testing.T) {
 		{"one flipped byte", flipHexDigit(good)},
 		{"truncated", good[:len(good)/2]},
 		{"not hexadecimal", []byte("this is not a signature\n")},
-		{"someone else's signature", newAuthor(t).sign(t, document)},
+		{"someone else's signature", fixture.NewAuthor(t).Sign(t, document)},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			refusesToLoad(t, document, tc.signature, a.public)
+			refusesToLoad(t, document, tc.signature, a.Public)
 		})
 	}
 }
@@ -484,18 +456,18 @@ func TestASetWithAnInvalidSignatureIsRefused(t *testing.T) {
 // The test signs the document the naive way, with the same key, and requires
 // the loader to refuse it.
 func TestASignatureOverTheBareDocumentIsRefused(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 	document := theDocument()
 
 	// Control: the same key, the same document, signed the way this format says
 	// to sign it.
 	admits(t, f, loads(t, a, document))
 
-	bare := ed25519.Sign(a.private, []byte(document))
+	bare := ed25519.Sign(a.Private, []byte(document))
 	hexBare := make([]byte, hex.EncodedLen(len(bare)))
 	hex.Encode(hexBare, bare)
-	refusesToLoad(t, document, hexBare, a.public)
+	refusesToLoad(t, document, hexBare, a.Public)
 }
 
 // TestASetWithNoSignatureIsRefused is the case that must never be read as "this
@@ -503,8 +475,8 @@ func TestASignatureOverTheBareDocumentIsRefused(t *testing.T) {
 // offers no entry point that does not take a signature, and an empty one is a
 // refusal like any other.
 func TestASetWithNoSignatureIsRefused(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 	document := theDocument()
 
 	// Control.
@@ -519,7 +491,7 @@ func TestASetWithNoSignatureIsRefused(t *testing.T) {
 		{"a signature file holding only whitespace", []byte("\n  \n")},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			refusesToLoad(t, document, tc.signature, a.public)
+			refusesToLoad(t, document, tc.signature, a.Public)
 		})
 	}
 }
@@ -532,9 +504,9 @@ func TestASetWithNoSignatureIsRefused(t *testing.T) {
 // never authorised, so accepting it would be a real compromise and not a
 // bookkeeping error.
 func TestASetSignedByTheWrongKeyIsRefused(t *testing.T) {
-	a := newAuthor(t)
-	host := newAuthor(t)
-	f := newFixture(t, withMeasurement(defaultConfig(), otherMeasurement))
+	a := fixture.NewAuthor(t)
+	host := fixture.NewAuthor(t)
+	f := newGuest(t, withMeasurement(defaultConfig(), otherMeasurement))
 
 	// Control: the author's own set does not admit this platform, so the host
 	// has something to gain.
@@ -543,7 +515,7 @@ func TestASetSignedByTheWrongKeyIsRefused(t *testing.T) {
 
 	// The host's set would admit it, and is signed — by the wrong key.
 	permissive := documentFor(oneValueDocument, otherMeasurement)
-	refusesToLoad(t, permissive, host.sign(t, permissive), a.public)
+	refusesToLoad(t, permissive, host.Sign(t, permissive), a.Public)
 
 	// Nor can a document nominate the key that should authorise it. There is no
 	// field for one, and a document that invents one is refused — here with the
@@ -552,18 +524,18 @@ func TestASetSignedByTheWrongKeyIsRefused(t *testing.T) {
 	// launch measurement and from nowhere else.
 	nominating := strings.Replace(permissive, `"version": 4,`,
 		`"version": 4,
-  "public_key": "`+hex.EncodeToString(host.public)+`",`, 1)
-	refusesToLoad(t, nominating, a.sign(t, nominating), a.public)
+  "public_key": "`+hex.EncodeToString(host.Public)+`",`, 1)
+	refusesToLoad(t, nominating, a.Sign(t, nominating), a.Public)
 }
 
 // TestADocumentModifiedAfterSigningIsRefused is the delivery channel doing its
 // worst to the document instead. The modification is a weakening a host would
 // actually want: permit the debugging it can then use to read the guest.
 func TestADocumentModifiedAfterSigningIsRefused(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 	document := theDocument()
-	signature := a.sign(t, document)
+	signature := a.Sign(t, document)
 
 	// Control: the document as signed.
 	admits(t, f, loads(t, a, document))
@@ -578,7 +550,7 @@ func TestADocumentModifiedAfterSigningIsRefused(t *testing.T) {
 			if tc.modified == document {
 				t.Fatal("the modification did not change the document; the fixture has drifted")
 			}
-			refusesToLoad(t, tc.modified, signature, a.public)
+			refusesToLoad(t, tc.modified, signature, a.Public)
 		})
 	}
 }
@@ -591,8 +563,8 @@ func TestADocumentModifiedAfterSigningIsRefused(t *testing.T) {
 // Every document here is signed afresh, so each refusal is the unknown field
 // and not a signature that no longer holds.
 func TestAnUnknownFieldIsRefused(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 	document := theDocument()
 
 	// Control: the same document without the extra field.
@@ -636,7 +608,7 @@ func TestAnUnknownFieldIsRefused(t *testing.T) {
 			if modified == document {
 				t.Fatalf("the document does not contain %q; the fixture has drifted", tc.from)
 			}
-			refusesToLoad(t, modified, a.sign(t, modified), a.public)
+			refusesToLoad(t, modified, a.Sign(t, modified), a.Public)
 		})
 	}
 }
@@ -649,8 +621,8 @@ func TestAnUnknownFieldIsRefused(t *testing.T) {
 // The author signed both occurrences, so the signature cannot help here. Only
 // refusing can.
 func TestAFieldNamedTwiceIsRefused(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 	document := theDocument()
 
 	// Control.
@@ -701,7 +673,7 @@ func TestAFieldNamedTwiceIsRefused(t *testing.T) {
 			if modified == document {
 				t.Fatalf("the document does not contain %q; the fixture has drifted", tc.from)
 			}
-			refusesToLoad(t, modified, a.sign(t, modified), a.public)
+			refusesToLoad(t, modified, a.Sign(t, modified), a.Public)
 		})
 	}
 }
@@ -710,8 +682,8 @@ func TestAFieldNamedTwiceIsRefused(t *testing.T) {
 // is not a comment. Ignoring it would let an author's file and a reviewer's
 // reading of it disagree about where the set ends.
 func TestBytesAfterTheDocumentAreRefused(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 	document := theDocument()
 
 	// Control.
@@ -724,7 +696,7 @@ func TestBytesAfterTheDocumentAreRefused(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			modified := document + tc.trailing
-			refusesToLoad(t, modified, a.sign(t, modified), a.public)
+			refusesToLoad(t, modified, a.Sign(t, modified), a.Public)
 		})
 	}
 }
@@ -735,8 +707,8 @@ func TestBytesAfterTheDocumentAreRefused(t *testing.T) {
 // enforces the part of it that already existed. Both are the failure ADR-0002
 // describes for the binding context, in a different file.
 func TestADocumentOfTheWrongFormatOrVersionIsRefused(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 	document := theDocument()
 
 	// Control.
@@ -753,7 +725,7 @@ func TestADocumentOfTheWrongFormatOrVersionIsRefused(t *testing.T) {
 			if modified == document {
 				t.Fatalf("the document does not contain %q; the fixture has drifted", tc.from)
 			}
-			refusesToLoad(t, modified, a.sign(t, modified), a.public)
+			refusesToLoad(t, modified, a.Sign(t, modified), a.Public)
 		})
 	}
 }
@@ -771,8 +743,8 @@ func TestADocumentOfTheWrongFormatOrVersionIsRefused(t *testing.T) {
 // an unknown field, and would be refused by a check other than the one under
 // test.
 func TestASetThatCannotMeanWhatItsAuthorIntendedDoesNotLoad(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 
 	const (
 		head   = `{"format": "` + documentFormat + `", "version": 4, "reference_values": [`
@@ -815,7 +787,7 @@ func TestASetThatCannotMeanWhatItsAuthorIntendedDoesNotLoad(t *testing.T) {
 				t.Fatal("the variant is the control document; the fixture has drifted")
 			}
 			document := documentFor(tc.document, theMeasurement)
-			refusesToLoad(t, document, a.sign(t, document), a.public)
+			refusesToLoad(t, document, a.Sign(t, document), a.Public)
 		})
 	}
 }
@@ -829,8 +801,8 @@ func TestASetThatCannotMeanWhatItsAuthorIntendedDoesNotLoad(t *testing.T) {
 // measurement of the wrong width matches no platform, so the set already fails
 // closed at verification rather than at load.
 func TestTheLoaderDoesNotJudgeALaunchMeasurementsWidth(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 
 	// Control: a measurement of this platform's width is admitted.
 	admits(t, f, loads(t, a, theDocument()))
@@ -846,16 +818,15 @@ func TestTheLoaderDoesNotJudgeALaunchMeasurementsWidth(t *testing.T) {
 // TestASetOnDiskLoadsFromItsDocumentAndSignature is the config device layout:
 // the document, and its signature in a second file beside it.
 func TestASetOnDiskLoadsFromItsDocumentAndSignature(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 	dir := t.TempDir()
 	path := filepath.Join(dir, "reference-values.json")
 	document := theDocument()
 
-	writeFile(t, path, []byte(document))
-	writeFile(t, path+attest.SignatureFileSuffix, a.sign(t, document))
+	fixture.WriteSigned(t, path, []byte(document), a.Sign(t, document))
 
-	set, err := attest.LoadReferenceValueSetFile(path, a.public)
+	set, err := attest.LoadReferenceValueSetFile(path, a.Public)
 	if err != nil {
 		t.Fatalf("loading a well-formed set from disk: %v", err)
 	}
@@ -870,16 +841,15 @@ func TestASetOnDiskLoadsFromItsDocumentAndSignature(t *testing.T) {
 // refusal, and the refusal does not carry io/fs.ErrNotExist for anyone to
 // branch on. The operator still reads which file was missing, in the text.
 func TestARefusedSetIsNeverTreatedAsAbsent(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 	dir := t.TempDir()
 	document := theDocument()
 
 	// Control: both files present, and the set admits its platform.
 	both := filepath.Join(dir, "both.json")
-	writeFile(t, both, []byte(document))
-	writeFile(t, both+attest.SignatureFileSuffix, a.sign(t, document))
-	set, err := attest.LoadReferenceValueSetFile(both, a.public)
+	fixture.WriteSigned(t, both, []byte(document), a.Sign(t, document))
+	set, err := attest.LoadReferenceValueSetFile(both, a.Public)
 	if err != nil {
 		t.Fatalf("loading a well-formed set from disk: %v", err)
 	}
@@ -888,14 +858,14 @@ func TestARefusedSetIsNeverTreatedAsAbsent(t *testing.T) {
 	// A document with no signature beside it: the shape a host takes when it
 	// strips the signature and hopes the set is used anyway.
 	unsigned := filepath.Join(dir, "unsigned.json")
-	writeFile(t, unsigned, []byte(document))
+	fixture.WriteFile(t, unsigned, []byte(document))
 
 	for _, tc := range []struct{ name, path string }{
 		{"no document and no signature", filepath.Join(dir, "absent.json")},
 		{"a document with no signature beside it", unsigned},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			set, err := attest.LoadReferenceValueSetFile(tc.path, a.public)
+			set, err := attest.LoadReferenceValueSetFile(tc.path, a.Public)
 			if err == nil {
 				t.Fatalf("the set loaded as %+v; want a refusal", set)
 			}
@@ -921,8 +891,8 @@ func TestARefusedSetIsNeverTreatedAsAbsent(t *testing.T) {
 // TCB floor written as four named components — and then put through the loader
 // and the verifier like any other set.
 func TestARenderedSetIsSignableAndLoadable(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 
 	document, err := attest.MarshalReferenceValueSet(defaultSet())
 	if err != nil {
@@ -938,7 +908,7 @@ func TestARenderedSetIsSignableAndLoadable(t *testing.T) {
 		}
 	}
 
-	set, err := attest.LoadReferenceValueSet(document, a.sign(t, string(document)), a.public)
+	set, err := attest.LoadReferenceValueSet(document, a.Sign(t, string(document)), a.Public)
 	if err != nil {
 		t.Fatalf("a rendered set was refused by the loader: %v", err)
 	}
@@ -956,8 +926,8 @@ func TestARenderedSetIsSignableAndLoadable(t *testing.T) {
 // whatever anyone else's did, and quietly stop enforcing anything its parser
 // dropped along the way.
 func TestTheSignatureCoversTheDeliveredBytesAndNotARendering(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 	document := documentFor(nonCanonicalDocument, theMeasurement)
 
 	// It is nothing like a rendering, and it loads and admits its platform.
@@ -975,7 +945,7 @@ func TestTheSignatureCoversTheDeliveredBytesAndNotARendering(t *testing.T) {
 	// The author's signature is over what the author wrote. If a rendering ever
 	// verifies against it, some canonicalisation has been introduced and the
 	// signature has stopped covering the delivered bytes.
-	if _, err := attest.LoadReferenceValueSet(rendered, a.sign(t, document), a.public); err == nil {
+	if _, err := attest.LoadReferenceValueSet(rendered, a.Sign(t, document), a.Public); err == nil {
 		t.Error("a rendering verified against the delivered document's signature; " +
 			"the signature must cover the delivered bytes and nothing else")
 	}
@@ -983,7 +953,7 @@ func TestTheSignatureCoversTheDeliveredBytesAndNotARendering(t *testing.T) {
 	// Signing what you ship works, which is the whole discipline the API
 	// enforces: both entry points take the document as bytes, and there is no
 	// path from a parsed set back to a signature check.
-	if _, err := attest.LoadReferenceValueSet(rendered, a.sign(t, string(rendered)), a.public); err != nil {
+	if _, err := attest.LoadReferenceValueSet(rendered, a.Sign(t, string(rendered)), a.Public); err != nil {
 		t.Errorf("a rendered set signed as rendered was refused: %v", err)
 	}
 }
@@ -992,10 +962,10 @@ func TestTheSignatureCoversTheDeliveredBytesAndNotARendering(t *testing.T) {
 // of the wrong length, so a mis-provisioned author key must be a refusal rather
 // than a crash — and must not be mistaken for a set that failed to verify.
 func TestAnAuthorKeyThatIsNotAnEd25519KeyIsRefused(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 	document := theDocument()
-	signature := a.sign(t, document)
+	signature := a.Sign(t, document)
 
 	// Control.
 	admits(t, f, loads(t, a, document))
@@ -1005,8 +975,8 @@ func TestAnAuthorKeyThatIsNotAnEd25519KeyIsRefused(t *testing.T) {
 		key  ed25519.PublicKey
 	}{
 		{"no key at all", nil},
-		{"a truncated key", a.public[:16]},
-		{"an over-long key", append(append(ed25519.PublicKey{}, a.public...), 0)},
+		{"a truncated key", a.Public[:16]},
+		{"an over-long key", append(append(ed25519.PublicKey{}, a.Public...), 0)},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			refusesToLoad(t, document, signature, tc.key)
@@ -1024,8 +994,8 @@ func TestAnAuthorKeyThatIsNotAnEd25519KeyIsRefused(t *testing.T) {
 // because a refused set is a guest that will not boot — the refusal says what
 // to do about it.
 func TestAVersionOneDocumentIsRefusedAsCarryingNoVendorTag(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 
 	// Control: the same values, re-emitted at the version this loader reads,
 	// still admit the platform. The refusal below is the version and the
@@ -1033,9 +1003,9 @@ func TestAVersionOneDocumentIsRefusedAsCarryingNoVendorTag(t *testing.T) {
 	admits(t, f, loads(t, a, theDocument()))
 
 	document := documentFor(versionOneDocument, theMeasurement)
-	refusesToLoad(t, document, a.sign(t, document), a.public)
+	refusesToLoad(t, document, a.Sign(t, document), a.Public)
 
-	_, err := attest.LoadReferenceValueSet([]byte(document), a.sign(t, document), a.public)
+	_, err := attest.LoadReferenceValueSet([]byte(document), a.Sign(t, document), a.Public)
 	for _, want := range []string{"version 1", "vendor", "re-emit"} {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("the refusal does not mention %q, so an operator reading it does not learn "+
@@ -1053,17 +1023,17 @@ func TestAVersionOneDocumentIsRefusedAsCarryingNoVendorTag(t *testing.T) {
 // the document loads, the peers connect, and nothing says the constraint the
 // author thought they had written is absent.
 func TestAVersionTwoDocumentIsRefusedAsNamingNoPolicy(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 
 	// Control: the same values at the version this loader reads still admit the
 	// platform. The refusal below is the version and nothing about these values.
 	admits(t, f, loads(t, a, theDocument()))
 
 	document := documentFor(versionTwoDocument, theMeasurement)
-	refusesToLoad(t, document, a.sign(t, document), a.public)
+	refusesToLoad(t, document, a.Sign(t, document), a.Public)
 
-	_, err := attest.LoadReferenceValueSet([]byte(document), a.sign(t, document), a.public)
+	_, err := attest.LoadReferenceValueSet([]byte(document), a.Sign(t, document), a.Public)
 	for _, want := range []string{"version 2", "policy", "sign it again"} {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("the refusal does not mention %q, so an operator reading it does not learn that the "+
@@ -1082,17 +1052,17 @@ func TestAVersionTwoDocumentIsRefusedAsNamingNoPolicy(t *testing.T) {
 // contain the digest of the other. The section moves out into policy.json, and
 // the refusal says so rather than saying "unknown version".
 func TestAVersionThreeDocumentIsRefusedAsBeingItsOwnPolicy(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 
 	// Control: the same values without an egress section still admit the
 	// platform.
 	admits(t, f, loads(t, a, theDocument()))
 
 	document := documentFor(versionThreeDocument, theMeasurement)
-	refusesToLoad(t, document, a.sign(t, document), a.public)
+	refusesToLoad(t, document, a.Sign(t, document), a.Public)
 
-	_, err := attest.LoadReferenceValueSet([]byte(document), a.sign(t, document), a.public)
+	_, err := attest.LoadReferenceValueSet([]byte(document), a.Sign(t, document), a.Public)
 	for _, want := range []string{"version 3", "egress", "policy.json", "re-emit"} {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("the refusal does not mention %q, so an operator reading it does not learn where the "+
@@ -1109,8 +1079,8 @@ func TestAVersionThreeDocumentIsRefusedAsBeingItsOwnPolicy(t *testing.T) {
 // the section went and that both documents have to be signed again — not that
 // this parser met a field it did not recognise.
 func TestASetStillCarryingAnEgressSectionIsRefused(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 	document := theDocument()
 
 	// Control.
@@ -1123,9 +1093,9 @@ func TestASetStillCarryingAnEgressSectionIsRefused(t *testing.T) {
 	if modified == document {
 		t.Fatal("the document has no version line; the fixture has drifted")
 	}
-	refusesToLoad(t, modified, a.sign(t, modified), a.public)
+	refusesToLoad(t, modified, a.Sign(t, modified), a.Public)
 
-	_, err := attest.LoadReferenceValueSet([]byte(modified), a.sign(t, modified), a.public)
+	_, err := attest.LoadReferenceValueSet([]byte(modified), a.Sign(t, modified), a.Public)
 	for _, want := range []string{"egress", "policy.json", "sign"} {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("the refusal does not mention %q: %v", want, err)
@@ -1142,7 +1112,7 @@ func TestASetStillCarryingAnEgressSectionIsRefused(t *testing.T) {
 // of the amd-sev-snp branch alone would leave the Intel half unconstrained
 // while looking correct.
 func TestAPolicyDigestOnAValueSurvivesTheDocument(t *testing.T) {
-	a := newAuthor(t)
+	a := fixture.NewAuthor(t)
 	document := strings.NewReplacer(
 		`"vendor": "amd-sev-snp",`, `"vendor": "amd-sev-snp",
       "policy_digest": "`+theListedPolicy.String()+`",`,
@@ -1204,8 +1174,8 @@ func TestAPolicyDigestOnAValueSurvivesTheDocument(t *testing.T) {
 // author who typed it will be reading a refusal about a peer rather than about
 // their file.
 func TestAPolicyDigestOfTheWrongShapeIsRefused(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 	document := theDocument()
 
 	// Control.
@@ -1224,7 +1194,7 @@ func TestAPolicyDigestOfTheWrongShapeIsRefused(t *testing.T) {
 			if modified == document {
 				t.Fatal("the document has no vendor line; the fixture has drifted")
 			}
-			refusesToLoad(t, modified, a.sign(t, modified), a.public)
+			refusesToLoad(t, modified, a.Sign(t, modified), a.Public)
 		})
 	}
 }
@@ -1244,8 +1214,8 @@ var (
 // peer, because a set nobody can enforce is a configuration mistake and not a
 // verdict.
 func TestAReferenceValueThatNamesNoVendorIsRefused(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 	document := theDocument()
 
 	// Control.
@@ -1262,7 +1232,7 @@ func TestAReferenceValueThatNamesNoVendorIsRefused(t *testing.T) {
 			if modified == document {
 				t.Fatalf("the document does not contain %q; the fixture has drifted", tc.from)
 			}
-			refusesToLoad(t, modified, a.sign(t, modified), a.public)
+			refusesToLoad(t, modified, a.Sign(t, modified), a.Public)
 		})
 	}
 }
@@ -1276,7 +1246,7 @@ func TestAReferenceValueThatNamesNoVendorIsRefused(t *testing.T) {
 // platform are in other packages; what is under test here is the document, and
 // whether these fields decide a verdict is that verifier's test to make.
 func TestATDXReferenceValueLoadsAndSurvivesARoundTrip(t *testing.T) {
-	a := newAuthor(t)
+	a := fixture.NewAuthor(t)
 	set := loads(t, a, theTDXDocument())
 
 	if len(set.Values) != 1 {
@@ -1336,7 +1306,7 @@ func TestATDXReferenceValueLoadsAndSurvivesARoundTrip(t *testing.T) {
 // the fail-closed answer. An absent field may make a value stricter than its
 // author intended, never weaker.
 func TestATDAttributesPolicyLeftOutPermitsNothing(t *testing.T) {
-	a := newAuthor(t)
+	a := fixture.NewAuthor(t)
 	document := strings.Replace(theTDXDocument(),
 		`      "td_attributes_policy": {"allow_debug": false},`+"\n", ``, 1)
 	if document == theTDXDocument() {
@@ -1360,7 +1330,7 @@ func TestATDAttributesPolicyLeftOutPermitsNothing(t *testing.T) {
 // evaluation number is a TCB info from before the recovery that named the
 // vulnerability.
 func TestEachRequiredTDXFieldIsLoadBearing(t *testing.T) {
-	a := newAuthor(t)
+	a := fixture.NewAuthor(t)
 
 	const (
 		head     = `{"format": "` + documentFormat + `", "version": 4, "reference_values": [{"vendor": "intel-tdx", `
@@ -1401,7 +1371,7 @@ func TestEachRequiredTDXFieldIsLoadBearing(t *testing.T) {
 				t.Fatal("the variant is the control document; the fixture has drifted")
 			}
 			document := withRegisters(tc.document)
-			refusesToLoad(t, document, a.sign(t, document), a.public)
+			refusesToLoad(t, document, a.Sign(t, document), a.Public)
 		})
 	}
 }
@@ -1412,7 +1382,7 @@ func TestEachRequiredTDXFieldIsLoadBearing(t *testing.T) {
 // is admitted on its registers, so a list that matches anything is the same
 // mistake as a reference value naming no launch measurement.
 func TestAnObservedRegisterListThatChecksNothingIsRefused(t *testing.T) {
-	a := newAuthor(t)
+	a := fixture.NewAuthor(t)
 
 	// Control.
 	loads(t, a, theTDXDocument())
@@ -1430,7 +1400,7 @@ func TestAnObservedRegisterListThatChecksNothingIsRefused(t *testing.T) {
 				t.Fatalf("the document does not contain %q; the fixture has drifted", tc.from)
 			}
 			document := withRegisters(modified)
-			refusesToLoad(t, document, a.sign(t, document), a.public)
+			refusesToLoad(t, document, a.Sign(t, document), a.Public)
 		})
 	}
 }
@@ -1441,7 +1411,7 @@ func TestAnObservedRegisterListThatChecksNothingIsRefused(t *testing.T) {
 // combinations — is below either floor, and a document naming one as its floor
 // is refused rather than treated as a floor of "whatever Intel says".
 func TestATCBStatusIntelDoesNotVouchForIsRefused(t *testing.T) {
-	a := newAuthor(t)
+	a := fixture.NewAuthor(t)
 
 	// Control: both admissible floors load.
 	for _, status := range []string{"UpToDate", "SWHardeningNeeded"} {
@@ -1454,7 +1424,7 @@ func TestATCBStatusIntelDoesNotVouchForIsRefused(t *testing.T) {
 		t.Run("a floor of "+status, func(t *testing.T) {
 			document := withRegisters(strings.Replace(tdxValueDocument, `"status": "UpToDate"`,
 				`"status": "`+status+`"`, 1))
-			refusesToLoad(t, document, a.sign(t, document), a.public)
+			refusesToLoad(t, document, a.Sign(t, document), a.Public)
 		})
 	}
 }
@@ -1468,8 +1438,8 @@ func TestATCBStatusIntelDoesNotVouchForIsRefused(t *testing.T) {
 // admit more than they wrote down. That is the same failure as ignoring an
 // unknown field, arrived at from a direction that looks like a valid document.
 func TestAValueCarryingTheOtherVendorsFieldsIsRefused(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 
 	// Controls: each vendor's own document, unmixed.
 	admits(t, f, loads(t, a, theDocument()))
@@ -1528,7 +1498,7 @@ func TestAValueCarryingTheOtherVendorsFieldsIsRefused(t *testing.T) {
 			if tc.document == theDocument() || tc.document == theTDXDocument() {
 				t.Fatal("the variant is a control document; the fixture has drifted")
 			}
-			refusesToLoad(t, tc.document, a.sign(t, tc.document), a.public)
+			refusesToLoad(t, tc.document, a.Sign(t, tc.document), a.Public)
 		})
 	}
 }
@@ -1539,8 +1509,8 @@ func TestAValueCarryingTheOtherVendorsFieldsIsRefused(t *testing.T) {
 // carried the vendor once at the top of the document, or a deployment that
 // shipped one file per vendor, would make the mixed group the special case.
 func TestOneFileHoldsBothVendors(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 
 	set := loads(t, a, theMixedDocument())
 	if len(set.Values) != 2 {
@@ -1563,7 +1533,7 @@ func TestOneFileHoldsBothVendors(t *testing.T) {
 	// It is a trust root a Verification will hold: New copies it and refuses at
 	// startup anything that could not mean what its author intended, and both
 	// vendors' values have to survive that.
-	if _, err := attest.New(verifierTrusting(t, f.platform), set); err != nil {
+	if _, err := attest.New(fixture.VerifierTrusting(t, f.platform), set); err != nil {
 		t.Fatalf("a mixed set was refused at construction: %v", err)
 	}
 
@@ -1588,11 +1558,4 @@ func flipHexDigit(signature []byte) []byte {
 		flipped[0] = '0'
 	}
 	return flipped
-}
-
-func writeFile(t *testing.T, path string, content []byte) {
-	t.Helper()
-	if err := os.WriteFile(path, content, 0o444); err != nil {
-		t.Fatalf("writing %s: %v", path, err)
-	}
 }

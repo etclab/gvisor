@@ -26,13 +26,12 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"gvisor.dev/gvisor/attest"
+	"gvisor.dev/gvisor/attest/internal/fixture"
 	"gvisor.dev/gvisor/attest/internal/snpfake"
 	"gvisor.dev/gvisor/attest/provision"
 	"gvisor.dev/gvisor/attest/tsm"
-	"gvisor.dev/gvisor/attest/verify"
 )
 
 // Every test here is offline and needs no confidential VM. The platform is
@@ -41,12 +40,8 @@ import (
 // guest on this host produced, and the certificate chain provisioned for it.
 
 var (
-	chainCreatedAt     = time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
-	whenChainsAreValid = chainCreatedAt.Add(30 * 24 * time.Hour)
-
 	platformTCB = attest.TCB{Bootloader: 9, TEE: 0, SNP: 23, Microcode: 72}
 	updatedTCB  = attest.TCB{Bootloader: 9, TEE: 0, SNP: 24, Microcode: 72}
-	chipID      = bytes.Repeat([]byte{0x5A}, 64)
 )
 
 // The captured artifacts: the report ticket 01 read out of a live confidential
@@ -91,16 +86,6 @@ func capturedCallerSupplied() [attest.CallerSuppliedBytesSize]byte {
 	return b
 }
 
-// platform builds a fake SEV-SNP platform at a TCB.
-func platform(t *testing.T, tcb attest.TCB) *snpfake.Platform {
-	t.Helper()
-	p, err := snpfake.New(snpfake.Config{TCB: tcb, ChipID: chipID, Policy: attest.GuestPolicy{AllowSMT: true}, Now: chainCreatedAt})
-	if err != nil {
-		t.Fatalf("snpfake.New: %v", err)
-	}
-	return p
-}
-
 // reportInterfaceOf is a fake report interface backed by a fake platform: what
 // is written to inblob is what the platform mints evidence over, and auxblob
 // is empty, as it is on real hardware here.
@@ -134,7 +119,7 @@ func provisionChainFor(t *testing.T, p *snpfake.Platform) string {
 		Getter:        p.KDS(),
 		VendorRootPEM: p.VendorRootPEM(),
 		ProductLine:   p.ProductLine(),
-		Now:           whenChainsAreValid,
+		Now:           fixture.WhenChainsAreValid,
 	})
 	if err != nil {
 		t.Fatalf("provision.Fetch: %v", err)
@@ -171,7 +156,7 @@ func bindingFor(t *testing.T) attest.Binding {
 // from the config device is bundled with it — and a verifier, the consumer
 // half of the same seam, accepts the pair against that binding.
 func TestEvidenceIsProducedOverTheBindingAndAcceptedByAVerifier(t *testing.T) {
-	p := platform(t, platformTCB)
+	p := fixture.SNPPlatformAtTCB(t, platformTCB)
 	iface := reportInterfaceOf(p)
 	a, err := tsm.NewOnFake(tsm.Options{ChainDir: provisionChainFor(t, p)}, iface)
 	if err != nil {
@@ -210,10 +195,7 @@ func TestEvidenceIsProducedOverTheBindingAndAcceptedByAVerifier(t *testing.T) {
 	}
 
 	// The consumer half of the seam, on the evidence this producer just made.
-	v, err := verify.New(verify.Options{VendorRootPEM: p.VendorRootPEM(), ProductLine: p.ProductLine(), Now: whenChainsAreValid})
-	if err != nil {
-		t.Fatal(err)
-	}
+	v := fixture.VerifierTrusting(t, p)
 	verification, err := attest.New(v, attest.ReferenceValueSet{Values: []attest.ReferenceValue{{
 		LaunchMeasurement: bytes.Repeat([]byte{0xA5}, 48),
 		MinimumTCB:        platformTCB,
@@ -248,7 +230,7 @@ func TestEvidenceIsProducedOverTheBindingAndAcceptedByAVerifier(t *testing.T) {
 // finding turned into behaviour: auxblob is empty here, no operator action
 // fills it, and an acquirer must read it, say so, and carry on (ADR-0005).
 func TestTheEmptyCertificateTableIsRecordedRatherThanRefused(t *testing.T) {
-	p := platform(t, platformTCB)
+	p := fixture.SNPPlatformAtTCB(t, platformTCB)
 	iface := reportInterfaceOf(p)
 	a, err := tsm.NewOnFake(tsm.Options{ChainDir: provisionChainFor(t, p)}, iface)
 	if err != nil {
@@ -296,7 +278,7 @@ func TestTheEmptyCertificateTableIsRecordedRatherThanRefused(t *testing.T) {
 // is configured to expect the provisioned one and because a platform-supplied
 // chain is exactly the dependency that cannot be relied on.
 func TestTheChainComesFromTheConfigDeviceEvenWhenThePlatformOffersOne(t *testing.T) {
-	p := platform(t, platformTCB)
+	p := fixture.SNPPlatformAtTCB(t, platformTCB)
 	iface := reportInterfaceOf(p)
 	iface.CertificateTable = bytes.Repeat([]byte{0xEE}, 128)
 	dir := provisionChainFor(t, p)
@@ -325,7 +307,7 @@ func TestTheChainComesFromTheConfigDeviceEvenWhenThePlatformOffersOne(t *testing
 // checked is that the refusal is a refusal — not an absence a caller could
 // step over — and that it points at provisioning.
 func TestAMissingChainFailsClosedAndNothingIsFetched(t *testing.T) {
-	p := platform(t, platformTCB)
+	p := fixture.SNPPlatformAtTCB(t, platformTCB)
 	a, err := tsm.NewOnFake(tsm.Options{ChainDir: t.TempDir()}, reportInterfaceOf(p))
 	if err != nil {
 		t.Fatal(err)
@@ -464,8 +446,8 @@ func TestATDXPlatformThatDoesNotEchoTheCallerSuppliedBytesIsRefused(t *testing.T
 // platform, which is the confusing direction; this is the last place the
 // failure can be pointed at re-provisioning.
 func TestAStaleChainFailsClosed(t *testing.T) {
-	dir := provisionChainFor(t, platform(t, platformTCB))
-	after := platform(t, updatedTCB)
+	dir := provisionChainFor(t, fixture.SNPPlatformAtTCB(t, platformTCB))
+	after := fixture.SNPPlatformAtTCB(t, updatedTCB)
 	a, err := tsm.NewOnFake(tsm.Options{ChainDir: dir}, reportInterfaceOf(after))
 	if err != nil {
 		t.Fatal(err)
@@ -484,7 +466,7 @@ func TestAStaleChainFailsClosed(t *testing.T) {
 // returns evidence over anything else has bound nothing, and saying so here
 // costs a peer an unexplained binding refusal.
 func TestAPlatformThatDoesNotEchoTheCallerSuppliedBytesIsRefused(t *testing.T) {
-	p := platform(t, platformTCB)
+	p := fixture.SNPPlatformAtTCB(t, platformTCB)
 	iface := reportInterfaceOf(p)
 	iface.Evidence = func([]byte) ([]byte, error) {
 		var other [attest.CallerSuppliedBytesSize]byte
@@ -510,7 +492,7 @@ func TestAPlatformThatDoesNotEchoTheCallerSuppliedBytesIsRefused(t *testing.T) {
 // saying it was not, and an acquirer that ignored it could return evidence
 // bound to somebody else's key.
 func TestARacingWriterIsRefused(t *testing.T) {
-	p := platform(t, platformTCB)
+	p := fixture.SNPPlatformAtTCB(t, platformTCB)
 	iface := reportInterfaceOf(p)
 	iface.RacingWriter = true
 	a, err := tsm.NewOnFake(tsm.Options{ChainDir: provisionChainFor(t, p)}, iface)
@@ -528,7 +510,7 @@ func TestARacingWriterIsRefused(t *testing.T) {
 // read. Guessing at the format of evidence whose vendor is unknown is how a
 // parser becomes an attack surface.
 func TestAnUnimplementedPlatformIsRefusedAtStartup(t *testing.T) {
-	iface := reportInterfaceOf(platform(t, platformTCB))
+	iface := reportInterfaceOf(fixture.SNPPlatformAtTCB(t, platformTCB))
 	// Arm CCA's guest driver, which the kernel exposes through the same
 	// interface and whose evidence nothing in this module can read.
 	iface.Provider = "cca_guest"
@@ -604,7 +586,7 @@ func TestTheCapturedGuestsChainIsRefusedForAnotherPlatform(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(capturedDir, provision.ChainFileName)); err != nil {
 		t.Skipf("no provisioned chain captured: %v", err)
 	}
-	a, err := tsm.NewOnFake(tsm.Options{ChainDir: capturedDir}, reportInterfaceOf(platform(t, platformTCB)))
+	a, err := tsm.NewOnFake(tsm.Options{ChainDir: capturedDir}, reportInterfaceOf(fixture.SNPPlatformAtTCB(t, platformTCB)))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -618,7 +600,7 @@ func TestTheCapturedGuestsChainIsRefusedForAnotherPlatform(t *testing.T) {
 // crashed process with this one's process identifier must not be reused, or
 // this acquisition would inherit whatever was written to its inblob.
 func TestARequestNameAlreadyTakenIsSteppedOver(t *testing.T) {
-	p := platform(t, platformTCB)
+	p := fixture.SNPPlatformAtTCB(t, platformTCB)
 	iface := reportInterfaceOf(p)
 	iface.Taken = map[string]bool{}
 	a, err := tsm.NewOnFake(tsm.Options{ChainDir: provisionChainFor(t, p)}, iface)
@@ -721,7 +703,7 @@ func TestTheLiveGuestsEvidenceIsBoundToTheKeyItWasAcquiredFor(t *testing.T) {
 // before the acquirer refuses outright, so a request left behind on refusal
 // would turn a transient refusal into a permanent one.
 func TestARefusedAcquisitionStillRemovesItsRequest(t *testing.T) {
-	p := platform(t, platformTCB)
+	p := fixture.SNPPlatformAtTCB(t, platformTCB)
 	iface := reportInterfaceOf(p)
 	iface.RacingWriter = true
 	a, err := tsm.NewOnFake(tsm.Options{ChainDir: provisionChainFor(t, p)}, iface)
@@ -739,7 +721,7 @@ func TestARefusedAcquisitionStillRemovesItsRequest(t *testing.T) {
 // TestARequestThatCannotBeRemovedIsAnError: a leaked request is reported, not
 // shrugged off, so an operator learns of it before the sixteenth one.
 func TestARequestThatCannotBeRemovedIsAnError(t *testing.T) {
-	p := platform(t, platformTCB)
+	p := fixture.SNPPlatformAtTCB(t, platformTCB)
 	iface := reportInterfaceOf(p)
 	a, err := tsm.NewOnFake(tsm.Options{ChainDir: provisionChainFor(t, p)}, iface)
 	if err != nil {
@@ -760,7 +742,7 @@ func TestARequestThatCannotBeRemovedIsAnError(t *testing.T) {
 // request; the refusal says what the floor was, which is the one fact an
 // operator needs.
 func TestAPlatformRejectionNamesThePrivilegeFloor(t *testing.T) {
-	p := platform(t, platformTCB)
+	p := fixture.SNPPlatformAtTCB(t, platformTCB)
 	iface := reportInterfaceOf(p)
 	a, err := tsm.NewOnFake(tsm.Options{ChainDir: provisionChainFor(t, p)}, iface)
 	if err != nil {

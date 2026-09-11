@@ -37,6 +37,7 @@ import (
 	"testing"
 
 	"gvisor.dev/gvisor/attest"
+	"gvisor.dev/gvisor/attest/internal/fixture"
 )
 
 // policyFormat is the format string spelled out rather than taken from the
@@ -69,22 +70,11 @@ const aSilentPolicyDocument = `{
 }
 `
 
-// signPolicy authorises a policy document, returning the contents of the file
-// that belongs beside it.
-func (a author) signPolicy(t *testing.T, document string) []byte {
-	t.Helper()
-	signature, err := attest.SignPolicy([]byte(document), a.private)
-	if err != nil {
-		t.Fatalf("signing a policy: %v", err)
-	}
-	return signature
-}
-
 // loadsPolicy asserts that a document and signature load, and returns the
 // policy.
-func loadsPolicy(t *testing.T, a author, document string) attest.Policy {
+func loadsPolicy(t *testing.T, a fixture.Author, document string) attest.Policy {
 	t.Helper()
-	policy, err := attest.LoadPolicy([]byte(document), a.signPolicy(t, document), a.public)
+	policy, err := attest.LoadPolicy([]byte(document), a.SignPolicy(t, document), a.Public)
 	if err != nil {
 		t.Fatalf("a well-formed signed policy was refused: %v", err)
 	}
@@ -115,7 +105,7 @@ func thePolicyDocument() string { return documentFor(aPolicyDocument, theMeasure
 // TestASignedPolicyLoadsAndSaysWhatItsAuthorWrote is the control the whole file
 // rests on.
 func TestASignedPolicyLoadsAndSaysWhatItsAuthorWrote(t *testing.T) {
-	a := newAuthor(t)
+	a := fixture.NewAuthor(t)
 	policy := loadsPolicy(t, a, thePolicyDocument())
 
 	if policy.Version != attest.PolicyVersion {
@@ -139,7 +129,7 @@ func TestASignedPolicyLoadsAndSaysWhatItsAuthorWrote(t *testing.T) {
 // deployment, not a mistake. A sandbox that answers and never calls says so,
 // and what it says is enforced rather than read as "anything".
 func TestAPolicyForwardingToNobodyLoadsAndForwardsToNobody(t *testing.T) {
-	a := newAuthor(t)
+	a := fixture.NewAuthor(t)
 	policy := loadsPolicy(t, a, aSilentPolicyDocument)
 
 	if len(policy.ForwardTo) != 0 {
@@ -161,7 +151,7 @@ func TestAPolicyForwardingToNobodyLoadsAndForwardsToNobody(t *testing.T) {
 // safe direction today, and in whichever direction the field's default happened
 // to be tomorrow.
 func TestAPolicyThatDoesNotSayWhomItForwardsToIsRefused(t *testing.T) {
-	a := newAuthor(t)
+	a := fixture.NewAuthor(t)
 	document := thePolicyDocument()
 
 	// Control.
@@ -177,14 +167,14 @@ func TestAPolicyThatDoesNotSayWhomItForwardsToIsRefused(t *testing.T) {
 			if modified == document {
 				t.Fatalf("the document does not contain %q; the fixture has drifted", tc.from)
 			}
-			refusesToLoadPolicy(t, modified, a.signPolicy(t, modified), a.public)
+			refusesToLoadPolicy(t, modified, a.SignPolicy(t, modified), a.Public)
 		})
 	}
 
 	// And the refusal says what to write instead.
 	modified := strings.Replace(document, `,
   "forward_to": ["`+hex.EncodeToString(theMeasurement)+`"]`, ``, 1)
-	_, err := attest.LoadPolicy([]byte(modified), a.signPolicy(t, modified), a.public)
+	_, err := attest.LoadPolicy([]byte(modified), a.SignPolicy(t, modified), a.Public)
 	if !strings.Contains(err.Error(), `"forward_to": []`) {
 		t.Errorf("the refusal does not say how to write a sandbox that dials nobody: %v", err)
 	}
@@ -198,7 +188,7 @@ func TestAPolicyThatDoesNotSayWhomItForwardsToIsRefused(t *testing.T) {
 // is belongs to the hardware vendor, and one of the wrong width matches no peer,
 // which fails closed — the same omission the reference value loader makes.
 func TestAForwardToEntryThatNamesNoImageIsRefused(t *testing.T) {
-	a := newAuthor(t)
+	a := fixture.NewAuthor(t)
 	document := thePolicyDocument()
 	measurement := hex.EncodeToString(theMeasurement)
 
@@ -215,7 +205,7 @@ func TestAForwardToEntryThatNamesNoImageIsRefused(t *testing.T) {
 			if modified == document {
 				t.Fatal("the document has no forward_to list; the fixture has drifted")
 			}
-			refusesToLoadPolicy(t, modified, a.signPolicy(t, modified), a.public)
+			refusesToLoadPolicy(t, modified, a.SignPolicy(t, modified), a.Public)
 		})
 	}
 
@@ -233,7 +223,7 @@ func TestAForwardToEntryThatNamesNoImageIsRefused(t *testing.T) {
 // digest vouches for the whole of it. That is the failure ADR-0002 describes for
 // the binding context, in the document the binding context now carries.
 func TestAPolicyOfAnUnknownVersionIsRefused(t *testing.T) {
-	a := newAuthor(t)
+	a := fixture.NewAuthor(t)
 	document := thePolicyDocument()
 
 	// Control.
@@ -257,7 +247,7 @@ func TestAPolicyOfAnUnknownVersionIsRefused(t *testing.T) {
 			if modified == document {
 				t.Fatalf("the document does not contain %q; the fixture has drifted", tc.from)
 			}
-			refusesToLoadPolicy(t, modified, a.signPolicy(t, modified), a.public)
+			refusesToLoadPolicy(t, modified, a.SignPolicy(t, modified), a.Public)
 		})
 	}
 
@@ -266,7 +256,7 @@ func TestAPolicyOfAnUnknownVersionIsRefused(t *testing.T) {
 	modified := strings.Replace(document, `"version": 1,
   "egress"`, `"version": 2,
   "egress"`, 1)
-	_, err := attest.LoadPolicy([]byte(modified), a.signPolicy(t, modified), a.public)
+	_, err := attest.LoadPolicy([]byte(modified), a.SignPolicy(t, modified), a.Public)
 	for _, want := range []string{"version 2", "re-emit", "sign it again"} {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("the refusal does not mention %q: %v", want, err)
@@ -278,14 +268,14 @@ func TestAPolicyOfAnUnknownVersionIsRefused(t *testing.T) {
 // live beside each other on one device under two names, and swapping them is
 // the provisioning mistake this format should say something useful about.
 func TestAReferenceValueSetPresentedAsAPolicyIsRefusedByName(t *testing.T) {
-	a := newAuthor(t)
+	a := fixture.NewAuthor(t)
 	set := theDocument()
 
 	// Signed as a policy, so the refusal is the document's format and not a
 	// signature that did not hold.
-	refusesToLoadPolicy(t, set, a.signPolicy(t, set), a.public)
+	refusesToLoadPolicy(t, set, a.SignPolicy(t, set), a.Public)
 
-	_, err := attest.LoadPolicy([]byte(set), a.signPolicy(t, set), a.public)
+	_, err := attest.LoadPolicy([]byte(set), a.SignPolicy(t, set), a.Public)
 	if !strings.Contains(err.Error(), "reference value set") {
 		t.Errorf("the refusal does not say the document is a set: %v", err)
 	}
@@ -301,7 +291,7 @@ func TestAReferenceValueSetPresentedAsAPolicyIsRefusedByName(t *testing.T) {
 // reads, and the whole value of a policy digest is that what it names is what is
 // enforced.
 func TestAnEgressSectionThatIsNotAPolicyIsRefused(t *testing.T) {
-	a := newAuthor(t)
+	a := fixture.NewAuthor(t)
 	document := thePolicyDocument()
 
 	// Control.
@@ -320,7 +310,7 @@ func TestAnEgressSectionThatIsNotAPolicyIsRefused(t *testing.T) {
 			if modified == document {
 				t.Fatalf("the document does not contain %q; the fixture has drifted", tc.from)
 			}
-			refusesToLoadPolicy(t, modified, a.signPolicy(t, modified), a.public)
+			refusesToLoadPolicy(t, modified, a.SignPolicy(t, modified), a.Public)
 		})
 	}
 }
@@ -330,7 +320,7 @@ func TestAnEgressSectionThatIsNotAPolicyIsRefused(t *testing.T) {
 // author's key signs. A field nobody recognises, a field named twice and bytes
 // after the document are each refused here too.
 func TestAPolicyIsAsStrictlyParsedAsASet(t *testing.T) {
-	a := newAuthor(t)
+	a := fixture.NewAuthor(t)
 	document := thePolicyDocument()
 
 	// Control.
@@ -349,7 +339,7 @@ func TestAPolicyIsAsStrictlyParsedAsASet(t *testing.T) {
 			if tc.modified == document {
 				t.Fatal("the modification did not change the document; the fixture has drifted")
 			}
-			refusesToLoadPolicy(t, tc.modified, a.signPolicy(t, tc.modified), a.public)
+			refusesToLoadPolicy(t, tc.modified, a.SignPolicy(t, tc.modified), a.Public)
 		})
 	}
 }
@@ -362,7 +352,7 @@ func TestAPolicyIsAsStrictlyParsedAsASet(t *testing.T) {
 // policy.json gets a different number. That is stated here as a test rather than
 // only as a comment, because it is the mistake a harness makes once.
 func TestALoadedPolicyCarriesTheDigestOfTheBytesItsAuthorSigned(t *testing.T) {
-	a := newAuthor(t)
+	a := fixture.NewAuthor(t)
 	document := thePolicyDocument()
 	policy := loadsPolicy(t, a, document)
 
@@ -397,13 +387,13 @@ func TestALoadedPolicyCarriesTheDigestOfTheBytesItsAuthorSigned(t *testing.T) {
 // property for free, and it matters: a harness that computed a policy digest
 // with the set's prefix would produce a number every peer refuses.
 func TestAPolicyDigestIsNotASetDigestOverTheSameBytes(t *testing.T) {
-	a := newAuthor(t)
+	a := fixture.NewAuthor(t)
 	document := thePolicyDocument()
 
 	// A signature over the policy does not verify as one over a set, and the
 	// reverse.
-	refusesToLoadPolicy(t, document, a.sign(t, document), a.public)
-	if _, err := attest.LoadReferenceValueSet([]byte(theDocument()), a.signPolicy(t, theDocument()), a.public); err == nil {
+	refusesToLoadPolicy(t, document, a.Sign(t, document), a.Public)
+	if _, err := attest.LoadReferenceValueSet([]byte(theDocument()), a.SignPolicy(t, theDocument()), a.Public); err == nil {
 		t.Error("a policy signature verified over a reference value set")
 	}
 
@@ -418,7 +408,7 @@ func TestAPolicyDigestIsNotASetDigestOverTheSameBytes(t *testing.T) {
 // TestAPolicyRendersBackToADocumentThatLoads: an author can build a policy in
 // code, render it, sign it and ship it, and the loader gets what they built.
 func TestAPolicyRendersBackToADocumentThatLoads(t *testing.T) {
-	a := newAuthor(t)
+	a := fixture.NewAuthor(t)
 	built := attest.Policy{ForwardTo: [][]byte{theMeasurement, otherMeasurement}}
 
 	rendered, err := attest.MarshalPolicy(built)
@@ -478,14 +468,13 @@ func TestAPolicyRendersBackToADocumentThatLoads(t *testing.T) {
 // fs.ErrNotExist, so no caller can write the branch that treats "there is no
 // policy" as permission to run without one.
 func TestAPolicyOnDiskLoadsFromItsDocumentAndSignature(t *testing.T) {
-	a := newAuthor(t)
+	a := fixture.NewAuthor(t)
 	document := thePolicyDocument()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "policy.json")
-	writeFile(t, path, []byte(document))
-	writeFile(t, path+attest.SignatureFileSuffix, a.signPolicy(t, document))
+	fixture.WriteSigned(t, path, []byte(document), a.SignPolicy(t, document))
 
-	policy, err := attest.LoadPolicyFile(path, a.public)
+	policy, err := attest.LoadPolicyFile(path, a.Public)
 	if err != nil {
 		t.Fatalf("a policy on disk was refused: %v", err)
 	}
@@ -500,18 +489,18 @@ func TestAPolicyOnDiskLoadsFromItsDocumentAndSignature(t *testing.T) {
 		{"a document that is not there", filepath.Join(dir, "absent.json")},
 		{"a document with no signature beside it", func() string {
 			p := filepath.Join(dir, "unsigned.json")
-			writeFile(t, p, []byte(document))
+			fixture.WriteFile(t, p, []byte(document))
 			return p
 		}()},
 		{"a signature by another key", func() string {
 			p := filepath.Join(dir, "stranger.json")
-			writeFile(t, p, []byte(document))
-			writeFile(t, p+attest.SignatureFileSuffix, newAuthor(t).signPolicy(t, document))
+			fixture.WriteFile(t, p, []byte(document))
+			fixture.WriteFile(t, p+attest.SignatureFileSuffix, fixture.NewAuthor(t).SignPolicy(t, document))
 			return p
 		}()},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			policy, err := attest.LoadPolicyFile(tc.path, a.public)
+			policy, err := attest.LoadPolicyFile(tc.path, a.Public)
 			if err == nil {
 				t.Fatalf("the policy loaded as %+v; want a refusal", policy)
 			}
@@ -530,9 +519,9 @@ func TestAPolicyOnDiskLoadsFromItsDocumentAndSignature(t *testing.T) {
 // before anything else, and an absent one is its own sentence because it is a
 // provisioning mistake with a different fix from a signature that did not hold.
 func TestAPolicySignatureOfTheWrongShapeIsRefused(t *testing.T) {
-	a := newAuthor(t)
+	a := fixture.NewAuthor(t)
 	document := thePolicyDocument()
-	good := a.signPolicy(t, document)
+	good := a.SignPolicy(t, document)
 
 	// Control.
 	loadsPolicy(t, a, document)
@@ -548,7 +537,7 @@ func TestAPolicySignatureOfTheWrongShapeIsRefused(t *testing.T) {
 		{"one digit changed", flipHexDigit(good)},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			refusesToLoadPolicy(t, document, tc.signature, a.public)
+			refusesToLoadPolicy(t, document, tc.signature, a.Public)
 		})
 	}
 }

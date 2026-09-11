@@ -21,27 +21,21 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"errors"
-	"os"
 	"path/filepath"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	"gvisor.dev/gvisor/attest"
+	"gvisor.dev/gvisor/attest/internal/fixture"
 	"gvisor.dev/gvisor/attest/internal/snpfake"
 	"gvisor.dev/gvisor/attest/tunneld"
-	"gvisor.dev/gvisor/attest/verify"
 )
 
 // Every test here drives tunneld's public API with the fake platform injected
 // through Config. Verification and reference value handling are covered at
 // the attest seam and are not re-tested; what is asserted is external
 // behaviour: a channel or an error, an exchange completed or not.
-
-var (
-	chainCreatedAt     = time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
-	whenChainsAreValid = chainCreatedAt.Add(30 * 24 * time.Hour)
-)
 
 var (
 	imageA    = bytes.Repeat([]byte{0x11}, 48)
@@ -58,33 +52,18 @@ var (
 // author is the reference value author for the whole test binary.
 var authorPub, authorPriv, _ = ed25519.GenerateKey(rand.Reader)
 
+// platform is a fake platform running one image at the TCB and under the guest
+// policy these tests treat as the ordinary ones.
 func platform(t *testing.T, measurement []byte) *snpfake.Platform {
 	t.Helper()
-	p, err := snpfake.New(snpfake.Config{
-		LaunchMeasurement: measurement,
-		TCB:               platformTCB,
-		Policy:            launched,
-		Now:               chainCreatedAt,
-	})
-	if err != nil {
-		t.Fatalf("snpfake.New: %v", err)
-	}
-	return p
+	return platformUnder(t, measurement, platformTCB, launched)
 }
 
-// verifierFor trusts the fake vendor root. Every fake platform is signed
-// under the same test root, so one verifier judges all of them.
-func verifierFor(t *testing.T, p *snpfake.Platform) attest.Verifier {
+// platformUnder is [platform] with all three stated, for a refusal that is
+// about one of them.
+func platformUnder(t *testing.T, measurement []byte, tcb attest.TCB, policy attest.GuestPolicy) *snpfake.Platform {
 	t.Helper()
-	v, err := verify.New(verify.Options{
-		VendorRootPEM: p.VendorRootPEM(),
-		ProductLine:   p.ProductLine(),
-		Now:           whenChainsAreValid,
-	})
-	if err != nil {
-		t.Fatalf("verify.New: %v", err)
-	}
-	return v
+	return fixture.SNPPlatform(t, snpfake.Config{LaunchMeasurement: measurement, TCB: tcb, Policy: policy})
 }
 
 func admitting(measurements ...[]byte) attest.ReferenceValueSet {
@@ -134,12 +113,7 @@ func writePolicy(t *testing.T, forwardTo [][]byte, key ed25519.PrivateKey) strin
 		t.Fatalf("sign policy: %v", err)
 	}
 	path := filepath.Join(t.TempDir(), "policy.json")
-	if err := os.WriteFile(path, doc, 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(path+attest.SignatureFileSuffix, sig, 0o644); err != nil {
-		t.Fatal(err)
-	}
+	fixture.WriteSigned(t, path, doc, sig)
 	return path
 }
 
@@ -167,12 +141,7 @@ func writeSet(t *testing.T, set attest.ReferenceValueSet, key ed25519.PrivateKey
 		t.Fatalf("sign set: %v", err)
 	}
 	path := filepath.Join(t.TempDir(), "reference-values.json")
-	if err := os.WriteFile(path, doc, 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(path+attest.SignatureFileSuffix, sig, 0o644); err != nil {
-		t.Fatal(err)
-	}
+	fixture.WriteSigned(t, path, doc, sig)
 	return path
 }
 
@@ -198,7 +167,7 @@ func start(t *testing.T, sandbox string, image []byte, admits attest.ReferenceVa
 	td, err := tunneld.New(context.Background(), tunneld.Config{
 		SandboxID:             sandbox,
 		Acquirer:              p,
-		Verifier:              verifierFor(t, p),
+		Verifier:              fixture.VerifierTrusting(t, p),
 		ReferenceValueSetPath: writeSet(t, admits, authorPriv),
 		PolicyPath:            writePolicy(t, everyImage(), authorPriv),
 		AuthorPublicKey:       authorPub,
@@ -314,7 +283,7 @@ func TestPeerPresentingNoEvidenceIsRefused(t *testing.T) {
 	a, err := tunneld.New(context.Background(), tunneld.Config{
 		SandboxID:             "a",
 		Acquirer:              evidenceless{p},
-		Verifier:              verifierFor(t, p),
+		Verifier:              fixture.VerifierTrusting(t, p),
 		ReferenceValueSetPath: writeSet(t, admitting(imageB), authorPriv),
 		PolicyPath:            writePolicy(t, everyImage(), authorPriv),
 		AuthorPublicKey:       authorPub,
@@ -345,7 +314,7 @@ func TestRefusesToStartWithoutAnAcceptedSetOrPolicy(t *testing.T) {
 	base := tunneld.Config{
 		SandboxID:             "a",
 		Acquirer:              p,
-		Verifier:              verifierFor(t, p),
+		Verifier:              fixture.VerifierTrusting(t, p),
 		AuthorPublicKey:       authorPub,
 		ListenAddr:            "127.0.0.1:0",
 		ReferenceValueSetPath: writeSet(t, admitting(imageB), authorPriv),

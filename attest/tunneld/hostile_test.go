@@ -25,6 +25,7 @@ import (
 	"github.com/quic-go/quic-go"
 
 	"gvisor.dev/gvisor/attest"
+	"gvisor.dev/gvisor/attest/internal/fixture"
 	"gvisor.dev/gvisor/attest/ratls"
 	"gvisor.dev/gvisor/attest/tunneld"
 )
@@ -45,7 +46,7 @@ func hostileDial(t *testing.T, addr string, admits attest.ReferenceValueSet, mis
 	if err != nil {
 		t.Fatal(err)
 	}
-	verification, err := attest.New(verifierFor(t, p), admits)
+	verification, err := attest.New(fixture.VerifierTrusting(t, p), admits)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -110,7 +111,7 @@ func TestAnExchangeWaitsForTheEstablishmentRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	verification, err := attest.New(verifierFor(t, p), admits)
+	verification, err := attest.New(fixture.VerifierTrusting(t, p), admits)
 	if err != nil {
 		t.Fatal(err)
 	}

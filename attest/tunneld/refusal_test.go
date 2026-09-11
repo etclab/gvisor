@@ -56,6 +56,7 @@ import (
 	"time"
 
 	"gvisor.dev/gvisor/attest"
+	"gvisor.dev/gvisor/attest/internal/fixture"
 	"gvisor.dev/gvisor/attest/internal/snpfake"
 	"gvisor.dev/gvisor/attest/ratls"
 	"gvisor.dev/gvisor/attest/tunnel"
@@ -177,29 +178,12 @@ func startRefusalNodeUnder(t *testing.T, name string, acquirer attest.Acquirer, 
 	return n
 }
 
-// refusalPlatform is a fake platform running one image at one TCB under one
-// guest policy, with the chain creation time fixed so that a test's outcome
-// does not depend on the day it runs.
-func refusalPlatform(t *testing.T, measurement []byte, tcb attest.TCB, policy attest.GuestPolicy) *snpfake.Platform {
-	t.Helper()
-	p, err := snpfake.New(snpfake.Config{
-		LaunchMeasurement: measurement,
-		TCB:               tcb,
-		Policy:            policy,
-		Now:               chainCreatedAt,
-	})
-	if err != nil {
-		t.Fatalf("snpfake.New: %v", err)
-	}
-	return p
-}
-
 // refusalGenuine is the judged side's platform with nothing wrong with it: the
 // image its judge admits, at a TCB the judge's floor allows, under a policy the
 // judge permits.
 func refusalGenuine(t *testing.T) *snpfake.Platform {
 	t.Helper()
-	return refusalPlatform(t, imageA, platformTCB, launched)
+	return platform(t, imageA)
 }
 
 // The fake vendor root, built once. Every snpfake platform is signed under the
@@ -217,7 +201,7 @@ var (
 func refusalFakeRoot(t *testing.T) attest.Verifier {
 	t.Helper()
 	refusalRootOnce.Do(func() {
-		p, err := snpfake.New(snpfake.Config{LaunchMeasurement: imageA, TCB: platformTCB, Policy: launched, Now: chainCreatedAt})
+		p, err := snpfake.New(snpfake.Config{LaunchMeasurement: imageA, TCB: platformTCB, Policy: launched, Now: fixture.ChainCreatedAt})
 		if err != nil {
 			refusalRootErr = err
 			return
@@ -230,7 +214,7 @@ func refusalFakeRoot(t *testing.T) attest.Verifier {
 	v, err := verify.New(verify.Options{
 		VendorRootPEM: refusalRootPEM,
 		ProductLine:   refusalProductLine,
-		Now:           whenChainsAreValid,
+		Now:           fixture.WhenChainsAreValid,
 	})
 	if err != nil {
 		t.Fatalf("verify.New: %v", err)
@@ -280,7 +264,7 @@ type refusalWiring struct {
 // chooses the role: the judged side as the dialer, or as the listener.
 func runRefusalWiring(t *testing.T, w refusalWiring, judgedDials bool) (judge, judged *refusalNode, ch *tunneld.Channel, err error) {
 	t.Helper()
-	judgePlatform := refusalPlatform(t, imageB, platformTCB, launched)
+	judgePlatform := platformUnder(t, imageB, platformTCB, launched)
 	verifier := w.verifier
 	if verifier == nil {
 		verifier = refusalFakeRoot(t)
@@ -507,11 +491,7 @@ func (m misbound) Acquire(ctx context.Context, csb [attest.CallerSuppliedBytesSi
 // chainOf is the certificate chain a fake platform presents with its evidence.
 func chainOf(t *testing.T, p *snpfake.Platform) []byte {
 	t.Helper()
-	ev, err := p.Acquire(context.Background(), [attest.CallerSuppliedBytesSize]byte{})
-	if err != nil {
-		t.Fatalf("acquiring evidence for its chain: %v", err)
-	}
-	return ev.Chain
+	return fixture.AcquireZero(t, p).Chain
 }
 
 // A refusalCase is one way evidence can fail, the wiring that produces it, and
@@ -539,7 +519,7 @@ func refusalCases() []refusalCase {
 		},
 		admitted: func(t *testing.T) refusalWiring {
 			return refusalWiring{
-				judged: refusalPlatform(t, imageNone, platformTCB, launched),
+				judged: platformUnder(t, imageNone, platformTCB, launched),
 				admits: refusalSet(imageNone, platformTCB, permitted),
 			}
 		},
@@ -552,7 +532,7 @@ func refusalCases() []refusalCase {
 		},
 		admitted: func(t *testing.T) refusalWiring {
 			return refusalWiring{
-				judged: refusalPlatform(t, imageA, refusalAbove, launched),
+				judged: platformUnder(t, imageA, refusalAbove, launched),
 				admits: refusalSet(imageA, refusalFloor, permitted),
 			}
 		},
@@ -561,7 +541,7 @@ func refusalCases() []refusalCase {
 		why:    "the refusal that keeps a debug-enabled guest out",
 		reason: attest.ReasonPolicyMismatch,
 		refused: func(t *testing.T) refusalWiring {
-			return refusalWiring{judged: refusalPlatform(t, imageA, platformTCB, refusalDebugging)}
+			return refusalWiring{judged: platformUnder(t, imageA, platformTCB, refusalDebugging)}
 		},
 		admitted: func(t *testing.T) refusalWiring {
 			return refusalWiring{judged: refusalGenuine(t)}
@@ -624,7 +604,7 @@ func refusalCases() []refusalCase {
 		detail: "ADR-0005",
 		reason: attest.ReasonMalformedEvidence,
 		refused: func(t *testing.T) refusalWiring {
-			before := refusalPlatform(t, imageA, refusalStaleTCB, launched)
+			before := platformUnder(t, imageA, refusalStaleTCB, launched)
 			return refusalWiring{judged: staleChain{refusalGenuine(t), chainOf(t, before)}}
 		},
 		admitted: func(t *testing.T) refusalWiring {
@@ -794,9 +774,9 @@ func TestTwoTunneldsPinningEachOtherBothAdmit(t *testing.T) {
 	// addresses are only known once both are listening — on the live harness
 	// they are fixed in advance and both guests dial from the start.
 	bPeers := tunneld.PeerTable{}
-	b := startRefusalNodeUnder(t, "b", refusalPlatform(t, imageB, platformTCB, launched), refusalFakeRoot(t),
+	b := startRefusalNodeUnder(t, "b", platformUnder(t, imageB, platformTCB, launched), refusalFakeRoot(t),
 		pinning(imageA, policyA), forwardsToA, bPeers)
-	a := startRefusalNodeUnder(t, "a", refusalPlatform(t, imageA, platformTCB, launched), refusalFakeRoot(t),
+	a := startRefusalNodeUnder(t, "a", platformUnder(t, imageA, platformTCB, launched), refusalFakeRoot(t),
 		pinning(imageB, policyB), forwardsToB, tunneld.PeerTable{"b": b.Addr().String()})
 	bPeers["a"] = a.Addr().String()
 
@@ -856,7 +836,7 @@ func TestAPeerNotInForwardToIsRefusedOnTheDialingSide(t *testing.T) {
 	// image they run.
 	listener := func(t *testing.T, name string, image []byte) *refusalNode {
 		t.Helper()
-		return startRefusalNodeUnder(t, name, refusalPlatform(t, image, platformTCB, launched),
+		return startRefusalNodeUnder(t, name, platformUnder(t, image, platformTCB, launched),
 			refusalFakeRoot(t), refusalSet(imageA, platformTCB, permitted), [][]byte{imageA}, nil)
 	}
 	reachable := listener(t, "reachable", imageB)
@@ -913,7 +893,7 @@ func TestAPeerNotInForwardToIsRefusedOnTheDialingSide(t *testing.T) {
 // deployment and not an oversight, and what it says is enforced. A tunneld
 // holding one still listens, and still admits the peers its set names.
 func TestASandboxThatForwardsToNobodyDialsNobody(t *testing.T) {
-	listener := startRefusalNode(t, "listener", refusalPlatform(t, imageB, platformTCB, launched),
+	listener := startRefusalNode(t, "listener", platformUnder(t, imageB, platformTCB, launched),
 		refusalFakeRoot(t), refusalSet(imageA, platformTCB, permitted), nil)
 	// The silent sandbox's own set admits both images, so nothing below the
 	// policy can be what stops it dialing.
@@ -938,7 +918,7 @@ func TestASandboxThatForwardsToNobodyDialsNobody(t *testing.T) {
 
 	// It is still a listener: the peer that dials *it* is admitted, because
 	// forward_to says nothing about who may call.
-	dialer := startRefusalNodeUnder(t, "dialer", refusalPlatform(t, imageA, platformTCB, launched),
+	dialer := startRefusalNodeUnder(t, "dialer", platformUnder(t, imageA, platformTCB, launched),
 		refusalFakeRoot(t), refusalSet(imageA, platformTCB, permitted), [][]byte{imageA},
 		tunneld.PeerTable{"silent": silent.Addr().String()})
 	ch, err := dialer.Peer(ctx(t), "silent")
@@ -1229,7 +1209,7 @@ func elideAddresses(s string) string {
 // not: every refusal below is followed by a legitimate peer through the same
 // listener, and the exchange it completes is checked.
 func TestOneListenerRefusesEveryDefectAndKeepsServing(t *testing.T) {
-	listener := startRefusalNode(t, "listener", refusalPlatform(t, imageB, platformTCB, launched),
+	listener := startRefusalNode(t, "listener", platformUnder(t, imageB, platformTCB, launched),
 		refusalFakeRoot(t), refusalSet(imageA, platformTCB, permitted), nil)
 
 	// Before any refusal, so that a listener broken from the start is not
@@ -1243,9 +1223,9 @@ func TestOneListenerRefusesEveryDefectAndKeepsServing(t *testing.T) {
 		reason   attest.Reason
 		acquirer attest.Acquirer
 	}{
-		{"launch measurement absent from the set", attest.ReasonMeasurementNotInSet, refusalPlatform(t, imageNone, platformTCB, launched)},
-		{"platform below the TCB floor", attest.ReasonTCBBelowFloor, refusalPlatform(t, imageA, refusalBelow, launched)},
-		{"guest policy bits mismatched", attest.ReasonPolicyMismatch, refusalPlatform(t, imageA, platformTCB, refusalDebugging)},
+		{"launch measurement absent from the set", attest.ReasonMeasurementNotInSet, platformUnder(t, imageNone, platformTCB, launched)},
+		{"platform below the TCB floor", attest.ReasonTCBBelowFloor, platformUnder(t, imageA, refusalBelow, launched)},
+		{"guest policy bits mismatched", attest.ReasonPolicyMismatch, platformUnder(t, imageA, platformTCB, refusalDebugging)},
 		{"no evidence presented", attest.ReasonNoEvidence, evidenceless{refusalGenuine(t)}},
 		{"provisioned chain missing", attest.ReasonChainNotRooted, chainless{refusalGenuine(t)}},
 		{"evidence that does not parse", attest.ReasonMalformedEvidence, garbled{refusalGenuine(t)}},

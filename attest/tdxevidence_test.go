@@ -66,6 +66,7 @@ import (
 	"time"
 
 	"gvisor.dev/gvisor/attest"
+	"gvisor.dev/gvisor/attest/internal/fixture"
 	"gvisor.dev/gvisor/attest/internal/tdxfake"
 	"gvisor.dev/gvisor/attest/verify"
 )
@@ -146,7 +147,7 @@ var tdxBoots = []tdxBoot{
 func TestEveryRecordedBootIsAcceptedByTheValuePredictedForIt(t *testing.T) {
 	for _, boot := range tdxBoots {
 		t.Run(boot.name, func(t *testing.T) {
-			attested := tdxMustAccept(t, tdxRecordedVerifier(t), tdxRecordedEvidence(t, boot), tdxSetFor(t, boot))
+			attested := fixture.MustAccept(t, tdxRecordedVerifier(t), tdxRecordedEvidence(t, boot), tdxSetFor(t, boot))
 			if got := attested.Vendor; got != attest.VendorIntelTDX {
 				t.Errorf("accepted as vendor %q, want %q", got, attest.VendorIntelTDX)
 			}
@@ -187,7 +188,7 @@ func TestARecordedBootIsRefusedByAnotherBootsPrediction(t *testing.T) {
 			t.Run(boot.name+"/vs/"+other.name, func(t *testing.T) {
 				// Control: this boot is accepted by its own prediction on this
 				// same wiring.
-				tdxMustAccept(t, verifier, tdxRecordedEvidence(t, boot), tdxSetFor(t, boot))
+				fixture.MustAccept(t, verifier, tdxRecordedEvidence(t, boot), tdxSetFor(t, boot))
 
 				tdxMustRefuse(t, verifier, tdxRecordedEvidence(t, boot), tdxSetFor(t, other), attest.ReasonMeasurementNotInSet)
 			})
@@ -202,7 +203,7 @@ func TestEvidenceFromAnotherVendorIsRefusedByTheTDXVerifier(t *testing.T) {
 	boot := tdxBoots[0]
 	verifier := tdxRecordedVerifier(t)
 	set := tdxSetFor(t, boot)
-	tdxMustAccept(t, verifier, tdxRecordedEvidence(t, boot), set)
+	fixture.MustAccept(t, verifier, tdxRecordedEvidence(t, boot), set)
 
 	// The same bytes, claiming AMD. The vendor tag is checked before anything
 	// looks at the bytes, which is the whole point of routing on a tag.
@@ -255,7 +256,7 @@ func TestADispatcherWithBothVendorsAdmitsTDXEvidenceFromAMixedSet(t *testing.T) 
 		MinimumTCB:        attest.TCB{Bootloader: 9, SNP: 23, Microcode: 72},
 	}}, mixed.Values...)
 
-	tdxMustAccept(t, both, tdxRecordedEvidence(t, boot), mixed)
+	fixture.MustAccept(t, both, tdxRecordedEvidence(t, boot), mixed)
 }
 
 // TestATruncatedQuoteIsRefusedAsMalformed: attacker-supplied bytes reach the
@@ -266,7 +267,7 @@ func TestATruncatedQuoteIsRefusedAsMalformed(t *testing.T) {
 	verifier := tdxRecordedVerifier(t)
 	set := tdxSetFor(t, boot)
 	evidence := tdxRecordedEvidence(t, boot)
-	tdxMustAccept(t, verifier, evidence, set)
+	fixture.MustAccept(t, verifier, evidence, set)
 
 	truncated := evidence
 	truncated.Bytes = evidence.Bytes[:600]
@@ -285,7 +286,7 @@ func TestAFlippedByteInARecordedQuoteIsRefused(t *testing.T) {
 	verifier := tdxRecordedVerifier(t)
 	set := tdxSetFor(t, boot)
 	evidence := tdxRecordedEvidence(t, boot)
-	tdxMustAccept(t, verifier, evidence, set)
+	fixture.MustAccept(t, verifier, evidence, set)
 
 	flipped := evidence
 	flipped.Bytes = append([]byte(nil), evidence.Bytes...)
@@ -312,7 +313,7 @@ func TestCollateralPastItsDateRefusesAsAChainThatDoesNotRootNow(t *testing.T) {
 	evidence := tdxRecordedEvidence(t, boot)
 
 	// Control: inside the collateral's validity, accepted.
-	tdxMustAccept(t, tdxRecordedVerifier(t), evidence, set)
+	fixture.MustAccept(t, tdxRecordedVerifier(t), evidence, set)
 
 	// The recorded collateral was issued on 2026-09-08 and says nextUpdate a
 	// month later. Three months on, it is stale.
@@ -321,7 +322,7 @@ func TestCollateralPastItsDateRefusesAsAChainThatDoesNotRootNow(t *testing.T) {
 		t.Fatalf("building the TDX verifier: %v", err)
 	}
 	refusal := tdxMustRefuse(t, later, evidence, set, attest.ReasonChainNotRooted)
-	if got := detail(refusal); !strings.Contains(got, "ADR-0007") {
+	if got := fixture.Detail(refusal); !strings.Contains(got, "ADR-0007") {
 		t.Errorf("refusal detail = %q; want it to name ADR-0007, the remedy for the verifier's own stale collateral, not the peer", got)
 	}
 }
@@ -345,7 +346,7 @@ func TestARecordedQuoteDoesNotChainToAFakePlatformsRoot(t *testing.T) {
 	tdxMustRefuse(t, wrongRoot, tdxRecordedEvidence(t, boot), tdxSetFor(t, boot), attest.ReasonChainNotRooted)
 
 	// And the fake's quote against Intel's real root, which is the default.
-	tdxMustRefuse(t, tdxRecordedVerifier(t), tdxAcquire(t, fake), tdxSetFor(t, boot), attest.ReasonChainNotRooted)
+	tdxMustRefuse(t, tdxRecordedVerifier(t), fixture.AcquireZero(t, fake), tdxSetFor(t, boot), attest.ReasonChainNotRooted)
 }
 
 // TestAFakeSignedUnderAnotherFakesRootIsRefused: two generated chains, and
@@ -358,7 +359,7 @@ func TestAFakeSignedUnderAnotherFakesRootIsRefused(t *testing.T) {
 	impostor := tdxNewFake(t, boot, tdxfake.Config{})
 
 	// Control: the platform's own root admits it.
-	tdxMustAccept(t, tdxFakeVerifier(t, platform), tdxAcquire(t, platform), tdxSetFor(t, boot))
+	fixture.MustAccept(t, tdxFakeVerifier(t, platform), fixture.AcquireZero(t, platform), tdxSetFor(t, boot))
 
 	elsewhere, err := verify.NewTDX(verify.TDXOptions{
 		CollateralDir: platform.CollateralDir(),
@@ -368,7 +369,7 @@ func TestAFakeSignedUnderAnotherFakesRootIsRefused(t *testing.T) {
 	if err != nil {
 		t.Fatalf("building the TDX verifier: %v", err)
 	}
-	tdxMustRefuse(t, elsewhere, tdxAcquire(t, platform), tdxSetFor(t, boot), attest.ReasonChainNotRooted)
+	tdxMustRefuse(t, elsewhere, fixture.AcquireZero(t, platform), tdxSetFor(t, boot), attest.ReasonChainNotRooted)
 }
 
 // TestCollateralSignedByAStrangerIsRefused: the TCB info and quoting-enclave
@@ -381,10 +382,10 @@ func TestAFakeSignedUnderAnotherFakesRootIsRefused(t *testing.T) {
 func TestCollateralSignedByAStrangerIsRefused(t *testing.T) {
 	boot := tdxBoots[0]
 	honest := tdxNewFake(t, boot, tdxfake.Config{})
-	tdxMustAccept(t, tdxFakeVerifier(t, honest), tdxAcquire(t, honest), tdxSetFor(t, boot))
+	fixture.MustAccept(t, tdxFakeVerifier(t, honest), fixture.AcquireZero(t, honest), tdxSetFor(t, boot))
 
 	forged := tdxNewFake(t, boot, tdxfake.Config{CollateralSignedByStranger: true})
-	tdxMustRefuse(t, tdxFakeVerifier(t, forged), tdxAcquire(t, forged), tdxSetFor(t, boot), attest.ReasonChainNotRooted)
+	tdxMustRefuse(t, tdxFakeVerifier(t, forged), fixture.AcquireZero(t, forged), tdxSetFor(t, boot), attest.ReasonChainNotRooted)
 }
 
 // TestAPlatformIntelCallsOutOfDateIsRefusedAtIntelsGate records a behaviour of
@@ -401,7 +402,7 @@ func TestCollateralSignedByAStrangerIsRefused(t *testing.T) {
 func TestAPlatformIntelCallsOutOfDateIsRefusedAtIntelsGate(t *testing.T) {
 	boot := tdxBoots[0]
 	current := tdxNewFake(t, boot, tdxfake.Config{})
-	tdxMustAccept(t, tdxFakeVerifier(t, current), tdxAcquire(t, current), tdxSetFor(t, boot))
+	fixture.MustAccept(t, tdxFakeVerifier(t, current), fixture.AcquireZero(t, current), tdxSetFor(t, boot))
 
 	stale := tdxNewFake(t, boot, tdxfake.Config{TCBStatus: "OutOfDate"})
 	// A floor of UpToDate would refuse this platform too, so the set is given
@@ -409,7 +410,7 @@ func TestAPlatformIntelCallsOutOfDateIsRefusedAtIntelsGate(t *testing.T) {
 	// ChainNotRooted, which is the point: Intel's gate ran first.
 	set := tdxSetFor(t, boot)
 	set.Values[0].TDX.MinimumTCB = attest.TDXTCBFloor{Status: attest.TDXTCBSWHardeningNeeded}
-	tdxMustRefuse(t, tdxFakeVerifier(t, stale), tdxAcquire(t, stale), set, attest.ReasonChainNotRooted)
+	tdxMustRefuse(t, tdxFakeVerifier(t, stale), fixture.AcquireZero(t, stale), set, attest.ReasonChainNotRooted)
 }
 
 // TestCollateralFromBeforeATCBRecoveryIsBelowTheFloor is the TCB refusal a
@@ -424,10 +425,10 @@ func TestAPlatformIntelCallsOutOfDateIsRefusedAtIntelsGate(t *testing.T) {
 func TestCollateralFromBeforeATCBRecoveryIsBelowTheFloor(t *testing.T) {
 	boot := tdxBoots[0]
 	current := tdxNewFake(t, boot, tdxfake.Config{})
-	tdxMustAccept(t, tdxFakeVerifier(t, current), tdxAcquire(t, current), tdxSetFor(t, boot))
+	fixture.MustAccept(t, tdxFakeVerifier(t, current), fixture.AcquireZero(t, current), tdxSetFor(t, boot))
 
 	old := tdxNewFake(t, boot, tdxfake.Config{EvaluationDataNumber: tdxFloor.EvaluationDataNumber - 1})
-	tdxMustRefuse(t, tdxFakeVerifier(t, old), tdxAcquire(t, old), tdxSetFor(t, boot), attest.ReasonTCBBelowFloor)
+	tdxMustRefuse(t, tdxFakeVerifier(t, old), fixture.AcquireZero(t, old), tdxSetFor(t, boot), attest.ReasonTCBBelowFloor)
 }
 
 // TestADebugEnabledTDIsRefused is the refusal that keeps a TD the host can read
@@ -436,20 +437,20 @@ func TestCollateralFromBeforeATCBRecoveryIsBelowTheFloor(t *testing.T) {
 func TestADebugEnabledTDIsRefused(t *testing.T) {
 	boot := tdxBoots[0]
 	ordinary := tdxNewFake(t, boot, tdxfake.Config{})
-	tdxMustAccept(t, tdxFakeVerifier(t, ordinary), tdxAcquire(t, ordinary), tdxSetFor(t, boot))
+	fixture.MustAccept(t, tdxFakeVerifier(t, ordinary), fixture.AcquireZero(t, ordinary), tdxSetFor(t, boot))
 
 	// The same attributes the recording carries, with bit 0 of the first byte
 	// set. Nothing else about the platform changes.
 	attributes := append([]byte(nil), tdxRecordedTDAttributes...)
 	attributes[0] |= 0x01
 	debugging := tdxNewFake(t, boot, tdxfake.Config{TDAttributes: attributes})
-	tdxMustRefuse(t, tdxFakeVerifier(t, debugging), tdxAcquire(t, debugging), tdxSetFor(t, boot), attest.ReasonPolicyMismatch)
+	tdxMustRefuse(t, tdxFakeVerifier(t, debugging), fixture.AcquireZero(t, debugging), tdxSetFor(t, boot), attest.ReasonPolicyMismatch)
 
 	// And a reference value that does permit it admits it, so the refusal above
 	// is the policy and not an accident of the fake.
 	permissive := tdxSetFor(t, boot)
 	permissive.Values[0].TDX.TDPolicy.AllowDebug = true
-	tdxMustAccept(t, tdxFakeVerifier(t, debugging), tdxAcquire(t, debugging), permissive)
+	fixture.MustAccept(t, tdxFakeVerifier(t, debugging), fixture.AcquireZero(t, debugging), permissive)
 }
 
 // TestAProviderRegisterOutsideTheObservedListIsRefused: MRTD, RTMR0 and RTMR1
@@ -476,10 +477,10 @@ func TestAProviderRegisterOutsideTheObservedListIsRefused(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			control := tdxNewFake(t, boot, tdxfake.Config{})
-			tdxMustAccept(t, tdxFakeVerifier(t, control), tdxAcquire(t, control), tdxSetFor(t, boot))
+			fixture.MustAccept(t, tdxFakeVerifier(t, control), fixture.AcquireZero(t, control), tdxSetFor(t, boot))
 
 			moved := tdxNewFake(t, boot, tc.cfg)
-			refusal := tdxMustRefuse(t, tdxFakeVerifier(t, moved), tdxAcquire(t, moved), tdxSetFor(t, boot), attest.ReasonMeasurementNotInSet)
+			refusal := tdxMustRefuse(t, tdxFakeVerifier(t, moved), fixture.AcquireZero(t, moved), tdxSetFor(t, boot), attest.ReasonMeasurementNotInSet)
 			if !strings.Contains(refusal.Detail(), tc.name) {
 				t.Errorf("the operator log does not say which register moved: %s", refusal.LogString())
 			}
@@ -540,7 +541,7 @@ func TestAFakeTDXPlatformIsAcceptedThroughVerification(t *testing.T) {
 	}
 	attested, err := verification.Verify(context.Background(), evidence, binding)
 	if err != nil {
-		t.Fatalf("accepted evidence was refused: %v", tdxLog(err))
+		t.Fatalf("accepted evidence was refused: %v", fixture.Detail(err))
 	}
 	if attested.Claims.TDX == nil {
 		t.Fatal("an accepted TDX platform carries no TDX claims")
@@ -588,7 +589,7 @@ func TestATDXPeerIsAdmittedOnlyByASetListingItsPolicy(t *testing.T) {
 	// Listed: admitted, by the value that lists it.
 	attested, err := verify(t, tdxSetListing(t, boot, tdxPolicy), binding)
 	if err != nil {
-		t.Fatalf("a TDX peer presenting a listed policy was refused: %v", tdxLog(err))
+		t.Fatalf("a TDX peer presenting a listed policy was refused: %v", fixture.Detail(err))
 	}
 	if attested.Satisfied.PolicyDigest == nil || *attested.Satisfied.PolicyDigest != tdxPolicy {
 		t.Errorf("admitted by a value listing %v; want the one listing %s", attested.Satisfied.PolicyDigest, tdxPolicy)
@@ -597,7 +598,7 @@ func TestATDXPeerIsAdmittedOnlyByASetListingItsPolicy(t *testing.T) {
 	// Unlisted: refused as a policy mismatch, with the presented digest named.
 	_, err = verify(t, tdxSetListing(t, boot, tdxOtherPolicy), binding)
 	if got := attest.ReasonOf(err); got != attest.ReasonPolicyMismatch {
-		t.Fatalf("refused with %v, want %v (%s)", got, attest.ReasonPolicyMismatch, tdxLog(err))
+		t.Fatalf("refused with %v, want %v (%s)", got, attest.ReasonPolicyMismatch, fixture.Detail(err))
 	}
 	var refusal *attest.Refusal
 	if errors.As(err, &refusal) && !strings.Contains(refusal.Detail(), tdxPolicy.String()) {
@@ -607,7 +608,7 @@ func TestATDXPeerIsAdmittedOnlyByASetListingItsPolicy(t *testing.T) {
 	// Unconstrained: the set every TDX value on this branch was authored as,
 	// which lists no policy and admits any.
 	if _, err := verify(t, tdxSetFor(t, boot), binding); err != nil {
-		t.Errorf("an unconstrained TDX value refused a peer's policy: %v", tdxLog(err))
+		t.Errorf("an unconstrained TDX value refused a peer's policy: %v", fixture.Detail(err))
 	}
 
 	// And a digest swapped in flight is refused at the binding rather than
@@ -618,7 +619,7 @@ func TestATDXPeerIsAdmittedOnlyByASetListingItsPolicy(t *testing.T) {
 	both := tdxSetListing(t, boot, tdxPolicy)
 	both.Values = append(both.Values, tdxSetListing(t, boot, tdxOtherPolicy).Values...)
 	if _, err := verify(t, both, claimed); attest.ReasonOf(err) != attest.ReasonBindingMismatch {
-		t.Fatalf("refused with %v, want %v (%s)", attest.ReasonOf(err), attest.ReasonBindingMismatch, tdxLog(err))
+		t.Fatalf("refused with %v, want %v (%s)", attest.ReasonOf(err), attest.ReasonBindingMismatch, fixture.Detail(err))
 	}
 }
 
@@ -635,7 +636,7 @@ func tdxSetListing(t *testing.T, boot tdxBoot, policy attest.PolicyDigest) attes
 func TestNoTDXEvidenceIsRefused(t *testing.T) {
 	boot := tdxBoots[0]
 	verifier := tdxRecordedVerifier(t)
-	tdxMustAccept(t, verifier, tdxRecordedEvidence(t, boot), tdxSetFor(t, boot))
+	fixture.MustAccept(t, verifier, tdxRecordedEvidence(t, boot), tdxSetFor(t, boot))
 	tdxMustRefuse(t, verifier, attest.Evidence{Vendor: attest.VendorIntelTDX}, tdxSetFor(t, boot), attest.ReasonNoEvidence)
 }
 
@@ -646,7 +647,7 @@ func TestNoTDXEvidenceIsRefused(t *testing.T) {
 // not tell the difference.
 func TestAVerifierWhoseCollateralIsMissingRefusesRatherThanFetching(t *testing.T) {
 	boot := tdxBoots[0]
-	tdxMustAccept(t, tdxRecordedVerifier(t), tdxRecordedEvidence(t, boot), tdxSetFor(t, boot))
+	fixture.MustAccept(t, tdxRecordedVerifier(t), tdxRecordedEvidence(t, boot), tdxSetFor(t, boot))
 
 	empty, err := verify.NewTDX(verify.TDXOptions{CollateralDir: t.TempDir(), Now: tdxNow})
 	if err != nil {
@@ -686,26 +687,18 @@ var tdxRecordedTDAttributes = []byte{0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0
 // stdout each time, which is noise in a test log and evidence in a transcript.
 func tdxRecordedVerifier(t *testing.T) *verify.TDX {
 	t.Helper()
-	v, err := verify.NewTDX(verify.TDXOptions{CollateralDir: tdxCollateralDir, Now: tdxNow})
-	if err != nil {
-		t.Fatalf("building the TDX verifier: %v", err)
-	}
-	return v
+	return fixture.TDXVerifier(t, verify.TDXOptions{CollateralDir: tdxCollateralDir, Now: tdxNow})
 }
 
 // tdxFakeVerifier is a verifier over one fake platform's generated collateral
 // and root.
 func tdxFakeVerifier(t *testing.T, p *tdxfake.Platform) *verify.TDX {
 	t.Helper()
-	v, err := verify.NewTDX(verify.TDXOptions{
+	return fixture.TDXVerifier(t, verify.TDXOptions{
 		CollateralDir: p.CollateralDir(),
 		VendorRootPEM: p.VendorRootPEM(),
 		Now:           tdxNow,
 	})
-	if err != nil {
-		t.Fatalf("building the TDX verifier: %v", err)
-	}
-	return v
 }
 
 // tdxNewFake builds a fake platform from one recorded boot, with its collateral
@@ -720,17 +713,6 @@ func tdxNewFake(t *testing.T, boot tdxBoot, cfg tdxfake.Config) *tdxfake.Platfor
 		t.Fatalf("building the fake TDX platform: %v", err)
 	}
 	return p
-}
-
-// tdxAcquire asks a fake platform for evidence over bytes nothing else in the
-// test depends on. Tests that care about the binding build it themselves.
-func tdxAcquire(t *testing.T, p *tdxfake.Platform) attest.Evidence {
-	t.Helper()
-	ev, err := p.Acquire(context.Background(), [attest.CallerSuppliedBytesSize]byte{})
-	if err != nil {
-		t.Fatalf("acquiring evidence from the fake platform: %v", err)
-	}
-	return ev
 }
 
 // tdxReadQuote reads one recorded quote.
@@ -814,16 +796,6 @@ func tdxHex(t *testing.T, s string) []byte {
 	return b
 }
 
-// tdxMustAccept requires a verdict of accepted and returns it.
-func tdxMustAccept(t *testing.T, v attest.Verifier, ev attest.Evidence, set attest.ReferenceValueSet) attest.Attested {
-	t.Helper()
-	attested, err := v.Verify(context.Background(), ev, set)
-	if err != nil {
-		t.Fatalf("evidence that should be accepted was refused: %v", tdxLog(err))
-	}
-	return attested
-}
-
 // tdxMustRefuse requires a refusal with a particular reason and returns it, so
 // that a test can go on to assert on what the operator reads.
 func tdxMustRefuse(t *testing.T, v attest.Verifier, ev attest.Evidence, set attest.ReferenceValueSet, want attest.Reason) *attest.Refusal {
@@ -840,15 +812,6 @@ func tdxMustRefuse(t *testing.T, v attest.Verifier, ev attest.Evidence, set atte
 		t.Fatalf("refused with %v, want %v (log: %s)", got, want, refusal.LogString())
 	}
 	return refusal
-}
-
-// tdxLog renders a refusal the way an operator would read it, for a failure
-// message that says what actually happened.
-func tdxLog(err error) string {
-	if r, ok := err.(*attest.Refusal); ok {
-		return r.LogString()
-	}
-	return err.Error()
 }
 
 func bytesEqualTDX(a, b []byte) bool {

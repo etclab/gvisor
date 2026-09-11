@@ -40,19 +40,10 @@ import (
 	"crypto/rand"
 	"errors"
 	"testing"
-	"time"
 
 	"gvisor.dev/gvisor/attest"
+	"gvisor.dev/gvisor/attest/internal/fixture"
 	"gvisor.dev/gvisor/attest/internal/snpfake"
-	"gvisor.dev/gvisor/attest/verify"
-)
-
-// chainCreatedAt is when the fake platform's certificate chain is created, and
-// whenChainsAreValid is an instant at which it is valid. Both are fixed so that
-// a test's outcome does not depend on the day it runs.
-var (
-	chainCreatedAt     = time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
-	whenChainsAreValid = chainCreatedAt.Add(30 * 24 * time.Hour)
 )
 
 // theMeasurement is the launch measurement the fake platform attests in these
@@ -78,15 +69,16 @@ var (
 	permittedPolicy = attest.GuestPolicy{AllowSMT: true}
 )
 
-// fixture is one fake platform and one verifier that trusts it, wired together
-// the way a tunneld will wire the real ones.
-type fixture struct {
+// guest is one fake platform, the key a tunneld generates at startup, and the
+// evidence that platform acquired over both — wired together the way a tunneld
+// will wire the real ones.
+type guest struct {
 	platform *snpfake.Platform
 	binding  attest.Binding
 	evidence attest.Evidence
 }
 
-// thePolicy is the policy digest the fixture's platform presents: what a
+// thePolicy is the policy digest the guest's platform presents: what a
 // sandbox that loaded its own signed reference value set would fold into its
 // evidence under binding context v2. otherPolicy is a different sandbox's.
 //
@@ -99,22 +91,19 @@ var (
 	otherPolicy = attest.PolicyDigest{0xb1, 0xb2, 0xb3, 0xb4, 0xb5, 0xb6, 0xb7, 0xb8}
 )
 
-// newFixture builds a fake platform, generates a key the way a tunneld does at
+// newGuest builds a fake platform, generates a key the way a tunneld does at
 // startup, and acquires evidence bound to it and to [thePolicy].
-func newFixture(t *testing.T, cfg snpfake.Config) *fixture {
-	return newFixturePresenting(t, cfg, thePolicy)
+func newGuest(t *testing.T, cfg snpfake.Config) *guest {
+	return newGuestPresenting(t, cfg, thePolicy)
 }
 
-// newFixturePresenting is [newFixture] with the policy the platform binds its
+// newGuestPresenting is [newGuest] with the policy the platform binds its
 // evidence to stated rather than assumed. The binding is v2 throughout: v1 is
-// the version this verifier no longer admits, and a fixture speaking it would
+// the version this verifier no longer admits, and a guest speaking it would
 // be refused before any of these tests reached what they are about.
-func newFixturePresenting(t *testing.T, cfg snpfake.Config, policy attest.PolicyDigest) *fixture {
+func newGuestPresenting(t *testing.T, cfg snpfake.Config, policy attest.PolicyDigest) *guest {
 	t.Helper()
-	platform, err := snpfake.New(cfg)
-	if err != nil {
-		t.Fatalf("snpfake.New: %v", err)
-	}
+	platform := fixture.SNPPlatform(t, cfg)
 	pub, _, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
 		t.Fatalf("generating a key: %v", err)
@@ -124,7 +113,7 @@ func newFixturePresenting(t *testing.T, cfg snpfake.Config, policy attest.Policy
 	if err != nil {
 		t.Fatalf("acquiring evidence: %v", err)
 	}
-	return &fixture{platform: platform, binding: binding, evidence: evidence}
+	return &guest{platform: platform, binding: binding, evidence: evidence}
 }
 
 // defaultConfig is a platform that a defaultSet reference value admits.
@@ -133,7 +122,6 @@ func defaultConfig() snpfake.Config {
 		LaunchMeasurement: theMeasurement,
 		TCB:               platformTCB,
 		Policy:            launchedPolicy,
-		Now:               chainCreatedAt,
 	}
 }
 
@@ -147,42 +135,18 @@ func defaultSet() attest.ReferenceValueSet {
 	}}}
 }
 
-// verifierTrusting returns a verifier configured with the fake platform's root,
-// as a tunneld would be configured with the root provisioned onto its config
-// device.
-func verifierTrusting(t *testing.T, p *snpfake.Platform) attest.Verifier {
-	t.Helper()
-	v, err := verify.New(verify.Options{
-		VendorRootPEM: p.VendorRootPEM(),
-		ProductLine:   p.ProductLine(),
-		Now:           whenChainsAreValid,
-	})
-	if err != nil {
-		t.Fatalf("verify.New: %v", err)
-	}
-	return v
-}
-
 // verification wires a verifier that trusts f's platform to a reference value
 // set.
-func verification(t *testing.T, f *fixture, set attest.ReferenceValueSet) *attest.Verification {
+func verification(t *testing.T, f *guest, set attest.ReferenceValueSet) *attest.Verification {
 	t.Helper()
-	v, err := attest.New(verifierTrusting(t, f.platform), set)
-	if err != nil {
-		t.Fatalf("attest.New: %v", err)
-	}
-	return v
+	return fixture.Verification(t, fixture.VerifierTrusting(t, f.platform), set)
 }
 
 // accepts is the control every refusal test is paired with: on this wiring,
 // legitimate evidence is still accepted.
-func accepts(t *testing.T, v *attest.Verification, f *fixture) attest.Attested {
+func accepts(t *testing.T, v *attest.Verification, f *guest) attest.Attested {
 	t.Helper()
-	attested, err := v.Verify(context.Background(), f.evidence, f.binding)
-	if err != nil {
-		t.Fatalf("control: legitimate evidence was refused: %s", detail(err))
-	}
-	return attested
+	return fixture.MustAccept(t, v, f.evidence, f.binding)
 }
 
 // A verdictSource is what [refuses] drives: an [attest.Verification], or the
@@ -201,7 +165,7 @@ func refuses(t *testing.T, v verdictSource, ev attest.Evidence, b attest.Binding
 		t.Fatalf("evidence was accepted as %+v; want refusal with %v", attested, want)
 	}
 	if got := attest.ReasonOf(err); got != want {
-		t.Errorf("refused with %v; want %v (detail: %s)", got, want, detail(err))
+		t.Errorf("refused with %v; want %v (detail: %s)", got, want, fixture.Detail(err))
 	}
 	if !errors.Is(err, attest.ErrRefused) {
 		t.Errorf("refusal does not match attest.ErrRefused: %v", err)
@@ -209,14 +173,4 @@ func refuses(t *testing.T, v verdictSource, ev attest.Evidence, b attest.Binding
 	if got, want := err.Error(), attest.ErrRefused.Error(); got != want {
 		t.Errorf("refusal Error() = %q; want the undifferentiated %q", got, want)
 	}
-}
-
-// detail returns the operator-facing text behind a refusal, for test output
-// only. A caller in production reads this from the log, never from an error.
-func detail(err error) string {
-	var r *attest.Refusal
-	if errors.As(err, &r) {
-		return r.LogString()
-	}
-	return err.Error()
 }

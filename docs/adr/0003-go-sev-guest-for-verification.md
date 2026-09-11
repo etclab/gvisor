@@ -1,5 +1,7 @@
 # SNP report verification uses google/go-sev-guest rather than a hand-rolled verifier
 
+Status: accepted; amended by ticket 17.
+
 `verify/` wraps `github.com/google/go-sev-guest` for report parsing, VCEK retrieval from
 AMD's KDS, chain validation to the AMD root, and TCB and policy predicates. Hand-rolling this
 would mean owning ASN.1 and AMD's certificate semantics inside the security boundary the

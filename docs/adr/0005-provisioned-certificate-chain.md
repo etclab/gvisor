@@ -1,5 +1,7 @@
 # The VCEK chain is provisioned onto the config device, not fetched at handshake time
 
+Status: accepted.
+
 The certificate chain needed to verify a peer's evidence is fetched from AMD's key distribution
 service once at provisioning time and delivered on the same read-only block device that carries
 the reference value set, rather than retrieved during tunnel establishment. Ticket 01 established

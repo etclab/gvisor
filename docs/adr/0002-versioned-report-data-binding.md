@@ -1,5 +1,7 @@
 # report_data reserves space for a policy digest it does not yet carry
 
+Status: accepted; amended by ticket 18, corrected by ticket 19.
+
 `report_data` is `H(pubkey ‖ ctx)` where `ctx` is a fixed-width, versioned field that is
 all-zero in v1, rather than the memo's `H(pubkey)`. Open question 2 asks whether runsc's
 configuration should be bound into the evidence and defers it, while warning that

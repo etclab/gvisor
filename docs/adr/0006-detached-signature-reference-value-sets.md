@@ -1,5 +1,7 @@
 # A reference value set is a plain document with a detached signature over its exact bytes
 
+Status: accepted; amended by ticket 17.
+
 The signed set is two files: a JSON document a reference value author writes and a reviewer
 reads, and an Ed25519 signature beside it. The signature covers a fixed domain separation
 prefix followed by the document's **exact bytes as delivered**. Nothing is canonicalised,

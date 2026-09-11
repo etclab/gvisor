@@ -1,5 +1,7 @@
 # Reference values are signed, and the author's public key is in the measured image
 
+Status: accepted.
+
 The reference value set is delivered from outside the launch measurement and its signature is
 checked at load against an author public key baked into the measured image. Placing the value
 set itself inside the measurement makes updates cascade without termination — accepting a

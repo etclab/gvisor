@@ -1,5 +1,7 @@
 # Intel collateral is provisioned onto the config device, and expires on a calendar
 
+Status: accepted.
+
 Verifying a TDX quote needs three documents the quote does not carry: Intel's TCB info for the
 platform's FMSPC, the quoting enclave's identity, and the revocation lists for the PCK chain.
 Intel signs and dates them and serves them from its provisioning service, and Intel's terms of

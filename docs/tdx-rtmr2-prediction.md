@@ -104,8 +104,10 @@ matches.
 the initrd was never loaded or measured; the value is exactly today's `update-grub` value, and
 the probe's initrd step ran `update-grub`. What moved RTMR2 there was the rewritten `grub.cfg`.
 The study's conclusion that RTMR2 covers the kernel and command line stands; its claim that it
-covers the initrd was not tested, and on this image's default boot path the initrd is outside
-RTMR2 altogether.
+covers the initrd was not tested here, and on this image's default boot path the initrd is outside
+RTMR2 altogether. (Ticket 19's step zero tested it on 2026-09-10: with an `initrd` line in the
+taken branch, grub adds two records — the `initrd` command string and the SHA-384 of the file —
+and the predictor matched 88 of 88; `docs/snp/evidence/ticket19/step-zero/`.)
 
 ---
 
@@ -143,7 +145,8 @@ script exit 3 rather than guess.
 - **That the value is right for a different boot disk layout.** `(hd0,gptN)` names, the ESP
   directory and the module directory are inputs; a second disk or a non-Ubuntu shim needs
   them supplied.
-- **Anything about the initrd.** On this image's default path it is not loaded.
+- **Anything about the initrd.** On this image's default path it is not loaded. Ticket 19's
+  step zero later loaded one and the prediction held (see the correction above).
 
 ---
 

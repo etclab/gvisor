@@ -10,7 +10,7 @@
 # # What this build actually does, and what it deliberately does not
 #
 # It takes the pinned Ubuntu 24.04 GCE image and changes two files on it:
-# /boot/grub/grub.cfg becomes a fixed six-line configuration, and
+# /boot/grub/grub.cfg becomes a fixed nine-line configuration, and
 # /boot/initrd.img-attested appears. Nothing else on the disk is touched. The
 # ESP is not opened for writing, no partition is added, moved or resized, and
 # Ubuntu's root filesystem is left exactly as the provider shipped it — it is

@@ -283,14 +283,7 @@ func MarshalReferenceValueSet(set ReferenceValueSet) ([]byte, error) {
 // they intend to ship and to ship the bytes they signed; there is no
 // canonicalisation step here that could quietly make those two different.
 func SignReferenceValueSet(document []byte, key ed25519.PrivateKey) ([]byte, error) {
-	if len(key) != ed25519.PrivateKeySize {
-		return nil, fmt.Errorf("attest: reference value author key is %d bytes, want an Ed25519 private key of %d", len(key), ed25519.PrivateKeySize)
-	}
-	signature := ed25519.Sign(key, signedBytes(document))
-	out := make([]byte, hex.EncodedLen(len(signature))+1)
-	hex.Encode(out, signature)
-	out[len(out)-1] = '\n'
-	return out, nil
+	return signDocument(setDocumentKind, document, key)
 }
 
 // LoadReferenceValueSet verifies a document against the reference value
@@ -302,17 +295,8 @@ func SignReferenceValueSet(document []byte, key ed25519.PrivateKey) ([]byte, err
 // contents when its signature did not hold: a caller cannot fall back to an
 // unsigned set because this package offers nothing to fall back to.
 func LoadReferenceValueSet(document, signature []byte, author ed25519.PublicKey) (ReferenceValueSet, error) {
-	if len(author) != ed25519.PublicKeySize {
-		return ReferenceValueSet{}, refuseSet("the reference value author public key is %d bytes, want an Ed25519 public key of %d", len(author), ed25519.PublicKeySize)
-	}
-	sig, err := parseSignature(signature, refuseSet, "reference value set")
-	if err != nil {
+	if err := verifySignedDocument(document, signature, author, setDocumentKind); err != nil {
 		return ReferenceValueSet{}, err
-	}
-	if !ed25519.Verify(author, signedBytes(document), sig) {
-		return ReferenceValueSet{}, refuseSet(
-			"the signature is not this reference value author's signature over these bytes; " +
-				"either the document was modified in delivery or it was signed by a different key")
 	}
 	// Past this line, and not before it, the document is the author's.
 	return parseReferenceValueSetDocument(document)
@@ -326,14 +310,9 @@ func LoadReferenceValueSet(document, signature []byte, author ed25519.PublicKey)
 // cannot write the one branch this design cannot survive — the one that treats
 // "there is no set here" as permission to proceed without one.
 func LoadReferenceValueSetFile(path string, author ed25519.PublicKey) (ReferenceValueSet, error) {
-	document, err := os.ReadFile(path)
+	document, signature, err := readSignedDocumentPair(path, setDocumentKind)
 	if err != nil {
-		return ReferenceValueSet{}, refuseSet("reading the reference value set at %s: %v", path, err)
-	}
-	sigPath := path + SignatureFileSuffix
-	signature, err := os.ReadFile(sigPath)
-	if err != nil {
-		return ReferenceValueSet{}, refuseSet("reading the signature at %s: %v", sigPath, err)
+		return ReferenceValueSet{}, err
 	}
 	return LoadReferenceValueSet(document, signature, author)
 }
@@ -383,6 +362,112 @@ func parseSignature(signature []byte, refuse refuseFunc, what string) ([]byte, e
 		return nil, refuse("the signature is %d bytes, want an Ed25519 signature of %d", len(sig), ed25519.SignatureSize)
 	}
 	return sig, nil
+}
+
+// A signedDocumentKind is everything that differs between the two signed
+// documents this package loads.
+//
+// There is one loader rather than two. [loadSignedDocument] and
+// [loadSignedDocumentFile] are the whole of "read the pair, check the author's
+// detached signature over the document, and only past that parse it", and the
+// reference value set and the policy are two values of this type handed to
+// them. What may differ is listed here and nowhere else: the bytes the
+// signature covers, the refusal the document reports, the noun that refusal
+// calls it, and the sentence a signature that did not hold earns. A second
+// document kind therefore cannot acquire a subtly different order of checks,
+// because a kind does not carry one.
+type signedDocumentKind struct {
+	// signedBytes is what the author's key signs over this kind of document:
+	// its own domain separation prefix followed by the document's exact bytes.
+	// It is the field that makes a signature over one kind fail to verify as a
+	// signature over the other, which is the whole of the separation between
+	// them (ADR-0006).
+	signedBytes func(document []byte) []byte
+
+	// refuse builds this kind's refusal, so that a caller who asked for a
+	// policy is never handed [ErrSetRefused], or the reverse.
+	refuse refuseFunc
+
+	// what is the noun the refusals call this document. It is what tells an
+	// operator which of the two files beside each other to go and look at.
+	what string
+
+	// notSigned is the sentence a signature that did not hold earns. The two
+	// kinds say different things here because a policy has one more way to be
+	// wrong — a signature over the set beside it — and the operator holding
+	// both files is the person who has to be told so.
+	notSigned string
+}
+
+// setDocumentKind is the reference value set as the shared loader sees it.
+var setDocumentKind = signedDocumentKind{
+	signedBytes: signedBytes,
+	refuse:      refuseSet,
+	what:        "reference value set",
+	notSigned: "the signature is not this reference value author's signature over these bytes; " +
+		"either the document was modified in delivery or it was signed by a different key",
+}
+
+// signDocument signs a document of one kind with the reference value author's
+// key, returning the contents of the signature file that belongs beside it.
+//
+// document is signed exactly as given, for either kind. It is the author's job
+// to sign the bytes they intend to ship and to ship the bytes they signed;
+// there is no canonicalisation step here that could quietly make those two
+// different.
+func signDocument(kind signedDocumentKind, document []byte, key ed25519.PrivateKey) ([]byte, error) {
+	if len(key) != ed25519.PrivateKeySize {
+		return nil, fmt.Errorf("attest: reference value author key is %d bytes, want an Ed25519 private key of %d", len(key), ed25519.PrivateKeySize)
+	}
+	signature := ed25519.Sign(key, kind.signedBytes(document))
+	out := make([]byte, hex.EncodedLen(len(signature))+1)
+	hex.Encode(out, signature)
+	out[len(out)-1] = '\n'
+	return out, nil
+}
+
+// verifySignedDocument checks a detached signature over a document of one
+// kind, and returns nil only once the document is the bytes this reference
+// value author signed under that kind's domain.
+//
+// It is the whole of what the two loaders do before they parse anything, which
+// is why it is one function: a second document kind cannot acquire a different
+// order of checks, a missing check, or a check against the other kind's
+// domain. Every way it can fail is a refusal carrying the kind's own sentinel.
+func verifySignedDocument(document, signature []byte, author ed25519.PublicKey, kind signedDocumentKind) error {
+	if len(author) != ed25519.PublicKeySize {
+		return kind.refuse("the reference value author public key is %d bytes, want an Ed25519 public key of %d", len(author), ed25519.PublicKeySize)
+	}
+	sig, err := parseSignature(signature, kind.refuse, kind.what)
+	if err != nil {
+		return err
+	}
+	if !ed25519.Verify(author, kind.signedBytes(document), sig) {
+		return kind.refuse("%s", kind.notSigned)
+	}
+	return nil
+}
+
+// readSignedDocumentPair reads a document of one kind from path together with
+// the detached signature beside it, the file at path+[SignatureFileSuffix].
+//
+// A missing signature file is a refusal like any other, not an absence. So is
+// a missing document, and which of the two was missing is named, because they
+// are different provisioning mistakes with different fixes. Neither error
+// matches [io/fs.ErrNotExist], so a caller cannot write the one branch this
+// design cannot survive — the one that treats "there is nothing here" as
+// permission to proceed without it.
+func readSignedDocumentPair(path string, kind signedDocumentKind) (document, signature []byte, err error) {
+	document, err = os.ReadFile(path)
+	if err != nil {
+		return nil, nil, kind.refuse("reading the %s at %s: %v", kind.what, path, err)
+	}
+	sigPath := path + SignatureFileSuffix
+	signature, err = os.ReadFile(sigPath)
+	if err != nil {
+		return nil, nil, kind.refuse("reading the signature at %s: %v", sigPath, err)
+	}
+	return document, signature, nil
 }
 
 // parseReferenceValueSetDocument turns a document whose signature has already

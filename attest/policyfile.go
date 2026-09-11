@@ -23,7 +23,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 )
 
 // The signed policy: a sandbox's own statement about its behaviour, the digest
@@ -306,14 +305,7 @@ func forwardToList(measurements [][]byte) ([]string, error) {
 // document is signed exactly as given; there is no canonicalisation step here
 // that could quietly make the bytes signed and the bytes shipped different.
 func SignPolicy(document []byte, key ed25519.PrivateKey) ([]byte, error) {
-	if len(key) != ed25519.PrivateKeySize {
-		return nil, fmt.Errorf("attest: reference value author key is %d bytes, want an Ed25519 private key of %d", len(key), ed25519.PrivateKeySize)
-	}
-	signature := ed25519.Sign(key, policySignedBytes(document))
-	out := make([]byte, hex.EncodedLen(len(signature))+1)
-	hex.Encode(out, signature)
-	out[len(out)-1] = '\n'
-	return out, nil
+	return signDocument(policyDocumentKind, document, key)
 }
 
 // LoadPolicy verifies a policy document against the reference value author's
@@ -324,19 +316,8 @@ func SignPolicy(document []byte, key ed25519.PrivateKey) ([]byte, error) {
 // to load a document without a signature, and no way to ask for the document's
 // contents when its signature did not hold.
 func LoadPolicy(document, signature []byte, author ed25519.PublicKey) (Policy, error) {
-	if len(author) != ed25519.PublicKeySize {
-		return Policy{}, refusePolicy("the reference value author public key is %d bytes, want an Ed25519 public key of %d", len(author), ed25519.PublicKeySize)
-	}
-	sig, err := parseSignature(signature, refusePolicy, "policy")
-	if err != nil {
+	if err := verifySignedDocument(document, signature, author, policyDocumentKind); err != nil {
 		return Policy{}, err
-	}
-	if !ed25519.Verify(author, policySignedBytes(document), sig) {
-		return Policy{}, refusePolicy(
-			"the signature is not this reference value author's signature over these bytes; " +
-				"either the document was modified in delivery, or it was signed by a different key, " +
-				"or it is a signature over some other document this author signed — a reference value " +
-				"set's signature is not a policy's, and each covers its own domain")
 	}
 	// Past this line, and not before it, the document is the author's.
 	return parsePolicyDocument(document)
@@ -350,14 +331,9 @@ func LoadPolicy(document, signature []byte, author ed25519.PublicKey) (Policy, e
 // cannot write the one branch this design cannot survive — the one that treats
 // "there is no policy here" as permission to proceed without one.
 func LoadPolicyFile(path string, author ed25519.PublicKey) (Policy, error) {
-	document, err := os.ReadFile(path)
+	document, signature, err := readSignedDocumentPair(path, policyDocumentKind)
 	if err != nil {
-		return Policy{}, refusePolicy("reading the policy at %s: %v", path, err)
-	}
-	sigPath := path + SignatureFileSuffix
-	signature, err := os.ReadFile(sigPath)
-	if err != nil {
-		return Policy{}, refusePolicy("reading the signature at %s: %v", sigPath, err)
+		return Policy{}, err
 	}
 	return LoadPolicy(document, signature, author)
 }
@@ -367,6 +343,19 @@ func LoadPolicyFile(path string, author ed25519.PublicKey) (Policy, error) {
 // signer, the verifier and [PolicyDigestOf], so the three cannot drift.
 func policySignedBytes(document []byte) []byte {
 	return signedBytesUnder(policySignaturePrefix, document)
+}
+
+// policyDocumentKind is the policy as the shared loader sees it: the same
+// [loadSignedDocument] the reference value set goes through, told the one set
+// of things a policy does differently.
+var policyDocumentKind = signedDocumentKind{
+	signedBytes: policySignedBytes,
+	refuse:      refusePolicy,
+	what:        "policy",
+	notSigned: "the signature is not this reference value author's signature over these bytes; " +
+		"either the document was modified in delivery, or it was signed by a different key, " +
+		"or it is a signature over some other document this author signed — a reference value " +
+		"set's signature is not a policy's, and each covers its own domain",
 }
 
 // wirePolicyFileOut is the policy as it is written.

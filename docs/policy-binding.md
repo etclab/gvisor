@@ -286,11 +286,13 @@ one or two entries in it.
 ## What the version bumps cost
 
 Every bundle recorded under `docs/snp` predates binding v2, and a recording whose report data can
-no longer be recomputed is a recording nobody can check again. So `BindingContextV1` stays
-exported and still hashes two inputs rather than three, and `verify-evidence` gained
-`-binding-version` (default 2) to judge those bundles. Asking for a policy digest at binding
-version 1 is an error rather than a silently ignored flag, since a v1 binding covers no policy
-and pretending otherwise would compute bytes no platform ever echoed.
+no longer be recomputed is a recording nobody can check again. Ticket 21 stops asking one tool to
+be two verifiers: `attest-tool verify` judges v2 and nothing else, and a bundle recorded before
+ticket 18 is verified with the binary of its era, named by the commit its manifest records — `git
+show <commit>:attest/cmd/verify-evidence/main.go`, whose last version carrying the
+`-binding-version 1` branch is `205fd2154`. `attest.BindingContextV1` stays, because
+`Binding.CallerSuppliedBytes` branches on it and the tests that replay the ticket 05 and ticket 08
+evidence name it; what went is the replay path in the verdict tool, which no script ever invoked.
 
 Recorded documents no longer load. `evidence/ticket14/reference-values.json` is format version 1
 and `evidence/tdx/refvals/reference-values.v20260826.json` is version 2; the five sets ticket 18
@@ -310,9 +312,6 @@ ticket.
 ```sh
 export PATH=$PATH:/usr/local/go/bin
 cd attest && GOPROXY=off go test ./... -count=1
-
-# a bundle recorded before ticket 18, judged as what it is
-go run ./cmd/verify-evidence -binding-version 1 -evidence <bundle> -refvals <set> ...
 ```
 
 The live half needs the operator's runner, once, in a tmux session, exactly as ticket 14:

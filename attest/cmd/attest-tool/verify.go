@@ -43,7 +43,7 @@ const (
 // produced it (ticket 05).
 //
 //	attest-tool verify -bundle DIR -refvals PATH -author PATH \
-//	                   [-policy-digest HEX] [-binding-version 1|2]
+//	                   [-policy-digest HEX]
 //
 // It is what a tunneld does when it meets a peer, with the tunnel left out:
 // load the reference value set the author signed, wire it to a verifier, and
@@ -87,8 +87,7 @@ func runVerify(args []string, out *os.File) int {
 	vendor := fs.String("vendor", string(attest.VendorAMDSEVSNP), "the hardware that produced the evidence: "+string(attest.VendorAMDSEVSNP)+" or "+string(attest.VendorIntelTDX)+". It is a flag rather than a guess: sniffing the format of an untrusted blob to decide which parser to hand it to is the mistake the vendor tag exists to prevent")
 	tdxCollateralDir := fs.String("tdx-collateral-dir", "", "directory holding Intel's provisioned TCB info, quoting-enclave identity and revocation lists; required to verify Intel TDX evidence, and never fetched (ADR-0005)")
 	tdxRoot := fs.String("tdx-root", "", "PEM file holding the Intel SGX Root CA; empty uses the Intel root embedded in the verification library, which is the production path")
-	bindingVersion := fs.Int("binding-version", 2, "the ADR-0002 binding version the bundle was acquired under: 2, or 1 for a bundle recorded before the policy digest existed")
-	policyDigest := fs.String("policy-digest", "", "the policy digest the bundle is bound to, hex — sha256 over the bytes the author signed over the peer's policy.json, which emit-refvals -digest-of prints; empty is 32 zero bytes. Meaningless with -binding-version 1, which had no such field")
+	policyDigest := fs.String("policy-digest", "", "the policy digest the bundle is bound to, hex — sha256 over the bytes the author signed over the peer's policy.json, which emit-refvals -digest-of prints; empty is 32 zero bytes")
 	if err := fs.Parse(args); err != nil {
 		return exitFailed
 	}
@@ -107,7 +106,6 @@ func runVerify(args []string, out *os.File) int {
 		vendor:       attest.Vendor(*vendor),
 		tdxDir:       *tdxCollateralDir,
 		tdxRoot:      *tdxRoot,
-		binding:      *bindingVersion,
 		policyDigest: *policyDigest,
 	})
 	if err != nil {
@@ -130,7 +128,6 @@ type options struct {
 	vendor       attest.Vendor
 	tdxDir       string
 	tdxRoot      string
-	binding      int
 	policyDigest string
 }
 
@@ -151,7 +148,7 @@ func verdict(fs *flag.FlagSet, out *os.File, o options) (int, error) {
 		fmt.Fprintf(out, "certificate chain   : %s, %d bytes (provisioned, ADR-0005)\n", p.chainPath, len(p.chain))
 	}
 	fmt.Fprintf(out, "public key (SPKI)   : %s, %d bytes, %x\n", p.keyPath, len(p.publicKey), p.publicKey)
-	printBinding(out, o, p.binding)
+	printBinding(out, p.binding)
 	printTrustRoots(out, o, p)
 
 	// The trust root. A set that is missing, unsigned, or signed by another
@@ -164,22 +161,17 @@ func verdict(fs *flag.FlagSet, out *os.File, o options) (int, error) {
 	}
 	printReferenceValues(out, o, p, set)
 
-	verifier, verification, err := o.verifierFor(p, set)
+	verification, err := o.verifierFor(p, set)
 	if err != nil {
 		return exitFailed, err
 	}
 	ev := attest.Evidence{Vendor: o.vendor, Bytes: p.evidence, Chain: p.chain}
-	var attested attest.Attested
-	if o.bindingVersion() == 1 {
-		attested, err = verifyPreV2(verifier, set, ev, p.binding)
-	} else {
-		attested, err = verification.Verify(context.Background(), ev, p.binding)
-	}
+	attested, err := verification.Verify(context.Background(), ev, p.binding)
 	if err != nil {
 		printRefusal(out, err)
 		return exitRefused, nil
 	}
-	printAccepted(out, o, attested)
+	printAccepted(out, attested)
 	return exitAccepted, nil
 }
 
@@ -325,19 +317,18 @@ func (o options) readTrust(p *presented) error {
 	return nil
 }
 
-// verifierFor wires one verifier per configured vendor and hands back both the
-// dispatching verifier and the verification built over it, since a v1 bundle is
-// judged by the first and a v2 bundle by the second.
-func (o options) verifierFor(p presented, set attest.ReferenceValueSet) (attest.Verifier, *attest.Verification, error) {
+// verifierFor wires one verifier per configured vendor and hands back the
+// verification built over them and the set the author signed.
+func (o options) verifierFor(p presented, set attest.ReferenceValueSet) (*attest.Verification, error) {
 	snp, err := verify.New(verify.Options{VendorRootPEM: p.rootPEM, ProductLine: o.productLine, Now: p.at})
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	verifiers := []attest.Verifier{snp}
 	if o.tdxDir != "" {
 		tdx, err := verify.NewTDX(verify.TDXOptions{CollateralDir: o.tdxDir, VendorRootPEM: p.tdxRootPEM, Now: p.at})
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		verifiers = append(verifiers, tdx)
 	}
@@ -346,27 +337,19 @@ func (o options) verifierFor(p presented, set attest.ReferenceValueSet) (attest.
 	// offered to whoever might parse it.
 	verifier, err := attest.Dispatch(verifiers...)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	verification, err := attest.New(verifier, set)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	return verifier, verification, nil
+	return verification, nil
 }
 
-// printBinding reports the binding the bundle claims to be bound to, and with
-// it the one thing a v1 bundle has to be read differently for: it commits to no
-// policy, so there is no policy digest line to print and a note saying why
-// stands in its place.
-func printBinding(out *os.File, o options, binding attest.Binding) {
-	fmt.Fprintf(out, "binding context     : v%d, %x\n", o.bindingVersion(), binding.Context[:])
-	if o.bindingVersion() == 1 {
-		fmt.Fprintf(out, "                      a pre-v2 bundle: its report data covers the key and the context and no policy,\n")
-		fmt.Fprintf(out, "                      so it is judged by the vendor's verifier plus the v1 binding rather than by\n")
-		fmt.Fprintf(out, "                      attest.Verification, which admits v2 alone\n")
-		return
-	}
+// printBinding reports what the bundle claims to be bound to: the context its
+// report data covers and the policy digest inside it.
+func printBinding(out *os.File, binding attest.Binding) {
+	fmt.Fprintf(out, "binding context     : v2, %x\n", binding.Context[:])
 	fmt.Fprintf(out, "policy digest       : %s\n", binding.PolicyDigest)
 }
 
@@ -434,7 +417,7 @@ func printRefusal(out *os.File, err error) {
 // own vocabulary, then the two things every vendor's evidence is held to — the
 // caller-supplied bytes the binding recomputes, and the reference value that
 // admitted it.
-func printAccepted(out *os.File, o options, attested attest.Attested) {
+func printAccepted(out *os.File, attested attest.Attested) {
 	fmt.Fprintf(out, "\nACCEPTED\n")
 	fmt.Fprintf(out, "  vendor            : %s\n", attested.Vendor)
 	if td := attested.Claims.TDX; td != nil {
@@ -443,11 +426,7 @@ func printAccepted(out *os.File, o options, attested attest.Attested) {
 		printSNPClaims(out, attested.Claims)
 	}
 	fmt.Fprintf(out, "  caller-supplied   : %x\n", attested.Claims.CallerSuppliedBytes[:])
-	if o.bindingVersion() == 1 {
-		fmt.Fprintf(out, "    = SHA-512(public key ‖ binding context), recomputed from the key above (ADR-0002, v1)\n")
-	} else {
-		fmt.Fprintf(out, "    = SHA-512(public key ‖ binding context ‖ policy digest), recomputed from the key above (ADR-0002, v2)\n")
-	}
+	fmt.Fprintf(out, "    = SHA-512(public key ‖ binding context ‖ policy digest), recomputed from the key above (ADR-0002, v2)\n")
 	if td := attested.Satisfied.TDX; td != nil {
 		fmt.Fprintf(out, "  satisfied         : reference value with predicted RTMR2 %x\n", td.PredictedRTMR2)
 	} else {
@@ -478,63 +457,15 @@ func printSNPClaims(out *os.File, claims attest.Claims) {
 		claims.TCB.Bootloader, claims.TCB.TEE, claims.TCB.SNP, claims.TCB.Microcode)
 }
 
-// bindingVersion is -binding-version, defaulted for a zero value so that a
-// caller building options in code gets what the flag's default gives.
-func (o options) bindingVersion() int {
-	if o.binding == 0 {
-		return 2
-	}
-	return o.binding
-}
-
-// bindingFor builds the binding the bundle claims to be bound to.
-//
-// Version 1 exists here and nowhere else in this tree that still produces
-// evidence: bundles acquired before ticket 18 are recorded under docs/snp and
-// cannot be re-acquired without booking the machines again, so the tool that
-// re-checks them has to be able to speak the version they were written in.
+// bindingFor builds the binding the bundle claims to be bound to: the key it
+// names, the v2 context, and the policy digest that context commits to.
 func (o options) bindingFor(publicKey []byte) (attest.Binding, error) {
-	switch o.bindingVersion() {
-	case 1:
-		if o.policyDigest != "" {
-			return attest.Binding{}, errors.New("-policy-digest with -binding-version 1: a v1 binding covers no policy, and pretending otherwise would compute bytes no platform ever echoed")
-		}
-		return attest.Binding{PublicKey: publicKey, Context: attest.BindingContextV1}, nil
-	case 2:
-		digest, err := parsePolicyDigest(o.policyDigest)
-		if err != nil {
-			return attest.Binding{}, err
-		}
-		return attest.Binding{PublicKey: publicKey, Context: attest.BindingContextV2, PolicyDigest: digest}, nil
-	default:
-		return attest.Binding{}, fmt.Errorf("-binding-version %d: this command speaks 1 and 2", o.bindingVersion())
+	binding := attest.Binding{PublicKey: publicKey, Context: attest.BindingContextV2}
+	var err error
+	if binding.PolicyDigest, err = parsePolicyDigest(o.policyDigest); err != nil {
+		return attest.Binding{}, err
 	}
-}
-
-// verifyPreV2 is what a v1 bundle is judged by, since [attest.Verification]
-// refuses a v1 context before it looks at anything else — correctly, because a
-// v1 peer commits to no policy and a live verifier must not admit one.
-//
-// It asks the two questions that are still answerable about a recording: the
-// vendor's, against the same set loaded from the same signed document, and the
-// binding, recomputed from the recording's own v1 context through the same
-// exported [attest.Binding.CallerSuppliedBytes] the guest used when it asked
-// for the report. What it does not do is check a policy digest, because there
-// is none to check; that is said out loud in the output rather than left for a
-// reader to infer from an unusually short transcript.
-func verifyPreV2(verifier attest.Verifier, set attest.ReferenceValueSet, ev attest.Evidence, binding attest.Binding) (attest.Attested, error) {
-	if !ev.Present() {
-		return attest.Attested{}, attest.Refuse(attest.ReasonNoEvidence, "no evidence presented")
-	}
-	attested, err := verifier.Verify(context.Background(), ev, set)
-	if err != nil {
-		return attest.Attested{}, err
-	}
-	if want := binding.CallerSuppliedBytes(); want != attested.Claims.CallerSuppliedBytes {
-		return attest.Attested{}, attest.Refuse(attest.ReasonBindingMismatch,
-			"evidence is bound to different caller-supplied bytes than the presented public key produces under v1")
-	}
-	return attested, nil
+	return binding, nil
 }
 
 // digestList renders an any-of list of expected register values.

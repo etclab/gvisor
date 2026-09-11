@@ -182,15 +182,28 @@ func (s *SNP) Verify(ctx context.Context, ev attest.Evidence, set attest.Referen
 				"the peer's provisioned certificate chain is stale and needs re-provisioning (ADR-0005): %v", err)
 	}
 
-	// Evidence is accepted if it satisfies any one reference value, which is
-	// what lets a new image roll out while the old one is still running. A
-	// value about another vendor's hardware says nothing about this peer and
-	// is skipped rather than refused: a set holding AMD and Intel entries is
-	// one signed document naming peers on both, and an SEV-SNP peer has
-	// nothing to say about an Intel entry. The TDX verifier does the same in
-	// reverse. An empty Vendor is not "another vendor" — it means SEV-SNP,
-	// the vendor that existed before values named one at all — so it is not
-	// skipped here.
+	rv, err := satisfyingValue(att, selfPolicy, set)
+	if err != nil {
+		return attest.Attested{}, err
+	}
+	return attest.Attested{Vendor: attest.VendorAMDSEVSNP, Claims: claims, Satisfied: rv}, nil
+}
+
+// satisfyingValue returns the first reference value in set that the report
+// satisfies, or the refusal that best says why none of them did. It is the last
+// of [SNP.Verify]'s steps and runs only on a report already known to be
+// authentic; the split is where the steps end, not a reordering of them.
+//
+// Evidence is accepted if it satisfies any one reference value, which is
+// what lets a new image roll out while the old one is still running. A
+// value about another vendor's hardware says nothing about this peer and
+// is skipped rather than refused: a set holding AMD and Intel entries is
+// one signed document naming peers on both, and an SEV-SNP peer has
+// nothing to say about an Intel entry. The TDX verifier does the same in
+// reverse. An empty Vendor is not "another vendor" — it means SEV-SNP,
+// the vendor that existed before values named one at all — so it is not
+// skipped here.
+func satisfyingValue(att *spb.Attestation, selfPolicy abi.SnpPolicy, set attest.ReferenceValueSet) (attest.ReferenceValue, error) {
 	var specific error
 	for _, rv := range set.Values {
 		if rv.Vendor != "" && rv.Vendor != attest.VendorAMDSEVSNP {
@@ -198,7 +211,7 @@ func (s *SNP) Verify(ctx context.Context, ev attest.Evidence, set attest.Referen
 		}
 		err := satisfies(att, selfPolicy, rv)
 		if err == nil {
-			return attest.Attested{Vendor: attest.VendorAMDSEVSNP, Claims: claims, Satisfied: rv}, nil
+			return rv, nil
 		}
 		// A value whose measurement does not match is a value about a different
 		// image and says nothing about this peer. A value whose measurement
@@ -209,9 +222,9 @@ func (s *SNP) Verify(ctx context.Context, ev attest.Evidence, set attest.Referen
 		}
 	}
 	if specific != nil {
-		return attest.Attested{}, specific
+		return attest.ReferenceValue{}, specific
 	}
-	return attest.Attested{}, attest.Refuse(attest.ReasonMeasurementNotInSet,
+	return attest.ReferenceValue{}, attest.Refuse(attest.ReasonMeasurementNotInSet,
 		"launch measurement matches none of the %d reference values in the set", len(set.Values))
 }
 

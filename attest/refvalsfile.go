@@ -502,29 +502,8 @@ func parseReferenceValueSetDocument(document []byte) (ReferenceValueSet, error) 
 	if doc.Version == nil {
 		return ReferenceValueSet{}, refuseSet("the document does not say what version it is; want %d", ReferenceValueSetVersion)
 	}
-	if *doc.Version == 1 {
-		return ReferenceValueSet{}, refuseSet(
-			"the document is version 1 and this loader reads version %d: a version 1 reference value "+
-				"carries no vendor tag, so it does not say whose evidence it admits, and reading one as "+
-				"SEV-SNP would be this loader deciding what its author did not write down; "+
-				"re-emit the set with a vendor on every value and sign it again", ReferenceValueSetVersion)
-	}
-	if *doc.Version == 2 {
-		return ReferenceValueSet{}, refuseSet(
-			"the document is version 2 and this loader reads version %d: no value in a version 2 "+
-				"document can name the policy a peer running that image must present, so every value "+
-				"in it admits any policy at all, which is weaker than an author writing one today "+
-				"means; re-emit the set at version %d and sign it again",
-			ReferenceValueSetVersion, ReferenceValueSetVersion)
-	}
-	if *doc.Version == 3 {
-		return ReferenceValueSet{}, refuseSet(
-			"the document is version 3 and this loader reads version %d: a version 3 set carried an "+
-				"egress section and was therefore the sandbox's own policy as well as its guest list, "+
-				"and a policy that names peers' policies cannot be pinned in both directions "+
-				"(docs/policy-binding.md); move the egress section into policy.json, sign that, and "+
-				"re-emit this set at version %d",
-			ReferenceValueSetVersion, ReferenceValueSetVersion)
+	if err := refuseSupersededSetVersion(*doc.Version); err != nil {
+		return ReferenceValueSet{}, err
 	}
 	if *doc.Version != ReferenceValueSetVersion {
 		return ReferenceValueSet{}, refuseSet("the document is version %d, this loader reads version %d", *doc.Version, ReferenceValueSetVersion)
@@ -554,6 +533,44 @@ func parseReferenceValueSetDocument(document []byte) (ReferenceValueSet, error) 
 		return ReferenceValueSet{}, refuseSet("%v", err)
 	}
 	return set, nil
+}
+
+// refuseSupersededSetVersion reports the refusal a set written at a version
+// this loader has superseded earns, and nil for a version that is not one of
+// them.
+//
+// The three sentences are history rather than parsing. Each names a format
+// this design left behind, says why leaving it behind was necessary, and tells
+// the author what to re-emit — and an author holding a set that will not load
+// is the only reader they have. Standing in the loader's own sequence of
+// checks they were most of it, and that sequence is what a reader of a loader
+// has come to read; they are one function away from it instead, and the
+// version this package does read is still checked where it always was.
+func refuseSupersededSetVersion(version int) error {
+	switch version {
+	case 1:
+		return refuseSet(
+			"the document is version 1 and this loader reads version %d: a version 1 reference value "+
+				"carries no vendor tag, so it does not say whose evidence it admits, and reading one as "+
+				"SEV-SNP would be this loader deciding what its author did not write down; "+
+				"re-emit the set with a vendor on every value and sign it again", ReferenceValueSetVersion)
+	case 2:
+		return refuseSet(
+			"the document is version 2 and this loader reads version %d: no value in a version 2 "+
+				"document can name the policy a peer running that image must present, so every value "+
+				"in it admits any policy at all, which is weaker than an author writing one today "+
+				"means; re-emit the set at version %d and sign it again",
+			ReferenceValueSetVersion, ReferenceValueSetVersion)
+	case 3:
+		return refuseSet(
+			"the document is version 3 and this loader reads version %d: a version 3 set carried an "+
+				"egress section and was therefore the sandbox's own policy as well as its guest list, "+
+				"and a policy that names peers' policies cannot be pinned in both directions "+
+				"(docs/policy-binding.md); move the egress section into policy.json, sign that, and "+
+				"re-emit this set at version %d",
+			ReferenceValueSetVersion, ReferenceValueSetVersion)
+	}
+	return nil
 }
 
 // wireSet is the document as it is read. Its required fields are pointers so

@@ -2,7 +2,8 @@ Ticket 19, milestone 3b: two attested guests on Google Cloud TDX.
 
 This directory holds what the runs produced, in the order the ticket did them.
 Nothing here was edited by hand; the scripts that wrote each part are named
-beside it.
+beside it. The record that reads all of it, and says which of ticket 14's
+eleven criteria hold here and which do not, is docs/two-guests-on-tdx.md.
 
   step-zero/   Before any image work: does predict-rtmr2.py's initrd path
                survive a boot that actually loads an initrd? Two boots of one

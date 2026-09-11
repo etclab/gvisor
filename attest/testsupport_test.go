@@ -43,7 +43,7 @@ import (
 	"time"
 
 	"gvisor.dev/gvisor/attest"
-	"gvisor.dev/gvisor/attest/snpfake"
+	"gvisor.dev/gvisor/attest/internal/snpfake"
 	"gvisor.dev/gvisor/attest/verify"
 )
 
@@ -74,7 +74,7 @@ var (
 // launchedPolicy is what the fake platform launched with: SMT allowed, no
 // debugging. permittedPolicy is a reference value that permits it.
 var (
-	launchedPolicy  = snpfake.Policy{SMT: true}
+	launchedPolicy  = attest.GuestPolicy{AllowSMT: true}
 	permittedPolicy = attest.GuestPolicy{AllowSMT: true}
 )
 

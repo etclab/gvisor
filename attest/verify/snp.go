@@ -341,6 +341,20 @@ func snpPolicy(p attest.GuestPolicy) abi.SnpPolicy {
 	}
 }
 
+// SNPPolicyBits is the guest policy word an SEV-SNP platform launched with
+// exactly the capabilities p names would report, in AMD's encoding.
+//
+// It is the mapping above, packed. It is exported for the one caller that has
+// to mint a report rather than read one — the fake platform in
+// gvisor.dev/gvisor/attest/internal/snpfake — so that the bits a test launches
+// a platform with and the bits this package checks a reference value against
+// come from a single piece of code. What crosses the package boundary is the
+// word and not the library's type, so the containment this package's comment
+// claims still holds.
+func SNPPolicyBits(p attest.GuestPolicy) uint64 {
+	return abi.SnpPolicyToBytes(snpPolicy(p))
+}
+
 // offlineGetter refuses every request. Certificate fetching is already
 // disabled; this is here so that a future edit that re-enables it fails loudly
 // instead of quietly restoring the network dependency on the critical path of

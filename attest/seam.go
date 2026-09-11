@@ -137,9 +137,10 @@ type Attested struct {
 // The implementation that talks to real hardware is
 // gvisor.dev/gvisor/attest/tsm, which drives the kernel's vendor-neutral
 // report interface and bundles the chain the config device holds (ADR-0005).
-// The other is the fake SEV-SNP platform in gvisor.dev/gvisor/attest/snpfake,
-// which mints test-signed evidence with arbitrary contents so that the
-// verification path can be exercised without a confidential VM.
+// The other is the fake SEV-SNP platform in
+// gvisor.dev/gvisor/attest/internal/snpfake, which mints test-signed evidence
+// with arbitrary contents so that the verification path can be exercised
+// without a confidential VM.
 type Acquirer interface {
 	// Vendor names the hardware this acquirer speaks for.
 	Vendor() Vendor

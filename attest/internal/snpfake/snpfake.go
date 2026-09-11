@@ -46,45 +46,22 @@ import (
 	spb "github.com/google/go-sev-guest/proto/sevsnp"
 	sevtest "github.com/google/go-sev-guest/testing"
 	"gvisor.dev/gvisor/attest"
+	"gvisor.dev/gvisor/attest/verify"
 )
 
-// DefaultProductLine is the AMD product line the fake platform claims. It
+// defaultProductLine is the AMD product line the fake platform claims. It
 // matches the host in docs/snp-host-stack.md.
-const DefaultProductLine = "Milan"
+const defaultProductLine = "Milan"
 
-// DefaultTCB is the TCB level the fake platform reports if a config does not
+// defaultTCB is the TCB level the fake platform reports if a config does not
 // choose one. It is the level the host in docs/snp-host-stack.md actually
 // produced, recorded there as a fact about that machine rather than as a
 // recommended floor.
-var DefaultTCB = attest.TCB{Bootloader: 9, TEE: 0, SNP: 23, Microcode: 72}
-
-// Policy is the guest policy the fake platform launched with — what its
-// evidence claims, as distinct from [attest.GuestPolicy], which is what a
-// reference value permits. The two are separate types because reading a claim
-// as a permission, or the reverse, is the mistake worth making impossible.
-type Policy struct {
-	// ABIMajor and ABIMinor are the SNP ABI version the guest demanded.
-	ABIMajor uint8
-	ABIMinor uint8
-
-	// SMT is set if the guest was launched allowing symmetric multithreading.
-	SMT bool
-
-	// MigrationAgent is set if the guest may have a migration agent.
-	MigrationAgent bool
-
-	// Debug is set if the host may decrypt the guest for debugging. A platform
-	// with this set is the one a reference value that does not permit debugging
-	// has to refuse.
-	Debug bool
-
-	// SingleSocket is set if the guest may only be active on a single socket.
-	SingleSocket bool
-}
+var defaultTCB = attest.TCB{Bootloader: 9, TEE: 0, SNP: 23, Microcode: 72}
 
 // Config describes the platform to fake.
 type Config struct {
-	// ProductLine is the AMD product line. Empty means [DefaultProductLine].
+	// ProductLine is the AMD product line. Empty means defaultProductLine.
 	ProductLine string
 
 	// LaunchMeasurement is the measurement the platform's evidence attests. It
@@ -99,12 +76,17 @@ type Config struct {
 	// a real platform's report that disagreed with itself would be refused as
 	// malformed and would test nothing.
 	//
-	// The zero value means [DefaultTCB]. A platform genuinely at TCB zero is
+	// The zero value means defaultTCB. A platform genuinely at TCB zero is
 	// not a case worth being able to express by accident.
 	TCB attest.TCB
 
-	// Policy is the guest policy the platform launched with.
-	Policy Policy
+	// Policy is the guest policy the platform launched with, named in the
+	// shape a reference value permits one with. The report's policy word is
+	// built from it by the same mapping the verifier reads that word back
+	// through — gvisor.dev/gvisor/attest/verify.SNPPolicyBits — so a test
+	// cannot launch a platform whose claim and the permission it is checked
+	// against were spelled by two different pieces of code.
+	Policy attest.GuestPolicy
 
 	// ChipID identifies the chip. Empty means a fixed value. It is written both
 	// into the report and into the endorsement key certificate, as a real
@@ -143,11 +125,11 @@ var fixedNow = time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
 func New(cfg Config) (*Platform, error) {
 	p := &Platform{cfg: cfg, productLine: cfg.ProductLine}
 	if p.productLine == "" {
-		p.productLine = DefaultProductLine
+		p.productLine = defaultProductLine
 	}
 	tcb := cfg.TCB
 	if tcb == (attest.TCB{}) {
-		tcb = DefaultTCB
+		tcb = defaultTCB
 	}
 	p.tcb = kds.TCBParts{BlSpl: tcb.Bootloader, TeeSpl: tcb.TEE, SnpSpl: tcb.SNP, UcodeSpl: tcb.Microcode}
 
@@ -352,7 +334,7 @@ func (p *Platform) report(callerSupplied [attest.CallerSuppliedBytesSize]byte) (
 		// a verifier work out the product line without being told. It is the
 		// version the host in docs/snp-host-stack.md produces.
 		Version:         3,
-		Policy:          abi.SnpPolicyToBytes(snpPolicy(p.cfg.Policy)),
+		Policy:          verify.SNPPolicyBits(p.cfg.Policy),
 		FamilyId:        make([]byte, abi.FamilyIDSize),
 		ImageId:         make([]byte, abi.ImageIDSize),
 		Vmpl:            0,
@@ -385,17 +367,6 @@ func (p *Platform) report(callerSupplied [attest.CallerSuppliedBytesSize]byte) (
 		return nil, fmt.Errorf("snpfake: setting the report signature: %w", err)
 	}
 	return raw, nil
-}
-
-func snpPolicy(p Policy) abi.SnpPolicy {
-	return abi.SnpPolicy{
-		ABIMajor:     p.ABIMajor,
-		ABIMinor:     p.ABIMinor,
-		SMT:          p.SMT,
-		MigrateMA:    p.MigrationAgent,
-		Debug:        p.Debug,
-		SingleSocket: p.SingleSocket,
-	}
 }
 
 // productFms is the CPUID family/model/stepping a product line reports, taken

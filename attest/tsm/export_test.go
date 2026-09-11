@@ -41,8 +41,8 @@ import (
 // (Documentation/ABI/testing/configfs-tsm), an inblob that takes exactly the
 // caller-supplied field's width, and an auxblob that is empty. The bytes it
 // answers outblob with come from whatever the test supplies — the fake SEV-SNP
-// platform in gvisor.dev/gvisor/attest/snpfake, or the report ticket 01 read
-// out of real silicon.
+// platform in gvisor.dev/gvisor/attest/internal/snpfake, or the report ticket
+// 01 read out of real silicon.
 
 // A FakeReportInterface is the kernel's report interface, faked. See the
 // comment above.

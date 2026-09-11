@@ -74,8 +74,8 @@ import (
 	"time"
 
 	"gvisor.dev/gvisor/attest"
+	"gvisor.dev/gvisor/attest/internal/snpfake"
 	"gvisor.dev/gvisor/attest/ratls"
-	"gvisor.dev/gvisor/attest/snpfake"
 	"gvisor.dev/gvisor/attest/tunnel"
 	"gvisor.dev/gvisor/attest/tunneld"
 )

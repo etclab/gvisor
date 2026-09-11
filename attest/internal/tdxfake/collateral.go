@@ -187,7 +187,7 @@ func (p *Platform) tcbInfoDocument(issued, nextUpdate time.Time) ([]byte, error)
 	}
 	evaluation := p.cfg.EvaluationDataNumber
 	if evaluation == 0 {
-		evaluation = DefaultEvaluationDataNumber
+		evaluation = defaultEvaluationDataNumber
 	}
 
 	match := tcbLevel{
@@ -278,7 +278,7 @@ func (p *Platform) enclaveIdentityDocument(issued, nextUpdate time.Time) ([]byte
 		}},
 	}
 	if doc.TcbEvaluationDataNumber == 0 {
-		doc.TcbEvaluationDataNumber = DefaultEvaluationDataNumber
+		doc.TcbEvaluationDataNumber = defaultEvaluationDataNumber
 	}
 	return json.Marshal(doc)
 }

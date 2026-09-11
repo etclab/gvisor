@@ -28,7 +28,7 @@ import (
 	"time"
 
 	"gvisor.dev/gvisor/attest"
-	"gvisor.dev/gvisor/attest/snpfake"
+	"gvisor.dev/gvisor/attest/internal/snpfake"
 	"gvisor.dev/gvisor/attest/tunneld"
 	"gvisor.dev/gvisor/attest/verify"
 )
@@ -51,7 +51,7 @@ var (
 
 var (
 	platformTCB = attest.TCB{Bootloader: 9, TEE: 0, SNP: 23, Microcode: 72}
-	launched    = snpfake.Policy{SMT: true}
+	launched    = attest.GuestPolicy{AllowSMT: true}
 	permitted   = attest.GuestPolicy{AllowSMT: true}
 )
 

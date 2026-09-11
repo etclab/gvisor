@@ -56,8 +56,8 @@ import (
 	"time"
 
 	"gvisor.dev/gvisor/attest"
+	"gvisor.dev/gvisor/attest/internal/snpfake"
 	"gvisor.dev/gvisor/attest/ratls"
-	"gvisor.dev/gvisor/attest/snpfake"
 	"gvisor.dev/gvisor/attest/tunnel"
 	"gvisor.dev/gvisor/attest/tunneld"
 	"gvisor.dev/gvisor/attest/verify"
@@ -82,7 +82,7 @@ var refusalBelow = attest.TCB{Bootloader: 9, TEE: 0, SNP: 23, Microcode: 71}
 
 // refusalDebugging is a guest the host may decrypt. No reference value in this
 // file permits it; that is the refusal that keeps a debug-enabled guest out.
-var refusalDebugging = snpfake.Policy{SMT: true, Debug: true}
+var refusalDebugging = attest.GuestPolicy{AllowSMT: true, AllowDebug: true}
 
 // refusalStaleTCB is a TCB level a platform used to be at. A chain issued for
 // it does not match a report from a platform that has since moved on, which is
@@ -180,7 +180,7 @@ func startRefusalNodeUnder(t *testing.T, name string, acquirer attest.Acquirer, 
 // refusalPlatform is a fake platform running one image at one TCB under one
 // guest policy, with the chain creation time fixed so that a test's outcome
 // does not depend on the day it runs.
-func refusalPlatform(t *testing.T, measurement []byte, tcb attest.TCB, policy snpfake.Policy) *snpfake.Platform {
+func refusalPlatform(t *testing.T, measurement []byte, tcb attest.TCB, policy attest.GuestPolicy) *snpfake.Platform {
 	t.Helper()
 	p, err := snpfake.New(snpfake.Config{
 		LaunchMeasurement: measurement,

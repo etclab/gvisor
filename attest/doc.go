@@ -44,7 +44,7 @@
 // other package. The acquirer is gvisor.dev/gvisor/attest/tsm, which drives
 // the kernel's vendor-neutral report interface and bundles the certificate
 // chain the config device holds (ADR-0005). Beside them,
-// gvisor.dev/gvisor/attest/snpfake is a fake SEV-SNP platform built on
+// gvisor.dev/gvisor/attest/internal/snpfake is a fake SEV-SNP platform built on
 // go-sev-guest's test signing, which is what lets everything above the seam be
 // exercised with no confidential VM.
 //

@@ -45,9 +45,9 @@ import (
 func TestPackagedImportGraphExcludesTestSupport(t *testing.T) {
 	deps := listDeps(t, "gvisor.dev/gvisor/attest/cmd/tunneld")
 	forbidden := []string{
-		"gvisor.dev/gvisor/attest/snpfake",
+		"gvisor.dev/gvisor/attest/internal/snpfake",
 		"github.com/google/go-sev-guest/testing",
-		"gvisor.dev/gvisor/attest/tdxfake",
+		"gvisor.dev/gvisor/attest/internal/tdxfake",
 		"github.com/google/go-tdx-guest/testing",
 		"testing",
 	}
@@ -78,9 +78,9 @@ func TestPackagedImportGraphExcludesTestSupport(t *testing.T) {
 func TestPackageImportGraphExcludesTestSupport(t *testing.T) {
 	deps := listDeps(t, "gvisor.dev/gvisor/attest/tunneld")
 	for _, f := range []string{
-		"gvisor.dev/gvisor/attest/snpfake",
+		"gvisor.dev/gvisor/attest/internal/snpfake",
 		"github.com/google/go-sev-guest/testing",
-		"gvisor.dev/gvisor/attest/tdxfake",
+		"gvisor.dev/gvisor/attest/internal/tdxfake",
 		"github.com/google/go-tdx-guest/testing",
 		"testing",
 	} {

@@ -50,7 +50,7 @@
 //
 // The mutations that a recording cannot express — a register moved, a debug
 // TD, a TCB level Intel calls out of date — come from
-// gvisor.dev/gvisor/attest/tdxfake, which re-signs a recording under a
+// gvisor.dev/gvisor/attest/internal/tdxfake, which re-signs a recording under a
 // generated chain and mints the Intel collateral to match.
 package attest_test
 
@@ -66,7 +66,7 @@ import (
 	"time"
 
 	"gvisor.dev/gvisor/attest"
-	"gvisor.dev/gvisor/attest/tdxfake"
+	"gvisor.dev/gvisor/attest/internal/tdxfake"
 	"gvisor.dev/gvisor/attest/verify"
 )
 

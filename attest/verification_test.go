@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	"gvisor.dev/gvisor/attest"
-	"gvisor.dev/gvisor/attest/snpfake"
+	"gvisor.dev/gvisor/attest/internal/snpfake"
 	"gvisor.dev/gvisor/attest/verify"
 )
 
@@ -164,7 +164,7 @@ func TestGuestPolicyNotPermittedIsRefused(t *testing.T) {
 	accepts(t, verification(t, ok, defaultSet()), ok)
 
 	debugging := defaultConfig()
-	debugging.Policy = snpfake.Policy{SMT: true, Debug: true}
+	debugging.Policy = attest.GuestPolicy{AllowSMT: true, AllowDebug: true}
 	f := newFixture(t, debugging)
 	refuses(t, verification(t, f, defaultSet()), f.evidence, f.binding, attest.ReasonPolicyMismatch)
 }
@@ -407,7 +407,7 @@ func TestReservedBytesOfTheBindingContextAreNotIgnored(t *testing.T) {
 func TestEveryRefusalLooksTheSameToACaller(t *testing.T) {
 	f := newFixture(t, defaultConfig())
 	debugging := defaultConfig()
-	debugging.Policy = snpfake.Policy{SMT: true, Debug: true}
+	debugging.Policy = attest.GuestPolicy{AllowSMT: true, AllowDebug: true}
 	debugger := newFixture(t, debugging)
 	other := newFixture(t, defaultConfig())
 

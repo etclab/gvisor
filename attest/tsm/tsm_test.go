@@ -29,8 +29,8 @@ import (
 	"time"
 
 	"gvisor.dev/gvisor/attest"
+	"gvisor.dev/gvisor/attest/internal/snpfake"
 	"gvisor.dev/gvisor/attest/provision"
-	"gvisor.dev/gvisor/attest/snpfake"
 	"gvisor.dev/gvisor/attest/tsm"
 	"gvisor.dev/gvisor/attest/verify"
 )
@@ -94,7 +94,7 @@ func capturedCallerSupplied() [attest.CallerSuppliedBytesSize]byte {
 // platform builds a fake SEV-SNP platform at a TCB.
 func platform(t *testing.T, tcb attest.TCB) *snpfake.Platform {
 	t.Helper()
-	p, err := snpfake.New(snpfake.Config{TCB: tcb, ChipID: chipID, Policy: snpfake.Policy{SMT: true}, Now: chainCreatedAt})
+	p, err := snpfake.New(snpfake.Config{TCB: tcb, ChipID: chipID, Policy: attest.GuestPolicy{AllowSMT: true}, Now: chainCreatedAt})
 	if err != nil {
 		t.Fatalf("snpfake.New: %v", err)
 	}

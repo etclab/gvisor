@@ -18,8 +18,9 @@
 //
 // # Why this one re-signs a recording
 //
-// gvisor.dev/gvisor/attest/snpfake builds an SEV-SNP report from nothing,
-// because an SEV-SNP report is a flat structure with one signature over it. A
+// gvisor.dev/gvisor/attest/internal/snpfake builds an SEV-SNP report from
+// nothing, because an SEV-SNP report is a flat structure with one signature
+// over it. A
 // TDX quote is not: it is a TD report, a quoting-enclave report whose report
 // data commits to an attestation key, a signature by that key over the TD
 // report, a signature by the platform's provisioning certification key over the
@@ -73,18 +74,18 @@ import (
 	"gvisor.dev/gvisor/attest"
 )
 
-// DefaultNow is the instant a fake platform's certificates and collateral are
+// defaultNow is the instant a fake platform's certificates and collateral are
 // dated around when a config does not choose one. It is inside the validity of
 // the Intel collateral recorded on this branch, so a test can drive the fake
 // and a recorded quote from one clock.
-var DefaultNow = time.Date(2026, time.September, 9, 0, 0, 0, 0, time.UTC)
+var defaultNow = time.Date(2026, time.September, 9, 0, 0, 0, 0, time.UTC)
 
-// DefaultEvaluationDataNumber is the tcbEvaluationDataNumber the fake's
+// defaultEvaluationDataNumber is the tcbEvaluationDataNumber the fake's
 // collateral carries. It is the number Intel's real TCB info for these
 // platforms carried when it was fetched (docs/snp/evidence/tdx/collateral),
 // recorded here as a fact about that document rather than as a recommended
 // floor.
-const DefaultEvaluationDataNumber = 20
+const defaultEvaluationDataNumber = 20
 
 // Intel's masks, as its real quoting-enclave identity and TCB info carry them
 // (docs/snp/evidence/tdx/collateral). They are copied rather than invented
@@ -120,7 +121,7 @@ type Config struct {
 	CollateralDir string
 
 	// Now is the instant the certificates and collateral are dated around.
-	// Zero means [DefaultNow], so that a test's outcome does not depend on the
+	// Zero means defaultNow, so that a test's outcome does not depend on the
 	// day it runs.
 	Now time.Time
 
@@ -156,7 +157,7 @@ type Config struct {
 	TCBStatus attest.TDXTCBStatus
 
 	// EvaluationDataNumber is the tcbEvaluationDataNumber the generated
-	// collateral carries. Zero means [DefaultEvaluationDataNumber]. A number
+	// collateral carries. Zero means defaultEvaluationDataNumber. A number
 	// below a reference value's floor is collateral from before a TCB recovery,
 	// and is the one TCB refusal this library commit lets a reference value
 	// make.
@@ -220,7 +221,7 @@ func New(cfg Config) (*Platform, error) {
 
 	p := &Platform{cfg: cfg, recorded: quote, now: cfg.Now}
 	if p.now.IsZero() {
-		p.now = DefaultNow
+		p.now = defaultNow
 	}
 	if err := p.mintChain(); err != nil {
 		return nil, err
@@ -261,11 +262,6 @@ func (p *Platform) VendorRootPEM() []byte { return certPEM(p.root) }
 // CollateralDir returns the directory the platform's Intel collateral was
 // written to, for handing to verify.TDXOptions.
 func (p *Platform) CollateralDir() string { return p.cfg.CollateralDir }
-
-// FMSPC returns the platform identifier the collateral is filed under. It comes
-// from the SGX extension of the recorded PCK certificate, which this platform's
-// own PCK certificate carries byte for byte.
-func (p *Platform) FMSPC() string { return p.fmspc }
 
 // quote builds and signs one quote.
 func (p *Platform) quote(callerSupplied [attest.CallerSuppliedBytesSize]byte) ([]byte, error) {

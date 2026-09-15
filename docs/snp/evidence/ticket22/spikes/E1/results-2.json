@@ -1,0 +1,644 @@
+{
+  "go": "go1.26.3",
+  "quic_go": "quic-go v0.59.0",
+  "kernel": "6.11.0-rc3-snp-host-85ef1ac03941",
+  "runs": [
+    {
+      "run": 1,
+      "direct": [
+        {
+          "name": "lat-64B",
+          "n": 2000,
+          "median_us": 232.947,
+          "p90_us": 303.853,
+          "min_us": 112.548,
+          "mbps": 0.26201305983764545,
+          "mismatches": 0
+        },
+        {
+          "name": "lat-4KiB",
+          "n": 1000,
+          "median_us": 525.884,
+          "p90_us": 728.115,
+          "min_us": 290.553,
+          "mbps": 7.4279689056902285,
+          "mismatches": 0
+        },
+        {
+          "name": "bulk-up-64MiB",
+          "n": 1,
+          "median_us": 415588.959,
+          "p90_us": 415588.959,
+          "min_us": 415588.959,
+          "mbps": 153.99831639896863,
+          "mismatches": 0
+        },
+        {
+          "name": "bulk-down-64MiB",
+          "n": 1,
+          "median_us": 455749.069,
+          "p90_us": 455749.069,
+          "min_us": 455749.069,
+          "mbps": 140.42815301944148,
+          "mismatches": 0
+        }
+      ],
+      "proxied": [
+        {
+          "name": "lat-64B",
+          "n": 2000,
+          "median_us": 484.752,
+          "p90_us": 645.783,
+          "min_us": 209.632,
+          "mbps": 0.12591006586873288,
+          "mismatches": 0
+        },
+        {
+          "name": "lat-4KiB",
+          "n": 1000,
+          "median_us": 790.918,
+          "p90_us": 1099.588,
+          "min_us": 351.734,
+          "mbps": 4.9388811482353425,
+          "mismatches": 0
+        },
+        {
+          "name": "bulk-up-64MiB",
+          "n": 1,
+          "median_us": 644498.095,
+          "p90_us": 644498.095,
+          "min_us": 644498.095,
+          "mbps": 99.30207784400045,
+          "mismatches": 0
+        },
+        {
+          "name": "bulk-down-64MiB",
+          "n": 1,
+          "median_us": 538791.96,
+          "p90_us": 538791.96,
+          "min_us": 538791.96,
+          "mbps": 118.78425208869116,
+          "mismatches": 0
+        }
+      ]
+    },
+    {
+      "run": 2,
+      "direct": [
+        {
+          "name": "lat-64B",
+          "n": 2000,
+          "median_us": 171.996,
+          "p90_us": 301.46,
+          "min_us": 106.188,
+          "mbps": 0.35486381223981955,
+          "mismatches": 0
+        },
+        {
+          "name": "lat-4KiB",
+          "n": 1000,
+          "median_us": 576.759,
+          "p90_us": 773.262,
+          "min_us": 303.352,
+          "mbps": 6.772759506136878,
+          "mismatches": 0
+        },
+        {
+          "name": "bulk-up-64MiB",
+          "n": 1,
+          "median_us": 526567.12,
+          "p90_us": 526567.12,
+          "min_us": 526567.12,
+          "mbps": 121.54196031077673,
+          "mismatches": 0
+        },
+        {
+          "name": "bulk-down-64MiB",
+          "n": 1,
+          "median_us": 422884.891,
+          "p90_us": 422884.891,
+          "min_us": 422884.891,
+          "mbps": 151.34142023532357,
+          "mismatches": 0
+        }
+      ],
+      "proxied": [
+        {
+          "name": "lat-64B",
+          "n": 2000,
+          "median_us": 315.52,
+          "p90_us": 485.704,
+          "min_us": 181.12,
+          "mbps": 0.19344306620816432,
+          "mismatches": 0
+        },
+        {
+          "name": "lat-4KiB",
+          "n": 1000,
+          "median_us": 785.821,
+          "p90_us": 1029.925,
+          "min_us": 382.12,
+          "mbps": 4.970915768349281,
+          "mismatches": 0
+        },
+        {
+          "name": "bulk-up-64MiB",
+          "n": 1,
+          "median_us": 592766.689,
+          "p90_us": 592766.689,
+          "min_us": 592766.689,
+          "mbps": 107.9682802486224,
+          "mismatches": 0
+        },
+        {
+          "name": "bulk-down-64MiB",
+          "n": 1,
+          "median_us": 543478.003,
+          "p90_us": 543478.003,
+          "min_us": 543478.003,
+          "mbps": 117.7600558747913,
+          "mismatches": 0
+        }
+      ]
+    },
+    {
+      "run": 3,
+      "direct": [
+        {
+          "name": "lat-64B",
+          "n": 2000,
+          "median_us": 165.887,
+          "p90_us": 231.956,
+          "min_us": 103.054,
+          "mbps": 0.36793212397595954,
+          "mismatches": 0
+        },
+        {
+          "name": "lat-4KiB",
+          "n": 1000,
+          "median_us": 410.151,
+          "p90_us": 568.097,
+          "min_us": 276.142,
+          "mbps": 9.52393143013183,
+          "mismatches": 0
+        },
+        {
+          "name": "bulk-up-64MiB",
+          "n": 1,
+          "median_us": 475602.237,
+          "p90_us": 475602.237,
+          "min_us": 475602.237,
+          "mbps": 134.56622997338846,
+          "mismatches": 0
+        },
+        {
+          "name": "bulk-down-64MiB",
+          "n": 1,
+          "median_us": 481801.166,
+          "p90_us": 481801.166,
+          "min_us": 481801.166,
+          "mbps": 132.83487985581172,
+          "mismatches": 0
+        }
+      ],
+      "proxied": [
+        {
+          "name": "lat-64B",
+          "n": 2000,
+          "median_us": 407.557,
+          "p90_us": 606.915,
+          "min_us": 173.99,
+          "mbps": 0.14975857671442278,
+          "mismatches": 0
+        },
+        {
+          "name": "lat-4KiB",
+          "n": 1000,
+          "median_us": 730.409,
+          "p90_us": 941.133,
+          "min_us": 410.121,
+          "mbps": 5.348031034666878,
+          "mismatches": 0
+        },
+        {
+          "name": "bulk-up-64MiB",
+          "n": 1,
+          "median_us": 503032.236,
+          "p90_us": 503032.236,
+          "min_us": 503032.236,
+          "mbps": 127.22842676825987,
+          "mismatches": 0
+        },
+        {
+          "name": "bulk-down-64MiB",
+          "n": 1,
+          "median_us": 478338.184,
+          "p90_us": 478338.184,
+          "min_us": 478338.184,
+          "mbps": 133.79655260806024,
+          "mismatches": 0
+        }
+      ]
+    },
+    {
+      "run": 4,
+      "direct": [
+        {
+          "name": "lat-64B",
+          "n": 2000,
+          "median_us": 175.301,
+          "p90_us": 241.249,
+          "min_us": 103.004,
+          "mbps": 0.3481734630720875,
+          "mismatches": 0
+        },
+        {
+          "name": "lat-4KiB",
+          "n": 1000,
+          "median_us": 546.886,
+          "p90_us": 726.162,
+          "min_us": 304.885,
+          "mbps": 7.142713472277587,
+          "mismatches": 0
+        },
+        {
+          "name": "bulk-up-64MiB",
+          "n": 1,
+          "median_us": 539937.336,
+          "p90_us": 539937.336,
+          "min_us": 539937.336,
+          "mbps": 118.5322735303491,
+          "mismatches": 0
+        },
+        {
+          "name": "bulk-down-64MiB",
+          "n": 1,
+          "median_us": 443833.121,
+          "p90_us": 443833.121,
+          "min_us": 443833.121,
+          "mbps": 144.1983416104721,
+          "mismatches": 0
+        }
+      ],
+      "proxied": [
+        {
+          "name": "lat-64B",
+          "n": 2000,
+          "median_us": 345.916,
+          "p90_us": 477.101,
+          "min_us": 170.324,
+          "mbps": 0.1764450220573781,
+          "mismatches": 0
+        },
+        {
+          "name": "lat-4KiB",
+          "n": 1000,
+          "median_us": 748.396,
+          "p90_us": 1008.493,
+          "min_us": 416.2,
+          "mbps": 5.219496095649897,
+          "mismatches": 0
+        },
+        {
+          "name": "bulk-up-64MiB",
+          "n": 1,
+          "median_us": 527323.679,
+          "p90_us": 527323.679,
+          "min_us": 527323.679,
+          "mbps": 121.36758228147005,
+          "mismatches": 0
+        },
+        {
+          "name": "bulk-down-64MiB",
+          "n": 1,
+          "median_us": 552514.55,
+          "p90_us": 552514.55,
+          "min_us": 552514.55,
+          "mbps": 115.83405360094136,
+          "mismatches": 0
+        }
+      ]
+    },
+    {
+      "run": 5,
+      "direct": [
+        {
+          "name": "lat-64B",
+          "n": 2000,
+          "median_us": 240.759,
+          "p90_us": 412.815,
+          "min_us": 116.844,
+          "mbps": 0.2535114211722096,
+          "mismatches": 0
+        },
+        {
+          "name": "lat-4KiB",
+          "n": 1000,
+          "median_us": 534.006,
+          "p90_us": 752.16,
+          "min_us": 291.053,
+          "mbps": 7.314992715437655,
+          "mismatches": 0
+        },
+        {
+          "name": "bulk-up-64MiB",
+          "n": 1,
+          "median_us": 430735.862,
+          "p90_us": 430735.862,
+          "min_us": 430735.862,
+          "mbps": 148.582938283416,
+          "mismatches": 0
+        },
+        {
+          "name": "bulk-down-64MiB",
+          "n": 1,
+          "median_us": 480305.606,
+          "p90_us": 480305.606,
+          "min_us": 480305.606,
+          "mbps": 133.24849679143657,
+          "mismatches": 0
+        }
+      ],
+      "proxied": [
+        {
+          "name": "lat-64B",
+          "n": 2000,
+          "median_us": 344.353,
+          "p90_us": 531.682,
+          "min_us": 160.309,
+          "mbps": 0.17724589665256293,
+          "mismatches": 0
+        },
+        {
+          "name": "lat-4KiB",
+          "n": 1000,
+          "median_us": 716.238,
+          "p90_us": 1076.895,
+          "min_us": 382.229,
+          "mbps": 5.453843554796031,
+          "mismatches": 0
+        },
+        {
+          "name": "bulk-up-64MiB",
+          "n": 1,
+          "median_us": 621605.317,
+          "p90_us": 621605.317,
+          "min_us": 621605.317,
+          "mbps": 102.95922227447743,
+          "mismatches": 0
+        },
+        {
+          "name": "bulk-down-64MiB",
+          "n": 1,
+          "median_us": 502327.026,
+          "p90_us": 502327.026,
+          "min_us": 502327.026,
+          "mbps": 127.40704100599199,
+          "mismatches": 0
+        }
+      ]
+    },
+    {
+      "run": 6,
+      "direct": [
+        {
+          "name": "lat-64B",
+          "n": 2000,
+          "median_us": 162.101,
+          "p90_us": 222.833,
+          "min_us": 109.123,
+          "mbps": 0.37652547640051576,
+          "mismatches": 0
+        },
+        {
+          "name": "lat-4KiB",
+          "n": 1000,
+          "median_us": 532.834,
+          "p90_us": 732.212,
+          "min_us": 266.727,
+          "mbps": 7.331082475968126,
+          "mismatches": 0
+        },
+        {
+          "name": "bulk-up-64MiB",
+          "n": 1,
+          "median_us": 624519.22,
+          "p90_us": 624519.22,
+          "min_us": 624519.22,
+          "mbps": 102.47883163627856,
+          "mismatches": 0
+        },
+        {
+          "name": "bulk-down-64MiB",
+          "n": 1,
+          "median_us": 481461.99,
+          "p90_us": 481461.99,
+          "min_us": 481461.99,
+          "mbps": 132.92845817382178,
+          "mismatches": 0
+        }
+      ],
+      "proxied": [
+        {
+          "name": "lat-64B",
+          "n": 2000,
+          "median_us": 421.168,
+          "p90_us": 615.628,
+          "min_us": 212.457,
+          "mbps": 0.1449187883457433,
+          "mismatches": 0
+        },
+        {
+          "name": "lat-4KiB",
+          "n": 1000,
+          "median_us": 806.882,
+          "p90_us": 1118.817,
+          "min_us": 439.745,
+          "mbps": 4.841166366333616,
+          "mismatches": 0
+        },
+        {
+          "name": "bulk-up-64MiB",
+          "n": 1,
+          "median_us": 647637.925,
+          "p90_us": 647637.925,
+          "min_us": 647637.925,
+          "mbps": 98.82064889884266,
+          "mismatches": 0
+        },
+        {
+          "name": "bulk-down-64MiB",
+          "n": 1,
+          "median_us": 566719.28,
+          "p90_us": 566719.28,
+          "min_us": 566719.28,
+          "mbps": 112.9306911880605,
+          "mismatches": 0
+        }
+      ]
+    },
+    {
+      "run": 7,
+      "direct": [
+        {
+          "name": "lat-64B",
+          "n": 2000,
+          "median_us": 204.735,
+          "p90_us": 308.27,
+          "min_us": 113.249,
+          "mbps": 0.2981178413558991,
+          "mismatches": 0
+        },
+        {
+          "name": "lat-4KiB",
+          "n": 1000,
+          "median_us": 500.075,
+          "p90_us": 752.842,
+          "min_us": 241.74,
+          "mbps": 7.811328300754886,
+          "mismatches": 0
+        },
+        {
+          "name": "bulk-up-64MiB",
+          "n": 1,
+          "median_us": 448953.812,
+          "p90_us": 448953.812,
+          "min_us": 448953.812,
+          "mbps": 142.55363979401963,
+          "mismatches": 0
+        },
+        {
+          "name": "bulk-down-64MiB",
+          "n": 1,
+          "median_us": 535695.925,
+          "p90_us": 535695.925,
+          "min_us": 535695.925,
+          "mbps": 119.47076132789323,
+          "mismatches": 0
+        }
+      ],
+      "proxied": [
+        {
+          "name": "lat-64B",
+          "n": 2000,
+          "median_us": 416.862,
+          "p90_us": 666.653,
+          "min_us": 193.869,
+          "mbps": 0.14641573530328983,
+          "mismatches": 0
+        },
+        {
+          "name": "lat-4KiB",
+          "n": 1000,
+          "median_us": 675.756,
+          "p90_us": 903.376,
+          "min_us": 351.825,
+          "mbps": 5.780562806693541,
+          "mismatches": 0
+        },
+        {
+          "name": "bulk-up-64MiB",
+          "n": 1,
+          "median_us": 689818.386,
+          "p90_us": 689818.386,
+          "min_us": 689818.386,
+          "mbps": 92.77804317613534,
+          "mismatches": 0
+        },
+        {
+          "name": "bulk-down-64MiB",
+          "n": 1,
+          "median_us": 591471.839,
+          "p90_us": 591471.839,
+          "min_us": 591471.839,
+          "mbps": 108.2046443803726,
+          "mismatches": 0
+        }
+      ]
+    }
+  ],
+  "summary": [
+    {
+      "phase": "lat-64B",
+      "metric": "median RTT (us)",
+      "direct": 175.301,
+      "proxied": 407.557,
+      "delta": 232.25600000000003,
+      "ratio": 2.324898317750612
+    },
+    {
+      "phase": "lat-64B",
+      "metric": "best RTT (us)",
+      "direct": 109.123,
+      "proxied": 181.12,
+      "delta": 71.997,
+      "ratio": 1.659778415182867
+    },
+    {
+      "phase": "lat-64B",
+      "metric": "p90 RTT (us)",
+      "direct": 301.46,
+      "proxied": 606.915,
+      "delta": 305.455,
+      "ratio": 2.0132521727592385
+    },
+    {
+      "phase": "lat-4KiB",
+      "metric": "median RTT (us)",
+      "direct": 532.834,
+      "proxied": 748.396,
+      "delta": 215.562,
+      "ratio": 1.4045575169752682
+    },
+    {
+      "phase": "lat-4KiB",
+      "metric": "best RTT (us)",
+      "direct": 290.553,
+      "proxied": 382.229,
+      "delta": 91.67599999999999,
+      "ratio": 1.3155224692224825
+    },
+    {
+      "phase": "lat-4KiB",
+      "metric": "p90 RTT (us)",
+      "direct": 732.212,
+      "proxied": 1029.925,
+      "delta": 297.71299999999997,
+      "ratio": 1.406593991903984
+    },
+    {
+      "phase": "bulk-up-64MiB",
+      "metric": "throughput (MiB/s)",
+      "direct": 134.56622997338846,
+      "proxied": 102.95922227447743,
+      "delta": -31.607007698911033,
+      "ratio": 0.7651193192737764
+    },
+    {
+      "phase": "bulk-down-64MiB",
+      "metric": "throughput (MiB/s)",
+      "direct": 133.24849679143657,
+      "proxied": 117.7600558747913,
+      "delta": -15.48844091664526,
+      "ratio": 0.8837627343677422
+    }
+  ],
+  "socketpair_pingpong": {
+    "name": "socketpair-pingpong-64B",
+    "n": 2000,
+    "median_us": 34.482,
+    "p90_us": 53.299,
+    "min_us": 21.232,
+    "mbps": 0,
+    "mismatches": 0
+  },
+  "udp_fd_probe": {
+    "getpeername_err": "transport endpoint is not connected",
+    "getsockname": "\u0026{37021 [127 0 0 1] {0 0 [0 0 0 0] [0 0 0 0 0 0 0 0]}}",
+    "parent_local_addr": "127.0.0.1:37021",
+    "parent_peer_addr": "127.0.0.1:41720",
+    "recvfrom_err": "resource temporarily unavailable",
+    "so_type": "2 (SOCK_DGRAM=2, SOCK_STREAM=1)",
+    "write_err": "destination address required"
+  }
+}

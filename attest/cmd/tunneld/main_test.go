@@ -16,6 +16,9 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -97,5 +100,60 @@ func TestThePolicyRefusalCoversEveryModeAndNothingElse(t *testing.T) {
 	}
 	if got := out.String(); strings.Contains(got, "ticket 22") || !strings.Contains(got, runConfigName) {
 		t.Errorf("a device carrying no policy was refused for the wrong reason:\n%s", got)
+	}
+}
+
+// TestThePolicyToPushIsReadAndSaidOutLoud: -push-policy is the operator's half
+// of the push (docs/policy-push.md), and what it puts on the console is what
+// makes a two-guest transcript a claim — the digest here is the digest on the
+// peer's SANDBOX applied line, or the push carried something else.
+//
+// What is refused here is a document that is not a policy at all. What is not
+// refused is a version this build would not itself apply: which versions may be
+// applied is the receiving peer's question, and its tunneld answers it.
+func TestThePolicyToPushIsReadAndSaidOutLoud(t *testing.T) {
+	dir := t.TempDir()
+	write := func(name, content string) string {
+		path := filepath.Join(dir, name)
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		return path
+	}
+	const version1 = `{"format":"policy","version":1,"n":["one"],"f":["two"],"x":["three"]}`
+
+	for name, path := range map[string]string{
+		"absent":            filepath.Join(dir, "nothing-here.json"),
+		"not a JSON object": write("list.json", `["policy"]`),
+		"another format":    write("other.json", `{"format":"reference-values","version":1}`),
+	} {
+		if _, err := loadPushPolicy(path, func(string, ...any) {}); err == nil {
+			t.Errorf("a %s document was accepted as a policy to push", name)
+		}
+	}
+
+	// A version this build does not apply is still one a peer may: the push
+	// carries it and the peer decides.
+	var lines linesf
+	if _, err := loadPushPolicy(write("v2.json", `{"format":"policy","version":2}`), lines.logf); err != nil {
+		t.Errorf("a version 2 policy was refused by the delegator: %v", err)
+	}
+
+	pushed, err := loadPushPolicy(write("v1.json", version1), lines.logf)
+	if err != nil {
+		t.Fatalf("a version 1 policy was refused: %v", err)
+	}
+	if string(pushed) != version1 {
+		t.Errorf("the bytes to push are %q; want exactly the file", pushed)
+	}
+	sum := sha256.Sum256([]byte(version1))
+	want := fmt.Sprintf("format=policy version=1 bytes=%d sha256=%s", len(version1), hex.EncodeToString(sum[:]))
+	if !strings.Contains(lines.String(), want) {
+		t.Errorf("the console does not say %q; it says:\n%s", want, lines.String())
+	}
+	// And no path is no policy and no push, which is what every recorded
+	// scenario runs.
+	if pushed, err := loadPushPolicy("", lines.logf); pushed != nil || err != nil {
+		t.Errorf(`loadPushPolicy("") = %q, %v; want no policy and no error`, pushed, err)
 	}
 }

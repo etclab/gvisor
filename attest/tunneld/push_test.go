@@ -36,6 +36,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -579,5 +580,49 @@ func TestAPushBeforeAdmissionIsImpossible(t *testing.T) {
 	}
 	if b.served.Load() != 0 {
 		t.Errorf("b answered %d exchanges over a refused tunnel", b.served.Load())
+	}
+}
+
+// TestAPushReachesASandboxInAnotherProcess: the push crosses the local contract
+// too, and the sandbox that answers it is the one attached over the unix socket
+// rather than anything in this tunneld's process.
+//
+// It is the composition the command makes when it is given -sandbox-socket
+// (attest/cmd/tunneld/nullsandbox.go): tunneld attaches the [sandbox.Host], the
+// host sends APPLY down the socket, and the acknowledgement that goes back onto
+// the tunnel is the attached sandbox's. The client is dialed in this process
+// because what is under test is the boundary rather than the fork —
+// attest/sandbox/socket_test.go re-executes the test binary for that.
+func TestAPushReachesASandboxInAnotherProcess(t *testing.T) {
+	b := startPushNode(t, "sandbox-b", imageB, admitting(imageA), nil)
+	host, err := sandbox.Listen(filepath.Join(t.TempDir(), "sandbox.sock"), b.Tunneld, nil)
+	if err != nil {
+		t.Fatalf("listening for a sandbox: %v", err)
+	}
+	defer host.Close()
+	b.Attach(host)
+
+	applied := &eventLog{}
+	client, err := sandbox.Dial(host.Path(), func(_ context.Context, policy []byte) error {
+		applied.record(string(policy))
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("attaching a sandbox: %v", err)
+	}
+	defer client.Close()
+	for host.Attached() == 0 {
+		time.Sleep(time.Millisecond)
+	}
+
+	a := startPushNode(t, "sandbox-a", imageA, admitting(imageB), nil, toward("b", b), pushing(policyV1))
+	stream, err := a.Open(ctx(t), "b")
+	if err != nil {
+		t.Fatalf("opening a stream to b: %v", err)
+	}
+	defer stream.Close()
+
+	if got := applied.order(); got != policyV1 {
+		t.Errorf("the sandbox in the other process was handed %q; want the pushed bytes", got)
 	}
 }

@@ -92,7 +92,9 @@ package main
 import (
 	"context"
 	"crypto/ed25519"
+	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -169,6 +171,7 @@ type options struct {
 	egressProbeExtra string
 	selfCheck        bool
 	sandboxSocket    string
+	pushPolicy       string
 }
 
 func run(args []string, out io.Writer) int {
@@ -184,6 +187,7 @@ func run(args []string, out io.Writer) int {
 	fs.StringVar(&o.egressProbeExtra, "egress-probe", "", "with -egress "+egressModeProbe+": extra targets to attempt, comma separated, each tcp:ADDR:PORT or udp:ADDR:PORT")
 	fs.BoolVar(&o.selfCheck, "self-check", false, "after starting, ask this platform for evidence and judge it with this sandbox's own reference value set, so the console says whether the set admits the machine it is on before any peer arrives")
 	fs.StringVar(&o.sandboxSocket, "sandbox-socket", "", "listen on this unix socket for a sandbox in another process to open and accept streams over (docs/sandbox-contract.md); conventionally "+conventionalSandboxSocket+". Empty runs the in-process null sandbox alone, which is what every recorded scenario does")
+	fs.StringVar(&o.pushPolicy, "push-policy", "", "the policy document to push to every peer this tunneld dials, once each tunnel is established and before anything is sent over it (docs/policy-push.md). Empty pushes nothing, which is what every recorded scenario does")
 	if err := fs.Parse(args); err != nil {
 		return exitRefusedToStart
 	}
@@ -293,6 +297,12 @@ func serve(o *options, cfg *runConfig, peers map[string]string, author ed25519.P
 	}
 	watched := newWatchedVerifier(routed, logf)
 
+	pushed, err := loadPushPolicy(o.pushPolicy, logf)
+	if err != nil {
+		logf("refusing to start: %v", err)
+		return exitRefusedToStart
+	}
+
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
@@ -308,6 +318,7 @@ func serve(o *options, cfg *runConfig, peers map[string]string, author ed25519.P
 		Peers:                 tunneld.PeerTable(peers),
 		ListenAddr:            cfg.Listen,
 		Handler:               echo(cfg.SandboxID),
+		PushPolicy:            pushed,
 		Limits:                limits,
 		RefusalLog:            refusalLogger(logf),
 	})
@@ -488,6 +499,46 @@ func echo(sandboxID string) tunneld.Handler {
 	return func(_ context.Context, request []byte) ([]byte, error) {
 		return append(append([]byte(nil), prefix...), request...), nil
 	}
+}
+
+// loadPushPolicy reads the policy this tunneld pushes to every peer it dials,
+// and says on the console what it is about to push: the format, the version,
+// the length and the digest of exactly those bytes. No path is no policy and no
+// push, which is what every recorded scenario runs.
+//
+// The two envelope fields are read here so that the console can carry them, and
+// so that a file that is not a policy at all is an operator's mistake refused at
+// startup rather than one a peer has to discover. The version is deliberately
+// not checked against this build's: which versions may be *applied* is the
+// receiving peer's question and its tunneld answers it (docs/policy-push.md), so
+// a delegator that refused to carry a version its own sandbox does not read
+// would be answering a question that is not its own. The format is checked,
+// because the format is what tells a push from an ordinary exchange on the wire
+// — a document with another one would not reach a sandbox at all.
+//
+// The digest is the line that makes a two-guest transcript a claim: the number
+// here and the number on the peer's SANDBOX applied line are the same, or the
+// push carried something else.
+func loadPushPolicy(path string, logf func(string, ...any)) ([]byte, error) {
+	if path == "" {
+		return nil, nil
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("reading the policy to push: %w", err)
+	}
+	var envelope sandbox.Envelope
+	if err := json.Unmarshal(raw, &envelope); err != nil {
+		return nil, fmt.Errorf("%s is %d bytes that are not a JSON object: %v", path, len(raw), err)
+	}
+	if envelope.Format != sandbox.PolicyFormat {
+		return nil, fmt.Errorf("%s says it is format %q, not %q; a document with another format is not a push and would reach no sandbox",
+			path, envelope.Format, sandbox.PolicyFormat)
+	}
+	sum := sha256.Sum256(raw)
+	logf("push policy %s: format=%s version=%d bytes=%d sha256=%s",
+		path, envelope.Format, envelope.Version, len(raw), hex.EncodeToString(sum[:]))
+	return raw, nil
 }
 
 // readAuthorKey reads the reference value author's public key from the file

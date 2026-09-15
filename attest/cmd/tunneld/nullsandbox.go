@@ -60,12 +60,24 @@ const conventionalSandboxSocket = "/run/tunneld/sandbox.sock"
 // another process is *the* sandbox: with a socket configured, this command's own
 // echo stands down and the attached sandbox accepts. Without one, the echo
 // answers, which is what every recorded scenario runs.
+//
+// The same choice decides where a *pushed* policy goes, and it is
+// [tunneld.Tunneld.Attach] that says so. Without a socket the in-process null
+// sandbox is told; with one the [sandbox.Host] is, so a push crosses the process
+// boundary to whatever attached and comes back as that sandbox's answer — and a
+// host with nobody attached refuses it, which is the honest reply to a peer
+// asking whether its policy landed.
 func attachSandbox(ctx context.Context, td *tunneld.Tunneld, socket, sandboxID string, logf func(string, ...any)) (sandbox.Sandbox, func()) {
-	box := tunneld.PolicyChecked(sandbox.NewNull(td, logf))
-	if socket == "" {
+	null := sandbox.NewNull(td, logf)
+	box := tunneld.PolicyChecked(null)
+	answerInProcess := func() (sandbox.Sandbox, func()) {
+		td.Attach(null)
 		answering, stop := context.WithCancel(ctx)
 		go answer(answering, box, sandboxID, logf)
 		return box, stop
+	}
+	if socket == "" {
+		return answerInProcess()
 	}
 	host, err := sandbox.Listen(socket, td, logf)
 	if err != nil {
@@ -73,11 +85,10 @@ func attachSandbox(ctx context.Context, td *tunneld.Tunneld, socket, sandboxID s
 		// answers exchanges and exercises its peers. What it cannot do is hand
 		// a stream to a sandbox beside it, and the console says so.
 		logf("sandbox socket %s: %v; no sandbox in another process can attach", socket, err)
-		answering, stop := context.WithCancel(ctx)
-		go answer(answering, box, sandboxID, logf)
-		return box, stop
+		return answerInProcess()
 	}
-	logf("sandbox socket %s: a sandbox in another process opens and accepts streams here; this tunneld answers none itself", socket)
+	td.Attach(host)
+	logf("sandbox socket %s: a sandbox in another process opens and accepts streams here; this tunneld answers none itself, and a pushed policy is passed to it", socket)
 	return box, func() { host.Close() }
 }
 

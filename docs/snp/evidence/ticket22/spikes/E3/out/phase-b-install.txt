@@ -1,0 +1,42 @@
+ceiling: the constant, with no input from any config device (iface "eth0", udp/4433):
+table inet attested_tunnel {
+	chain input {
+		type filter hook input priority 0; policy drop;
+		iifname "lo" accept
+		meta nfproto ipv4 iifname "eth0" meta l4proto udp udp sport 4433 accept   # a peer answering a dial of ours
+		meta nfproto ipv4 iifname "eth0" meta l4proto udp udp dport 4433 accept   # a peer dialing this sandbox's listener
+	}
+	chain output {
+		type filter hook output priority 0; policy drop;
+		oifname "lo" accept
+		meta l4proto tcp reject with tcp reset        # so that connect() fails now rather than in a minute, and says a rule did it
+		meta nfproto ipv4 ip daddr 169.254.0.0/16 reject with icmpx admin-prohibited   # the provider's metadata server is an address, and the grant above says "any"
+		meta nfproto ipv4 oifname "eth0" meta l4proto udp udp dport 4433 accept   # dialing a peer
+		meta nfproto ipv4 oifname "eth0" meta l4proto udp udp sport 4433 accept   # answering a peer from this sandbox's listener
+		reject with icmpx admin-prohibited            # everything the ceiling does not permit
+	}
+	chain forward {
+		type filter hook forward priority 0; policy drop;
+	}
+}
+ceiling: INSTALLED; as the kernel holds it:
+table inet attested_tunnel {
+	chain forward {
+		type filter hook forward priority 0; policy drop;
+	}
+	chain input {
+		type filter hook input priority 0; policy drop;
+		iifname "lo" accept   # handle 2
+		meta nfproto ipv4 iifname "eth0" meta l4proto udp sport 4433 accept   # handle 3
+		meta nfproto ipv4 iifname "eth0" meta l4proto udp dport 4433 accept   # handle 4
+	}
+	chain output {
+		type filter hook output priority 0; policy drop;
+		oifname "lo" accept   # handle 6
+		meta l4proto tcp reject with tcp reset   # handle 7
+		meta nfproto ipv4 ip daddr 169.254.0.0/16 reject with icmpx code 3   # handle 8
+		meta nfproto ipv4 oifname "eth0" meta l4proto udp dport 4433 accept   # handle 9
+		meta nfproto ipv4 oifname "eth0" meta l4proto udp sport 4433 accept   # handle 10
+		reject with icmpx code 3   # handle 11
+	}
+}

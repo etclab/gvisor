@@ -1,0 +1,207 @@
+e3: repository   /home/pniroula/Projects/gvisor-t22
+e3: scratch      /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t22/dea855a8-a093-4031-b06c-61e8610e847c/scratchpad/E3/final
+e3: captures     /home/pniroula/Projects/gvisor-t22/docs/snp/evidence/ticket22/spikes/E3/out
+e3: building the real tunneld from /home/pniroula/Projects/gvisor-t22/attest
+e3: building the spike programs from /home/pniroula/Projects/gvisor-t22/docs/snp/evidence/ticket22/spikes/E3/spike
+e3: writing the minimum config device at /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t22/dea855a8-a093-4031-b06c-61e8610e847c/scratchpad/E3/final/config
+mkconfig: wrote author.pub (65 bytes)
+mkconfig: wrote policy.json (253 bytes)
+mkconfig: wrote policy.json.sig (129 bytes)
+mkconfig: wrote peers.json (85 bytes)
+mkconfig: wrote tunneld.json (133 bytes)
+e3: SHA-256 of the constant (the name the ticket prints at boot):
+197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973  ceiling.nft
+e3: entering a user + network namespace
+e3: ================ PHASE 0: the ceiling before the link ================
+e3: the namespace as it stands, before anything is installed:
+e3: link: 1: lo: <LOOPBACK> mtu 65536 qdisc noop state DOWN mode DEFAULT group default qlen 1000\    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+e3: (an empty ruleset above means the kernel is holding nothing yet)
+e3: installing /home/pniroula/Projects/gvisor-t22/docs/snp/evidence/ticket22/spikes/E3/ceiling.nft — a constant file; no config device has been looked for yet
+e3: installed, with no eth0 in this namespace and lo still down:
+table inet attested_tunnel {
+	chain input {
+		type filter hook input priority filter; policy drop;
+		iifname "lo" accept
+		meta nfproto ipv4 iifname "eth0" udp sport 4433 accept
+		meta nfproto ipv4 iifname "eth0" udp dport 4433 accept
+	}
+
+	chain output {
+		type filter hook output priority filter; policy drop;
+		oifname "lo" accept
+		meta l4proto tcp reject with tcp reset
+		ip daddr 169.254.0.0/16 reject with icmpx admin-prohibited
+		meta nfproto ipv4 oifname "eth0" udp dport 4433 accept
+		meta nfproto ipv4 oifname "eth0" udp sport 4433 accept
+		reject with icmpx admin-prohibited
+	}
+
+	chain forward {
+		type filter hook forward priority filter; policy drop;
+	}
+}
+e3: why iifname and not iif: the same rule in the index-matching spelling,
+e3: against this same namespace with no eth0 in it:
+e3: nft: /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t22/dea855a8-a093-4031-b06c-61e8610e847c/scratchpad/E3/final/config/../e3-iif-variant.nft:4:5-10: Error: Interface does not exist
+e3: nft: oif "eth0" accept
+e3: nft:     ^^^^^^
+e3: nft -f with the oif spelling exited 1 (non-zero: Interface does not exist)
+e3: the ruleset is unchanged; the ceiling installed above is still the only table:
+table inet attested_tunnel
+e3: link eth0 up: 10.128.0.40/32 mtu 1460, gateway 10.128.0.1
+e3: addr: 1: lo    inet 127.0.0.1/8 scope host lo\       valid_lft forever preferred_lft forever
+e3: addr: 1: lo    inet6 ::1/128 scope host \       valid_lft forever preferred_lft forever
+e3: addr: 2: eth0    inet 10.128.0.40/32 scope global eth0\       valid_lft forever preferred_lft forever
+e3: addr: 2: eth0    inet6 fe80::c42e:94ff:fe3b:1c1d/64 scope link \       valid_lft forever preferred_lft forever
+e3: route: default via 10.128.0.1 dev eth0 
+e3: route: 10.128.0.1 dev eth0 scope link 
+e3: ================ PHASE A: ceiling.nft, installed by nft -f before the link existed ================
+e3: the rule set the kernel holds, in nft's own words:
+table inet attested_tunnel {
+	chain input {
+		type filter hook input priority filter; policy drop;
+		iifname "lo" accept
+		meta nfproto ipv4 iifname "eth0" udp sport 4433 accept
+		meta nfproto ipv4 iifname "eth0" udp dport 4433 accept
+	}
+
+	chain output {
+		type filter hook output priority filter; policy drop;
+		oifname "lo" accept
+		meta l4proto tcp reject with tcp reset
+		ip daddr 169.254.0.0/16 reject with icmpx admin-prohibited
+		meta nfproto ipv4 oifname "eth0" udp dport 4433 accept
+		meta nfproto ipv4 oifname "eth0" udp sport 4433 accept
+		reject with icmpx admin-prohibited
+	}
+
+	chain forward {
+		type filter hook forward priority filter; policy drop;
+	}
+}
+e3: the ticket 19 egress probe, unmodified, against a ceiling it never saw:
+tunneld: sandbox "e3-ceiling"
+tunneld: author key 79b5562e8fe654f9… (/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t22/dea855a8-a093-4031-b06c-61e8610e847c/scratchpad/E3/final/config/author.pub, inside the launch measurement)
+tunneld: policy /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t22/dea855a8-a093-4031-b06c-61e8610e847c/scratchpad/E3/final/config/policy.json loaded under the author key; digest d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b
+tunneld: policy egress: version 1, unattested egress permitted: false
+tunneld: EGRESS PROBE: 7 attempt(s) at addresses this policy permits nothing to reach
+tunneld: EGRESS REFUSED tcp/169.254.169.254:80: dial tcp 169.254.169.254:80: connect: connection refused (the provider's metadata server) — the netfilter rule refused it
+tunneld: EGRESS REFUSED tcp/8.8.8.8:53: dial tcp 8.8.8.8:53: connect: connection refused (a public resolver, over TCP) — the netfilter rule refused it
+tunneld: EGRESS REFUSED udp/8.8.8.8:53: write udp 10.128.0.40:58481->8.8.8.8:53: write: operation not permitted (a public resolver, over UDP) — the netfilter rule refused it
+tunneld: EGRESS REFUSED udp/10.128.0.1:53: write udp 10.128.0.40:41734->10.128.0.1:53: write: operation not permitted (named by -egress-probe) — the netfilter rule refused it
+tunneld: EGRESS REFUSED tcp/10.128.0.1:80: dial tcp 10.128.0.1:80: connect: connection refused (named by -egress-probe) — the netfilter rule refused it
+tunneld: EGRESS REFUSED udp/169.254.169.254:4433: write udp 10.128.0.40:55249->169.254.169.254:4433: write: operation not permitted (named by -egress-probe) — the netfilter rule refused it
+tunneld: EGRESS REFUSED udp/169.254.169.254:53: write udp 10.128.0.40:32969->169.254.169.254:53: write: operation not permitted (named by -egress-probe) — the netfilter rule refused it
+tunneld: EGRESS PROBE PASSED: every attempt was refused before it left
+tunneld: EXIT status=0
+e3: tunneld -egress probe exited 0 (0 means every attempt was refused)
+e3: the positive control: the same address on the tunnel port and beside it
+CONTROL ALLOWED  udp/10.128.0.41:4433: write of 15 bytes returned no error; the output hook did not refuse it
+CONTROL REFUSED  udp/10.128.0.41:4434: write: write udp 10.128.0.40:37237->10.128.0.41:4434: write: operation not permitted
+CONTROL ALLOWED  udp/8.8.8.8:4433: write of 15 bytes returned no error; the output hook did not refuse it
+CONTROL REFUSED  udp/169.254.169.254:4433: write: write udp 10.128.0.40:39002->169.254.169.254:4433: write: operation not permitted
+e3: control exited 0 (0 means every attempt was classified ALLOWED or REFUSED)
+e3: installing the same ceiling through the github.com/google/nftables path
+ceiling: the constant, with no input from any config device (iface "eth0", udp/4433):
+table inet attested_tunnel {
+	chain input {
+		type filter hook input priority 0; policy drop;
+		iifname "lo" accept
+		meta nfproto ipv4 iifname "eth0" meta l4proto udp udp sport 4433 accept   # a peer answering a dial of ours
+		meta nfproto ipv4 iifname "eth0" meta l4proto udp udp dport 4433 accept   # a peer dialing this sandbox's listener
+	}
+	chain output {
+		type filter hook output priority 0; policy drop;
+		oifname "lo" accept
+		meta l4proto tcp reject with tcp reset        # so that connect() fails now rather than in a minute, and says a rule did it
+		meta nfproto ipv4 ip daddr 169.254.0.0/16 reject with icmpx admin-prohibited   # the provider's metadata server is an address, and the grant above says "any"
+		meta nfproto ipv4 oifname "eth0" meta l4proto udp udp dport 4433 accept   # dialing a peer
+		meta nfproto ipv4 oifname "eth0" meta l4proto udp udp sport 4433 accept   # answering a peer from this sandbox's listener
+		reject with icmpx admin-prohibited            # everything the ceiling does not permit
+	}
+	chain forward {
+		type filter hook forward priority 0; policy drop;
+	}
+}
+ceiling: INSTALLED; as the kernel holds it:
+table inet attested_tunnel {
+	chain forward {
+		type filter hook forward priority 0; policy drop;
+	}
+	chain input {
+		type filter hook input priority 0; policy drop;
+		iifname "lo" accept   # handle 2
+		meta nfproto ipv4 iifname "eth0" meta l4proto udp sport 4433 accept   # handle 3
+		meta nfproto ipv4 iifname "eth0" meta l4proto udp dport 4433 accept   # handle 4
+	}
+	chain output {
+		type filter hook output priority 0; policy drop;
+		oifname "lo" accept   # handle 6
+		meta l4proto tcp reject with tcp reset   # handle 7
+		meta nfproto ipv4 ip daddr 169.254.0.0/16 reject with icmpx code 3   # handle 8
+		meta nfproto ipv4 oifname "eth0" meta l4proto udp dport 4433 accept   # handle 9
+		meta nfproto ipv4 oifname "eth0" meta l4proto udp sport 4433 accept   # handle 10
+		reject with icmpx code 3   # handle 11
+	}
+}
+e3: ================ PHASE B: the same ceiling, installed by the Go renderer ================
+e3: the rule set the kernel holds, in nft's own words:
+table inet attested_tunnel {
+	chain input {
+		type filter hook input priority filter; policy drop;
+		iifname "lo" accept
+		meta nfproto ipv4 iifname "eth0" udp sport 4433 accept
+		meta nfproto ipv4 iifname "eth0" udp dport 4433 accept
+	}
+
+	chain output {
+		type filter hook output priority filter; policy drop;
+		oifname "lo" accept
+		meta l4proto tcp reject with tcp reset
+		ip daddr 169.254.0.0/16 reject with icmpx admin-prohibited
+		meta nfproto ipv4 oifname "eth0" udp dport 4433 accept
+		meta nfproto ipv4 oifname "eth0" udp sport 4433 accept
+		reject with icmpx admin-prohibited
+	}
+
+	chain forward {
+		type filter hook forward priority filter; policy drop;
+	}
+}
+e3: the ticket 19 egress probe, unmodified, against a ceiling it never saw:
+tunneld: sandbox "e3-ceiling"
+tunneld: author key 79b5562e8fe654f9… (/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t22/dea855a8-a093-4031-b06c-61e8610e847c/scratchpad/E3/final/config/author.pub, inside the launch measurement)
+tunneld: policy /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t22/dea855a8-a093-4031-b06c-61e8610e847c/scratchpad/E3/final/config/policy.json loaded under the author key; digest d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b
+tunneld: policy egress: version 1, unattested egress permitted: false
+tunneld: EGRESS PROBE: 7 attempt(s) at addresses this policy permits nothing to reach
+tunneld: EGRESS REFUSED tcp/169.254.169.254:80: dial tcp 169.254.169.254:80: connect: connection refused (the provider's metadata server) — the netfilter rule refused it
+tunneld: EGRESS REFUSED tcp/8.8.8.8:53: dial tcp 8.8.8.8:53: connect: connection refused (a public resolver, over TCP) — the netfilter rule refused it
+tunneld: EGRESS REFUSED udp/8.8.8.8:53: write udp 10.128.0.40:57404->8.8.8.8:53: write: operation not permitted (a public resolver, over UDP) — the netfilter rule refused it
+tunneld: EGRESS REFUSED udp/10.128.0.1:53: write udp 10.128.0.40:34332->10.128.0.1:53: write: operation not permitted (named by -egress-probe) — the netfilter rule refused it
+tunneld: EGRESS REFUSED tcp/10.128.0.1:80: dial tcp 10.128.0.1:80: connect: connection refused (named by -egress-probe) — the netfilter rule refused it
+tunneld: EGRESS REFUSED udp/169.254.169.254:4433: write udp 10.128.0.40:48169->169.254.169.254:4433: write: operation not permitted (named by -egress-probe) — the netfilter rule refused it
+tunneld: EGRESS REFUSED udp/169.254.169.254:53: write udp 10.128.0.40:34491->169.254.169.254:53: write: operation not permitted (named by -egress-probe) — the netfilter rule refused it
+tunneld: EGRESS PROBE PASSED: every attempt was refused before it left
+tunneld: EXIT status=0
+e3: tunneld -egress probe exited 0 (0 means every attempt was refused)
+e3: the positive control: the same address on the tunnel port and beside it
+CONTROL ALLOWED  udp/10.128.0.41:4433: write of 15 bytes returned no error; the output hook did not refuse it
+CONTROL REFUSED  udp/10.128.0.41:4434: write: write udp 10.128.0.40:35815->10.128.0.41:4434: write: operation not permitted
+CONTROL ALLOWED  udp/8.8.8.8:4433: write of 15 bytes returned no error; the output hook did not refuse it
+CONTROL REFUSED  udp/169.254.169.254:4433: write: write udp 10.128.0.40:47156->169.254.169.254:4433: write: operation not permitted
+e3: control exited 0 (0 means every attempt was classified ALLOWED or REFUSED)
+e3: ================ the two installers, compared ================
+e3: diff of what the kernel held after nft -f and after the Go renderer:
+e3: IDENTICAL: the constant text and the Go renderer install the same rule set
+e3: done
+e3: captures written:
+total 48
+-rw------- 1 pniroula 253477    78 Sep 15 15:20 ceiling.nft.sha256
+-rw------- 1 pniroula 253477   219 Sep 15 15:20 installers-agree.txt
+-rw------- 1 pniroula 253477  1817 Sep 15 15:20 phase-0-before-the-link.txt
+-rw------- 1 pniroula 253477  3559 Sep 15 15:20 phase-a-nft.txt
+-rw------- 1 pniroula 253477  3549 Sep 15 15:20 phase-b-go.txt
+-rw------- 1 pniroula 253477  2055 Sep 15 15:20 phase-b-install.txt
+-rw------- 1 pniroula 253477   669 Sep 15 15:20 ruleset-a.txt
+-rw------- 1 pniroula 253477   669 Sep 15 15:20 ruleset-b.txt
+-rw------- 1 pniroula 253477 12892 Sep 15 15:20 run-e3-console.txt

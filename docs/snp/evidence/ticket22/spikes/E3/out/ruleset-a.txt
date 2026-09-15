@@ -1,0 +1,22 @@
+table inet attested_tunnel {
+	chain input {
+		type filter hook input priority filter; policy drop;
+		iifname "lo" accept
+		meta nfproto ipv4 iifname "eth0" udp sport 4433 accept
+		meta nfproto ipv4 iifname "eth0" udp dport 4433 accept
+	}
+
+	chain output {
+		type filter hook output priority filter; policy drop;
+		oifname "lo" accept
+		meta l4proto tcp reject with tcp reset
+		ip daddr 169.254.0.0/16 reject with icmpx admin-prohibited
+		meta nfproto ipv4 oifname "eth0" udp dport 4433 accept
+		meta nfproto ipv4 oifname "eth0" udp sport 4433 accept
+		reject with icmpx admin-prohibited
+	}
+
+	chain forward {
+		type filter hook forward priority filter; policy drop;
+	}
+}

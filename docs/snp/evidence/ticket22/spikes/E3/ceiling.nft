@@ -1,0 +1,142 @@
+# The egress ceiling, as a constant. Ticket 22, spike E3.
+#
+# This file is the whole of what the measured image installs before anything
+# else touches the network. Nothing on the config device contributes a byte of
+# it: no peer address, no policy digest, no listen address, no gateway, no
+# interface name. It is the same text for every guest booted from this image,
+# and it is inside the launch measurement (RTMR2 on TDX, the launch digest on
+# SEV-SNP), so a verifier who has read the image knows exactly which rule set
+# the guest came up with.
+#
+# SHA-256 of this file is the constant's name. Print it at boot; it is what a
+# reader of the console compares against what the image says.
+#
+# ---------------------------------------------------------------------------
+# The two compiled-in values, and only two
+# ---------------------------------------------------------------------------
+#
+#   eth0    the VPC link, as the kernel names it when no udev runs. The
+#           measured initrd loads gve and renames nothing
+#           (docs/snp/cloud/tdx/init.tdx); ticket 19 captured eth0 on all six
+#           guests it booted. It is an image constant, not a boot-time
+#           discovery: a name discovered at boot is a name something outside
+#           the measurement chose, and the point of this file is that nothing
+#           outside the measurement chooses anything in it. It also fails
+#           closed — a rule naming an interface that never appears grants
+#           nothing.
+#
+#   4433    the tunnel's UDP port. Today it is read out of tunneld.json's
+#           `listen`, which is on the config device; after this ticket the
+#           ceiling names it and tunneld.json may only agree with it. A
+#           tunneld.json asking to listen on any other port must be refused at
+#           load — otherwise the guest comes up with a listener the ceiling
+#           silently drops, which looks like a network fault and is a
+#           configuration error.
+#
+# Changing either produces a different image with a different measurement,
+# which is the point: a verifier can tell the two apart.
+#
+# ---------------------------------------------------------------------------
+# What the ceiling grants, and what it does not
+# ---------------------------------------------------------------------------
+#
+#   * loopback, in both directions. Not a convenience — netfilter builds a
+#     refusal addressed back at the local socket that tripped a rule, and the
+#     kernel delivers that refusal over lo. With lo filtered the egress probes
+#     time out instead of failing, and a timeout proves nothing (ticket 19
+#     measured this).
+#
+#   * udp/4433 on eth0, to and from ANY address, in both directions. The
+#     ceiling does not name peers and must not: peers.json is on the config
+#     device, and a ceiling that read it would be a ceiling the config device
+#     could widen. Which peers a sandbox may actually talk to is decided at the
+#     attestation layer — the per-verifier allow-list in reference-values.json
+#     — and by tunneld's own peer table, which refuses a name it does not hold
+#     (ErrUnknownPeer) before a socket is opened. Two mechanisms, disjoint:
+#     this one bounds what the guest can reach at all, that one decides whom it
+#     will speak to.
+#
+#   * nothing else. No DHCP — the guest's init sets its address statically and
+#     there is no DHCP client in the image and there will not be one
+#     (docs/snp/cloud/tdx/init.tdx: "a guest that learned its address from the
+#     network would be a guest whose address the network chose"). No DNS — a
+#     guest that could resolve a name could reach a resolver. No IPv6 at all:
+#     the tunnel is IPv4, every accept below tests `meta nfproto ipv4` first,
+#     and an IPv6 packet falls through to the chain's drop policy. No NTP, no
+#     ICMP, no forwarding — the guest routes for nobody and the empty forward
+#     chain says so rather than leaving it to an absence.
+#
+#   * 169.254.0.0/16 is refused before the tunnel-port grant is reached. The
+#     grant is "udp/4433 to any address", and 169.254.169.254 is an address.
+#     The metadata server does not speak QUIC on 4433 and the grant would be
+#     harmless in practice, but "harmless in practice" is not what this file is
+#     for. The carve-out costs one rule, takes no input, and makes the one
+#     address every cloud guest can reach unreachable by construction rather
+#     than by coincidence. E3 probed udp/169.254.169.254:4433 specifically —
+#     the attempt the tunnel-port grant would otherwise have permitted — and it
+#     was refused.
+#
+# ---------------------------------------------------------------------------
+# Three things E3 got wrong first, and the transcript said so
+# ---------------------------------------------------------------------------
+#
+# 1. `iifname`, not `iif`. They are different rules. `iif` resolves the name to
+#    an interface index when the rule is LOADED; `iifname` compares the name
+#    when a PACKET arrives. `nft -f` with `oif "eth0"` in a namespace that has
+#    no eth0 yet fails outright — "Error: Interface does not exist" — and that
+#    is exactly the situation the ceiling has to survive, because the ceiling
+#    must be installed BEFORE the link comes up (see 2). With `oifname` the
+#    same file loads against an empty namespace and starts refusing
+#    immediately. This also matches what the existing renderer actually sends:
+#    egress.go's ifaceRule uses expr.MetaKeyIIFNAME/OIFNAME, so the kernel has
+#    always held `iifname` — only the `text` it renders beside it says `iif`,
+#    which is a rendering bug worth fixing in the shrink.
+#
+# 2. The ceiling goes in before the link. init.tdx today installs the rule set
+#    at step 5, after it has brought eth0 up and routed at step 4. That order
+#    was forced: the rule set named peer addresses, which were on the config
+#    device, which had to be mounted first. A constant has no such dependency,
+#    so it can go in before nf_tables has an interface to filter — before the
+#    config device is even looked for. The window in which a measured guest is
+#    unconstrained then has length zero, rather than "however long finding and
+#    mounting a disk takes". E3 installs it against an empty namespace to show
+#    this works.
+#
+# 3. The order of the two refusals. The ceiling permits no TCP at all, so the
+#    TCP reset is hoisted to the top of the output chain, above the link-local
+#    carve-out and above the tunnel-port grant. It changes nothing about what
+#    is permitted — every accept below it is UDP-only, so no TCP packet could
+#    reach one — and it changes what a refusal looks like at the socket. With
+#    the carve-out first, a TCP connect() to 169.254.169.254 received the ICMP
+#    administratively-prohibited and the kernel handed the socket EHOSTUNREACH,
+#    which the ticket 19 probe classifies — correctly — as UNROUTED: "no route,
+#    so the rule was never reached; this does not demonstrate the policy". A
+#    true classification of a misleading refusal. Hoisted, the same attempt
+#    gets a reset, ECONNREFUSED, and REFUSED, which is what the record has to
+#    show.
+#
+# The input chain keeps a plain drop policy and no reject: there is nobody on
+# the other end to tell.
+
+flush ruleset
+
+table inet attested_tunnel {
+	chain input {
+		type filter hook input priority 0; policy drop;
+		iifname "lo" accept
+		meta nfproto ipv4 iifname "eth0" meta l4proto udp udp sport 4433 accept
+		meta nfproto ipv4 iifname "eth0" meta l4proto udp udp dport 4433 accept
+	}
+	chain output {
+		type filter hook output priority 0; policy drop;
+		oifname "lo" accept
+		meta l4proto tcp reject with tcp reset
+		meta nfproto ipv4 ip daddr 169.254.0.0/16 reject with icmpx admin-prohibited
+		meta nfproto ipv4 oifname "eth0" meta l4proto udp udp dport 4433 accept
+		meta nfproto ipv4 oifname "eth0" meta l4proto udp udp sport 4433 accept
+		reject with icmpx admin-prohibited
+	}
+	chain forward {
+		type filter hook forward priority 0; policy drop;
+	}
+}

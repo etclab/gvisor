@@ -1,6 +1,6 @@
 # report_data reserves space for a policy digest it does not yet carry
 
-Status: accepted; amended by ticket 18, corrected by ticket 19.
+Status: accepted; amended by ticket 18, corrected by ticket 19; amended by ticket 22 (ADR-0008).
 
 `report_data` is `H(pubkey ‖ ctx)` where `ctx` is a fixed-width, versioned field that is
 all-zero in v1, rather than the memo's `H(pubkey)`. Open question 2 asks whether runsc's

@@ -1,0 +1,142 @@
+E3 output-01: where the pin is decided. Tree: spike-s1-runsc-in-guest at 686716227.
+Complete output of each command below; no trimming.
+
+$ grep -rn 'pinNullNetNS\|goferNetworkNamespace(\|UnmountNullNetNS' runsc | grep -v _test.go
+runsc/container/null_netns.go:59:// pinNullNetNS pins the network namespace of the process `pid` by
+runsc/container/null_netns.go:70:func pinNullNetNS(conf *config.Config, pid int) error {
+runsc/container/container.go:1620:	goferNetNS, goferNetNSFile, pinGoferNetNS := goferNetworkNamespace(conf)
+runsc/container/container.go:1698:		if err := pinNullNetNS(conf, cmd.Process.Pid); err != nil {
+runsc/container/container.go:1735:// namespace (see `pinNullNetNS`) once the gofer starts.
+runsc/container/container.go:1736:func goferNetworkNamespace(conf *config.Config) (ns *specs.LinuxNamespace, nsFile *os.File, pinNetNS bool) {
+runsc/specutils/namespace.go:313:// UnmountNullNetNS unmounts null gofer network namespace bind mounts under
+runsc/specutils/namespace.go:317:func UnmountNullNetNS(sharedRootDir string) {
+runsc/cmd/do.go:498:		specutils.UnmountNullNetNS(tmpDir)
+
+$ sed -n '1695,1703p' runsc/container/container.go     # the only call site
+1695		if pinGoferNetNS {
+1696			// The gofer was started in a new empty network namespace.
+1697			// Pin it, future gofers will join it instead of creating a new one.
+1698			if err := pinNullNetNS(conf, cmd.Process.Pid); err != nil {
+1699				log.Warningf("Unable to pin the gofer's network namespace at %q (%v); future gofers will create new network namespaces. This slows down gVisor startup.", nullNetNSPath(conf), err)
+1700			} else {
+1701				log.Infof("Pinned null network namespace at %q", nullNetNSPath(conf))
+1702			}
+1703		}
+
+$ sed -n '1728,1770p' runsc/container/container.go     # what decides pinNetNS
+1728	// goferNetworkNamespace returns the network namespace that the gofer process
+1729	// should be started in.
+1730	// A nil namespace means to stay in the current network namespace.
+1731	// The returned `os.File` keeps the namespace referred to by the returned
+1732	// namespace's Path alive, so it must be kept open until gofer start.
+1733	// If `pinNetNS` is true, the gofer should be started in a new network
+1734	// namespace, which should then be pinned as the shared "null" network
+1735	// namespace (see `pinNullNetNS`) once the gofer starts.
+1736	func goferNetworkNamespace(conf *config.Config) (ns *specs.LinuxNamespace, nsFile *os.File, pinNetNS bool) {
+1737		switch conf.GoferNetworkNamespace {
+1738		case config.GoferNetworkNamespaceNew:
+1739			return &specs.LinuxNamespace{Type: specs.NetworkNamespace}, nil, false
+1740		case config.GoferNetworkNamespaceHost:
+1741			return nil, nil, false
+1742		case config.GoferNetworkNamespaceNull:
+1743			nsFile, err := openNullNetNS(nullNetNSPath(conf))
+1744			if err != nil {
+1745				if !os.IsNotExist(err) {
+1746					// Unexpected error.
+1747					log.Warningf("No usable null network namespace at %q (%v); creating a new one. This issue is slowing down your sandboxes' startup.", nullNetNSPath(conf), err)
+1748				} else if conf.SharedRootDir == "" && conf.RootDir != config.DefaultRootDir() {
+1749					// User has customized `--root` but not `--shared-root`, so they are likely missing out on
+1750					// the performance benefits of a shared root directory.
+1751					log.Warningf("gVisor startup is slower if `--root` (or `--shared-root`) is not reused across multiple sandboxes. You can speed up sandbox startup by setting `--shared-root` to a shared system-wide directory so that the null gofer network namespace is reused across sandboxes.")
+1752				} else {
+1753					// Informational-only as this is expected on first sandbox creation.
+1754					log.Infof("No usable null network namespace at %q (%v); creating a new one. This is expected if this sandbox is the first sandbox to start with this `--shared-root` directory (%v). If this is not the first sandbox, this issue is slowing down your sandboxes' startup.", nullNetNSPath(conf), err, conf.SharedRoot())
+1755				}
+1756				return &specs.LinuxNamespace{Type: specs.NetworkNamespace}, nil, true
+1757			}
+1758			return &specs.LinuxNamespace{
+1759				Type: specs.NetworkNamespace,
+1760				// Refer to the namespace through our own open FD so that
+1761				// it stays valid even if racing with an unmount.
+1762				Path: fmt.Sprintf("/proc/self/fd/%d", nsFile.Fd()),
+1763			}, nsFile, false
+1764		default:
+1765			return &specs.LinuxNamespace{
+1766				Type: specs.NetworkNamespace,
+1767				Path: string(conf.GoferNetworkNamespace),
+1768			}, nil, false
+1769		}
+1770	}
+
+$ sed -n '70,82p' runsc/container/null_netns.go        # the bind mount itself
+70	func pinNullNetNS(conf *config.Config, pid int) error {
+71		path := nullNetNSPath(conf)
+72		f, err := os.OpenFile(path, os.O_RDONLY|os.O_CREATE, 0444)
+73		if err != nil {
+74			return fmt.Errorf("creating mount point: %w", err)
+75		}
+76		_ = f.Close()
+77		if err := unix.Mount(fmt.Sprintf("/proc/%d/ns/net", pid), path, "", unix.MS_BIND, ""); err != nil {
+78			_ = os.Remove(path) // Best effort.
+79			return fmt.Errorf("bind-mounting namespace of PID %d: %w", pid, err)
+80		}
+81		return nil
+82	}
+
+$ sed -n '793,812p' runsc/config/config.go             # the three values of the flag
+793	// GoferNetworkNamespace controls the network namespace used by gofer processes.
+794	type GoferNetworkNamespace string
+795	
+796	const (
+797		// GoferNetworkNamespaceNew creates an empty network namespace for each gofer.
+798		GoferNetworkNamespaceNew GoferNetworkNamespace = "new"
+799	
+800		// GoferNetworkNamespaceHost runs gofers in runsc's current network namespace.
+801		GoferNetworkNamespaceHost GoferNetworkNamespace = "host"
+802	
+803		// GoferNetworkNamespaceNull runs gofers in a shared empty network
+804		// namespace. The namespace is pinned by a bind mount under the shared
+805		// root directory (`--shared-root`, defaulting to `--root`; same hack as
+806		// `ip netns add`), and shared by all gofers using the same directory.
+807		// This provides the same isolation as `GoferNetworkNamespaceNew`
+808		// without the cost of a new nets per gofer.
+809		// Falls back to `GoferNetworkNamespaceNew` if the shared namespace cannot
+810		// be set up (e.g. rootless).
+811		GoferNetworkNamespaceNull GoferNetworkNamespace = "null"
+812	)
+
+$ sed -n '160p' runsc/config/flags.go                  # the flag, and its default
+160		flagSet.Var(goferNetworkNamespacePtr(GoferNetworkNamespaceNull), "gofer-network-namespace", "network namespace for gofers: null (default; an empty namespace shared by all gofers using the same --shared-root, which defaults to --root), new (a new empty namespace per gofer), host (the current namespace), or an absolute path to an existing namespace.")
+
+$ sed -n '585,592p' runsc/config/config.go             # where the pin is put
+585	// SharedRoot returns the effective directory for state shared across
+586	// sandboxes: SharedRootDir if set, otherwise RootDir.
+587	func (c *Config) SharedRoot() string {
+588		if c.SharedRootDir != "" {
+589			return c.SharedRootDir
+590		}
+591		return c.RootDir
+592	}
+
+$ sed -n '313,324p' runsc/specutils/namespace.go       # the only unmount helper
+313	// UnmountNullNetNS unmounts null gofer network namespace bind mounts under
+314	// `sharedRootDir`, if any.
+315	// Must be called before removing a shared root (or runtime root) directory,
+316	// which would otherwise fail with `EBUSY`.
+317	func UnmountNullNetNS(sharedRootDir string) {
+318		// Namespace creation isn't serialized across invocations, so concurrent
+319		// creations may stack bind mounts on the same path.
+320		// So loop until none are left.
+321		path := filepath.Join(sharedRootDir, NullNetNSFilename)
+322		for unix.Unmount(path, unix.MNT_DETACH) == nil {
+323		}
+324	}
+
+$ runsc flags 2>&1 | grep -A2 -E "^  -(gofer-network-namespace|shared-root)"   # (runsc prints the flag list on stderr)
+  -gofer-network-namespace value
+    	network namespace for gofers: null (default; an empty namespace shared by all gofers using the same --shared-root, which defaults to --root), new (a new empty namespace per gofer), host (the current namespace), or an absolute path to an existing namespace. (default null)
+  -gso
+--
+  -shared-root string
+    	directory for storage of state shared across sandboxes on the system. Defaults to the value of --root. Point this at a shared system-wide directory if --root is not reused across sandboxes. Access to --shared-root allows identification of running sandboxes, but not control over them.
+  -sidecar-release-enforcement-policy value

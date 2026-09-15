@@ -1,0 +1,31 @@
+######## CASE shared-ro
+---- writable mounts before runsc runs:
+proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,uid=253477,gid=253477,inode64 0 0
+tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,uid=253477,gid=253477,inode64 0 0
+tmpfs /dev tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,uid=253477,gid=253477,inode64 0 0
+udev /dev/null devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/zero devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/full devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/random devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/urandom devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/tty devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+---- check before runsc runs ----
+no writable path is executable
+CHECK_EXIT=0
+
+---- /roshared is on the read-only image root:
+/dev/md0p1 / ext4 ro,relatime,stripe=64 0 0
+touch: /roshared/probe: Read-only file system
+touch /roshared/probe: EXIT=1
+$ /runsc --root=/run/st-shared-ro --shared-root=/roshared --platform=systrap --network=none --ignore-cgroups --rootless --debug --debug-log=/tmp/dbg-shared-ro/ run --bundle /bundle e3-shared-ro
+EXIT=0
+---- what the debug log says about the null network namespace:
+No usable null network namespace at "/roshared/null-netns" (open /roshared/null-netns: no such file or directory); creating a new one. This is expected if this sandbox is the first sandbox to start with this `--shared-root` directory (/roshared). If this is not the first sandbox, this issue is slowing down your sandboxes' startup.
+Unable to pin the gofer's network namespace at "/roshared/null-netns" (creating mount point: open /roshared/null-netns: read-only file system); future gofers will create new network namespaces. This slows down gVisor startup.
+---- /proc/mounts lines mentioning null-netns:
+   (none)
+---- the guest init's check (docs/snp/image/init.rootfs:31-44) ----
+no writable path is executable
+CHECK_EXIT=0

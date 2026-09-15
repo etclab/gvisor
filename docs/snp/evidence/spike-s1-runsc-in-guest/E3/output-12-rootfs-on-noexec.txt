@@ -1,0 +1,38 @@
+######## CASE noexec-rootfs
+---- writable mounts before runsc runs:
+proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,uid=253477,gid=253477,inode64 0 0
+tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,uid=253477,gid=253477,inode64 0 0
+tmpfs /dev tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,uid=253477,gid=253477,inode64 0 0
+udev /dev/null devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/zero devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/full devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/random devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/urandom devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/tty devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+---- check before runsc runs ----
+no writable path is executable
+CHECK_EXIT=0
+
+---- /tmp is:
+tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,uid=253477,gid=253477,inode64 0 0
+$ /runsc --root=/run/st-noexec-rootfs --platform=systrap --network=none --ignore-cgroups --rootless --debug --debug-log=/tmp/dbg-noexec-rootfs/ run --bundle /tmp/bundle-noexec e3-noexec-rootfs
+EXIT=128
+running container: creating container: cannot create sandbox: cannot read client sync file: waiting for sandbox to start: EOF
+---- the gofer's account:
+W0915 23:45:09.878211       1 util.go:107] FATAL ERROR: Error reading mounts file: error unmarshaling mounts: unexpected end of JSON input
+I0915 23:45:09.842990       1 gofer_mount.go:249] Remounting root as readonly: "/proc/fs/root"
+W0915 23:45:09.843089       1 util.go:107] FATAL ERROR: Error setting up root FS: remounting root as read-only with source: "/proc/fs/root", target: "/proc/fs/root", flags: 0x1027, err: mount("/proc/fs/root", "/proc/fs/proc/self/fd/16", "bind", 0x1027, "") failed: operation not permitted
+Error setting up root FS: remounting root as read-only with source: "/proc/fs/root", target: "/proc/fs/root", flags: 0x1027, err: mount("/proc/fs/root", "/proc/fs/proc/self/fd/16", "bind", 0x1027, "") failed: operation not permitted
+I0915 23:45:09.800561      32 sandbox.go:913] Failed to set RLIMIT_MEMLOCK: operation not permitted
+W0915 23:45:09.890101      32 util.go:107] FATAL ERROR: running container: creating container: cannot create sandbox: cannot read client sync file: waiting for sandbox to start: EOF
+
+---- and the same bundle on the read-only, exec-permitted image root (the guest's shape):
+EXIT=0
+---- /proc/mounts lines mentioning null-netns:
+nsfs /run/st-noexec-rootfs/null-netns nsfs rw 0 0
+---- the guest init's check (docs/snp/image/init.rootfs:31-44) ----
+WRITABLE AND EXECUTABLE: /run/st-noexec-rootfs/null-netns (nsfs,rw)
+FATAL: writable executable path present; powering off without running tunneld
+CHECK_EXIT=1

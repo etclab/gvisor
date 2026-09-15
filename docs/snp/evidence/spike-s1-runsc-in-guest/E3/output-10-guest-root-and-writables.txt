@@ -1,0 +1,72 @@
+E3 output-10: how the measured guest mounts its root and its writable filesystems.
+Complete output of each command below; no trimming.
+
+$ sed -n '52,70p' docs/snp/image/init.initrd      # the root, in the initrd
+52	insmod /lib/dm-verity.ko || fail "insmod dm-verity"
+53	MINOR=$(veritymap root "$ROOTDEV" "$ROOTDEV" "$DATABLOCKS" "$HASHSTART" "$ROOTHASH" "$SALT") \
+54	  || fail "dm-verity mapping"
+55	i=0
+56	until [ -b "/dev/dm-$MINOR" ]; do
+57	  i=$((i+1)); [ $i -lt 50 ] || fail "/dev/dm-$MINOR never appeared"
+58	  sleep 0.2
+59	done
+60	say "dm-verity mapping /dev/dm-$MINOR active (panic_on_corruption)"
+61	
+62	mount -t squashfs -o ro /dev/dm-$MINOR /newroot || fail "mount verity root"
+63	say "root filesystem mounted read-only"
+64	
+65	# The config device carries the reference value set, its detached signature,
+66	# the peer table and the provisioned certificate chain. It is outside the
+67	# launch measurement, so it is mounted read-only and nothing on it can run.
+68	if CFGDEV=$(find_disk attested-config); then
+69	  if mount -t ext4 -o ro,noexec,nosuid,nodev "$CFGDEV" /newroot/config; then
+70	    say "config device $CFGDEV mounted at /config (ro,noexec,nosuid,nodev)"
+
+$ sed -n '14,20p' docs/snp/image/init.rootfs       # the writable filesystems, in /sbin/init
+14	exec >/dev/console 2>&1
+15	mount -t proc   -o nosuid,nodev,noexec proc   /proc
+16	mount -t sysfs  -o nosuid,nodev,noexec sysfs  /sys
+17	mount -t tmpfs  -o nosuid,nodev,noexec,mode=755 tmpfs /run
+18	mount -t tmpfs  -o nosuid,nodev,noexec,mode=1777 tmpfs /tmp
+19	mount -t configfs -o nosuid,nodev,noexec configfs /sys/kernel/config
+20	
+
+$ sed -n '31,48p' docs/snp/image/init.rootfs       # the check itself
+31	# Every mount that is writable must be noexec. Listed, not assumed.
+32	bad=0
+33	while read -r dev mnt type opts rest; do
+34	  case ",$opts," in
+35	    *,rw,*) case ",$opts," in
+36	              *,noexec,*) ;;
+37	              *) say "WRITABLE AND EXECUTABLE: $mnt ($type,$opts)"; bad=1 ;;
+38	            esac ;;
+39	  esac
+40	done < /proc/mounts
+41	sed 's/^/init: mount: /' /proc/mounts
+42	if [ $bad != 0 ]; then
+43	  # A guest that could diverge from what was measured must not run tunneld.
+44	  say "FATAL: writable executable path present; powering off without running tunneld"
+45	  sync
+46	  poweroff -f
+47	fi
+48	say "no writable path is executable"
+
+$ sed -n '182,199p' docs/snp/image/build-image.sh  # the root is a squashfs + dm-verity
+182	# squashfs: read-only by construction, 4 KiB padded, timestamps zeroed, all root.
+183	mksquashfs "$R" rootfs.squashfs -comp zstd -noappend -no-xattrs -all-root \
+184	  -mkfs-time 0 -all-time 0 -root-time 0 -no-progress -quiet
+185	DATA_BYTES=$(stat -c %s rootfs.squashfs)
+186	[ $((DATA_BYTES % 4096)) -eq 0 ] || { echo "squashfs not 4 KiB aligned" >&2; exit 1; }
+187	DATABLOCKS=$((DATA_BYTES / 4096))
+188	
+189	# dm-verity hash tree appended to the same image, no superblock: every
+190	# parameter the kernel needs travels on the measured command line instead.
+191	cp rootfs.squashfs "$OUT/rootfs.img"
+192	VERITY_OUT=$(veritysetup format --no-superblock --hash-offset="$DATA_BYTES" \
+193	  --data-block-size=4096 --hash-block-size=4096 --data-blocks="$DATABLOCKS" \
+194	  --hash=sha256 --salt=- "$OUT/rootfs.img" "$OUT/rootfs.img")
+195	ROOTHASH=$(echo "$VERITY_OUT" | sed -n 's/^Root hash:[[:space:]]*//p')
+196	[[ "$ROOTHASH" =~ ^[0-9a-f]{64}$ ]] || { echo "no root hash from veritysetup:"; echo "$VERITY_OUT"; exit 1; } >&2
+197	veritysetup verify --no-superblock --hash-offset="$DATA_BYTES" \
+198	  --data-block-size=4096 --hash-block-size=4096 --data-blocks="$DATABLOCKS" \
+199	  --hash=sha256 --salt=- "$OUT/rootfs.img" "$OUT/rootfs.img" "$ROOTHASH"

@@ -1,0 +1,69 @@
+######## CASE characterise
+---- writable mounts before runsc runs:
+proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,uid=253477,gid=253477,inode64 0 0
+tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,uid=253477,gid=253477,inode64 0 0
+tmpfs /dev tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,uid=253477,gid=253477,inode64 0 0
+udev /dev/null devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/zero devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/full devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/random devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/urandom devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/tty devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+---- check before runsc runs ----
+no writable path is executable
+CHECK_EXIT=0
+
+EXIT=0
+
+---- /proc/mounts line (what the guest init reads):
+nsfs /run/st-characterise/null-netns nsfs rw 0 0
+---- /proc/self/mountinfo line (per-mount options | fs type | super options):
+2440 865 0:4 net:[4026536019] /run/st-characterise/null-netns rw - nsfs nsfs rw
+---- the mount underneath it, /run:
+865 862 0:83 / /run rw,nosuid,nodev,noexec,relatime - tmpfs tmpfs rw,mode=755,uid=253477,gid=253477,inode64
+---- stat -f /run/st-characterise/null-netns
+  File: "/run/st-characterise/null-netns"
+    ID: 400000000 Namelen: 255     Type: UNKNOWN
+Block size: 4096      
+Blocks: Total: 0          Free: 0          Available: 0
+Inodes: Total: 0          Free: 0
+---- stat /run/st-characterise/null-netns
+  File: /run/st-characterise/null-netns
+  Size: 0         	Blocks: 0          IO Block: 4096   regular empty file
+Device: 4h/4d	Inode: 4026536019  Links: 1
+Access: (0444/-r--r--r--)  Uid: (65534/ UNKNOWN)   Gid: (65534/ UNKNOWN)
+Access: 2026-09-15 23:43:55.776916596 +0000
+Modify: 2026-09-15 23:43:55.776916596 +0000
+Change: 2026-09-15 23:43:55.776916596 +0000
+---- ls -la /run/st-characterise
+total 0
+drwx------    2 0        0               60 Sep 15 23:43 .
+drwxr-xr-x    3 0        0               60 Sep 15 23:43 ..
+-r--r--r--    1 65534    65534            0 Sep 15 23:43 null-netns
+---- ls -la /run/st-characterise/null-netns
+-r--r--r--    1 65534    65534            0 Sep 15 23:43 /run/st-characterise/null-netns
+
+---- can anything be put on it? (it is one inode, not a directory)
+touch: /run/st-characterise/null-netns/x: Not a directory
+touch /run/st-characterise/null-netns/x: EXIT=1
+mkdir: can't create directory '/run/st-characterise/null-netns/d': Not a directory
+mkdir /run/st-characterise/null-netns/d: EXIT=1
+cp: can't create '/run/st-characterise/null-netns': Operation not permitted
+cp /busybox over it: EXIT=1
+---- can it be made executable, or read, or run?
+chmod: /run/st-characterise/null-netns: Operation not permitted
+chmod +x: EXIT=1
+-r--r--r--    1 65534    65534            0 Sep 15 23:43 /run/st-characterise/null-netns
+cat: EXIT=1
+cat: read error: Invalid argument
+/case.sh: line 195: /run/st-characterise/null-netns: Permission denied
+exec it: EXIT=126
+sh: exec: line 0: /run/st-characterise/null-netns: Permission denied
+exec via sh: EXIT=126
+---- for contrast, the same on the tmpfs underneath (which IS noexec):
+/case.sh: line 199: /run/probe-bin: Permission denied
+exec a binary on the noexec /run: EXIT=126
+---- what the pin points at: the gofer's netns, long dead
+net:[4026535932]

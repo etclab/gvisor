@@ -72,6 +72,7 @@ import (
 
 	"gvisor.dev/gvisor/attest"
 	"gvisor.dev/gvisor/attest/ratls"
+	"gvisor.dev/gvisor/attest/sandbox"
 	"gvisor.dev/gvisor/attest/tunnel"
 )
 
@@ -187,10 +188,19 @@ type Tunneld struct {
 	incoming chan accepted
 	done     chan struct{}
 
+	// refusals is where every reason this tunneld reaches is written: the
+	// handshake's, through ratls, and a pushed policy that was not applied
+	// (push.go). One sink, because an operator reading a console has one place
+	// to look.
+	refusals RefusalLog
+
 	mu       sync.Mutex
 	closed   bool
 	accepted []*tunnel.Conn
-	wg       sync.WaitGroup
+	// box is the sandbox a pushed policy is handed to, set by [Tunneld.Attach]
+	// and nil until it is (push.go).
+	box sandbox.Sandbox
+	wg  sync.WaitGroup
 }
 
 // New starts a tunneld: loads and checks the reference value set, generates the
@@ -225,7 +235,8 @@ func New(ctx context.Context, cfg Config) (*Tunneld, error) {
 	if addr == "" {
 		addr = "127.0.0.1:0"
 	}
-	refusals := ratls.WithRefusalLog(refusalLog(cfg))
+	logRefusal := refusalLog(cfg)
+	refusals := ratls.WithRefusalLog(logRefusal)
 	// The listening side asks nothing more of a peer than verification did, so
 	// its admission hook keeps the verdict instead (sandbox.go, verdictBook):
 	// it is what names the peer that opened a stream to the sandbox.
@@ -248,6 +259,7 @@ func New(ctx context.Context, cfg Config) (*Tunneld, error) {
 		verdicts:      verdicts,
 		incoming:      make(chan accepted),
 		done:          make(chan struct{}),
+		refusals:      logRefusal,
 	}
 	t.wg.Add(1)
 	go t.accept()
@@ -311,7 +323,10 @@ func (t *Tunneld) accept() {
 		// it here would mean nothing did.
 		t.accepted = append(live(t.accepted), conn)
 		t.mu.Unlock()
-		go conn.Serve(t.handle)
+		// A policy push is one of the exchanges this tunnel carries, and the
+		// handler is bound to the connection so that a push it refuses can end
+		// it (push.go).
+		go conn.Serve(t.handleFor(conn))
 		// And beside the exchanges, the streams: Serve tells the two apart and
 		// this carries the raw ones to the sandbox (sandbox.go).
 		go t.acceptStreams(conn)

@@ -19,8 +19,9 @@ import (
 	"fmt"
 )
 
-// A Reason names one distinct way evidence can fail to satisfy a reference
-// value set.
+// A Reason names one distinct way a peer can fail to be one this sandbox will
+// speak to: nine ways evidence can fail to satisfy a reference value set, and
+// one thing an admitted peer can do afterwards.
 //
 // Reasons are typed so that a test can assert on which check refused a peer and
 // an operator can read it in a log. They are not a caller-facing vocabulary:
@@ -86,6 +87,26 @@ const (
 	// ReasonUnknownBindingContext is a peer claiming a binding context this
 	// verifier does not understand (ADR-0002).
 	ReasonUnknownBindingContext
+
+	// ReasonPolicyNotApplied is an admitted peer that did not apply the policy
+	// pushed at it: its sandbox refused the document, or it has no sandbox to
+	// apply one, or it answered in a version this side does not read, or it did
+	// not answer at all (ticket 22, docs/policy-push.md).
+	//
+	// It is the one reason here that is not a verdict on evidence. Every other
+	// reason is reached inside a handshake, by a verifier holding a report
+	// against a reference value set; this one is reached after the handshake
+	// succeeded, over a tunnel both sides established, and no [Verifier] can
+	// return it. It is in the taxonomy anyway because it ends the same way and
+	// an operator reads it off the same log line: the peer is refused, the
+	// tunnel closes, and nothing is carried over it.
+	//
+	// The policy it names is pushed rather than presented, and is trusted for
+	// having arrived over a tunnel whose far end was already admitted. That is
+	// also the whole of why a push can be refused this late: there is no
+	// earlier moment at which a delegator could have asked, because before
+	// admission there is no peer to ask.
+	ReasonPolicyNotApplied
 )
 
 // reasonNames are the strings that appear in operator logs. They are not
@@ -101,6 +122,7 @@ var reasonNames = map[Reason]string{
 	ReasonPolicyMismatch:        "guest policy or policy digest not permitted by the reference value",
 	ReasonBindingMismatch:       "caller-supplied bytes do not match the presented public key",
 	ReasonUnknownBindingContext: "unrecognised binding context",
+	ReasonPolicyNotApplied:      "the policy pushed to the peer was not applied",
 }
 
 // String returns an operator-facing description of r.

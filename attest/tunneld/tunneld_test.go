@@ -125,11 +125,17 @@ func echo(prefix string, n *node) tunneld.Handler {
 
 // start runs a tunneld on an ephemeral port: its platform measures image,
 // its set admits admits, and it knows peers.
-func start(t *testing.T, sandbox string, image []byte, admits attest.ReferenceValueSet, peers tunneld.PeerTable) *node {
+//
+// adjust, if any is given, gets a hand on the configuration before the tunneld
+// is built. It is how a test whose subject is a field the four parameters above
+// do not carry states it — the policy this tunneld pushes, how long it waits
+// for the acknowledgement, and where its refusals go (push_test.go) — without a
+// second starter beside this one.
+func start(t *testing.T, sandbox string, image []byte, admits attest.ReferenceValueSet, peers tunneld.PeerTable, adjust ...func(*tunneld.Config)) *node {
 	t.Helper()
 	p := platform(t, image)
 	n := &node{}
-	td, err := tunneld.New(context.Background(), tunneld.Config{
+	cfg := tunneld.Config{
 		SandboxID:             sandbox,
 		Acquirer:              p,
 		Verifier:              fixture.VerifierTrusting(t, p),
@@ -139,7 +145,11 @@ func start(t *testing.T, sandbox string, image []byte, admits attest.ReferenceVa
 		Peers:                 peers,
 		ListenAddr:            "127.0.0.1:0",
 		Handler:               echo(sandbox+":", n),
-	})
+	}
+	for _, hand := range adjust {
+		hand(&cfg)
+	}
+	td, err := tunneld.New(context.Background(), cfg)
 	if err != nil {
 		t.Fatalf("tunneld.New(%s): %v", sandbox, err)
 	}

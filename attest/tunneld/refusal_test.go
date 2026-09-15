@@ -382,8 +382,14 @@ func stillCarriesTraffic(t *testing.T, w refusalWiring) {
 	})
 }
 
-// refusalReasons is the whole taxonomy, used to check that none of it reaches a
-// caller.
+// refusalReasons is the whole taxonomy, used to check that no handshake refusal
+// lets a caller recover which check refused its peer.
+//
+// The tenth reason is in the list for the same purpose and not for the same
+// property: a push that was not applied is this side's own decision about a
+// document this side wrote, so its caller is told (push_test.go). What it must
+// not do is appear in the text of a refusal reached at a handshake, which is
+// what a list rather than a special case keeps true.
 var refusalReasons = []attest.Reason{
 	attest.ReasonNoEvidence,
 	attest.ReasonUnsupportedVendor,
@@ -394,6 +400,7 @@ var refusalReasons = []attest.Reason{
 	attest.ReasonPolicyMismatch,
 	attest.ReasonBindingMismatch,
 	attest.ReasonUnknownBindingContext,
+	attest.ReasonPolicyNotApplied,
 }
 
 // refusalLeaksNothing is the property that makes the taxonomy safe to have: an
@@ -1181,9 +1188,13 @@ func exchangeThrough(t *testing.T, listener *refusalNode, name string, acquirer 
 }
 
 // refusalCoverage names the reasons this file drives through tunneld. A reason
-// added to the taxonomy with nothing here to refuse for it is a reason no
-// handshake ever applies, which is the failure this guards against — and the
-// one that looks like success, because every existing test still passes.
+// added to the taxonomy with nothing here to refuse for it is a reason nothing
+// ever applies, which is the failure this guards against — and the one that
+// looks like success, because every existing test still passes.
+//
+// Every entry but the last is reached inside a handshake. The last is reached
+// after one succeeded, over an established tunnel, which is the whole of what
+// makes it the tenth rather than the ninth (attest/refusal.go).
 var refusalCoverage = map[attest.Reason]string{
 	attest.ReasonNoEvidence:            "TestEveryWayEvidenceCanFailRefusesTheTunnel",
 	attest.ReasonUnsupportedVendor:     "TestEveryWayEvidenceCanFailRefusesTheTunnel",
@@ -1194,6 +1205,7 @@ var refusalCoverage = map[attest.Reason]string{
 	attest.ReasonPolicyMismatch:        "TestEveryWayEvidenceCanFailRefusesTheTunnel",
 	attest.ReasonBindingMismatch:       "TestEveryWayEvidenceCanFailRefusesTheTunnel",
 	attest.ReasonUnknownBindingContext: "TestAPeerSpeakingAnUnrecognisedBindingContextIsRefused",
+	attest.ReasonPolicyNotApplied:      "TestAPushTheSandboxRefusesClosesTheTunnel",
 }
 
 func TestEveryReasonInTheTaxonomyRefusesATunnel(t *testing.T) {

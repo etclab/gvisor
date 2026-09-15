@@ -17,7 +17,15 @@
 # Ticket 19: it emits a second signed document beside the first,
 # policy.json and .sig, which is what a guest booting this image *is* rather
 # than whom it admits — the egress section, and the measurements it will dial.
-# Its digest is the number a peer names in policy_digest (docs/policy-binding.md).
+#
+# Ticket 22: that document is no longer delivered and is no longer what a peer
+# pins. It stays here, beside the image, as the thing an authoring station
+# pushes over the tunnel after attestation (docs/policy-push.md); it goes onto
+# no config device, and tunneld refuses to start on one that carries it. What a
+# guest presents is the digest of the egress ceiling compiled into the tunneld
+# this build measures — `attest-tool ceiling -digest`, which needs no guest, no
+# key and no boot — and that is the number in policy_digest below and the number
+# a peer's own policy_digest names (attest/ceiling, ADR-0008).
 #
 # Rebuildable and auditable, not bit-reproducible: every input is pinned by
 # hash or version, every tool version is recorded, and the manifest lists
@@ -41,18 +49,21 @@
 #   PEER_POLICY_DIGEST
 #                   optional. The peer policy the emitted reference value
 #                   admits: the digest another guest's tunneld prints at start.
-#                   Left unset the value is unconstrained and admits a peer
-#                   running the named image under any policy, which is what
-#                   every set authored before ticket 18 says.
+#                   Left UNSET it is this image's own egress ceiling, so a pair
+#                   of guests booted from this image admit each other on the
+#                   policy as well as on the measurement. Set and EMPTY leaves
+#                   the value unconstrained, admitting a peer running the named
+#                   image under any policy — the weaker reading, and what every
+#                   set authored before ticket 18 says.
 #   FORWARD_TO      the measurements the emitted policy says this sandbox will
 #                   dial, comma separated. Unset means this image's own
 #                   measurement, so two guests booting it can call each other,
 #                   which is what every scenario in the harness needs. Set and
 #                   empty means the sandbox dials nobody. Whatever it says, the
 #                   emitted policy's digest is recorded in the manifest as
-#                   policy_digest — that is the number a peer's policy_digest
-#                   names, and since ticket 19 it is the digest of policy.json
-#                   and not of the reference value set.
+#                   emitted_policy_digest, which is an archive entry and not
+#                   what any peer pins: nothing loads that document off a disk
+#                   any more, and forward_to decides nothing (ticket 22).
 #   TCB_FLOOR       minimum TCB the reference value admits, as
 #                   bootloader,tee,snp,microcode. Default 9,0,23,72 — the level
 #                   ticket 01 observed on this host. An authoring decision,
@@ -213,10 +224,28 @@ MEASUREMENT=$(bash "$HERE/predict-measurement.sh" "$OUT" -vcpus "$VCPUS" -vcpu-t
                 -out "$OUT/predicted-measurement.txt")
 [[ "$MEASUREMENT" =~ ^[0-9a-f]{96}$ ]] || { echo "no measurement predicted" >&2; exit 1; }
 
-# The guest list: whom a guest booting this image admits.
+# The digest a guest booted from this image presents. Since ticket 22 it is the
+# name of the egress ceiling compiled into the tunneld measured in above — not
+# the digest of the policy emitted further down, which no longer travels on a
+# config device and which no guest loads. It is asked of the tool rather than
+# computed here, because the number has exactly one definition and it lives in
+# the source the binary embeds (attest/ceiling).
+POLICY_DIGEST=$(cd "$REPO/attest" && GOPROXY=off go run ./cmd/attest-tool ceiling -digest)
+[[ "$POLICY_DIGEST" =~ ^[0-9a-f]{64}$ ]] || { echo "attest-tool ceiling -digest printed no digest" >&2; exit 1; }
+echo "egress ceiling digest: $POLICY_DIGEST (what a guest from this image presents)"
+
+# Whom a guest booting this image admits, and under which policy. Unset means
+# this image's own ceiling, so two guests from it admit each other on both; set
+# and empty is the unconstrained reading, kept because the sets authored before
+# ticket 18 are that shape and the harness still authors one.
+DIGEST_ARGS=()
+if [ -z "${PEER_POLICY_DIGEST+set}" ]; then
+  DIGEST_ARGS=(-policy-digest "$POLICY_DIGEST")
+elif [ -n "$PEER_POLICY_DIGEST" ]; then
+  DIGEST_ARGS=(-policy-digest "$PEER_POLICY_DIGEST")
+fi
 EMITTED=$("$B/emit-refvals" -measurement "$MEASUREMENT" -key "$AUTHOR_KEY" -out "$OUT" \
-                  -tcb "$TCB_FLOOR" -policy "$POLICY" \
-                  ${PEER_POLICY_DIGEST:+-policy-digest "$PEER_POLICY_DIGEST"})
+                  -tcb "$TCB_FLOOR" -policy "$POLICY" "${DIGEST_ARGS[@]}")
 printf '%s\n' "$EMITTED"
 
 # The policy: what a guest booting this image is. Two documents since ticket 19,
@@ -236,12 +265,14 @@ fi
 EMITTED_POLICY=$("$B/emit-refvals" -emit-policy -key "$AUTHOR_KEY" -out "$OUT" "${FORWARD_ARGS[@]}")
 printf '%s\n' "$EMITTED_POLICY"
 
-# The emitted policy's digest, which is what a peer puts in its policy_digest to
-# admit a guest running this image under this policy (tickets 18 and 19). It is
-# SHA-256 over the bytes the author signed rather than over the file, so it comes
-# from the tool that knows that and never from sha256sum.
-POLICY_DIGEST=$(printf '%s\n' "$EMITTED_POLICY" | sed -n 's/^policy digest: //p')
-[[ "$POLICY_DIGEST" =~ ^[0-9a-f]{64}$ ]] || { echo "emit-refvals printed no policy digest" >&2; exit 1; }
+# The emitted policy's own digest. It was what a peer put in its policy_digest
+# until ticket 22 and it is an archive entry now: the document is pushed over a
+# tunnel rather than delivered on a disk, and what a peer pins is the ceiling
+# digest above. It is still SHA-256 over the bytes the author signed rather than
+# over the file, so it comes from the tool that knows that and never from
+# sha256sum.
+EMITTED_POLICY_DIGEST=$(printf '%s\n' "$EMITTED_POLICY" | sed -n 's/^policy digest: //p')
+[[ "$EMITTED_POLICY_DIGEST" =~ ^[0-9a-f]{64}$ ]] || { echo "emit-refvals printed no policy digest" >&2; exit 1; }
 {
   echo "# Inputs of the two documents emitted beside this file (tickets 07 and 19)."
   echo "# The launch measurement in reference-values.json is a prediction from these"
@@ -249,9 +280,18 @@ POLICY_DIGEST=$(printf '%s\n' "$EMITTED_POLICY" | sed -n 's/^policy digest: //p'
   echo
   echo "reference-values.json sha256: $(sha256sum "$OUT/reference-values.json" | cut -d' ' -f1)"
   echo "policy.json sha256:           $(sha256sum "$OUT/policy.json" | cut -d' ' -f1)"
-  echo "policy digest:                $POLICY_DIGEST (sha256 over the signed policy bytes, not over"
-  echo "                              the file; this is what a peer's policy_digest names)"
-  echo "admits peer policy:           ${PEER_POLICY_DIGEST:-any (this value lists no policy_digest)}"
+  echo "egress ceiling digest:        $POLICY_DIGEST (sha256 over attest/ceiling/ceiling.nft, compiled"
+  echo "                              into the measured tunneld; this is what a guest presents and what"
+  echo "                              a peer's policy_digest names since ticket 22)"
+  echo "emitted policy digest:        $EMITTED_POLICY_DIGEST (sha256 over the signed policy bytes, not over"
+  echo "                              the file; the document beside this one, pushed rather than delivered)"
+  if [ -z "${PEER_POLICY_DIGEST+set}" ]; then
+    echo "admits peer policy:           $POLICY_DIGEST (this image's own ceiling, so a guest booting it admits itself)"
+  elif [ -z "$PEER_POLICY_DIGEST" ]; then
+    echo "admits peer policy:           any (this value lists no policy_digest, which is the weaker reading)"
+  else
+    echo "admits peer policy:           $PEER_POLICY_DIGEST"
+  fi
   echo "forwards to:                  $(printf '%s\n' "$EMITTED_POLICY" | sed -n 's/^forwards to[:]* //p' | paste -sd, -)"
   echo "signed by author key:         $KEYHEX (Ed25519; also at /etc/attested-tunnel/author.pub in rootfs.img)"
   echo "launch policy:                $POLICY"
@@ -278,10 +318,16 @@ POLICY_DIGEST=$(printf '%s\n' "$EMITTED_POLICY" | sed -n 's/^policy digest: //p'
   echo "emitted as reference-values.json and policy.json (+ .sig each, signed by the author key);"
   echo "inputs in reference-values.inputs.txt"
   echo
-  echo "## Policy digest of the emitted policy (tickets 18 and 19): sha256 over the bytes the author"
-  echo "## signed over policy.json, which is not sha256sum of the file. A peer admits a guest running"
-  echo "## this image under this policy by naming this number in its own policy_digest."
+  echo "## The digest a guest booted from this image presents (ticket 22): sha256 over the egress"
+  echo "## ceiling compiled into its tunneld, which attest-tool ceiling -digest prints without a guest,"
+  echo "## a key or a boot. A peer admits a guest running this image under this ceiling by naming this"
+  echo "## number in its own policy_digest."
   echo "policy_digest: $POLICY_DIGEST"
+  echo
+  echo "## The digest of policy.json beside this file: sha256 over the bytes the author signed, which is"
+  echo "## not sha256sum of the file. It is on no config device and no guest loads it — it is what an"
+  echo "## authoring station pushes over an established tunnel (docs/policy-push.md)."
+  echo "emitted_policy_digest: $EMITTED_POLICY_DIGEST"
   echo
   echo "## Provenance"
   echo "firmware: tianocore/edk2 $OVMF_TAG $OVMF_COMMIT OvmfPkg/AmdSev/AmdSevX64.dsc, built by docs/snp/image/build-ovmf-amdsev.sh"

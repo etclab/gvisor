@@ -97,6 +97,10 @@ SNP=1; CAPTURE=""; RUN_FOR=1000; SCENARIOS=(); SPOOL=""
 RELAY_A_PORT="${RELAY_A_PORT:-15801}"; RELAY_B_PORT="${RELAY_B_PORT:-15802}"
 MARKER="attested-tunnel-plaintext-marker"
 TAMPER=0
+# What a policy to push is called on a config device. Anything but policy.json:
+# that name and its signature are what ticket 22 took off the device, and a
+# tunneld that finds either refuses to start before it reads anything else.
+PUSH_POLICY_NAME="push-policy.json"
 while [ -n "${1:-}" ]; do
   case "$1" in
     -image)    IMAGE="$2"; shift 2 ;;
@@ -242,32 +246,52 @@ spool_run() {
 # two guests booted from one image can differ at all.
 #
 #   make_config DIR SANDBOX ADDRESS PEER_NAME PEER_ADDRESS RUN_JSON \
-#               [-stale] [-refvals DIR] [-policy DIR]
+#               [-stale] [-refvals DIR] [-policy DIR] [-push FILE]
 #
-# The device carries two signed documents since ticket 19: the set, which says
-# whom this guest admits, and the policy, which says what it is. They default to
-# the image's own emitted pair and are overridden separately, because every
-# scenario below changes exactly one of them.
+# The device carried two signed documents between tickets 19 and 22: the set,
+# which says whom this guest admits, and the policy, which says what it is. They
+# default to the image's own emitted pair and are overridden separately, because
+# every scenario below changes exactly one of them.
+#
+# Since ticket 22 only the set reaches the device. The policy is still authored
+# into the config SOURCE, because that directory is what the record keeps and
+# what the digests below are read off, but the device is built from a copy with
+# the two policy files left behind: nothing in a guest loads one, tunneld
+# refuses to start on a device that carries either half, and mkconfigdev.sh
+# refuses to build one. A policy reaches a peer over the tunnel instead, and
+# -push is how this harness hands one to the guest that will push it
+# (docs/policy-push.md).
 make_config() {
   local dir="$1" sandbox="$2" address="$3" peer="$4" peeraddr="$5" runjson="$6"; shift 6
-  local refvals="$IMAGE" policysrc="" chainsrc="$CHAIN" chainbin="certificate-chain.bin" chainjson="certificate-chain.json"
+  local refvals="$IMAGE" policysrc="" pushpolicy="" chainsrc="$CHAIN" chainbin="certificate-chain.bin" chainjson="certificate-chain.json"
   while [ -n "${1:-}" ]; do
     case "$1" in
       -stale)   chainsrc="$STALE"; chainbin="certificate-chain-stale.bin"; chainjson="certificate-chain-stale.json"; shift ;;
       -refvals) refvals="$2"; shift 2 ;;
       -policy)  policysrc="$2"; shift 2 ;;
+      -push)    pushpolicy="$2"; shift 2 ;;
       *) echo "make_config: unknown option $1" >&2; exit 2 ;;
     esac
   done
   [ -n "$policysrc" ] || policysrc="$IMAGE"
-  rm -rf "$dir"; mkdir -p "$dir"
+  rm -rf "$dir" "$dir-device"; mkdir -p "$dir" "$dir-device"
   cp "$refvals/reference-values.json" "$refvals/reference-values.json.sig" "$dir/"
   cp "$policysrc/policy.json" "$policysrc/policy.json.sig" "$dir/"
   cp "$chainsrc/$chainbin"  "$dir/certificate-chain.bin"
   cp "$chainsrc/$chainjson" "$dir/certificate-chain.json"
   printf '{"peers": {"%s": "%s"}}\n' "$peer" "$peeraddr" > "$dir/peers.json"
   printf '%s\n' "$runjson" > "$dir/tunneld.json"
-  bash "$HERE/image/mkconfigdev.sh" "$dir" "$dir.img" | sed 's/^/    /'
+  if [ -n "$pushpolicy" ]; then cp "$pushpolicy" "$dir/$PUSH_POLICY_NAME"; fi
+  # The device, from a copy of the source with the policy left behind. The two
+  # names are matched exactly rather than by pattern: a policy to push is a
+  # policy too, and that one does go on the device, which is the whole point of
+  # it. What is filtered is the two file names ticket 22 took off, and nothing
+  # that merely looks like them.
+  for f in "$dir"/*; do
+    case "$(basename "$f")" in policy.json|policy.json.sig) continue ;; esac
+    cp -r "$f" "$dir-device/"
+  done
+  bash "$HERE/image/mkconfigdev.sh" "$dir-device" "$dir.img" | sed 's/^/    /'
 }
 
 # The two run configurations. Both guests are configured alike on the limits,

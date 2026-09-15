@@ -150,6 +150,11 @@ check() { local what="$1"; shift; if "$@" >/dev/null 2>&1; then pass "$what"; el
 in_file() { grep -qF -- "$2" "$1"; }
 not_in_file() { ! grep -qF -- "$2" "$1"; }
 
+# How the exercise exited is read off init's line rather than tunneld's. Since
+# ticket 22 a console carries two "tunneld: EXIT status=" lines — the serving
+# tunneld's, and the one the egress probe init runs after it prints — and only
+# init names which of the two it waited for (docs/snp/image/init.rootfs).
+
 echo "=== two attested guests, from $(basename "$IMAGE") ==="
 echo "date        : $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 echo "repo        : $(git -C "$REPO" rev-parse HEAD) on $(git -C "$REPO" rev-parse --abbrev-ref HEAD)"
@@ -521,7 +526,7 @@ scenario_live() {
   check "guest-b exchanged over it, warm"         in_file "$b" "kind=warm_exchange"
   check "guest-b ran concurrent exchanges on one tunnel" in_file "$b" "kind=concurrent"
   check "guest-a answered guest-b's exchanges"    in_file "$b" 'answered_by="guest-a"'
-  check "guest-b's exercise completed"            in_file "$b" "tunneld: EXIT status=0"
+  check "guest-b's exercise completed"            in_file "$b" "init: tunneld exited with status 0"
   check "neither guest refused the other"         not_in_file "$a" "tunneld: REFUSED"
 
   # What the two guests wrote down about each other. The chains are equal
@@ -613,7 +618,7 @@ scenario_modified() {
         in_file "$b" "peer=guest-a FAILED"
   check "the modified guest itself admitted guest-a, so the refusal is one-sided" \
         in_file "$b" "tunneld: PEER key="
-  check "the modified guest's exercise failed"    in_file "$b" "tunneld: EXIT status=2"
+  check "the modified guest's exercise failed"    in_file "$b" "init: tunneld exited with status 2"
 }
 
 # ---- scenario: a platform below the TCB floor -----------------------------
@@ -664,7 +669,7 @@ scenario_nosnp() {
   check "its kernel would not load the guest driver"       in_file "$b" "sev-guest did not load"
   check "it refused to start rather than run without evidence" in_file "$b" "refusing to start"
   check "it never listened"                                not_in_file "$b" "tunneld: listening on"
-  check "it exited saying so"                              in_file "$b" "tunneld: EXIT status=1"
+  check "it exited saying so"                              in_file "$b" "init: tunneld exited with status 1"
   if [ "$SNP" = 1 ]; then
     check "the attested guest admitted nobody"             test "$(accepted_count "$a")" = "0"
     check "the attested guest got no tunnel to it"         in_file "$a" "peer=guest-b FAILED"
@@ -902,7 +907,7 @@ scenario_policy_pinned() {
   check "guest-b exchanged over it, warm"         in_file "$b" "kind=warm_exchange"
   check "guest-b ran concurrent exchanges on one tunnel" in_file "$b" "kind=concurrent"
   check "guest-a answered guest-b's exchanges"    in_file "$b" 'answered_by="guest-a"'
-  check "guest-b's exercise completed"            in_file "$b" "tunneld: EXIT status=0"
+  check "guest-b's exercise completed"            in_file "$b" "init: tunneld exited with status 0"
   check "the exchange went through the relay"     grep -q "a_to_b_frames=[1-9]" "$work/relay.txt"
   check "the relay found no plaintext on the wire" in_file "$work/relay.txt" "MARKER not found"
   grep -h "LATENCY .*kind=establish" "$b" | sed 's/^/    /' || true
@@ -998,8 +1003,8 @@ scenario_policy_mismatch() {
   check "guest-b's dial of guest-a got no tunnel" in_file "$b" "peer=guest-a FAILED"
   check "guest-a's dial of guest-b got no tunnel either, though A admits B" \
         in_file "$a" "peer=guest-b FAILED"
-  check "guest-a's exercise failed"               in_file "$a" "tunneld: EXIT status=2"
-  check "guest-b's exercise failed"               in_file "$b" "tunneld: EXIT status=2"
+  check "guest-a's exercise failed"               in_file "$a" "init: tunneld exited with status 2"
+  check "guest-b's exercise failed"               in_file "$b" "init: tunneld exited with status 2"
   check "nothing was exchanged in either direction" not_in_file "$a" "answered_by="
   check "nor in the other"                          not_in_file "$b" "answered_by="
   check "the relay found no plaintext on the wire"  in_file "$work/relay.txt" "MARKER not found"
@@ -1082,8 +1087,8 @@ scenario_mutual() {
   check "guest-b exchanged over it, warm"         in_file "$b" "kind=warm_exchange"
   check "guest-b answered guest-a's exchanges"    in_file "$a" 'answered_by="guest-b"'
   check "guest-a answered guest-b's exchanges"    in_file "$b" 'answered_by="guest-a"'
-  check "guest-a's exercise completed"            in_file "$a" "tunneld: EXIT status=0"
-  check "guest-b's exercise completed"            in_file "$b" "tunneld: EXIT status=0"
+  check "guest-a's exercise completed"            in_file "$a" "init: tunneld exited with status 0"
+  check "guest-b's exercise completed"            in_file "$b" "init: tunneld exited with status 0"
 
   check "the exchange went through the relay"     grep -q "a_to_b_frames=[1-9]" "$work/relay.txt"
   check "the relay found no plaintext on the wire" in_file "$work/relay.txt" "MARKER not found"

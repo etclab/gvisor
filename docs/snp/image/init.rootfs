@@ -2,11 +2,11 @@
 # /sbin/init of the measured root filesystem.
 #
 # Mounts the kernel filesystems (all noexec), loads the report interface
-# driver, proves to the console that no writable path is executable, installs
-# the egress ceiling the binary carries, and runs that binary. When it exits
-# the guest powers off: no shell is ever spawned (the busybox that runs this
-# script is present, but nothing listens and nothing else is run), no getty,
-# nothing else.
+# driver, proves to the console that no writable path is executable, brings
+# loopback up, installs the egress ceiling the binary carries, runs that
+# binary, and proves the ceiling held. When it exits the guest powers off: no
+# shell is ever spawned (the busybox that runs this script is present, but
+# nothing listens and nothing else is run), no getty, nothing else.
 export PATH=/bin:/sbin:/usr/bin
 say() { echo "init: $*"; }
 
@@ -46,6 +46,24 @@ if [ $bad != 0 ]; then
 fi
 say "no writable path is executable"
 
+# Loopback, before the ceiling and before anything that could be refused.
+#
+# It is not a convenience. The ceiling's output chain ends in rejects rather
+# than in its drop policy so that a socket learns at once that a rule refused
+# it, and netfilter delivers the refusal it builds — a TCP reset, an ICMP
+# "administratively prohibited" — back at the local socket over lo. With lo
+# down that refusal is dropped on the way back and the attempt reads as a
+# timeout, which is what a black hole, a missing route and a firewall all look
+# like (attest/cmd/tunneld/egress.go, attest/ceiling/ceiling.nft). Measured
+# rather than assumed, in a namespace addressed like this guest: with lo down
+# the two TCP probes below time out and with it up all four are refused.
+#
+# lo carries nothing between the guests — the segment is eth0, which tunneld
+# brings up out of the run configuration — so this widens nothing. The ceiling
+# accepts lo in both directions and always has.
+say "bringing loopback up (the kernel delivers a rule's refusal to the local socket over it)"
+ip link set lo up || say "WARNING: loopback would not come up; a refused attempt will read as a timeout"
+
 # The egress ceiling, before tunneld and therefore before the link: tunneld
 # brings its own interface up out of the run configuration, so this is the last
 # moment at which nothing in this guest can address a packet. The rule set is a
@@ -68,6 +86,38 @@ fi
 say "running /usr/bin/tunneld"
 /usr/bin/tunneld
 rc=$?
-say "tunneld exited with status $rc; powering off"
+say "tunneld exited with status $rc"
+
+# ---- the proof that the ceiling held --------------------------------------
+# The probe attempts the egress the ceiling forbids and reports the errno, so
+# that "nothing left this guest" is told apart from "nothing was tried": EACCES
+# or EPERM is a rule refusing, ENETUNREACH is the routing table having nothing
+# to say, and the probe says as much itself on every line it writes.
+#
+# It runs here, after tunneld has exited, and that is the one thing about this
+# guest that differs from docs/snp/cloud/tdx/init.tdx, where the probe is step
+# 6. On TDX the initrd stands the link up itself and can prove the ceiling
+# before the workload; here tunneld is what brings this guest's link up, out of
+# the run configuration on the config device that this script never reads. Ahead
+# of tunneld there is no address, so every attempt would fail in the routing
+# table without reaching a rule and the transcript would demonstrate nothing.
+# The ceiling itself is installed before the link either way, which is the
+# property that matters: the window in which this guest is up and unconstrained
+# has length zero.
+#
+# The default route is added for that same reason and for nothing else. Each of
+# the four built-in probes names an address off this segment, so the routing
+# table has to have something to say about them or the rule is never reached;
+# an on-link default route is the smallest thing that says it. Nothing leaves
+# on it: the output hook rejects these packets before the kernel ever resolves
+# a neighbour, so the segment carries no ARP for any of the four. And it is
+# added after the exercise is over, on a guest that powers off in the next
+# breath, so it can widen nothing that ran.
+say "proving the egress ceiling held, from inside the guest:"
+ip route add default dev eth0 2>/dev/null \
+  || say "no default route could be added; the attempts below will read as unrouted rather than refused"
+/usr/bin/tunneld -egress probe || say "WARNING: the egress probe reached something the ceiling forbids"
+
+say "powering off"
 sync
 poweroff -f

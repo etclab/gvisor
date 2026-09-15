@@ -147,7 +147,7 @@ printf '%s\n' "$KEYHEX" > author.pub
 R="$B/rootfs"
 mkdir -p "$R"/{bin,sbin,usr/bin,etc/attested-tunnel,lib/modules,config,proc,sys,dev,run,tmp}
 install -m 755 "$BUSYBOX" "$R/bin/busybox"
-ROOT_APPLETS="sh mount umount insmod cat echo sleep ls dmesg grep sed poweroff sync"
+ROOT_APPLETS="sh mount umount insmod cat echo sleep ls dmesg grep sed poweroff sync ip"
 for a in $ROOT_APPLETS; do ln -s busybox "$R/bin/$a"; done
 install -m 755 "$HERE/init.rootfs" "$R/sbin/init"
 install -m 755 "$TUNNELD" "$R/usr/bin/tunneld"

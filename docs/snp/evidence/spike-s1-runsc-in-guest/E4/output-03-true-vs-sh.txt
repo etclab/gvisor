@@ -1,0 +1,176 @@
+######## 4. LIVE, trivial workload (/bin/busybox sleep 25), for the mount-table comparison
+runsc processes seen:
+  268 /runsc --root=/run/state-tl --platform=systrap --network=none --ignore-cgroups --rootless run --bundle /bundle-true-live s1-e4-tl
+  293 {exe} runsc-gofer --platform=systrap --rootless=true --ignore-cgroups=true --root=/run/state-tl --network=none gofer --bundle /bundle-true-live --gofer-mount-confs=lisafs:none --spec-fd=3 --mounts-fd=4 --rpc-fd=5 --pin-ring-fd=6 --sync-sentry-exit-fd=7 --io-fds=8 --sync-chroot-fd=9 s1-e4-tl
+  298 {exe} runsc-sandbox --platform=systrap --rootless=true --ignore-cgroups=true --root=/run/state-tl --network=none boot --bundle=/bundle-true-live --gofer-mount-confs=lisafs:none --apply-caps=true --setup-root --total-host-memory 807732506624 --total-memory 807732506624 --attached --io-fds=3 --dev-io-fd=-1 --mounts-fd=4 --start-sync-fd=5 --pin-ring-fd=6 --controller-fd=7 --spec-fd=8 --stdio-fds=9 --stdio-fds=10 --stdio-fds=11 s1-e4-tl
+
+---- TRUE-LIVE runsc-gofer /proc/293/mounts
+/dev/md0p1 / ext4 ro,nosuid,nodev,relatime,stripe=64 0 0
+---- TRUE-LIVE runsc-gofer /proc/293/uid_map
+         0          0          1
+---- TRUE-LIVE runsc-gofer /proc/293/gid_map
+         0          0          1
+---- TRUE-LIVE runsc-gofer Cap* from /proc/293/status
+CapInh:	000000000004001f
+CapPrm:	000000000004001f
+CapEff:	000000000004001f
+CapBnd:	000000000004001f
+CapAmb:	000000000004001f
+
+---- TRUE-LIVE runsc-sandbox /proc/298/mounts
+runsc-root / tmpfs ro,relatime,uid=253477,gid=253477,inode64 0 0
+runsc-proc /proc tmpfs rw,nosuid,nodev,noexec,relatime,uid=253477,gid=253477,inode64 0 0
+proc /proc/sandbox-proc proc ro,nosuid,nodev,noexec,relatime 0 0
+---- TRUE-LIVE runsc-sandbox /proc/298/uid_map
+         0          0          1
+---- TRUE-LIVE runsc-sandbox /proc/298/gid_map
+         0          0          1
+---- TRUE-LIVE runsc-sandbox Cap* from /proc/298/status
+CapInh:	0000000000000000
+CapPrm:	000000000008001f
+CapEff:	000000000008001f
+CapBnd:	000000000008001f
+CapAmb:	0000000000000000
+
+---- TRUE-LIVE the namespace's own /proc/mounts while the sandbox lives
+/dev/md0p1 / ext4 ro,relatime,stripe=64 0 0
+proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,uid=253477,gid=253477,inode64 0 0
+tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,uid=253477,gid=253477,inode64 0 0
+tmpfs /dev tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,uid=253477,gid=253477,inode64 0 0
+udev /dev/null devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/zero devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/full devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/random devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/urandom devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/tty devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+nsfs /run/state-true/null-netns nsfs rw 0 0
+nsfs /run/state-hi/null-netns nsfs rw 0 0
+nsfs /run/state-view/null-netns nsfs rw 0 0
+nsfs /run/state-tl/null-netns nsfs rw 0 0
+---- TRUE-LIVE state dir while the container lives
+/run/state-tl
+/run/state-tl/null-netns
+/run/state-tl/runsc-s1-e4-tl.sock
+/run/state-tl/s1-e4-tl_sandbox:s1-e4-tl.lock
+/run/state-tl/s1-e4-tl_sandbox:s1-e4-tl.state
+TRUE_LIVE_EXIT=0
+
+######## 5. LIVE, busybox sh workload (sh -c 'echo hi; ls /; sleep 25'), same comparison
+runsc processes seen:
+  369 /runsc --root=/run/state-hl --platform=systrap --network=none --ignore-cgroups --rootless run --bundle /bundle-hi-live s1-e4-hl
+  379 {exe} runsc-gofer --root=/run/state-hl --network=none --platform=systrap --rootless=true --ignore-cgroups=true gofer --bundle /bundle-hi-live --gofer-mount-confs=lisafs:none --spec-fd=3 --mounts-fd=4 --rpc-fd=5 --pin-ring-fd=6 --sync-sentry-exit-fd=7 --io-fds=8 --sync-chroot-fd=9 s1-e4-hl
+  384 {exe} runsc-sandbox --root=/run/state-hl --network=none --platform=systrap --rootless=true --ignore-cgroups=true boot --bundle=/bundle-hi-live --gofer-mount-confs=lisafs:none --apply-caps=true --setup-root --total-host-memory 807732506624 --total-memory 807732506624 --attached --io-fds=3 --dev-io-fd=-1 --mounts-fd=4 --start-sync-fd=5 --pin-ring-fd=6 --controller-fd=7 --spec-fd=8 --stdio-fds=9 --stdio-fds=10 --stdio-fds=11 s1-e4-hl
+
+---- HI-LIVE runsc-gofer /proc/379/mounts
+/dev/md0p1 / ext4 ro,nosuid,nodev,relatime,stripe=64 0 0
+---- HI-LIVE runsc-gofer /proc/379/uid_map
+         0          0          1
+---- HI-LIVE runsc-gofer /proc/379/gid_map
+         0          0          1
+---- HI-LIVE runsc-gofer Cap* from /proc/379/status
+CapInh:	000000000004001f
+CapPrm:	000000000004001f
+CapEff:	000000000004001f
+CapBnd:	000000000004001f
+CapAmb:	000000000004001f
+
+---- HI-LIVE runsc-sandbox /proc/384/mounts
+runsc-root / tmpfs ro,relatime,uid=253477,gid=253477,inode64 0 0
+runsc-proc /proc tmpfs rw,nosuid,nodev,noexec,relatime,uid=253477,gid=253477,inode64 0 0
+proc /proc/sandbox-proc proc ro,nosuid,nodev,noexec,relatime 0 0
+---- HI-LIVE runsc-sandbox /proc/384/uid_map
+         0          0          1
+---- HI-LIVE runsc-sandbox /proc/384/gid_map
+         0          0          1
+---- HI-LIVE runsc-sandbox Cap* from /proc/384/status
+CapInh:	0000000000000000
+CapPrm:	000000000008001f
+CapEff:	000000000008001f
+CapBnd:	000000000008001f
+CapAmb:	0000000000000000
+
+---- HI-LIVE the namespace's own /proc/mounts while the sandbox lives
+/dev/md0p1 / ext4 ro,relatime,stripe=64 0 0
+proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,uid=253477,gid=253477,inode64 0 0
+tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,uid=253477,gid=253477,inode64 0 0
+tmpfs /dev tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,uid=253477,gid=253477,inode64 0 0
+udev /dev/null devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/zero devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/full devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/random devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/urandom devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/tty devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+nsfs /run/state-true/null-netns nsfs rw 0 0
+nsfs /run/state-hi/null-netns nsfs rw 0 0
+nsfs /run/state-view/null-netns nsfs rw 0 0
+nsfs /run/state-tl/null-netns nsfs rw 0 0
+nsfs /run/state-hl/null-netns nsfs rw 0 0
+---- HI-LIVE state dir while the container lives
+/run/state-hl
+/run/state-hl/null-netns
+/run/state-hl/runsc-s1-e4-hl.sock
+/run/state-hl/s1-e4-hl_sandbox:s1-e4-hl.lock
+/run/state-hl/s1-e4-hl_sandbox:s1-e4-hl.state
+HI_LIVE_EXIT=0
+hi
+bin
+dev
+proc
+sys
+tmp
+
+######## 6. the state dirs after everything exited
+drwx------    2 0        0               60 Sep 15 23:42 /run/state-true
+-r--r--r--    1 65534    65534            0 Sep 15 23:42 /run/state-true/null-netns
+drwx------    2 0        0               60 Sep 15 23:42 /run/state-hi
+-r--r--r--    1 65534    65534            0 Sep 15 23:42 /run/state-hi/null-netns
+drwx------    2 0        0               60 Sep 15 23:42 /run/state-view
+-r--r--r--    1 65534    65534            0 Sep 15 23:42 /run/state-view/null-netns
+drwx------    2 0        0               60 Sep 15 23:43 /run/state-tl
+-r--r--r--    1 65534    65534            0 Sep 15 23:42 /run/state-tl/null-netns
+drwx------    2 0        0               60 Sep 15 23:43 /run/state-hl
+-r--r--r--    1 65534    65534            0 Sep 15 23:43 /run/state-hl/null-netns
+---- the guest init's check, after everything exited
+WRITABLE AND EXECUTABLE: /run/state-true/null-netns (nsfs,rw)
+WRITABLE AND EXECUTABLE: /run/state-hi/null-netns (nsfs,rw)
+WRITABLE AND EXECUTABLE: /run/state-view/null-netns (nsfs,rw)
+WRITABLE AND EXECUTABLE: /run/state-tl/null-netns (nsfs,rw)
+WRITABLE AND EXECUTABLE: /run/state-hl/null-netns (nsfs,rw)
+FATAL: writable executable path present; powering off without running tunneld
+CHECK_EXIT=1
+
+======== the comparison asked for in E4 step 3 ========
+
+Sections 4 and 5 above are the same container in the same guest-like
+namespace with the same flags, differing only in the workload:
+  section 4:  /bin/busybox sleep 25                     (the E1/E2 trivial workload)
+  section 5:  /bin/busybox sh -c 'echo hi; ls /; sleep 25'
+Both blocks were normalised (pids -> <pid>, the container id, the state-dir
+name and the bundle name -> <X>, the section number -> <N>, and each
+null-netns line -> state-<S>) and diffed:
+
+$ diff -u live-true.norm live-hi.norm
+--- live-true.norm	2026-09-15 19:50:54.753649866 -0400
++++ live-hi.norm	2026-09-15 19:50:54.768649711 -0400
+@@ -1,8 +1,8 @@
+-######## 4. LIVE, trivial workload (/bin/busybox sleep 25), for the mount-table comparison
++######## 5. LIVE, busybox sh workload (sh -c 'echo hi; ls /; sleep 25'), same comparison
+ runsc processes seen:
+   <pid> /runsc --root=/run/state-<X> --platform=systrap --network=none --ignore-cgroups --rootless run --bundle /bundle-<X> s1-e4-<X>
+-  <pid> {exe} runsc-gofer --platform=systrap --rootless=true --ignore-cgroups=true --root=/run/state-<X> --network=none gofer --bundle /bundle-<X> --gofer-mount-confs=lisafs:none --spec-fd=3 --mounts-fd=4 --rpc-fd=5 --pin-ring-fd=6 --sync-sentry-exit-fd=7 --io-fds=8 --sync-chroot-fd=9 s1-e4-<X>
+-  <pid> {exe} runsc-sandbox --platform=systrap --rootless=true --ignore-cgroups=true --root=/run/state-<X> --network=none boot --bundle=/bundle-<X> --gofer-mount-confs=lisafs:none --apply-caps=true --setup-root --total-host-memory 807732506624 --total-memory 807732506624 --attached --io-fds=3 --dev-io-fd=-1 --mounts-fd=4 --start-sync-fd=5 --pin-ring-fd=6 --controller-fd=7 --spec-fd=8 --stdio-fds=9 --stdio-fds=10 --stdio-fds=11 s1-e4-<X>
++  <pid> {exe} runsc-gofer --root=/run/state-<X> --network=none --platform=systrap --rootless=true --ignore-cgroups=true gofer --bundle /bundle-<X> --gofer-mount-confs=lisafs:none --spec-fd=3 --mounts-fd=4 --rpc-fd=5 --pin-ring-fd=6 --sync-sentry-exit-fd=7 --io-fds=8 --sync-chroot-fd=9 s1-e4-<X>
++  <pid> {exe} runsc-sandbox --root=/run/state-<X> --network=none --platform=systrap --rootless=true --ignore-cgroups=true boot --bundle=/bundle-<X> --gofer-mount-confs=lisafs:none --apply-caps=true --setup-root --total-host-memory 807732506624 --total-memory 807732506624 --attached --io-fds=3 --dev-io-fd=-1 --mounts-fd=4 --start-sync-fd=5 --pin-ring-fd=6 --controller-fd=7 --spec-fd=8 --stdio-fds=9 --stdio-fds=10 --stdio-fds=11 s1-e4-<X>
+ 
+ ---- <X>-LIVE runsc-gofer /proc/<pid>/mounts
+ /dev/md0p1 / ext4 ro,nosuid,nodev,relatime,stripe=64 0 0
+@@ -49,4 +49,5 @@
+ nsfs /run/state-<S>/null-netns nsfs rw 0 0
+ nsfs /run/state-<S>/null-netns nsfs rw 0 0
+ nsfs /run/state-<X>/null-netns nsfs rw 0 0
++nsfs /run/state-<X>/null-netns nsfs rw 0 0
+ ---- <X>-LIVE state dir while the container lives

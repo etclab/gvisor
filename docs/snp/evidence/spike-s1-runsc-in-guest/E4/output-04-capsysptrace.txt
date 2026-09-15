@@ -1,0 +1,140 @@
+######## caller identity and host capabilities, before anything runs
+uid=253477(pniroula) gid=253477 groups=253477,27(sudo),108(kvm),120(libvirt),999(docker)
+CapInh:	0000000000000000
+CapPrm:	0000000000000000
+CapEff:	0000000000000000
+CapBnd:	000001ffffffffff
+CapAmb:	0000000000000000
+NoNewPrivs:	0
+Seccomp:	0
+Seccomp_filters:	0
+uid_map:          0          0 4294967295
+host /proc/mounts lines: 57
+null-netns lines in the host mount table: 0
+
+######## (d) yama ptrace_scope on this host
+$ cat /proc/sys/kernel/yama/ptrace_scope
+1
+
+######## (b) plain shell: NO outer unshare, NO --rootless, unprivileged user
+$ runsc --root=$S/state-b --platform=systrap --network=none --ignore-cgroups run --bundle $BUNDLE s1-e4-b
+EXIT=128
+running container: creating container: cannot create gofer process: newuidmap failed: exec: "newuidmap": executable file not found in $PATH
+
+######## (b') the same with --debug, to see which check refuses and where
+EXIT=128
+running container: creating container: cannot create gofer process: newuidmap failed: exec: "newuidmap": executable file not found in $PATH
+---- the directfs userns decision, and the refusal, from the debug log
+D0915 19:49:28.265052  2627705 container.go:2134] Configuring container with a new userns with identity user mappings into current userns
+I0915 19:49:28.268194  2627705 container.go:1681] Starting gofer with command: [runsc-gofer --root=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-s1/c95870d0-0fd4-43e1-a909-68b46d194ebe/scratchpad/e4/state-bd --debug=true --debug-log=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-s1/c95870d0-0fd4-43e1-a909-68b46d194ebe/scratchpad/e4/dbg-b/ --network=none --platform=systrap --ignore-cgroups=true --debug-log-fd=3 gofer --bundle /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-s1/c95870d0-0fd4-43e1-a909-68b46d194ebe/scratchpad/e4/img/bundle-hi --gofer-mount-confs=lisafs:none --spec-fd=4 --mounts-fd=5 --rpc-fd=6 --pin-ring-fd=7 --sync-sentry-exit-fd=8 --io-fds=9 --sync-userns-fd=10 --sync-chroot-fd=11 s1-e4-bd]
+D0915 19:49:28.268665  2627705 donation.go:31] Donating FD 10: "userns sync other FD"
+D0915 19:49:28.268716  2627705 container.go:1686] Starting gofer: /proc/self/exe [runsc-gofer --root=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-s1/c95870d0-0fd4-43e1-a909-68b46d194ebe/scratchpad/e4/state-bd --debug=true --debug-log=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-s1/c95870d0-0fd4-43e1-a909-68b46d194ebe/scratchpad/e4/dbg-b/ --network=none --platform=systrap --ignore-cgroups=true --debug-log-fd=3 gofer --bundle /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-s1/c95870d0-0fd4-43e1-a909-68b46d194ebe/scratchpad/e4/img/bundle-hi --gofer-mount-confs=lisafs:none --spec-fd=4 --mounts-fd=5 --rpc-fd=6 --pin-ring-fd=7 --sync-sentry-exit-fd=8 --io-fds=9 --sync-userns-fd=10 --sync-chroot-fd=11 s1-e4-bd]
+I0915 19:49:28.289897  2627705 sandbox.go:2494] Mapping host uid 0 to container uid 0 (size=4294967295)
+D0915 19:49:28.290260  2627705 sandbox.go:2504] newuidmap: []string{"2627729", "0", "0", "4294967295"}
+W0915 19:49:28.293423  2627705 util.go:107] FATAL ERROR: running container: creating container: cannot create gofer process: newuidmap failed: exec: "newuidmap": executable file not found in $PATH
+
+######## (b'') plain shell again, NO unshare, NO --rootless, but --directfs=false
+   (directfs is what makes runsc copy the caller's whole identity mapping;
+    without it runsc creates the user namespace itself)
+$ runsc --root=$S/state-bn --platform=systrap --network=none --ignore-cgroups --directfs=false run --bundle $BUNDLE s1-e4-bn
+EXIT=128
+running container: creating container: cannot create gofer process: unable to run a rootless container without userns
+
+######## (b-userns) plain shell again, NO unshare, NO --rootless, but the SPEC
+   declares a user namespace with a single-ID mapping (0 -> 253477, size 1),
+   which an unprivileged process is allowed to write itself.
+   Workload has a trailing sleep so the sentry can be read while it lives.
+$ runsc --root=$S/state-un --platform=systrap --network=none --ignore-cgroups run --bundle $S/bundle-userns s1-e4-un
+---- runsc-gofer pid 2627783
+uid_map:          0     253477          1
+Uid:	253477	253477	253477	253477
+Gid:	253477	253477	253477	253477
+CapInh:	000000000004001f
+CapPrm:	000000000004001f
+CapEff:	000000000004001f
+CapBnd:	000000000004001f
+CapAmb:	000000000004001f
+NoNewPrivs:	1
+Seccomp:	2
+---- runsc-sandbox pid 2627789
+uid_map:          0     253477          1
+Uid:	253477	253477	253477	253477
+Gid:	253477	253477	253477	253477
+CapInh:	0000000000000000
+CapPrm:	000000000008001f
+CapEff:	000000000008001f
+CapBnd:	000000000008001f
+CapAmb:	0000000000000000
+NoNewPrivs:	1
+Seccomp:	2
+EXIT=0
+hi
+bin
+dev
+proc
+sys
+tmp
+
+######## (a-control) E1's configuration: NO outer unshare, WITH --rootless
+$ runsc --root=$S/state-a --platform=systrap --network=none --ignore-cgroups --rootless run --bundle $BUNDLE s1-e4-a
+EXIT=0
+hi
+bin
+dev
+proc
+sys
+tmp
+
+######## (c) outer 'unshare -Ur' ONLY (user ns, no mount ns), WITH --rootless
+$ unshare -Ur sh -c '...; runsc --root=$S/state-c --platform=systrap --network=none --ignore-cgroups --rootless run --bundle $BUNDLE s1-e4-c'
+---- inside unshare -Ur, before runsc
+uid=0(root) gid=0(root) groups=0(root),65534(nogroup)
+uid_map:
+         0     253477          1
+CapInh:	0000000000000000
+CapPrm:	000001ffffffffff
+CapEff:	000001ffffffffff
+CapBnd:	000001ffffffffff
+CapAmb:	0000000000000000
+EXIT=0
+OUTER_EXIT=0
+---- workload output
+hi
+bin
+dev
+proc
+sys
+tmp
+
+######## (c') the same with --debug, to see what pinNullNetNS did with no mount namespace
+EXIT=0
+OUTER_EXIT=0
+---- workload output
+hi
+bin
+dev
+proc
+sys
+tmp
+---- every line mentioning the null network namespace
+W0915 19:49:49.721393  2628537 container.go:1699] Unable to pin the gofer's network namespace at "/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-s1/c95870d0-0fd4-43e1-a909-68b46d194ebe/scratchpad/e4/state-cd/null-netns" (bind-mounting namespace of PID 2628559: operation not permitted); future gofers will create new network namespaces. This slows down gVisor startup.
+
+######## the host afterwards
+host /proc/mounts lines: 57
+null-netns lines in the host mount table: 0
+state dirs left behind:
+== $S/state-a
+.
+./null-netns
+== $S/state-b
+.
+== $S/state-bd
+.
+== $S/state-bn
+.
+== $S/state-un
+.
+== $S/state-c
+.
+== $S/state-cd
+.

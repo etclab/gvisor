@@ -1,0 +1,154 @@
+E4 — exact commands, in the order they were run.
+
+$SCRATCH stands for the session scratch directory
+  /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-s1/c95870d0-0fd4-43e1-a909-68b46d194ebe/scratchpad
+Same runsc binary as E1 and E2 (sha256
+8070bcdf0b7889d8ed3710f5920f06cf909682434b21437eb9df8d7fb6c72518, built from
+ebbe8cba8), same unprivileged user (pniroula, uid 253477), no sudo, nothing
+rebuilt. Workstation only, kernel 6.11.0-rc3-snp-host, /proc/sys/kernel/yama/
+ptrace_scope = 1.
+
+busybox is /usr/bin/busybox, confirmed static:
+
+$ file /usr/bin/busybox
+  ELF 64-bit LSB executable, x86-64, version 1 (GNU/Linux), statically linked,
+  BuildID[sha1]=351ba74c282274bdd56e030c641d226cab5c14b7, for GNU/Linux 3.2.0,
+  stripped
+
+--- the bundles -------------------------------------------------------------
+
+Five OCI bundles, all identical to E1's except for process.args. config.json in
+this directory is the one E4 was asked for; the others are alongside it.
+
+  config.json             ["/bin/busybox","sh","-c","echo hi; ls /"]
+  config-view.json        ["/bin/busybox","sh","-c","cat /proc/mounts; ls -la /; id; cat /proc/self/status | grep -i cap"]
+  config-true-live.json   ["/bin/busybox","sleep","25"]
+  config-hi-live.json     ["/bin/busybox","sh","-c","echo hi; ls /; sleep 25"]
+  config-userns.json      as config-hi-live.json, plus a user namespace and a
+                          single-ID uid/gid mapping in linux.namespaces (used
+                          only by the capability probe, see (b-userns) below)
+
+The trivial workload used for the comparison in step 3 is E1's config.json
+byte for byte:
+
+$ diff $SCRATCH/e4/cfg/config.true.json \
+       docs/snp/evidence/spike-s1-runsc-in-guest/E1/config.json
+(no output)
+
+The rootfs of every bundle is a directory holding a static busybox plus the
+symlinks sh, true, cat, sleep, ls, id, grep. root.readonly is true.
+
+--- the image ---------------------------------------------------------------
+
+build-img.sh in this directory, the same as E2's except for the bundle list. It
+assembles $SCRATCH/e4/img: runsc, busybox, the five bundles, E2's
+init-mount-check.sh and E4's run-inside.sh, then `chmod -R a+rX`. The image is
+mounted read-only inside the namespace, so nothing is written into it.
+
+$ $SCRATCH/e4/build-img.sh
+  116M    $SCRATCH/e4/img
+
+--- step 1 and step 3: the workloads, in E2's configuration ------------------
+
+E2's guest-like-ns.sh and init-mount-check.sh are reused unchanged from
+docs/snp/evidence/spike-s1-runsc-in-guest/E2/. The namespace is the same:
+/ a read-only exec-permitted bind of the image, /proc /sys /run /tmp /dev all
+writable and noexec, the state dir on /run and TMPDIR=/tmp.
+
+$ unshare -Urmnpf $SCRATCH/e2/guest-like-ns.sh $SCRATCH/e4/img \
+      /busybox sh /run-inside.sh
+  -> $SCRATCH/e4/e4-run.txt
+
+run-inside.sh is in this directory. With
+FLAGS = --platform=systrap --network=none --ignore-cgroups --rootless,
+each container getting its own --root so the runs cannot interfere:
+
+  0. sh init-mount-check.sh /proc/mounts                      before runsc runs
+  1. /runsc --root=/run/state-true $FLAGS run --bundle /bundle-true s1-e4-true
+  2. /runsc --root=/run/state-hi   $FLAGS run --bundle /bundle-hi   s1-e4-hi
+  3. /runsc --root=/run/state-view $FLAGS run --bundle /bundle-view s1-e4-view
+  4. /runsc --root=/run/state-tl   $FLAGS run --bundle /bundle-true-live s1-e4-tl &
+       then, while it lives: /proc/<sandbox>/mounts, /proc/<gofer>/mounts,
+       uid_map, gid_map, Cap* from status, the namespace's own /proc/mounts,
+       and the state dir
+  5. /runsc --root=/run/state-hl   $FLAGS run --bundle /bundle-hi-live s1-e4-hl &
+       then the same captures
+  6. find over all five state dirs; the check again
+
+Each runsc invocation writes to its own file inside the namespace: runsc hands
+the caller's fd 1 straight to the sandbox and a shared file offset clobbers the
+workload's output (E2 recorded the same trap).
+
+  -> output-01-workloads.txt   sections 0-3 of $SCRATCH/e4/e4-run.txt (lines 1-83)
+  -> output-02-sandbox-view.txt  only the step-2 workload output, lines 54-73 of
+                                 the same file, split under four headings
+  -> output-03-true-vs-sh.txt  sections 4-6 (lines 84-227), plus the diff below
+
+The step-3 comparison, run on the host afterwards over the two live blocks,
+normalising pids, the container id, the state-dir name, the bundle name and the
+null-netns lines:
+
+$ awk '/^######## 4\./,/^---- TRUE-LIVE state dir/' e4-run.txt > live-true.raw
+$ awk '/^######## 5\./,/^---- HI-LIVE state dir/'   e4-run.txt > live-hi.raw
+$ sed -E -e 's#/proc/[0-9]+/#/proc/<pid>/#g' -e 's/^ *[0-9]+ /  <pid> /' \
+         -e 's#state-(tl|hl)#state-<X>#g' -e 's#s1-e4-(tl|hl)#s1-e4-<X>#g' \
+         -e 's#bundle-(true-live|hi-live)#bundle-<X>#g' \
+         -e 's#(TRUE|HI)-LIVE#<X>-LIVE#g' \
+         -e 's#^nsfs /run/state-[a-z]+/null-netns nsfs rw 0 0$#nsfs /run/state-<S>/null-netns nsfs rw 0 0#' \
+         live-{true,hi}.raw > live-{true,hi}.norm
+$ diff -u live-true.norm live-hi.norm
+  -> appended to output-03-true-vs-sh.txt
+
+--- step 2: the CAP_SYS_PTRACE question -------------------------------------
+
+caps-tests.sh in this directory. The same workload
+(/bin/busybox sh -c 'echo hi; ls /') every time; only the caller's namespace
+and capability arrangement and the runsc flags change. No outer unshare except
+where it says so. FLAGS below =
+--platform=systrap --network=none --ignore-cgroups.
+
+The script expects one bundle it does not build, the one used by (b-userns);
+it was assembled first, by hand, from the image's bundle and config-userns.json
+in this directory:
+
+$ cp -a $SCRATCH/e4/img/bundle-hi $SCRATCH/e4/bundle-userns
+$ cp config-userns.json $SCRATCH/e4/bundle-userns/config.json
+
+$ $SCRATCH/e4/caps-tests.sh
+  -> output-04-capsysptrace.txt
+
+  (d)  cat /proc/sys/kernel/yama/ptrace_scope
+  (b)  runsc --root=$S/state-b  FLAGS run --bundle $BUNDLE s1-e4-b
+       (no outer unshare, no --rootless, unprivileged user)
+  (b') the same with --debug --debug-log=$S/dbg-b/, then
+       grep -hE "userns|UID mapping|GID mapping|Mapping host|newuidmap|FATAL" \
+            $S/dbg-b/*.run.txt
+  (b'') runsc --root=$S/state-bn FLAGS --directfs=false run --bundle $BUNDLE s1-e4-bn
+  (b-userns) runsc --root=$S/state-un FLAGS run --bundle $S/bundle-userns s1-e4-un
+       (still no unshare and no --rootless; the spec itself declares a user
+       namespace with a single-ID mapping 0 -> 253477, which an unprivileged
+       process may write; the workload sleeps 20s so the sentry's uid_map and
+       Cap* can be read from the host)
+  (a-control) runsc --root=$S/state-a FLAGS --rootless run --bundle $BUNDLE s1-e4-a
+       (E1's configuration, for contrast)
+  (c)  unshare -Ur sh -c 'id; cat /proc/self/uid_map; grep Cap /proc/self/status;
+            runsc --root=$S/state-c FLAGS --rootless run --bundle $BUNDLE s1-e4-c'
+       (user namespace only: no -m, no -n, no -p)
+  (c') the same with --debug --debug-log=$S/dbg-c/, then
+       grep -h "null network namespace\|null-netns" $S/dbg-c/* | sort -u
+
+Only the debug-log lines are filtered, by the two greps written out above;
+every other output in the four output-*.txt files is the command's own stdout
+and stderr in full. output-01/02/03 are line ranges of one capture file, stated
+above; nothing inside a range is edited.
+
+--- what was checked on the host --------------------------------------------
+
+Before and after the whole of caps-tests.sh:
+
+$ wc -l < /proc/mounts            57 both times
+$ grep -c null-netns /proc/mounts  0 both times
+
+so nothing E4 ran left a mount on the workstation. Case (c) is the only run
+whose caller had no mount namespace of its own; its pin attempt was refused by
+the kernel and logged as a warning, see output-04.

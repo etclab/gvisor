@@ -99,8 +99,8 @@ func TestASandboxInAnotherProcessOpensAcceptsAndIsPushedAPolicy(t *testing.T) {
 	// OPEN. The child asked for a peer; the far end of the socketpair the fake
 	// network handed tunneld is this test, playing the peer.
 	far := fake.nextOpened(t)
-	if got := drain(far); got != "ping" {
-		t.Errorf("the peer received %q over the opened stream; want %q", got, "ping")
+	if got, err := io.ReadAll(far); err != nil || string(got) != "ping" {
+		t.Errorf("the peer received %q (%v) over the opened stream; want %q", got, err, "ping")
 	}
 	writeAndEnd(t, far, "pong")
 	far.Close()
@@ -120,8 +120,8 @@ func TestASandboxInAnotherProcessOpensAcceptsAndIsPushedAPolicy(t *testing.T) {
 	near, incoming := socketpair(t)
 	fake.incoming <- incoming
 	writeAndEnd(t, near, "hello")
-	if got := drain(near); got != "world" {
-		t.Errorf("the peer received %q over the accepted stream; want %q", got, "world")
+	if got, err := io.ReadAll(near); err != nil || string(got) != "world" {
+		t.Errorf("the peer received %q (%v) over the accepted stream; want %q", got, err, "world")
 	}
 	near.Close()
 
@@ -166,8 +166,8 @@ func TestSandboxChildProcess(t *testing.T) {
 		t.Fatalf("opening a stream to b: %v", err)
 	}
 	writeAndEnd(t, stream, "ping")
-	if got := drain(stream); got != "pong" {
-		t.Errorf("the sandbox read %q from the opened stream; want %q", got, "pong")
+	if got, err := io.ReadAll(stream); err != nil || string(got) != "pong" {
+		t.Errorf("the sandbox read %q (%v) from the opened stream; want %q", got, err, "pong")
 	}
 	stream.Close()
 
@@ -185,8 +185,8 @@ func TestSandboxChildProcess(t *testing.T) {
 	if who != whoTheParentClaims {
 		t.Errorf("the accepted stream carried %+v; want %+v", who, whoTheParentClaims)
 	}
-	if got := drain(accepted); got != "hello" {
-		t.Errorf("the sandbox read %q from the accepted stream; want %q", got, "hello")
+	if got, err := io.ReadAll(accepted); err != nil || string(got) != "hello" {
+		t.Errorf("the sandbox read %q (%v) from the accepted stream; want %q", got, err, "hello")
 	}
 	writeAndEnd(t, accepted, "world")
 	accepted.Close()
@@ -326,17 +326,6 @@ func writeAndEnd(t *testing.T, s sandbox.Stream, what string) {
 	}
 }
 
-// drain reads a stream to its end and returns what arrived. A read that failed
-// is part of the string rather than a fatal error of its own, so a mismatch
-// says what the stream actually gave up.
-func drain(s sandbox.Stream) string {
-	b, err := io.ReadAll(s)
-	if err != nil {
-		return fmt.Sprintf("<read failed after %q: %v>", b, err)
-	}
-	return string(b)
-}
-
 // answers waits for the sandbox to answer n pushes and returns what it said to
 // each, in order.
 func answers(t *testing.T, applied chan error, n int) []error {
@@ -395,14 +384,14 @@ func TestThePumpCarriesTheEndOfTheStreamEachWay(t *testing.T) {
 		defer wg.Done()
 		// The peer reads to end-of-file, which only arrives if the sandbox's
 		// half-close crossed the boundary, and then answers and half-closes.
-		if got := drain(far); got != "request" {
-			t.Errorf("the peer read %q; want %q", got, "request")
+		if got, err := io.ReadAll(far); err != nil || string(got) != "request" {
+			t.Errorf("the peer read %q (%v); want %q", got, err, "request")
 		}
 		writeAndEnd(t, far, "response")
 	}()
 	writeAndEnd(t, stream, "request")
-	if got := drain(stream); got != "response" {
-		t.Errorf("the sandbox read %q; want %q", got, "response")
+	if got, err := io.ReadAll(stream); err != nil || string(got) != "response" {
+		t.Errorf("the sandbox read %q (%v); want %q", got, err, "response")
 	}
 	wg.Wait()
 }

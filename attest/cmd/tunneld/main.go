@@ -94,6 +94,7 @@ import (
 	"time"
 
 	"gvisor.dev/gvisor/attest"
+	"gvisor.dev/gvisor/attest/sandbox"
 	"gvisor.dev/gvisor/attest/tsm"
 	"gvisor.dev/gvisor/attest/tunneld"
 	"gvisor.dev/gvisor/attest/verify"
@@ -156,6 +157,7 @@ type options struct {
 	egressMode       string
 	egressProbeExtra string
 	selfCheck        bool
+	sandboxSocket    string
 }
 
 func run(args []string, out io.Writer) int {
@@ -170,6 +172,7 @@ func run(args []string, out io.Writer) int {
 	fs.StringVar(&o.egressMode, "egress", "", "instead of serving: "+egressModePrint+" the netfilter rule set this sandbox's signed policy implies, "+egressModeInstall+" it in the kernel and read it back, or "+egressModeProbe+" it by attempting the egress the policy forbids")
 	fs.StringVar(&o.egressProbeExtra, "egress-probe", "", "with -egress "+egressModeProbe+": extra targets to attempt, comma separated, each tcp:ADDR:PORT or udp:ADDR:PORT")
 	fs.BoolVar(&o.selfCheck, "self-check", false, "after starting, ask this platform for evidence and judge it with this sandbox's own reference value set, so the console says whether the set admits the machine it is on before any peer arrives")
+	fs.StringVar(&o.sandboxSocket, "sandbox-socket", "", "listen on this unix socket for a sandbox in another process to open and accept streams over (docs/sandbox-contract.md); conventionally "+conventionalSandboxSocket+". Empty runs the in-process null sandbox alone, which is what every recorded scenario does")
 	if err := fs.Parse(args); err != nil {
 		return exitRefusedToStart
 	}
@@ -266,7 +269,13 @@ func serve(o *options, cfg *runConfig, peers map[string]string, author ed25519.P
 		}
 	}
 
-	return exerciseAndHold(ctx, cfg, td, watched, logf)
+	// The sandbox contract (ticket 22, nullsandbox.go). Everything above this
+	// line is a tunneld; everything below it goes through the boundary the
+	// sandbox beside it sees.
+	box, detach := attachSandbox(ctx, td, o.sandboxSocket, cfg.SandboxID, logf)
+	defer detach()
+
+	return exerciseAndHold(ctx, cfg, box, watched, logf)
 }
 
 // bringUpLink sets the address on this guest's interface from the run
@@ -394,10 +403,10 @@ func logStartupSummary(td *tunneld.Tunneld, acquirer *tsm.Acquirer, limits tunne
 // of it that decides an exit status: Milestone 3's stand-in caller (the package
 // comment's exercise), then the hold that keeps the listener up for peers still
 // dialing, then the count of what was refused while it ran.
-func exerciseAndHold(ctx context.Context, cfg *runConfig, td *tunneld.Tunneld, watched *watchedVerifier, logf func(string, ...any)) int {
+func exerciseAndHold(ctx context.Context, cfg *runConfig, box sandbox.Sandbox, watched *watchedVerifier, logf func(string, ...any)) int {
 	code := exitOK
 	if cfg.Exercise != nil {
-		if err := cfg.Exercise.perform(ctx, td, watched, logf); err != nil {
+		if err := cfg.Exercise.perform(ctx, box, watched, logf); err != nil {
 			logf("exercise failed: %v", err)
 			code = exitExerciseFailed
 		}

@@ -28,10 +28,6 @@
 //	                                   INSIDE the launch measurement (ADR-0004)
 //	/config/reference-values.json      the reference value set, outside it
 //	/config/reference-values.json.sig  its detached signature (ADR-0006)
-//	/config/policy.json                this sandbox's own signed policy: what
-//	                                   leaves it, and whom it will dial
-//	/config/policy.json.sig            its detached signature, under the same
-//	                                   author key and its own domain
 //	/config/peers.json                 the peer table
 //	/config/certificate-chain.bin      the chain provisioned for this chip and
 //	                                   TCB (ADR-0005)
@@ -39,17 +35,31 @@
 //	/config/tunneld.json               this run: the sandbox identifier, the
 //	                                   address to listen on, the link to bring
 //	                                   up, the limits, and what to exercise
+//	/config/collateral/                Intel's provisioned TCB info, quoting
+//	                                   enclave identity and revocation lists
 //
-// One file on that list is new here, and the reason it is safe to add is the
-// reason the others are safe to deliver on an untrusted device. Nothing on the
-// config device can admit a peer. The trust root is the author key inside the
-// measurement; the set is refused unless that key signed it; the chain is
-// public and self-validating; the peer table resolves names to addresses and a
-// wrong address is a failed handshake rather than a compromised one. A run
-// configuration is the same kind of thing: it says which peers this tunneld
-// asks for and how hard it exercises them, and a host that rewrites it can
-// make this guest talk to nobody, or to a peer that refuses it. It cannot make
-// it talk to an unattested one.
+// Nothing on that list can admit a peer, and that is why it is safe to deliver
+// on an untrusted device. The trust root is the author key inside the
+// measurement; the set is refused unless that key signed it; the chain and the
+// collateral are public and self-validating; the peer table resolves names to
+// addresses and a wrong address is a failed handshake rather than a compromised
+// one. A run configuration is the same kind of thing: it says which peers this
+// tunneld asks for and how hard it exercises them, and a host that rewrites it
+// can make this guest talk to nobody, or to a peer that refuses it. It cannot
+// make it talk to an unattested one.
+//
+// # policy.json is not on that list, and a device carrying one is refused
+//
+// It was until ticket 22: a second signed document saying what this sandbox is
+// — the egress rules to install, and the images it would dial. Both halves left
+// the device. The egress ceiling is a constant compiled into this binary and
+// into the measurement with it (attest/ceiling), so a verifier reading the
+// image knows what the guest enforces; and what this sandbox may delegate to
+// whom is a contract pushed over the tunnel after attestation, by a peer whose
+// evidence has already been judged, rather than a list read off a disk the host
+// supplies. Nothing here reads a policy document any more, so a device still
+// carrying one would be obeyed in no respect and noticed in none — which is why
+// [run] refuses to start on one rather than ignoring it.
 //
 // # The exercise is Milestone 3's stand-in for the agent
 //
@@ -115,9 +125,9 @@ const (
 	// there rather than being told (ADR-0006).
 	referenceValueSetName = "reference-values.json"
 
-	// This sandbox's own policy, beside the set and signed the same way under
-	// its own domain. Two documents since ticket 19: the set says whom this
-	// sandbox admits, and this says what it is.
+	// The document ticket 22 took off the config device. The name is kept
+	// because this command still looks for it — to refuse the device, not to
+	// read it — and a refusal has to name the file the operator has to remove.
 	policyName = "policy.json"
 )
 
@@ -176,6 +186,11 @@ func run(args []string, out io.Writer) int {
 	}
 	logf := func(format string, a ...any) { fmt.Fprintf(out, "tunneld: "+format+"\n", a...) }
 
+	if stale := aPolicyOnTheConfigDevice(o.configDir); stale != "" {
+		logf("refusing to start: %s", stale)
+		return exitRefusedToStart
+	}
+
 	// The egress modes end here, and they end here *before* anything is read.
 	// The ceiling is a constant in this binary (egress.go, attest/ceiling), so
 	// these modes need no config device, no author key and no policy — which is
@@ -222,7 +237,41 @@ func run(args []string, out io.Writer) int {
 // because the ceiling is this binary's constant and package tunneld holds no
 // opinion about netfilter.
 //
-// serve is everything the three documents left to decide: bring the link up,
+// aPolicyOnTheConfigDevice is the refusal a device still carrying the document
+// ticket 22 removed has earned, and is empty when it carries neither half.
+//
+// Both names are checked because a half-updated device is what a partial
+// rebuild leaves behind, and because the orphan is the harder of the two to
+// notice: a lone policy.json.sig used to produce a refusal that named the
+// *document* as missing, so nobody ever saw the signature. Whichever is found
+// is named, so the operator removes the file they have rather than the file
+// this command expected.
+//
+// It is a stat rather than a load. After ticket 22 nothing calls the policy
+// loader on a config-device path at all, so there is no loader left to refuse
+// in; and the loader was deliberately built never to wrap [io/fs.ErrNotExist],
+// so that no caller could read an absence as permission to proceed. A presence
+// check on a file nobody reads is the opposite statement and belongs here, in
+// the command that owns the device's layout — package tunneld is never told a
+// directory and could not check something it was not told.
+//
+// It is before the mode split because all three of a guest's per-boot
+// invocations run through it (docs/snp/cloud/tdx/init.tdx): checked inside
+// serve, `-egress install` would still run against a stale device, and checked
+// inside the egress modes, the serving tunneld would.
+func aPolicyOnTheConfigDevice(configDir string) string {
+	for _, name := range []string{policyName, policyName + attest.SignatureFileSuffix} {
+		if _, err := os.Stat(filepath.Join(configDir, name)); err == nil {
+			return fmt.Sprintf("the config device carries %s, which ticket 22 moved off the config device; "+
+				"policy is pushed over the tunnel after attestation and the egress ceiling is compiled into "+
+				"this binary. Nothing here reads that file, so leaving it there would say something this "+
+				"guest does not do: re-build the config device without it", name)
+		}
+	}
+	return ""
+}
+
+// serve is everything the config device left to decide: bring the link up,
 // build the two halves of the vendor seam, start one tunneld on them, say what
 // it is, and exercise it. It is a function of its own so that [run] above is
 // the flags, the documents both paths read, and the choice between them —
@@ -251,7 +300,6 @@ func serve(o *options, cfg *runConfig, peers map[string]string, author ed25519.P
 		Acquirer:              acquirer,
 		Verifier:              watched,
 		ReferenceValueSetPath: filepath.Join(o.configDir, referenceValueSetName),
-		PolicyPath:            filepath.Join(o.configDir, policyName),
 		AuthorPublicKey:       author,
 		PolicyDigest:          attest.PolicyDigest(ceiling.Digest()),
 		Peers:                 tunneld.PeerTable(peers),
@@ -362,8 +410,13 @@ func newVendorSeam(configDir, reportDir, tdxCollateralDir string, logf func(stri
 
 // logStartupSummary is what an operator reads off the console once the tunneld
 // is up: what the report interface observed, the digest a peer's policy has to
-// list to admit this sandbox, whom this sandbox will dial, which reference
-// values admit any policy at all, and where it is listening.
+// list to admit this sandbox, which reference values admit any policy at all,
+// and where it is listening.
+//
+// Whom this sandbox will dial was on that list until ticket 22, off its own
+// signed policy's `forward_to`. It is not a fact this process holds any more:
+// the peer table says whom it may ask for, and what it may delegate arrives
+// over the tunnel after attestation.
 func logStartupSummary(td *tunneld.Tunneld, acquirer *tsm.Acquirer, limits tunneld.Limits, logf func(string, ...any)) {
 	if observation, ok := acquirer.LastObservation(); ok {
 		logf("%s", observation)
@@ -379,17 +432,6 @@ func logStartupSummary(td *tunneld.Tunneld, acquirer *tsm.Acquirer, limits tunne
 		td.PolicyDigest())
 	logf("egress ceiling %s on udp/%d; `tunneld -egress print` writes the text this names",
 		ceiling.Interface, ceiling.Port)
-
-	// And whom this sandbox's own policy says it will dial. An empty list is a
-	// sandbox that answers and never calls, which is a legitimate thing to
-	// deploy and an expensive thing to diagnose from a failed dial alone.
-	forward := td.ForwardTo()
-	if len(forward) == 0 {
-		logf("policy forward_to is empty: this sandbox dials nobody")
-	}
-	for _, m := range forward {
-		logf("policy forward_to: measurement %s", abbreviate(hex.EncodeToString(m)))
-	}
 
 	// And the entries that will admit any policy at all. This is the one place
 	// this design reads an absent field the weaker way, so it says so out loud,

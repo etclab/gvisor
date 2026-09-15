@@ -63,10 +63,22 @@ import (
 // [PolicyDigestOf] it, which the peer folded into its evidence under ADR-0002's
 // binding version 2 and which the verifier checks against
 // [ReferenceValue.PolicyDigest]. The document itself is read only by the
-// sandbox it belongs to: it is loaded off the config device beside the set, its
-// digest becomes the sandbox's identity, and `forward_to` is enforced by that
-// sandbox on the peers it dials. A peer learns a policy's contents by holding
-// the same document, not by being sent one.
+// sandbox it belongs to, and a peer learns its contents by holding the same
+// document rather than by being sent one.
+//
+// # Where the document is read, after ticket 22
+//
+// Not off the config device. Until then a guest loaded its own policy there
+// beside its set, presented that document's digest as its identity, generated
+// its egress rules from the egress section, and enforced `forward_to` itself on
+// the peers it dialled. All three went: the egress ceiling is a constant
+// compiled into the measured image and the digest a guest presents is that
+// ceiling's name (attest/ceiling), and what a sandbox may delegate to whom is a
+// contract pushed over the tunnel after attestation rather than a list on a
+// disk the host supplies. What is left here is the format and its two ends —
+// authoring a signed policy, and naming one by digest — which is what the
+// pushed document is, and what [ReferenceValue.PolicyDigest] still compares
+// (docs/policy-binding.md).
 
 // policyFormat is the value of a policy document's format field. It names what
 // the document is, so that a loader pointed at some other JSON — the reference
@@ -187,10 +199,8 @@ func refusePolicy(format string, args ...any) error {
 // A Policy is what a sandbox says about itself: what may leave it, and which
 // images it will dial.
 //
-// It is the document a [PolicyDigest] names. A sandbox loads its own policy off
-// the config device, presents its digest to every peer, and enforces
-// `forward_to` itself; it never holds a peer's policy document, only the digest
-// of one.
+// It is the document a [PolicyDigest] names. A sandbox never holds a peer's
+// policy document, only the digest of one.
 type Policy struct {
 	// Version is the document's version, which is policyVersion and nothing
 	// else. It is kept rather than discarded after the check so that a loaded
@@ -211,6 +221,14 @@ type Policy struct {
 	// does not load: an author who did not say whom they forward to has not
 	// said "nobody", and a loader supplying the answer would be deciding policy
 	// on their behalf.
+	//
+	// Nothing in this repository enforces it since ticket 22. It was the
+	// dialing side's admission check in package tunneld, run against a document
+	// on the config device; that document is gone and delegation is decided by
+	// the contract pushed over the tunnel instead. The field stays because the
+	// format does: the documents tickets 18 and 19 recorded still load, still
+	// hash to the digests those records name, and are still what an author
+	// signs (docs/policy-binding.md).
 	ForwardTo [][]byte
 
 	// Digest is the digest of the document this policy was loaded from:
@@ -246,21 +264,6 @@ type Egress struct {
 // egressSectionVersion is the version of the egress section this loader reads,
 // and the only one it writes.
 const egressSectionVersion = 1
-
-// Forwards reports whether this policy will dial a peer running the given
-// measurement.
-//
-// A policy listing nothing forwards to nobody, which is why this is written as
-// a search rather than as "empty means anything": the fail-open reading of an
-// empty list is the one mistake this whole design is arranged to avoid.
-func (p Policy) Forwards(measurement []byte) bool {
-	for _, m := range p.ForwardTo {
-		if bytes.Equal(m, measurement) {
-			return true
-		}
-	}
-	return false
-}
 
 // MarshalPolicy renders a policy as a document for an author to review and
 // sign.

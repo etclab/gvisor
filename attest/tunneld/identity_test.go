@@ -111,8 +111,7 @@ func startOnVM(t *testing.T, sandbox string, vm *snpfake.Platform, admits attest
 		Acquirer:              vm,
 		Verifier:              n.verifier,
 		ReferenceValueSetPath: writeSet(t, admits, authorPriv),
-		PolicyPath:            writePolicy(t, everyImage(), authorPriv),
-		PolicyDigest:          policyDigestOf(t, everyImage()),
+		PolicyDigest:          somePolicyDigest(sandbox),
 		AuthorPublicKey:       authorPub,
 		Peers:                 peers,
 		ListenAddr:            "127.0.0.1:0",
@@ -535,13 +534,12 @@ func TestBothTunneldsExchangeConcurrently(t *testing.T) {
 
 // The digest a tunneld presents is the one its caller named, and nothing else.
 //
-// It was the digest of the policy this tunneld loaded off the config device
+// It was the digest of the policy this tunneld loaded off its config device
 // until ticket 22, and it is now the name of the egress ceiling compiled into
 // the measured image — a number package tunneld has no way to compute and no
 // business choosing. So the only thing this package can be asked to guarantee
 // is that it presents what it was given, which is what the first half below
-// pins: a tunneld handed a digest that is deliberately not its policy's
-// presents the one it was handed.
+// pins.
 //
 // The second half is the refusal that keeps "was given" from meaning "was not
 // given": a tunneld with no digest at all would ask every peer to admit it on
@@ -549,13 +547,12 @@ func TestBothTunneldsExchangeConcurrently(t *testing.T) {
 // exists to prevent.
 func TestATunneldPresentsTheDigestItsCallerNamed(t *testing.T) {
 	p := platform(t, imageA)
-	named := sha256.Sum256([]byte("ticket 22: the name of an egress ceiling, not of a document"))
+	named := attest.PolicyDigest(sha256.Sum256([]byte("ticket 22: the name of an egress ceiling, not of a document")))
 	base := tunneld.Config{
 		SandboxID:             "a",
 		Acquirer:              p,
 		Verifier:              fixture.VerifierTrusting(t, p),
 		ReferenceValueSetPath: writeSet(t, admitting(imageB), authorPriv),
-		PolicyPath:            writePolicy(t, everyImage(), authorPriv),
 		PolicyDigest:          named,
 		AuthorPublicKey:       authorPub,
 		ListenAddr:            "127.0.0.1:0",
@@ -565,11 +562,8 @@ func TestATunneldPresentsTheDigestItsCallerNamed(t *testing.T) {
 		t.Fatalf("tunneld.New: %v", err)
 	}
 	defer td.Close()
-	if got := td.PolicyDigest(); got != attest.PolicyDigest(named) {
-		t.Errorf("the tunneld presents %s; its caller named %s", got, attest.PolicyDigest(named))
-	}
-	if got := td.PolicyDigest(); got == policyDigestOf(t, everyImage()) {
-		t.Error("the tunneld presents the digest of the policy on its config device; since ticket 22 that document does not name this sandbox")
+	if got := td.PolicyDigest(); got != named {
+		t.Errorf("the tunneld presents %s; its caller named %s", got, named)
 	}
 
 	without := base

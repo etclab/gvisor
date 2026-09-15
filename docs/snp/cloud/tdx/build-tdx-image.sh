@@ -469,8 +469,18 @@ else
 fi
 EMITTED_POLICY=$("$B/emit-refvals" -emit-policy -key "$AUTHOR_KEY" -out "$OUT" "${FORWARD_ARGS[@]}")
 printf '%s\n' "$EMITTED_POLICY"
-POLICY_DIGEST=$(printf '%s\n' "$EMITTED_POLICY" | sed -n 's/^policy digest: //p')
-[[ "$POLICY_DIGEST" =~ ^[0-9a-f]{64}$ ]] || { echo "emit-refvals printed no policy digest" >&2; exit 1; }
+EMITTED_POLICY_DIGEST=$(printf '%s\n' "$EMITTED_POLICY" | sed -n 's/^policy digest: //p')
+[[ "$EMITTED_POLICY_DIGEST" =~ ^[0-9a-f]{64}$ ]] || { echo "emit-refvals printed no policy digest" >&2; exit 1; }
+
+# The digest a guest booted from this image actually presents. Since ticket 22
+# it is the name of the egress ceiling compiled into the tunneld measured into
+# this image — not the digest of the document just written, which no longer
+# travels on the config device and which no guest loads. The policy above is
+# still emitted and archived beside the image: it is what an authoring station
+# pushes over the tunnel after attestation, and its digest is the number below.
+POLICY_DIGEST=$(cd "$REPO/attest" && GOPROXY=off go run ./cmd/attest-tool ceiling -digest)
+[[ "$POLICY_DIGEST" =~ ^[0-9a-f]{64}$ ]] || { echo "attest-tool ceiling -digest printed no digest" >&2; exit 1; }
+echo "egress ceiling digest: $POLICY_DIGEST (what a guest from this image presents)"
 
 MEASUREMENT_ARGS=(-rtmr2 "$RTMR2")
 if [ -n "${PEER_MEASUREMENTS:-}" ]; then
@@ -501,7 +511,7 @@ echo
 # ---- 9. the manifest ------------------------------------------------------
 ADMITS_MEASUREMENT="${PEER_MEASUREMENTS:-$RTMR2 (this image itself)}"
 if [ -z "${PEER_POLICY_DIGEST+set}" ]; then
-  ADMITS_POLICY="$POLICY_DIGEST (the policy this build emitted, so a guest booting this image admits itself)"
+  ADMITS_POLICY="$POLICY_DIGEST (this image's own egress ceiling, so a guest booting it admits itself)"
 elif [ -z "$PEER_POLICY_DIGEST" ]; then
   ADMITS_POLICY="any policy (this value lists no policy_digest, which is the weaker reading)"
 else
@@ -514,8 +524,11 @@ fi
   echo "## The measurement"
   echo "predicted_rtmr2: $RTMR2"
   echo "records:         $RECORDS (predict-rtmr2.py --raw, offline; no machine was asked)"
-  echo "policy_digest:   $POLICY_DIGEST (sha256 over the bytes the author signed over policy.json,"
-  echo "                 which is not sha256sum of the file; a peer names this in its policy_digest)"
+  echo "policy_digest:   $POLICY_DIGEST (sha256 over the egress ceiling compiled into this image's"
+  echo "                 tunneld, which is what a guest presents since ticket 22; a peer names it"
+  echo "                 in its own policy_digest. attest-tool ceiling -digest prints it)"
+  echo "emitted_policy_digest: $EMITTED_POLICY_DIGEST (the policy.json beside this file, which is not"
+  echo "                 on any config device and is pushed over the tunnel after attestation)"
   echo
   echo "## Every input the measurement covers"
   echo "base_image:      $BASE_IMAGE $BASE_SHA256"
@@ -577,7 +590,8 @@ fi
 echo "=== built"
 echo "image:                   $OUT/disk.raw ($DISK_SHA)"
 echo "predicted RTMR2:         $RTMR2"
-echo "policy digest:           $POLICY_DIGEST"
+echo "ceiling digest:          $POLICY_DIGEST (what a guest presents; attest-tool ceiling -digest)"
+echo "emitted policy digest:   $EMITTED_POLICY_DIGEST (policy.json beside the image; pushed, not delivered)"
 echo "reference value set:     $OUT/reference-values.json (+ .sig)"
 echo "policy:                  $OUT/policy.json (+ .sig)"
 echo "manifest:                $OUT/manifest.txt"

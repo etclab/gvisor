@@ -8,9 +8,6 @@
 #
 #   reference-values.json       the reference value set: whom this guest admits
 #   reference-values.json.sig   its detached Ed25519 signature (ADR-0006)
-#   policy.json                 this guest's own signed policy: what leaves it,
-#                               and the measurements it will dial
-#   policy.json.sig             its detached signature, same key, own domain
 #   peers.json                  the peer table: names to addresses
 #   tunneld.json                this run: sandbox id, listen address, limits,
 #                               what to exercise
@@ -39,8 +36,8 @@
 #     down to a few megabytes and costs nothing to upload.
 #
 # Nothing on this device is trusted and nothing on it can admit a peer. The
-# trust root is the author key inside the measurement; the set and the policy
-# are refused unless that key signed them; the peer table resolves names to
+# trust root is the author key inside the measurement; the set is refused unless
+# that key signed it; the peer table resolves names to
 # addresses and a wrong address is a failed handshake rather than a compromised
 # one; the collateral is Intel's own, signed by Intel, and a substituted file
 # fails to verify rather than admitting anybody. The device is mounted
@@ -50,8 +47,23 @@ SRC="${1:?SRCDIR}"; OUT="${2:?OUT.raw}"
 SIZE_MB="${SIZE_MB:-1024}"
 LABEL="${LABEL:-attested-config}"
 
+# policy.json and its signature are not on the list: ticket 22 took that document
+# off the device, the egress ceiling it carried is compiled into the measured
+# tunneld, and tunneld refuses to start on a device that still carries either
+# half. The image is populated from the whole of SRCDIR, so one left in there
+# would be on the device whatever this script printed — hence a refusal rather
+# than a warning, and a refusal rather than a deletion, because the script that
+# wrote the file is the thing to fix.
+for f in policy.json policy.json.sig; do
+  if [ -f "$SRC/$f" ]; then
+    echo "config: refusing to build: $SRC/$f" >&2
+    echo "config: ticket 22 took the policy off the config device; tunneld refuses to start on one that carries it" >&2
+    exit 1
+  fi
+done
+
 missing=0
-for f in reference-values.json reference-values.json.sig policy.json policy.json.sig \
+for f in reference-values.json reference-values.json.sig \
          peers.json tunneld.json network.conf; do
   if [ -f "$SRC/$f" ]; then
     echo "config: $f  $(sha256sum "$SRC/$f" | cut -d' ' -f1)  $(stat -c %s "$SRC/$f") bytes"

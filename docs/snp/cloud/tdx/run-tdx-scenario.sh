@@ -397,8 +397,22 @@ cp -r "$COLLATERAL" "$W/a/collateral"
 cp -r "$COLLATERAL" "$W/b/collateral"
 rm -f "$W/a/emit.txt" "$W/b/emit.txt"
 
-bash "$HERE/mkconfigdev-tdx.sh" "$W/a" "$OUT/config-a.raw" | sed 's/^/    a| /'
-bash "$HERE/mkconfigdev-tdx.sh" "$W/b" "$OUT/config-b.raw" | sed 's/^/    b| /'
+# The two policies stay in $W — their digests are what this scenario is about
+# and $OUT archives them — but they do not go onto either device. Ticket 22 took
+# that document off the config device: the egress ceiling it carried is compiled
+# into the measured tunneld, tunneld refuses to start on a device that carries
+# it, and mkconfigdev-tdx.sh refuses to build one. What a guest presents is the
+# digest of its image's ceiling, `attest-tool ceiling -digest`, and the three
+# scenarios' documents were authored around the older meaning: see
+# docs/policy-binding.md.
+mkdir -p "$W/devices/a" "$W/devices/b"
+for g in a b; do
+  find "$W/$g" -maxdepth 1 -mindepth 1 ! -name 'policy.json' ! -name 'policy.json.sig' \
+       -exec cp -r {} "$W/devices/$g/" \;
+done
+
+bash "$HERE/mkconfigdev-tdx.sh" "$W/devices/a" "$OUT/config-a.raw" | sed 's/^/    a| /'
+bash "$HERE/mkconfigdev-tdx.sh" "$W/devices/b" "$OUT/config-b.raw" | sed 's/^/    b| /'
 
 # ---- 3. the digests this scenario turns on --------------------------------
 {

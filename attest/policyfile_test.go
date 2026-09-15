@@ -117,28 +117,18 @@ func TestASignedPolicyLoadsAndSaysWhatItsAuthorWrote(t *testing.T) {
 	if want := [][]byte{theMeasurement}; !reflect.DeepEqual(policy.ForwardTo, want) {
 		t.Errorf("the policy forwards to %x; the document names %x", policy.ForwardTo, want)
 	}
-	if !policy.Forwards(theMeasurement) {
-		t.Error("the policy does not forward to the image its own document names")
-	}
-	if policy.Forwards(otherMeasurement) {
-		t.Error("the policy forwards to an image its document does not name")
-	}
 }
 
-// TestAPolicyForwardingToNobodyLoadsAndForwardsToNobody: the empty list is a
-// deployment, not a mistake. A sandbox that answers and never calls says so,
-// and what it says is enforced rather than read as "anything".
-func TestAPolicyForwardingToNobodyLoadsAndForwardsToNobody(t *testing.T) {
+// TestAPolicyForwardingToNobodyLoadsAndSaysSo: the empty list is a deployment,
+// not a mistake. A sandbox that answers and never calls says so, and it loads
+// as an empty list rather than as a missing one — the fail-open reading of an
+// absent field is the mistake this whole design is arranged to avoid.
+func TestAPolicyForwardingToNobodyLoadsAndSaysSo(t *testing.T) {
 	a := fixture.NewAuthor(t)
 	policy := loadsPolicy(t, a, aSilentPolicyDocument)
 
 	if len(policy.ForwardTo) != 0 {
 		t.Errorf("the policy forwards to %x; the document names nobody", policy.ForwardTo)
-	}
-	for _, m := range [][]byte{theMeasurement, otherMeasurement, nil} {
-		if policy.Forwards(m) {
-			t.Errorf("a policy listing nothing forwards to %x; an empty list is nobody, not anybody", m)
-		}
 	}
 }
 
@@ -213,8 +203,8 @@ func TestAForwardToEntryThatNamesNoImageIsRefused(t *testing.T) {
 	// one. It simply names an image no peer here is running.
 	narrow := strings.Replace(document, `["`+measurement+`"]`, `["aabbcc"]`, 1)
 	policy := loadsPolicy(t, a, narrow)
-	if policy.Forwards(theMeasurement) {
-		t.Error("a policy naming a measurement of the wrong width forwards to this image anyway")
+	if want := [][]byte{{0xaa, 0xbb, 0xcc}}; !reflect.DeepEqual(policy.ForwardTo, want) {
+		t.Errorf("a policy naming a measurement of the wrong width loaded as %x; want %x", policy.ForwardTo, want)
 	}
 }
 

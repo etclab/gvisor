@@ -1,0 +1,70 @@
+Ticket 21's 64 recorded verdicts, replayed across ticket 22
+===========================================================
+
+Result: all 64 identical, line 2 onward. Line 1 of a transcript is the command
+line and differs by construction when the binary path does, which is what the
+harness's own README says to skip.
+
+    compared 66 transcripts, 0 verdicts differ
+    (the 64 rows, plus INDEX.txt, whose "# prefix :" line names the binary, and
+     COMMANDS.txt, which is byte-identical)
+
+    exit status histogram, both sides:
+      exit 0: 8      accepted
+      exit 1: 15     not a verdict: usage, missing inputs, digest-parse
+                     negatives, bad vendor, tdx flag/collateral negatives
+      exit 2: 37     refused
+      exit 3: 4      reference value set refused
+
+The same histogram spike E4 recorded as the pre-change baseline
+(spikes/E4/logs/replay-v2.txt, spikes/E4/replay/INDEX.txt), and the same
+slug-to-exit table row for row.
+
+Why it is the check worth making
+--------------------------------
+
+Ticket 22 takes policy.json off the config device and narrows what the digest
+in the binding names. None of that is supposed to reach a verdict already
+recorded: `attest-tool verify` never opened a policy document — its only policy
+input is `-policy-digest HEX`, and no recorded row passes a file — so the change
+either leaves every verdict alone or it has touched something it had no business
+touching. Three of the 64 rows are the regression test for the half ticket 22
+promises to keep: `snp-t05-badhex` and `snp-t05-shortdigest` drive
+attest.ParsePolicyDigest directly and must still print the same two refusals,
+and `snp-t05-v2-zerodigest` must still reach the allow-list comparison and lose
+there (exit 3).
+
+Method
+------
+
+Both binaries built from source, the base one from the commit this work started
+at, with the evidence, the lists and the authored sets all taken from this
+checkout so that every path in every transcript is the same string:
+
+    REPO=/home/pniroula/Projects/gvisor-t22
+    H=$REPO/docs/snp/evidence/ticket21/harness
+
+    git archive 32a18ba24 attest | tar -x -C $W/base
+    (cd $W/base/attest && GOPROXY=off go build -o $W/attest-tool-base ./cmd/attest-tool)
+    (cd $REPO/attest   && GOPROXY=off go build -o $W/attest-tool-head ./cmd/attest-tool)
+
+    for side in base head; do
+      REPLAY_REPO=$REPO \
+      REPLAY_LIST=$H/verdict-invocations-v2.txt \
+      REPLAY_AUTHORED=$H/authored \
+        bash $H/replay-verdicts.sh $W/replay-$side $W/attest-tool-$side verify
+    done
+
+    for f in $W/replay-head/*.txt; do
+      diff <(tail -n +2 "$W/replay-base/${f##*/}") <(tail -n +2 "$f") \
+        || echo "DIFF ${f##*/}"
+    done
+
+32a18ba24 is "Record E1: a QUIC stream has no FD to hand over…", the tip this
+ticket's three commits were written on. The 47 retired invocations
+(verdict-invocations-retired.txt) were not replayed: they carry
+-binding-version, which ticket 21 removed, and they exit 1 on the usage line
+before any verdict on either side of this change.
+
+The transcripts themselves are not kept, for the reason ticket 21 gave: they are
+64 files this harness regenerates in a minute, and the diff is the evidence.

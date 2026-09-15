@@ -20,24 +20,30 @@
 // generates its key at startup and never persists it; it takes the sandbox
 // identifier as a parameter, synthetic until the sentry integration supplies
 // a real one, so that the key lifecycle here is already the final one. It
-// loads two signed documents against the author public key it was started
-// with — its reference value set through [attest.LoadReferenceValueSetFile]
-// and its policy through [attest.LoadPolicyFile] — and there is no path that
-// starts without either.
+// loads one signed document against the author public key it was started with
+// — its reference value set, through [attest.LoadReferenceValueSetFile] — and
+// there is no path that starts without it.
 //
-// # The set and the policy are different questions
+// # The set and the digest are different questions
 //
 // The set is whom this sandbox admits: measurement and policy_digest pairs,
-// enforced on every peer in either role. The policy is what this sandbox is:
-// its egress section, and the measurements it will dial. Its digest is the
-// identity this sandbox presents, and `forward_to` is the one check that runs
-// on the dialing side alone — a peer this sandbox would happily answer may
-// still be one its own policy does not say it will call.
+// enforced on every peer in either role. The digest in [Config.PolicyDigest]
+// is what this sandbox presents about itself, for a peer's set to check
+// against; what it names is the caller's to say, and the measured guest's
+// command names the egress ceiling compiled into its image.
 //
-// They were one document until ticket 19. Splitting them is what makes mutual
-// pinning expressible at all: while a sandbox's policy was its own allow-list,
-// A's set would have had to name the digest of B's set and B's the digest of
-// A's, and neither digest can be fixed before the other.
+// The two were one document until ticket 19. Splitting them is what makes
+// mutual pinning expressible at all: while a sandbox's policy was its own
+// allow-list, A's set would have had to name the digest of B's set and B's the
+// digest of A's, and neither digest can be fixed before the other.
+//
+// A second signed document — this sandbox's own policy, with its `forward_to`
+// list — was loaded here beside the set until ticket 22, off the config
+// device, and its digest was the one presented. Both are gone from this
+// package: the ceiling that document used to carry is compiled into the
+// measured image, and what a sandbox may delegate to whom is a contract pushed
+// over the tunnel after attestation, not a list read off a disk the host
+// supplies (docs/policy-binding.md).
 //
 // The vendor is injected through [Config]: an [attest.Acquirer] for this
 // platform's evidence and an [attest.Verifier] for its peers'. Tests inject
@@ -104,11 +110,6 @@ type Config struct {
 	ReferenceValueSetPath string
 	AuthorPublicKey       ed25519.PublicKey
 
-	// PolicyPath locates this sandbox's own signed policy, authorised by the
-	// same AuthorPublicKey under its own domain. A policy that fails to load
-	// refuses startup.
-	PolicyPath string
-
 	// PolicyDigest is the digest this tunneld presents to every peer it meets,
 	// bound into its evidence under ADR-0002's amendment and checked against
 	// the peer's own allow-list.
@@ -166,12 +167,10 @@ type Tunneld struct {
 	cfg      Config
 	listener *tunnel.Listener
 
-	// policy is this sandbox's own signed policy, and unconstrained the values
-	// in its set that list no policy of their own. Both are read off disk at
-	// startup and never change: the two documents are loaded once, and the
-	// identity bound to [Config.PolicyDigest] is held for the life of the
-	// process.
-	policy        attest.Policy
+	// unconstrained is the values in this tunneld's set that list no policy of
+	// their own. It is read off disk at startup and never changes: the set is
+	// loaded once, and the identity bound to [Config.PolicyDigest] is held for
+	// the life of the process.
 	unconstrained []attest.UnconstrainedValue
 
 	// dialed holds the tunnels this tunneld opened, one per peer, and is what
@@ -186,11 +185,10 @@ type Tunneld struct {
 	wg       sync.WaitGroup
 }
 
-// New starts a tunneld: loads and checks the reference value set and the
-// policy, generates the key, acquires this platform's evidence, and begins
-// listening. Any failure is a refusal to start; in particular a reference value
-// set that does not load returns an error wrapping [attest.ErrSetRefused], and
-// a policy that does not load one wrapping [attest.ErrPolicyRefused].
+// New starts a tunneld: loads and checks the reference value set, generates the
+// key, acquires this platform's evidence, and begins listening. Any failure is
+// a refusal to start; in particular a reference value set that does not load
+// returns an error wrapping [attest.ErrSetRefused].
 func New(ctx context.Context, cfg Config) (*Tunneld, error) {
 	if cfg.SandboxID == "" {
 		return nil, errors.New("tunneld: no sandbox identifier")
@@ -202,10 +200,6 @@ func New(ctx context.Context, cfg Config) (*Tunneld, error) {
 		return nil, errors.New("tunneld: no policy digest; a tunneld that presented none would ask every peer to admit it on its measurement alone")
 	}
 	set, err := attest.LoadReferenceValueSetFile(cfg.ReferenceValueSetPath, cfg.AuthorPublicKey)
-	if err != nil {
-		return nil, fmt.Errorf("tunneld: refusing to start: %w", err)
-	}
-	policy, err := attest.LoadPolicyFile(cfg.PolicyPath, cfg.AuthorPublicKey)
 	if err != nil {
 		return nil, fmt.Errorf("tunneld: refusing to start: %w", err)
 	}
@@ -228,14 +222,15 @@ func New(ctx context.Context, cfg Config) (*Tunneld, error) {
 	if err != nil {
 		return nil, fmt.Errorf("tunneld: refusing to start: %w", err)
 	}
-	// Only the dialing side is built with the forward_to gate. Whom this
-	// sandbox calls is its own policy's business; whom it answers is the
-	// reference value set's, and the set is enforced in both roles alike.
-	client := identity.ClientConfig(verification, refusals, ratls.WithAdmission(forwardTo(policy)))
+	// Both roles are built from the same set, and since ticket 22 there is
+	// nothing else in either: the dialing side carried one extra check until
+	// then, this sandbox's own `forward_to`, and the document it came from does
+	// not reach this package any more. [ratls.WithAdmission] is where a check
+	// of that kind goes when the pushed contract brings one back.
+	client := identity.ClientConfig(verification, refusals)
 	t := &Tunneld{
 		cfg:           cfg,
 		listener:      listener,
-		policy:        policy,
 		unconstrained: set.Unconstrained(),
 		dialed:        tunnel.NewCache(client, cfg.Limits),
 	}
@@ -271,43 +266,6 @@ func (t *Tunneld) Addr() net.Addr { return t.listener.Addr() }
 // reader of the image can recompute for themselves, so nothing about
 // publishing it is a disclosure.
 func (t *Tunneld) PolicyDigest() attest.PolicyDigest { return t.cfg.PolicyDigest }
-
-// ForwardTo is the images this tunneld's own policy says it will dial, in the
-// order the document lists them.
-//
-// It is exposed for the same reason as [Tunneld.PolicyDigest] — the process
-// around a tunneld prints it at start, and an empty list is a sandbox that
-// dials nobody, which is worth reading on a console rather than inferring from
-// a failed dial. The slices are copies: the list decides whom this sandbox
-// calls, and a caller holding the loader's arrays could rewrite that at a
-// distance.
-func (t *Tunneld) ForwardTo() [][]byte {
-	out := make([][]byte, len(t.policy.ForwardTo))
-	for i, m := range t.policy.ForwardTo {
-		out[i] = append([]byte(nil), m...)
-	}
-	return out
-}
-
-// forwardTo is the dialing side's admission check: a peer whose evidence has
-// verified and whose policy this side's set admits is dialed only if this
-// side's own policy says it forwards to the image that peer is running.
-//
-// It is [attest.ReasonPolicyMismatch] because it is the same kind of statement
-// as the digest check — the right image under the wrong arrangement — and the
-// detail says which of the two it was, so an operator reading a console does
-// not have to guess whether to edit a set or a policy.
-func forwardTo(p attest.Policy) ratls.Admission {
-	return func(a attest.Attested) error {
-		if p.Forwards(a.Claims.LaunchMeasurement) {
-			return nil
-		}
-		return attest.Refuse(attest.ReasonPolicyMismatch,
-			"peer runs measurement %x, which is not in forward_to: this sandbox's policy names %d "+
-				"measurement(s) it will dial and this is not one of them",
-			a.Claims.LaunchMeasurement, len(p.ForwardTo))
-	}
-}
 
 // Unconstrained is the values in this tunneld's own set that list no policy
 // digest, and so admit a peer running the named image under any policy at all.

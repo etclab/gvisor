@@ -62,7 +62,14 @@ export PATH="/usr/local/go/bin:$PATH"
 
 RTMR2=$(sed -n 's/^predicted_rtmr2: //p' "$IMAGE_DIR/manifest.txt")
 [[ "$RTMR2" =~ ^[0-9a-f]{96}$ ]] || { echo "no predicted_rtmr2 in $IMAGE_DIR/manifest.txt" >&2; exit 2; }
-POLICY_DIGEST=$(sed -n 's/^policy_digest: *\([0-9a-f]\{64\}\).*/\1/p' "$IMAGE_DIR/manifest.txt")
+# The digest this guest presents, which since ticket 22 is the name of the
+# egress ceiling compiled into its tunneld and not the digest of any document on
+# its config device. It comes from the source the image was built from, which is
+# the only place it ever lived: attest-tool prints it without a guest, a key or
+# a boot. The manifest's own policy_digest line is the pre-ticket-22 number and
+# is deliberately not read here.
+POLICY_DIGEST=$(cd "$REPO/attest" && GOPROXY=off go run ./cmd/attest-tool ceiling -digest)
+[[ "$POLICY_DIGEST" =~ ^[0-9a-f]{64}$ ]] || { echo "attest-tool ceiling -digest printed no digest" >&2; exit 2; }
 BOOT_IMAGE="${BOOT_IMAGE:-attested-tdx-${RTMR2:0:12}}"
 CONFIG_IMAGE="${CONFIG_IMAGE:-attested-config-$VM-$(date -u +%Y%m%d%H%M%S)}"
 
@@ -116,7 +123,7 @@ echo "=== TDX smoke boot (ticket 19): $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
 echo "project $(gcloud config get-value project 2>/dev/null) zone $ZONE"
 echo "repo    $(git -C "$REPO" rev-parse HEAD)"
 echo "image   $IMAGE_DIR (predicted RTMR2 $RTMR2)"
-echo "policy  digest $POLICY_DIGEST"
+echo "ceiling digest $POLICY_DIGEST (what the guest presents; attest-tool ceiling -digest)"
 echo "out     $OUT"
 echo
 
@@ -124,8 +131,9 @@ echo
 echo "############ the config device ############"
 D="$OUT/config-src"
 rm -rf "$D"; mkdir -p "$D"
-cp "$IMAGE_DIR/reference-values.json" "$IMAGE_DIR/reference-values.json.sig" \
-   "$IMAGE_DIR/policy.json" "$IMAGE_DIR/policy.json.sig" "$D/"
+# The reference value set and nothing else of the author's: ticket 22 took
+# policy.json off the config device, and tunneld refuses a device carrying one.
+cp "$IMAGE_DIR/reference-values.json" "$IMAGE_DIR/reference-values.json.sig" "$D/"
 cp -r "$REPO/docs/snp/evidence/tdx/collateral" "$D/collateral"
 cat > "$D/peers.json" <<EOF
 {
@@ -259,7 +267,7 @@ if [ -s "$OUT/quote.bin" ] && [ -n "$KEYHEX" ]; then
   printf '%s' "$KEYHEX" | xxd -r -p > "$OUT/public-key.der"
   python3 "$HERE/parse-tdx-quote.py" "$OUT/quote.bin" > "$OUT/quote.txt" 2>&1 || true
   sed -n 's/^\(mrtd\|rtmr0\|rtmr1\|rtmr2\|td_attributes\) *: /  &/p' "$OUT/quote.txt" || true
-  cp "$IMAGE_DIR/reference-values.json" "$IMAGE_DIR/reference-values.json.sig" "$IMAGE_DIR/policy.json" "$IMAGE_DIR/policy.json.sig" "$OUT/"
+  cp "$IMAGE_DIR/reference-values.json" "$IMAGE_DIR/reference-values.json.sig" "$OUT/"
   AUTHOR_PUB=$(sed -n 's/^signed by author key: *\([0-9a-f]\{64\}\).*/\1/p' "$IMAGE_DIR/manifest.txt")
   printf '%s\n' "$AUTHOR_PUB" > "$OUT/author.pub"
   (cd "$REPO/attest" && GOPROXY=off go run ./cmd/attest-tool verify \

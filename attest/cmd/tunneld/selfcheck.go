@@ -53,7 +53,7 @@ import (
 // and an adversary who could forge the first could forge the third. The value
 // is diagnostic, not evidential. What *is* evidential is the quote it prints:
 // a verifier on a workstation can take those bytes, judge them against the same
-// signed set with attest/cmd/verify-evidence, and reach the verdict
+// signed set with attest-tool verify, and reach the verdict
 // independently. That is why the evidence is written to the console in base64
 // — a measured guest has no other channel, and this is the one the record
 // keeps (docs/snp/cloud/tdx/guest-evidence-tdx.sh does the same thing by hand).
@@ -88,7 +88,7 @@ func performSelfCheck(ctx context.Context, acquirer attest.Acquirer, verifier at
 	// a handshake and therefore what every other tool in this module writes
 	// into a binding. [attest.Binding] takes the key "exactly as presented", so
 	// the encoding is free as long as both sides use one — and the side that
-	// re-checks this on a workstation is attest/cmd/verify-evidence, which
+	// re-checks this on a workstation is attest-tool verify, which
 	// reads a DER SubjectPublicKeyInfo out of a file.
 	spki, err := x509.MarshalPKIXPublicKey(pub)
 	if err != nil {
@@ -129,7 +129,7 @@ func performSelfCheck(ctx context.Context, acquirer attest.Acquirer, verifier at
 
 	// The bytes themselves, so the verdict above can be reached again by
 	// somebody who trusts none of the machinery that printed it.
-	logf("SELFCHECK EVIDENCE BEGIN (base64 of %d bytes; feed it to attest/cmd/verify-evidence)", len(evidence.Bytes))
+	logf("SELFCHECK EVIDENCE BEGIN (base64 of %d bytes; feed it to attest-tool verify)", len(evidence.Bytes))
 	encoded := base64.StdEncoding.EncodeToString(evidence.Bytes)
 	for len(encoded) > 0 {
 		n := selfCheckBase64Width
@@ -141,7 +141,7 @@ func performSelfCheck(ctx context.Context, acquirer attest.Acquirer, verifier at
 	}
 	logf("SELFCHECK EVIDENCE END")
 	logf("SELFCHECK PUBLIC KEY %s", hex.EncodeToString(spki))
-	logf("SELFCHECK (that is a DER SubjectPublicKeyInfo, %d bytes; write it to a file and pass it as verify-evidence -key. "+
+	logf("SELFCHECK (that is a DER SubjectPublicKeyInfo, %d bytes; write it to a file and pass it as attest-tool verify -key. "+
 		"It is a throwaway: the evidence is bound to it and to nothing else, so it can establish no tunnel)", len(spki))
 	return verr
 }

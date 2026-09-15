@@ -160,36 +160,8 @@ func TestSandboxChildProcess(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	// OPEN, and the round trip through the descriptor it returned.
-	stream, err := null.Open(ctx, "b")
-	if err != nil {
-		t.Fatalf("opening a stream to b: %v", err)
-	}
-	writeAndEnd(t, stream, "ping")
-	if got, err := io.ReadAll(stream); err != nil || string(got) != "pong" {
-		t.Errorf("the sandbox read %q (%v) from the opened stream; want %q", got, err, "pong")
-	}
-	stream.Close()
-
-	// A peer tunneld will not give a stream to is an error and no stream, with
-	// tunneld's own sentence in it.
-	if _, err := null.Open(ctx, "nobody"); err == nil || !strings.Contains(err.Error(), "unknown peer") {
-		t.Errorf("opening a stream to an unknown peer returned %v; want tunneld's refusal", err)
-	}
-
-	// ACCEPT, with the identity attached.
-	accepted, who, err := null.Accept(ctx)
-	if err != nil {
-		t.Fatalf("accepting a stream: %v", err)
-	}
-	if who != whoTheParentClaims {
-		t.Errorf("the accepted stream carried %+v; want %+v", who, whoTheParentClaims)
-	}
-	if got, err := io.ReadAll(accepted); err != nil || string(got) != "hello" {
-		t.Errorf("the sandbox read %q (%v) from the accepted stream; want %q", got, err, "hello")
-	}
-	writeAndEnd(t, accepted, "world")
-	accepted.Close()
+	checkChildOpensAStream(t, ctx, null)
+	checkChildAcceptsAStream(t, ctx, null)
 
 	// APPLY: the version 1 policy acknowledged, the version 2 one refused.
 	answered := answers(t, applied, 2)
@@ -206,6 +178,47 @@ func TestSandboxChildProcess(t *testing.T) {
 	if records[0].Format != sandbox.PolicyFormat || records[0].Version != sandbox.PolicyVersion || records[0].Bytes != len(policyV1) {
 		t.Errorf("recorded %+v; want the version 1 policy of %d bytes", records[0], len(policyV1))
 	}
+}
+
+// checkChildOpensAStream is the OPEN half of the child process's side of the
+// contract: a stream to a known peer round-trips through the descriptor
+// tunneld returned, and a peer tunneld does not know is refused with
+// tunneld's own sentence rather than handed out as a stream.
+func checkChildOpensAStream(t *testing.T, ctx context.Context, null *sandbox.Null) {
+	t.Helper()
+	stream, err := null.Open(ctx, "b")
+	if err != nil {
+		t.Fatalf("opening a stream to b: %v", err)
+	}
+	writeAndEnd(t, stream, "ping")
+	if got, err := io.ReadAll(stream); err != nil || string(got) != "pong" {
+		t.Errorf("the sandbox read %q (%v) from the opened stream; want %q", got, err, "pong")
+	}
+	stream.Close()
+
+	// A peer tunneld will not give a stream to is an error and no stream, with
+	// tunneld's own sentence in it.
+	if _, err := null.Open(ctx, "nobody"); err == nil || !strings.Contains(err.Error(), "unknown peer") {
+		t.Errorf("opening a stream to an unknown peer returned %v; want tunneld's refusal", err)
+	}
+}
+
+// checkChildAcceptsAStream is the ACCEPT half: the accepted stream carries
+// the peer's identity, and the bytes written each way round-trip across it.
+func checkChildAcceptsAStream(t *testing.T, ctx context.Context, null *sandbox.Null) {
+	t.Helper()
+	accepted, who, err := null.Accept(ctx)
+	if err != nil {
+		t.Fatalf("accepting a stream: %v", err)
+	}
+	if who != whoTheParentClaims {
+		t.Errorf("the accepted stream carried %+v; want %+v", who, whoTheParentClaims)
+	}
+	if got, err := io.ReadAll(accepted); err != nil || string(got) != "hello" {
+		t.Errorf("the sandbox read %q (%v) from the accepted stream; want %q", got, err, "hello")
+	}
+	writeAndEnd(t, accepted, "world")
+	accepted.Close()
 }
 
 // TestTheHostRefusesAPushWithNoSandboxAttached is the other end of the same

@@ -249,18 +249,23 @@ func TestAPushedPolicyReachesTheSandboxAndIsAcknowledged(t *testing.T) {
 	}
 }
 
+// A pushRefusalCase is one way a pushed policy fails to land: the sandbox
+// beside the receiving tunneld, the policy sent, what the refusal must say,
+// and what (if anything) the sandbox was handed.
+type pushRefusalCase struct {
+	name    string
+	box     *recordingSandbox
+	policy  string
+	says    string
+	applied string
+}
+
 // TestAPushTheSandboxRefusesClosesTheTunnel is every way a push fails to land,
 // and the one thing all three do: the refusal goes back, the reason is logged,
 // and the tunnel goes with it. A peer whose policy did not land is a peer whose
 // next stream would run under a contract neither side holds.
 func TestAPushTheSandboxRefusesClosesTheTunnel(t *testing.T) {
-	for _, c := range []struct {
-		name    string
-		box     *recordingSandbox
-		policy  string
-		says    string
-		applied string
-	}{
+	for _, c := range []pushRefusalCase{
 		{
 			name:    "the sandbox will not take it",
 			box:     &recordingSandbox{refusal: errors.New("this sandbox will not run that")},
@@ -284,44 +289,51 @@ func TestAPushTheSandboxRefusesClosesTheTunnel(t *testing.T) {
 			says:   "no sandbox is attached to this tunneld",
 		},
 	} {
-		t.Run(c.name, func(t *testing.T) {
-			b := startPushNode(t, "sandbox-b", imageB, admitting(imageA), c.box)
-			a := start(t, "sandbox-a", imageA, admitting(imageB), tunneld.PeerTable{"b": b.Addr().String()})
-			ch, err := a.Peer(ctx(t), "b")
-			if err != nil {
-				t.Fatalf("a.Peer(b): %v", err)
-			}
-			defer ch.Close()
-			// A stream on the tunnel before the push, so that the test can see
-			// the tunnel end rather than infer it from a channel that would
-			// quietly re-dial.
-			stream, err := ch.OpenStream(ctx(t))
-			if err != nil {
-				t.Fatalf("opening a stream: %v", err)
-			}
-			defer stream.Close()
+		t.Run(c.name, func(t *testing.T) { runPushRefusalCase(t, c) })
+	}
+}
 
-			answer := pushed(t, ch, c.policy)
-			if answer.OK {
-				t.Fatalf("the push was acknowledged")
-			}
-			if answer.Reason != c.says {
-				t.Errorf("the refusal says %q; want %q", answer.Reason, c.says)
-			}
-			if c.box != nil && c.box.applied.order() != c.applied {
-				t.Errorf("the sandbox was handed %q; want %q", c.box.applied.order(), c.applied)
-			}
-			r := b.refusals.next(t)
-			if got := r.Reason(); got != attest.ReasonPolicyNotApplied {
-				t.Errorf("b refused with %v; want %v (log: %s)", got, attest.ReasonPolicyNotApplied, r.LogString())
-			}
-			if line := r.LogString(); !strings.Contains(line, attest.ReasonPolicyNotApplied.String()) {
-				t.Errorf("the operator log does not name the reason: %q", line)
-			}
-			if err := endsWithin(t, stream, 5*time.Second); err == nil {
-				t.Errorf("the tunnel survived a refused push")
-			}
-		})
+// runPushRefusalCase drives one pushRefusalCase: it starts the pair, pushes
+// the case's policy over a tunnel that already carries a stream, and checks
+// that the refusal, the sandbox, the operator log, and the tunnel itself all
+// agree the policy did not land.
+func runPushRefusalCase(t *testing.T, c pushRefusalCase) {
+	t.Helper()
+	b := startPushNode(t, "sandbox-b", imageB, admitting(imageA), c.box)
+	a := start(t, "sandbox-a", imageA, admitting(imageB), tunneld.PeerTable{"b": b.Addr().String()})
+	ch, err := a.Peer(ctx(t), "b")
+	if err != nil {
+		t.Fatalf("a.Peer(b): %v", err)
+	}
+	defer ch.Close()
+	// A stream on the tunnel before the push, so that the test can see
+	// the tunnel end rather than infer it from a channel that would
+	// quietly re-dial.
+	stream, err := ch.OpenStream(ctx(t))
+	if err != nil {
+		t.Fatalf("opening a stream: %v", err)
+	}
+	defer stream.Close()
+
+	answer := pushed(t, ch, c.policy)
+	if answer.OK {
+		t.Fatalf("the push was acknowledged")
+	}
+	if answer.Reason != c.says {
+		t.Errorf("the refusal says %q; want %q", answer.Reason, c.says)
+	}
+	if c.box != nil && c.box.applied.order() != c.applied {
+		t.Errorf("the sandbox was handed %q; want %q", c.box.applied.order(), c.applied)
+	}
+	r := b.refusals.next(t)
+	if got := r.Reason(); got != attest.ReasonPolicyNotApplied {
+		t.Errorf("b refused with %v; want %v (log: %s)", got, attest.ReasonPolicyNotApplied, r.LogString())
+	}
+	if line := r.LogString(); !strings.Contains(line, attest.ReasonPolicyNotApplied.String()) {
+		t.Errorf("the operator log does not name the reason: %q", line)
+	}
+	if err := endsWithin(t, stream, 5*time.Second); err == nil {
+		t.Errorf("the tunnel survived a refused push")
 	}
 }
 

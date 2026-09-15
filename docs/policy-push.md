@@ -235,6 +235,13 @@ On the receiving side, the sandbox a push goes to is whichever one the command a
 
 Both go through `PolicyChecked`, so the envelope is read at the boundary either way.
 
+One consequence for the figures a recorded run prints: the exercise establishes by asking the
+contract for a stream, so with `-push-policy` set its `kind=establish` line covers the handshake
+*and* the push round trip, which E2 measured at 0.83 ms for a 2 KiB policy against tens of
+milliseconds for an establishment. Without the flag nothing is pushed and the figure means
+exactly what it meant before, which is why every scenario recorded under `docs/snp` still reads
+the way it was written.
+
 ## What proves it
 
 Every test is offline, on the loopback harness with the fake platform injected through `Config`

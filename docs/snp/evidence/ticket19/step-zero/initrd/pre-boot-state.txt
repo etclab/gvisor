@@ -1,0 +1,57 @@
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+--- sha256 of what grub will read at the next boot ---
+f5f44bbd2277f4e882ee56f35d1e557a8e67c3cdc0e4202eba6c5addbb260590  /boot/efi/EFI/ubuntu/grub.cfg
+6fe6e1bcbe6cf6baec8e056d40361ca1aa715cc04ddcc2855351de060b84350b  /boot/efi/EFI/ubuntu/shimx64.efi
+a831af01e4fb5e3c9457120e1d08ea13d98a0a47b62728c284b7f502d535965c  /boot/efi/EFI/ubuntu/grubx64.efi
+bash: line 4: /boot/grub/grub.cfg: Permission denied
+bash: line 5: /boot/grub/x86_64-efi/crypto.lst: Permission denied
+bash: line 6: /boot/vmlinuz-6.17.0-1022-gcp: Permission denied
+--- size and sha256 of every initrd on disk ---
+/boot/initrd.img-6.17.0-1022-gcp 31155953 bytes
+--- the grub.cfg that will be measured ---
+----i---------e------- /boot/grub/grub.cfg
+menuentry 'Ubuntu' --class ubuntu --class gnu-linux --class gnu --class os $menuentry_id_option 'gnulinux-simple-d6a74ed7-6f8e-440e-a2d5-a30c23ac640b' {$
+^Irecordfail$
+^Iload_video$
+^Igfxmode $linux_gfx_mode$
+^Iinsmod gzio$
+^Iif [ x$grub_platform = xxen ]; then insmod xzio; insmod lzopio; fi$
+^Iinsmod part_gpt$
+^Iinsmod ext2$
+^Isearch --no-floppy --fs-uuid --set=root b4f9057b-66e6-4f5a-bbba-a8086989e88f$
+^Iif [ "${initrdfail}" = 1 ]; then$
+^I^Iecho^I'GRUB_FORCE_PARTUUID set, initrdless boot failed. Attempting with initrd.'$
+^I^Ilinux^I/vmlinuz-6.17.0-1022-gcp root=PARTUUID=fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7 ro  console=ttyS0,115200$
+^I^Iinitrd^I/initrd.img-6.17.0-1022-gcp$
+^Ielse$
+^I^Iecho^I'GRUB_FORCE_PARTUUID set, attempting initrdless boot.'$
+^I^Ilinux^I/vmlinuz-6.17.0-1022-gcp root=PARTUUID=fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7 ro  console=ttyS0,115200 panic=-1$
+^I^Iinitrd^I/initrd.img-6.17.0-1022-gcp$
+^Ifi$
+^Iinitrdfail$
+}$
+--- partitions ---
+NAME         PARTUUID                             UUID                                 MOUNTPOINTS                  SIZE
+loop0                                                                                  /snap/core24/1643           66.8M
+loop1                                                                                  /snap/google-cloud-cli/491 344.5M
+loop2                                                                                  /snap/snapd/27710           50.1M
+nvme0n1                                                                                                              20G
+├─nvme0n1p1  fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7 d6a74ed7-6f8e-440e-a2d5-a30c23ac640b /                             19G
+├─nvme0n1p14 30ddd14b-a649-4fd4-a2cd-f25dc868be33                                                                     4M
+├─nvme0n1p15 6a0a967b-f814-468b-af0c-f6bf6538ef09 7038-D0CC                            /boot/efi                    106M
+└─nvme0n1p16 dbf34f44-ded2-4878-b8de-f3d710283689 b4f9057b-66e6-4f5a-bbba-a8086989e88f /boot                        913M
+--- grubenv bytes ---
+IyBHUlVCIEVudmlyb25tZW50IEJsb2NrCiMgV0FSTklORzogRG8gbm90IGVkaXQgdGhpcyBmaWxlIGJ5IHRvb2xzIG90aGVyIHRo
+YW4gZ3J1Yi1lZGl0ZW52ISEhCiMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMj
+IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMj
+IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMj
+IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMj
+IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMj
+IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMj
+IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMj
+IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMj
+IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMj
+IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMj
+IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMj
+IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMj
+IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIw==

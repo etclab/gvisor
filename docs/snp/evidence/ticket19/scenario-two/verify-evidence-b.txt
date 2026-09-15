@@ -1,0 +1,66 @@
+=== guest B's quote against guest B's OWN set (the self-check, remade here) ===
+evidence : /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/scenario-two/quote-b.bin
+key      : /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/scenario-two/public-key-b.der
+refvals  : /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/scenario-two/set-b.json
+policy   : 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28
+
+evidence            : /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/scenario-two/quote-b.bin, 8000 bytes
+vendor              : intel-tdx
+certificate chain   : carried inside the quote
+public key (SPKI)   : /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/scenario-two/public-key-b.der, 44 bytes, 302a300506032b65700321001e2f405c93ecf795e7906d1ebce3f71566654d2c0ce8c0f29d4250f3f598d82e
+binding context     : v2, 02000000000000000000000000000000
+policy digest       : 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28
+intel collateral    : /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/tdx/collateral (provisioned, ADR-0005)
+intel root          : the Intel root embedded in the verification library — no fetch, no file
+reference value set : /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/scenario-two/set-b.json, 1 value(s), author 665053d10032f5b9a46394a65b022c0bd7007392b8f445fe4ace5b0e5ed4c5a2
+  [0] intel-tdx predicted RTMR2 d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+      observed MRTD      c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+      observed RTMR0     c2fc12a52db868515eff7c657e42ce04b0b7363fa6ddf7c1cca87aa8e6a061a11f9981924a600ad6d2232f75182a850a
+      observed RTMR1     02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b | 3a446943925fef7f1682fd54e1b6697df864692e28592ec373860d1868582ac14ca3029c48282eb964868a785bafd691
+      minimum TCB        status=UpToDate evaluation_data_number=20
+      TD policy          debug=false
+      admits policy      d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b
+WARN : 2026/09/10 19:25:37.396480 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 19:25:37.398515 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 19:25:37.400048 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+
+REFUSED
+  reason            : guest policy or policy digest not permitted by the reference value
+  operator log      : verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+  a caller learns   : attest: verification failed
+
+verify-evidence exit status: 2  (0 accepted, 2 refused)
+
+=== guest B's quote against guest A's set (the check guest A makes of B) ===
+evidence : /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/scenario-two/quote-b.bin
+key      : /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/scenario-two/public-key-b.der
+refvals  : /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/scenario-two/set-a.json
+policy   : 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28
+
+evidence            : /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/scenario-two/quote-b.bin, 8000 bytes
+vendor              : intel-tdx
+certificate chain   : carried inside the quote
+public key (SPKI)   : /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/scenario-two/public-key-b.der, 44 bytes, 302a300506032b65700321001e2f405c93ecf795e7906d1ebce3f71566654d2c0ce8c0f29d4250f3f598d82e
+binding context     : v2, 02000000000000000000000000000000
+policy digest       : 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28
+intel collateral    : /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/tdx/collateral (provisioned, ADR-0005)
+intel root          : the Intel root embedded in the verification library — no fetch, no file
+reference value set : /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/scenario-two/set-a.json, 1 value(s), author 665053d10032f5b9a46394a65b022c0bd7007392b8f445fe4ace5b0e5ed4c5a2
+  [0] intel-tdx predicted RTMR2 d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+      observed MRTD      c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+      observed RTMR0     c2fc12a52db868515eff7c657e42ce04b0b7363fa6ddf7c1cca87aa8e6a061a11f9981924a600ad6d2232f75182a850a
+      observed RTMR1     02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b | 3a446943925fef7f1682fd54e1b6697df864692e28592ec373860d1868582ac14ca3029c48282eb964868a785bafd691
+      minimum TCB        status=UpToDate evaluation_data_number=20
+      TD policy          debug=false
+      admits policy      d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b
+WARN : 2026/09/10 19:25:37.431681 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 19:25:37.433815 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 19:25:37.435368 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+
+REFUSED
+  reason            : guest policy or policy digest not permitted by the reference value
+  operator log      : verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+  a caller learns   : attest: verification failed
+
+verify-evidence exit status: 2  (0 accepted, 2 refused)
+

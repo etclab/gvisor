@@ -1,0 +1,51 @@
+### scenario one, guest a: the rule set as the kernel holds it, and every attempt refused
+
+tunneld: EGRESS RULES as the signed policy and the peer table imply them:
+table inet attested_tunnel {
+	chain input {
+		type filter hook input priority 0; policy drop;
+		iif "lo" accept
+		meta nfproto ipv4 ip saddr 10.128.0.41 meta l4proto udp udp sport 4433 accept   # peer "guest-b" answering
+		meta nfproto ipv4 ip saddr 10.128.0.41 meta l4proto udp udp dport 4433 accept   # peer "guest-b" dialing this sandbox's listener
+	}
+	chain output {
+		type filter hook output priority 0; policy drop;
+		oif "lo" accept
+		meta nfproto ipv4 ip daddr 10.128.0.41 meta l4proto udp udp dport 4433 accept   # dial peer "guest-b"
+		meta nfproto ipv4 ip daddr 10.128.0.41 meta l4proto udp udp sport 4433 accept   # answer peer "guest-b" from this sandbox's listener
+		meta l4proto tcp reject with tcp reset        # so that connect() fails now rather than in a minute
+		reject with icmpx admin-prohibited            # everything else the policy did not permit
+	}
+	chain forward {
+		type filter hook forward priority 0; policy drop;
+	}
+}
+tunneld: EGRESS RULES INSTALLED; as the kernel holds them:
+table inet attested_tunnel {
+	chain forward {
+		type filter hook forward priority 0; policy drop;
+	}
+	chain input {
+		type filter hook input priority 0; policy drop;
+		iif "lo" accept   # handle 2
+		meta nfproto ipv4 ip saddr 10.128.0.41 meta l4proto udp sport 4433 accept   # handle 3
+		meta nfproto ipv4 ip saddr 10.128.0.41 meta l4proto udp dport 4433 accept   # handle 4
+	}
+	chain output {
+		type filter hook output priority 0; policy drop;
+		oif "lo" accept   # handle 6
+		meta nfproto ipv4 ip daddr 10.128.0.41 meta l4proto udp dport 4433 accept   # handle 7
+		meta nfproto ipv4 ip daddr 10.128.0.41 meta l4proto udp sport 4433 accept   # handle 8
+		meta l4proto tcp reject with tcp reset   # handle 9
+		reject with icmpx code 3   # handle 10
+	}
+}
+
+tunneld: EGRESS PROBE: 5 attempt(s) at addresses this policy permits nothing to reach
+tunneld: EGRESS REFUSED tcp/169.254.169.254:80: dial tcp 169.254.169.254:80: connect: connection refused (the provider's metadata server) — the netfilter rule refused it
+tunneld: EGRESS REFUSED tcp/8.8.8.8:53: dial tcp 8.8.8.8:53: connect: connection refused (a public resolver, over TCP) — the netfilter rule refused it
+tunneld: EGRESS REFUSED udp/8.8.8.8:53: write udp 10.128.0.40:52420->8.8.8.8:53: write: operation not permitted (a public resolver, over UDP) — the netfilter rule refused it
+tunneld: EGRESS REFUSED udp/10.128.0.1:53: write udp 10.128.0.40:39059->10.128.0.1:53: write: operation not permitted (named by -egress-probe) — the netfilter rule refused it
+tunneld: EGRESS REFUSED tcp/10.128.0.1:80: dial tcp 10.128.0.1:80: connect: connection refused (named by -egress-probe) — the netfilter rule refused it
+tunneld: EGRESS PROBE PASSED: every attempt was refused before it left
+

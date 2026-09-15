@@ -1,0 +1,31 @@
+# mutual: the policy digests this scenario turns on.
+#
+# A policy digest is SHA-256 over the bytes a policy's author signed, so it is
+# not sha256sum of policy.json, and since ticket 19 it is the digest of the
+# policy and not of the reference value set beside it. Each number below was
+# printed by emit-refvals when it wrote the document, checked against
+# 'emit-refvals -digest-of' on the document as delivered, and checked again
+# against the line the guest holding that document printed at start.
+
+launch measurement, both guests : a234bfa378d30bbde9c5cc3b3c7649c35ea8a7abf783fe95f22a44b0aeb0fc38cae92689256a5dd42197dfa1b87f7723
+D_A, guest A's own policy       : ee2225534af9014bf0dc4c347473a4df91cdf6bbd733073b87100b2893cede74
+    the digest of policy-a.json, which is on guest A's config device
+D_B, guest B's own policy       : 5410bc5bcafe59074856ce80c04f4678964780a62c3e181def13dbf7526dabe3
+    the digest of policy-b.json, which is on guest B's config device
+
+set-a.json's value admits policy : 5410bc5bcafe59074856ce80c04f4678964780a62c3e181def13dbf7526dabe3   (guest B's, and no other)
+set-b.json's value admits policy : ee2225534af9014bf0dc4c347473a4df91cdf6bbd733073b87100b2893cede74   (guest A's, and no other)
+    Neither value is unconstrained, and each names a policy the other guest
+    really presents. Under ticket 18 this pair could not be authored: D_A was
+    the digest of a document that would have had to contain D_B, and D_B the
+    digest of one containing D_A.
+
+why the two digests differ, given that both guests boot one image:
+    policy-a.json forwards to a234bfa378d30bbde9c5cc3b3c7649c35ea8a7abf783fe95f22a44b0aeb0fc38cae92689256a5dd42197dfa1b87f7723
+    policy-b.json forwards to that and also to
+      7426bf87f2a10b161f8fe49a1fc8ab416c5575f5d74708ab8156a9f95acb2e1f75dc6f7a6dad8e3ebf2634b8c417ea5b
+    = sha384 of the ASCII string "an image this sandbox would also dial, which nothing on this segment boots",
+    with no trailing newline. It is a launch measurement of the right width
+    naming no image anybody has, so guest B's policy is a different document
+    from guest A's while both still say the true thing about this segment:
+    each guest will dial the image the other is running.

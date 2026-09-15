@@ -74,8 +74,9 @@ import (
 	"time"
 
 	"gvisor.dev/gvisor/attest"
+	"gvisor.dev/gvisor/attest/internal/fixture"
+	"gvisor.dev/gvisor/attest/internal/snpfake"
 	"gvisor.dev/gvisor/attest/ratls"
-	"gvisor.dev/gvisor/attest/snpfake"
 	"gvisor.dev/gvisor/attest/tunnel"
 	"gvisor.dev/gvisor/attest/tunneld"
 )
@@ -101,7 +102,7 @@ func startOnVM(t *testing.T, sandbox string, vm *snpfake.Platform, admits attest
 	t.Helper()
 	n := &vmNode{
 		name:     sandbox,
-		verifier: &counting{Verifier: verifierFor(t, vm)},
+		verifier: &counting{Verifier: fixture.VerifierTrusting(t, vm)},
 		refusals: newRefusalRecorder(),
 	}
 	td, err := tunneld.New(context.Background(), tunneld.Config{
@@ -109,6 +110,7 @@ func startOnVM(t *testing.T, sandbox string, vm *snpfake.Platform, admits attest
 		Acquirer:              vm,
 		Verifier:              n.verifier,
 		ReferenceValueSetPath: writeSet(t, admits, authorPriv),
+		PolicyPath:            writePolicy(t, everyImage(), authorPriv),
 		AuthorPublicKey:       authorPub,
 		Peers:                 peers,
 		ListenAddr:            "127.0.0.1:0",
@@ -151,11 +153,11 @@ type watchingPeer struct {
 func startWatchingPeer(t *testing.T, image []byte, admits attest.ReferenceValueSet) *watchingPeer {
 	t.Helper()
 	p := platform(t, image)
-	identity, err := ratls.NewIdentity(ctx(t), p)
+	identity, err := ratls.NewIdentity(ctx(t), p, somePolicyDigest("watching peer"))
 	if err != nil {
 		t.Fatalf("building the watching peer's identity: %v", err)
 	}
-	verification, err := attest.New(verifierFor(t, p), admits)
+	verification, err := attest.New(fixture.VerifierTrusting(t, p), admits)
 	if err != nil {
 		t.Fatalf("building the watching peer's verification: %v", err)
 	}
@@ -296,8 +298,8 @@ func TestTwoTunneldsOnOneVMPresentDistinctKeysAndDistinctEvidence(t *testing.T) 
 	// because the keys do and not because the two are speaking different
 	// versions of the binding.
 	for i, p := range seen {
-		if p.bindingContext != attest.BindingContextV1 {
-			t.Errorf("tunneld %d claimed binding context %x; want v1", i, p.bindingContext[:])
+		if p.bindingContext != attest.BindingContextV2 {
+			t.Errorf("tunneld %d claimed binding context %x; want v2", i, p.bindingContext[:])
 		}
 	}
 	if !bytes.Equal(seen[0].chain, seen[1].chain) {

@@ -1,5 +1,7 @@
 # Milestones 1-3 build as a standalone Go module outside the bazel graph
 
+Status: accepted.
+
 `attest/` carries its own `go.mod` and builds with plain `go build`, not through this repo's
 bazel/gazelle graph, until the sentry integration in Milestone 4 forces the question. The
 memo's Milestones 1-3 (offline evidence and verification, the measured image, RA-TLS between

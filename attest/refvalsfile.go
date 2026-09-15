@@ -17,6 +17,7 @@ package attest
 import (
 	"bytes"
 	"crypto/ed25519"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -58,12 +59,52 @@ import (
 // checked, so a parser that drops a field, reorders a key or normalises a
 // number cannot produce bytes that verify while meaning something else. This is
 // enforced by the shape of the API rather than by discipline: [SignReferenceValueSet]
-// and [LoadReferenceValueSet] both take the document as bytes, and there is no
+// and loadReferenceValueSet both take the document as bytes, and there is no
 // path from a parsed set back to a signature check.
+//
+// # Every value names its vendor (version 2)
+//
+// Each reference value in the document carries a "vendor" field, and the rest
+// of its fields are that vendor's: an amd-sev-snp value names a launch
+// measurement, a four-component TCB floor and a guest policy; an intel-tdx
+// value names the provider's observed registers, the image's predicted RTMR2, a
+// TD attributes policy and an Intel TCB floor. A field belonging to the other
+// vendor is refused rather than ignored, because a value whose author was
+// writing about one vendor and named another's constraint would otherwise be
+// enforced as the half that matched — which is weaker than what they wrote.
+//
+// Version 1 documents had no vendor field and could name only an SEV-SNP launch
+// digest. They are refused rather than read as SEV-SNP by default: a default is
+// a guess about what an author meant, and this file is the one place in the
+// design where guessing is not allowed. Re-emit the set and sign it again.
+//
+// # A value names the policy it admits (version 3), and only that (version 4)
+//
+// Version 3 gave a value an optional "policy_digest": the digest of the signed
+// policy a peer running the named image must present, folded into that peer's
+// evidence under ADR-0002's binding version 2 and checked here before the
+// binding is recomputed. It also gave the document a top-level "egress" section,
+// on the theory that the set was the sandbox's own policy as well as its guest
+// list.
+//
+// Version 4 takes the egress section back out, and the reason is what ticket
+// 18's live run found. If the set is the policy, then its digest is the digest
+// of a document that names peers' digests — so two sandboxes can never both pin
+// each other, because each set would have to contain the digest of the other,
+// which is taken over a document that already contains it. The policy is
+// therefore its own document (policyfile.go), naming no digests at all, and a
+// version 4 set is a version 3 set with the egress section removed. What stays
+// is the pair this file exists for: a measurement, and the policy a peer running
+// it must present.
+//
+// Version history, since a reader meeting an old file needs it in one place:
+// version 1 had no vendor on a value, version 2 had no per-entry policy digest,
+// version 3 had one and carried an egress section as well, version 4 has the
+// digest and leaves egress to the policy.
 //
 // # Order of operations
 //
-// [LoadReferenceValueSet] verifies before it parses. Everything in the document
+// loadReferenceValueSet verifies before it parses. Everything in the document
 // — its structure, its nesting depth, its field names — reaches the JSON parser
 // only after the author's signature over those exact bytes has held, so a host
 // that substitutes a document cannot reach the parser at all. The only thing
@@ -91,22 +132,30 @@ import (
 // comment. Nothing inside the measured image calls them: a guest holds the
 // author's public key and never its private key.
 
-// ReferenceValueSetFormat is the value of a document's format field. It names
+// referenceValueSetFormat is the value of a document's format field. It names
 // what the document is, so that a loader pointed at some other JSON refuses it
 // rather than interpreting whichever fields it happens to recognise.
-const ReferenceValueSetFormat = "gvisor.dev/gvisor/attest/reference-value-set"
+const referenceValueSetFormat = "gvisor.dev/gvisor/attest/reference-value-set"
 
-// ReferenceValueSetVersion is the document version this package writes and the
+// referenceValueSetVersion is the document version this package writes and the
 // only one it reads. A document claiming any other version is refused rather
 // than read on a best-effort basis, for the reason ADR-0002 gives about the
 // binding context: a reader that skips what it does not understand admits a
 // value weaker than its author intended.
-const ReferenceValueSetVersion = 1
+//
+// Version 2 added the per-value vendor field, version 3 the per-entry policy
+// digest and an egress section, and version 4 moved that section into the
+// separate signed policy where it belongs. Versions 1, 2 and 3 are each refused
+// with a message saying what is wrong and what to do about it, because reading
+// any of them on a best-effort basis would be this loader deciding what an
+// author did not write down (ADR-0006, addendum).
+const referenceValueSetVersion = 4
 
 // SignatureFileSuffix is appended to a document's path to find its signature.
 // A set delivered on the config device is therefore two files —
 // reference-values.json and reference-values.json.sig — and a document with no
-// signature beside it is refused, not loaded.
+// signature beside it is refused, not loaded. The policy beside it is delivered
+// the same way, under the same suffix.
 const SignatureFileSuffix = ".sig"
 
 // signaturePrefix is prepended to the document before signing and before
@@ -118,7 +167,9 @@ const SignatureFileSuffix = ".sig"
 // separately, because a document that gains a field does not change how it is
 // signed.
 //
-// It is a constant, never negotiated and never read out of a file.
+// It is a constant, never negotiated and never read out of a file, and
+// [policySignaturePrefix] is its counterpart: the author's key signs a set and a
+// policy, and the two prefixes are what stop either signature being the other's.
 const signaturePrefix = "gvisor.dev/gvisor/attest reference-value-set signature v1\x00"
 
 // ErrSetRefused is what every failure to load a reference value set matches.
@@ -166,28 +217,57 @@ func MarshalReferenceValueSet(set ReferenceValueSet) ([]byte, error) {
 	if err := set.validate(); err != nil {
 		return nil, fmt.Errorf("attest: %w", err)
 	}
-	doc := wireSet{
-		Format:  ptr(ReferenceValueSetFormat),
-		Version: ptr(ReferenceValueSetVersion),
+	doc := wireDocument{
+		Format:  referenceValueSetFormat,
+		Version: referenceValueSetVersion,
 	}
-	for _, rv := range set.Values {
-		doc.ReferenceValues = append(doc.ReferenceValues, wireValue{
-			LaunchMeasurement: ptr(hex.EncodeToString(rv.LaunchMeasurement)),
-			MinimumTCB: &wireTCB{
-				Bootloader: ptr(rv.MinimumTCB.Bootloader),
-				TEE:        ptr(rv.MinimumTCB.TEE),
-				SNP:        ptr(rv.MinimumTCB.SNP),
-				Microcode:  ptr(rv.MinimumTCB.Microcode),
-			},
-			GuestPolicy: &wirePolicy{
-				ABIMajor:            rv.GuestPolicy.ABIMajor,
-				ABIMinor:            rv.GuestPolicy.ABIMinor,
-				AllowSMT:            rv.GuestPolicy.AllowSMT,
-				AllowMigrationAgent: rv.GuestPolicy.AllowMigrationAgent,
-				AllowDebug:          rv.GuestPolicy.AllowDebug,
-				RequireSingleSocket: rv.GuestPolicy.RequireSingleSocket,
-			},
-		})
+	for i, rv := range set.Values {
+		// rv.vendor(), not rv.Vendor: an empty Vendor means SEV-SNP in memory,
+		// and this format always writes the tag explicitly, so a value built
+		// by code from before version 2 is rendered exactly as its version-2
+		// equivalent would be.
+		switch rv.vendor() {
+		case VendorAMDSEVSNP:
+			doc.ReferenceValues = append(doc.ReferenceValues, wireAMDOut{
+				Vendor:            string(VendorAMDSEVSNP),
+				PolicyDigest:      renderPolicyDigest(rv.PolicyDigest),
+				LaunchMeasurement: hex.EncodeToString(rv.LaunchMeasurement),
+				MinimumTCB: wireTCBOut{
+					Bootloader: rv.MinimumTCB.Bootloader,
+					TEE:        rv.MinimumTCB.TEE,
+					SNP:        rv.MinimumTCB.SNP,
+					Microcode:  rv.MinimumTCB.Microcode,
+				},
+				GuestPolicy: wirePolicy{
+					ABIMajor:            rv.GuestPolicy.ABIMajor,
+					ABIMinor:            rv.GuestPolicy.ABIMinor,
+					AllowSMT:            rv.GuestPolicy.AllowSMT,
+					AllowMigrationAgent: rv.GuestPolicy.AllowMigrationAgent,
+					AllowDebug:          rv.GuestPolicy.AllowDebug,
+					RequireSingleSocket: rv.GuestPolicy.RequireSingleSocket,
+				},
+			})
+		case VendorIntelTDX:
+			doc.ReferenceValues = append(doc.ReferenceValues, wireTDXOut{
+				Vendor:             string(VendorIntelTDX),
+				PolicyDigest:       renderPolicyDigest(rv.PolicyDigest),
+				ObservedMRTD:       hexEach(rv.TDX.ObservedMRTD),
+				ObservedRTMR0:      hexEach(rv.TDX.ObservedRTMR0),
+				ObservedRTMR1:      hexEach(rv.TDX.ObservedRTMR1),
+				PredictedRTMR2:     hex.EncodeToString(rv.TDX.PredictedRTMR2),
+				TDAttributesPolicy: wireTDPolicy{AllowDebug: rv.TDX.TDPolicy.AllowDebug},
+				MinimumTCB: wireTDXTCBOut{
+					Status:               string(rv.TDX.MinimumTCB.Status),
+					EvaluationDataNumber: rv.TDX.MinimumTCB.EvaluationDataNumber,
+				},
+			})
+		default:
+			// Unreachable: validate above refuses a value naming any other
+			// vendor. It is written down anyway, because a format that
+			// silently omitted a value it could not render would ship a
+			// weaker set than the one it was handed.
+			return nil, fmt.Errorf("attest: reference value %d names vendor %q, which this format cannot write", i, rv.Vendor)
+		}
 	}
 	out, err := json.MarshalIndent(doc, "", "  ")
 	if err != nil {
@@ -203,17 +283,10 @@ func MarshalReferenceValueSet(set ReferenceValueSet) ([]byte, error) {
 // they intend to ship and to ship the bytes they signed; there is no
 // canonicalisation step here that could quietly make those two different.
 func SignReferenceValueSet(document []byte, key ed25519.PrivateKey) ([]byte, error) {
-	if len(key) != ed25519.PrivateKeySize {
-		return nil, fmt.Errorf("attest: reference value author key is %d bytes, want an Ed25519 private key of %d", len(key), ed25519.PrivateKeySize)
-	}
-	signature := ed25519.Sign(key, signedBytes(document))
-	out := make([]byte, hex.EncodedLen(len(signature))+1)
-	hex.Encode(out, signature)
-	out[len(out)-1] = '\n'
-	return out, nil
+	return signDocument(setDocumentKind, document, key)
 }
 
-// LoadReferenceValueSet verifies a document against the reference value
+// loadReferenceValueSet verifies a document against the reference value
 // author's public key and, only if that holds, parses it.
 //
 // Every way this can fail is a refusal matching [ErrSetRefused], and there is
@@ -221,18 +294,9 @@ func SignReferenceValueSet(document []byte, key ed25519.PrivateKey) ([]byte, err
 // load a document without a signature, and no way to ask for the document's
 // contents when its signature did not hold: a caller cannot fall back to an
 // unsigned set because this package offers nothing to fall back to.
-func LoadReferenceValueSet(document, signature []byte, author ed25519.PublicKey) (ReferenceValueSet, error) {
-	if len(author) != ed25519.PublicKeySize {
-		return ReferenceValueSet{}, refuseSet("the reference value author public key is %d bytes, want an Ed25519 public key of %d", len(author), ed25519.PublicKeySize)
-	}
-	sig, err := parseSignature(signature)
-	if err != nil {
+func loadReferenceValueSet(document, signature []byte, author ed25519.PublicKey) (ReferenceValueSet, error) {
+	if err := verifySignedDocument(document, signature, author, setDocumentKind); err != nil {
 		return ReferenceValueSet{}, err
-	}
-	if !ed25519.Verify(author, signedBytes(document), sig) {
-		return ReferenceValueSet{}, refuseSet(
-			"the signature is not this reference value author's signature over these bytes; " +
-				"either the document was modified in delivery or it was signed by a different key")
 	}
 	// Past this line, and not before it, the document is the author's.
 	return parseReferenceValueSetDocument(document)
@@ -246,28 +310,38 @@ func LoadReferenceValueSet(document, signature []byte, author ed25519.PublicKey)
 // cannot write the one branch this design cannot survive — the one that treats
 // "there is no set here" as permission to proceed without one.
 func LoadReferenceValueSetFile(path string, author ed25519.PublicKey) (ReferenceValueSet, error) {
-	document, err := os.ReadFile(path)
+	document, signature, err := readSignedDocumentPair(path, setDocumentKind)
 	if err != nil {
-		return ReferenceValueSet{}, refuseSet("reading the reference value set at %s: %v", path, err)
+		return ReferenceValueSet{}, err
 	}
-	sigPath := path + SignatureFileSuffix
-	signature, err := os.ReadFile(sigPath)
-	if err != nil {
-		return ReferenceValueSet{}, refuseSet("reading the signature at %s: %v", sigPath, err)
-	}
-	return LoadReferenceValueSet(document, signature, author)
+	return loadReferenceValueSet(document, signature, author)
 }
 
-// signedBytes is what the author's key actually signs: the domain separation
-// prefix followed by the document's exact bytes. It is used by the signer and
-// the verifier, so the two cannot drift.
+// signedBytes is what the author's key actually signs over a reference value
+// set: the domain separation prefix followed by the document's exact bytes. It
+// is used by the signer and the verifier, so the two cannot drift.
 func signedBytes(document []byte) []byte {
-	msg := make([]byte, 0, len(signaturePrefix)+len(document))
-	msg = append(msg, signaturePrefix...)
+	return signedBytesUnder(signaturePrefix, document)
+}
+
+// signedBytesUnder is the shape both signed documents share, with the domain
+// separation prefix as the parameter. It is one function rather than two so
+// that a second document kind cannot be given a subtly different construction —
+// the prefix is the only thing that may differ between them.
+func signedBytesUnder(prefix string, document []byte) []byte {
+	msg := make([]byte, 0, len(prefix)+len(document))
+	msg = append(msg, prefix...)
 	return append(msg, document...)
 }
 
-// parseSignature reads the signature file: one hexadecimal Ed25519 signature,
+// A refuseFunc builds the refusal a document kind reports. There are two,
+// [refuseSet] and [refusePolicy], and the helpers below take one rather than
+// choosing so that the reference value set and the policy share a parser
+// without sharing a sentinel: a caller that asked for a policy and got
+// [ErrSetRefused] would have to read the text to find out what happened.
+type refuseFunc func(format string, args ...any) error
+
+// parseSignature reads a signature file: one hexadecimal Ed25519 signature,
 // with surrounding whitespace ignored so that a file written by an editor or by
 // a shell redirect both work.
 //
@@ -275,19 +349,125 @@ func signedBytes(document []byte) []byte {
 // signature check, so that the log says the signature was absent — which is a
 // provisioning mistake with a different fix from a signature that did not hold.
 // It is refused either way; only the sentence differs.
-func parseSignature(signature []byte) ([]byte, error) {
+func parseSignature(signature []byte, refuse refuseFunc, what string) ([]byte, error) {
 	text := strings.TrimSpace(string(signature))
 	if text == "" {
-		return nil, refuseSet("no signature was presented with the reference value set")
+		return nil, refuse("no signature was presented with the %s", what)
 	}
 	sig, err := hex.DecodeString(text)
 	if err != nil {
-		return nil, refuseSet("the signature is not hexadecimal: %v", err)
+		return nil, refuse("the signature is not hexadecimal: %v", err)
 	}
 	if len(sig) != ed25519.SignatureSize {
-		return nil, refuseSet("the signature is %d bytes, want an Ed25519 signature of %d", len(sig), ed25519.SignatureSize)
+		return nil, refuse("the signature is %d bytes, want an Ed25519 signature of %d", len(sig), ed25519.SignatureSize)
 	}
 	return sig, nil
+}
+
+// A signedDocumentKind is everything that differs between the two signed
+// documents this package loads.
+//
+// There is one loader rather than two. [loadSignedDocument] and
+// [loadSignedDocumentFile] are the whole of "read the pair, check the author's
+// detached signature over the document, and only past that parse it", and the
+// reference value set and the policy are two values of this type handed to
+// them. What may differ is listed here and nowhere else: the bytes the
+// signature covers, the refusal the document reports, the noun that refusal
+// calls it, and the sentence a signature that did not hold earns. A second
+// document kind therefore cannot acquire a subtly different order of checks,
+// because a kind does not carry one.
+type signedDocumentKind struct {
+	// signedBytes is what the author's key signs over this kind of document:
+	// its own domain separation prefix followed by the document's exact bytes.
+	// It is the field that makes a signature over one kind fail to verify as a
+	// signature over the other, which is the whole of the separation between
+	// them (ADR-0006).
+	signedBytes func(document []byte) []byte
+
+	// refuse builds this kind's refusal, so that a caller who asked for a
+	// policy is never handed [ErrSetRefused], or the reverse.
+	refuse refuseFunc
+
+	// what is the noun the refusals call this document. It is what tells an
+	// operator which of the two files beside each other to go and look at.
+	what string
+
+	// notSigned is the sentence a signature that did not hold earns. The two
+	// kinds say different things here because a policy has one more way to be
+	// wrong — a signature over the set beside it — and the operator holding
+	// both files is the person who has to be told so.
+	notSigned string
+}
+
+// setDocumentKind is the reference value set as the shared loader sees it.
+var setDocumentKind = signedDocumentKind{
+	signedBytes: signedBytes,
+	refuse:      refuseSet,
+	what:        "reference value set",
+	notSigned: "the signature is not this reference value author's signature over these bytes; " +
+		"either the document was modified in delivery or it was signed by a different key",
+}
+
+// signDocument signs a document of one kind with the reference value author's
+// key, returning the contents of the signature file that belongs beside it.
+//
+// document is signed exactly as given, for either kind. It is the author's job
+// to sign the bytes they intend to ship and to ship the bytes they signed;
+// there is no canonicalisation step here that could quietly make those two
+// different.
+func signDocument(kind signedDocumentKind, document []byte, key ed25519.PrivateKey) ([]byte, error) {
+	if len(key) != ed25519.PrivateKeySize {
+		return nil, fmt.Errorf("attest: reference value author key is %d bytes, want an Ed25519 private key of %d", len(key), ed25519.PrivateKeySize)
+	}
+	signature := ed25519.Sign(key, kind.signedBytes(document))
+	out := make([]byte, hex.EncodedLen(len(signature))+1)
+	hex.Encode(out, signature)
+	out[len(out)-1] = '\n'
+	return out, nil
+}
+
+// verifySignedDocument checks a detached signature over a document of one
+// kind, and returns nil only once the document is the bytes this reference
+// value author signed under that kind's domain.
+//
+// It is the whole of what the two loaders do before they parse anything, which
+// is why it is one function: a second document kind cannot acquire a different
+// order of checks, a missing check, or a check against the other kind's
+// domain. Every way it can fail is a refusal carrying the kind's own sentinel.
+func verifySignedDocument(document, signature []byte, author ed25519.PublicKey, kind signedDocumentKind) error {
+	if len(author) != ed25519.PublicKeySize {
+		return kind.refuse("the reference value author public key is %d bytes, want an Ed25519 public key of %d", len(author), ed25519.PublicKeySize)
+	}
+	sig, err := parseSignature(signature, kind.refuse, kind.what)
+	if err != nil {
+		return err
+	}
+	if !ed25519.Verify(author, kind.signedBytes(document), sig) {
+		return kind.refuse("%s", kind.notSigned)
+	}
+	return nil
+}
+
+// readSignedDocumentPair reads a document of one kind from path together with
+// the detached signature beside it, the file at path+[SignatureFileSuffix].
+//
+// A missing signature file is a refusal like any other, not an absence. So is
+// a missing document, and which of the two was missing is named, because they
+// are different provisioning mistakes with different fixes. Neither error
+// matches [io/fs.ErrNotExist], so a caller cannot write the one branch this
+// design cannot survive — the one that treats "there is nothing here" as
+// permission to proceed without it.
+func readSignedDocumentPair(path string, kind signedDocumentKind) (document, signature []byte, err error) {
+	document, err = os.ReadFile(path)
+	if err != nil {
+		return nil, nil, kind.refuse("reading the %s at %s: %v", kind.what, path, err)
+	}
+	sigPath := path + SignatureFileSuffix
+	signature, err = os.ReadFile(sigPath)
+	if err != nil {
+		return nil, nil, kind.refuse("reading the signature at %s: %v", sigPath, err)
+	}
+	return document, signature, nil
 }
 
 // parseReferenceValueSetDocument turns a document whose signature has already
@@ -299,7 +479,7 @@ func parseSignature(signature []byte) ([]byte, error) {
 // is refused rather than resolved to the last one, because a reviewer reads the
 // first. Bytes after the document are refused rather than ignored.
 func parseReferenceValueSetDocument(document []byte) (ReferenceValueSet, error) {
-	if err := rejectRepeatedFields(document); err != nil {
+	if err := rejectRepeatedFields(document, refuseSet); err != nil {
 		return ReferenceValueSet{}, err
 	}
 
@@ -314,21 +494,36 @@ func parseReferenceValueSetDocument(document []byte) (ReferenceValueSet, error) 
 	}
 
 	if doc.Format == nil {
-		return ReferenceValueSet{}, refuseSet("the document does not say what format it is; want %q", ReferenceValueSetFormat)
+		return ReferenceValueSet{}, refuseSet("the document does not say what format it is; want %q", referenceValueSetFormat)
 	}
-	if *doc.Format != ReferenceValueSetFormat {
-		return ReferenceValueSet{}, refuseSet("the document is in format %q, this loader reads %q", *doc.Format, ReferenceValueSetFormat)
+	if *doc.Format != referenceValueSetFormat {
+		return ReferenceValueSet{}, refuseSet("the document is in format %q, this loader reads %q", *doc.Format, referenceValueSetFormat)
 	}
 	if doc.Version == nil {
-		return ReferenceValueSet{}, refuseSet("the document does not say what version it is; want %d", ReferenceValueSetVersion)
+		return ReferenceValueSet{}, refuseSet("the document does not say what version it is; want %d", referenceValueSetVersion)
 	}
-	if *doc.Version != ReferenceValueSetVersion {
-		return ReferenceValueSet{}, refuseSet("the document is version %d, this loader reads version %d", *doc.Version, ReferenceValueSetVersion)
+	if err := refuseSupersededSetVersion(*doc.Version); err != nil {
+		return ReferenceValueSet{}, err
+	}
+	if *doc.Version != referenceValueSetVersion {
+		return ReferenceValueSet{}, refuseSet("the document is version %d, this loader reads version %d", *doc.Version, referenceValueSetVersion)
+	}
+	if doc.Egress != nil {
+		// Refused here, by name, rather than left to the strict decode's
+		// "unknown field egress". The author of this document wrote a policy
+		// down and it is not being enforced by anybody; the sentence they need
+		// says where it went, not that this parser did not recognise it.
+		return ReferenceValueSet{}, refuseSet(
+			"the document is version %d and still carries an egress section; since version %d the "+
+				"egress section belongs to the sandbox's own signed policy and not to its guest list, "+
+				"because a set that was also a policy could not be pinned in both directions "+
+				"(docs/policy-binding.md); move it into policy.json and sign both again",
+			referenceValueSetVersion, referenceValueSetVersion)
 	}
 
-	set := ReferenceValueSet{}
-	for i, wv := range doc.ReferenceValues {
-		rv, err := wv.referenceValue()
+	var set ReferenceValueSet
+	for i, raw := range doc.ReferenceValues {
+		rv, err := parseReferenceValue(raw)
 		if err != nil {
 			return ReferenceValueSet{}, refuseSet("reference value %d: %v", i, err)
 		}
@@ -340,13 +535,130 @@ func parseReferenceValueSetDocument(document []byte) (ReferenceValueSet, error) 
 	return set, nil
 }
 
-// wireSet is the document. Its required fields are pointers so that absent and
-// zero are distinguishable: a document that forgot to say what version it is
-// must not be read as version zero.
+// refuseSupersededSetVersion reports the refusal a set written at a version
+// this loader has superseded earns, and nil for a version that is not one of
+// them.
+//
+// The three sentences are history rather than parsing. Each names a format
+// this design left behind, says why leaving it behind was necessary, and tells
+// the author what to re-emit — and an author holding a set that will not load
+// is the only reader they have. Standing in the loader's own sequence of
+// checks they were most of it, and that sequence is what a reader of a loader
+// has come to read; they are one function away from it instead, and the
+// version this package does read is still checked where it always was.
+func refuseSupersededSetVersion(version int) error {
+	switch version {
+	case 1:
+		return refuseSet(
+			"the document is version 1 and this loader reads version %d: a version 1 reference value "+
+				"carries no vendor tag, so it does not say whose evidence it admits, and reading one as "+
+				"SEV-SNP would be this loader deciding what its author did not write down; "+
+				"re-emit the set with a vendor on every value and sign it again", referenceValueSetVersion)
+	case 2:
+		return refuseSet(
+			"the document is version 2 and this loader reads version %d: no value in a version 2 "+
+				"document can name the policy a peer running that image must present, so every value "+
+				"in it admits any policy at all, which is weaker than an author writing one today "+
+				"means; re-emit the set at version %d and sign it again",
+			referenceValueSetVersion, referenceValueSetVersion)
+	case 3:
+		return refuseSet(
+			"the document is version 3 and this loader reads version %d: a version 3 set carried an "+
+				"egress section and was therefore the sandbox's own policy as well as its guest list, "+
+				"and a policy that names peers' policies cannot be pinned in both directions "+
+				"(docs/policy-binding.md); move the egress section into policy.json, sign that, and "+
+				"re-emit this set at version %d",
+			referenceValueSetVersion, referenceValueSetVersion)
+	}
+	return nil
+}
+
+// wireSet is the document as it is read. Its required fields are pointers so
+// that absent and zero are distinguishable: a document that forgot to say what
+// version it is must not be read as version zero.
+//
+// Its reference values are held unparsed. Which fields an entry may carry
+// depends on the vendor it names, and two vendors put objects of different
+// shapes under the same "minimum_tcb" key, so an entry is decoded once its
+// vendor is known and not before.
 type wireSet struct {
-	Format          *string     `json:"format"`
-	Version         *int        `json:"version"`
-	ReferenceValues []wireValue `json:"reference_values"`
+	Format  *string `json:"format"`
+	Version *int    `json:"version"`
+
+	// Egress is a field this format no longer defines, kept in the struct so
+	// that a document still carrying one is refused with the sentence that
+	// says where it went rather than with a complaint about an unknown field.
+	// It is held unparsed because nothing here reads it: what matters is that
+	// it is there.
+	Egress json.RawMessage `json:"egress"`
+
+	ReferenceValues []json.RawMessage `json:"reference_values"`
+}
+
+// wireDocument is the document as it is written, and is deliberately a
+// different type from wireSet. What is written is one shape per vendor with
+// every field present; what is read has to be strict about fields that are
+// absent, repeated, or belong to the other vendor. Sharing one type between the
+// two jobs is how a renderer ends up defining the format.
+type wireDocument struct {
+	Format          string `json:"format"`
+	Version         int    `json:"version"`
+	ReferenceValues []any  `json:"reference_values"`
+}
+
+// wireAMDOut and wireTDXOut are one rendered reference value each.
+//
+// PolicyDigest is the one field of either that is omitted when it is not set,
+// and the exception is the whole point: an entry with no policy_digest is
+// unconstrained, and writing "policy_digest": "" would render that as a policy
+// nobody has rather than as no constraint at all.
+type wireAMDOut struct {
+	Vendor            string     `json:"vendor"`
+	PolicyDigest      string     `json:"policy_digest,omitempty"`
+	LaunchMeasurement string     `json:"launch_measurement"`
+	MinimumTCB        wireTCBOut `json:"minimum_tcb"`
+	GuestPolicy       wirePolicy `json:"guest_policy"`
+}
+
+type wireTDXOut struct {
+	Vendor             string        `json:"vendor"`
+	PolicyDigest       string        `json:"policy_digest,omitempty"`
+	ObservedMRTD       []string      `json:"observed_mrtd"`
+	ObservedRTMR0      []string      `json:"observed_rtmr0"`
+	ObservedRTMR1      []string      `json:"observed_rtmr1"`
+	PredictedRTMR2     string        `json:"predicted_rtmr2"`
+	TDAttributesPolicy wireTDPolicy  `json:"td_attributes_policy"`
+	MinimumTCB         wireTDXTCBOut `json:"minimum_tcb"`
+}
+
+type wireTCBOut struct {
+	Bootloader uint8 `json:"bootloader"`
+	TEE        uint8 `json:"tee"`
+	SNP        uint8 `json:"snp"`
+	Microcode  uint8 `json:"microcode"`
+}
+
+type wireTDXTCBOut struct {
+	Status               string `json:"status"`
+	EvaluationDataNumber uint32 `json:"tcb_evaluation_data_number"`
+}
+
+// renderPolicyDigest renders an entry's policy digest, or the empty string for
+// an entry that lists none.
+func renderPolicyDigest(d *PolicyDigest) string {
+	if d == nil {
+		return ""
+	}
+	return d.String()
+}
+
+// hexEach renders a list of observed register values.
+func hexEach(values [][]byte) []string {
+	out := make([]string, len(values))
+	for i, v := range values {
+		out[i] = hex.EncodeToString(v)
+	}
+	return out
 }
 
 // wireValue is one reference value.
@@ -357,24 +669,64 @@ type wireSet struct {
 // stop for the other. A format that allowed a bare single value would make the
 // common case shorter and the case the design exists to support a special one.
 type wireValue struct {
-	// LaunchMeasurement is hexadecimal. Its width is not checked, deliberately:
-	// how wide a launch measurement is belongs to the hardware vendor, and
-	// baking one vendor's digest width into the format is exactly the seam that
-	// makes a second vendor a day's work rather than a refactor. A measurement
-	// of the wrong width matches nothing, which fails closed.
+	// Vendor is required and is the first thing read. Every field below it
+	// belongs to one vendor or the other, and which of them may appear is
+	// decided by this one.
+	Vendor *string `json:"vendor"`
+
+	// PolicyDigest is optional and belongs to both vendors, which makes it the
+	// only field here that does. It is the digest of the peer's own signed
+	// reference value set, in hexadecimal, exactly 32 bytes wide.
+	//
+	// Absent means unconstrained: this value admits a peer running the named
+	// image under any policy. That is the weaker reading of an absent field,
+	// which the rest of this format refuses to take — and it is taken here
+	// because the alternative refuses every set authored before the field
+	// existed, and because an unconstrained entry is reported by
+	// [ReferenceValueSet.Unconstrained] rather than passing unremarked.
+	PolicyDigest *string `json:"policy_digest"`
+
+	// MinimumTCB is required, for both vendors, and its shape is the vendor's.
+	// An author writing a trust root has an opinion about which platform levels
+	// to admit, and a floor that defaults silently to zero when the key is left
+	// out is a floor nobody chose. It is held unparsed because AMD's floor is
+	// four component versions and Intel's is a status and an evaluation number.
+	MinimumTCB json.RawMessage `json:"minimum_tcb"`
+
+	// LaunchMeasurement is hexadecimal, and amd-sev-snp's. Its width is not
+	// checked, deliberately: how wide a launch measurement is belongs to the
+	// hardware vendor, and baking one vendor's digest width into the format is
+	// exactly the seam that makes a second vendor tractable. A measurement of
+	// the wrong width matches nothing, which fails closed.
 	LaunchMeasurement *string `json:"launch_measurement"`
 
-	// MinimumTCB is required. An author writing a trust root has an opinion
-	// about which firmware levels to admit, and a floor that defaults silently
-	// to zero when the key is left out is a floor nobody chose.
-	MinimumTCB *wireTCB `json:"minimum_tcb"`
-
-	// GuestPolicy may be omitted, and omitting it permits nothing — the zero
-	// value of [GuestPolicy] is the fail-closed direction, which is the right
-	// default for a reference value whose author did not think about policy.
-	// This asymmetry with MinimumTCB is deliberate: an absent field may make a
-	// value stricter than intended, never weaker.
+	// GuestPolicy is amd-sev-snp's, and may be omitted: omitting it permits
+	// nothing — the zero value of [GuestPolicy] is the fail-closed direction,
+	// which is the right default for a reference value whose author did not
+	// think about policy. This asymmetry with MinimumTCB is deliberate: an
+	// absent field may make a value stricter than intended, never weaker.
 	GuestPolicy *wirePolicy `json:"guest_policy"`
+
+	// ObservedMRTD, ObservedRTMR0 and ObservedRTMR1 are intel-tdx's, each a
+	// list of hexadecimal values of which a peer must present one. They are
+	// named observed because they are the provider's and nobody here can
+	// predict them (docs/tdx-rtmr2-prediction.md); a list because the
+	// provider's values are not single. Each is required and each must name at
+	// least one value: a register with no expected value is a register not
+	// checked, which is the fail-open direction.
+	ObservedMRTD  []string `json:"observed_mrtd"`
+	ObservedRTMR0 []string `json:"observed_rtmr0"`
+	ObservedRTMR1 []string `json:"observed_rtmr1"`
+
+	// PredictedRTMR2 is intel-tdx's, hexadecimal, and required. It is named
+	// predicted because it is computed from the image before anything boots,
+	// under the same rule as an SEV-SNP launch measurement: a value read off a
+	// booted guest is not a prediction and a check built on one cannot fail.
+	PredictedRTMR2 *string `json:"predicted_rtmr2"`
+
+	// TDAttributesPolicy is intel-tdx's, and like GuestPolicy may be omitted to
+	// permit nothing.
+	TDAttributesPolicy *wireTDPolicy `json:"td_attributes_policy"`
 }
 
 // wireTCB is a TCB floor: four separately named component versions, never the
@@ -403,7 +755,54 @@ type wirePolicy struct {
 	RequireSingleSocket bool  `json:"require_single_socket"`
 }
 
-func (w wireValue) referenceValue() (ReferenceValue, error) {
+// wireTDPolicy is what an intel-tdx reference value permits of TD_ATTRIBUTES.
+// Its one field's absence is the fail-closed answer, as in wirePolicy.
+type wireTDPolicy struct {
+	AllowDebug bool `json:"allow_debug"`
+}
+
+// wireTDXTCB is an Intel TCB floor. Both fields are required, for the reason
+// wireTCB gives about a component left out: a status floor with no evaluation
+// number admits a TCB info from before any TCB recovery, which still verifies
+// and still calls a since-vulnerable platform UpToDate — and that is the field
+// the host provisions, so it is the one an author must actually choose.
+type wireTDXTCB struct {
+	Status               *string `json:"status"`
+	EvaluationDataNumber *uint32 `json:"tcb_evaluation_data_number"`
+}
+
+// parseReferenceValue turns one entry of the document into a reference value.
+//
+// The vendor is read first and decides everything after it. The entry is
+// decoded strictly, so a field no vendor defines is refused here exactly as an
+// unknown field at the top level is.
+func parseReferenceValue(raw json.RawMessage) (ReferenceValue, error) {
+	var w wireValue
+	if err := strictDecode(raw, &w, "the reference value"); err != nil {
+		return ReferenceValue{}, err
+	}
+	if w.Vendor == nil {
+		return ReferenceValue{}, errors.New(
+			"names no vendor; every value in a version 2 document says whose evidence it admits, " +
+				"and one that does not cannot be read as any vendor's without guessing")
+	}
+	switch vendor := Vendor(*w.Vendor); vendor {
+	case VendorAMDSEVSNP:
+		return w.amdReferenceValue()
+	case VendorIntelTDX:
+		return w.tdxReferenceValue()
+	default:
+		return ReferenceValue{}, fmt.Errorf("names vendor %q; this loader reads %q and %q",
+			vendor, VendorAMDSEVSNP, VendorIntelTDX)
+	}
+}
+
+// amdReferenceValue reads the amd-sev-snp half of the format, which is exactly
+// what version 1 held.
+func (w wireValue) amdReferenceValue() (ReferenceValue, error) {
+	if err := w.refuseTheOtherVendorsFields(VendorAMDSEVSNP); err != nil {
+		return ReferenceValue{}, err
+	}
 	if w.LaunchMeasurement == nil {
 		return ReferenceValue{}, errors.New("no launch_measurement")
 	}
@@ -414,11 +813,19 @@ func (w wireValue) referenceValue() (ReferenceValue, error) {
 	if w.MinimumTCB == nil {
 		return ReferenceValue{}, errors.New("no minimum_tcb; a floor left out is a floor of zero, which admits every firmware level")
 	}
-	tcb, err := w.MinimumTCB.tcb()
+	var floor wireTCB
+	if err := strictDecode(w.MinimumTCB, &floor, "minimum_tcb"); err != nil {
+		return ReferenceValue{}, err
+	}
+	tcb, err := floor.tcb()
 	if err != nil {
 		return ReferenceValue{}, err
 	}
-	rv := ReferenceValue{LaunchMeasurement: measurement, MinimumTCB: tcb}
+	policy, err := w.policyDigest()
+	if err != nil {
+		return ReferenceValue{}, err
+	}
+	rv := ReferenceValue{Vendor: VendorAMDSEVSNP, LaunchMeasurement: measurement, MinimumTCB: tcb, PolicyDigest: policy}
 	if w.GuestPolicy != nil {
 		rv.GuestPolicy = GuestPolicy{
 			ABIMajor:            w.GuestPolicy.ABIMajor,
@@ -430,6 +837,127 @@ func (w wireValue) referenceValue() (ReferenceValue, error) {
 		}
 	}
 	return rv, nil
+}
+
+// tdxReferenceValue reads the intel-tdx half.
+func (w wireValue) tdxReferenceValue() (ReferenceValue, error) {
+	if err := w.refuseTheOtherVendorsFields(VendorIntelTDX); err != nil {
+		return ReferenceValue{}, err
+	}
+	tdx := &TDXReferenceValue{}
+	for _, r := range []struct {
+		name   string
+		values []string
+		into   *[][]byte
+	}{
+		{"observed_mrtd", w.ObservedMRTD, &tdx.ObservedMRTD},
+		{"observed_rtmr0", w.ObservedRTMR0, &tdx.ObservedRTMR0},
+		{"observed_rtmr1", w.ObservedRTMR1, &tdx.ObservedRTMR1},
+	} {
+		if r.values == nil {
+			return ReferenceValue{}, fmt.Errorf(
+				"no %s; a register with no expected value is a register not checked", r.name)
+		}
+		for i, v := range r.values {
+			b, err := hex.DecodeString(v)
+			if err != nil {
+				return ReferenceValue{}, fmt.Errorf("%s[%d] is not hexadecimal: %v", r.name, i, err)
+			}
+			*r.into = append(*r.into, b)
+		}
+	}
+	if w.PredictedRTMR2 == nil {
+		return ReferenceValue{}, errors.New(
+			"no predicted_rtmr2; the value naming the image is the one that must not be left out, " +
+				"because a value without it admits every image the provider boots")
+	}
+	rtmr2, err := hex.DecodeString(*w.PredictedRTMR2)
+	if err != nil {
+		return ReferenceValue{}, fmt.Errorf("predicted_rtmr2 is not hexadecimal: %v", err)
+	}
+	tdx.PredictedRTMR2 = rtmr2
+	if w.MinimumTCB == nil {
+		return ReferenceValue{}, errors.New("no minimum_tcb; a floor left out is a floor nobody chose, which admits a platform at any Intel TCB level")
+	}
+	var floor wireTDXTCB
+	if err := strictDecode(w.MinimumTCB, &floor, "minimum_tcb"); err != nil {
+		return ReferenceValue{}, err
+	}
+	tdx.MinimumTCB, err = floor.floor()
+	if err != nil {
+		return ReferenceValue{}, err
+	}
+	if w.TDAttributesPolicy != nil {
+		tdx.TDPolicy = TDPolicy{AllowDebug: w.TDAttributesPolicy.AllowDebug}
+	}
+	policy, err := w.policyDigest()
+	if err != nil {
+		return ReferenceValue{}, err
+	}
+	return ReferenceValue{Vendor: VendorIntelTDX, TDX: tdx, PolicyDigest: policy}, nil
+}
+
+// policyDigest reads the entry's optional policy digest.
+//
+// A digest of the wrong width is refused rather than padded or truncated. It
+// would match nothing, which fails closed, but it is also unambiguously a
+// mistake in a file somebody wrote by hand — and an entry that silently matches
+// nothing is an allow-list entry that does not do its job while looking as
+// though it does.
+func (w wireValue) policyDigest() (*PolicyDigest, error) {
+	if w.PolicyDigest == nil {
+		return nil, nil
+	}
+	digest, n, err := decodePolicyDigest(*w.PolicyDigest)
+	if err != nil {
+		return nil, fmt.Errorf("policy_digest is not hexadecimal: %v", err)
+	}
+	if n != sha256.Size {
+		return nil, fmt.Errorf("policy_digest is %d bytes, want %d; a digest of the wrong width names no policy any peer can present", n, sha256.Size)
+	}
+	return &digest, nil
+}
+
+// refuseTheOtherVendorsFields refuses a value carrying a field that belongs to
+// the vendor it does not name.
+//
+// Ignoring such a field is the same failure as ignoring an unknown one, and
+// worse for being plausible: an author who wrote "predicted_rtmr2" on an
+// amd-sev-snp value was thinking about a register this value cannot check, and
+// enforcing only the part that parsed would admit more than they wrote down.
+func (w wireValue) refuseTheOtherVendorsFields(vendor Vendor) error {
+	for _, f := range []struct {
+		name    string
+		present bool
+		owner   Vendor
+	}{
+		{"launch_measurement", w.LaunchMeasurement != nil, VendorAMDSEVSNP},
+		{"guest_policy", w.GuestPolicy != nil, VendorAMDSEVSNP},
+		{"observed_mrtd", w.ObservedMRTD != nil, VendorIntelTDX},
+		{"observed_rtmr0", w.ObservedRTMR0 != nil, VendorIntelTDX},
+		{"observed_rtmr1", w.ObservedRTMR1 != nil, VendorIntelTDX},
+		{"predicted_rtmr2", w.PredictedRTMR2 != nil, VendorIntelTDX},
+		{"td_attributes_policy", w.TDAttributesPolicy != nil, VendorIntelTDX},
+	} {
+		if f.present && f.owner != vendor {
+			return fmt.Errorf("is a %s value carrying %s, which is a %s field; a value is about one vendor",
+				vendor, f.name, f.owner)
+		}
+	}
+	return nil
+}
+
+// strictDecode reads one JSON value that has already been extracted from the
+// signed document, refusing any field the target type does not define. It is
+// how the strictness the top-level decode applies reaches the parts of the
+// document that are decoded separately.
+func strictDecode(raw json.RawMessage, into any, what string) error {
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(into); err != nil {
+		return fmt.Errorf("%s does not parse: %v", what, err)
+	}
+	return nil
 }
 
 func (w wireTCB) tcb() (TCB, error) {
@@ -458,6 +986,19 @@ func (w wireTCB) tcb() (TCB, error) {
 	}, nil
 }
 
+func (w wireTDXTCB) floor() (TDXTCBFloor, error) {
+	if w.Status == nil {
+		return TDXTCBFloor{}, fmt.Errorf("minimum_tcb does not name status; a floor is %q or %q, and a value that names neither admits a platform Intel has already said is out of date", TDXTCBUpToDate, TDXTCBSWHardeningNeeded)
+	}
+	if w.EvaluationDataNumber == nil {
+		return TDXTCBFloor{}, errors.New("minimum_tcb does not name tcb_evaluation_data_number; a status floor alone is met by TCB info from before any TCB recovery, which still calls a since-vulnerable platform UpToDate")
+	}
+	return TDXTCBFloor{
+		Status:               TDXTCBStatus(*w.Status),
+		EvaluationDataNumber: *w.EvaluationDataNumber,
+	}, nil
+}
+
 // repeatedField and foldedField are the two things the token walk below is
 // looking for.
 type repeatedField struct{ where string }
@@ -478,18 +1019,19 @@ func (e *foldedField) Error() string { return "field name outside the format's a
 // author signed both, so the signature does not help. Only refusing does.
 //
 // This runs on a document whose signature has already held, so it is walking
-// the author's own bytes rather than an attacker's.
-func rejectRepeatedFields(document []byte) error {
+// the author's own bytes rather than an attacker's. Both signed documents this
+// package reads go through it, which is why the refusal is a parameter.
+func rejectRepeatedFields(document []byte, refuse refuseFunc) error {
 	dec := json.NewDecoder(bytes.NewReader(document))
 	dec.UseNumber()
 	err := walkForRepeats(dec, "")
 	var repeat *repeatedField
 	if errors.As(err, &repeat) {
-		return refuseSet("the document names %s twice; a reviewer reads the first occurrence and a parser takes the last", repeat.where)
+		return refuse("the document names %s twice; a reviewer reads the first occurrence and a parser takes the last", repeat.where)
 	}
 	var folded *foldedField
 	if errors.As(err, &folded) {
-		return refuseSet("the field name %s is not lowercase ASCII; the parser matches names case-insensitively, so a reviewer and a parser could read it as different fields", folded.where)
+		return refuse("the field name %s is not lowercase ASCII; the parser matches names case-insensitively, so a reviewer and a parser could read it as different fields", folded.where)
 	}
 	// Any other error means the document is not well-formed JSON. The strict
 	// decode that follows reports that with far better context than a token
@@ -555,18 +1097,21 @@ func walkForRepeats(dec *json.Decoder, path string) error {
 }
 
 // isFormatFieldName reports whether key is drawn from the only alphabet the
-// format's field names use: lowercase ASCII letters and underscore.
+// format's field names use: lowercase ASCII letters, digits and underscore.
+//
+// Digits are here for observed_rtmr0 and its neighbours. They are safe for the
+// reason the letters are restricted: what this check exists to stop is one
+// field name folding onto another under the parser's case-insensitive match,
+// and a digit has no other case to fold to.
 func isFormatFieldName(key string) bool {
 	if key == "" {
 		return false
 	}
 	for i := 0; i < len(key); i++ {
 		c := key[i]
-		if c != '_' && (c < 'a' || c > 'z') {
+		if c != '_' && (c < 'a' || c > 'z') && (c < '0' || c > '9') {
 			return false
 		}
 	}
 	return true
 }
-
-func ptr[T any](v T) *T { return &v }

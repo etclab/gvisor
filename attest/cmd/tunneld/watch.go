@@ -18,6 +18,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"sync"
 
 	"gvisor.dev/gvisor/attest"
@@ -37,7 +38,8 @@ import (
 // it can see is enough:
 //
 //   - the caller-supplied bytes, which are H(peer's public key ‖ binding
-//     context) (ADR-0002) and therefore name the key without carrying it;
+//     context ‖ policy digest) (ADR-0002 and its amendment) and therefore
+//     name the key without carrying it;
 //   - the certificate chain, which is issued per chip and per TCB (ADR-0005),
 //     so two peers with different chains are on different chips and two with
 //     the same chain are on one;
@@ -62,8 +64,12 @@ type peerSeen struct {
 	key         string
 	chain       string
 	measurement string
-	tcb         attest.TCB
-	times       int
+	// platform is the vendor-specific half of the line an operator reads,
+	// rendered when the peer was first seen. It is a string rather than a
+	// struct because AMD's TCB and Intel's are different objects, and a watcher
+	// that held both would be a second place the vendor seam leaks through.
+	platform string
+	times    int
 }
 
 func newWatchedVerifier(inner attest.Verifier, logf func(string, ...any)) *watchedVerifier {
@@ -95,11 +101,10 @@ func (w *watchedVerifier) Verify(ctx context.Context, ev attest.Evidence, set at
 			key:         key,
 			chain:       chain,
 			measurement: hex.EncodeToString(attested.Claims.LaunchMeasurement),
-			tcb:         attested.Claims.TCB,
+			platform:    platformLine(attested),
 		}
-		w.logf("PEER key=%s chain=%s measurement=%s tcb=bootloader=%d,tee=%d,snp=%d,microcode=%d",
-			abbreviate(seen.key), abbreviate(seen.chain), abbreviate(seen.measurement),
-			seen.tcb.Bootloader, seen.tcb.TEE, seen.tcb.SNP, seen.tcb.Microcode)
+		w.logf("PEER key=%s chain=%s measurement=%s %s",
+			abbreviate(seen.key), abbreviate(seen.chain), abbreviate(seen.measurement), seen.platform)
 	}
 	seen.times++
 	w.peers[key] = seen
@@ -133,7 +138,7 @@ func (w *watchedVerifier) report(logf func(string, ...any)) {
 	// by their chains, and told to be running the image somebody predicted by
 	// their measurement — and a reader checking any of those against another
 	// document cannot do it with sixteen characters.
-	for _, key := range sortedPeerKeys(w.peers) {
+	for _, key := range sortedKeys(w.peers) {
 		p := w.peers[key]
 		logf("PEER SEEN key=%s chain=%s measurement=%s times=%d", p.key, p.chain, p.measurement, p.times)
 	}
@@ -147,15 +152,29 @@ func digest(b []byte) string {
 	return hex.EncodeToString(sum[:])
 }
 
-func sortedPeerKeys(m map[string]peerSeen) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	for i := 1; i < len(keys); i++ {
-		for j := i; j > 0 && keys[j] < keys[j-1]; j-- {
-			keys[j], keys[j-1] = keys[j-1], keys[j]
+// platformLine is the vendor-specific tail of the PEER line: the fields an
+// operator needs to tell one platform from another, in the vocabulary of the
+// vendor that produced them.
+//
+// AMD's four security patch levels and Intel's status-and-evaluation-number
+// are not the same thing said twice, so neither is translated into the other.
+// A vendor this does not know is named and nothing is claimed about it, which
+// is the only honest thing a printer can do with evidence it cannot read.
+func platformLine(attested attest.Attested) string {
+	switch attested.Vendor {
+	case attest.VendorAMDSEVSNP:
+		t := attested.Claims.TCB
+		return fmt.Sprintf("vendor=%s tcb=bootloader=%d,tee=%d,snp=%d,microcode=%d",
+			attested.Vendor, t.Bootloader, t.TEE, t.SNP, t.Microcode)
+	case attest.VendorIntelTDX:
+		td := attested.Claims.TDX
+		if td == nil {
+			return fmt.Sprintf("vendor=%s (no TDX claims)", attested.Vendor)
 		}
+		return fmt.Sprintf("vendor=%s mrtd=%s rtmr2=%s tcb=%s,evaluation=%d",
+			attested.Vendor, abbreviate(hex.EncodeToString(td.MRTD)), abbreviate(hex.EncodeToString(td.RTMR2)),
+			td.TCBStatus, td.TCBEvaluationDataNumber)
+	default:
+		return fmt.Sprintf("vendor=%s", attested.Vendor)
 	}
-	return keys
 }

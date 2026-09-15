@@ -40,7 +40,6 @@ package attest_test
 
 import (
 	"context"
-	"crypto/ed25519"
 	"encoding/hex"
 	"os"
 	"path/filepath"
@@ -48,6 +47,7 @@ import (
 	"testing"
 
 	"gvisor.dev/gvisor/attest"
+	"gvisor.dev/gvisor/attest/internal/fixture"
 	"gvisor.dev/gvisor/attest/verify"
 )
 
@@ -132,30 +132,22 @@ func predictionFor(dir string) (string, error) {
 // baselineSet is the verification a peer would run against the image as built:
 // the real SEV-SNP verifier with no root of its own, which means the AMD roots
 // embedded in the library, and the set the baseline's build signed.
-func baselineSet(t *testing.T) *attest.Verification {
+//
+// It is a [preV2], for the reason that type gives: these six guests were booted
+// before binding context v2 existed and their evidence is bound under v1, which
+// [attest.Verification] now refuses on the version alone. What the milestone
+// asserts is about measurements, and it is asked here the way Verify asks it.
+func baselineSet(t *testing.T) *preV2 {
 	t.Helper()
-	raw, err := os.ReadFile(filepath.Join(sensitivityDir, "author.pub"))
-	if err != nil {
-		t.Skipf("no captured reference value set: %v", err)
-	}
-	author, err := hex.DecodeString(strings.TrimSpace(string(raw)))
-	if err != nil || len(author) != ed25519.PublicKeySize {
-		t.Fatalf("author.pub is not a hexadecimal Ed25519 public key")
-	}
-	set, err := attest.LoadReferenceValueSetFile(
-		filepath.Join(sensitivityDir, "reference-values.json"), ed25519.PublicKey(author))
-	if err != nil {
-		t.Fatalf("the captured reference value set was refused: %v", err)
-	}
+	set := baselineReferenceValues(t)
 	verifier, err := verify.New(verify.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	v, err := attest.New(verifier, set)
-	if err != nil {
-		t.Fatal(err)
+	if _, err := attest.New(verifier, set); err != nil {
+		t.Fatalf("the baseline's own set was refused at construction: %v", err)
 	}
-	return v
+	return &preV2{verifier: verifier, set: set}
 }
 
 // TestEachGuestReportedTheMeasurementPredictedForIt is the half of milestone 2
@@ -205,7 +197,7 @@ func TestOnlyTheUnmodifiedImageSatisfiesTheSetSignedForIt(t *testing.T) {
 			attested, err := v.Verify(context.Background(), g.evidence, g.binding)
 			if variant.accepted {
 				if err != nil {
-					t.Fatalf("the guest booted from an image with %s was refused: %s", variant.changed, detail(err))
+					t.Fatalf("the guest booted from an image with %s was refused: %s", variant.changed, fixture.Detail(err))
 				}
 				if got := hex.EncodeToString(attested.Claims.LaunchMeasurement); got != g.predicted {
 					t.Errorf("accepted measurement %s is not the predicted %s", got, g.predicted)
@@ -229,7 +221,7 @@ func TestOnlyTheUnmodifiedImageSatisfiesTheSetSignedForIt(t *testing.T) {
 // out of an accepted verdict — that is, out of a report whose AMD signature
 // has been checked — rather than out of the raw bytes at a fixed offset. The
 // question there is what the platform attested, not whether the set admits it.
-func baselineSetOrOwn(t *testing.T, v variant) *attest.Verification {
+func baselineSetOrOwn(t *testing.T, v variant) *preV2 {
 	t.Helper()
 	if v.accepted {
 		return baselineSet(t)
@@ -244,21 +236,10 @@ func baselineSetOrOwn(t *testing.T, v variant) *attest.Verification {
 	}
 	// Everything but the measurement is the baseline set's, taken from the
 	// file rather than restated here.
-	raw, err := os.ReadFile(filepath.Join(sensitivityDir, "author.pub"))
-	if err != nil {
-		t.Skipf("no captured reference value set: %v", err)
-	}
-	author, err := hex.DecodeString(strings.TrimSpace(string(raw)))
-	if err != nil {
-		t.Fatal(err)
-	}
-	base, err := attest.LoadReferenceValueSetFile(
-		filepath.Join(sensitivityDir, "reference-values.json"), ed25519.PublicKey(author))
-	if err != nil {
-		t.Fatal(err)
-	}
+	base := baselineReferenceValues(t)
 	own := base
 	own.Values = []attest.ReferenceValue{{
+		Vendor:            attest.VendorAMDSEVSNP,
 		LaunchMeasurement: m,
 		MinimumTCB:        base.Values[0].MinimumTCB,
 		GuestPolicy:       base.Values[0].GuestPolicy,
@@ -267,19 +248,33 @@ func baselineSetOrOwn(t *testing.T, v variant) *attest.Verification {
 	if err != nil {
 		t.Fatal(err)
 	}
-	got, err := attest.New(verifier, own)
-	if err != nil {
-		t.Fatal(err)
+	// The set still goes through attest.New, which is where a set that could
+	// not mean what its author intended is refused. Only the verdict is taken
+	// through the stand-in, and only because the recording's binding is v1.
+	if _, err := attest.New(verifier, own); err != nil {
+		t.Fatalf("the set built for %q was refused at construction: %v", v.dir, err)
 	}
-	return got
+	return &preV2{verifier: verifier, set: own}
+}
+
+// baselineReferenceValues is the set the baseline image's build authored and
+// signed, re-authored in this process because the recorded document is version
+// 1 and the key that signed it is not in git; reauthoredSet says what that
+// preserves and what it does not. The recorded artifacts are untouched.
+//
+// It skips rather than fails when the run's artifacts are not in the checkout,
+// for the reason loadBootedGuest does.
+func baselineReferenceValues(t *testing.T) attest.ReferenceValueSet {
+	t.Helper()
+	path := filepath.Join(sensitivityDir, "reference-values.json")
+	if _, err := os.Stat(path); err != nil {
+		t.Skipf("no captured reference value set: %v", err)
+	}
+	return reauthoredSet(t, path)
 }
 
 // mustAccept verifies and returns the launch measurement of the verdict.
-func mustAccept(t *testing.T, v *attest.Verification, g bootedGuest) []byte {
+func mustAccept(t *testing.T, v *preV2, g bootedGuest) []byte {
 	t.Helper()
-	attested, err := v.Verify(context.Background(), g.evidence, g.binding)
-	if err != nil {
-		t.Fatalf("evidence from a live confidential guest was refused: %s", detail(err))
-	}
-	return attested.Claims.LaunchMeasurement
+	return fixture.MustAccept(t, v, g.evidence, g.binding).Claims.LaunchMeasurement
 }

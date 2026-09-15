@@ -30,6 +30,7 @@ import (
 	"github.com/quic-go/quic-go"
 
 	"gvisor.dev/gvisor/attest"
+	"gvisor.dev/gvisor/attest/internal/fixture"
 	"gvisor.dev/gvisor/attest/tunneld"
 )
 
@@ -119,8 +120,9 @@ func startWith(t *testing.T, sandbox string, image []byte, admits attest.Referen
 	td, err := tunneld.New(context.Background(), tunneld.Config{
 		SandboxID:             sandbox,
 		Acquirer:              p,
-		Verifier:              verifierFor(t, p),
+		Verifier:              fixture.VerifierTrusting(t, p),
 		ReferenceValueSetPath: writeSet(t, admits, authorPriv),
+		PolicyPath:            writePolicy(t, everyImage(), authorPriv),
 		AuthorPublicKey:       authorPub,
 		Peers:                 peers,
 		ListenAddr:            "127.0.0.1:0",

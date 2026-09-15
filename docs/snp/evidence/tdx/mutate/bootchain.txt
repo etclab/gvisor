@@ -1,0 +1,28 @@
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+--- /etc/default/grub.d/ ---
+total 8
+-rw-r--r-- 1 root root 174 Aug 26 09:55 40-force-partuuid.cfg
+-rw-r--r-- 1 root root 261 Aug 26 09:54 50-cloudimg-settings.cfg
+--- fragments ---
+/etc/default/grub.d/40-force-partuuid.cfg:# Force boot without an initramfs by setting GRUB_FORCE_PARTUUID
+/etc/default/grub.d/40-force-partuuid.cfg:# Remove this line to enable boot with an initramfs
+/etc/default/grub.d/40-force-partuuid.cfg:GRUB_FORCE_PARTUUID=fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7
+/etc/default/grub.d/50-cloudimg-settings.cfg:# CLOUD_IMG: This file was created/modified by the Cloud Image build process
+/etc/default/grub.d/50-cloudimg-settings.cfg:GRUB_DEFAULT=0
+/etc/default/grub.d/50-cloudimg-settings.cfg:GRUB_HIDDEN_TIMEOUT=0.1
+/etc/default/grub.d/50-cloudimg-settings.cfg:GRUB_HIDDEN_TIMEOUT_QUIET=true
+/etc/default/grub.d/50-cloudimg-settings.cfg:GRUB_TIMEOUT=0.1
+/etc/default/grub.d/50-cloudimg-settings.cfg:GRUB_CMDLINE_LINUX_DEFAULT="console=ttyS0,115200"
+/etc/default/grub.d/50-cloudimg-settings.cfg:GRUB_RECORDFAIL_TIMEOUT=0
+/etc/default/grub.d/50-cloudimg-settings.cfg:GRUB_TERMINAL=serial
+--- /etc/default/grub ---
+GRUB_DEFAULT=0
+GRUB_TIMEOUT_STYLE=hidden
+GRUB_TIMEOUT=0
+GRUB_DISTRIBUTOR=`( . /etc/os-release; echo ${NAME:-Ubuntu} ) 2>/dev/null || echo Ubuntu`
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"
+GRUB_CMDLINE_LINUX=""
+--- what grub.cfg puts on the linux line ---
+		linux	/vmlinuz-6.17.0-1022-gcp root=PARTUUID=fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7 ro  console=ttyS0,115200
+		linux	/vmlinuz-6.17.0-1022-gcp root=PARTUUID=fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7 ro  console=ttyS0,115200 panic=-1
+			linux	/vmlinuz-6.17.0-1022-gcp root=PARTUUID=fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7 ro  console=ttyS0,115200

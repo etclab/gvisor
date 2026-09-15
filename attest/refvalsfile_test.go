@@ -16,11 +16,16 @@
 // and its loader.
 //
 // These drive the same seam as the verification tests — this module's public
-// surface, and the one a tunneld will call at ticket 09. A loaded set is never
+// surface, and the one a tunneld will call at ticket 09. A loaded set is not
 // inspected field by field as though loading were the point; it is wired into a
 // [attest.Verification] and shown to admit or refuse a fake platform, because
 // what a reference value set is for is deciding who gets in. Nothing here
 // reaches inside the loader or asserts on how a refusal was reached.
+//
+// The Intel TDX values are the exception, and are inspected. Their verifier and
+// its fake platform live in other packages, so what a TDX document decides is
+// tested where that verifier is; what is tested here is that the document says
+// it.
 //
 // The documents are written out as literals rather than rendered by
 // [attest.MarshalReferenceValueSet]. That is the point of the format: a
@@ -37,22 +42,23 @@ package attest_test
 import (
 	"bytes"
 	"crypto/ed25519"
-	"crypto/rand"
 	"encoding/hex"
 	"errors"
 	"io/fs"
-	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
 	"gvisor.dev/gvisor/attest"
+	"gvisor.dev/gvisor/attest/internal/fixture"
 )
 
-// documentFormat is the format string spelled out rather than taken from
-// [attest.ReferenceValueSetFormat]. It is a wire constant: a document already
-// signed and shipped does not change when a Go identifier is renamed, so the
-// test hardcodes what is on disk and fails if the constant drifts from it.
+// documentFormat is the format string spelled out rather than taken from the
+// package's own referenceValueSetFormat constant. It is a wire constant: a
+// document already signed and shipped does not change when a Go identifier is
+// renamed, so the test hardcodes what is on disk and fails if the constant
+// drifts from it.
 const documentFormat = "gvisor.dev/gvisor/attest/reference-value-set"
 
 // oneValueDocument is a reference value set as an author writes it: one image,
@@ -64,9 +70,10 @@ const documentFormat = "gvisor.dev/gvisor/attest/reference-value-set"
 // numbers below are the same ones platformTCB and permittedPolicy hold in Go.
 const oneValueDocument = `{
   "format": "gvisor.dev/gvisor/attest/reference-value-set",
-  "version": 1,
+  "version": 4,
   "reference_values": [
     {
+      "vendor": "amd-sev-snp",
       "launch_measurement": "$MEASUREMENT",
       "minimum_tcb": {
         "bootloader": 9,
@@ -92,14 +99,16 @@ const oneValueDocument = `{
 // that neither deployment has to stop for the other.
 const twoValueDocument = `{
   "format": "gvisor.dev/gvisor/attest/reference-value-set",
-  "version": 1,
+  "version": 4,
   "reference_values": [
     {
+      "vendor": "amd-sev-snp",
       "launch_measurement": "$MEASUREMENT",
       "minimum_tcb": {"bootloader": 9, "tee": 0, "snp": 23, "microcode": 72},
       "guest_policy": {"allow_smt": true}
     },
     {
+      "vendor": "amd-sev-snp",
       "launch_measurement": "$MEASUREMENT",
       "minimum_tcb": {"bootloader": 9, "tee": 0, "snp": 23, "microcode": 72},
       "guest_policy": {"allow_smt": true}
@@ -114,8 +123,138 @@ const twoValueDocument = `{
 // canonical form to be in, so it loads and admits the same platform.
 const nonCanonicalDocument = `{"reference_values":[{"guest_policy":{"allow_smt":true},` +
 	`"minimum_tcb":{"microcode":72,"snp":23,"tee":0,"bootloader":9},` +
-	`"launch_measurement":"$MEASUREMENT"}],"version":1,` +
+	`"vendor":"amd-sev-snp","launch_measurement":"$MEASUREMENT"}],"version":4,` +
 	`"format":"gvisor.dev/gvisor/attest/reference-value-set"}`
+
+// versionOneDocument is a set as it was authored and signed before this format
+// carried a vendor: version 1, and a reference value that names a launch
+// measurement without saying whose evidence it admits.
+//
+// Documents of this shape exist and are signed — every set recorded under
+// docs/snp is one — which is exactly why the loader has to refuse them out
+// loud rather than read them as SEV-SNP.
+const versionOneDocument = `{
+  "format": "gvisor.dev/gvisor/attest/reference-value-set",
+  "version": 1,
+  "reference_values": [
+    {
+      "launch_measurement": "$MEASUREMENT",
+      "minimum_tcb": {"bootloader": 9, "tee": 0, "snp": 23, "microcode": 72},
+      "guest_policy": {"allow_smt": true}
+    }
+  ]
+}
+`
+
+// versionTwoDocument is a set as it was authored and signed after the format
+// carried a vendor on every value and before a value could name the policy it
+// admits: version 2, a guest list and nothing more.
+//
+// Documents of this shape exist and are signed — the ticket 14 harness shipped
+// one — which is why the loader has to refuse them out loud and say what to do.
+const versionTwoDocument = `{
+  "format": "gvisor.dev/gvisor/attest/reference-value-set",
+  "version": 2,
+  "reference_values": [
+    {
+      "vendor": "amd-sev-snp",
+      "launch_measurement": "$MEASUREMENT",
+      "minimum_tcb": {"bootloader": 9, "tee": 0, "snp": 23, "microcode": 72},
+      "guest_policy": {"allow_smt": true}
+    }
+  ]
+}
+`
+
+// versionThreeDocument is a set as ticket 18 authored and signed one: an egress
+// section at the top, because the set was then the sandbox's own policy as well
+// as its guest list.
+//
+// Documents of this shape exist and are signed — the ticket 18 run shipped four
+// of them, and they are recorded under docs/snp/evidence/ticket18 — which is why
+// the loader has to refuse them out loud and say where the egress section went.
+const versionThreeDocument = `{
+  "format": "gvisor.dev/gvisor/attest/reference-value-set",
+  "version": 3,
+  "egress": {"version": 1, "unattested": false},
+  "reference_values": [
+    {
+      "vendor": "amd-sev-snp",
+      "launch_measurement": "$MEASUREMENT",
+      "minimum_tcb": {"bootloader": 9, "tee": 0, "snp": 23, "microcode": 72},
+      "guest_policy": {"allow_smt": true}
+    }
+  ]
+}
+`
+
+// The registers an Intel TDX reference value names. Each is a distinct repeated
+// byte, so a value read back out of a loaded set says which register it came
+// from. Their roles are not interchangeable: theMRTD, theRTMR0 and the two
+// values RTMR1 takes are the provider's, observed on real hardware and
+// unpredictable from anything an author holds, while thePredictedRTMR2 is the
+// image's, computed before anything boots.
+//
+// RTMR1 has two values because Google's VMs give it two: one on a VM's first
+// boot and another on every boot after (docs/snp/evidence/tdx). A reference
+// value naming one would refuse its own peer after a reboot.
+var (
+	theMRTD           = bytes.Repeat([]byte{0x33}, 48)
+	theRTMR0          = bytes.Repeat([]byte{0x44}, 48)
+	firstBootRTMR1    = bytes.Repeat([]byte{0x55}, 48)
+	laterBootRTMR1    = bytes.Repeat([]byte{0x66}, 48)
+	thePredictedRTMR2 = bytes.Repeat([]byte{0x77}, 48)
+)
+
+// tdxValueDocument is an Intel TDX reference value as an author writes it.
+//
+// Read it, and read the field names in particular. Three of them say observed
+// and one says predicted, and that is the difference between a constant copied
+// off the provider's running machines because nobody can compute it, and the
+// one register computed from the image before it booted. A check built on a
+// value read back off the machine it is checking cannot fail.
+const tdxValueDocument = `{
+  "format": "gvisor.dev/gvisor/attest/reference-value-set",
+  "version": 4,
+  "reference_values": [
+    {
+      "vendor": "intel-tdx",
+      "observed_mrtd": ["$MRTD"],
+      "observed_rtmr0": ["$RTMR0"],
+      "observed_rtmr1": ["$RTMR1A", "$RTMR1B"],
+      "predicted_rtmr2": "$RTMR2",
+      "td_attributes_policy": {"allow_debug": false},
+      "minimum_tcb": {"status": "UpToDate", "tcb_evaluation_data_number": 20}
+    }
+  ]
+}
+`
+
+// mixedDocument is one file holding both vendors: the same peer group reachable
+// from an AMD guest and from an Intel one, which is the whole reason a value
+// carries a vendor rather than a verifier carrying a file of its own.
+const mixedDocument = `{
+  "format": "gvisor.dev/gvisor/attest/reference-value-set",
+  "version": 4,
+  "reference_values": [
+    {
+      "vendor": "amd-sev-snp",
+      "launch_measurement": "$MEASUREMENT",
+      "minimum_tcb": {"bootloader": 9, "tee": 0, "snp": 23, "microcode": 72},
+      "guest_policy": {"allow_smt": true}
+    },
+    {
+      "vendor": "intel-tdx",
+      "observed_mrtd": ["$MRTD"],
+      "observed_rtmr0": ["$RTMR0"],
+      "observed_rtmr1": ["$RTMR1A", "$RTMR1B"],
+      "predicted_rtmr2": "$RTMR2",
+      "td_attributes_policy": {"allow_debug": false},
+      "minimum_tcb": {"status": "UpToDate", "tcb_evaluation_data_number": 20}
+    }
+  ]
+}
+`
 
 // measurementPlaceholder stands in for a hexadecimal launch measurement in the
 // document templates above.
@@ -140,37 +279,34 @@ func documentFor(template string, measurements ...[]byte) string {
 // that every refusal below is paired against.
 func theDocument() string { return documentFor(oneValueDocument, theMeasurement) }
 
-// an author is a reference value author: the key pair whose public half a
-// measured image carries and whose private half authorises a set.
-type author struct {
-	public  ed25519.PublicKey
-	private ed25519.PrivateKey
+// withRegisters fills a TDX template's register placeholders. They are named
+// rather than positional because a document that named RTMR0 where it meant
+// RTMR2 would still load, and the test would be checking the wrong register.
+func withRegisters(template string) string {
+	for _, r := range []struct {
+		placeholder string
+		value       []byte
+	}{
+		{"$MRTD", theMRTD},
+		{"$RTMR0", theRTMR0},
+		{"$RTMR1A", firstBootRTMR1},
+		{"$RTMR1B", laterBootRTMR1},
+		{"$RTMR2", thePredictedRTMR2},
+	} {
+		template = strings.ReplaceAll(template, r.placeholder, hex.EncodeToString(r.value))
+	}
+	return template
 }
 
-func newAuthor(t *testing.T) author {
-	t.Helper()
-	pub, priv, err := ed25519.GenerateKey(rand.Reader)
-	if err != nil {
-		t.Fatalf("generating a reference value author key: %v", err)
-	}
-	return author{public: pub, private: priv}
-}
-
-// sign authorises a document, returning the contents of the file that belongs
-// beside it.
-func (a author) sign(t *testing.T, document string) []byte {
-	t.Helper()
-	signature, err := attest.SignReferenceValueSet([]byte(document), a.private)
-	if err != nil {
-		t.Fatalf("signing a reference value set: %v", err)
-	}
-	return signature
-}
+// theTDXDocument is the one-value TDX document, and theMixedDocument the file
+// holding one value of each vendor.
+func theTDXDocument() string   { return withRegisters(tdxValueDocument) }
+func theMixedDocument() string { return withRegisters(documentFor(mixedDocument, theMeasurement)) }
 
 // loads asserts that a document and signature load, and returns the set.
-func loads(t *testing.T, a author, document string) attest.ReferenceValueSet {
+func loads(t *testing.T, a fixture.Author, document string) attest.ReferenceValueSet {
 	t.Helper()
-	set, err := attest.LoadReferenceValueSet([]byte(document), a.sign(t, document), a.public)
+	set, err := attest.LoadReferenceValueSet([]byte(document), a.Sign(t, document), a.Public)
 	if err != nil {
 		t.Fatalf("a well-formed signed set was refused: %v", err)
 	}
@@ -196,7 +332,7 @@ func refusesToLoad(t *testing.T, document string, signature []byte, public ed255
 // admits wires a loaded set to a verifier that trusts f's platform and asserts
 // the platform is admitted. This is what makes a loaded set evidence of
 // anything: the file decides who gets in, so the test asks who gets in.
-func admits(t *testing.T, f *fixture, set attest.ReferenceValueSet) attest.Attested {
+func admits(t *testing.T, f *guest, set attest.ReferenceValueSet) attest.Attested {
 	t.Helper()
 	return accepts(t, verification(t, f, set), f)
 }
@@ -205,8 +341,8 @@ func admits(t *testing.T, f *fixture, set attest.ReferenceValueSet) attest.Attes
 // on: a set an author wrote, signed and delivered admits the platform it names,
 // with the TCB floor and guest policy it named intact on the far side.
 func TestASignedSetLoadsAndDrivesVerification(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 
 	set := loads(t, a, theDocument())
 	attested := admits(t, f, set)
@@ -232,8 +368,8 @@ func TestASignedSetLoadsAndDrivesVerification(t *testing.T) {
 // loader that read three of the four names and defaulted the fourth, would pass
 // the control and fail here.
 func TestEachNamedTCBComponentIsLoadBearing(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 
 	// Control: the floor as written admits the platform.
 	admits(t, f, loads(t, a, theDocument()))
@@ -263,18 +399,18 @@ func TestEachNamedTCBComponentIsLoadBearing(t *testing.T) {
 // The list is what makes that expressible. A format that allowed a bare single
 // value would have made the common case shorter and this case a special one.
 func TestASetHoldingSeveralValuesAdmitsEvidenceMatchingAnyOne(t *testing.T) {
-	a := newAuthor(t)
+	a := fixture.NewAuthor(t)
 	set := loads(t, a, documentFor(twoValueDocument, otherMeasurement, theMeasurement))
 
 	// The image that is running.
-	running := newFixture(t, withMeasurement(defaultConfig(), otherMeasurement))
+	running := newGuest(t, withMeasurement(defaultConfig(), otherMeasurement))
 	if got := admits(t, running, set); !bytes.Equal(got.Satisfied.LaunchMeasurement, otherMeasurement) {
 		t.Errorf("admitted by the reference value for %x; want the one for %x",
 			got.Satisfied.LaunchMeasurement, otherMeasurement)
 	}
 
 	// The image being deployed, from the same file, with neither redeployed.
-	deploying := newFixture(t, defaultConfig())
+	deploying := newGuest(t, defaultConfig())
 	if got := admits(t, deploying, set); !bytes.Equal(got.Satisfied.LaunchMeasurement, theMeasurement) {
 		t.Errorf("admitted by the reference value for %x; want the one for %x",
 			got.Satisfied.LaunchMeasurement, theMeasurement)
@@ -284,14 +420,14 @@ func TestASetHoldingSeveralValuesAdmitsEvidenceMatchingAnyOne(t *testing.T) {
 // TestASetWithAnInvalidSignatureIsRefused is the untrusted delivery channel
 // doing its worst to the signature.
 func TestASetWithAnInvalidSignatureIsRefused(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 	document := theDocument()
 
 	// Control: the signature as the author produced it.
 	admits(t, f, loads(t, a, document))
 
-	good := a.sign(t, document)
+	good := a.Sign(t, document)
 	for _, tc := range []struct {
 		name      string
 		signature []byte
@@ -299,10 +435,10 @@ func TestASetWithAnInvalidSignatureIsRefused(t *testing.T) {
 		{"one flipped byte", flipHexDigit(good)},
 		{"truncated", good[:len(good)/2]},
 		{"not hexadecimal", []byte("this is not a signature\n")},
-		{"someone else's signature", newAuthor(t).sign(t, document)},
+		{"someone else's signature", fixture.NewAuthor(t).Sign(t, document)},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			refusesToLoad(t, document, tc.signature, a.public)
+			refusesToLoad(t, document, tc.signature, a.Public)
 		})
 	}
 }
@@ -320,18 +456,18 @@ func TestASetWithAnInvalidSignatureIsRefused(t *testing.T) {
 // The test signs the document the naive way, with the same key, and requires
 // the loader to refuse it.
 func TestASignatureOverTheBareDocumentIsRefused(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 	document := theDocument()
 
 	// Control: the same key, the same document, signed the way this format says
 	// to sign it.
 	admits(t, f, loads(t, a, document))
 
-	bare := ed25519.Sign(a.private, []byte(document))
+	bare := ed25519.Sign(a.Private, []byte(document))
 	hexBare := make([]byte, hex.EncodedLen(len(bare)))
 	hex.Encode(hexBare, bare)
-	refusesToLoad(t, document, hexBare, a.public)
+	refusesToLoad(t, document, hexBare, a.Public)
 }
 
 // TestASetWithNoSignatureIsRefused is the case that must never be read as "this
@@ -339,8 +475,8 @@ func TestASignatureOverTheBareDocumentIsRefused(t *testing.T) {
 // offers no entry point that does not take a signature, and an empty one is a
 // refusal like any other.
 func TestASetWithNoSignatureIsRefused(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 	document := theDocument()
 
 	// Control.
@@ -355,7 +491,7 @@ func TestASetWithNoSignatureIsRefused(t *testing.T) {
 		{"a signature file holding only whitespace", []byte("\n  \n")},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			refusesToLoad(t, document, tc.signature, a.public)
+			refusesToLoad(t, document, tc.signature, a.Public)
 		})
 	}
 }
@@ -368,9 +504,9 @@ func TestASetWithNoSignatureIsRefused(t *testing.T) {
 // never authorised, so accepting it would be a real compromise and not a
 // bookkeeping error.
 func TestASetSignedByTheWrongKeyIsRefused(t *testing.T) {
-	a := newAuthor(t)
-	host := newAuthor(t)
-	f := newFixture(t, withMeasurement(defaultConfig(), otherMeasurement))
+	a := fixture.NewAuthor(t)
+	host := fixture.NewAuthor(t)
+	f := newGuest(t, withMeasurement(defaultConfig(), otherMeasurement))
 
 	// Control: the author's own set does not admit this platform, so the host
 	// has something to gain.
@@ -379,27 +515,27 @@ func TestASetSignedByTheWrongKeyIsRefused(t *testing.T) {
 
 	// The host's set would admit it, and is signed — by the wrong key.
 	permissive := documentFor(oneValueDocument, otherMeasurement)
-	refusesToLoad(t, permissive, host.sign(t, permissive), a.public)
+	refusesToLoad(t, permissive, host.Sign(t, permissive), a.Public)
 
 	// Nor can a document nominate the key that should authorise it. There is no
 	// field for one, and a document that invents one is refused — here with the
 	// real author's own signature over it, so that the refusal is the invented
 	// field and nothing else. The key the loader trusts comes from inside the
 	// launch measurement and from nowhere else.
-	nominating := strings.Replace(permissive, `"version": 1,`,
-		`"version": 1,
-  "public_key": "`+hex.EncodeToString(host.public)+`",`, 1)
-	refusesToLoad(t, nominating, a.sign(t, nominating), a.public)
+	nominating := strings.Replace(permissive, `"version": 4,`,
+		`"version": 4,
+  "public_key": "`+hex.EncodeToString(host.Public)+`",`, 1)
+	refusesToLoad(t, nominating, a.Sign(t, nominating), a.Public)
 }
 
 // TestADocumentModifiedAfterSigningIsRefused is the delivery channel doing its
 // worst to the document instead. The modification is a weakening a host would
 // actually want: permit the debugging it can then use to read the guest.
 func TestADocumentModifiedAfterSigningIsRefused(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 	document := theDocument()
-	signature := a.sign(t, document)
+	signature := a.Sign(t, document)
 
 	// Control: the document as signed.
 	admits(t, f, loads(t, a, document))
@@ -407,14 +543,14 @@ func TestADocumentModifiedAfterSigningIsRefused(t *testing.T) {
 	for _, tc := range []struct{ name, modified string }{
 		{"a policy bit relaxed", strings.Replace(document, `"allow_debug": false`, `"allow_debug": true`, 1)},
 		{"the TCB floor lowered", strings.Replace(document, `"microcode": 72`, `"microcode": 0`, 1)},
-		{"whitespace only", strings.Replace(document, `"version": 1,`, `"version":1,`, 1)},
+		{"whitespace only", strings.Replace(document, `"version": 4,`, `"version":4,`, 1)},
 		{"a byte appended", document + " "},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.modified == document {
 				t.Fatal("the modification did not change the document; the fixture has drifted")
 			}
-			refusesToLoad(t, tc.modified, signature, a.public)
+			refusesToLoad(t, tc.modified, signature, a.Public)
 		})
 	}
 }
@@ -427,8 +563,8 @@ func TestADocumentModifiedAfterSigningIsRefused(t *testing.T) {
 // Every document here is signed afresh, so each refusal is the unknown field
 // and not a signature that no longer holds.
 func TestAnUnknownFieldIsRefused(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 	document := theDocument()
 
 	// Control: the same document without the extra field.
@@ -437,8 +573,8 @@ func TestAnUnknownFieldIsRefused(t *testing.T) {
 	for _, tc := range []struct{ name, from, to string }{
 		{
 			"at the top level",
-			`"version": 1,`,
-			`"version": 1,
+			`"version": 4,`,
+			`"version": 4,
   "allow_anything": true,`,
 		},
 		{
@@ -472,7 +608,7 @@ func TestAnUnknownFieldIsRefused(t *testing.T) {
 			if modified == document {
 				t.Fatalf("the document does not contain %q; the fixture has drifted", tc.from)
 			}
-			refusesToLoad(t, modified, a.sign(t, modified), a.public)
+			refusesToLoad(t, modified, a.Sign(t, modified), a.Public)
 		})
 	}
 }
@@ -485,8 +621,8 @@ func TestAnUnknownFieldIsRefused(t *testing.T) {
 // The author signed both occurrences, so the signature cannot help here. Only
 // refusing can.
 func TestAFieldNamedTwiceIsRefused(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 	document := theDocument()
 
 	// Control.
@@ -537,7 +673,7 @@ func TestAFieldNamedTwiceIsRefused(t *testing.T) {
 			if modified == document {
 				t.Fatalf("the document does not contain %q; the fixture has drifted", tc.from)
 			}
-			refusesToLoad(t, modified, a.sign(t, modified), a.public)
+			refusesToLoad(t, modified, a.Sign(t, modified), a.Public)
 		})
 	}
 }
@@ -546,8 +682,8 @@ func TestAFieldNamedTwiceIsRefused(t *testing.T) {
 // is not a comment. Ignoring it would let an author's file and a reviewer's
 // reading of it disagree about where the set ends.
 func TestBytesAfterTheDocumentAreRefused(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 	document := theDocument()
 
 	// Control.
@@ -560,7 +696,7 @@ func TestBytesAfterTheDocumentAreRefused(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			modified := document + tc.trailing
-			refusesToLoad(t, modified, a.sign(t, modified), a.public)
+			refusesToLoad(t, modified, a.Sign(t, modified), a.Public)
 		})
 	}
 }
@@ -571,8 +707,8 @@ func TestBytesAfterTheDocumentAreRefused(t *testing.T) {
 // enforces the part of it that already existed. Both are the failure ADR-0002
 // describes for the binding context, in a different file.
 func TestADocumentOfTheWrongFormatOrVersionIsRefused(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 	document := theDocument()
 
 	// Control.
@@ -581,15 +717,15 @@ func TestADocumentOfTheWrongFormatOrVersionIsRefused(t *testing.T) {
 	for _, tc := range []struct{ name, from, to string }{
 		{"another format", `"format": "` + documentFormat + `"`, `"format": "example.com/some-other-file"`},
 		{"no format", `"format": "` + documentFormat + `",`, ``},
-		{"a later version", `"version": 1`, `"version": 2`},
-		{"no version", `"version": 1,`, ``},
+		{"a later version", `"version": 4`, `"version": 5`},
+		{"no version", `"version": 4,`, ``},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			modified := strings.Replace(document, tc.from, tc.to, 1)
 			if modified == document {
 				t.Fatalf("the document does not contain %q; the fixture has drifted", tc.from)
 			}
-			refusesToLoad(t, modified, a.sign(t, modified), a.public)
+			refusesToLoad(t, modified, a.Sign(t, modified), a.Public)
 		})
 	}
 }
@@ -607,16 +743,17 @@ func TestADocumentOfTheWrongFormatOrVersionIsRefused(t *testing.T) {
 // an unknown field, and would be refused by a check other than the one under
 // test.
 func TestASetThatCannotMeanWhatItsAuthorIntendedDoesNotLoad(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 
 	const (
-		head   = `{"format": "` + documentFormat + `", "version": 1, "reference_values": [`
+		head   = `{"format": "` + documentFormat + `", "version": 4, "reference_values": [`
+		vendor = `"vendor": "amd-sev-snp"`
 		policy = `"guest_policy": {"allow_smt": true}`
 		floor  = `"minimum_tcb": {"bootloader": 9, "tee": 0, "snp": 23, "microcode": 72}`
 		tail   = `]}`
 	)
-	complete := head + `{"launch_measurement": "` + measurementPlaceholder + `", ` + floor + `, ` + policy + `}` + tail
+	complete := head + `{` + vendor + `, "launch_measurement": "` + measurementPlaceholder + `", ` + floor + `, ` + policy + `}` + tail
 
 	// Control: complete, this document loads and admits its platform. Every
 	// variant below is this document minus one thing.
@@ -629,19 +766,19 @@ func TestASetThatCannotMeanWhatItsAuthorIntendedDoesNotLoad(t *testing.T) {
 		},
 		{
 			"no launch measurement",
-			head + `{` + floor + `, ` + policy + `}` + tail,
+			head + `{` + vendor + `, ` + floor + `, ` + policy + `}` + tail,
 		},
 		{
 			"an empty launch measurement",
-			head + `{"launch_measurement": "", ` + floor + `, ` + policy + `}` + tail,
+			head + `{` + vendor + `, "launch_measurement": "", ` + floor + `, ` + policy + `}` + tail,
 		},
 		{
 			"no TCB floor",
-			head + `{"launch_measurement": "` + measurementPlaceholder + `", ` + policy + `}` + tail,
+			head + `{` + vendor + `, "launch_measurement": "` + measurementPlaceholder + `", ` + policy + `}` + tail,
 		},
 		{
 			"a TCB floor missing a component",
-			head + `{"launch_measurement": "` + measurementPlaceholder + `", ` +
+			head + `{` + vendor + `, "launch_measurement": "` + measurementPlaceholder + `", ` +
 				`"minimum_tcb": {"bootloader": 9, "tee": 0, "snp": 23}, ` + policy + `}` + tail,
 		},
 	} {
@@ -650,7 +787,7 @@ func TestASetThatCannotMeanWhatItsAuthorIntendedDoesNotLoad(t *testing.T) {
 				t.Fatal("the variant is the control document; the fixture has drifted")
 			}
 			document := documentFor(tc.document, theMeasurement)
-			refusesToLoad(t, document, a.sign(t, document), a.public)
+			refusesToLoad(t, document, a.Sign(t, document), a.Public)
 		})
 	}
 }
@@ -664,8 +801,8 @@ func TestASetThatCannotMeanWhatItsAuthorIntendedDoesNotLoad(t *testing.T) {
 // measurement of the wrong width matches no platform, so the set already fails
 // closed at verification rather than at load.
 func TestTheLoaderDoesNotJudgeALaunchMeasurementsWidth(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 
 	// Control: a measurement of this platform's width is admitted.
 	admits(t, f, loads(t, a, theDocument()))
@@ -681,16 +818,15 @@ func TestTheLoaderDoesNotJudgeALaunchMeasurementsWidth(t *testing.T) {
 // TestASetOnDiskLoadsFromItsDocumentAndSignature is the config device layout:
 // the document, and its signature in a second file beside it.
 func TestASetOnDiskLoadsFromItsDocumentAndSignature(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 	dir := t.TempDir()
 	path := filepath.Join(dir, "reference-values.json")
 	document := theDocument()
 
-	writeFile(t, path, []byte(document))
-	writeFile(t, path+attest.SignatureFileSuffix, a.sign(t, document))
+	fixture.WriteSigned(t, path, []byte(document), a.Sign(t, document))
 
-	set, err := attest.LoadReferenceValueSetFile(path, a.public)
+	set, err := attest.LoadReferenceValueSetFile(path, a.Public)
 	if err != nil {
 		t.Fatalf("loading a well-formed set from disk: %v", err)
 	}
@@ -705,16 +841,15 @@ func TestASetOnDiskLoadsFromItsDocumentAndSignature(t *testing.T) {
 // refusal, and the refusal does not carry io/fs.ErrNotExist for anyone to
 // branch on. The operator still reads which file was missing, in the text.
 func TestARefusedSetIsNeverTreatedAsAbsent(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 	dir := t.TempDir()
 	document := theDocument()
 
 	// Control: both files present, and the set admits its platform.
 	both := filepath.Join(dir, "both.json")
-	writeFile(t, both, []byte(document))
-	writeFile(t, both+attest.SignatureFileSuffix, a.sign(t, document))
-	set, err := attest.LoadReferenceValueSetFile(both, a.public)
+	fixture.WriteSigned(t, both, []byte(document), a.Sign(t, document))
+	set, err := attest.LoadReferenceValueSetFile(both, a.Public)
 	if err != nil {
 		t.Fatalf("loading a well-formed set from disk: %v", err)
 	}
@@ -723,14 +858,14 @@ func TestARefusedSetIsNeverTreatedAsAbsent(t *testing.T) {
 	// A document with no signature beside it: the shape a host takes when it
 	// strips the signature and hopes the set is used anyway.
 	unsigned := filepath.Join(dir, "unsigned.json")
-	writeFile(t, unsigned, []byte(document))
+	fixture.WriteFile(t, unsigned, []byte(document))
 
 	for _, tc := range []struct{ name, path string }{
 		{"no document and no signature", filepath.Join(dir, "absent.json")},
 		{"a document with no signature beside it", unsigned},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			set, err := attest.LoadReferenceValueSetFile(tc.path, a.public)
+			set, err := attest.LoadReferenceValueSetFile(tc.path, a.Public)
 			if err == nil {
 				t.Fatalf("the set loaded as %+v; want a refusal", set)
 			}
@@ -756,12 +891,15 @@ func TestARefusedSetIsNeverTreatedAsAbsent(t *testing.T) {
 // TCB floor written as four named components — and then put through the loader
 // and the verifier like any other set.
 func TestARenderedSetIsSignableAndLoadable(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 
 	document, err := attest.MarshalReferenceValueSet(defaultSet())
 	if err != nil {
 		t.Fatalf("rendering a reference value set: %v", err)
+	}
+	if !strings.Contains(string(document), `"vendor": "amd-sev-snp"`) {
+		t.Errorf("the rendered document does not name the vendor its value is about:\n%s", document)
 	}
 	for _, component := range []string{`"bootloader"`, `"tee"`, `"snp"`, `"microcode"`} {
 		if !strings.Contains(string(document), component) {
@@ -770,7 +908,7 @@ func TestARenderedSetIsSignableAndLoadable(t *testing.T) {
 		}
 	}
 
-	set, err := attest.LoadReferenceValueSet(document, a.sign(t, string(document)), a.public)
+	set, err := attest.LoadReferenceValueSet(document, a.Sign(t, string(document)), a.Public)
 	if err != nil {
 		t.Fatalf("a rendered set was refused by the loader: %v", err)
 	}
@@ -788,8 +926,8 @@ func TestARenderedSetIsSignableAndLoadable(t *testing.T) {
 // whatever anyone else's did, and quietly stop enforcing anything its parser
 // dropped along the way.
 func TestTheSignatureCoversTheDeliveredBytesAndNotARendering(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 	document := documentFor(nonCanonicalDocument, theMeasurement)
 
 	// It is nothing like a rendering, and it loads and admits its platform.
@@ -807,7 +945,7 @@ func TestTheSignatureCoversTheDeliveredBytesAndNotARendering(t *testing.T) {
 	// The author's signature is over what the author wrote. If a rendering ever
 	// verifies against it, some canonicalisation has been introduced and the
 	// signature has stopped covering the delivered bytes.
-	if _, err := attest.LoadReferenceValueSet(rendered, a.sign(t, document), a.public); err == nil {
+	if _, err := attest.LoadReferenceValueSet(rendered, a.Sign(t, document), a.Public); err == nil {
 		t.Error("a rendering verified against the delivered document's signature; " +
 			"the signature must cover the delivered bytes and nothing else")
 	}
@@ -815,7 +953,7 @@ func TestTheSignatureCoversTheDeliveredBytesAndNotARendering(t *testing.T) {
 	// Signing what you ship works, which is the whole discipline the API
 	// enforces: both entry points take the document as bytes, and there is no
 	// path from a parsed set back to a signature check.
-	if _, err := attest.LoadReferenceValueSet(rendered, a.sign(t, string(rendered)), a.public); err != nil {
+	if _, err := attest.LoadReferenceValueSet(rendered, a.Sign(t, string(rendered)), a.Public); err != nil {
 		t.Errorf("a rendered set signed as rendered was refused: %v", err)
 	}
 }
@@ -824,10 +962,10 @@ func TestTheSignatureCoversTheDeliveredBytesAndNotARendering(t *testing.T) {
 // of the wrong length, so a mis-provisioned author key must be a refusal rather
 // than a crash — and must not be mistaken for a set that failed to verify.
 func TestAnAuthorKeyThatIsNotAnEd25519KeyIsRefused(t *testing.T) {
-	a := newAuthor(t)
-	f := newFixture(t, defaultConfig())
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
 	document := theDocument()
-	signature := a.sign(t, document)
+	signature := a.Sign(t, document)
 
 	// Control.
 	admits(t, f, loads(t, a, document))
@@ -837,12 +975,576 @@ func TestAnAuthorKeyThatIsNotAnEd25519KeyIsRefused(t *testing.T) {
 		key  ed25519.PublicKey
 	}{
 		{"no key at all", nil},
-		{"a truncated key", a.public[:16]},
-		{"an over-long key", append(append(ed25519.PublicKey{}, a.public...), 0)},
+		{"a truncated key", a.Public[:16]},
+		{"an over-long key", append(append(ed25519.PublicKey{}, a.Public...), 0)},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			refusesToLoad(t, document, signature, tc.key)
 		})
+	}
+}
+
+// TestAVersionOneDocumentIsRefusedAsCarryingNoVendorTag is the format change
+// this ticket priced, enforced.
+//
+// A version 1 value names a launch measurement and nothing about whose
+// hardware produced it. Reading it as SEV-SNP would be defensible and is still
+// wrong: it is this loader deciding what an author did not write down, in the
+// one file where nothing may be inferred. So the document is refused, and —
+// because a refused set is a guest that will not boot — the refusal says what
+// to do about it.
+func TestAVersionOneDocumentIsRefusedAsCarryingNoVendorTag(t *testing.T) {
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
+
+	// Control: the same values, re-emitted at the version this loader reads,
+	// still admit the platform. The refusal below is the version and the
+	// missing vendor, not anything about these values.
+	admits(t, f, loads(t, a, theDocument()))
+
+	document := documentFor(versionOneDocument, theMeasurement)
+	refusesToLoad(t, document, a.Sign(t, document), a.Public)
+
+	_, err := attest.LoadReferenceValueSet([]byte(document), a.Sign(t, document), a.Public)
+	for _, want := range []string{"version 1", "vendor", "re-emit"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("the refusal does not mention %q, so an operator reading it does not learn "+
+				"that the fix is to re-emit and re-sign the set: %v", want, err)
+		}
+	}
+}
+
+// TestAVersionTwoDocumentIsRefusedAsNamingNoPolicy is the same change again,
+// one version later.
+//
+// No value in a version 2 document can name the policy a peer running that
+// image must present, so every value in it admits any policy at all. That is
+// weaker than an author writing a set today means, and it is weaker silently:
+// the document loads, the peers connect, and nothing says the constraint the
+// author thought they had written is absent.
+func TestAVersionTwoDocumentIsRefusedAsNamingNoPolicy(t *testing.T) {
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
+
+	// Control: the same values at the version this loader reads still admit the
+	// platform. The refusal below is the version and nothing about these values.
+	admits(t, f, loads(t, a, theDocument()))
+
+	document := documentFor(versionTwoDocument, theMeasurement)
+	refusesToLoad(t, document, a.Sign(t, document), a.Public)
+
+	_, err := attest.LoadReferenceValueSet([]byte(document), a.Sign(t, document), a.Public)
+	for _, want := range []string{"version 2", "policy", "sign it again"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("the refusal does not mention %q, so an operator reading it does not learn that the "+
+				"fix is to re-emit and re-sign the set: %v", want, err)
+		}
+	}
+}
+
+// TestAVersionThreeDocumentIsRefusedAsBeingItsOwnPolicy is ticket 19's version
+// bump, and the refusal carries the reason for the split.
+//
+// A version 3 set carried an egress section, which made it a statement about
+// behaviour as well as a guest list — and therefore made a sandbox's policy the
+// digest of the document that lists peers' policies. Two peers could not both
+// pin each other under that arrangement, because each set would have had to
+// contain the digest of the other. The section moves out into policy.json, and
+// the refusal says so rather than saying "unknown version".
+func TestAVersionThreeDocumentIsRefusedAsBeingItsOwnPolicy(t *testing.T) {
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
+
+	// Control: the same values without an egress section still admit the
+	// platform.
+	admits(t, f, loads(t, a, theDocument()))
+
+	document := documentFor(versionThreeDocument, theMeasurement)
+	refusesToLoad(t, document, a.Sign(t, document), a.Public)
+
+	_, err := attest.LoadReferenceValueSet([]byte(document), a.Sign(t, document), a.Public)
+	for _, want := range []string{"version 3", "egress", "policy.json", "re-emit"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("the refusal does not mention %q, so an operator reading it does not learn where the "+
+				"egress section went: %v", want, err)
+		}
+	}
+}
+
+// TestASetStillCarryingAnEgressSectionIsRefused is the same mistake made at the
+// right version: a document that says version 4 and still has the section in it.
+//
+// The strict decode would refuse it anyway, as an unknown field. It is refused
+// by name and one check earlier, because the sentence an author needs says where
+// the section went and that both documents have to be signed again — not that
+// this parser met a field it did not recognise.
+func TestASetStillCarryingAnEgressSectionIsRefused(t *testing.T) {
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
+	document := theDocument()
+
+	// Control.
+	admits(t, f, loads(t, a, document))
+
+	modified := strings.Replace(document,
+		`"version": 4,`,
+		`"version": 4,
+  "egress": {"version": 1, "unattested": false},`, 1)
+	if modified == document {
+		t.Fatal("the document has no version line; the fixture has drifted")
+	}
+	refusesToLoad(t, modified, a.Sign(t, modified), a.Public)
+
+	_, err := attest.LoadReferenceValueSet([]byte(modified), a.Sign(t, modified), a.Public)
+	for _, want := range []string{"egress", "policy.json", "sign"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("the refusal does not mention %q: %v", want, err)
+		}
+	}
+}
+
+// TestAPolicyDigestOnAValueSurvivesTheDocument is the allow-list entry made
+// writable: a reference value is a measurement and a policy, and both have to
+// come back out of the file the way they went in.
+//
+// It is checked for both vendors in one document, because policy_digest is the
+// only field of this format that belongs to both, and a loader that read it out
+// of the amd-sev-snp branch alone would leave the Intel half unconstrained
+// while looking correct.
+func TestAPolicyDigestOnAValueSurvivesTheDocument(t *testing.T) {
+	a := fixture.NewAuthor(t)
+	document := strings.NewReplacer(
+		`"vendor": "amd-sev-snp",`, `"vendor": "amd-sev-snp",
+      "policy_digest": "`+theListedPolicy.String()+`",`,
+		`"vendor": "intel-tdx",`, `"vendor": "intel-tdx",
+      "policy_digest": "`+theOtherListedPolicy.String()+`",`,
+	).Replace(theMixedDocument())
+
+	set := loads(t, a, document)
+	if len(set.Values) != 2 {
+		t.Fatalf("the document holds two values; %d loaded", len(set.Values))
+	}
+	for i, want := range []attest.PolicyDigest{theListedPolicy, theOtherListedPolicy} {
+		got := set.Values[i].PolicyDigest
+		if got == nil {
+			t.Errorf("value %d (%s) loaded unconstrained; the document lists %s", i, set.Values[i].Vendor, want)
+			continue
+		}
+		if *got != want {
+			t.Errorf("value %d (%s) lists policy %s; the document lists %s", i, set.Values[i].Vendor, got, want)
+		}
+	}
+	if got := set.Unconstrained(); len(got) != 0 {
+		t.Errorf("a set whose every value lists a policy reports %+v as unconstrained", got)
+	}
+
+	// It renders back out, and back in, unchanged. An author can therefore read
+	// a set out of the loader, hand it to the signer, and get the same
+	// allow-list rather than a weaker one.
+	rendered, err := attest.MarshalReferenceValueSet(set)
+	if err != nil {
+		t.Fatalf("rendering the set: %v", err)
+	}
+	back := loads(t, a, string(rendered))
+	if !reflect.DeepEqual(back.Values, set.Values) {
+		t.Errorf("the policy digests did not survive a round trip:\n%s", rendered)
+	}
+	if strings.Count(string(rendered), "policy_digest") != 2 {
+		t.Errorf("the rendered document names policy_digest %d times; want one per value:\n%s",
+			strings.Count(string(rendered), "policy_digest"), rendered)
+	}
+
+	// And a value that lists none renders without the field rather than with an
+	// empty one, because "" is a policy nobody has and absent is any policy.
+	unconstrained, err := attest.MarshalReferenceValueSet(loads(t, a, theDocument()))
+	if err != nil {
+		t.Fatalf("rendering an unconstrained set: %v", err)
+	}
+	if strings.Contains(string(unconstrained), "policy_digest") {
+		t.Errorf("a value listing no policy rendered a policy_digest field:\n%s", unconstrained)
+	}
+}
+
+// TestAPolicyDigestOfTheWrongShapeIsRefused: a digest that is not 32 bytes of
+// hexadecimal names no policy any peer can present.
+//
+// It would match nothing, which fails closed — and that is exactly why it is
+// refused out loud instead. An allow-list entry that silently matches nothing
+// is an entry that does not do its job while looking as though it does, and the
+// author who typed it will be reading a refusal about a peer rather than about
+// their file.
+func TestAPolicyDigestOfTheWrongShapeIsRefused(t *testing.T) {
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
+	document := theDocument()
+
+	// Control.
+	admits(t, f, loads(t, a, document))
+
+	for _, tc := range []struct{ name, digest string }{
+		{"too short", theListedPolicy.String()[:62]},
+		{"too long", theListedPolicy.String() + "00"},
+		{"empty", ""},
+		{"not hexadecimal", strings.Repeat("g", 64)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			modified := strings.Replace(document, `"vendor": "amd-sev-snp",`,
+				`"vendor": "amd-sev-snp",
+      "policy_digest": "`+tc.digest+`",`, 1)
+			if modified == document {
+				t.Fatal("the document has no vendor line; the fixture has drifted")
+			}
+			refusesToLoad(t, modified, a.Sign(t, modified), a.Public)
+		})
+	}
+}
+
+// theListedPolicy and theOtherListedPolicy are policy digests as a document
+// lists them. What they are digests of does not matter here — the loader never
+// computes one — only that they are 32 bytes and tell each other apart.
+var (
+	theListedPolicy      = attest.PolicyDigest{0xc1, 0xc2, 0xc3, 0xc4, 0xc5, 0xc6, 0xc7, 0xc8}
+	theOtherListedPolicy = attest.PolicyDigest{0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7, 0xf8}
+)
+
+// TestAReferenceValueThatNamesNoVendorIsRefused: version 2 is not version 1
+// with an optional field. A value that does not say whose evidence it admits is
+// refused inside a version 2 document too, and so is one naming hardware no
+// verifier here implements — which is refused at load rather than at the first
+// peer, because a set nobody can enforce is a configuration mistake and not a
+// verdict.
+func TestAReferenceValueThatNamesNoVendorIsRefused(t *testing.T) {
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
+	document := theDocument()
+
+	// Control.
+	admits(t, f, loads(t, a, document))
+
+	for _, tc := range []struct{ name, from, to string }{
+		{"no vendor at all", `"vendor": "amd-sev-snp",` + "\n      ", ``},
+		{"an empty vendor", `"vendor": "amd-sev-snp"`, `"vendor": ""`},
+		{"hardware nobody here verifies", `"vendor": "amd-sev-snp"`, `"vendor": "example-corp-tee"`},
+		{"a vendor spelled as something else", `"vendor": "amd-sev-snp"`, `"vendor": "sev-snp"`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			modified := strings.Replace(document, tc.from, tc.to, 1)
+			if modified == document {
+				t.Fatalf("the document does not contain %q; the fixture has drifted", tc.from)
+			}
+			refusesToLoad(t, modified, a.Sign(t, modified), a.Public)
+		})
+	}
+}
+
+// TestATDXReferenceValueLoadsAndSurvivesARoundTrip is the control for the
+// second vendor: the document an author writes for an Intel TDX peer loads, and
+// every field arrives where it was written.
+//
+// Unlike every other set in this file, this one is inspected rather than wired
+// to a verifier and shown to admit a platform. The TDX verifier and its fake
+// platform are in other packages; what is under test here is the document, and
+// whether these fields decide a verdict is that verifier's test to make.
+func TestATDXReferenceValueLoadsAndSurvivesARoundTrip(t *testing.T) {
+	a := fixture.NewAuthor(t)
+	set := loads(t, a, theTDXDocument())
+
+	if len(set.Values) != 1 {
+		t.Fatalf("the document holds one value; %d loaded", len(set.Values))
+	}
+	rv := set.Values[0]
+	if rv.Vendor != attest.VendorIntelTDX {
+		t.Fatalf("loaded as vendor %q; want %q", rv.Vendor, attest.VendorIntelTDX)
+	}
+	if rv.TDX == nil {
+		t.Fatal("an intel-tdx value loaded with no TDX fields")
+	}
+	if len(rv.LaunchMeasurement) != 0 {
+		t.Errorf("a TDX value loaded carrying an SEV-SNP launch measurement %x", rv.LaunchMeasurement)
+	}
+	// Each register where the document put it. A loader that filled RTMR0 from
+	// the RTMR2 line would still produce a set that loads, and every check
+	// built on it would then be checking the wrong register.
+	for _, r := range []struct {
+		name string
+		got  [][]byte
+		want [][]byte
+	}{
+		{"observed_mrtd", rv.TDX.ObservedMRTD, [][]byte{theMRTD}},
+		{"observed_rtmr0", rv.TDX.ObservedRTMR0, [][]byte{theRTMR0}},
+		{"observed_rtmr1", rv.TDX.ObservedRTMR1, [][]byte{firstBootRTMR1, laterBootRTMR1}},
+		{"predicted_rtmr2", [][]byte{rv.TDX.PredictedRTMR2}, [][]byte{thePredictedRTMR2}},
+	} {
+		if !reflect.DeepEqual(r.got, r.want) {
+			t.Errorf("%s loaded as %x; the document names %x", r.name, r.got, r.want)
+		}
+	}
+	if want := (attest.TDXTCBFloor{Status: attest.TDXTCBUpToDate, EvaluationDataNumber: 20}); rv.TDX.MinimumTCB != want {
+		t.Errorf("the loaded Intel TCB floor is %+v; want %+v", rv.TDX.MinimumTCB, want)
+	}
+	if rv.TDX.TDPolicy.AllowDebug {
+		t.Error("the loaded TD attributes policy permits debugging; the document does not")
+	}
+
+	// A set that loaded renders back to a document that loads to the same set,
+	// so an author can read one out of the loader and hand it to the signer.
+	// The bytes are not expected to match: there is no canonical form, and the
+	// signature covers what was delivered rather than what a renderer produces.
+	rendered, err := attest.MarshalReferenceValueSet(set)
+	if err != nil {
+		t.Fatalf("rendering a loaded TDX set: %v", err)
+	}
+	back := loads(t, a, string(rendered))
+	if !reflect.DeepEqual(back.Values, set.Values) {
+		t.Errorf("the set does not survive a round trip through the document:\n got %+v\nwant %+v\n%s",
+			back.Values[0].TDX, set.Values[0].TDX, rendered)
+	}
+}
+
+// TestATDAttributesPolicyLeftOutPermitsNothing is the asymmetry the format
+// keeps in both vendors: a floor left out is refused, a permission left out is
+// the fail-closed answer. An absent field may make a value stricter than its
+// author intended, never weaker.
+func TestATDAttributesPolicyLeftOutPermitsNothing(t *testing.T) {
+	a := fixture.NewAuthor(t)
+	document := strings.Replace(theTDXDocument(),
+		`      "td_attributes_policy": {"allow_debug": false},`+"\n", ``, 1)
+	if document == theTDXDocument() {
+		t.Fatal("the fixture has drifted; nothing was removed")
+	}
+	set := loads(t, a, document)
+	if set.Values[0].TDX.TDPolicy.AllowDebug {
+		t.Error("a value with no td_attributes_policy permits debugging; " +
+			"an omitted permission must permit nothing")
+	}
+}
+
+// TestEachRequiredTDXFieldIsLoadBearing is
+// TestEachNamedTCBComponentIsLoadBearing's sibling for the other vendor.
+//
+// Every field a TDX value must name is cut out, one at a time, and the document
+// must not load without it. Each default a loader could reach for instead is a
+// permission it would be granting on the author's behalf: no observed_rtmr0 is
+// a register not checked, no predicted_rtmr2 is every image the provider boots,
+// no status is a platform Intel has already called out of date, and no
+// evaluation number is a TCB info from before the recovery that named the
+// vulnerability.
+func TestEachRequiredTDXFieldIsLoadBearing(t *testing.T) {
+	a := fixture.NewAuthor(t)
+
+	const (
+		head     = `{"format": "` + documentFormat + `", "version": 4, "reference_values": [{"vendor": "intel-tdx", `
+		tail     = `}]}`
+		mrtd     = `"observed_mrtd": ["$MRTD"]`
+		rtmr0    = `"observed_rtmr0": ["$RTMR0"]`
+		rtmr1    = `"observed_rtmr1": ["$RTMR1A", "$RTMR1B"]`
+		rtmr2    = `"predicted_rtmr2": "$RTMR2"`
+		tdPolicy = `"td_attributes_policy": {"allow_debug": false}`
+		floor    = `"minimum_tcb": {"status": "UpToDate", "tcb_evaluation_data_number": 20}`
+	)
+	complete := head + strings.Join([]string{mrtd, rtmr0, rtmr1, rtmr2, tdPolicy, floor}, ", ") + tail
+
+	// Control: complete, this document loads. Every variant below is this
+	// document minus one thing.
+	loads(t, a, withRegisters(complete))
+
+	for _, tc := range []struct{ name, document string }{
+		{"no observed MRTD", head + strings.Join([]string{rtmr0, rtmr1, rtmr2, tdPolicy, floor}, ", ") + tail},
+		{"no observed RTMR0", head + strings.Join([]string{mrtd, rtmr1, rtmr2, tdPolicy, floor}, ", ") + tail},
+		{"no observed RTMR1", head + strings.Join([]string{mrtd, rtmr0, rtmr2, tdPolicy, floor}, ", ") + tail},
+		{"no predicted RTMR2", head + strings.Join([]string{mrtd, rtmr0, rtmr1, tdPolicy, floor}, ", ") + tail},
+		{"no TCB floor", head + strings.Join([]string{mrtd, rtmr0, rtmr1, rtmr2, tdPolicy}, ", ") + tail},
+		{
+			"a TCB floor naming no status",
+			head + strings.Join([]string{mrtd, rtmr0, rtmr1, rtmr2, tdPolicy,
+				`"minimum_tcb": {"tcb_evaluation_data_number": 20}`}, ", ") + tail,
+		},
+		{
+			"a TCB floor naming no evaluation number",
+			head + strings.Join([]string{mrtd, rtmr0, rtmr1, rtmr2, tdPolicy,
+				`"minimum_tcb": {"status": "UpToDate"}`}, ", ") + tail,
+		},
+		{"an empty predicted RTMR2", strings.Replace(complete, rtmr2, `"predicted_rtmr2": ""`, 1)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.document == complete {
+				t.Fatal("the variant is the control document; the fixture has drifted")
+			}
+			document := withRegisters(tc.document)
+			refusesToLoad(t, document, a.Sign(t, document), a.Public)
+		})
+	}
+}
+
+// TestAnObservedRegisterListThatChecksNothingIsRefused: the lists say "any of
+// these", never "ignore". An empty list, or a list holding an empty value, is a
+// register the author has stopped checking without saying so — and a TDX peer
+// is admitted on its registers, so a list that matches anything is the same
+// mistake as a reference value naming no launch measurement.
+func TestAnObservedRegisterListThatChecksNothingIsRefused(t *testing.T) {
+	a := fixture.NewAuthor(t)
+
+	// Control.
+	loads(t, a, theTDXDocument())
+
+	for _, tc := range []struct{ name, from, to string }{
+		{"an empty MRTD list", `"observed_mrtd": ["$MRTD"]`, `"observed_mrtd": []`},
+		{"an empty RTMR0 list", `"observed_rtmr0": ["$RTMR0"]`, `"observed_rtmr0": []`},
+		{"an empty RTMR1 list", `"observed_rtmr1": ["$RTMR1A", "$RTMR1B"]`, `"observed_rtmr1": []`},
+		{"an empty value in a list", `"observed_mrtd": ["$MRTD"]`, `"observed_mrtd": [""]`},
+		{"a value that is not hexadecimal", `"observed_rtmr0": ["$RTMR0"]`, `"observed_rtmr0": ["not a register"]`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			modified := strings.Replace(tdxValueDocument, tc.from, tc.to, 1)
+			if modified == tdxValueDocument {
+				t.Fatalf("the document does not contain %q; the fixture has drifted", tc.from)
+			}
+			document := withRegisters(modified)
+			refusesToLoad(t, document, a.Sign(t, document), a.Public)
+		})
+	}
+}
+
+// TestATCBStatusIntelDoesNotVouchForIsRefused: a floor is one of the two
+// statuses that mean the platform is at Intel's current level. Everything else
+// Intel can say — ConfigurationNeeded, OutOfDate, Revoked and their
+// combinations — is below either floor, and a document naming one as its floor
+// is refused rather than treated as a floor of "whatever Intel says".
+func TestATCBStatusIntelDoesNotVouchForIsRefused(t *testing.T) {
+	a := fixture.NewAuthor(t)
+
+	// Control: both admissible floors load.
+	for _, status := range []string{"UpToDate", "SWHardeningNeeded"} {
+		document := withRegisters(strings.Replace(tdxValueDocument, `"status": "UpToDate"`,
+			`"status": "`+status+`"`, 1))
+		loads(t, a, document)
+	}
+
+	for _, status := range []string{"OutOfDate", "Revoked", "ConfigurationNeeded", "uptodate", ""} {
+		t.Run("a floor of "+status, func(t *testing.T) {
+			document := withRegisters(strings.Replace(tdxValueDocument, `"status": "UpToDate"`,
+				`"status": "`+status+`"`, 1))
+			refusesToLoad(t, document, a.Sign(t, document), a.Public)
+		})
+	}
+}
+
+// TestAValueCarryingTheOtherVendorsFieldsIsRefused closes the hole the vendor
+// tag would otherwise open.
+//
+// An entry naming one vendor and carrying the other's field is not an entry
+// with a stray key: its author was thinking about a constraint this value
+// cannot express, and a loader that enforced only the half it recognised would
+// admit more than they wrote down. That is the same failure as ignoring an
+// unknown field, arrived at from a direction that looks like a valid document.
+func TestAValueCarryingTheOtherVendorsFieldsIsRefused(t *testing.T) {
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
+
+	// Controls: each vendor's own document, unmixed.
+	admits(t, f, loads(t, a, theDocument()))
+	loads(t, a, theTDXDocument())
+
+	for _, tc := range []struct{ name, document string }{
+		{
+			"an SEV-SNP value naming a predicted RTMR2",
+			strings.Replace(theDocument(), `"launch_measurement": "`,
+				`"predicted_rtmr2": "`+hex.EncodeToString(thePredictedRTMR2)+`",
+      "launch_measurement": "`, 1),
+		},
+		{
+			"an SEV-SNP value naming an observed register",
+			strings.Replace(theDocument(), `"launch_measurement": "`,
+				`"observed_rtmr1": ["`+hex.EncodeToString(firstBootRTMR1)+`"],
+      "launch_measurement": "`, 1),
+		},
+		{
+			"an SEV-SNP value naming a TD attributes policy",
+			strings.Replace(theDocument(), `"launch_measurement": "`,
+				`"td_attributes_policy": {"allow_debug": true},
+      "launch_measurement": "`, 1),
+		},
+		{
+			"a TDX value naming a launch measurement",
+			strings.Replace(theTDXDocument(), `"observed_mrtd": [`,
+				`"launch_measurement": "`+hex.EncodeToString(theMeasurement)+`",
+      "observed_mrtd": [`, 1),
+		},
+		{
+			"a TDX value naming a guest policy",
+			strings.Replace(theTDXDocument(), `"observed_mrtd": [`,
+				`"guest_policy": {"allow_debug": true},
+      "observed_mrtd": [`, 1),
+		},
+		{
+			"a TDX value carrying an SEV-SNP TCB floor",
+			strings.Replace(theTDXDocument(),
+				`"minimum_tcb": {"status": "UpToDate", "tcb_evaluation_data_number": 20}`,
+				`"minimum_tcb": {"bootloader": 9, "tee": 0, "snp": 23, "microcode": 72}`, 1),
+		},
+		{
+			"an SEV-SNP value carrying an Intel TCB floor",
+			strings.Replace(theDocument(),
+				`"minimum_tcb": {
+        "bootloader": 9,
+        "tee": 0,
+        "snp": 23,
+        "microcode": 72
+      }`,
+				`"minimum_tcb": {"status": "UpToDate", "tcb_evaluation_data_number": 20}`, 1),
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.document == theDocument() || tc.document == theTDXDocument() {
+				t.Fatal("the variant is a control document; the fixture has drifted")
+			}
+			refusesToLoad(t, tc.document, a.Sign(t, tc.document), a.Public)
+		})
+	}
+}
+
+// TestOneFileHoldsBothVendors is what the vendor tag is for. A peer group can
+// span hardware, so a set holds an SEV-SNP value and an Intel TDX value at
+// once, and each verifier reads the values that are its own. A format that
+// carried the vendor once at the top of the document, or a deployment that
+// shipped one file per vendor, would make the mixed group the special case.
+func TestOneFileHoldsBothVendors(t *testing.T) {
+	a := fixture.NewAuthor(t)
+	f := newGuest(t, defaultConfig())
+
+	set := loads(t, a, theMixedDocument())
+	if len(set.Values) != 2 {
+		t.Fatalf("the mixed document holds two values; %d loaded", len(set.Values))
+	}
+	if got := []attest.Vendor{set.Values[0].Vendor, set.Values[1].Vendor}; got[0] != attest.VendorAMDSEVSNP || got[1] != attest.VendorIntelTDX {
+		t.Fatalf("the values loaded as %v; want the SEV-SNP one and then the TDX one", got)
+	}
+	if !bytes.Equal(set.Values[0].LaunchMeasurement, theMeasurement) {
+		t.Errorf("the SEV-SNP value names %x; the document names %x",
+			set.Values[0].LaunchMeasurement, theMeasurement)
+	}
+	if set.Values[0].TDX != nil {
+		t.Error("the SEV-SNP value loaded carrying TDX fields")
+	}
+	if set.Values[1].TDX == nil || !bytes.Equal(set.Values[1].TDX.PredictedRTMR2, thePredictedRTMR2) {
+		t.Errorf("the TDX value did not load its predicted RTMR2")
+	}
+
+	// It is a trust root a Verification will hold: New copies it and refuses at
+	// startup anything that could not mean what its author intended, and both
+	// vendors' values have to survive that.
+	if _, err := attest.New(fixture.VerifierTrusting(t, f.platform), set); err != nil {
+		t.Fatalf("a mixed set was refused at construction: %v", err)
+	}
+
+	// And it renders back to a document that loads to the same set.
+	rendered, err := attest.MarshalReferenceValueSet(set)
+	if err != nil {
+		t.Fatalf("rendering a mixed set: %v", err)
+	}
+	back := loads(t, a, string(rendered))
+	if !reflect.DeepEqual(back.Values, set.Values) {
+		t.Errorf("a mixed set does not survive a round trip through the document:\n%s", rendered)
 	}
 }
 
@@ -856,11 +1558,4 @@ func flipHexDigit(signature []byte) []byte {
 		flipped[0] = '0'
 	}
 	return flipped
-}
-
-func writeFile(t *testing.T, path string, content []byte) {
-	t.Helper()
-	if err := os.WriteFile(path, content, 0o444); err != nil {
-		t.Fatalf("writing %s: %v", path, err)
-	}
 }

@@ -173,6 +173,8 @@ REFUSED
   a caller learns   : attest: verification failed
 ```
 
+*`attest/cmd/verify-evidence` and `attest/cmd/acquire-evidence` became `attest-tool verify` and `attest-tool acquire` in ticket 21; their last versions are `git show 205fd2154:attest/cmd/verify-evidence/main.go` and `git show 205fd2154:attest/cmd/acquire-evidence/main.go`.*
+
 **6. The control was taken again after every refusal**, and the unmodified image was still
 accepted. A refusal test that would also pass with the whole path broken is not evidence.
 
@@ -208,6 +210,9 @@ nothing else — ticket 08's analogue of ticket 07's `crosscheck-report.c`, and 
 same reason. It acquires evidence exactly as `cmd/acquire-evidence` does (`attest/tsm`, the
 chain from `/config`, a key generated a moment earlier and dropped at power-off), prints the
 bundle base64-encoded between marker lines, and exits.
+
+*`crosscheck-report.c` was removed in ticket 21; its last version is
+`git show 205fd2154:docs/snp/image/crosscheck-report.c`.*
 
 **It verifies nothing.** It does not read `reference-values.json`, it does not look at
 `/etc/attested-tunnel/author.pub`, and it has no opinion about the measurement it is carrying.

@@ -121,6 +121,10 @@ diagnostic surface a measured guest has (user story 48).
 | a latency table | below. |
 | the harness records its output for every property | `docs/snp/evidence/ticket14/`. |
 
+*`tunnel-in-stock-guest.sh` and the `unattested-peer/` directory were removed in ticket 21; their
+last versions are `git show 205fd2154:docs/snp/tunnel-in-stock-guest.sh` and
+`git show 205fd2154:docs/snp/unattested-peer`.*
+
 ## The latency table
 
 Measured by the dialing guest, over the relay, on the two-guest run recorded in
@@ -219,6 +223,8 @@ runs. Ticket 05 established this on real silicon and this run reproduces it. It 
 correction, reported again and not applied, because the places that would have to change are an
 ADR and three documents outside this ticket's territory — including the sentence in the refusal
 above, which tells an operator to expect "malformed evidence" at their peers.
+
+*`attest/cmd/verify-evidence` became `attest-tool verify` in ticket 21; its last version is `git show 205fd2154:attest/cmd/verify-evidence/main.go`.*
 
 **And no firmware was rolled over.** The TCB-change criterion is satisfied by *simulation*: the
 stale chain is a real one, fetched from AMD's key distribution service for this same chip at

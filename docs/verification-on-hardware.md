@@ -11,6 +11,8 @@ is `attest` and `attest/verify`, driven by `attest/cmd/verify-evidence`; the har
 `docs/snp/verify-on-hardware.sh` and its recorded run is
 `docs/snp/evidence/ticket05/verify-run.txt`.
 
+*`attest/cmd/verify-evidence` became `attest-tool verify` in ticket 21; its last version is `git show 205fd2154:attest/cmd/verify-evidence/main.go`.*
+
 ## Nothing here is new code
 
 Everything this ticket needed already existed. `attest/tsm` acquires, `attest/provision`

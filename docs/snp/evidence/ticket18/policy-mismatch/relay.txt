@@ -1,0 +1,10 @@
+l2relay: RELAYED a_to_b_frames=1250 b_to_a_frames=975 a_to_b_bytes=1231387 b_to_a_bytes=787163 tampered=0
+l2relay: MARKER not found hits=0 marker='attested-tunnel-plaintext-marker' in 2225 frames carrying 2018550 bytes
+l2relay: what was on the segment:
+  ethertypes : IPv4=2198, ARP=8, IPv6=19
+  ip protocols: ICMP=30, UDP=2168
+  arp targets : 10.14.0.2, 10.14.0.3
+  10.14.0.2 -> 10.14.0.3 proto=UDP frames=1210
+  10.14.0.3 -> 10.14.0.2 proto=UDP frames=958
+  10.14.0.2 -> 10.14.0.3 proto=ICMP frames=26
+  10.14.0.3 -> 10.14.0.2 proto=ICMP frames=4

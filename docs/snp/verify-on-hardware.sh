@@ -200,19 +200,22 @@ note "the two sets differ in exactly the launch measurement, and both are signed
 ########################################################################
 say "3. Acquire evidence from the live confidential guest"
 ########################################################################
-CGO_ENABLED=0 go -C "$REPO/attest" build -o "$WORK/acquire-evidence" ./cmd/acquire-evidence || exit 1
-go -C "$REPO/attest" build -o "$WORK/verify-evidence" ./cmd/verify-evidence || exit 1
+# One tool, built twice: the guest runs a static copy of it, the workstation
+# the ordinary one (attest-tool acquire and attest-tool verify, ticket 21).
+mkdir -p "$WORK/guest"
+CGO_ENABLED=0 go -C "$REPO/attest" build -o "$WORK/guest/attest-tool" ./cmd/attest-tool || exit 1
+go -C "$REPO/attest" build -o "$WORK/attest-tool" ./cmd/attest-tool || exit 1
 
 gssh "rm -rf $GUEST_DIR && mkdir -p $GUEST_DIR/config-device $GUEST_DIR/empty-device $GUEST_DIR/stale-device"
-gssh --scp "$WORK/acquire-evidence" "G:$GUEST_DIR/"
+gssh --scp "$WORK/guest/attest-tool" "G:$GUEST_DIR/"
 gssh --scp "$EVIDENCE_DIR/certificate-chain.bin" "$EVIDENCE_DIR/certificate-chain.json" \
               "G:$GUEST_DIR/config-device/"
 
-echo "\$ acquire-evidence -chain-dir $GUEST_DIR/config-device -out $GUEST_DIR/bundle   # in the guest, as root"
+echo "\$ attest-tool acquire -chain-dir $GUEST_DIR/config-device -out $GUEST_DIR/bundle   # in the guest, as root"
 gssh "sudo modprobe sev-guest;
          sudo mountpoint -q /sys/kernel/config || sudo mount -t configfs none /sys/kernel/config;
          echo \"report requests before: \$(sudo ls /sys/kernel/config/tsm/report | wc -l)\";
-         sudo $GUEST_DIR/acquire-evidence -chain-dir $GUEST_DIR/config-device -out $GUEST_DIR/bundle;
+         sudo $GUEST_DIR/attest-tool acquire -chain-dir $GUEST_DIR/config-device -out $GUEST_DIR/bundle;
          echo \"acquire rc=\$?\";
          echo \"report requests after: \$(sudo ls /sys/kernel/config/tsm/report | wc -l)\"" \
     > "$WORK/acquire.txt" 2>&1
@@ -321,7 +324,7 @@ say "5. Verify, in an empty network namespace"
 cat > "$WORK/inside-netns.sh" <<'INNER'
 set -u
 WORK="$1"
-V="$WORK/verify-evidence"
+V="$WORK/attest-tool verify"
 COMMON="-refvals $WORK/set/reference-values.json -author $WORK/author.pub"
 
 echo "--- this shell's network ---"
@@ -411,8 +414,8 @@ say "6. The provisioned chain, removed and staled on the config device"
 # The verifier's answer is the peer's half. This is the local half: an acquirer
 # whose config device has no chain, or a chain for a TCB the platform has moved
 # off, refuses to produce a bundle at all — naming ADR-0005, and never fetching.
-echo "$ acquire-evidence -chain-dir $GUEST_DIR/empty-device   # nothing provisioned"
-gssh "sudo $GUEST_DIR/acquire-evidence -chain-dir $GUEST_DIR/empty-device; echo rc=\$?" \
+echo "$ attest-tool acquire -chain-dir $GUEST_DIR/empty-device   # nothing provisioned"
+gssh "sudo $GUEST_DIR/attest-tool acquire -chain-dir $GUEST_DIR/empty-device; echo rc=\$?" \
     > "$WORK/case-device-empty.txt" 2>&1
 cat "$WORK/case-device-empty.txt"
 expect_text "$WORK/case-device-empty.txt" "no certificate chain is provisioned here — provision one, do not fetch" \
@@ -423,8 +426,8 @@ expect_text "$WORK/case-device-empty.txt" "rc=1"                    "and the acq
 if [ "$STALE" = yes ]; then
   gssh --scp "$WORK/stale-device/certificate-chain.bin" "$WORK/stale-device/certificate-chain.json" \
                 "G:$GUEST_DIR/stale-device/"
-  echo "$ acquire-evidence -chain-dir $GUEST_DIR/stale-device   # AMD-issued, for microcode $STALE_UCODE"
-  gssh "sudo $GUEST_DIR/acquire-evidence -chain-dir $GUEST_DIR/stale-device; echo rc=\$?" \
+  echo "$ attest-tool acquire -chain-dir $GUEST_DIR/stale-device   # AMD-issued, for microcode $STALE_UCODE"
+  gssh "sudo $GUEST_DIR/attest-tool acquire -chain-dir $GUEST_DIR/stale-device; echo rc=\$?" \
       > "$WORK/case-device-stale.txt" 2>&1
   cat "$WORK/case-device-stale.txt"
   expect_text "$WORK/case-device-stale.txt" "the chain is stale"     "a stale config device fails closed locally"
@@ -441,7 +444,7 @@ say "7. The refusals are the code's, not the namespace's"
 # round trip away.
 curl -sS --max-time 20 -o /dev/null -w '    the vendor is reachable from this shell: HTTP %{http_code}\n' \
      https://kdsintf.amd.com/vcek/v1/Genoa/cert_chain
-"$WORK/verify-evidence" -bundle "$WORK/bundle" -refvals "$WORK/set/reference-values.json" \
+"$WORK/attest-tool" verify -bundle "$WORK/bundle" -refvals "$WORK/set/reference-values.json" \
      -author "$WORK/author.pub" -without-chain > "$WORK/case-nochain-online.txt" 2>&1
 echo "rc=$?" >> "$WORK/case-nochain-online.txt"
 tail -6 "$WORK/case-nochain-online.txt"
@@ -450,7 +453,7 @@ expect_text "$WORK/case-nochain-online.txt" "no certificate chain presented with
 expect_text "$WORK/case-nochain-online.txt" "rc=2"                  "and the exit status is the same refusal"
 
 if [ "$STALE" = yes ]; then
-  "$WORK/verify-evidence" -bundle "$WORK/bundle" -chain "$WORK/stale-device/certificate-chain.bin" \
+  "$WORK/attest-tool" verify -bundle "$WORK/bundle" -chain "$WORK/stale-device/certificate-chain.bin" \
        -refvals "$WORK/set/reference-values.json" -author "$WORK/author.pub" \
        > "$WORK/case-stale-online.txt" 2>&1
   echo "rc=$?" >> "$WORK/case-stale-online.txt"

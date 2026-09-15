@@ -1,0 +1,236 @@
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+############ 1. the report interface, and what drives it ############
+attributes:
+total 0
+-r--r--r-- 1 root root 4096 Sep 10 20:09 generation
+--w------- 1 root root    0 Sep 10 20:09 inblob
+-r--r--r-- 1 root root    0 Sep 10 20:09 outblob
+-r--r--r-- 1 root root 4096 Sep 10 20:09 provider
+  provider : tdx_guest
+  generation : 0
+  privlevel : (not exposed)
+  privlevel_floor : (not exposed)
+request removed
+
+############ 2. is this a TDX guest, and with what loaded ############
+6.17.0-1022-gcp
+PRETTY_NAME="Ubuntu 24.04.4 LTS"
+NAME="Ubuntu"
+BOOT_IMAGE=/vmlinuz-6.17.0-1022-gcp root=PARTUUID=fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7 ro console=ttyS0,115200 panic=-1
+--- dmesg, tdx ---
+[    0.000000] tdx: Guest detected
+[    0.000000] tdx: Attributes: SEPT_VE_DISABLE
+[    0.000000] tdx: TD_CTLS: PENDING_VE_DISABLE ENUM_TOPOLOGY VIRT_CPUID2 REDUCE_VE
+[    1.475872] process: using TDX aware idle routine
+[    1.475872] Memory Encryption Features active: Intel TDX
+[    1.475872] smpboot: CPU0: Intel TDX (family: 0x6, model: 0x8f, stepping: 0x8)
+[    5.314949] systemd[1]: Detected confidential virtualization tdx.
+--- lsmod ---
+Module                  Size  Used by
+cpuid                  12288  0
+8021q                  45056  0
+garp                   20480  1 8021q
+mrp                    20480  1 8021q
+stp                    12288  1 garp
+llc                    16384  2 stp,garp
+binfmt_misc            24576  1
+nls_iso8859_1          12288  1
+tdx_guest              16384  0
+input_leds             12288  0
+serio_raw              20480  0
+sch_fq_codel           24576  5
+dm_multipath           45056  0
+nvme_fabrics           36864  0
+efi_pstore             12288  0
+dmi_sysfs              20480  0
+ip_tables              32768  0
+x_tables               65536  1 ip_tables
+autofs4                57344  2
+btrfs                2154496  0
+blake2b_generic        20480  0
+raid10                 73728  0
+raid456               196608  0
+async_raid6_recov      20480  1 raid456
+async_memcpy           16384  2 raid456,async_raid6_recov
+async_pq               20480  2 raid456,async_raid6_recov
+async_xor              16384  3 async_pq,raid456,async_raid6_recov
+async_tx               16384  5 async_pq,async_memcpy,async_xor,raid456,async_raid6_recov
+xor                    20480  2 async_xor,btrfs
+raid6_pq              126976  4 async_pq,btrfs,raid456,async_raid6_recov
+raid1                  61440  0
+raid0                  24576  0
+linear                 16384  0
+polyval_clmulni        12288  0
+ghash_clmulni_intel    12288  0
+psmouse               217088  0
+gve                   167936  0
+aesni_intel            98304  0
+
+############ 3. block devices, as Google names them ############
+--- /dev/disk/by-id ---
+total 0
+lrwxrwxrwx 1 root root 13 Sep 10 20:08 google-persistent-disk-0 -> ../../nvme0n1
+lrwxrwxrwx 1 root root 15 Sep 10 20:08 google-persistent-disk-0-part1 -> ../../nvme0n1p1
+lrwxrwxrwx 1 root root 16 Sep 10 20:08 google-persistent-disk-0-part14 -> ../../nvme0n1p14
+lrwxrwxrwx 1 root root 16 Sep 10 20:08 google-persistent-disk-0-part15 -> ../../nvme0n1p15
+lrwxrwxrwx 1 root root 16 Sep 10 20:08 google-persistent-disk-0-part16 -> ../../nvme0n1p16
+lrwxrwxrwx 1 root root 13 Sep 10 20:08 nvme-nvme.1ae0-6e766d655f636172642d7064-6e766d655f636172642d7064-00000001 -> ../../nvme0n1
+lrwxrwxrwx 1 root root 15 Sep 10 20:08 nvme-nvme.1ae0-6e766d655f636172642d7064-6e766d655f636172642d7064-00000001-part1 -> ../../nvme0n1p1
+lrwxrwxrwx 1 root root 16 Sep 10 20:08 nvme-nvme.1ae0-6e766d655f636172642d7064-6e766d655f636172642d7064-00000001-part14 -> ../../nvme0n1p14
+lrwxrwxrwx 1 root root 16 Sep 10 20:08 nvme-nvme.1ae0-6e766d655f636172642d7064-6e766d655f636172642d7064-00000001-part15 -> ../../nvme0n1p15
+lrwxrwxrwx 1 root root 16 Sep 10 20:08 nvme-nvme.1ae0-6e766d655f636172642d7064-6e766d655f636172642d7064-00000001-part16 -> ../../nvme0n1p16
+lrwxrwxrwx 1 root root 13 Sep 10 20:08 nvme-nvme_card-pd_nvme_card-pd -> ../../nvme0n1
+lrwxrwxrwx 1 root root 15 Sep 10 20:08 nvme-nvme_card-pd_nvme_card-pd-part1 -> ../../nvme0n1p1
+lrwxrwxrwx 1 root root 16 Sep 10 20:08 nvme-nvme_card-pd_nvme_card-pd-part14 -> ../../nvme0n1p14
+lrwxrwxrwx 1 root root 16 Sep 10 20:08 nvme-nvme_card-pd_nvme_card-pd-part15 -> ../../nvme0n1p15
+lrwxrwxrwx 1 root root 16 Sep 10 20:08 nvme-nvme_card-pd_nvme_card-pd-part16 -> ../../nvme0n1p16
+lrwxrwxrwx 1 root root 13 Sep 10 20:08 nvme-nvme_card-pd_nvme_card-pd_1 -> ../../nvme0n1
+lrwxrwxrwx 1 root root 15 Sep 10 20:08 nvme-nvme_card-pd_nvme_card-pd_1-part1 -> ../../nvme0n1p1
+lrwxrwxrwx 1 root root 16 Sep 10 20:08 nvme-nvme_card-pd_nvme_card-pd_1-part14 -> ../../nvme0n1p14
+lrwxrwxrwx 1 root root 16 Sep 10 20:08 nvme-nvme_card-pd_nvme_card-pd_1-part15 -> ../../nvme0n1p15
+lrwxrwxrwx 1 root root 16 Sep 10 20:08 nvme-nvme_card-pd_nvme_card-pd_1-part16 -> ../../nvme0n1p16
+--- lsblk ---
+NAME         SERIAL              SIZE TYPE
+loop0                           66.8M loop
+loop1                          344.5M loop
+loop2                           50.1M loop
+nvme0n1      persistent-disk-0    20G disk
+├─nvme0n1p1                       19G part
+├─nvme0n1p14                       4M part
+├─nvme0n1p15                     106M part
+└─nvme0n1p16                     913M part
+--- /sys/block/*/serial ---
+--- udevadm info for the boot disk ---
+boot filesystem is on /dev/nvme0n1p16
+P: /devices/pci0000:00/0000:00:04.0/nvme/nvme0/nvme0n1/nvme0n1p16
+M: nvme0n1p16
+R: 16
+U: block
+T: partition
+D: b 259:4
+N: nvme0n1p16
+L: 0
+S: disk/by-id/nvme-nvme_card-pd_nvme_card-pd-part16
+S: disk/by-label/BOOT
+S: disk/by-partuuid/dbf34f44-ded2-4878-b8de-f3d710283689
+S: disk/by-id/nvme-nvme.1ae0-6e766d655f636172642d7064-6e766d655f636172642d7064-00000001-part16
+S: disk/by-id/google-persistent-disk-0-part16
+S: disk/by-uuid/b4f9057b-66e6-4f5a-bbba-a8086989e88f
+S: disk/by-id/nvme-nvme_card-pd_nvme_card-pd_1-part16
+S: disk/by-path/pci-0000:00:04.0-nvme-1-part16
+S: disk/by-diskseq/9-part16
+Q: 9
+E: DEVPATH=/devices/pci0000:00/0000:00:04.0/nvme/nvme0/nvme0n1/nvme0n1p16
+E: DEVNAME=/dev/nvme0n1p16
+E: DEVTYPE=partition
+E: DISKSEQ=9
+E: PARTN=16
+E: PARTUUID=dbf34f44-ded2-4878-b8de-f3d710283689
+E: MAJOR=259
+E: MINOR=4
+E: SUBSYSTEM=block
+E: USEC_INITIALIZED=2464458
+E: DM_MULTIPATH_DEVICE_PATH=0
+E: ID_SERIAL_SHORT=persistent-disk-0
+E: ID_WWN=nvme.1ae0-6e766d655f636172642d7064-6e766d655f636172642d7064-00000001
+E: ID_MODEL=nvme_card-pd
+E: ID_REVISION=2
+E: ID_NSID=1
+E: ID_SERIAL=Google_PersistentDisk_persistent-disk-0
+E: ID_PATH=pci-0000:00:04.0-nvme-1
+E: ID_PATH_TAG=pci-0000_00_04_0-nvme-1
+E: ID_PART_TABLE_UUID=2b0a8058-7062-4bc0-b8b9-78129f9d189e
+E: ID_PART_TABLE_TYPE=gpt
+E: ID_FS_LABEL=BOOT
+E: ID_FS_LABEL_ENC=BOOT
+E: ID_FS_UUID=b4f9057b-66e6-4f5a-bbba-a8086989e88f
+E: ID_FS_UUID_ENC=b4f9057b-66e6-4f5a-bbba-a8086989e88f
+E: ID_FS_VERSION=1.0
+E: ID_FS_BLOCKSIZE=4096
+E: ID_FS_LASTBLOCK=233728
+E: ID_FS_SIZE=957349888
+E: ID_FS_TYPE=ext4
+E: ID_FS_USAGE=filesystem
+E: ID_PART_ENTRY_SCHEME=gpt
+E: ID_PART_ENTRY_UUID=dbf34f44-ded2-4878-b8de-f3d710283689
+E: ID_PART_ENTRY_TYPE=bc13c2ff-59e6-4262-a352-b275fd6f7172
+E: ID_PART_ENTRY_NUMBER=16
+E: ID_PART_ENTRY_OFFSET=227328
+E: ID_PART_ENTRY_SIZE=1869825
+E: ID_PART_ENTRY_DISK=259:0
+E: NVME_HOST_IFACE=none
+E: DEVLINKS=/dev/disk/by-id/nvme-nvme_card-pd_nvme_card-pd-part16 /dev/disk/by-label/BOOT /dev/disk/by-partuuid/dbf34f44-ded2-4878-b8de-f3d710283689 /dev/disk/by-id/nvme-nvme.1ae0-6e766d655f636172642d7064-6e766d655f636172642d7064-00000001-part16 /dev/disk/by-id/google-persistent-disk-0-part16 /dev/disk/by-uuid/b4f9057b-66e6-4f5a-bbba-a8086989e88f /dev/disk/by-id/nvme-nvme_card-pd_nvme_card-pd_1-part16 /dev/disk/by-path/pci-0000:00:04.0-nvme-1-part16 /dev/disk/by-diskseq/9-part16
+E: TAGS=:systemd:
+E: CURRENT_TAGS=:systemd:
+
+P: /devices/pci0000:00/0000:00:04.0/nvme/nvme0/nvme0n1
+M: nvme0n1
+R: 1
+U: block
+T: disk
+D: b 259:0
+N: nvme0n1
+L: 0
+S: disk/by-id/google-persistent-disk-0
+S: disk/by-id/nvme-nvme.1ae0-6e766d655f636172642d7064-6e766d655f636172642d7064-00000001
+S: disk/by-id/nvme-nvme_card-pd_nvme_card-pd_1
+S: disk/by-diskseq/9
+S: disk/by-id/nvme-nvme_card-pd_nvme_card-pd
+S: disk/by-path/pci-0000:00:04.0-nvme-1
+Q: 9
+E: DEVPATH=/devices/pci0000:00/0000:00:04.0/nvme/nvme0/nvme0n1
+E: DEVNAME=/dev/nvme0n1
+E: DEVTYPE=disk
+E: DISKSEQ=9
+E: MAJOR=259
+E: MINOR=0
+E: SUBSYSTEM=block
+E: USEC_INITIALIZED=2464196
+E: MPATH_SBIN_PATH=/sbin
+E: DM_MULTIPATH_DEVICE_PATH=0
+E: ID_SERIAL_SHORT=persistent-disk-0
+E: ID_WWN=nvme.1ae0-6e766d655f636172642d7064-6e766d655f636172642d7064-00000001
+E: ID_MODEL=nvme_card-pd
+E: ID_REVISION=2
+E: ID_NSID=1
+E: ID_SERIAL=Google_PersistentDisk_persistent-disk-0
+E: ID_PATH=pci-0000:00:04.0-nvme-1
+E: ID_PATH_TAG=pci-0000_00_04_0-nvme-1
+E: ID_PART_TABLE_UUID=2b0a8058-7062-4bc0-b8b9-78129f9d189e
+E: ID_PART_TABLE_TYPE=gpt
+E: DEVLINKS=/dev/disk/by-id/google-persistent-disk-0 /dev/disk/by-id/nvme-nvme.1ae0-6e766d655f636172642d7064-6e766d655f636172642d7064-00000001 /dev/disk/by-id/nvme-nvme_card-pd_nvme_card-pd_1 /dev/disk/by-diskseq/9 /dev/disk/by-id/nvme-nvme_card-pd_nvme_card-pd /dev/disk/by-path/pci-0000:00:04.0-nvme-1
+E: TAGS=:systemd:
+E: CURRENT_TAGS=:systemd:
+
+
+############ 4. the network, and the metadata server ############
+--- ip -d link ---
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00 promiscuity 0  allmulti 0 minmtu 0 maxmtu 0 addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 524280 tso_max_segs 65535 gro_max_size 65536 
+2: ens3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1460 qdisc mq state UP mode DEFAULT group default qlen 1000
+    link/ether 42:01:0a:80:00:21 brd ff:ff:ff:ff:ff:ff promiscuity 0  allmulti 0 minmtu 68 maxmtu 1460 addrgenmode eui64 numtxqueues 4 numrxqueues 4 gso_max_size 65536 gso_max_segs 65535 tso_max_size 262143 tso_max_segs 65535 gro_max_size 65536 parentbus pci parentdev 0000:00:03.0 
+    altname enp0s3
+--- ip addr ---
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host noprefixroute 
+       valid_lft forever preferred_lft forever
+2: ens3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1460 qdisc mq state UP group default qlen 1000
+    link/ether 42:01:0a:80:00:21 brd ff:ff:ff:ff:ff:ff
+    altname enp0s3
+    inet 10.128.0.33/32 metric 100 scope global dynamic ens3
+       valid_lft 86373sec preferred_lft 86373sec
+    inet6 fe80::4001:aff:fe80:21/64 scope link 
+       valid_lft forever preferred_lft forever
+--- ip route ---
+default via 10.128.0.1 dev ens3 proto dhcp src 10.128.0.33 metric 100 
+10.128.0.1 dev ens3 proto dhcp scope link src 10.128.0.33 metric 100 
+169.254.169.254 via 10.128.0.1 dev ens3 proto dhcp src 10.128.0.33 metric 100 
+--- metadata server ---
+169.254.169.254 answered:
+computeMetadata/
+--- and one value out of it ---
+727311160789873480 (curl exit 0)
+

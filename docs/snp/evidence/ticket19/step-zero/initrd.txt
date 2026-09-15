@@ -1,0 +1,146 @@
+=== TDX initrd probe (ticket 19, step zero): 2026-09-10T20:05:52Z ===
+project nsf-2348130-428843 zone us-central1-a image ubuntu-2404-noble-amd64-v20260826
+repo    eb9939ed4dd0b6d49e99d3a773bc1bb32622b740
+out     /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/step-zero
+
+############ creating tdx-initrd at 2026-09-10T20:05Z ############
+Created [https://www.googleapis.com/compute/beta/projects/nsf-2348130-428843/zones/us-central1-a/instances/tdx-initrd].
+WARNING: Some requests generated warnings:
+ - Disk size: '20 GB' is larger than image size: '10 GB'. You might need to resize the root repartition manually if the operating system does not support automatic resizing. See https://cloud.google.com/compute/docs/disks/add-persistent-disk#resize_pd for details.
+ - The resource 'projects/ubuntu-os-cloud/global/images/ubuntu-2404-noble-amd64-v20260826' is deprecated. A suggested replacement is 'projects/ubuntu-os-cloud/global/images/ubuntu-2404-noble-amd64-v20260906'.
+
+tdx-initrd	us-central1-a	c3-standard-4	RUNNING
+
+############ boot 1: baseline, the pinned image untouched ############
+--- baseline ---
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+boot_id : 1d75f8c8-d0d6-43b6-948d-ab8c7b751172
+cmdline : BOOT_IMAGE=/vmlinuz-6.17.0-1022-gcp root=PARTUUID=fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7 ro console=ttyS0,115200 panic=-1
+kernel  : 6.17.0-1022-gcp
+rtmr2               : ecc9935861eba8e47817c10761468525af6df776fa2fa2767be5d6d152a5ae3a62da7b750df33d8069c7ff9bae811df9
+  ccel 262144 bytes
+  partitions: root gpt1, /boot gpt16, ESP gpt15; /boot fs-uuid b4f9057b-66e6-4f5a-bbba-a8086989e88f
+  snapshot for baseline: 65024000 bytes of tar, grub.cfg 7531 bytes
+
+############ the rewrite: one initrd line into the branch that is taken ############
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+inserted after line 165 of /tmp/grub.cfg.orig:
+                  initrd  /initrd.img-6.17.0-1022-gcp
+one line added; 7531 bytes -> 7568 bytes
+--- what changed ---
+--- /tmp/grub.cfg.orig^I2026-09-10 20:07:47.911506224 +0000$
++++ /tmp/grub.cfg.new^I2026-09-10 20:07:47.937538721 +0000$
+@@ -163,6 +163,7 @@$
+ ^Ielse$
+ ^I^Iecho^I'GRUB_FORCE_PARTUUID set, attempting initrdless boot.'$
+ ^I^Ilinux^I/vmlinuz-6.17.0-1022-gcp root=PARTUUID=fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7 ro  console=ttyS0,115200 panic=-1$
++^I^Iinitrd^I/initrd.img-6.17.0-1022-gcp$
+ ^Ifi$
+ ^Iinitrdfail$
+ }$
+apt-daily.timer
+Disabling 'apt-daily-upgrade.service', but its triggering units are still active:
+apt-daily-upgrade.timer
+--- installed ---
+----i---------e------- /boot/grub/grub.cfg
+30b0f8521f23e208def12f64d07af082babfca760fc92da7d1f50e1cfb1fe0db  /boot/grub/grub.cfg
+99b0dcc93aca6499b4c222ef751d0384db3403246a1c3c7a728e1e06573d477c  /boot/initrd.img-6.17.0-1022-gcp
+/boot/grub/grub.cfg 7568 bytes
+/boot/initrd.img-6.17.0-1022-gcp 31155953 bytes
+GRUB_FORCE_PARTUUID: commented out
+
+  snapshot for initrd: 65024000 bytes of tar, grub.cfg 7568 bytes
+  boot_id 1d75f8c8-d0d6-43b6-948d-ab8c7b751172 -> a8146c72-1365-4067-a144-c15aba243026 (barrier crossed on attempt 2)
+############ boot 2: the same image, one initrd line ############
+--- initrd ---
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+boot_id : a8146c72-1365-4067-a144-c15aba243026
+cmdline : BOOT_IMAGE=/vmlinuz-6.17.0-1022-gcp root=PARTUUID=fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7 ro console=ttyS0,115200 panic=-1
+kernel  : 6.17.0-1022-gcp
+rtmr2               : d8f247b4cb48558ec514b254f8b587c0853ac093f190ec82e1e7b5c998640e265ccb863ba69a2b634b0ccaff86ab1aa5
+  ccel 262144 bytes
+
+############ what the guest exposes, for the initrd ticket 19 has to write ############
+  provider : tdx_guest
+boot filesystem is on /dev/nvme0n1p16
+  guest-facts.txt: 236 lines
+
+############ the acquirer, on Intel, with no chain directory ############
+built from eb9939ed4dd0b6d49e99d3a773bc1bb32622b740
+090859af396bdbf59b60af8a9986b365d5e184fc170f038063e59f65b6faa213  /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/step-zero/acquire-evidence
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+090859af396bdbf59b60af8a9986b365d5e184fc170f038063e59f65b6faa213  /tmp/acquire-evidence
+=== no -chain-dir at all: a TDX quote carries the chain that roots it ===
+tsm: provider "tdx_guest" (intel-tdx) returned 8000 bytes of evidence over 1 write(s); its own certificate table could not be read (auxblob: open /sys/kernel/config/tsm/report/acquire-evidence-1829-1/auxblob: no such file or directory), which is the expected state on this host and not an error; bundled no certificate chain, because the quote carries the one that roots it
+vendor              : intel-tdx
+public key (SPKI)   : 44 bytes, 302a300506032b657003210030f048f37aa1456c0df4347770a4b0f441699627c0f6fbef4da7f5d8df8963f5
+binding context     : v2 (version byte 0x02), 02000000000000000000000000000000
+policy digest       : 0000000000000000000000000000000000000000000000000000000000000000
+caller-supplied     : baab01e10d72cf1445c1bd0224a8b4be4c3b490e5e2cded7903c89783cfef1086e228c3ac53e8aa8224dabd99ddc105766352adb72cc3ddfb726971aaeb7b75f
+  = SHA-512(public key ‖ binding context ‖ policy digest), the whole 64-byte field (ADR-0002)
+evidence            : 8000 bytes
+certificate chain   : none bundled; intel-tdx evidence carries the chain that roots it
+platform's own table: not exposed by this kernel — open /sys/kernel/config/tsm/report/acquire-evidence-1829-1/auxblob: no such file or directory
+wrote /tmp/bundle/evidence.bin (8000 bytes)
+wrote /tmp/bundle/public-key.der (44 bytes)
+wrote /tmp/bundle/caller-supplied.bin (64 bytes)
+wrote /tmp/bundle/policy-digest.bin (32 bytes)
+wrote /tmp/bundle/observation.txt (374 bytes)
+exit status: 0
+
+=== and with a -chain-dir that holds nothing, which must be ignored rather than read ===
+tsm: provider "tdx_guest" (intel-tdx) returned 8000 bytes of evidence over 1 write(s); its own certificate table could not be read (auxblob: open /sys/kernel/config/tsm/report/acquire-evidence-1836-1/auxblob: no such file or directory), which is the expected state on this host and not an error; bundled no certificate chain, because the quote carries the one that roots it
+vendor              : intel-tdx
+public key (SPKI)   : 44 bytes, 302a300506032b65700321005b9b102eff06b2eb041d8fe2b83ccf48b7878f6e5c56d5d9dc25b6de6ae7246d
+binding context     : v2 (version byte 0x02), 02000000000000000000000000000000
+policy digest       : 0000000000000000000000000000000000000000000000000000000000000000
+caller-supplied     : fc9029868da9767d2bbf926c828c509011c28ac41a0465d2c0def222f60d61598558d41be590011b260ce83c816e268ce232014c7689f843a12d37582285a101
+  = SHA-512(public key ‖ binding context ‖ policy digest), the whole 64-byte field (ADR-0002)
+evidence            : 8000 bytes
+certificate chain   : none bundled; intel-tdx evidence carries the chain that roots it
+platform's own table: not exposed by this kernel — open /sys/kernel/config/tsm/report/acquire-evidence-1836-1/auxblob: no such file or directory
+exit status: 0
+
+=== the bundle ===
+total 24
+-rw-r--r-- 1 root root   64 Sep 10 20:09 caller-supplied.bin
+-rw-r--r-- 1 root root 8000 Sep 10 20:09 evidence.bin
+-rw-r--r-- 1 root root  374 Sep 10 20:09 observation.txt
+-rw-r--r-- 1 root root   32 Sep 10 20:09 policy-digest.bin
+-rw-r--r-- 1 root root   44 Sep 10 20:09 public-key.der
+  bundle: 20480 bytes
+
+############ the control: the pristine boot, predicted from its own bytes ############
+records predicted   : 86
+records recorded    : 86 (/home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/step-zero/baseline/ccel.bin)
+RTMR2 predicted     : ecc9935861eba8e47817c10761468525af6df776fa2fa2767be5d6d152a5ae3a62da7b750df33d8069c7ff9bae811df9
+RTMR2 in quote      : ecc9935861eba8e47817c10761468525af6df776fa2fa2767be5d6d152a5ae3a62da7b750df33d8069c7ff9bae811df9 (/home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/step-zero/baseline/quote.bin)
+RTMR2 comparison    : MATCH
+RESULT: MATCH
+
+############ the question: the initrd boot, predicted from the bytes it booted ############
+records predicted   : 88
+records recorded    : 88 (/home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/step-zero/initrd/ccel.bin)
+RTMR2 predicted     : d8f247b4cb48558ec514b254f8b587c0853ac093f190ec82e1e7b5c998640e265ccb863ba69a2b634b0ccaff86ab1aa5
+RTMR2 in quote      : d8f247b4cb48558ec514b254f8b587c0853ac093f190ec82e1e7b5c998640e265ccb863ba69a2b634b0ccaff86ab1aa5 (/home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/step-zero/initrd/quote.bin)
+RTMR2 comparison    : MATCH
+RESULT: MATCH
+
+############ the two boots, side by side ############
+baseline   rtmr2 ecc9935861eba8e47817c10761468525af6df776fa2fa2767be5d6d152a5ae3a62da7b750df33d8069c7ff9bae811df9  records 86
+initrd     rtmr2 d8f247b4cb48558ec514b254f8b587c0853ac093f190ec82e1e7b5c998640e265ccb863ba69a2b634b0ccaff86ab1aa5  records 88
+
+wrote /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/step-zero/README.txt
+
+MATCH: the initrd boot's RTMR2 was predicted from the disk bytes; ticket 19 may proceed
+
+deleting tdx-initrd
+Deleted [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/zones/us-central1-a/instances/tdx-initrd].
+
+############ for docs/snp/cloud/tdx/RESOURCES.md ############
+| created | name | type | purpose | state |
+|---|---|---|---|---|
+| 2026-09-10T20:05Z | tdx-initrd | c3-standard-4 TDX, us-central1-a, 20GB pd-balanced, pinned image `ubuntu-2404-noble-amd64-v20260826` | ticket 19 step zero: two boots -- baseline and one with an `initrd` line in grub.cfg -- to test predict-rtmr2.py's initrd path, plus attest/tsm's acquirer run on Intel with no chain directory | **deleted 2026-09-10T20:10Z** |
+
+verdict: MATCH: the initrd boot's RTMR2 was predicted from the disk bytes; ticket 19 may proceed
+=== done 2026-09-10T20:10:25Z, exit 0 ===

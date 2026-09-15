@@ -18,7 +18,7 @@
 // image has no shell, no writable storage that outlives the guest and no
 // network, so the only way a bundle gets out of it is the serial console.
 //
-// It does what cmd/acquire-evidence does, with the flags fixed to what the
+// It does what cmd/attest-tool acquire does, with the flags fixed to what the
 // image provides — the certificate chain provisioned on the config device at
 // /config (ADR-0005), the kernel's report interface at its default path — and
 // then prints the bundle base64-encoded between marker lines so the harness on
@@ -27,13 +27,20 @@
 // It VERIFIES NOTHING. It does not read the reference value set, it does not
 // look at /etc/attested-tunnel/author.pub, and it has no opinion about the
 // measurement it is carrying. The verdict is taken outside the guest by
-// cmd/verify-evidence, which is the whole point: a guest that judged its own
+// cmd/attest-tool verify, which is the whole point: a guest that judged its own
 // evidence would be judging a measurement it could not have influenced anyway,
 // and would prove nothing.
 //
 // The private key is generated here and discarded when the guest powers off,
-// exactly as in cmd/acquire-evidence: it exists so the binding is over a real
+// exactly as in cmd/attest-tool acquire: it exists so the binding is over a real
 // key rather than a constant.
+//
+// The binding is ADR-0002's version 2, which covers a policy digest as well as
+// the key. This image carries no signed set to take a digest from — it verifies
+// nothing, so it holds nothing — and -policy-digest is how a harness supplies
+// one; left out it binds 32 zero bytes, which is a definite policy that no
+// reference value set names. The version and the digest are printed, because a
+// bundle recovered off a console has to say which arithmetic reproduces it.
 package main
 
 import (
@@ -42,6 +49,8 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"encoding/base64"
+	"encoding/hex"
+	"flag"
 	"fmt"
 	"os"
 
@@ -56,13 +65,23 @@ import (
 const chainDir = "/config"
 
 func main() {
-	if err := run(); err != nil {
+	policyDigest := flag.String("policy-digest", "", "the policy this evidence commits to, hex; empty binds 32 zero bytes")
+	flag.Parse()
+	if err := run(*policyDigest); err != nil {
 		fmt.Printf("report-evidence: FAILED: %v\n", err)
 		os.Exit(2)
 	}
 }
 
-func run() error {
+func run(policyDigestHex string) error {
+	var policy attest.PolicyDigest
+	if policyDigestHex != "" {
+		raw, err := hex.DecodeString(policyDigestHex)
+		if err != nil || len(raw) != len(policy) {
+			return fmt.Errorf("-policy-digest must be %d bytes of hexadecimal", len(policy))
+		}
+		copy(policy[:], raw)
+	}
 	acquirer, err := tsm.New(tsm.Options{ChainDir: chainDir, RequestName: "ticket08"})
 	if err != nil {
 		return err
@@ -75,7 +94,7 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("encoding the public key: %w", err)
 	}
-	binding := attest.Binding{PublicKey: spki, Context: attest.BindingContextV1}
+	binding := attest.Binding{PublicKey: spki, Context: attest.BindingContextV2, PolicyDigest: policy}
 	callerSupplied := binding.CallerSuppliedBytes()
 
 	ev, err := acquirer.Acquire(context.Background(), callerSupplied)
@@ -84,6 +103,7 @@ func run() error {
 	}
 	observation, _ := acquirer.LastObservation()
 	fmt.Printf("report-evidence: %s\n", observation)
+	fmt.Printf("report-evidence: binding context v%d, policy digest %s\n", binding.Context.Version(), binding.PolicyDigest)
 	fmt.Printf("report-evidence: caller-supplied %x\n", callerSupplied[:])
 
 	// The launch measurement the platform reported, printed for the console

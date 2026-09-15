@@ -1,0 +1,32 @@
+Pseudo-terminal will not be allocated because stdin is not a terminal.
++ sudo rm -f /etc/default/grub.d/99-tdx-probe.cfg
++ echo 'a file that was not in the initrd before'
++ sudo tee /etc/tdx-probe-marker
++ sudo mkdir -p /etc/initramfs-tools/hooks
++ printf '#!/bin/sh\n[ "$1" = prereqs ] && { echo; exit 0; }\n. /usr/share/initramfs-tools/hook-functions\ncopy_file text /etc/tdx-probe-marker /etc/tdx-probe-marker\n'
++ sudo tee /etc/initramfs-tools/hooks/tdxprobe
++ sudo chmod +x /etc/initramfs-tools/hooks/tdxprobe
++ sudo update-initramfs -u
++ tail -3
+update-initramfs: Generating /boot/initrd.img-6.17.0-1022-gcp
++ sudo update-grub
++ tail -2
+Adding boot menu entry for UEFI Firmware Settings ...
+done
+--- CONTROL: marker gone from grub.cfg? (want 0) ---
++ echo '--- CONTROL: marker gone from grub.cfg? (want 0) ---'
++ sudo grep -c tdx.probe.marker=alpha /boot/grub/grub.cfg
+0
++ true
++ echo '--- CONTROL: is the marker file in the initrd? ---'
+--- CONTROL: is the marker file in the initrd? ---
++ grep -c tdx-probe-marker
+++ uname -r
++ sudo lsinitramfs /boot/initrd.img-6.17.0-1022-gcp
+1
+--- CONTROL: initrd hash, must have moved ---
++ echo '--- CONTROL: initrd hash, must have moved ---'
++ cut -c1-32
+++ uname -r
++ sudo sha256sum /boot/initrd.img-6.17.0-1022-gcp
+4a75372a37348da4d117dd5e9c89e319

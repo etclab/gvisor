@@ -47,30 +47,31 @@ iteration of unproven code.
 
 | Package   | What it is |
 |-----------|------------|
-| `attest`  | The public surface: the vendor seam, the reference value vocabulary, the signed reference value set format and its loader, the binding of ADR-0002, the refusal taxonomy, and `Verification.Verify`. |
+| `attest`  | The public surface: the vendor seam, the reference value vocabulary, the signed reference value set format and the signed policy format with their loaders, the binding of ADR-0002, the refusal taxonomy, and `Verification.Verify`. |
 | `verify`  | The SEV-SNP verifier. Wraps `go-sev-guest` (ADR-0003) and keeps that library's API shape from reaching anywhere else. |
 | `tsm`     | Ticket 04: evidence acquisition from real hardware, through the kernel's vendor-neutral report interface at `/sys/kernel/config/tsm/report`. Writes the caller-supplied bytes, reads the evidence back, and bundles the chain the config device holds — never the platform's, which is empty here, and never the network's (ADR-0005). Procedure: `docs/evidence-acquisition.md`. |
-| `cmd/acquire-evidence` | The command over `tsm`, run inside a guest: generate a key, acquire evidence bound to it, bundle the chain, print what the platform said. |
-| `snpfake` | A fake SEV-SNP platform built on `go-sev-guest`'s test signing. Implements the acquisition half of the seam for everything that must run without a confidential VM. Test support, but not a `_test` package, because tunneld's tests inject it through `tunneld.Config`. |
+| `internal/snpfake` | A fake SEV-SNP platform built on `go-sev-guest`'s test signing. Implements the acquisition half of the seam for everything that must run without a confidential VM. Test support, but not a `_test` package, because tunneld's tests inject it through `tunneld.Config`. Under `internal/` since ticket 21, so that nothing outside this module can import it at all. |
+| `internal/tdxfake` | A fake Intel TDX platform: it re-signs the quote a real Google TDX VM produced, with every key replaced by a test key and every field a test wants to move, moved, and writes the four Intel collateral documents beside it. Same standing as `internal/snpfake`, and under `internal/` for the same reason. |
+| `internal/fixture` | Ticket 21: the platform, verifier, author and acceptance builders four test packages had each written for themselves. A package rather than a `_test.go` file because a helper declared in one package's test files is not reachable from another's; under `internal/` and named by the same two guards as the fakes, so it cannot reach the measured binary either. |
 | `provision` | Ticket 15: fetches the certificate chain for a platform's chip and TCB from AMD's key distribution service once, validates it through `verify`, and writes it beside the reference value set (ADR-0005); the consumer half loads it and refuses a missing or stale chain rather than fetching. Procedure: `docs/provisioning-certificate-chain.md`. |
-| `cmd/provision-chain` | The operator command over `provision`: `fetch` and `check`. |
-| `cmd/verify-evidence` | Ticket 05: the command that takes a verdict on a bundle from outside the guest that produced it — load the signed set, wire it to the verifier, exit 0 on acceptance and 2 on refusal. Procedure: `docs/verification-on-hardware.md`. |
-| `ratls`   | The certificate as a serialization envelope: a versioned payload under a private arc carrying the evidence, the chain and the binding context, and the handshake callback that runs `Verification.Verify` on the peer's. Nothing else in the certificate is read. |
+| `cmd/attest-tool` | Ticket 21: the one command over the packages above that is not the measured binary, one subcommand each. `acquire` runs inside a guest over `tsm`: generate a key, acquire evidence bound to it, bundle the chain, print what the platform said. `provision fetch` and `provision check` are the operator's half over `provision`. `verify` takes a verdict on a bundle from outside the guest that produced it — load the signed set, wire it to the verifier, exit 0 on acceptance and 2 on refusal. Procedures: `docs/evidence-acquisition.md`, `docs/provisioning-certificate-chain.md`, `docs/verification-on-hardware.md`. |
+| `ratls`   | The certificate as a serialization envelope: a versioned payload (version 2) under a private arc carrying the evidence, the chain, the binding context and the peer's policy digest, and the handshake callback that runs `Verification.Verify` on the peer's. Nothing else in the certificate is read. |
 | `tunnel`  | The transport: QUIC with TLS 1.3, early data refused on both ends, one exchange per stream, the establishment round trip, and the cache that holds at most one tunnel per peer under an idle timeout and a maximum age (`Limits`). Knows nothing about attestation. |
-| `tunneld` | The composition root and the public API: `New` with a `Config`, `Peer(name)` yielding a `Channel`, `Channel.Exchange`. One `tunnel.Cache` per tunneld, built from its one identity, under `Config.Limits`; a `Channel` is a handle on a peer rather than a holder of a connection. |
+| `tunneld` | The composition root and the public API: `New` with a `Config`, `Peer(name)` yielding a `Channel`, `Channel.Exchange`. It loads the set and the policy, presents the policy's digest as its identity, and enforces `forward_to` on the peers it dials. One `tunnel.Cache` per tunneld, built from its one identity, under `Config.Limits`; a `Channel` is a handle on a peer rather than a holder of a connection. |
 
-`verify`, `snpfake`, `ratls` and `tunnel` have no test files of their own, and that is the design
-rather than a gap. There are two seams, one per layer. Below tunneld the seam is this module's
-public surface: every `attest` test drives `Verification.Verify` or the set loader and asserts on
-external behaviour — accepted, or refused with a given reason — and none reaches inside `verify`.
-Above it the seam is tunneld's API: every `tunneld` test starts tunnelds with the fake platform
-injected through `Config` and asserts that a channel exists or does not, and that an exchange
-completes or does not. Certificate carry, transport and peer resolution are tested only through
-that API, and verification is not re-tested there. The package has one second instrument: a
-peer built by hand from `ratls` and `tunnel`, admitting on exactly a tunneld's terms, used where
-a tunneld cannot stand in — a peer that misbehaves after the handshake (`hostile_test.go`), and
-a peer that writes down the key it was shown (`identity_test.go`), since a tunneld's key is by
-design observable nowhere but at the peer it is presented to.
+`verify`, `internal/snpfake`, `internal/tdxfake`, `internal/fixture`, `ratls` and `tunnel` have no
+test files of their
+own, and that is the design rather than a gap. There are two seams, one per layer. Below tunneld
+the seam is this module's public surface: every `attest` test drives `Verification.Verify` or the
+set loader and asserts on external behaviour — accepted, or refused with a given reason — and none
+reaches inside `verify`. Above it the seam is tunneld's API: every `tunneld` test starts tunnelds
+with the fake platform injected through `Config` and asserts that a channel exists or does not,
+and that an exchange completes or does not. Certificate carry, transport and peer resolution are
+tested only through that API, and verification is not re-tested there. The package has one second
+instrument: a peer built by hand from `ratls` and `tunnel`, admitting on exactly a tunneld's
+terms, used where a tunneld cannot stand in — a peer that misbehaves after the handshake
+(`hostile_test.go`), and a peer that writes down the key it was shown (`identity_test.go`), since
+a tunneld's key is by design observable nowhere but at the peer it is presented to.
 
 `tsm` is the one exception, and it is the exception for a reason worth stating. What sits below it
 is not a vendor but the kernel, so nothing above it can drive it without a confidential VM — the
@@ -79,7 +80,7 @@ and the fake for it is declared in `export_test.go`, so the tests themselves are
 `tsm_test` and still drive `Acquire` and nothing else. What they stand in for is the ABI, not the
 hardware: attributes generated on read, a generation counter that advances on every write, an
 `inblob` the width of the field, an empty `auxblob`. The evidence they feed it is real —
-`snpfake`'s, or the reports `docs/snp/evidence` captured from live guests.
+`internal/snpfake`'s, or the reports `docs/snp/evidence` captured from live guests.
 
 ## Acquiring evidence
 
@@ -148,15 +149,16 @@ party's format, and it is visibly a placeholder: if an enterprise number is assi
 work, `ratls.PayloadOID` is the one constant that changes. (Go's `encoding/asn1` represents arcs
 as `int`, which rules out the UUID-based `2.25` arc.)
 
-`snpfake` must never reach a production binary: it imports `go-sev-guest`'s test helpers, which
-import `testing` and register flags at init, and ticket 14 puts a binary inside the launch
-measurement. The binary that goes in is `cmd/tunneld`, not package `tunneld`, and that is where
-the guard lives: `cmd/tunneld/importgraph_test.go` lists the non-test dependency graph of
-`gvisor.dev/gvisor/attest/cmd/tunneld` and fails if `snpfake`, `go-sev-guest/testing` or
-`testing` appears, and checks package `tunneld`'s graph beside it so a failure names which of the
-two grew the dependency. The command's graph contains the package's, so one guard on the command
-is stronger than the guard that was in the package until ticket 14 moved it. The fake is injected
-only through `Config`, from test code.
+`internal/snpfake` must never reach a production binary: it imports `go-sev-guest`'s test
+helpers, which import `testing` and register flags at init, and ticket 14 puts a binary inside the
+launch measurement. The binary that goes in is `cmd/tunneld`, not package `tunneld`, and that is
+where the guard lives: `cmd/tunneld/importgraph_test.go` lists the non-test dependency graph of
+`gvisor.dev/gvisor/attest/cmd/tunneld` and fails if `internal/snpfake`, `internal/tdxfake`,
+`internal/fixture`, `go-sev-guest/testing`, `go-tdx-guest/testing` or `testing` appears, and checks package
+`tunneld`'s graph beside it so a failure names which of the two grew the dependency. The
+command's graph contains the package's, so one guard on the command is stronger than the guard
+that was in the package until ticket 14 moved it. The fake is injected only through `Config`,
+from test code.
 
 Two things about it are worth knowing before trusting it. It guards the *artifact* as well as the
 graph — `cmd/tunneld/packaged_test.go` builds the binary the way the packaging step does and reads
@@ -178,7 +180,7 @@ second public surface for tests to drive.
 
 Milestone 1 (ticket 05) is the first point at which a report from a physical AMD processor is
 checked against AMD's own root, outside the guest that produced it, against a set signed for
-that guest. It needed no new verification code — `attest/cmd/verify-evidence` loads a set,
+that guest. It needed no new verification code — `attest/cmd/attest-tool verify` loads a set,
 wires it to `verify`, and asks `Verification.Verify` for a verdict — and it is established by
 a recorded harness, `docs/snp/verify-on-hardware.sh`, because a live guest cannot be replayed.
 
@@ -211,18 +213,54 @@ measurement.
 ```json
 {
   "format": "gvisor.dev/gvisor/attest/reference-value-set",
-  "version": 1,
+  "version": 4,
   "reference_values": [
     {
+      "vendor": "amd-sev-snp",
       "launch_measurement": "1111…",
       "minimum_tcb": {"bootloader": 9, "tee": 0, "snp": 23, "microcode": 72},
-      "guest_policy": {"allow_smt": true}
+      "guest_policy": {"allow_smt": true},
+      "policy_digest": "ee22…"
+    },
+    {
+      "vendor": "intel-tdx",
+      "observed_mrtd": ["c1ee…"],
+      "observed_rtmr0": ["c0b8…"],
+      "observed_rtmr1": ["02c7…", "3a44…"],
+      "predicted_rtmr2": "ecc9…",
+      "td_attributes_policy": {"allow_debug": false},
+      "minimum_tcb": {"status": "UpToDate", "tcb_evaluation_data_number": 20}
     }
   ]
 }
 ```
 
-Four things about it are decided rather than incidental:
+Six things about it are decided rather than incidental:
+
+- **A value names the image it admits and the policy that image must be running under** (format
+  version 3 for `policy_digest`, version 4 for the set being only that). `policy_digest` is the
+  digest of the peer's own signed policy, which the peer folded into its evidence under ADR-0002's
+  binding version 2; a verifier checks it before recomputing the binding. Absent means
+  unconstrained — this value admits the named image under any policy — which is the one place this
+  format reads an absent field the weaker way, and a tunneld prints one line per such entry at
+  every start.
+
+  Version 3 documents also carried a top-level `egress` section, on the theory that the set was the
+  sandbox's own policy as well as its guest list. It is not, and cannot be: a set whose digest is
+  its sandbox's policy would have to contain the digest of a peer's set that already contains
+  it, so no two peers could pin each other (`docs/policy-binding.md`). Version 4 is version 3 with
+  the section removed, and a document that still carries one is refused with a sentence saying to
+  move it into `policy.json` and sign both again. Version 2 documents carried no `policy_digest`
+  at all and are refused likewise.
+
+- **Every value names its vendor, and one file holds both** (format version 2, ADR-0006's
+  addendum). The rest of a value's fields are that vendor's, and a field belonging to the other
+  one is refused rather than ignored. Version 1 documents carried no vendor and are refused
+  outright rather than read as SEV-SNP: that would be the loader deciding what an author did not
+  write down. Re-emit and re-sign them. The Intel names say which kind of value each register is
+  — three *observed* on the provider's hardware because nobody can predict them, one *predicted*
+  from the image before it booted, which is the only one that can fail a check
+  (`docs/tdx-rtmr2-prediction.md`).
 
 - **The signature is detached and covers the document's exact bytes** (ADR-0006). The alternative — an
   envelope whose payload is an opaque blob parsed only after its signature verifies — gives the
@@ -245,3 +283,35 @@ Four things about it are decided rather than incidental:
 A launch measurement's width is deliberately checked nowhere: it belongs to the hardware vendor,
 and one of them baked in here would sit above the seam that makes a second vendor tractable. A
 measurement of the wrong width matches nothing, which fails closed.
+
+## The signed policy
+
+The second document a tunneld loads, beside the set and under the same author key. It is what a
+sandbox *is*, where the set is whom it admits, and its digest is the number a peer names in
+`policy_digest`.
+
+```json
+{
+  "format": "gvisor.dev/gvisor/attest/policy",
+  "version": 1,
+  "egress": {"version": 1, "unattested": false},
+  "forward_to": ["a234…"]
+}
+```
+
+- **It names measurements and never digests**, which is the whole reason it is a separate file.
+  A policy that named policies would put its own digest inside the document that fixes it, and two
+  peers could not both pin each other — the finding ticket 18's live run produced and ticket 19
+  acted on (`docs/policy-binding.md`).
+- **`egress` says what leaves the sandbox.** Today it says unattested egress is refused, and both
+  its `version` and its `unattested` field are required, because a policy a verifier vouches for
+  is one its author wrote down. A document claiming `"unattested": true` is refused on load:
+  nothing here enforces permitting it, and a digest that vouched for it would vouch for a promise
+  no code keeps. The section versions separately from the document around it.
+- **`forward_to` is the images this sandbox will dial**, enforced by the dialing side after a
+  peer's evidence has verified and its policy has been admitted. Empty means it dials nobody;
+  absent does not load, because an author who said nothing has not said "nobody".
+- **The signature is the set's scheme under its own domain prefix**, so a signature over one
+  document can never be presented as a signature over the other, and the digest of the same bytes
+  differs between the two. `attest.PolicyDigestOf` computes it over the signed region, so
+  `sha256sum policy.json` is a different number and the wrong one.

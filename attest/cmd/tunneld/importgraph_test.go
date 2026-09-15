@@ -22,8 +22,9 @@ import (
 	"testing"
 )
 
-// The fake platform imports go-sev-guest's test helpers, which import
-// "testing" and register flags at init. Ticket 14 builds this command into the
+// The fake platforms import go-sev-guest's and go-tdx-guest's test helpers,
+// which import "testing" and register flags at init, and the fixture package
+// the tests build on imports "testing" itself. Ticket 14 builds this command into the
 // measured image as /usr/bin/tunneld, so everything reachable from here is in
 // the launch measurement — and a measurement over a binary nobody checked is a
 // measurement of whatever was there.
@@ -45,8 +46,11 @@ import (
 func TestPackagedImportGraphExcludesTestSupport(t *testing.T) {
 	deps := listDeps(t, "gvisor.dev/gvisor/attest/cmd/tunneld")
 	forbidden := []string{
-		"gvisor.dev/gvisor/attest/snpfake",
+		"gvisor.dev/gvisor/attest/internal/fixture",
+		"gvisor.dev/gvisor/attest/internal/snpfake",
 		"github.com/google/go-sev-guest/testing",
+		"gvisor.dev/gvisor/attest/internal/tdxfake",
+		"github.com/google/go-tdx-guest/testing",
 		"testing",
 	}
 	for _, f := range forbidden {
@@ -76,8 +80,11 @@ func TestPackagedImportGraphExcludesTestSupport(t *testing.T) {
 func TestPackageImportGraphExcludesTestSupport(t *testing.T) {
 	deps := listDeps(t, "gvisor.dev/gvisor/attest/tunneld")
 	for _, f := range []string{
-		"gvisor.dev/gvisor/attest/snpfake",
+		"gvisor.dev/gvisor/attest/internal/fixture",
+		"gvisor.dev/gvisor/attest/internal/snpfake",
 		"github.com/google/go-sev-guest/testing",
+		"gvisor.dev/gvisor/attest/internal/tdxfake",
+		"github.com/google/go-tdx-guest/testing",
 		"testing",
 	} {
 		if contains(deps, f) {

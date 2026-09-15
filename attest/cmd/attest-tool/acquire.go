@@ -1,0 +1,212 @@
+// Copyright 2026 The gVisor Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package main
+
+import (
+	"context"
+	"crypto/ed25519"
+	"crypto/rand"
+	"crypto/x509"
+	"encoding/base64"
+	"flag"
+	"fmt"
+	"os"
+	"path/filepath"
+
+	"gvisor.dev/gvisor/attest"
+	"gvisor.dev/gvisor/attest/tsm"
+)
+
+// runAcquire runs inside a confidential guest and produces one bundle:
+// evidence from the platform, bound to a key generated a moment earlier, and,
+// on AMD SEV-SNP, the certificate chain provisioned on the config device that a
+// verifier needs to check it (ADR-0002, ADR-0005).
+//
+//	attest-tool acquire [-chain-dir DIR] [-out DIR] [-report-dir DIR] [-base64]
+//
+// -chain-dir is required on AMD and unused on Intel TDX, where the quote
+// carries the chain that roots it and there is nothing to provision. Which one
+// this guest is is the platform's answer and not a flag, so the acquirer probes
+// first and asks for the directory only if the vendor that answered wants one.
+//
+// It is what a tunneld does at startup, with the tunnel left out: generate a
+// key, bind evidence to it, keep the pair. Here the private key is discarded
+// as soon as the evidence exists — it is generated only so that the binding is
+// over a real key rather than a constant — and the public key is written out
+// so that the run can be checked afterwards.
+//
+// Nothing here verifies anything. Checking the evidence against AMD's root is
+// the verifier's job and a different ticket; this is the producer.
+//
+// The procedure this is part of is docs/evidence-acquisition.md.
+func runAcquire(args []string) error {
+	// The flag set, the error prefix in main and the report request name below
+	// all keep the name the program had before ticket 21 folded it into
+	// attest-tool, so that a guest transcript recorded after the fold still
+	// reads against the ones recorded for tickets 04 and 19.
+	fs := flag.NewFlagSet("acquire-evidence", flag.ExitOnError)
+	chainDir := fs.String("chain-dir", "", "directory holding the provisioned certificate chain (the config device); required on AMD SEV-SNP, unused on Intel TDX")
+	reportDir := fs.String("report-dir", tsm.DefaultReportDir, "the kernel's vendor-neutral report interface")
+	out := fs.String("out", "", "directory to write the bundle to; empty writes nothing")
+	b64 := fs.Bool("base64", false, "print the bundle base64-encoded, for recovery from a serial console")
+	policyDigest := fs.String("policy-digest", "", "the policy this evidence commits to, hex: the digest of the sandbox's own signed reference value set. Empty binds 32 zero bytes, which is a policy no set names")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	policy, err := parsePolicyDigest(*policyDigest)
+	if err != nil {
+		return err
+	}
+	acquirer, err := newAcquirer(*chainDir, *reportDir)
+	if err != nil {
+		if *chainDir == "" {
+			fs.Usage()
+		}
+		return err
+	}
+
+	// The key this evidence is bound to. A tunneld generates one at startup
+	// and holds it for the life of the process; this holds it for the length
+	// of one acquisition and drops it.
+	pub, _, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		return fmt.Errorf("generating the key: %w", err)
+	}
+	spki, err := x509.MarshalPKIXPublicKey(pub)
+	if err != nil {
+		return fmt.Errorf("encoding the public key: %w", err)
+	}
+	// v2: the binding covers the policy as well as the key (ADR-0002's
+	// amendment). A bundle acquired here is verified by attest-tool verify,
+	// which speaks the same version by default and has a flag for the older
+	// one, since bundles recorded before ticket 18 are still on disk.
+	binding := attest.Binding{PublicKey: spki, Context: attest.BindingContextV2, PolicyDigest: policy}
+	callerSupplied := binding.CallerSuppliedBytes()
+
+	ev, err := acquirer.Acquire(context.Background(), callerSupplied)
+	if err != nil {
+		return err
+	}
+	observation, _ := acquirer.LastObservation()
+	printBundle(observation, ev, binding, callerSupplied, *chainDir)
+
+	if *out != "" {
+		if err := writeBundle(*out, observation, ev, binding, callerSupplied); err != nil {
+			return err
+		}
+	}
+
+	if *b64 {
+		dumpBundle(ev, spki)
+	}
+	return nil
+}
+
+// newAcquirer opens this platform's report interface.
+//
+// No check on chainDir here. Whether one is wanted depends on the vendor,
+// which is the platform's to say: the acquirer probes the report interface
+// and refuses at startup, naming ADR-0005, if it finds an SEV-SNP guest with
+// nowhere to read a chain from.
+func newAcquirer(chainDir, reportDir string) (*tsm.Acquirer, error) {
+	return tsm.New(tsm.Options{ChainDir: chainDir, ReportDir: reportDir, RequestName: "acquire-evidence"})
+}
+
+// printBundle says what was acquired, in the order a reader of a serial console
+// meets it: what the report interface observed, then the binding, then the
+// evidence and whatever roots it.
+func printBundle(observation tsm.Observation, ev attest.Evidence, binding attest.Binding, callerSupplied [attest.CallerSuppliedBytesSize]byte, chainDir string) {
+	fmt.Println(observation)
+	fmt.Printf("vendor              : %s\n", ev.Vendor)
+	fmt.Printf("public key (SPKI)   : %d bytes, %x\n", len(binding.PublicKey), binding.PublicKey)
+	fmt.Printf("binding context     : v%d (version byte 0x%02x), %x\n", binding.Context.Version(), binding.Context.Version(), binding.Context[:])
+	fmt.Printf("policy digest       : %s\n", binding.PolicyDigest)
+	fmt.Printf("caller-supplied     : %x\n", callerSupplied[:])
+	fmt.Printf("  = SHA-512(public key ‖ binding context ‖ policy digest), the whole 64-byte field (ADR-0002)\n")
+	fmt.Printf("evidence            : %d bytes\n", len(ev.Bytes))
+	if len(ev.Chain) > 0 {
+		fmt.Printf("certificate chain   : %d bytes, from %s (ADR-0005)\n", len(ev.Chain), chainDir)
+	} else {
+		fmt.Printf("certificate chain   : none bundled; %s evidence carries the chain that roots it\n", ev.Vendor)
+	}
+	if observation.CertificateTableError != "" {
+		fmt.Printf("platform's own table: not exposed by this kernel — %s\n", observation.CertificateTableError)
+	} else {
+		fmt.Printf("platform's own table: %d bytes — empty, as expected on this host\n", observation.CertificateTableBytes)
+	}
+}
+
+// writeBundle puts the bundle on disk under dir, one file per part, and names
+// each file as it goes so that a run recorded on a console and a run recorded
+// on a disk say the same thing.
+func writeBundle(dir string, observation tsm.Observation, ev attest.Evidence, binding attest.Binding, callerSupplied [attest.CallerSuppliedBytesSize]byte) error {
+	files := []struct {
+		name string
+		data []byte
+	}{
+		{"evidence.bin", ev.Bytes},
+		{"public-key.der", binding.PublicKey},
+		{"caller-supplied.bin", callerSupplied[:]},
+		{"policy-digest.bin", append([]byte(nil), binding.PolicyDigest[:]...)},
+		{"observation.txt", []byte(observation.String() + "\n")},
+	}
+	// Only where there is one. An empty certificate-chain.bin beside a TDX
+	// quote would read as a chain that failed to load rather than as one
+	// that was never wanted.
+	if len(ev.Chain) > 0 {
+		files = append(files, struct {
+			name string
+			data []byte
+		}{"certificate-chain.bin", ev.Chain})
+	}
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	for _, f := range files {
+		path := filepath.Join(dir, f.name)
+		if err := os.WriteFile(path, f.data, 0o644); err != nil {
+			return fmt.Errorf("writing %s: %w", path, err)
+		}
+		fmt.Printf("wrote %s (%d bytes)\n", path, len(f.data))
+	}
+	return nil
+}
+
+// dumpBundle prints the parts that cannot be recovered from a console any other
+// way. The chain goes out only where there is one, for the reason writeBundle
+// gives.
+func dumpBundle(ev attest.Evidence, spki []byte) {
+	dump("evidence.bin", ev.Bytes)
+	if len(ev.Chain) > 0 {
+		dump("certificate-chain.bin", ev.Chain)
+	}
+	dump("public-key.der", spki)
+}
+
+func dump(name string, data []byte) {
+	fmt.Printf("===BEGIN %s===\n%s\n===END %s===\n", name, base64.StdEncoding.EncodeToString(data), name)
+}
+
+// parsePolicyDigest reads -policy-digest, for both the subcommand that binds
+// evidence to a policy and the one that checks the binding. Empty is 32 zero
+// bytes: a definite policy that no reference value set names, so a bundle
+// acquired without one is verifiable but not admissible, which is the honest
+// state for a tool that holds no set.
+func parsePolicyDigest(spec string) (attest.PolicyDigest, error) {
+	if spec == "" {
+		return attest.PolicyDigest{}, nil
+	}
+	return attest.ParsePolicyDigest("-policy-digest", spec)
+}

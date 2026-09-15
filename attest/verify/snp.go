@@ -12,12 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package verify is the SEV-SNP implementation of the vendor seam's consumer
-// half. It answers the vendor's questions about evidence — does it parse, does
-// it chain to AMD's root, does it satisfy a reference value — and answers
-// nothing else.
+// Package verify is the vendor seam's consumer half. It answers the vendor's
+// questions about evidence — does it parse, does it chain to the vendor's root,
+// does it satisfy a reference value — and answers nothing else.
 //
-// It wraps github.com/google/go-sev-guest for report parsing, chain validation
+// There are two implementations and they share this package rather than
+// splitting into two. [SNP] is AMD SEV-SNP, in this file; [TDX] is Intel TDX,
+// in tdx.go, with the Intel collateral format beside it in tdxcollateral.go.
+// One package because the containment argument below is the same argument for
+// both, and because the doctrine — an injected clock, a provisioned root, a
+// getter that refuses the network, a refusal per predicate — is worth having
+// in one place where a second implementation can be read against the first.
+// Nothing routes between them here; [attest.Dispatch] does that, above the
+// seam.
+//
+// This file's half wraps github.com/google/go-sev-guest for report parsing, chain validation
 // and the TCB and policy predicates, per ADR-0003. Hand-rolling that would mean
 // owning ASN.1 and AMD's certificate semantics inside the security boundary the
 // whole design rests on, in a prototype where that code is not the
@@ -173,13 +182,36 @@ func (s *SNP) Verify(ctx context.Context, ev attest.Evidence, set attest.Referen
 				"the peer's provisioned certificate chain is stale and needs re-provisioning (ADR-0005): %v", err)
 	}
 
-	// Evidence is accepted if it satisfies any one reference value, which is
-	// what lets a new image roll out while the old one is still running.
+	rv, err := satisfyingValue(att, selfPolicy, set)
+	if err != nil {
+		return attest.Attested{}, err
+	}
+	return attest.Attested{Vendor: attest.VendorAMDSEVSNP, Claims: claims, Satisfied: rv}, nil
+}
+
+// satisfyingValue returns the first reference value in set that the report
+// satisfies, or the refusal that best says why none of them did. It is the last
+// of [SNP.Verify]'s steps and runs only on a report already known to be
+// authentic; the split is where the steps end, not a reordering of them.
+//
+// Evidence is accepted if it satisfies any one reference value, which is
+// what lets a new image roll out while the old one is still running. A
+// value about another vendor's hardware says nothing about this peer and
+// is skipped rather than refused: a set holding AMD and Intel entries is
+// one signed document naming peers on both, and an SEV-SNP peer has
+// nothing to say about an Intel entry. The TDX verifier does the same in
+// reverse. An empty Vendor is not "another vendor" — it means SEV-SNP,
+// the vendor that existed before values named one at all — so it is not
+// skipped here.
+func satisfyingValue(att *spb.Attestation, selfPolicy abi.SnpPolicy, set attest.ReferenceValueSet) (attest.ReferenceValue, error) {
 	var specific error
 	for _, rv := range set.Values {
+		if rv.Vendor != "" && rv.Vendor != attest.VendorAMDSEVSNP {
+			continue
+		}
 		err := satisfies(att, selfPolicy, rv)
 		if err == nil {
-			return attest.Attested{Vendor: attest.VendorAMDSEVSNP, Claims: claims, Satisfied: rv}, nil
+			return rv, nil
 		}
 		// A value whose measurement does not match is a value about a different
 		// image and says nothing about this peer. A value whose measurement
@@ -190,9 +222,9 @@ func (s *SNP) Verify(ctx context.Context, ev attest.Evidence, set attest.Referen
 		}
 	}
 	if specific != nil {
-		return attest.Attested{}, specific
+		return attest.ReferenceValue{}, specific
 	}
-	return attest.Attested{}, attest.Refuse(attest.ReasonMeasurementNotInSet,
+	return attest.ReferenceValue{}, attest.Refuse(attest.ReasonMeasurementNotInSet,
 		"launch measurement matches none of the %d reference values in the set", len(set.Values))
 }
 
@@ -261,10 +293,7 @@ func (s *SNP) checkAuthentic(ctx context.Context, att *spb.Attestation) error {
 		DisableCertFetching: true,
 		Getter:              offlineGetter{},
 	}
-	if err := sevverify.SnpAttestationContext(ctx, att, opts); err != nil {
-		return attest.Refuse(attest.ReasonChainNotRooted, "%v", err)
-	}
-	return nil
+	return refuseUnrooted(sevverify.SnpAttestationContext(ctx, att, opts))
 }
 
 // claimsOf reads the platform facts out of an authentic report.
@@ -310,6 +339,20 @@ func snpPolicy(p attest.GuestPolicy) abi.SnpPolicy {
 		Debug:        p.AllowDebug,
 		SingleSocket: p.RequireSingleSocket,
 	}
+}
+
+// SNPPolicyBits is the guest policy word an SEV-SNP platform launched with
+// exactly the capabilities p names would report, in AMD's encoding.
+//
+// It is the mapping above, packed. It is exported for the one caller that has
+// to mint a report rather than read one — the fake platform in
+// gvisor.dev/gvisor/attest/internal/snpfake — so that the bits a test launches
+// a platform with and the bits this package checks a reference value against
+// come from a single piece of code. What crosses the package boundary is the
+// word and not the library's type, so the containment this package's comment
+// claims still holds.
+func SNPPolicyBits(p attest.GuestPolicy) uint64 {
+	return abi.SnpPolicyToBytes(snpPolicy(p))
 }
 
 // offlineGetter refuses every request. Certificate fetching is already

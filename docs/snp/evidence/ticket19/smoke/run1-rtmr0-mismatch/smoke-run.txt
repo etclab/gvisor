@@ -1,0 +1,149 @@
+=== TDX smoke boot (ticket 19): 2026-09-10T21:19:19Z ===
+project nsf-2348130-428843 zone us-central1-a
+repo    d813519f95f064ecdf13c86fb559e6851300f62e
+image   /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-tdx-work/c555559c-f76b-4220-8c97-490f1962a496/scratchpad/image-a (predicted RTMR2 d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d)
+policy  digest d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b
+out     /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/smoke
+
+############ the config device ############
+config: reference-values.json  dce1bb9aea030757bee176aba4e9144f12ad9fba046f8d884c7de9f403f157fb  1070 bytes
+config: reference-values.json.sig  1d8beab1780b78350b85ee55e52c63c2020f4efe841dd28110cf358957ff61d8  129 bytes
+config: policy.json  6930dd1c2f17a9882a90924f6fa09f5533f45a4579ed116021bc578de14e1abb  253 bytes
+config: policy.json.sig  8b48e4b4786e48618500478578158804d1ba64c844099c59cfa3aa2b881cdbff  129 bytes
+config: peers.json  70a510fb39471b2891d0a2288766cd6d5c647eb1c6a12482ca958b9bfb3b814c  111 bytes
+config: tunneld.json  f899d795623031760192c167d379230236710c60712323d1733bceedc3e3ae46  314 bytes
+config: network.conf  f62ce12ab98cfaf4583c1150344bd1160c00201a1a707c52216156a2f222c6a6  290 bytes
+config: collateral/  10 files
+config:   collateral.txt  251a7fcc0661499cad9dc34c420b8cff8429930cda2ab3394a824c4376311578
+config:   FETCH.txt  8ab6bb6e39ae50fe28e26ad9a9566fd7e330f642b1fa06800bb191f6c0a3e138
+config:   pckcrl-platform.body  3bf7fa8fb2c2f3131ebbbbb1d7dfb97f8fe8b3b0996e85534973b2d5d9f2fffd
+config:   pckcrl-platform.headers  3a5c2260039915832a367ad475fe078dd965bd9136dad4ba0933f87af2c80c22
+config:   qeidentity.body  550f110a50541821aab6e472a2d4c2edc26022d2f59b72a0577f875b56d7d984
+config:   qeidentity.headers  1854cd99f67bf53819501f659d3bc8d5bb656e0e8f131c97edaf46146f07696f
+config:   rootcrl.body  c114be5d5ca7aab2d37817eca55aa8a2353853809904ff3695b31c26bcb7465b
+config:   rootcrl.headers  a52a1a2982c8819b0893146188e1629817ae977bf462effa8d151deb8a2f841a
+config:   tcbinfo-00806f050000.body  857fc7e41a832a5957fc0f8724c2516e5669f988b8e9b3b15ed4d1ac1877312c
+config:   tcbinfo-00806f050000.headers  b555e197c38993174679e167711c94f78f8936de4ce75f0ae22f431bc802c232
+config device written to /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/smoke/config.raw
+  size   1073741824 bytes, label attested-config
+  sha256 fb94a362b92afe71294d9dfbddb4423588db15f1b0c57d8d3c46f9888c7f44d8  (not measured, and nothing on it is trusted)
+
+############ publishing the two images ############
+=== publish-tdx-image 2026-09-10T21:19:26Z
+raw    /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-tdx-work/c555559c-f76b-4220-8c97-490f1962a496/scratchpad/image-a/disk.raw (10737418240 bytes, sha256 7b3025a91357b99990f6b42199a84e17b45cde7bfec0dc8e88e381bddc1b1fe0)
+image  attested-tdx-d5ddcc423b1a
+packing /tmp/pniroula/tmp.MRe6c0wpTq/disk.tar.gz (sparse, old GNU format)
+  1085762178 bytes
+creating gs://attested-tunnel-t19-20260910211926 in us-central1
+Creating gs://attested-tunnel-t19-20260910211926/...
+  
+Updating gs://attested-tunnel-t19-20260910211926/...
+.
+WARNING: Parallel composite upload was turned ON to get the best performance on
+uploading large objects. If you would like to opt-out and instead
+perform a normal upload, run:
+`gcloud config set storage/parallel_composite_upload_enabled False`
+If you would like to disable this warning, run:
+`gcloud config set storage/parallel_composite_upload_enabled True`
+Note that with parallel composite uploads, your object might be
+uploaded as a composite object
+(https://cloud.google.com/storage/docs/composite-objects), which means
+that any user who downloads your object will need to use crc32c
+checksums to verify data integrity. gcloud storage is capable of
+computing crc32c checksums, but this might pose a problem for other
+clients.
+
+Copying file:///tmp/pniroula/tmp.MRe6c0wpTq/disk.tar.gz to gs://attested-tunnel-t19-20260910211926/attested-tdx-d5ddcc423b1a.tar.gz
+  
+...........................
+
+Average throughput: 328.1MiB/s
+creating the image
+Created [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/global/images/attested-tdx-d5ddcc423b1a].
+attested-tdx-d5ddcc423b1a	READY	10
+diskSizeGb: '10'
+guestOsFeatures:
+- type: UEFI_COMPATIBLE
+- type: TDX_CAPABLE
+- type: GVNIC
+- type: VIRTIO_SCSI_MULTIQUEUE
+- type: SEV_CAPABLE
+- type: SEV_SNP_CAPABLE
+labels:
+  purpose: attested-tunnel-t19
+name: attested-tdx-d5ddcc423b1a
+status: READY
+published attested-tdx-d5ddcc423b1a
+staged through gs://attested-tunnel-t19-20260910211926 (created and deleted inside this run)
+deleting gs://attested-tunnel-t19-20260910211926
+Removing objects:
+  
+Removing gs://attested-tunnel-t19-20260910211926/attested-tdx-d5ddcc423b1a.tar.gz#1789075230257982...
+.
+Removing buckets:
+  
+Removing gs://attested-tunnel-t19-20260910211926/...
+...
+=== publish-tdx-image 2026-09-10T21:22:53Z
+raw    /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/smoke/config.raw (1073741824 bytes, sha256 fb94a362b92afe71294d9dfbddb4423588db15f1b0c57d8d3c46f9888c7f44d8)
+image  attested-config-tdx-smoke-a-20260910211919
+packing /tmp/pniroula/tmp.g575H4QQ5V/disk.tar.gz (sparse, old GNU format)
+  12521 bytes
+creating gs://attested-tunnel-t19-20260910212253 in us-central1
+Creating gs://attested-tunnel-t19-20260910212253/...
+  
+Updating gs://attested-tunnel-t19-20260910212253/...
+.
+Copying file:///tmp/pniroula/tmp.g575H4QQ5V/disk.tar.gz to gs://attested-tunnel-t19-20260910212253/attested-config-tdx-smoke-a-20260910211919.tar.gz
+  
+.
+creating the image
+Created [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/global/images/attested-config-tdx-smoke-a-20260910211919].
+attested-config-tdx-smoke-a-20260910211919	READY	1
+diskSizeGb: '1'
+guestOsFeatures:
+- type: UEFI_COMPATIBLE
+- type: TDX_CAPABLE
+- type: GVNIC
+- type: VIRTIO_SCSI_MULTIQUEUE
+- type: SEV_CAPABLE
+- type: SEV_SNP_CAPABLE
+labels:
+  purpose: attested-tunnel-t19
+name: attested-config-tdx-smoke-a-20260910211919
+status: READY
+published attested-config-tdx-smoke-a-20260910211919
+staged through gs://attested-tunnel-t19-20260910212253 (created and deleted inside this run)
+deleting gs://attested-tunnel-t19-20260910212253
+Removing objects:
+  
+Removing gs://attested-tunnel-t19-20260910212253/attested-config-tdx-smoke-a-20260910211919.tar.gz#1789075384962920...
+.
+Removing buckets:
+  
+Removing gs://attested-tunnel-t19-20260910212253/...
+...
+
+############ creating tdx-smoke-a at 2026-09-10T21:24Z ############
+Created [https://www.googleapis.com/compute/beta/projects/nsf-2348130-428843/zones/us-central1-a/instances/tdx-smoke-a].
+WARNING: Some requests generated warnings:
+ - Disk size: '10 GB' is larger than image size: '1 GB'. You might need to resize the root repartition manually if the operating system does not support automatic resizing. See https://cloud.google.com/compute/docs/disks/add-persistent-disk#resize_pd for details.
+ - Disk size: '20 GB' is larger than image size: '10 GB'. You might need to resize the root repartition manually if the operating system does not support automatic resizing. See https://cloud.google.com/compute/docs/disks/add-persistent-disk#resize_pd for details.
+
+tdx-smoke-a	us-central1-a	c3-standard-4	RUNNING	10.128.0.40
+
+############ watching the serial console ############
+interrupted
+
+deleting tdx-smoke-a
+Deleted [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/zones/us-central1-a/instances/tdx-smoke-a].
+
+############ for docs/snp/cloud/tdx/RESOURCES.md ############
+| created | name | type | purpose | state |
+|---|---|---|---|---|
+| 2026-09-10T21:24Z | tdx-smoke-a | c3-standard-4 TDX, us-central1-a, 20GB pd-balanced boot from custom image `attested-tdx-d5ddcc423b1a` + 10GB pd-balanced config disk from `attested-config-tdx-smoke-a-20260910211919`, `--private-network-ip 10.128.0.40` | ticket 19 smoke boot: one guest from the built image, egress rule set installed and probed, tunneld self-check | **deleted 2026-09-10T21:29Z** |
+| 2026-09-10T21:24Z | attested-tdx-d5ddcc423b1a | custom image, 10GiB, label `purpose=attested-tunnel-t19` | ticket 19: the attested tunnel guest image, predicted RTMR2 `d5ddcc42…73e0d` | **kept for the scenario runs** |
+| 2026-09-10T21:24Z | attested-config-tdx-smoke-a-20260910211919 | custom image, 1GiB, label `purpose=attested-tunnel-t19` | ticket 19: tdx-smoke-a config device (set, policy, peers, run config, addressing, Intel collateral) | **kept for the scenario runs** |
+
+verdict: incomplete
+=== done 2026-09-10T21:29:17Z, exit 130 ===

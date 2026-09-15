@@ -1,0 +1,49 @@
+# initrd of the attested tunnel guest, 7.0.0-1011-gcp, label b
+dir /dev 0755 0 0
+nod /dev/console 0600 0 0 c 5 1
+dir /proc 0755 0 0
+dir /sys 0755 0 0
+dir /run 0755 0 0
+dir /tmp 1777 0 0
+dir /config 0755 0 0
+dir /bin 0755 0 0
+dir /sbin 0755 0 0
+dir /usr 0755 0 0
+dir /usr/bin 0755 0 0
+dir /etc 0755 0 0
+dir /etc/attested-tunnel 0755 0 0
+dir /lib 0755 0 0
+dir /lib/modules 0755 0 0
+file /init $SCRATCH/image-b/build/initrd/init 0755 0 0
+file /bin/busybox $SCRATCH/image-b/build/initrd/busybox 0755 0 0
+slink /bin/sh busybox 0777 0 0
+slink /bin/mount busybox 0777 0 0
+slink /bin/insmod busybox 0777 0 0
+slink /bin/cat busybox 0777 0 0
+slink /bin/echo busybox 0777 0 0
+slink /bin/printf busybox 0777 0 0
+slink /bin/sleep busybox 0777 0 0
+slink /bin/sync busybox 0777 0 0
+slink /bin/uname busybox 0777 0 0
+slink /bin/dmesg busybox 0777 0 0
+slink /bin/grep busybox 0777 0 0
+slink /bin/sed busybox 0777 0 0
+slink /bin/cut busybox 0777 0 0
+slink /bin/sort busybox 0777 0 0
+slink /bin/tr busybox 0777 0 0
+slink /bin/dd busybox 0777 0 0
+slink /bin/od busybox 0777 0 0
+slink /bin/find busybox 0777 0 0
+slink /bin/stat busybox 0777 0 0
+slink /bin/sha256sum busybox 0777 0 0
+slink /bin/ip busybox 0777 0 0
+slink /bin/poweroff busybox 0777 0 0
+file /usr/bin/tunneld $SCRATCH/image-b/build/initrd/tunneld 0755 0 0
+file /etc/attested-tunnel/author.pub $SCRATCH/image-b/build/author.pub 0444 0 0
+file /lib/modules/gve.ko $SCRATCH/image-b/build/modules/gve.ko 0444 0 0
+file /lib/modules/nf_reject_ipv4.ko $SCRATCH/image-b/build/modules/nf_reject_ipv4.ko 0444 0 0
+file /lib/modules/nf_reject_ipv6.ko $SCRATCH/image-b/build/modules/nf_reject_ipv6.ko 0444 0 0
+file /lib/modules/nf_tables.ko $SCRATCH/image-b/build/modules/nf_tables.ko 0444 0 0
+file /lib/modules/nft_reject_inet.ko $SCRATCH/image-b/build/modules/nft_reject_inet.ko 0444 0 0
+file /lib/modules/nft_reject.ko $SCRATCH/image-b/build/modules/nft_reject.ko 0444 0 0
+file /lib/modules/tdx-guest.ko $SCRATCH/image-b/build/modules/tdx-guest.ko 0444 0 0

@@ -1,0 +1,37 @@
+=== image identification, 2026-09-08T18:17:01Z ===
+
+--- ubuntu-os-cloud family ubuntu-2404-lts-amd64, all members around 2026-08-31T21:07Z (the ccel.bin boot) ---
+ubuntu-2404-noble-amd64-v20260820   2026-08-20T05:48:46.989-07:00  DEPRECATED  10
+ubuntu-2404-noble-amd64-v20260826   2026-08-26T04:39:04.320-07:00  DEPRECATED  10
+ubuntu-2404-noble-amd64-v20260903   2026-09-03T13:58:20.740-07:00  DEPRECATED  10
+ubuntu-2404-noble-amd64-v20260906   2026-09-06T03:15:26.996-07:00              10
+
+family alias today resolves to: ubuntu-2404-noble-amd64-v20260906
+=> the member current on 2026-08-31 was ubuntu-2404-noble-amd64-v20260826 (created 08-26, next member 09-03)
+
+--- obtained by: disk rtmr2-src created from that image, attached mode=ro to non-TDX helper rtmr2-helper (e2-standard-2, debian-12), dd | zstd over ssh to the workstation ---
+sha256 of /dev/disk/by-id/google-src on the helper : d0b2b2c29a0bcc42c9dc414706b2b45af99fabf375150afaabcd59cd0785474f
+sha256 of the local disk.raw (10737418240 bytes)      : d0b2b2c29a0bcc42c9dc414706b2b45af99fabf375150afaabcd59cd0785474f
+
+--- identity check against the log ---
+blkid on the helper:
+/dev/disk/by-id/google-src-part1:  LABEL="cloudimg-rootfs" UUID="d6a74ed7-6f8e-440e-a2d5-a30c23ac640b" TYPE="ext4" PARTUUID="fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7"
+/dev/disk/by-id/google-src-part14: PARTUUID="30ddd14b-a649-4fd4-a2cd-f25dc868be33"
+/dev/disk/by-id/google-src-part15: LABEL="UEFI" UUID="7038-D0CC" TYPE="vfat" PARTUUID="6a0a967b-f814-468b-af0c-f6bf6538ef09"
+/dev/disk/by-id/google-src-part16: LABEL="BOOT" UUID="b4f9057b-66e6-4f5a-bbba-a8086989e88f" TYPE="ext4" PARTUUID="dbf34f44-ded2-4878-b8de-f3d710283689"
+
+ccel.bin record 'grub_cmd: search.fs_uuid b4f9057b-66e6-4f5a-bbba-a8086989e88f root' == UUID of part16 (/boot)
+ccel.bin record 'kernel_cmdline: ... root=PARTUUID=fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7' == PARTUUID of part1 (/)
+menuentry id 'gnulinux-simple-d6a74ed7-6f8e-440e-a2d5-a30c23ac640b' == UUID of part1
+
+--- packages on the image (dpkg -l via chroot on the read-only mount) ---
+grub-common 2.12-1ubuntu7.3
+grub-efi-amd64-bin 2.12-1ubuntu7.3
+grub-efi-amd64-signed 1.202.5+2.12-1ubuntu7.3
+grub-gfxpayload-lists 0.7build2
+grub-pc 2.12-1ubuntu7.3
+grub-pc-bin 2.12-1ubuntu7.3
+grub2-common 2.12-1ubuntu7.3
+linux-image-6.17.0-1022-gcp 6.17.0-1022.25
+linux-image-gcp 6.17.0-1022.25
+shim-signed 1.58+15.8-0ubuntu1

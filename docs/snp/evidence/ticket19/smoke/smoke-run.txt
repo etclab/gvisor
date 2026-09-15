@@ -1,0 +1,185 @@
+=== TDX smoke boot (ticket 19): 2026-09-10T21:47:49Z ===
+project nsf-2348130-428843 zone us-central1-a
+repo    ef0ce05dad0ba651c2c118cdb2f26ba8a1a25f5e
+image   /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-tdx-work/c555559c-f76b-4220-8c97-490f1962a496/scratchpad/image-a (predicted RTMR2 d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d)
+policy  digest d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b
+out     /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/smoke
+
+############ the config device ############
+config: reference-values.json  facc7c3e74454279eb7dff66d991e888a56f89f4daf2de79169e2d77a67004cb  1070 bytes
+config: reference-values.json.sig  3ceeafb8822ced2c0bafa50280ef5635bd39316c793cee43220284712b87562e  129 bytes
+config: policy.json  6930dd1c2f17a9882a90924f6fa09f5533f45a4579ed116021bc578de14e1abb  253 bytes
+config: policy.json.sig  8b48e4b4786e48618500478578158804d1ba64c844099c59cfa3aa2b881cdbff  129 bytes
+config: peers.json  70a510fb39471b2891d0a2288766cd6d5c647eb1c6a12482ca958b9bfb3b814c  111 bytes
+config: tunneld.json  0271447c72301c96cd0477b9cb2e0f4e6e184ba5ab7bb762d2e1630de30fc180  314 bytes
+config: network.conf  f62ce12ab98cfaf4583c1150344bd1160c00201a1a707c52216156a2f222c6a6  290 bytes
+config: collateral/  10 files
+config:   collateral.txt  251a7fcc0661499cad9dc34c420b8cff8429930cda2ab3394a824c4376311578
+config:   FETCH.txt  8ab6bb6e39ae50fe28e26ad9a9566fd7e330f642b1fa06800bb191f6c0a3e138
+config:   pckcrl-platform.body  3bf7fa8fb2c2f3131ebbbbb1d7dfb97f8fe8b3b0996e85534973b2d5d9f2fffd
+config:   pckcrl-platform.headers  3a5c2260039915832a367ad475fe078dd965bd9136dad4ba0933f87af2c80c22
+config:   qeidentity.body  550f110a50541821aab6e472a2d4c2edc26022d2f59b72a0577f875b56d7d984
+config:   qeidentity.headers  1854cd99f67bf53819501f659d3bc8d5bb656e0e8f131c97edaf46146f07696f
+config:   rootcrl.body  c114be5d5ca7aab2d37817eca55aa8a2353853809904ff3695b31c26bcb7465b
+config:   rootcrl.headers  a52a1a2982c8819b0893146188e1629817ae977bf462effa8d151deb8a2f841a
+config:   tcbinfo-00806f050000.body  857fc7e41a832a5957fc0f8724c2516e5669f988b8e9b3b15ed4d1ac1877312c
+config:   tcbinfo-00806f050000.headers  b555e197c38993174679e167711c94f78f8936de4ce75f0ae22f431bc802c232
+config device written to /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/smoke/config.raw
+  size   1073741824 bytes, label attested-config
+  sha256 166f1b6b7281803087e89eabac05ce71b3e55229acb52243cf97c7265d575901  (not measured, and nothing on it is trusted)
+
+############ publishing the two images ############
+boot image attested-tdx-d5ddcc423b1a exists already; reusing it
+=== publish-tdx-image 2026-09-10T21:47:55Z
+raw    /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/smoke/config.raw (1073741824 bytes, sha256 166f1b6b7281803087e89eabac05ce71b3e55229acb52243cf97c7265d575901)
+image  attested-config-tdx-smoke-a-20260910214749
+packing /tmp/pniroula/tmp.Tazm1Pbnzz/disk.tar.gz (sparse, old GNU format)
+  12533 bytes
+creating gs://attested-tunnel-t19-20260910214755 in us-central1
+Creating gs://attested-tunnel-t19-20260910214755/...
+  
+Updating gs://attested-tunnel-t19-20260910214755/...
+.
+Copying file:///tmp/pniroula/tmp.Tazm1Pbnzz/disk.tar.gz to gs://attested-tunnel-t19-20260910214755/attested-config-tdx-smoke-a-20260910214749.tar.gz
+  
+.
+creating the image
+Created [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/global/images/attested-config-tdx-smoke-a-20260910214749].
+attested-config-tdx-smoke-a-20260910214749	READY	1
+diskSizeGb: '1'
+guestOsFeatures:
+- type: UEFI_COMPATIBLE
+- type: TDX_CAPABLE
+- type: GVNIC
+- type: VIRTIO_SCSI_MULTIQUEUE
+- type: SEV_CAPABLE
+- type: SEV_SNP_CAPABLE
+labels:
+  purpose: attested-tunnel-t19
+name: attested-config-tdx-smoke-a-20260910214749
+status: READY
+published attested-config-tdx-smoke-a-20260910214749
+staged through gs://attested-tunnel-t19-20260910214755 (created and deleted inside this run)
+deleting gs://attested-tunnel-t19-20260910214755
+Removing objects:
+  
+Removing gs://attested-tunnel-t19-20260910214755/attested-config-tdx-smoke-a-20260910214749.tar.gz#1789076887552745...
+.
+Removing buckets:
+  
+Removing gs://attested-tunnel-t19-20260910214755/...
+...
+
+############ creating tdx-smoke-a at 2026-09-10T21:49Z ############
+Created [https://www.googleapis.com/compute/beta/projects/nsf-2348130-428843/zones/us-central1-a/instances/tdx-smoke-a].
+WARNING: Some requests generated warnings:
+ - Disk size: '10 GB' is larger than image size: '1 GB'. You might need to resize the root repartition manually if the operating system does not support automatic resizing. See https://cloud.google.com/compute/docs/disks/add-persistent-disk#resize_pd for details.
+ - Disk size: '20 GB' is larger than image size: '10 GB'. You might need to resize the root repartition manually if the operating system does not support automatic resizing. See https://cloud.google.com/compute/docs/disks/add-persistent-disk#resize_pd for details.
+
+tdx-smoke-a	us-central1-a	c3-standard-4	RUNNING	10.128.0.40
+
+############ watching the serial console ############
+the instance is STOPPING; the guest powered itself off
+console: 755 lines in /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/smoke/console.txt
+
+---- the lines that matter ----
+initrd: loaded tdx-guest
+initrd: loaded gve
+initrd: loaded nf_tables
+initrd: loaded nf_reject_ipv4
+initrd: loaded nf_reject_ipv6
+initrd: loaded nft_reject
+initrd: loaded nft_reject_inet
+initrd: report interface present at /sys/kernel/config/tsm/report
+initrd: config device /dev/nvme0n2 found by the ext4 label
+initrd: config device mounted at /config (ro,noexec,nosuid,nodev); it holds:
+initrd: loopback up (the kernel delivers a rule's refusal to the local socket over it)
+initrd: link eth0 up: 10.128.0.40/32 mtu 1460, gateway 10.128.0.1
+tunneld: policy /config/policy.json loaded under the author key; digest d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b
+tunneld: policy egress: version 1, unattested egress permitted: false
+tunneld: EGRESS RULES as the signed policy and the peer table imply them:
+tunneld: EGRESS RULES INSTALLED; as the kernel holds them:
+tunneld: EXIT status=0
+tunneld: policy /config/policy.json loaded under the author key; digest d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b
+tunneld: policy egress: version 1, unattested egress permitted: false
+tunneld: EGRESS PROBE: 5 attempt(s) at addresses this policy permits nothing to reach
+tunneld: EGRESS REFUSED tcp/169.254.169.254:80: dial tcp 169.254.169.254:80: connect: connection refused (the provider's metadata server) — the netfilter rule refused it
+tunneld: EGRESS REFUSED tcp/8.8.8.8:53: dial tcp 8.8.8.8:53: connect: connection refused (a public resolver, over TCP) — the netfilter rule refused it
+tunneld: EGRESS REFUSED udp/8.8.8.8:53: write udp 10.128.0.40:40403->8.8.8.8:53: write: operation not permitted (a public resolver, over UDP) — the netfilter rule refused it
+tunneld: EGRESS REFUSED udp/10.128.0.1:53: write udp 10.128.0.40:37366->10.128.0.1:53: write: operation not permitted (named by -egress-probe) — the netfilter rule refused it
+tunneld: EGRESS REFUSED tcp/10.128.0.1:80: dial tcp 10.128.0.1:80: connect: connection refused (named by -egress-probe) — the netfilter rule refused it
+tunneld: EGRESS PROBE PASSED: every attempt was refused before it left
+tunneld: EXIT status=0
+tunneld: policy digest d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b (sha256 over the signed policy; put it in a peer's policy_digest)
+tunneld: policy forward_to: measurement d5ddcc423b1aed53…
+tunneld: listening on 10.128.0.40:4433 as "tdx-smoke-a"; idle 1m0s, maximum age 15m0s
+tunneld: SELFCHECK VERDICT ADMITTED: this platform satisfies this sandbox's own reference value set
+tunneld: SELFCHECK measurement d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+tunneld: SELFCHECK mrtd  c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+tunneld: SELFCHECK rtmr0 c2fc12a52db868515eff7c657e42ce04b0b7363fa6ddf7c1cca87aa8e6a061a11f9981924a600ad6d2232f75182a850a
+tunneld: SELFCHECK rtmr1 02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b
+tunneld: SELFCHECK rtmr2 d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+tunneld: SELFCHECK tcb   status=UpToDate evaluation=20 fmspc=00806f050000 attributes=0000001000000000
+tunneld: PEER key=b8b2a51f203f1c5a… chain=none measurement=d5ddcc423b1aed53… vendor=intel-tdx mrtd=c1ee9c16e3afc506… rtmr2=d5ddcc423b1aed53… tcb=UpToDate,evaluation=20
+tunneld: LATENCY pass=1 peer=self kind=establish ms=37.322 attempts=1 verifier_calls=2
+tunneld: LATENCY pass=1 peer=self kind=warm_exchange n=3 min_ms=0.115 p50_ms=37.063 p90_ms=37.063 max_ms=37.063 mean_ms=12.494 answered_by="tdx-smoke-a"
+tunneld: LATENCY pass=1 peer=self kind=concurrent streams=8 rounds=1 n=8 wall_ms=0.364 min_ms=0.248 p50_ms=0.298 p90_ms=0.321 max_ms=0.321 mean_ms=0.288
+
+############ the guest's own quote, verified on this workstation ############
+quote: 8000 bytes, sha256 46f69d224b0e72f97a4585bf7806806a9b3b4bfa2f09b0b5cb1e0501a11354a5
+  td_attributes       : 0000001000000000
+  mrtd                : c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+  rtmr0               : c2fc12a52db868515eff7c657e42ce04b0b7363fa6ddf7c1cca87aa8e6a061a11f9981924a600ad6d2232f75182a850a
+  rtmr1               : 02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b
+  rtmr2               : d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+vendor              : intel-tdx
+certificate chain   : carried inside the quote
+public key (SPKI)   : /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/smoke/public-key.der, 44 bytes, 302a300506032b6570032100aeffd1ef2df597ef7aedbaa4d6f154be09540132d5d138c0d51600a72d2838b4
+binding context     : v2, 02000000000000000000000000000000
+policy digest       : d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b
+intel collateral    : /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/tdx/collateral (provisioned, ADR-0005)
+intel root          : the Intel root embedded in the verification library — no fetch, no file
+reference value set : /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/smoke/reference-values.json, 1 value(s), author 665053d10032f5b9a46394a65b022c0bd7007392b8f445fe4ace5b0e5ed4c5a2
+  [0] intel-tdx predicted RTMR2 d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+      observed MRTD      c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+      observed RTMR0     c2fc12a52db868515eff7c657e42ce04b0b7363fa6ddf7c1cca87aa8e6a061a11f9981924a600ad6d2232f75182a850a
+      observed RTMR1     02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b | 3a446943925fef7f1682fd54e1b6697df864692e28592ec373860d1868582ac14ca3029c48282eb964868a785bafd691
+      minimum TCB        status=UpToDate evaluation_data_number=20
+      TD policy          debug=false
+      admits policy      d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b
+WARN : 2026/09/10 17:51:38.033791 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 17:51:38.036166 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/10 17:51:38.037404 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+
+ACCEPTED
+  vendor            : intel-tdx
+  RTMR2             : d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+  MRTD              : c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+  RTMR0             : c2fc12a52db868515eff7c657e42ce04b0b7363fa6ddf7c1cca87aa8e6a061a11f9981924a600ad6d2232f75182a850a
+  RTMR1             : 02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b
+  TD attributes     : 0000001000000000 (debug=false)
+  Intel TCB         : status=UpToDate evaluation_data_number=20 fmspc=00806f050000
+  caller-supplied   : 7ecf137de827af7aeca385829aaa05f96a9398648f4e9bf62372727a2712e1d251fd3b26704d2f42f7e70608122ed2d33e0cb1fb8238682449b35b790bac487d
+    = SHA-512(public key ‖ binding context ‖ policy digest), recomputed from the key above (ADR-0002, v2)
+  satisfied         : reference value with predicted RTMR2 d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+verify-evidence admitted the guest: yes
+predicted RTMR2 (from the image, before the boot): d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+RTMR2 in the guest's quote:                        d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+RTMR1 in the guest's quote:                        02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b
+MRTD  in the guest's quote:                        c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+RTMR0 in the guest's quote:                        c2fc12a52db868515eff7c657e42ce04b0b7363fa6ddf7c1cca87aa8e6a061a11f9981924a600ad6d2232f75182a850a
+
+MATCH: the predicted RTMR2 is the register the hardware reported, and the signed set admits it
+
+deleting tdx-smoke-a
+Deleted [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/zones/us-central1-a/instances/tdx-smoke-a].
+
+############ for docs/snp/cloud/tdx/RESOURCES.md ############
+| created | name | type | purpose | state |
+|---|---|---|---|---|
+| 2026-09-10T21:49Z | tdx-smoke-a | c3-standard-4 TDX, us-central1-a, 20GB pd-balanced boot from custom image `attested-tdx-d5ddcc423b1a` + 10GB pd-balanced config disk from `attested-config-tdx-smoke-a-20260910214749`, `--private-network-ip 10.128.0.40` | ticket 19 smoke boot: one guest from the built image, egress rule set installed and probed, tunneld self-check | **deleted 2026-09-10T21:51Z** |
+| 2026-09-10T21:49Z | attested-tdx-d5ddcc423b1a | custom image, 10GiB, label `purpose=attested-tunnel-t19` | ticket 19: the attested tunnel guest image, predicted RTMR2 `d5ddcc42…73e0d` | **kept for the scenario runs** |
+| 2026-09-10T21:49Z | attested-config-tdx-smoke-a-20260910214749 | custom image, 1GiB, label `purpose=attested-tunnel-t19` | ticket 19: tdx-smoke-a config device (set, policy, peers, run config, addressing, Intel collateral) | **kept for the scenario runs** |
+
+verdict: MATCH: the predicted RTMR2 is the register the hardware reported, and the signed set admits it
+=== done 2026-09-10T21:51:47Z, exit 0 ===

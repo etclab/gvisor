@@ -1,0 +1,218 @@
+=== two attested guests, from image-ticket19 ===
+date        : 2026-09-10T19:49:59Z
+repo        : 979d9f7aaba08d5c1c4233313db97d795ddb9268 on tdx-attested-tunnel
+image       : /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket19
+mode        : SEV-SNP (privileged, through the spool)
+scenarios   : mutual
+
+predicted launch measurement of the image both guests boot:
+  a234bfa378d30bbde9c5cc3b3c7649c35ea8a7abf783fe95f22a44b0aeb0fc38cae92689256a5dd42197dfa1b87f7723
+the reference value set on both config devices names exactly that, signed by the
+author key baked into the image at /etc/attested-tunnel/author.pub (ADR-0004),
+and the policy beside it is signed by the same key under its own domain.
+
+spool       : /home/pniroula/Projects/gvisor/docs/snp/root-spool
+
+### mutual: each guest's value names the other's policy digest, and both admit
+PASS  mutual: re-signing with the key whose public half is inside the launch measurement
+    | author public key: 3f27c388b8c18afb53cce0214c3a9c7650290073d23ceffe09042c8d017dec72
+    | wrote /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket19-run/mutual/policy-a/policy.json and /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket19-run/mutual/policy-a/policy.json.sig (loads back through attest.LoadPolicyFile)
+    | forwards to: a234bfa378d30bbde9c5cc3b3c7649c35ea8a7abf783fe95f22a44b0aeb0fc38cae92689256a5dd42197dfa1b87f7723
+    | policy digest: ee2225534af9014bf0dc4c347473a4df91cdf6bbd733073b87100b2893cede74
+    | author public key: 3f27c388b8c18afb53cce0214c3a9c7650290073d23ceffe09042c8d017dec72
+    | wrote /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket19-run/mutual/policy-b/policy.json and /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket19-run/mutual/policy-b/policy.json.sig (loads back through attest.LoadPolicyFile)
+    | forwards to: a234bfa378d30bbde9c5cc3b3c7649c35ea8a7abf783fe95f22a44b0aeb0fc38cae92689256a5dd42197dfa1b87f7723
+    | forwards to: 7426bf87f2a10b161f8fe49a1fc8ab416c5575f5d74708ab8156a9f95acb2e1f75dc6f7a6dad8e3ebf2634b8c417ea5b
+    | policy digest: 5410bc5bcafe59074856ce80c04f4678964780a62c3e181def13dbf7526dabe3
+PASS  the two policies have distinct digests, so 'each names the other' is two numbers
+    | author public key: 3f27c388b8c18afb53cce0214c3a9c7650290073d23ceffe09042c8d017dec72
+    | wrote /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket19-run/mutual/refvals-a/reference-values.json and /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket19-run/mutual/refvals-a/reference-values.json.sig (loads back through attest.LoadReferenceValueSetFile)
+    | admits peer policy: 5410bc5bcafe59074856ce80c04f4678964780a62c3e181def13dbf7526dabe3
+    | author public key: 3f27c388b8c18afb53cce0214c3a9c7650290073d23ceffe09042c8d017dec72
+    | wrote /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket19-run/mutual/refvals-b/reference-values.json and /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket19-run/mutual/refvals-b/reference-values.json.sig (loads back through attest.LoadReferenceValueSetFile)
+    | admits peer policy: ee2225534af9014bf0dc4c347473a4df91cdf6bbd733073b87100b2893cede74
+PASS  the digest emit-refvals printed for guest A's policy is the digest of the document it wrote
+PASS  the digest emit-refvals printed for guest B's policy is the digest of the document it wrote
+    # mutual: the policy digests this scenario turns on.
+    #
+    # A policy digest is SHA-256 over the bytes a policy's author signed, so it is
+    # not sha256sum of policy.json, and since ticket 19 it is the digest of the
+    # policy and not of the reference value set beside it. Each number below was
+    # printed by emit-refvals when it wrote the document, checked against
+    # 'emit-refvals -digest-of' on the document as delivered, and checked again
+    # against the line the guest holding that document printed at start.
+    
+    launch measurement, both guests : a234bfa378d30bbde9c5cc3b3c7649c35ea8a7abf783fe95f22a44b0aeb0fc38cae92689256a5dd42197dfa1b87f7723
+    D_A, guest A's own policy       : ee2225534af9014bf0dc4c347473a4df91cdf6bbd733073b87100b2893cede74
+        the digest of policy-a.json, which is on guest A's config device
+    D_B, guest B's own policy       : 5410bc5bcafe59074856ce80c04f4678964780a62c3e181def13dbf7526dabe3
+        the digest of policy-b.json, which is on guest B's config device
+    
+    set-a.json's value admits policy : 5410bc5bcafe59074856ce80c04f4678964780a62c3e181def13dbf7526dabe3   (guest B's, and no other)
+    set-b.json's value admits policy : ee2225534af9014bf0dc4c347473a4df91cdf6bbd733073b87100b2893cede74   (guest A's, and no other)
+        Neither value is unconstrained, and each names a policy the other guest
+        really presents. Under ticket 18 this pair could not be authored: D_A was
+        the digest of a document that would have had to contain D_B, and D_B the
+        digest of one containing D_A.
+    
+    why the two digests differ, given that both guests boot one image:
+        policy-a.json forwards to a234bfa378d30bbde9c5cc3b3c7649c35ea8a7abf783fe95f22a44b0aeb0fc38cae92689256a5dd42197dfa1b87f7723
+        policy-b.json forwards to that and also to
+          7426bf87f2a10b161f8fe49a1fc8ab416c5575f5d74708ab8156a9f95acb2e1f75dc6f7a6dad8e3ebf2634b8c417ea5b
+        = sha384 of the ASCII string "an image this sandbox would also dial, which nothing on this segment boots",
+        with no trailing newline. It is a launch measurement of the right width
+        naming no image anybody has, so guest B's policy is a different document
+        from guest A's while both still say the true thing about this segment:
+        each guest will dial the image the other is running.
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: policy.json
+    config: policy.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config device written to /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket19-run/mutual/config-a.img (8fc16c1aa547f37c…, not measured)
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: policy.json
+    config: policy.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config device written to /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket19-run/mutual/config-b.img (6de216e58dcf81c0…, not measured)
+spooled /home/pniroula/Projects/gvisor/docs/snp/root-spool/tunnel-65626-mutual.job; waiting up to 780s for the runner
+mutual finished, rc=0
+    | guest A qemu exited 0
+    | guest B qemu exited 0
+relay:
+    | l2relay: RELAYED a_to_b_frames=1486 b_to_a_frames=1489 a_to_b_bytes=184725 b_to_a_bytes=183994 tampered=0
+    | l2relay: MARKER not found hits=0 marker='attested-tunnel-plaintext-marker' in 2975 frames carrying 368719 bytes
+    | l2relay: what was on the segment:
+    |   ethertypes : IPv4=2923, ARP=28, IPv6=24
+    |   ip protocols: ICMP=2, UDP=2921
+    |   arp targets : 10.14.0.2, 10.14.0.3
+    |   10.14.0.3 -> 10.14.0.2 proto=UDP frames=1463
+    |   10.14.0.2 -> 10.14.0.3 proto=UDP frames=1458
+    |   10.14.0.2 -> 10.14.0.3 proto=ICMP frames=2
+PASS  guest-a: booted the measured image and ran the packaged tunneld
+PASS  guest-a: no writable path in the image is executable
+PASS  guest-a: read the author key from inside the launch measurement
+PASS  guest-a: read the reference value set and chain from the config device
+PASS  guest-b: booted the measured image and ran the packaged tunneld
+PASS  guest-b: no writable path in the image is executable
+PASS  guest-b: read the author key from inside the launch measurement
+PASS  guest-b: read the reference value set and chain from the config device
+PASS  guest-a: acquired its own evidence from the platform
+PASS  guest-a: bundled the chain provisioned on its config device, not the platform's
+PASS  guest-a: is listening
+PASS  guest-b: acquired its own evidence from the platform
+PASS  guest-b: bundled the chain provisioned on its config device, not the platform's
+PASS  guest-b: is listening
+PASS  guest-a printed the digest of the policy on its own config device
+PASS  guest-b printed the digest of the policy on its own config device
+PASS  guest-a's value names a policy, so it reports nothing unconstrained
+PASS  guest-b's value names a policy too, so neither guest admits any policy at all
+PASS  guest-a's policy says it forwards to the image on this segment
+PASS  guest-b's policy says the same
+PASS  guest-a admitted guest-b, whose policy digest its value names
+PASS  guest-b admitted guest-a, whose policy digest its value names
+PASS  guest-a refused nothing
+PASS  and neither did guest-b
+PASS  guest-a admitted at least one peer
+PASS  guest-b admitted at least one peer
+PASS  guest-a established a tunnel
+PASS  guest-b established one too
+PASS  guest-a exchanged over it, warm
+PASS  guest-b exchanged over it, warm
+PASS  guest-b answered guest-a's exchanges
+PASS  guest-a answered guest-b's exchanges
+PASS  guest-a's exercise completed
+PASS  guest-b's exercise completed
+PASS  the exchange went through the relay
+PASS  the relay found no plaintext on the wire
+    addresses resolved on the segment: 10.14.0.2, 10.14.0.3
+PASS  no guest looked for a gateway or anything else off the segment
+    tunneld: LATENCY pass=1 peer=guest-b kind=establish ms=76.624 attempts=1 verifier_calls=1
+    tunneld: LATENCY pass=2 peer=guest-b kind=establish ms=0.019 attempts=1 verifier_calls=0
+    tunneld: LATENCY pass=3 peer=guest-b kind=establish ms=0.018 attempts=1 verifier_calls=0
+    tunneld: LATENCY pass=4 peer=guest-b kind=establish ms=0.018 attempts=1 verifier_calls=0
+    tunneld: LATENCY pass=5 peer=guest-b kind=establish ms=0.018 attempts=1 verifier_calls=0
+    tunneld: LATENCY pass=6 peer=guest-b kind=establish ms=0.019 attempts=1 verifier_calls=0
+    tunneld: LATENCY pass=7 peer=guest-b kind=establish ms=0.016 attempts=1 verifier_calls=0
+    tunneld: LATENCY pass=8 peer=guest-b kind=establish ms=0.016 attempts=1 verifier_calls=0
+    tunneld: LATENCY pass=9 peer=guest-b kind=establish ms=0.013 attempts=1 verifier_calls=0
+    tunneld: LATENCY pass=10 peer=guest-b kind=establish ms=0.018 attempts=1 verifier_calls=0
+    tunneld: LATENCY pass=1 peer=guest-a kind=establish ms=251.632 attempts=1 verifier_calls=2
+    tunneld: LATENCY pass=2 peer=guest-a kind=establish ms=0.011 attempts=1 verifier_calls=0
+    tunneld: LATENCY pass=3 peer=guest-a kind=establish ms=0.020 attempts=1 verifier_calls=0
+    tunneld: LATENCY pass=4 peer=guest-a kind=establish ms=0.021 attempts=1 verifier_calls=0
+    tunneld: LATENCY pass=5 peer=guest-a kind=establish ms=0.013 attempts=1 verifier_calls=0
+    tunneld: LATENCY pass=6 peer=guest-a kind=establish ms=0.019 attempts=1 verifier_calls=0
+    tunneld: LATENCY pass=7 peer=guest-a kind=establish ms=0.018 attempts=1 verifier_calls=0
+    tunneld: LATENCY pass=8 peer=guest-a kind=establish ms=0.021 attempts=1 verifier_calls=0
+    tunneld: LATENCY pass=9 peer=guest-a kind=establish ms=0.019 attempts=1 verifier_calls=0
+    tunneld: LATENCY pass=10 peer=guest-a kind=establish ms=0.018 attempts=1 verifier_calls=0
+
+=== latency, as the guests measured it ===
+  LATENCY pass=1 peer=guest-b kind=establish ms=76.624 attempts=1 verifier_calls=1
+  LATENCY pass=1 peer=guest-b kind=warm_exchange n=20 min_ms=2.008 p50_ms=2.833 p90_ms=3.592 max_ms=20.748 mean_ms=3.602 answered_by="guest-b"
+  LATENCY pass=1 peer=guest-b kind=concurrent streams=8 rounds=3 n=24 wall_ms=20.221 min_ms=3.331 p50_ms=4.997 p90_ms=5.819 max_ms=5.885 mean_ms=4.892
+  LATENCY pass=2 peer=guest-b kind=establish ms=0.019 attempts=1 verifier_calls=0
+  LATENCY pass=2 peer=guest-b kind=warm_exchange n=20 min_ms=3.279 p50_ms=4.035 p90_ms=5.233 max_ms=5.261 mean_ms=4.091 answered_by="guest-b"
+  LATENCY pass=2 peer=guest-b kind=concurrent streams=8 rounds=3 n=24 wall_ms=28.783 min_ms=5.088 p50_ms=6.157 p90_ms=14.920 max_ms=14.983 mean_ms=8.794
+  LATENCY pass=3 peer=guest-b kind=establish ms=0.018 attempts=1 verifier_calls=0
+  LATENCY pass=3 peer=guest-b kind=warm_exchange n=20 min_ms=3.541 p50_ms=4.665 p90_ms=11.184 max_ms=28.109 mean_ms=6.099 answered_by="guest-b"
+  LATENCY pass=3 peer=guest-b kind=concurrent streams=8 rounds=3 n=24 wall_ms=27.299 min_ms=4.230 p50_ms=6.120 p90_ms=10.755 max_ms=10.841 mean_ms=6.661
+  LATENCY pass=4 peer=guest-b kind=establish ms=0.018 attempts=1 verifier_calls=0
+  LATENCY pass=4 peer=guest-b kind=warm_exchange n=20 min_ms=2.116 p50_ms=3.148 p90_ms=4.871 max_ms=15.228 mean_ms=3.935 answered_by="guest-b"
+  LATENCY pass=4 peer=guest-b kind=concurrent streams=8 rounds=3 n=24 wall_ms=41.746 min_ms=3.069 p50_ms=4.925 p90_ms=6.738 max_ms=6.782 mean_ms=4.754
+  LATENCY pass=5 peer=guest-b kind=establish ms=0.018 attempts=1 verifier_calls=0
+  LATENCY pass=5 peer=guest-b kind=warm_exchange n=20 min_ms=3.058 p50_ms=3.567 p90_ms=5.082 max_ms=5.574 mean_ms=3.796 answered_by="guest-b"
+  LATENCY pass=5 peer=guest-b kind=concurrent streams=8 rounds=3 n=24 wall_ms=26.378 min_ms=3.975 p50_ms=6.441 p90_ms=8.525 max_ms=9.055 mean_ms=6.390
+  LATENCY pass=6 peer=guest-b kind=establish ms=0.019 attempts=1 verifier_calls=0
+  LATENCY pass=6 peer=guest-b kind=warm_exchange n=20 min_ms=2.242 p50_ms=3.898 p90_ms=5.421 max_ms=5.980 mean_ms=3.931 answered_by="guest-b"
+  LATENCY pass=6 peer=guest-b kind=concurrent streams=8 rounds=3 n=24 wall_ms=28.023 min_ms=5.366 p50_ms=6.803 p90_ms=9.625 max_ms=9.695 mean_ms=7.408
+  LATENCY pass=7 peer=guest-b kind=establish ms=0.016 attempts=1 verifier_calls=0
+  LATENCY pass=7 peer=guest-b kind=warm_exchange n=20 min_ms=2.035 p50_ms=3.462 p90_ms=5.096 max_ms=8.144 mean_ms=3.672 answered_by="guest-b"
+  LATENCY pass=7 peer=guest-b kind=concurrent streams=8 rounds=3 n=24 wall_ms=18.003 min_ms=3.415 p50_ms=5.396 p90_ms=6.305 max_ms=6.612 mean_ms=5.028
+  LATENCY pass=8 peer=guest-b kind=establish ms=0.016 attempts=1 verifier_calls=0
+  LATENCY pass=8 peer=guest-b kind=warm_exchange n=20 min_ms=2.601 p50_ms=3.741 p90_ms=5.016 max_ms=15.498 mean_ms=4.371 answered_by="guest-b"
+  LATENCY pass=8 peer=guest-b kind=concurrent streams=8 rounds=3 n=24 wall_ms=37.933 min_ms=2.978 p50_ms=4.873 p90_ms=25.041 max_ms=25.066 mean_ms=6.402
+  LATENCY pass=9 peer=guest-b kind=establish ms=0.013 attempts=1 verifier_calls=0
+  LATENCY pass=9 peer=guest-b kind=warm_exchange n=20 min_ms=2.048 p50_ms=2.995 p90_ms=3.915 max_ms=4.130 mean_ms=2.898 answered_by="guest-b"
+  LATENCY pass=9 peer=guest-b kind=concurrent streams=8 rounds=3 n=24 wall_ms=31.339 min_ms=3.848 p50_ms=7.764 p90_ms=14.930 max_ms=14.939 mean_ms=9.564
+  LATENCY pass=10 peer=guest-b kind=establish ms=0.018 attempts=1 verifier_calls=0
+  LATENCY pass=10 peer=guest-b kind=warm_exchange n=20 min_ms=2.661 p50_ms=3.236 p90_ms=5.270 max_ms=5.557 mean_ms=3.570 answered_by="guest-b"
+  LATENCY pass=10 peer=guest-b kind=concurrent streams=8 rounds=3 n=24 wall_ms=31.471 min_ms=5.925 p50_ms=8.376 p90_ms=12.523 max_ms=12.555 mean_ms=9.202
+  LATENCY pass=1 peer=guest-a kind=establish ms=251.632 attempts=1 verifier_calls=2
+  LATENCY pass=1 peer=guest-a kind=warm_exchange n=20 min_ms=2.191 p50_ms=3.331 p90_ms=3.621 max_ms=4.151 mean_ms=3.131 answered_by="guest-a"
+  LATENCY pass=1 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=24.925 min_ms=4.018 p50_ms=4.952 p90_ms=6.088 max_ms=6.258 mean_ms=5.012
+  LATENCY pass=2 peer=guest-a kind=establish ms=0.011 attempts=1 verifier_calls=0
+  LATENCY pass=2 peer=guest-a kind=warm_exchange n=20 min_ms=2.617 p50_ms=3.065 p90_ms=4.650 max_ms=5.049 mean_ms=3.322 answered_by="guest-a"
+  LATENCY pass=2 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=18.410 min_ms=2.941 p50_ms=4.537 p90_ms=5.401 max_ms=5.494 mean_ms=4.309
+  LATENCY pass=3 peer=guest-a kind=establish ms=0.020 attempts=1 verifier_calls=0
+  LATENCY pass=3 peer=guest-a kind=warm_exchange n=20 min_ms=1.519 p50_ms=3.571 p90_ms=7.810 max_ms=11.958 mean_ms=4.207 answered_by="guest-a"
+  LATENCY pass=3 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=17.678 min_ms=2.372 p50_ms=4.904 p90_ms=5.813 max_ms=5.839 mean_ms=4.667
+  LATENCY pass=4 peer=guest-a kind=establish ms=0.021 attempts=1 verifier_calls=0
+  LATENCY pass=4 peer=guest-a kind=warm_exchange n=20 min_ms=2.302 p50_ms=3.259 p90_ms=4.243 max_ms=17.092 mean_ms=3.928 answered_by="guest-a"
+  LATENCY pass=4 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=45.991 min_ms=3.124 p50_ms=11.452 p90_ms=26.889 max_ms=27.392 mean_ms=14.175
+  LATENCY pass=5 peer=guest-a kind=establish ms=0.013 attempts=1 verifier_calls=0
+  LATENCY pass=5 peer=guest-a kind=warm_exchange n=20 min_ms=2.992 p50_ms=3.565 p90_ms=5.033 max_ms=5.869 mean_ms=3.733 answered_by="guest-a"
+  LATENCY pass=5 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=22.381 min_ms=4.434 p50_ms=5.441 p90_ms=8.714 max_ms=8.754 mean_ms=5.953
+  LATENCY pass=6 peer=guest-a kind=establish ms=0.019 attempts=1 verifier_calls=0
+  LATENCY pass=6 peer=guest-a kind=warm_exchange n=20 min_ms=1.933 p50_ms=3.341 p90_ms=6.681 max_ms=6.881 mean_ms=3.700 answered_by="guest-a"
+  LATENCY pass=6 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=33.850 min_ms=3.683 p50_ms=6.397 p90_ms=14.244 max_ms=14.268 mean_ms=7.362
+  LATENCY pass=7 peer=guest-a kind=establish ms=0.018 attempts=1 verifier_calls=0
+  LATENCY pass=7 peer=guest-a kind=warm_exchange n=20 min_ms=2.221 p50_ms=3.616 p90_ms=5.108 max_ms=22.279 mean_ms=4.505 answered_by="guest-a"
+  LATENCY pass=7 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=50.009 min_ms=5.421 p50_ms=18.599 p90_ms=21.146 max_ms=21.850 mean_ms=15.397
+  LATENCY pass=8 peer=guest-a kind=establish ms=0.021 attempts=1 verifier_calls=0
+  LATENCY pass=8 peer=guest-a kind=warm_exchange n=20 min_ms=2.360 p50_ms=3.568 p90_ms=4.803 max_ms=12.966 mean_ms=4.085 answered_by="guest-a"
+  LATENCY pass=8 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=37.114 min_ms=2.778 p50_ms=5.958 p90_ms=24.073 max_ms=24.172 mean_ms=10.623
+  LATENCY pass=9 peer=guest-a kind=establish ms=0.019 attempts=1 verifier_calls=0
+  LATENCY pass=9 peer=guest-a kind=warm_exchange n=20 min_ms=2.097 p50_ms=2.837 p90_ms=3.726 max_ms=4.262 mean_ms=2.851 answered_by="guest-a"
+  LATENCY pass=9 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=27.371 min_ms=4.049 p50_ms=5.892 p90_ms=13.253 max_ms=13.327 mean_ms=7.903
+  LATENCY pass=10 peer=guest-a kind=establish ms=0.018 attempts=1 verifier_calls=0
+  LATENCY pass=10 peer=guest-a kind=warm_exchange n=20 min_ms=2.755 p50_ms=3.454 p90_ms=5.007 max_ms=5.944 mean_ms=3.778 answered_by="guest-a"
+  LATENCY pass=10 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=45.364 min_ms=4.593 p50_ms=14.928 p90_ms=16.854 max_ms=16.963 mean_ms=12.760
+
+=== 41 passed, 0 failed ===

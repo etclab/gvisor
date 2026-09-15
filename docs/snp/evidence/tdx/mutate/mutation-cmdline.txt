@@ -1,0 +1,19 @@
+Pseudo-terminal will not be allocated because stdin is not a terminal.
++ printf 'GRUB_CMDLINE_LINUX="$GRUB_CMDLINE_LINUX tdx.probe.marker=alpha"\n'
++ sudo tee /etc/default/grub.d/99-tdx-probe.cfg
+GRUB_CMDLINE_LINUX="$GRUB_CMDLINE_LINUX tdx.probe.marker=alpha"
++ sudo update-grub
++ tail -3
+Check GRUB_DISABLE_OS_PROBER documentation entry.
+Adding boot menu entry for UEFI Firmware Settings ...
+done
+--- CONTROL: is the marker in grub.cfg? ---
++ echo '--- CONTROL: is the marker in grub.cfg? ---'
++ sudo grep -c tdx.probe.marker=alpha /boot/grub/grub.cfg
+6
+--- CONTROL: initrd hash, must not have moved ---
++ echo '--- CONTROL: initrd hash, must not have moved ---'
++ cut -c1-32
+++ uname -r
++ sudo sha256sum /boot/initrd.img-6.17.0-1022-gcp
+99b0dcc93aca6499b4c222ef751d0384

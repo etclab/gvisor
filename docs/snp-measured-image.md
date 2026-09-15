@@ -175,9 +175,13 @@ serial `attested-config`, mounted by the initrd at `/config` with `ro,noexec,nos
 |---|---|---|
 | `reference-values.json` | the reference value set, `attest/README.md` format | ticket 07 emits, operator places |
 | `reference-values.json.sig` | its detached Ed25519 signature, hex, one line (ADR-0006) | same |
+| `policy.json` | the sandbox's own signed policy: its egress section and the measurements it will dial (ticket 19, `docs/policy-binding.md`) | ticket 19's build emits, operator places |
+| `policy.json.sig` | its detached signature, the same author key under its own domain prefix | same |
 | `peers.json` | the peer table | tunneld defines its contents |
 | `certificate-chain.bin` | the provisioned certificate chain as an AMD certificate table (VCEK, ASK, ARK), written by `attest/cmd/provision-chain` | ticket 15 |
 | `certificate-chain.json` | chip identity and TCB the chain was fetched for, so staleness is detectable (ADR-0005) | ticket 15 |
+
+*`attest/cmd/provision-chain` became `attest-tool provision` in ticket 21; its last version is `git show 205fd2154:attest/cmd/provision-chain/main.go`.*
 
 And inside the measurement, the one trust root:
 
@@ -191,6 +195,9 @@ directory `mkconfigdev.sh` packages). This ticket originally chose `chain/chain.
 06 boot evidence in `evidence/console-snp.txt` still shows those names. Renaming touched
 `mkconfigdev.sh`'s comment block, `tunneld-placeholder.c`'s path constants and this table, and
 did not touch the measurement.
+
+*`tunneld-placeholder.c` was removed in ticket 21, and `build-image.sh` now requires `TUNNELD`;
+its last version is `git show 205fd2154:docs/snp/image/tunneld-placeholder.c`.*
 
 Updating any file on the device does not change M. The placeholder demonstrates the
 document-alone case ADR-0006 requires: a device with `reference-values.json` and no `.sig`

@@ -1,0 +1,40 @@
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+090859af396bdbf59b60af8a9986b365d5e184fc170f038063e59f65b6faa213  /tmp/acquire-evidence
+=== no -chain-dir at all: a TDX quote carries the chain that roots it ===
+tsm: provider "tdx_guest" (intel-tdx) returned 8000 bytes of evidence over 1 write(s); its own certificate table could not be read (auxblob: open /sys/kernel/config/tsm/report/acquire-evidence-1829-1/auxblob: no such file or directory), which is the expected state on this host and not an error; bundled no certificate chain, because the quote carries the one that roots it
+vendor              : intel-tdx
+public key (SPKI)   : 44 bytes, 302a300506032b657003210030f048f37aa1456c0df4347770a4b0f441699627c0f6fbef4da7f5d8df8963f5
+binding context     : v2 (version byte 0x02), 02000000000000000000000000000000
+policy digest       : 0000000000000000000000000000000000000000000000000000000000000000
+caller-supplied     : baab01e10d72cf1445c1bd0224a8b4be4c3b490e5e2cded7903c89783cfef1086e228c3ac53e8aa8224dabd99ddc105766352adb72cc3ddfb726971aaeb7b75f
+  = SHA-512(public key ‖ binding context ‖ policy digest), the whole 64-byte field (ADR-0002)
+evidence            : 8000 bytes
+certificate chain   : none bundled; intel-tdx evidence carries the chain that roots it
+platform's own table: not exposed by this kernel — open /sys/kernel/config/tsm/report/acquire-evidence-1829-1/auxblob: no such file or directory
+wrote /tmp/bundle/evidence.bin (8000 bytes)
+wrote /tmp/bundle/public-key.der (44 bytes)
+wrote /tmp/bundle/caller-supplied.bin (64 bytes)
+wrote /tmp/bundle/policy-digest.bin (32 bytes)
+wrote /tmp/bundle/observation.txt (374 bytes)
+exit status: 0
+
+=== and with a -chain-dir that holds nothing, which must be ignored rather than read ===
+tsm: provider "tdx_guest" (intel-tdx) returned 8000 bytes of evidence over 1 write(s); its own certificate table could not be read (auxblob: open /sys/kernel/config/tsm/report/acquire-evidence-1836-1/auxblob: no such file or directory), which is the expected state on this host and not an error; bundled no certificate chain, because the quote carries the one that roots it
+vendor              : intel-tdx
+public key (SPKI)   : 44 bytes, 302a300506032b65700321005b9b102eff06b2eb041d8fe2b83ccf48b7878f6e5c56d5d9dc25b6de6ae7246d
+binding context     : v2 (version byte 0x02), 02000000000000000000000000000000
+policy digest       : 0000000000000000000000000000000000000000000000000000000000000000
+caller-supplied     : fc9029868da9767d2bbf926c828c509011c28ac41a0465d2c0def222f60d61598558d41be590011b260ce83c816e268ce232014c7689f843a12d37582285a101
+  = SHA-512(public key ‖ binding context ‖ policy digest), the whole 64-byte field (ADR-0002)
+evidence            : 8000 bytes
+certificate chain   : none bundled; intel-tdx evidence carries the chain that roots it
+platform's own table: not exposed by this kernel — open /sys/kernel/config/tsm/report/acquire-evidence-1836-1/auxblob: no such file or directory
+exit status: 0
+
+=== the bundle ===
+total 24
+-rw-r--r-- 1 root root   64 Sep 10 20:09 caller-supplied.bin
+-rw-r--r-- 1 root root 8000 Sep 10 20:09 evidence.bin
+-rw-r--r-- 1 root root  374 Sep 10 20:09 observation.txt
+-rw-r--r-- 1 root root   32 Sep 10 20:09 policy-digest.bin
+-rw-r--r-- 1 root root   44 Sep 10 20:09 public-key.der

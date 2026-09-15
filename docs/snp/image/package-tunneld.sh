@@ -11,8 +11,12 @@
 # signed, and every peer has been told what to admit.
 #
 #   1. go test ./cmd/tunneld   the import-graph guard and the artifact guard:
-#                              no snpfake, no go-sev-guest/testing, no testing,
-#                              nothing dynamically linked (attest/README.md).
+#                              no attest/internal/snpfake, no
+#                              attest/internal/tdxfake, no
+#                              attest/internal/fixture, no
+#                              go-sev-guest/testing, no go-tdx-guest/testing,
+#                              no testing, nothing dynamically linked
+#                              (attest/README.md).
 #   2. CGO_ENABLED=0 go build  the binary the image embeds. Confirmed static
 #                              again here with file(1), because the guard runs
 #                              on a build of its own and this is the file that
@@ -24,7 +28,8 @@
 #
 # It emits, in OUT: the image (OVMF.fd, vmlinuz, initrd.img, cmdline.txt,
 # rootfs.img), the predicted launch measurement, the signed reference value set
-# for it, the manifest, and packaging.txt recording what went in.
+# and the signed policy for it, the manifest, and packaging.txt recording what
+# went in.
 #
 # Environment:
 #   OUT         output directory (default $STACK/image-ticket14)
@@ -108,6 +113,8 @@ echo "=== packaged"
 M=$(sed -n 's/^launch_measurement: //p' "$OUT/manifest.txt")
 echo "predicted launch measurement: $M"
 echo "reference value set:          $OUT/reference-values.json (+ .sig)"
+echo "policy:                       $OUT/policy.json (+ .sig)"
+echo "policy digest:                $(sed -n 's/^policy_digest: //p' "$OUT/manifest.txt")"
 echo "author public key:            $(cat "$OUT/build/author.pub" 2>/dev/null || echo '?')"
 echo "author key:                   $AUTHOR_KEY (keep it: re-signing a set needs it)"
 echo "packaged binary:              $OUT/tunneld (the copy inside rootfs.img is what is measured)"

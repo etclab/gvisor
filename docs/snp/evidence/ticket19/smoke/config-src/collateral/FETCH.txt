@@ -1,0 +1,36 @@
+=== Intel PCS collateral fetch, one time, 2026-09-08T19:57:30Z ===
+for FMSPC 00806f050000, PCK CA 'platform' (every recorded quote on this branch, see collateral.txt)
+URLs are the ones github.com/google/go-tdx-guest@v0.3.2-0.20240902060211-1f7f7b9b42b9 pcs.TcbInfoURL / QeIdentityURL / PckCrlURL build,
+plus the root CA CRL distribution point named in the PCK Platform CA certificate.
+
+--- tcbinfo-00806f050000
+GET https://api.trustedservices.intel.com/tdx/certification/v4/tcb?fmspc=00806f050000
+http 200, 7953 bytes, 0.463511s
+Content-Type: application/json
+TCB-Info-Issuer-Chain: <PEM chain, url-encoded, kept in the .headers file>
+Date: Tue, 08 Sep 2026 19:57:31 GMT
+sha256 857fc7e41a832a5957fc0f8724c2516e5669f988b8e9b3b15ed4d1ac1877312c  tcbinfo-00806f050000.body
+
+--- qeidentity
+GET https://api.trustedservices.intel.com/tdx/certification/v4/qe/identity
+http 200, 624 bytes, 0.159741s
+Content-Type: application/json
+SGX-Enclave-Identity-Issuer-Chain: <PEM chain, url-encoded, kept in the .headers file>
+Date: Tue, 08 Sep 2026 19:57:31 GMT
+sha256 550f110a50541821aab6e472a2d4c2edc26022d2f59b72a0577f875b56d7d984  qeidentity.body
+
+--- pckcrl-platform
+GET https://api.trustedservices.intel.com/sgx/certification/v4/pckcrl?ca=platform&encoding=der
+http 200, 3356 bytes, 0.131117s
+Content-Type: application/pkix-crl
+SGX-PCK-CRL-Issuer-Chain: <PEM chain, url-encoded, kept in the .headers file>
+Date: Tue, 08 Sep 2026 19:57:31 GMT
+sha256 3bf7fa8fb2c2f3131ebbbbb1d7dfb97f8fe8b3b0996e85534973b2d5d9f2fffd  pckcrl-platform.body
+
+--- rootcrl
+GET https://certificates.trustedservices.intel.com/IntelSGXRootCA.der
+http 200, 294 bytes, 0.261738s
+content-type: binary/octet-stream
+date: Tue, 08 Sep 2026 19:56:30 GMT
+sha256 c114be5d5ca7aab2d37817eca55aa8a2353853809904ff3695b31c26bcb7465b  rootcrl.body
+

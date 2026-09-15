@@ -1,0 +1,37 @@
+# scenario three: the measurements and policy digests this scenario turns on.
+#
+# A policy digest is SHA-256 over the bytes the author signed over policy.json,
+# so it is not sha256sum of the file. Each number below was printed by
+# emit-refvals when it wrote the document, read back off the delivered document
+# with 'emit-refvals -digest-of', and read a third time off the console of the
+# guest holding it. The console column is filled in after the run.
+
+guest A boots  : attested-tdx-d5ddcc423b1a, predicted RTMR2 d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+guest B boots  : attested-tdx-640de950bbdd, predicted RTMR2 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7
+
+D_A, guest A's own policy      : d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b
+    emit-refvals -digest-of    : d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b
+    forwards to                :
+        d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+D_B, guest B's own policy      : 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28
+    emit-refvals -digest-of    : 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28
+    forwards to                :
+        d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+        d79409ccd2bdca0bafc6b4a452899e79a6f4acf3102221b77626d96b0a327e0ee55cc7d5a5034f7aaf2eb39da3a39592
+
+set-a admits measurement       : d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d   (the measurement A EXPECTS of its peer)
+    guest B actually reports   : 640de950bbdde9300d2092da28885ec6455acdc3b6df99ea847d02d5cf7c99d86724bb4dff41bb037c4f212f33414be7
+set-a admits policy digest     : 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28
+set-b admits measurement       : d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+set-b admits policy digest     : d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b
+
+the fictitious measurement, where a policy carries one:
+    d79409ccd2bdca0bafc6b4a452899e79a6f4acf3102221b77626d96b0a327e0ee55cc7d5a5034f7aaf2eb39da3a39592
+    = sha384 of the ASCII string "a TDX image this sandbox would also dial, which nothing in this project has built", with no trailing newline.
+      It is a launch measurement of the right width naming no image anybody has,
+      so one guest's policy is a different document from the other's while both
+      still say the true thing about this pair.
+
+the third reading, off the guests' own consoles:
+    guest A printed policy digest : d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b
+    guest B printed policy digest : 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28

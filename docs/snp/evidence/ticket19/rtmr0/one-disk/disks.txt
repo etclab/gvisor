@@ -1,0 +1,32 @@
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+NAME         SERIAL              SIZE TYPE
+loop0                           66.8M loop
+loop1                          344.5M loop
+loop2                           50.1M loop
+nvme0n1      persistent-disk-0    20G disk
+├─nvme0n1p1                       19G part
+├─nvme0n1p14                       4M part
+├─nvme0n1p15                     106M part
+└─nvme0n1p16                     913M part
+
+by-id: total 0
+by-id: lrwxrwxrwx 1 root root 13 Sep 10 21:35 google-persistent-disk-0 -> ../../nvme0n1
+by-id: lrwxrwxrwx 1 root root 15 Sep 10 21:35 google-persistent-disk-0-part1 -> ../../nvme0n1p1
+by-id: lrwxrwxrwx 1 root root 16 Sep 10 21:35 google-persistent-disk-0-part14 -> ../../nvme0n1p14
+by-id: lrwxrwxrwx 1 root root 16 Sep 10 21:35 google-persistent-disk-0-part15 -> ../../nvme0n1p15
+by-id: lrwxrwxrwx 1 root root 16 Sep 10 21:35 google-persistent-disk-0-part16 -> ../../nvme0n1p16
+by-id: lrwxrwxrwx 1 root root 13 Sep 10 21:35 nvme-nvme.1ae0-6e766d655f636172642d7064-6e766d655f636172642d7064-00000001 -> ../../nvme0n1
+by-id: lrwxrwxrwx 1 root root 15 Sep 10 21:35 nvme-nvme.1ae0-6e766d655f636172642d7064-6e766d655f636172642d7064-00000001-part1 -> ../../nvme0n1p1
+by-id: lrwxrwxrwx 1 root root 16 Sep 10 21:35 nvme-nvme.1ae0-6e766d655f636172642d7064-6e766d655f636172642d7064-00000001-part14 -> ../../nvme0n1p14
+by-id: lrwxrwxrwx 1 root root 16 Sep 10 21:35 nvme-nvme.1ae0-6e766d655f636172642d7064-6e766d655f636172642d7064-00000001-part15 -> ../../nvme0n1p15
+by-id: lrwxrwxrwx 1 root root 16 Sep 10 21:35 nvme-nvme.1ae0-6e766d655f636172642d7064-6e766d655f636172642d7064-00000001-part16 -> ../../nvme0n1p16
+by-id: lrwxrwxrwx 1 root root 13 Sep 10 21:35 nvme-nvme_card-pd_nvme_card-pd -> ../../nvme0n1
+by-id: lrwxrwxrwx 1 root root 15 Sep 10 21:35 nvme-nvme_card-pd_nvme_card-pd-part1 -> ../../nvme0n1p1
+by-id: lrwxrwxrwx 1 root root 16 Sep 10 21:35 nvme-nvme_card-pd_nvme_card-pd-part14 -> ../../nvme0n1p14
+by-id: lrwxrwxrwx 1 root root 16 Sep 10 21:35 nvme-nvme_card-pd_nvme_card-pd-part15 -> ../../nvme0n1p15
+by-id: lrwxrwxrwx 1 root root 16 Sep 10 21:35 nvme-nvme_card-pd_nvme_card-pd-part16 -> ../../nvme0n1p16
+by-id: lrwxrwxrwx 1 root root 13 Sep 10 21:35 nvme-nvme_card-pd_nvme_card-pd_1 -> ../../nvme0n1
+by-id: lrwxrwxrwx 1 root root 15 Sep 10 21:35 nvme-nvme_card-pd_nvme_card-pd_1-part1 -> ../../nvme0n1p1
+by-id: lrwxrwxrwx 1 root root 16 Sep 10 21:35 nvme-nvme_card-pd_nvme_card-pd_1-part14 -> ../../nvme0n1p14
+by-id: lrwxrwxrwx 1 root root 16 Sep 10 21:35 nvme-nvme_card-pd_nvme_card-pd_1-part15 -> ../../nvme0n1p15
+by-id: lrwxrwxrwx 1 root root 16 Sep 10 21:35 nvme-nvme_card-pd_nvme_card-pd_1-part16 -> ../../nvme0n1p16

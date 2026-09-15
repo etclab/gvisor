@@ -19,28 +19,23 @@ import (
 	"context"
 	"crypto/ed25519"
 	"crypto/rand"
+	"crypto/sha256"
 	"errors"
-	"os"
 	"path/filepath"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	"gvisor.dev/gvisor/attest"
-	"gvisor.dev/gvisor/attest/snpfake"
+	"gvisor.dev/gvisor/attest/internal/fixture"
+	"gvisor.dev/gvisor/attest/internal/snpfake"
 	"gvisor.dev/gvisor/attest/tunneld"
-	"gvisor.dev/gvisor/attest/verify"
 )
 
 // Every test here drives tunneld's public API with the fake platform injected
 // through Config. Verification and reference value handling are covered at
 // the attest seam and are not re-tested; what is asserted is external
 // behaviour: a channel or an error, an exchange completed or not.
-
-var (
-	chainCreatedAt     = time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
-	whenChainsAreValid = chainCreatedAt.Add(30 * 24 * time.Hour)
-)
 
 var (
 	imageA    = bytes.Repeat([]byte{0x11}, 48)
@@ -50,40 +45,25 @@ var (
 
 var (
 	platformTCB = attest.TCB{Bootloader: 9, TEE: 0, SNP: 23, Microcode: 72}
-	launched    = snpfake.Policy{SMT: true}
+	launched    = attest.GuestPolicy{AllowSMT: true}
 	permitted   = attest.GuestPolicy{AllowSMT: true}
 )
 
 // author is the reference value author for the whole test binary.
 var authorPub, authorPriv, _ = ed25519.GenerateKey(rand.Reader)
 
+// platform is a fake platform running one image at the TCB and under the guest
+// policy these tests treat as the ordinary ones.
 func platform(t *testing.T, measurement []byte) *snpfake.Platform {
 	t.Helper()
-	p, err := snpfake.New(snpfake.Config{
-		LaunchMeasurement: measurement,
-		TCB:               platformTCB,
-		Policy:            launched,
-		Now:               chainCreatedAt,
-	})
-	if err != nil {
-		t.Fatalf("snpfake.New: %v", err)
-	}
-	return p
+	return platformUnder(t, measurement, platformTCB, launched)
 }
 
-// verifierFor trusts the fake vendor root. Every fake platform is signed
-// under the same test root, so one verifier judges all of them.
-func verifierFor(t *testing.T, p *snpfake.Platform) attest.Verifier {
+// platformUnder is [platform] with all three stated, for a refusal that is
+// about one of them.
+func platformUnder(t *testing.T, measurement []byte, tcb attest.TCB, policy attest.GuestPolicy) *snpfake.Platform {
 	t.Helper()
-	v, err := verify.New(verify.Options{
-		VendorRootPEM: p.VendorRootPEM(),
-		ProductLine:   p.ProductLine(),
-		Now:           whenChainsAreValid,
-	})
-	if err != nil {
-		t.Fatalf("verify.New: %v", err)
-	}
-	return v
+	return fixture.SNPPlatform(t, snpfake.Config{LaunchMeasurement: measurement, TCB: tcb, Policy: policy})
 }
 
 func admitting(measurements ...[]byte) attest.ReferenceValueSet {
@@ -98,6 +78,57 @@ func admitting(measurements ...[]byte) attest.ReferenceValueSet {
 	return set
 }
 
+// somePolicyDigest stands in for the digest of a peer's own signed policy, where
+// a test builds a peer out of ratls directly instead of starting a tunneld to
+// build one.
+//
+// Every set these tests write lists no policy_digest on any value, so every
+// entry admits any policy and the number here decides nothing. What matters is
+// that the peer presents one at all, which every peer speaking binding context
+// v2 must. The tests that are about the digest name their own.
+func somePolicyDigest(who string) attest.PolicyDigest {
+	return sha256.Sum256([]byte("a test peer's policy: " + who))
+}
+
+// everyImage is what a test tunneld's own policy forwards to: all three images
+// this package's fixtures use.
+//
+// forward_to is the dialing side's check and it is not what most of these tests
+// are about, so the default policy says yes to every peer they can build and the
+// verdicts stay the reference value set's. The tests that *are* about forward_to
+// write their own policy.
+func everyImage() [][]byte { return [][]byte{imageA, imageB, imageNone} }
+
+// writePolicy writes a signed policy forwarding to the given images and returns
+// the document path. It is the second document a tunneld loads, beside the set,
+// and its digest is the identity that tunneld presents.
+func writePolicy(t *testing.T, forwardTo [][]byte, key ed25519.PrivateKey) string {
+	t.Helper()
+	doc, err := attest.MarshalPolicy(attest.Policy{ForwardTo: forwardTo})
+	if err != nil {
+		t.Fatalf("marshal policy: %v", err)
+	}
+	sig, err := attest.SignPolicy(doc, key)
+	if err != nil {
+		t.Fatalf("sign policy: %v", err)
+	}
+	path := filepath.Join(t.TempDir(), "policy.json")
+	fixture.WriteSigned(t, path, doc, sig)
+	return path
+}
+
+// policyDigestOf is the digest a tunneld loading a policy forwarding to these
+// images will present. It renders the document exactly as writePolicy does, so
+// the two agree by construction.
+func policyDigestOf(t *testing.T, forwardTo [][]byte) attest.PolicyDigest {
+	t.Helper()
+	doc, err := attest.MarshalPolicy(attest.Policy{ForwardTo: forwardTo})
+	if err != nil {
+		t.Fatalf("marshal policy: %v", err)
+	}
+	return attest.PolicyDigestOf(doc)
+}
+
 // writeSet writes a signed reference value set and returns the document path.
 func writeSet(t *testing.T, set attest.ReferenceValueSet, key ed25519.PrivateKey) string {
 	t.Helper()
@@ -110,12 +141,7 @@ func writeSet(t *testing.T, set attest.ReferenceValueSet, key ed25519.PrivateKey
 		t.Fatalf("sign set: %v", err)
 	}
 	path := filepath.Join(t.TempDir(), "reference-values.json")
-	if err := os.WriteFile(path, doc, 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(path+attest.SignatureFileSuffix, sig, 0o644); err != nil {
-		t.Fatal(err)
-	}
+	fixture.WriteSigned(t, path, doc, sig)
 	return path
 }
 
@@ -141,8 +167,9 @@ func start(t *testing.T, sandbox string, image []byte, admits attest.ReferenceVa
 	td, err := tunneld.New(context.Background(), tunneld.Config{
 		SandboxID:             sandbox,
 		Acquirer:              p,
-		Verifier:              verifierFor(t, p),
+		Verifier:              fixture.VerifierTrusting(t, p),
 		ReferenceValueSetPath: writeSet(t, admits, authorPriv),
+		PolicyPath:            writePolicy(t, everyImage(), authorPriv),
 		AuthorPublicKey:       authorPub,
 		Peers:                 peers,
 		ListenAddr:            "127.0.0.1:0",
@@ -256,8 +283,9 @@ func TestPeerPresentingNoEvidenceIsRefused(t *testing.T) {
 	a, err := tunneld.New(context.Background(), tunneld.Config{
 		SandboxID:             "a",
 		Acquirer:              evidenceless{p},
-		Verifier:              verifierFor(t, p),
+		Verifier:              fixture.VerifierTrusting(t, p),
 		ReferenceValueSetPath: writeSet(t, admitting(imageB), authorPriv),
+		PolicyPath:            writePolicy(t, everyImage(), authorPriv),
 		AuthorPublicKey:       authorPub,
 		Peers:                 tunneld.PeerTable{"b": b.Addr().String()},
 		ListenAddr:            "127.0.0.1:0",
@@ -275,21 +303,29 @@ func TestPeerPresentingNoEvidenceIsRefused(t *testing.T) {
 	}
 }
 
-func TestRefusesToStartWithoutAnAcceptedSet(t *testing.T) {
+// TestRefusesToStartWithoutAnAcceptedSetOrPolicy: a tunneld loads two signed
+// documents and there is no path that starts without either.
+//
+// The two failures keep separate sentinels. A caller that asked why a guest will
+// not boot should not have to read the text to learn which of the two files on
+// the config device is the one to fix.
+func TestRefusesToStartWithoutAnAcceptedSetOrPolicy(t *testing.T) {
 	p := platform(t, imageA)
 	base := tunneld.Config{
-		SandboxID:       "a",
-		Acquirer:        p,
-		Verifier:        verifierFor(t, p),
-		AuthorPublicKey: authorPub,
-		ListenAddr:      "127.0.0.1:0",
+		SandboxID:             "a",
+		Acquirer:              p,
+		Verifier:              fixture.VerifierTrusting(t, p),
+		AuthorPublicKey:       authorPub,
+		ListenAddr:            "127.0.0.1:0",
+		ReferenceValueSetPath: writeSet(t, admitting(imageB), authorPriv),
+		PolicyPath:            writePolicy(t, everyImage(), authorPriv),
 	}
 	_, otherAuthor, _ := ed25519.GenerateKey(rand.Reader)
-	cases := map[string]string{
+
+	for name, path := range map[string]string{
 		"missing":           filepath.Join(t.TempDir(), "absent.json"),
 		"signed by another": writeSet(t, admitting(imageB), otherAuthor),
-	}
-	for name, path := range cases {
+	} {
 		cfg := base
 		cfg.ReferenceValueSetPath = path
 		td, err := tunneld.New(context.Background(), cfg)
@@ -300,12 +336,30 @@ func TestRefusesToStartWithoutAnAcceptedSet(t *testing.T) {
 			t.Errorf("%s set: New = %v, %v; want ErrSetRefused", name, td, err)
 		}
 	}
-	// Control: the same configuration with an accepted set starts.
-	cfg := base
-	cfg.ReferenceValueSetPath = writeSet(t, admitting(imageB), authorPriv)
-	td, err := tunneld.New(context.Background(), cfg)
-	if err != nil {
-		t.Fatalf("control: New with an accepted set: %v", err)
+	for name, path := range map[string]string{
+		"missing":               filepath.Join(t.TempDir(), "absent.json"),
+		"signed by another":     writePolicy(t, everyImage(), otherAuthor),
+		"a reference value set": writeSet(t, admitting(imageB), authorPriv),
+	} {
+		cfg := base
+		cfg.PolicyPath = path
+		td, err := tunneld.New(context.Background(), cfg)
+		if !errors.Is(err, attest.ErrPolicyRefused) {
+			if td != nil {
+				td.Close()
+			}
+			t.Errorf("%s policy: New = %v, %v; want ErrPolicyRefused", name, td, err)
+		}
 	}
-	td.Close()
+
+	// Control: the same configuration with both documents accepted starts, and
+	// presents the digest of the policy it loaded.
+	td, err := tunneld.New(context.Background(), base)
+	if err != nil {
+		t.Fatalf("control: New with an accepted set and policy: %v", err)
+	}
+	defer td.Close()
+	if got, want := td.PolicyDigest(), policyDigestOf(t, everyImage()); got != want {
+		t.Errorf("the tunneld presents policy %s; its own document is %s", got, want)
+	}
 }

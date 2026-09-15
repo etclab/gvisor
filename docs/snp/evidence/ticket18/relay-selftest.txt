@@ -1,0 +1,35 @@
+=== relay self-test, 2026-09-09T00:03:21Z ===
+
+### 1. two guests on the segment reach each other through the relay
+    PING 10.14.0.3 (10.14.0.3): 56 data bytes
+    64 bytes from 10.14.0.3: seq=0 ttl=64 time=3.997 ms
+    64 bytes from 10.14.0.3: seq=1 ttl=64 time=2.603 ms
+    64 bytes from 10.14.0.3: seq=2 ttl=64 time=2.352 ms
+    
+    --- 10.14.0.3 ping statistics ---
+    3 packets transmitted, 3 packets received, 0% packet loss
+    round-trip min/avg/max = 2.352/2.984/3.997 ms
+    l2relay: RELAYED a_to_b_frames=12 b_to_a_frames=12 a_to_b_bytes=964 b_to_a_bytes=964 tampered=0
+    l2relay: MARKER not found hits=0 marker='attested-tunnel-plaintext-marker' in 24 frames carrying 1928 bytes
+    l2relay: what was on the segment:
+      ethertypes : IPv4=6, ARP=4, IPv6=14
+      ip protocols: ICMP=6
+      arp targets : 10.14.0.2, 10.14.0.3
+      10.14.0.2 -> 10.14.0.3 proto=ICMP frames=3
+      10.14.0.3 -> 10.14.0.2 proto=ICMP frames=3
+PASS  frames crossed the relay in both directions
+PASS  the two guests reached each other over it
+PASS  only the two guests' own addresses were ever resolved
+
+### 2. the scanner, on a frame that really does carry the marker
+    l2relay: RELAYED a_to_b_frames=1 b_to_a_frames=0 a_to_b_bytes=66 b_to_a_bytes=0 tampered=0
+    l2relay: MARKER FOUND hits=1 marker='attested-tunnel-plaintext-marker' in 1 frames carrying 66 bytes
+    l2relay: what was on the segment:
+      ethertypes : IPv4=1
+      ip protocols: UDP=1
+      arp targets : none
+      10.14.0.2 -> 10.14.0.3 proto=UDP frames=1
+PASS  the relay saw the plaintext when there was plaintext to see
+PASS  and delivered the frame to the other guest unchanged
+
+=== 5 passed, 0 failed ===

@@ -1,0 +1,11 @@
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+boot_id : 04d80a1e-fcdc-47f6-88ee-77bc94bf53cb
+cmdline : BOOT_IMAGE=/vmlinuz-7.0.0-1011-gcp root=PARTUUID=fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7 ro console=ttyS0,115200 panic=-1
+kernel  : 7.0.0-1011-gcp
+--- sha256 of what grub read, as of this boot ---
+f5f44bbd2277f4e882ee56f35d1e557a8e67c3cdc0e4202eba6c5addbb260590  /boot/efi/EFI/ubuntu/grub.cfg
+6fe6e1bcbe6cf6baec8e056d40361ca1aa715cc04ddcc2855351de060b84350b  /boot/efi/EFI/ubuntu/shimx64.efi
+a831af01e4fb5e3c9457120e1d08ea13d98a0a47b62728c284b7f502d535965c  /boot/efi/EFI/ubuntu/grubx64.efi
+bash: line 6: /boot/grub/grub.cfg: Permission denied
+bash: line 7: /boot/grub/x86_64-efi/crypto.lst: Permission denied
+--- grubenv as of this boot (after grub-common ran) ---

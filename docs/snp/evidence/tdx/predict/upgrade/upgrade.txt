@@ -1,0 +1,72 @@
+=== TDX upgrade/stability probe: 2026-09-08T18:15:23Z ===
+project nsf-2348130-428843 zone us-central1-a image ubuntu-2404-noble-amd64-v20260826
+repo    92658f502aecf8c1e2caf445804463abc6e57b19
+
+Created [https://www.googleapis.com/compute/beta/projects/nsf-2348130-428843/zones/us-central1-a/instances/tdx-upgrade].
+WARNING: Some requests generated warnings:
+ - Disk size: '20 GB' is larger than image size: '10 GB'. You might need to resize the root repartition manually if the operating system does not support automatic resizing. See https://cloud.google.com/compute/docs/disks/add-persistent-disk#resize_pd for details.
+ - The resource 'projects/ubuntu-os-cloud/global/images/ubuntu-2404-noble-amd64-v20260826' is deprecated. A suggested replacement is 'projects/ubuntu-os-cloud/global/images/ubuntu-2404-noble-amd64-v20260906'.
+
+tdx-upgrade	us-central1-a	c3-standard-4	RUNNING
+
+############ boot 1: baseline, the pinned image untouched ############
+--- baseline ---
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+boot_id : 81b0cdba-c9e2-4828-8d3e-b31b5f076dd7
+cmdline : BOOT_IMAGE=/vmlinuz-6.17.0-1022-gcp root=PARTUUID=fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7 ro console=ttyS0,115200 panic=-1
+rtmr2               : ecc9935861eba8e47817c10761468525af6df776fa2fa2767be5d6d152a5ae3a62da7b750df33d8069c7ff9bae811df9
+  ccel 262144 bytes
+
+############ boot 2: update-grub with nothing changed ############
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+grub.cfg before: d0d7ec65eb4a81659b81759198d55402
+Warning: os-prober will not be executed to detect other bootable partitions.
+Systems on them will not be added to the GRUB boot configuration.
+Check GRUB_DISABLE_OS_PROBER documentation entry.
+Adding boot menu entry for UEFI Firmware Settings ...
+done
+grub.cfg after : c084cc1398cd08a86aeb1c9c090acbce
+  snapshot for update-grub: 65024000 bytes
+  boot_id 81b0cdba-c9e2-4828-8d3e-b31b5f076dd7 -> a9946231-1fb8-4a4b-8124-0c15b6ea1424 (barrier crossed on attempt 4)
+--- update-grub ---
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+boot_id : a9946231-1fb8-4a4b-8124-0c15b6ea1424
+cmdline : BOOT_IMAGE=/vmlinuz-6.17.0-1022-gcp root=PARTUUID=fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7 ro console=ttyS0,115200 panic=-1
+rtmr2               : 0375c957827297814393458ff7ce320514bf227fa51af473091bbeb0b9dde8a7fe8fef3f4f208e843addaee422981847
+  ccel 262144 bytes
+
+############ boot 3: after a failed boot (recordfail=1 left in grubenv) ############
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+recordfail=1
+  snapshot for recordfail: 65024000 bytes
+  boot_id a9946231-1fb8-4a4b-8124-0c15b6ea1424 -> 8db69b2d-dcaa-4d00-827d-e1a6eec5d745 (barrier crossed on attempt 4)
+--- recordfail ---
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+boot_id : 8db69b2d-dcaa-4d00-827d-e1a6eec5d745
+cmdline : BOOT_IMAGE=/vmlinuz-6.17.0-1022-gcp root=PARTUUID=fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7 ro console=ttyS0,115200 panic=-1
+rtmr2               : 8db33f41dc43771f857474ca41c08418100f023778fe31d7ff95cbb16823f3fe9f75cf13ce428d9482d44d7edbba62b7
+  ccel 262144 bytes
+
+############ boot 4: kernel upgrade ############
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+candidate:   Installed: 6.17.0-1022.25   Candidate: 7.0.0-1011.11~24.04.1 
+kernels on disk now: /boot/vmlinuz-6.17.0-1022-gcp 
+  snapshot for kernel-upgrade: 65024000 bytes
+  boot_id 8db69b2d-dcaa-4d00-827d-e1a6eec5d745 -> 945fa902-621e-4f64-b416-8c0afb90747a (barrier crossed on attempt 4)
+--- kernel-upgrade ---
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+boot_id : 945fa902-621e-4f64-b416-8c0afb90747a
+cmdline : BOOT_IMAGE=/vmlinuz-6.17.0-1022-gcp root=PARTUUID=fcf50dcd-5e7d-459a-b19d-5ca4a4dbbbf7 ro console=ttyS0,115200 panic=-1
+rtmr2               : 0375c957827297814393458ff7ce320514bf227fa51af473091bbeb0b9dde8a7fe8fef3f4f208e843addaee422981847
+  ccel 262144 bytes
+
+############ registers across the four boots ############
+baseline        rtmr2 ecc9935861eba8e47817c10761468525af6df776fa2fa2767be5d6d152a5ae3a62da7b750df33d8069c7ff9bae811df9
+update-grub     rtmr2 0375c957827297814393458ff7ce320514bf227fa51af473091bbeb0b9dde8a7fe8fef3f4f208e843addaee422981847
+recordfail      rtmr2 8db33f41dc43771f857474ca41c08418100f023778fe31d7ff95cbb16823f3fe9f75cf13ce428d9482d44d7edbba62b7
+kernel-upgrade  rtmr2 0375c957827297814393458ff7ce320514bf227fa51af473091bbeb0b9dde8a7fe8fef3f4f208e843addaee422981847
+(the prediction for each is made on the workstation from that boot's bootstate.tar; see predict-rtmr2.py)
+
+deleting tdx-upgrade
+Deleted [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/zones/us-central1-a/instances/tdx-upgrade].
+=== done 2026-09-08T18:23:57Z ===

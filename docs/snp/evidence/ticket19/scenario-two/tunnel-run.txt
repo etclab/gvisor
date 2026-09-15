@@ -1,0 +1,585 @@
+=== ticket 19, scenario two: two attested guests on Google Cloud TDX ===
+date        : 2026-09-10T23:15:20Z
+repo        : 83ff9b7c3985d21fd066418809e40e926c2c196a on tdx-attested-tunnel
+project     : nsf-2348130-428843, zone us-central1-a
+guest A     : t19-two-a at 10.128.0.40, boot image attested-tdx-d5ddcc423b1a, predicted RTMR2 d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+guest B     : t19-two-b at 10.128.0.41, boot image attested-tdx-d5ddcc423b1a, predicted RTMR2 d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+author key  : /home/pniroula/Projects/gvisor-tdx-work/.scratch/attested-secure-tunnel/host-stack/image-ticket19-tdx/author.key (public half 665053d10032f5b9a46394a65b022c0bd7007392b8f445fe4ace5b0e5ed4c5a2, inside both measurements)
+collateral  : /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/tdx/collateral (provisioned, never fetched)
+out         : /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/scenario-two
+
+############ 1. authoring the four documents ############
+--- probe run: emit each policy once, with the set left unconstrained, to learn the two digests
+    D_A (guest A's own policy) = d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b
+    D_B (guest B's own policy) = 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28
+
+--- the real run: the same policies, and a set each
+    a| author public key: 665053d10032f5b9a46394a65b022c0bd7007392b8f445fe4ace5b0e5ed4c5a2
+    a| wrote /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/scenario-two/config-src/a/policy.json and /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/scenario-two/config-src/a/policy.json.sig (loads back through attest.LoadPolicyFile)
+    a| forwards to: d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+    a| policy digest: d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b
+    a| author public key: 665053d10032f5b9a46394a65b022c0bd7007392b8f445fe4ace5b0e5ed4c5a2
+    a| admits peer policy: d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b
+    a| wrote /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/scenario-two/config-src/a/reference-values.json and /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/scenario-two/config-src/a/reference-values.json.sig (loads back through attest.LoadReferenceValueSetFile)
+    a| 
+    a| policy digest of the policy just written: d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b
+    a|   (this is the number the OTHER guest passes as -admit-policy)
+    b| author public key: 665053d10032f5b9a46394a65b022c0bd7007392b8f445fe4ace5b0e5ed4c5a2
+    b| wrote /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/scenario-two/config-src/b/policy.json and /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/scenario-two/config-src/b/policy.json.sig (loads back through attest.LoadPolicyFile)
+    b| forwards to: d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+    b| forwards to: d79409ccd2bdca0bafc6b4a452899e79a6f4acf3102221b77626d96b0a327e0ee55cc7d5a5034f7aaf2eb39da3a39592
+    b| policy digest: 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28
+    b| author public key: 665053d10032f5b9a46394a65b022c0bd7007392b8f445fe4ace5b0e5ed4c5a2
+    b| admits peer policy: d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b
+    b| wrote /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/scenario-two/config-src/b/reference-values.json and /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/scenario-two/config-src/b/reference-values.json.sig (loads back through attest.LoadReferenceValueSetFile)
+    b| 
+    b| policy digest of the policy just written: 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28
+    b|   (this is the number the OTHER guest passes as -admit-policy)
+PASS  the policy a guest carries does not depend on what its set says (probe run and real run wrote the same bytes)
+PASS  D_A: the digest emit-refvals printed is the digest of the document it delivered
+PASS  D_B: the digest emit-refvals printed is the digest of the document it delivered
+PASS  the two policies have distinct digests, so 'each names the other' is two numbers
+PASS  guest A's policy is byte-identical to the one the image build emitted, so D_A is the image's own policy digest
+
+############ 2. the two config devices ############
+    a| config: reference-values.json  facc7c3e74454279eb7dff66d991e888a56f89f4daf2de79169e2d77a67004cb  1070 bytes
+    a| config: reference-values.json.sig  3ceeafb8822ced2c0bafa50280ef5635bd39316c793cee43220284712b87562e  129 bytes
+    a| config: policy.json  6930dd1c2f17a9882a90924f6fa09f5533f45a4579ed116021bc578de14e1abb  253 bytes
+    a| config: policy.json.sig  8b48e4b4786e48618500478578158804d1ba64c844099c59cfa3aa2b881cdbff  129 bytes
+    a| config: peers.json  4ff5f243997be0fb0390c51557b5f847c9f4fc43aaf573b7d62ba4b17d184151  114 bytes
+    a| config: tunneld.json  c4852307e217072f4e2222043fdaabdfbbef06d89f38cc6d862c7ba6c8e56df0  345 bytes
+    a| config: network.conf  f62ce12ab98cfaf4583c1150344bd1160c00201a1a707c52216156a2f222c6a6  290 bytes
+    a| config: collateral/  10 files
+    a| config:   collateral.txt  251a7fcc0661499cad9dc34c420b8cff8429930cda2ab3394a824c4376311578
+    a| config:   FETCH.txt  8ab6bb6e39ae50fe28e26ad9a9566fd7e330f642b1fa06800bb191f6c0a3e138
+    a| config:   pckcrl-platform.body  3bf7fa8fb2c2f3131ebbbbb1d7dfb97f8fe8b3b0996e85534973b2d5d9f2fffd
+    a| config:   pckcrl-platform.headers  3a5c2260039915832a367ad475fe078dd965bd9136dad4ba0933f87af2c80c22
+    a| config:   qeidentity.body  550f110a50541821aab6e472a2d4c2edc26022d2f59b72a0577f875b56d7d984
+    a| config:   qeidentity.headers  1854cd99f67bf53819501f659d3bc8d5bb656e0e8f131c97edaf46146f07696f
+    a| config:   rootcrl.body  c114be5d5ca7aab2d37817eca55aa8a2353853809904ff3695b31c26bcb7465b
+    a| config:   rootcrl.headers  a52a1a2982c8819b0893146188e1629817ae977bf462effa8d151deb8a2f841a
+    a| config:   tcbinfo-00806f050000.body  857fc7e41a832a5957fc0f8724c2516e5669f988b8e9b3b15ed4d1ac1877312c
+    a| config:   tcbinfo-00806f050000.headers  b555e197c38993174679e167711c94f78f8936de4ce75f0ae22f431bc802c232
+    a| config device written to /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/scenario-two/config-a.raw
+    a|   size   1073741824 bytes, label attested-config
+    a|   sha256 6e5afc064926da45b9964620c3b4a3274aa417b0217460fdb3c3d23c33fe42e6  (not measured, and nothing on it is trusted)
+    b| config: reference-values.json  facc7c3e74454279eb7dff66d991e888a56f89f4daf2de79169e2d77a67004cb  1070 bytes
+    b| config: reference-values.json.sig  3ceeafb8822ced2c0bafa50280ef5635bd39316c793cee43220284712b87562e  129 bytes
+    b| config: policy.json  66348e6934166669907d13ec7f1d46bc3e7f66b5925a02d73fd0918200cf271b  357 bytes
+    b| config: policy.json.sig  ce43fc3f233bfa090c1774aef0f86872cfc1d5947640acb8badcba7a33712b97  129 bytes
+    b| config: peers.json  82064b82ebab8340ab20ac43501e493976b9d8860036c25201d3ca2d0067545e  114 bytes
+    b| config: tunneld.json  35f9eae63920867f3cde1f96b28eced402f44585020a18723e1c99501eb92d7c  345 bytes
+    b| config: network.conf  c860983b2e25e713540010ddba6a917265f9416e74e0039a646c9873978f83bc  290 bytes
+    b| config: collateral/  10 files
+    b| config:   collateral.txt  251a7fcc0661499cad9dc34c420b8cff8429930cda2ab3394a824c4376311578
+    b| config:   FETCH.txt  8ab6bb6e39ae50fe28e26ad9a9566fd7e330f642b1fa06800bb191f6c0a3e138
+    b| config:   pckcrl-platform.body  3bf7fa8fb2c2f3131ebbbbb1d7dfb97f8fe8b3b0996e85534973b2d5d9f2fffd
+    b| config:   pckcrl-platform.headers  3a5c2260039915832a367ad475fe078dd965bd9136dad4ba0933f87af2c80c22
+    b| config:   qeidentity.body  550f110a50541821aab6e472a2d4c2edc26022d2f59b72a0577f875b56d7d984
+    b| config:   qeidentity.headers  1854cd99f67bf53819501f659d3bc8d5bb656e0e8f131c97edaf46146f07696f
+    b| config:   rootcrl.body  c114be5d5ca7aab2d37817eca55aa8a2353853809904ff3695b31c26bcb7465b
+    b| config:   rootcrl.headers  a52a1a2982c8819b0893146188e1629817ae977bf462effa8d151deb8a2f841a
+    b| config:   tcbinfo-00806f050000.body  857fc7e41a832a5957fc0f8724c2516e5669f988b8e9b3b15ed4d1ac1877312c
+    b| config:   tcbinfo-00806f050000.headers  b555e197c38993174679e167711c94f78f8936de4ce75f0ae22f431bc802c232
+    b| config device written to /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/scenario-two/config-b.raw
+    b|   size   1073741824 bytes, label attested-config
+    b|   sha256 7c2d87fd2581c347919357a4405a93541c26991f4c51d5dc4a2720246bb55be3  (not measured, and nothing on it is trusted)
+    # scenario two: the measurements and policy digests this scenario turns on.
+    #
+    # A policy digest is SHA-256 over the bytes the author signed over policy.json,
+    # so it is not sha256sum of the file. Each number below was printed by
+    # emit-refvals when it wrote the document, read back off the delivered document
+    # with 'emit-refvals -digest-of', and read a third time off the console of the
+    # guest holding it. The console column is filled in after the run.
+    
+    guest A boots  : attested-tdx-d5ddcc423b1a, predicted RTMR2 d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+    guest B boots  : attested-tdx-d5ddcc423b1a, predicted RTMR2 d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+    
+    D_A, guest A's own policy      : d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b
+        emit-refvals -digest-of    : d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b
+        forwards to                :
+            d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+    D_B, guest B's own policy      : 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28
+        emit-refvals -digest-of    : 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28
+        forwards to                :
+            d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+            d79409ccd2bdca0bafc6b4a452899e79a6f4acf3102221b77626d96b0a327e0ee55cc7d5a5034f7aaf2eb39da3a39592
+    
+    set-a admits measurement       : d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d   (the measurement A EXPECTS of its peer)
+        guest B actually reports   : d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+    set-a admits policy digest     : d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b
+    set-b admits measurement       : d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+    set-b admits policy digest     : d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b
+    
+    the fictitious measurement, where a policy carries one:
+        d79409ccd2bdca0bafc6b4a452899e79a6f4acf3102221b77626d96b0a327e0ee55cc7d5a5034f7aaf2eb39da3a39592
+        = sha384 of the ASCII string "a TDX image this sandbox would also dial, which nothing in this project has built", with no trailing newline.
+          It is a launch measurement of the right width naming no image anybody has,
+          so one guest's policy is a different document from the other's while both
+          still say the true thing about this pair.
+
+############ 3. publishing the two config devices ############
+Creating gs://attested-tunnel-t19-20260910231540/...
+  
+Updating gs://attested-tunnel-t19-20260910231540/...
+.
+Copying file:///tmp/pniroula/tmp.c0PWjTxETG/disk.tar.gz to gs://attested-tunnel-t19-20260910231540/attested-config-t19-two-a-20260910231520.tar.gz
+  
+.
+Created [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/global/images/attested-config-t19-two-a-20260910231520].
+Removing objects:
+  
+Removing gs://attested-tunnel-t19-20260910231540/attested-config-t19-two-a-20260910231520.tar.gz#1789082152420167...
+.
+Removing buckets:
+  
+Removing gs://attested-tunnel-t19-20260910231540/...
+...
+    a| - type: TDX_CAPABLE
+    a| - type: GVNIC
+    a| - type: VIRTIO_SCSI_MULTIQUEUE
+    a| - type: SEV_CAPABLE
+    a| - type: SEV_SNP_CAPABLE
+    a| labels:
+    a|   purpose: attested-tunnel-t19
+    a| name: attested-config-t19-two-a-20260910231520
+    a| status: READY
+    a| published attested-config-t19-two-a-20260910231520
+    a| staged through gs://attested-tunnel-t19-20260910231540 (created and deleted inside this run)
+    a| deleting gs://attested-tunnel-t19-20260910231540
+Creating gs://attested-tunnel-t19-20260910231654/...
+  
+Updating gs://attested-tunnel-t19-20260910231654/...
+.
+Copying file:///tmp/pniroula/tmp.kY4mXICt5s/disk.tar.gz to gs://attested-tunnel-t19-20260910231654/attested-config-t19-two-b-20260910231520.tar.gz
+  
+.
+Created [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/global/images/attested-config-t19-two-b-20260910231520].
+Removing objects:
+  
+Removing gs://attested-tunnel-t19-20260910231654/attested-config-t19-two-b-20260910231520.tar.gz#1789082226042456...
+.
+Removing buckets:
+  
+Removing gs://attested-tunnel-t19-20260910231654/...
+..
+    b| - type: TDX_CAPABLE
+    b| - type: GVNIC
+    b| - type: VIRTIO_SCSI_MULTIQUEUE
+    b| - type: SEV_CAPABLE
+    b| - type: SEV_SNP_CAPABLE
+    b| labels:
+    b|   purpose: attested-tunnel-t19
+    b| name: attested-config-t19-two-b-20260910231520
+    b| status: READY
+    b| published attested-config-t19-two-b-20260910231520
+    b| staged through gs://attested-tunnel-t19-20260910231654 (created and deleted inside this run)
+    b| deleting gs://attested-tunnel-t19-20260910231654
+
+############ 4. creating both guests ############
+creating t19-two-a and t19-two-b at 2026-09-10T23:18Z
+    a| Created [https://www.googleapis.com/compute/beta/projects/nsf-2348130-428843/zones/us-central1-a/instances/t19-two-a].
+    a| WARNING: Some requests generated warnings:
+    a|  - Disk size: '10 GB' is larger than image size: '1 GB'. You might need to resize the root repartition manually if the operating system does not support automatic resizing. See https://cloud.google.com/compute/docs/disks/add-persistent-disk#resize_pd for details.
+    a|  - Disk size: '20 GB' is larger than image size: '10 GB'. You might need to resize the root repartition manually if the operating system does not support automatic resizing. See https://cloud.google.com/compute/docs/disks/add-persistent-disk#resize_pd for details.
+    a| 
+    a| t19-two-a	us-central1-a	c3-standard-4	RUNNING	10.128.0.40
+    b| Created [https://www.googleapis.com/compute/beta/projects/nsf-2348130-428843/zones/us-central1-a/instances/t19-two-b].
+    b| WARNING: Some requests generated warnings:
+    b|  - Disk size: '10 GB' is larger than image size: '1 GB'. You might need to resize the root repartition manually if the operating system does not support automatic resizing. See https://cloud.google.com/compute/docs/disks/add-persistent-disk#resize_pd for details.
+    b|  - Disk size: '20 GB' is larger than image size: '10 GB'. You might need to resize the root repartition manually if the operating system does not support automatic resizing. See https://cloud.google.com/compute/docs/disks/add-persistent-disk#resize_pd for details.
+    b| 
+    b| t19-two-b	us-central1-a	c3-standard-4	RUNNING	10.128.0.41
+
+############ 5. watching both serial consoles ############
+docs/snp/cloud/tdx/run-tdx-scenario.sh: line 541: the whole-buffer read after the stop returned $(stat -c %s "$out.full" 2> /dev/null || echo 0) bytes against the ${
+    }$(stat -c %s "$out") the incremental capture holds: bad substitution
+guest A: the instance is STOPPING; the guest powered itself off
+guest B: finished: initrd: EXIT status=2
+console A: 1496 lines; console B: 1037 lines
+
+---- guest A, the lines that matter ----
+    a| initrd: loaded tdx-guest
+    a| initrd: loaded gve
+    a| initrd: loaded nf_tables
+    a| initrd: loaded nf_reject_ipv4
+    a| initrd: loaded nf_reject_ipv6
+    a| initrd: loaded nft_reject
+    a| initrd: loaded nft_reject_inet
+    a| initrd: report interface present at /sys/kernel/config/tsm/report
+    a| initrd: config device /dev/nvme0n2 found by the ext4 label
+    a| initrd: config device mounted at /config (ro,noexec,nosuid,nodev); it holds:
+    a| initrd: loopback up (the kernel delivers a rule's refusal to the local socket over it)
+    a| initrd: link eth0 up: 10.128.0.40/32 mtu 1460, gateway 10.128.0.1
+    a| tunneld: policy /config/policy.json loaded under the author key; digest d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b
+    a| tunneld: policy egress: version 1, unattested egress permitted: false
+    a| tunneld: EXIT status=0
+    a| tunneld: policy /config/policy.json loaded under the author key; digest d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b
+    a| tunneld: policy egress: version 1, unattested egress permitted: false
+    a| tunneld: EGRESS PROBE: 5 attempt(s) at addresses this policy permits nothing to reach
+    a| tunneld: EGRESS REFUSED tcp/169.254.169.254:80: dial tcp 169.254.169.254:80: connect: connection refused (the provider's metadata server) — the netfilter rule refused it
+    a| tunneld: EGRESS REFUSED tcp/8.8.8.8:53: dial tcp 8.8.8.8:53: connect: connection refused (a public resolver, over TCP) — the netfilter rule refused it
+    a| tunneld: EGRESS REFUSED udp/8.8.8.8:53: write udp 10.128.0.40:51258->8.8.8.8:53: write: operation not permitted (a public resolver, over UDP) — the netfilter rule refused it
+    a| tunneld: EGRESS REFUSED udp/10.128.0.1:53: write udp 10.128.0.40:36904->10.128.0.1:53: write: operation not permitted (named by -egress-probe) — the netfilter rule refused it
+    a| tunneld: EGRESS REFUSED tcp/10.128.0.1:80: dial tcp 10.128.0.1:80: connect: connection refused (named by -egress-probe) — the netfilter rule refused it
+    a| tunneld: EGRESS PROBE PASSED: every attempt was refused before it left
+    a| tunneld: EXIT status=0
+    a| tunneld: policy digest d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b (sha256 over the signed policy; put it in a peer's policy_digest)
+    a| tunneld: policy forward_to: measurement d5ddcc423b1aed53…
+    a| tunneld: listening on 10.128.0.40:4433 as "guest-a"; idle 1m0s, maximum age 15m0s
+    a| tunneld: SELFCHECK VERDICT ADMITTED: this platform satisfies this sandbox's own reference value set
+    a| tunneld: SELFCHECK measurement d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+    a| tunneld: SELFCHECK mrtd  c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+    a| tunneld: SELFCHECK rtmr0 c2fc12a52db868515eff7c657e42ce04b0b7363fa6ddf7c1cca87aa8e6a061a11f9981924a600ad6d2232f75182a850a
+    a| tunneld: SELFCHECK rtmr1 02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b
+    a| tunneld: SELFCHECK rtmr2 d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+    a| tunneld: SELFCHECK tcb   status=UpToDate evaluation=20 fmspc=00806f050000 attributes=0000001000000000
+    a| tunneld: exercise: dialing guest-b; 3 warm exchanges, 8 concurrent × 1 rounds, marker "attested-tunnel-plaintext-marker"
+    a| tunneld: PEER key=37b5fc86d3a7dcac… chain=none measurement=d5ddcc423b1aed53… vendor=intel-tdx mrtd=c1ee9c16e3afc506… rtmr2=d5ddcc423b1aed53… tcb=UpToDate,evaluation=20
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: exercise: pass=1 peer=guest-b not up yet, retrying until 1m30s elapses (tunneld: tunnel not established: "guest-b" at 10.128.0.41:4433: tunnel: dialing 10.128.0.41:4433: CRYPTO_ERROR 0x12a (local): attest: verification failed)
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: REFUSED verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28; no reference value for the measurement it is running lists that policy
+    a| tunneld: exercise: pass=1 peer=guest-b FAILED: after 91 attempt(s) over 1m30s: tunneld: tunnel not established: "guest-b" at 10.128.0.41:4433: tunnel: dialing 10.128.0.41:4433: CRYPTO_ERROR 0x12a (local): attest: verification failed
+    a| tunneld: exercise failed: pass 1, peer guest-b: after 91 attempt(s) over 1m30s: tunneld: tunnel not established: "guest-b" at 10.128.0.41:4433: tunnel: dialing 10.128.0.41:4433: CRYPTO_ERROR 0x12a (local): attest: verification failed
+
+---- guest B, the lines that matter ----
+    b| initrd: loaded tdx-guest
+    b| initrd: loaded gve
+    b| initrd: loaded nf_tables
+    b| initrd: loaded nf_reject_ipv4
+    b| initrd: loaded nf_reject_ipv6
+    b| initrd: loaded nft_reject
+    b| initrd: loaded nft_reject_inet
+    b| initrd: report interface present at /sys/kernel/config/tsm/report
+    b| initrd: config device /dev/nvme0n2 found by[    2.119121] EXT4-fs (nvme0n2): mounted filesystem 3a2a6cd2-8207-46c6-b89e-d8cc291c4e98 ro without journal. Quota mode: none.
+    b| initrd: config device mounted at /config (ro,noexec,nosuid,nodev); it holds:
+    b| initrd: loopback up (the kernel delivers a rule's refusal to the local socket over it)
+    b| initrd: link eth0 up: 10.128.0.41/32 mtu 1460, gateway 10.128.0.1
+    b| tunneld: policy /config/policy.json loaded under the author key; digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28
+    b| tunneld: policy egress: version 1, unattested egress permitted: false
+    b| tunneld: EXIT status=0
+    b| tunneld: policy /config/policy.json loaded under the author key; digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28
+    b| tunneld: policy egress: version 1, unattested egress permitted: false
+    b| tunneld: EGRESS PROBE: 5 attempt(s) at addresses this policy permits nothing to reach
+    b| tunneld: EGRESS REFUSED tcp/169.254.169.254:80: dial tcp 169.254.169.254:80: connect: connection refused (the provider's metadata server) — the netfilter rule refused it
+    b| tunneld: EGRESS REFUSED tcp/8.8.8.8:53: dial tcp 8.8.8.8:53: connect: connection refused (a public resolver, over TCP) — the netfilter rule refused it
+    b| tunneld: EGRESS REFUSED udp/8.8.8.8:53: write udp 10.128.0.41:49068->8.8.8.8:53: write: operation not permitted (a public resolver, over UDP) — the netfilter rule refused it
+    b| tunneld: EGRESS REFUSED udp/10.128.0.1:53: write udp 10.128.0.41:36771->10.128.0.1:53: write: operation not permitted (named by -egress-probe) — the netfilter rule refused it
+    b| tunneld: EGRESS REFUSED tcp/10.128.0.1:80: dial tcp 10.128.0.1:80: connect: connection refused (named by -egress-probe) — the netfilter rule refused it
+    b| tunneld: EGRESS PROBE PASSED: every attempt was refused before it left
+    b| tunneld: EXIT status=0
+    b| tunneld: policy digest 444a4aa826ae40b5cc4332df842f0cea17e02a51f6d8f30f2385daf051561f28 (sha256 over the signed policy; put it in a peer's policy_digest)
+    b| tunneld: policy forward_to: measurement d5ddcc423b1aed53…
+    b| tunneld: policy forward_to: measurement d79409ccd2bdca0b…
+    b| tunneld: listening on 10.128.0.41:4433 as "guest-b"; idle 1m0s, maximum age 15m0s
+    b| tunneld: SELFCHECK VERDICT REFUSED reason=guest policy or policy digest not permitted by the reference value: attest: verification failed
+    b| tunneld: SELFCHECK (unverified, read straight out of the quote's bytes) mrtd  c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+    b| tunneld: SELFCHECK (unverified) rtmr0 c2fc12a52db868515eff7c657e42ce04b0b7363fa6ddf7c1cca87aa8e6a061a11f9981924a600ad6d2232f75182a850a
+    b| tunneld: SELFCHECK (unverified) rtmr1 02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b
+    b| tunneld: SELFCHECK (unverified) rtmr2 d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+    b| tunneld: exercise: dialing guest-a; 3 warm exchanges, 8 concurrent × 1 rounds, marker "attested-tunnel-plaintext-marker"
+    b| tunneld: PEER key=15576ede988e8b67… chain=none measurement=d5ddcc423b1aed53… vendor=intel-tdx mrtd=c1ee9c16e3afc506… rtmr2=d5ddcc423b1aed53… tcb=UpToDate,evaluation=20
+    b| tunneld: exercise: pass=1 peer=guest-a not up yet, retrying until 1m30s elapses (tunneld: tunnel not established: "guest-a" at 10.128.0.40:4433: tunnel: dialing 10.128.0.40:4433: CRYPTO_ERROR 0x12a (remote): tls: bad certificate)
+    b| tunneld: exercise: pass=1 peer=guest-a FAILED: after 89 attempt(s) over 1m30s: tunneld: tunnel not established: "guest-a" at 10.128.0.40:4433: tunnel: dialing 10.128.0.40:4433: CRYPTO_ERROR 0x12a (remote): tls: bad certificate
+    b| tunneld: exercise failed: pass 1, peer guest-a: after 89 attempt(s) over 1m30s: tunneld: tunnel not established: "guest-a" at 10.128.0.40:4433: tunnel: dialing 10.128.0.40:4433: CRYPTO_ERROR 0x12a (remote): tls: bad certificate
+    b| tunneld: PEERS verifier_calls=89 accepted=89 refused=0 distinct_keys=1 distinct_chains=1
+    b| tunneld: PEER SEEN key=15576ede988e8b677b4e1e9827e727c4d963d7e524bab2af48e69b514b10fd8d62776e2d7062269ff712db11d297f5f71e00fb72b24e089098b1d3e58c7a2fc8 chain=none measurement=d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d times=89
+    b| tunneld: EXIT status=2
+    b| initrd: EXIT status=2
+
+############ 6. each guest's quote, judged on this workstation ############
+    a| === guest A's quote against guest A's OWN set (the self-check, remade here) ===
+    a| ACCEPTED
+    a| verify-evidence exit status: 0  (0 accepted, 2 refused)
+    a| === guest A's quote against guest B's set (the check guest B makes of A) ===
+    a| ACCEPTED
+    a| verify-evidence exit status: 0  (0 accepted, 2 refused)
+    b| === guest B's quote against guest B's OWN set (the self-check, remade here) ===
+    b| REFUSED
+    b| verify-evidence exit status: 2  (0 accepted, 2 refused)
+    b| === guest B's quote against guest A's set (the check guest A makes of B) ===
+    b| REFUSED
+    b| verify-evidence exit status: 2  (0 accepted, 2 refused)
+    # scenario two: the registers each boot reported.
+    #
+    # The RTMR2 column is the only one that had to be PREDICTED; MRTD, RTMR0 and
+    # RTMR1 are the provider's constants for this shape and are pinned from
+    # observation. RTMR1's first-boot value is the expected one here: this guest
+    # never runs Ubuntu's initramfs, so nothing ever grows the root and the GPT
+    # never changes (docs/snp/cloud/tdx/SCENARIOS.md).
+    
+    guest a (t19-two-a)
+      predicted rtmr2 : d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+      quoted    rtmr2 : d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+      console   rtmr2 : d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+      console   mrtd  : c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+      console   rtmr0 : c2fc12a52db868515eff7c657e42ce04b0b7363fa6ddf7c1cca87aa8e6a061a11f9981924a600ad6d2232f75182a850a
+      console   rtmr1 : 02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b
+      quoted    mrtd  : c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+      quoted    rtmr0 : c2fc12a52db868515eff7c657e42ce04b0b7363fa6ddf7c1cca87aa8e6a061a11f9981924a600ad6d2232f75182a850a
+      quoted    rtmr1 : 02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b
+      tcb             : status=UpToDate evaluation=20 fmspc=00806f050000 attributes=0000001000000000
+    
+    guest b (t19-two-b)
+      predicted rtmr2 : d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+      quoted    rtmr2 : d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+      console   rtmr2 : d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+      console   mrtd  : c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+      console   rtmr0 : c2fc12a52db868515eff7c657e42ce04b0b7363fa6ddf7c1cca87aa8e6a061a11f9981924a600ad6d2232f75182a850a
+      console   rtmr1 : 02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b
+      quoted    mrtd  : c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+      quoted    rtmr0 : c2fc12a52db868515eff7c657e42ce04b0b7363fa6ddf7c1cca87aa8e6a061a11f9981924a600ad6d2232f75182a850a
+      quoted    rtmr1 : 02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b
+      tcb             : 
+    
+
+############ 7. what the run showed ############
+PASS  guest A: the initrd ran and loaded the TDX guest driver
+PASS  guest A: the config device was found and mounted read-only
+PASS  guest A: the address on the config device came up with the VPC's gateway route
+PASS  guest A: the egress rule set the signed policy implies was installed and read back out of the kernel
+PASS  guest A: every attempt at the egress the policy forbids was refused before it left
+PASS  guest A: the provider's metadata server is in the refused set
+PASS  guest A: it read the author key from inside the launch measurement
+PASS  guest A: it acquired its own evidence from this platform
+PASS  guest A: it is listening
+PASS  guest A: no reference value in its set is unconstrained
+PASS  guest A: nothing was clamped, so the maximum age in force is the one on its config device
+PASS  guest A: Intel reports this platform UpToDate at evaluation 20
+PASS  guest A: nothing was refused for being below the TCB floor
+      guest A: the console ends at …
+      guest A: the last lines this guest wrote — the peer summary, tunneld's EXIT status and
+                the initrd's — are not on it. The guest writes them and powers off within
+                milliseconds, and Compute Engine serves an empty body for an instance that has
+                stopped, so they cannot be fetched afterwards either. The smoke boot's console
+                ends the same way. What the exercise did is read from its own lines instead.
+PASS  guest B: the initrd ran and loaded the TDX guest driver
+PASS  guest B: the config device was found and mounted read-only
+PASS  guest B: the address on the config device came up with the VPC's gateway route
+PASS  guest B: the egress rule set the signed policy implies was installed and read back out of the kernel
+PASS  guest B: every attempt at the egress the policy forbids was refused before it left
+PASS  guest B: the provider's metadata server is in the refused set
+PASS  guest B: it read the author key from inside the launch measurement
+PASS  guest B: it acquired its own evidence from this platform
+PASS  guest B: it is listening
+PASS  guest B: no reference value in its set is unconstrained
+PASS  guest B: nothing was clamped, so the maximum age in force is the one on its config device
+PASS  guest B: Intel reports this platform UpToDate at evaluation 20
+PASS  guest B: nothing was refused for being below the TCB floor
+      guest B: the console survived the guest's own poweroff to the initrd's last line
+PASS  guest A printed the digest of the policy on its own config device
+PASS  guest B printed the digest of the policy on its own config device
+PASS  guest A's policy says which measurements it will dial
+PASS  guest B's policy says which measurements it will dial
+PASS  scenario two: guest A refused guest B, naming the policy digest B presented
+PASS  scenario two: guest B admitted guest A
+PASS  scenario two: guest B refused nothing
+PASS  scenario two: no tunnel in either direction — guest A got none
+PASS  scenario two: and guest B got none either
+PASS  scenario two: nothing was exchanged either way (A)
+PASS  scenario two: nothing was exchanged either way (B)
+PASS  scenario two: guest A's exercise failed, and named the peer it could not establish to
+PASS  scenario two: guest B's exercise failed too
+PASS  scenario two: guest A's self-check is ADMITTED — its set and this platform agree, so the refusal of B is about B
+PASS  scenario two: this workstation admits guest A's quote against guest A's own set too
+PASS  scenario two: this workstation admits guest A's quote against the set guest B holds
+PASS  scenario two: this workstation REFUSES guest B's quote against the set guest A holds — the refusal, remade here
+
+the egress capture is in /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/scenario-two/egress-a.txt and /home/pniroula/Projects/gvisor-tdx-work/docs/snp/evidence/ticket19/scenario-two/egress-b.txt
+
+############ tearing down ############
+Deleted [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/zones/us-central1-a/instances/t19-two-a].
+Deleted [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/zones/us-central1-a/instances/t19-two-b].
+Deleted [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/global/images/attested-config-t19-two-a-20260910231520].
+deleted image attested-config-t19-two-a-20260910231520
+Deleted [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/global/images/attested-config-t19-two-b-20260910231520].
+deleted image attested-config-t19-two-b-20260910231520
+
+instances still carrying purpose=attested-tunnel-t19:
+disks:
+
+############ rows for docs/snp/cloud/tdx/RESOURCES.md ############
+| 2026-09-10T23:18Z | t19-two-a | c3-standard-4 TDX, us-central1-a, 20GB pd-balanced boot from `attested-tdx-d5ddcc423b1a` + 10GB pd-balanced config disk from `attested-config-t19-two-a-20260910231520`, `--private-network-ip 10.128.0.40` | ticket 19 scenario two, guest A | **deleted 2026-09-10T23:25Z** |
+| 2026-09-10T23:18Z | t19-two-b | c3-standard-4 TDX, us-central1-a, 20GB pd-balanced boot from `attested-tdx-d5ddcc423b1a` + 10GB pd-balanced config disk from `attested-config-t19-two-b-20260910231520`, `--private-network-ip 10.128.0.41` | ticket 19 scenario two, guest B | **deleted 2026-09-10T23:25Z** |
+| 2026-09-10T23:18Z | attested-config-t19-two-a-20260910231520, attested-config-t19-two-b-20260910231520 | custom images, 1GiB each, `purpose=attested-tunnel-t19` | ticket 19 scenario two: the two config devices (a signed set and policy each, peer table, run config, addressing, Intel collateral) | **deleted 2026-09-10T23:25Z** |
+
+=== 48 passed, 0 failed ===
+=== done 2026-09-10T23:26:15Z, exit 0 ===

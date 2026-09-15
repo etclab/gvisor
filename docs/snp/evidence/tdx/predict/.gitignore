@@ -1,0 +1,3 @@
+# bootstate.tar snapshots are 65-132 MB each; they stay on the workstation.
+# pre-boot-state.txt beside each one lists the sha256 of every file grub reads.
+*.tar

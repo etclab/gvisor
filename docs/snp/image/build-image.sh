@@ -9,10 +9,15 @@
 #
 # Ticket 07: the build then predicts the launch measurement of what it just
 # built, from those inputs alone (predict-measurement.sh), and emits it as the
-# signed reference value set — reference-values.json and .sig, in the ticket 03
-# format, signed with the author key — beside a record of every input that
-# went into the prediction. Building and authorising are one step. No part of
-# this asks a platform anything; see docs/snp-measurement-prediction.md.
+# signed reference value set — reference-values.json and .sig, signed with the
+# author key — beside a record of every input that went into the prediction.
+# Building and authorising are one step. No part of this asks a platform
+# anything; see docs/snp-measurement-prediction.md.
+#
+# Ticket 19: it emits a second signed document beside the first,
+# policy.json and .sig, which is what a guest booting this image *is* rather
+# than whom it admits — the egress section, and the measurements it will dial.
+# Its digest is the number a peer names in policy_digest (docs/policy-binding.md).
 #
 # Rebuildable and auditable, not bit-reproducible: every input is pinned by
 # hash or version, every tool version is recorded, and the manifest lists
@@ -33,22 +38,36 @@
 #   VCPU_TYPE       QEMU -cpu model (default EPYC-v4); its signature is in each VMSA.
 #   POLICY          SEV-SNP guest policy (default 0x30000); the emitted
 #                   guest_policy permits exactly its bits.
+#   PEER_POLICY_DIGEST
+#                   optional. The peer policy the emitted reference value
+#                   admits: the digest another guest's tunneld prints at start.
+#                   Left unset the value is unconstrained and admits a peer
+#                   running the named image under any policy, which is what
+#                   every set authored before ticket 18 says.
+#   FORWARD_TO      the measurements the emitted policy says this sandbox will
+#                   dial, comma separated. Unset means this image's own
+#                   measurement, so two guests booting it can call each other,
+#                   which is what every scenario in the harness needs. Set and
+#                   empty means the sandbox dials nobody. Whatever it says, the
+#                   emitted policy's digest is recorded in the manifest as
+#                   policy_digest — that is the number a peer's policy_digest
+#                   names, and since ticket 19 it is the digest of policy.json
+#                   and not of the reference value set.
 #   TCB_FLOOR       minimum TCB the reference value admits, as
 #                   bootloader,tee,snp,microcode. Default 9,0,23,72 — the level
 #                   ticket 01 observed on this host. An authoring decision,
 #                   recorded in the emitted artifact; not a build input.
 #   Every one of VCPUS, VCPU_TYPE and POLICY must match launch-measured-guest.sh
 #   (-smp, -cpu, policy=) or the prediction is for a different launch.
-#   TUNNELD         static binary to embed as /usr/bin/tunneld. Default: build
-#                   tunneld-placeholder.c. Ticket 14 sets this and nothing else:
+#   TUNNELD         required. Static binary to embed as /usr/bin/tunneld.
 #                   package-tunneld.sh checks the import graph and the built
 #                   artifact, builds attest/cmd/tunneld with CGO_ENABLED=0, and
 #                   calls this script with TUNNELD pointing at it. Run that
 #                   rather than setting this by hand — the checks have to
 #                   happen before the measurement is computed, and this script
-#                   computes it. The default is left as the placeholder so that
-#                   tickets 06-08's recorded images rebuild to the measurements
-#                   they recorded.
+#                   computes it. There is no default: ticket 21 removed the
+#                   placeholder this script used to build when TUNNELD was
+#                   empty, so a build now names the binary it measures.
 #   BUSYBOX         static busybox (default /bin/busybox from busybox-static)
 set -euo pipefail
 HERE="$(dirname "$(readlink -f "$0")")"
@@ -56,10 +75,10 @@ REPO="$(git -C "$HERE" rev-parse --show-toplevel)"
 STACK="${STACK:-$REPO/.scratch/attested-secure-tunnel/host-stack}"
 OUT="${OUT:-$STACK/image}"
 BUSYBOX="${BUSYBOX:-/bin/busybox}"
-TUNNELD="${TUNNELD:-}"
 VCPUS="${VCPUS:-4}"; VCPU_TYPE="${VCPU_TYPE:-EPYC-v4}"; POLICY="${POLICY:-0x30000}"
 TCB_FLOOR="${TCB_FLOOR:-9,0,23,72}"
 : "${AUTHOR_KEY:?set AUTHOR_KEY to the reference value author Ed25519 private key, PKCS8 PEM}"
+: "${TUNNELD:?set TUNNELD to the static binary to embed as /usr/bin/tunneld; docs/snp/image/package-tunneld.sh builds it and sets this}"
 export PATH="/usr/local/go/bin:$PATH"
 command -v go >/dev/null || { echo "go not found; attest/README.md says how" >&2; exit 1; }
 
@@ -102,15 +121,12 @@ cd "$B"
 # Tools built from the checked-in sources, statically.
 gcc -O2 -static -Wall -o veritymap "$HERE/veritymap.c"
 gcc -O2 -static -Wall -o gen_init_cpio "$GEN_INIT_CPIO_SRC"
-if [ -z "$TUNNELD" ]; then
-  gcc -O2 -static -Wall -o tunneld-placeholder "$HERE/tunneld-placeholder.c"
-  TUNNELD="$B/tunneld-placeholder"
-  echo "TUNNELD not set: embedding tunneld-placeholder"
-fi
+
 file "$TUNNELD" | grep -q 'statically linked' || { echo "TUNNELD $TUNNELD is not static" >&2; exit 1; }
 
-# The reference value set emitter: the author-side half of attest/refvalsfile.go,
-# built from source so the document shipped is the one the loader reads.
+# The document emitter: the author-side half of attest/refvalsfile.go and
+# attest/policyfile.go, built from source so the documents shipped are the ones
+# the loader reads.
 (cd "$HERE/emit-refvals" && go build -o "$B/emit-refvals" .)
 
 # Author key: the public half of AUTHOR_KEY, as one line of 64 lowercase hex.
@@ -190,20 +206,53 @@ cp "$FIRMWARE" "$OUT/OVMF.fd"
 CMDLINE="console=ttyS0 earlyprintk=serial panic=-1 rdinit=/init verity.roothash=$ROOTHASH verity.salt=- verity.datablocks=$DATABLOCKS verity.hashstart=$DATABLOCKS"
 printf '%s\n' "$CMDLINE" > "$OUT/cmdline.txt"
 
-# ---- predicted measurement and the reference value set --------------------
+# ---- predicted measurement, the reference value set and the policy ---------
 # From the four files just written plus VCPUS and VCPU_TYPE, and nothing else:
 # no platform is consulted (docs/snp-measurement-prediction.md).
 MEASUREMENT=$(bash "$HERE/predict-measurement.sh" "$OUT" -vcpus "$VCPUS" -vcpu-type "$VCPU_TYPE" \
                 -out "$OUT/predicted-measurement.txt")
 [[ "$MEASUREMENT" =~ ^[0-9a-f]{96}$ ]] || { echo "no measurement predicted" >&2; exit 1; }
-"$B/emit-refvals" -measurement "$MEASUREMENT" -key "$AUTHOR_KEY" -out "$OUT" \
-                  -tcb "$TCB_FLOOR" -policy "$POLICY"
+
+# The guest list: whom a guest booting this image admits.
+EMITTED=$("$B/emit-refvals" -measurement "$MEASUREMENT" -key "$AUTHOR_KEY" -out "$OUT" \
+                  -tcb "$TCB_FLOOR" -policy "$POLICY" \
+                  ${PEER_POLICY_DIGEST:+-policy-digest "$PEER_POLICY_DIGEST"})
+printf '%s\n' "$EMITTED"
+
+# The policy: what a guest booting this image is. Two documents since ticket 19,
+# because a set that was also a policy could not be pinned in both directions
+# (docs/policy-binding.md). Unset FORWARD_TO means this image's own measurement,
+# so a pair of guests booted from it can call each other; set and empty means the
+# sandbox dials nobody, and that is written down rather than left out.
+FORWARD_ARGS=()
+if [ -z "${FORWARD_TO+set}" ]; then
+  FORWARD_ARGS=(-forward-to "$MEASUREMENT")
+else
+  IFS=',' read -r -a FORWARD_LIST <<< "$FORWARD_TO"
+  for m in "${FORWARD_LIST[@]}"; do
+    [ -n "$m" ] && FORWARD_ARGS+=(-forward-to "$m")
+  done
+fi
+EMITTED_POLICY=$("$B/emit-refvals" -emit-policy -key "$AUTHOR_KEY" -out "$OUT" "${FORWARD_ARGS[@]}")
+printf '%s\n' "$EMITTED_POLICY"
+
+# The emitted policy's digest, which is what a peer puts in its policy_digest to
+# admit a guest running this image under this policy (tickets 18 and 19). It is
+# SHA-256 over the bytes the author signed rather than over the file, so it comes
+# from the tool that knows that and never from sha256sum.
+POLICY_DIGEST=$(printf '%s\n' "$EMITTED_POLICY" | sed -n 's/^policy digest: //p')
+[[ "$POLICY_DIGEST" =~ ^[0-9a-f]{64}$ ]] || { echo "emit-refvals printed no policy digest" >&2; exit 1; }
 {
-  echo "# Inputs of the reference value set emitted beside this file (ticket 07)."
+  echo "# Inputs of the two documents emitted beside this file (tickets 07 and 19)."
   echo "# The launch measurement in reference-values.json is a prediction from these"
   echo "# inputs. It was not read from any machine."
   echo
   echo "reference-values.json sha256: $(sha256sum "$OUT/reference-values.json" | cut -d' ' -f1)"
+  echo "policy.json sha256:           $(sha256sum "$OUT/policy.json" | cut -d' ' -f1)"
+  echo "policy digest:                $POLICY_DIGEST (sha256 over the signed policy bytes, not over"
+  echo "                              the file; this is what a peer's policy_digest names)"
+  echo "admits peer policy:           ${PEER_POLICY_DIGEST:-any (this value lists no policy_digest)}"
+  echo "forwards to:                  $(printf '%s\n' "$EMITTED_POLICY" | sed -n 's/^forwards to[:]* //p' | paste -sd, -)"
   echo "signed by author key:         $KEYHEX (Ed25519; also at /etc/attested-tunnel/author.pub in rootfs.img)"
   echo "launch policy:                $POLICY"
   echo "tcb floor (authoring choice): $TCB_FLOOR (bootloader,tee,snp,microcode)"
@@ -226,7 +275,13 @@ MEASUREMENT=$(bash "$HERE/predict-measurement.sh" "$OUT" -vcpus "$VCPUS" -vcpu-t
   echo
   echo "## Predicted launch measurement (offline, from the files above + vcpus=$VCPUS vcpu_type=$VCPU_TYPE; not read from a machine)"
   echo "launch_measurement: $MEASUREMENT"
-  echo "emitted as reference-values.json (+ .sig, signed by the author key); inputs in reference-values.inputs.txt"
+  echo "emitted as reference-values.json and policy.json (+ .sig each, signed by the author key);"
+  echo "inputs in reference-values.inputs.txt"
+  echo
+  echo "## Policy digest of the emitted policy (tickets 18 and 19): sha256 over the bytes the author"
+  echo "## signed over policy.json, which is not sha256sum of the file. A peer admits a guest running"
+  echo "## this image under this policy by naming this number in its own policy_digest."
+  echo "policy_digest: $POLICY_DIGEST"
   echo
   echo "## Provenance"
   echo "firmware: tianocore/edk2 $OVMF_TAG $OVMF_COMMIT OvmfPkg/AmdSev/AmdSevX64.dsc, built by docs/snp/image/build-ovmf-amdsev.sh"
@@ -259,7 +314,7 @@ MEASUREMENT=$(bash "$HERE/predict-measurement.sh" "$OUT" -vcpus "$VCPUS" -vcpu-t
   done
 } > "$OUT/manifest.txt"
 
-cp "$HERE"/{build-image.sh,predict-measurement.sh,init.initrd,init.rootfs,veritymap.c,tunneld-placeholder.c} "$B/" 2>/dev/null || true
+cp "$HERE"/{build-image.sh,predict-measurement.sh,init.initrd,init.rootfs,veritymap.c} "$B/" 2>/dev/null || true
 echo
 echo "image in $OUT:"
 ls -l "$OUT" | grep -v '^d\|^total'

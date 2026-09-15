@@ -27,9 +27,22 @@
 //
 // A single extension under a private arc carries a versioned payload: the
 // version, the vendor, the evidence, the certificate chain the evidence needs
-// (per chip, so each side presents its own — ADR-0005), and the binding
-// context. The freshness challenge of Milestone 5 is a later payload version,
-// not a new protocol.
+// (per chip, so each side presents its own — ADR-0005), the binding context and
+// the digest of the policy the peer presents. The last of those arrived with
+// payload version 2 and ADR-0002's binding version 2, and it travels beside the
+// context rather than inside it because a 16-byte context has no room for a
+// 32-byte digest. The freshness challenge of Milestone 5 is a later payload
+// version, not a new protocol.
+//
+// # One more question, on the side that dials
+//
+// [WithAdmission] adds a check after verification, and only the client
+// configuration is built with one. It is where a sandbox's own `forward_to`
+// list is enforced: a peer may be perfectly authentic, running an image this
+// side admits, under a policy this side lists — and still be one this sandbox's
+// policy does not say it will dial. That is a fact about the dialer and not
+// about the peer, so it cannot live in the reference value set and it does not
+// live in [attest.Verification].
 //
 // # Refusals
 //
@@ -66,17 +79,25 @@ import (
 var PayloadOID = asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 32473, 1, 1}
 
 // PayloadVersion is the version of the payload this package writes and reads.
-const PayloadVersion = 1
+const PayloadVersion = 2
 
-// payload is the ASN.1 form of the extension. Every field is present in v1; a
-// later version adds fields after these and bumps the version, and a reader of
-// v1 refuses it rather than guessing.
+// payload is the ASN.1 form of the extension. A later version adds fields after
+// these and bumps the version, and a reader refuses a version it does not write
+// rather than guessing.
+//
+// PolicyDigest is the field version 2 added, and it is marked optional for one
+// reason: a version 1 payload is five fields long, and a reader whose struct
+// demands six would refuse it as unparseable. It parses, and is then refused on
+// its version — which is a sentence an operator can act on rather than a
+// complaint about DER. Every other field stays required, so a peer cannot omit
+// one and have the digest slide into its place.
 type payload struct {
 	Version        int
 	Vendor         string
 	Evidence       []byte
 	Chain          []byte
 	BindingContext []byte
+	PolicyDigest   []byte `asn1:"optional"`
 }
 
 // Identity is the key a tunneld holds for the life of the process and the
@@ -87,27 +108,36 @@ type Identity struct {
 }
 
 // NewIdentity generates a fresh key, binds it to evidence acquired from the
-// platform, and wraps both in a certificate. The key never leaves the process:
-// it is generated here and held only in the returned Identity.
+// platform and to the policy this sandbox presents, and wraps all of it in a
+// certificate. The key never leaves the process: it is generated here and held
+// only in the returned Identity.
 //
-// The binding context is [attest.BindingContextV1], which is what this version
-// of the protocol speaks. [NewIdentityForContext] is the seam a later one grows
+// policy is the digest of this sandbox's own signed policy document
+// ([attest.Policy.Digest]). It is a parameter rather than something this package
+// computes because the policy is loaded above it, and it is not optional: a
+// peer's allow-list is a list of measurement and policy pairs, and a sandbox
+// that presented no policy would be asking to be admitted on the measurement
+// alone.
+//
+// The binding context is [attest.BindingContextV2], which is what this version
+// of the protocol speaks. [NewIdentityForContext] is the seam versions grow
 // through.
-func NewIdentity(ctx context.Context, acquirer attest.Acquirer) (*Identity, error) {
-	return NewIdentityForContext(ctx, acquirer, attest.BindingContextV1)
+func NewIdentity(ctx context.Context, acquirer attest.Acquirer, policy attest.PolicyDigest) (*Identity, error) {
+	return NewIdentityForContext(ctx, acquirer, attest.BindingContextV2, policy)
 }
 
 // NewIdentityForContext is [NewIdentity] with the binding context stated rather
 // than assumed.
 //
-// ADR-0002 reserves that field so that a later version can bind runsc's
+// ADR-0002 reserved that field so that a later version could bind a sandbox's
 // configuration into the evidence without re-attesting every deployed platform,
-// and the reservation is worth nothing unless a verifier meeting a context it
-// does not understand refuses it. A v2 of this protocol is one caller: it
-// passes its own constant here and changes nothing else in this package. The
-// other is a test that needs a peer speaking a version this verifier does not,
-// which cannot otherwise exist while v1 is the only context anything mints.
-func NewIdentityForContext(ctx context.Context, acquirer attest.Acquirer, bindingContext attest.BindingContext) (*Identity, error) {
+// and the reservation was worth nothing unless a verifier meeting a context it
+// does not understand refuses it. Ticket 18 spent the reservation, and this is
+// still the seam: the next version passes its own constant here and changes
+// nothing else in this package. The other caller is a test that needs a peer
+// speaking a version this verifier does not — a v1 peer, now — which cannot
+// otherwise exist while v2 is the only context anything mints.
+func NewIdentityForContext(ctx context.Context, acquirer attest.Acquirer, bindingContext attest.BindingContext, policy attest.PolicyDigest) (*Identity, error) {
 	if acquirer == nil {
 		return nil, errors.New("ratls: no acquirer")
 	}
@@ -119,7 +149,7 @@ func NewIdentityForContext(ctx context.Context, acquirer attest.Acquirer, bindin
 	if err != nil {
 		return nil, fmt.Errorf("ratls: encoding the public key: %w", err)
 	}
-	binding := attest.Binding{PublicKey: spki, Context: bindingContext}
+	binding := attest.Binding{PublicKey: spki, Context: bindingContext, PolicyDigest: policy}
 	ev, err := acquirer.Acquire(ctx, binding.CallerSuppliedBytes())
 	if err != nil {
 		return nil, fmt.Errorf("ratls: acquiring evidence: %w", err)
@@ -130,6 +160,7 @@ func NewIdentityForContext(ctx context.Context, acquirer attest.Acquirer, bindin
 		Evidence:       ev.Bytes,
 		Chain:          ev.Chain,
 		BindingContext: binding.Context[:],
+		PolicyDigest:   binding.PolicyDigest[:],
 	})
 	if err != nil {
 		return nil, fmt.Errorf("ratls: encoding the payload: %w", err)
@@ -177,11 +208,31 @@ func randomSerial() *big.Int {
 // must be safe to call concurrently and must not block.
 type RefusalLog func(*attest.Refusal)
 
-// An Option adjusts a configuration this package builds. There is one today.
+// An Admission is asked about a peer this side has already found authentic:
+// evidence that verified, over a policy digest this side's reference value set
+// lists, bound to the key the handshake proved possession of. It returns a
+// refusal to abort the handshake anyway, or nil.
+//
+// It exists for the one question the reference value set cannot answer, because
+// the answer is not about the peer at all. `forward_to` in this sandbox's own
+// signed policy says which images it will dial; whether a peer is on that list
+// is a fact about the dialer's policy, and no allow-list entry of the peer's
+// could carry it. It is therefore a hook rather than a check inside
+// [attest.Verification]: the verification is the same on both sides, and the
+// side that dials asks one more thing.
+//
+// It runs after [attest.Verification.Verify] and never instead of it, so
+// whatever it reads has already been vouched for. A refusal it returns should
+// be an [attest.Refusal] carrying its own reason; anything else is filed the way
+// an untyped verifier error is.
+type Admission func(attest.Attested) error
+
+// An Option adjusts a configuration this package builds.
 type Option func(*options)
 
 type options struct {
-	log RefusalLog
+	log   RefusalLog
+	admit Admission
 }
 
 // WithRefusalLog sends every refusal to log. Without it a refusal still aborts
@@ -190,6 +241,14 @@ type options struct {
 // a destination for somebody else's logs.
 func WithRefusalLog(log RefusalLog) Option {
 	return func(o *options) { o.log = log }
+}
+
+// WithAdmission asks a of every peer whose evidence has already been accepted,
+// and refuses the peer if it says so. Without it nothing is asked, which is what
+// a listening side wants: whom this sandbox will *dial* is its own policy's
+// business, and holds no opinion about who dials it.
+func WithAdmission(a Admission) Option {
+	return func(o *options) { o.admit = a }
 }
 
 func collect(opts []Option) options {
@@ -265,8 +324,14 @@ func PeerVerifier(v *attest.Verification, opts ...Option) func(rawCerts [][]byte
 		if err != nil {
 			return refuse(err)
 		}
-		if _, err := v.Verify(context.Background(), ev, binding); err != nil {
+		attested, err := v.Verify(context.Background(), ev, binding)
+		if err != nil {
 			return refuse(err)
+		}
+		if o.admit != nil {
+			if err := o.admit(attested); err != nil {
+				return refuse(err)
+			}
 		}
 		return nil
 	}
@@ -290,6 +355,10 @@ func refusal(err error) *attest.Refusal {
 // is the whole of what this package reads from the envelope: the public key,
 // so that the binding can be checked against the key TLS proved possession
 // of, and the payload extension.
+//
+// It reads the policy digest the peer presents and does not judge it. Whether
+// that digest is one this side admits, and whether the peer's evidence was
+// actually acquired over it, are [attest.Verification.Verify]'s questions.
 func Open(der []byte) (attest.Evidence, attest.Binding, error) {
 	cert, err := x509.ParseCertificate(der)
 	if err != nil {
@@ -313,15 +382,28 @@ func Open(der []byte) (attest.Evidence, attest.Binding, error) {
 	if len(rest) != 0 {
 		return attest.Evidence{}, attest.Binding{}, attest.Refuse(attest.ReasonMalformedEvidence, "peer's attestation payload carries %d trailing bytes", len(rest))
 	}
+	if p.Version == 1 {
+		// A version 1 peer is not malformed and is not a stranger: it is this
+		// protocol, one version back, carrying no policy digest. It gets the
+		// reason that says so, which is the same reason its binding context
+		// would earn a moment later — and it gets it here, before anything
+		// reads a field the older payload never had.
+		return attest.Evidence{}, attest.Binding{}, attest.Refuse(attest.ReasonUnknownBindingContext,
+			"peer speaks attestation payload version 1, which carried no policy digest; this tunneld reads version %d", PayloadVersion)
+	}
 	if p.Version != PayloadVersion {
 		return attest.Evidence{}, attest.Binding{}, attest.Refuse(attest.ReasonMalformedEvidence, "peer's attestation payload is version %d; this tunneld reads version %d", p.Version, PayloadVersion)
 	}
 	if len(p.BindingContext) != attest.BindingContextSize {
 		return attest.Evidence{}, attest.Binding{}, attest.Refuse(attest.ReasonMalformedEvidence, "peer's binding context is %d bytes, want %d", len(p.BindingContext), attest.BindingContextSize)
 	}
+	if len(p.PolicyDigest) != len(attest.PolicyDigest{}) {
+		return attest.Evidence{}, attest.Binding{}, attest.Refuse(attest.ReasonMalformedEvidence, "peer's policy digest is %d bytes, want %d", len(p.PolicyDigest), len(attest.PolicyDigest{}))
+	}
 	// RawSubjectPublicKeyInfo is the DER exactly as presented, which is what
 	// NewIdentity hashed into the caller-supplied bytes on the other side.
 	binding := attest.Binding{PublicKey: cert.RawSubjectPublicKeyInfo}
 	copy(binding.Context[:], p.BindingContext)
+	copy(binding.PolicyDigest[:], p.PolicyDigest)
 	return attest.Evidence{Vendor: attest.Vendor(p.Vendor), Bytes: p.Evidence, Chain: p.Chain}, binding, nil
 }

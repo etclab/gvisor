@@ -28,6 +28,10 @@
 //	                                   INSIDE the launch measurement (ADR-0004)
 //	/config/reference-values.json      the reference value set, outside it
 //	/config/reference-values.json.sig  its detached signature (ADR-0006)
+//	/config/policy.json                this sandbox's own signed policy: what
+//	                                   leaves it, and whom it will dial
+//	/config/policy.json.sig            its detached signature, under the same
+//	                                   author key and its own domain
 //	/config/peers.json                 the peer table
 //	/config/certificate-chain.bin      the chain provisioned for this chip and
 //	                                   TCB (ADR-0005)
@@ -109,6 +113,11 @@ const (
 	// beside it under attest.SignatureFileSuffix, and the loader finds it
 	// there rather than being told (ADR-0006).
 	referenceValueSetName = "reference-values.json"
+
+	// This sandbox's own policy, beside the set and signed the same way under
+	// its own domain. Two documents since ticket 19: the set says whom this
+	// sandbox admits, and this says what it is.
+	policyName = "policy.json"
 )
 
 // Exit statuses. A refusal to start and a failed exercise are different
@@ -117,6 +126,12 @@ const (
 	exitOK             = 0
 	exitRefusedToStart = 1
 	exitExerciseFailed = 2
+
+	// exitEgressLeaked is the one this binary reports when an -egress probe
+	// reached something the policy forbids. It is its own status because a
+	// guest whose egress policy did not hold has to stop, and a harness reading
+	// a console should not have to tell that apart from a failed exchange.
+	exitEgressLeaked = 3
 )
 
 func main() {
@@ -126,73 +141,95 @@ func main() {
 	os.Exit(code)
 }
 
+// options is what the flags said: the directories this run reads, the mode it
+// runs in, and whether it checks itself before any peer arrives. It is a type
+// rather than eight locals so that parsing the flags and acting on them are two
+// functions rather than one; the image passes none of them — init runs
+// "/usr/bin/tunneld" with no arguments — so on the machine that matters every
+// field here holds its default.
+type options struct {
+	configDir        string
+	authorPath       string
+	reportDir        string
+	runPath          string
+	tdxCollateralDir string
+	egressMode       string
+	egressProbeExtra string
+	selfCheck        bool
+}
+
 func run(args []string, out io.Writer) int {
 	fs := flag.NewFlagSet("tunneld", flag.ContinueOnError)
 	fs.SetOutput(out)
-	configDir := fs.String("config", defaultConfigDir, "the read-only config device: reference value set, peer table, provisioned chain, run configuration")
-	authorPath := fs.String("author", defaultAuthorKey, "the reference value author's public key, which is inside the launch measurement (ADR-0004)")
-	reportDir := fs.String("report-dir", tsm.DefaultReportDir, "the kernel's vendor-neutral report interface")
-	runPath := fs.String("run", "", "the run configuration; empty means <config>/"+runConfigName)
+	var o options
+	fs.StringVar(&o.configDir, "config", defaultConfigDir, "the read-only config device: reference value set, policy, peer table, provisioned chain, run configuration")
+	fs.StringVar(&o.authorPath, "author", defaultAuthorKey, "the reference value author's public key, which is inside the launch measurement (ADR-0004)")
+	fs.StringVar(&o.reportDir, "report-dir", tsm.DefaultReportDir, "the kernel's vendor-neutral report interface")
+	fs.StringVar(&o.runPath, "run", "", "the run configuration; empty means <config>/"+runConfigName)
+	fs.StringVar(&o.tdxCollateralDir, "tdx-collateral-dir", "", "directory holding Intel's provisioned TCB info, quoting-enclave identity and revocation lists; empty means this tunneld admits no Intel TDX peers. Never fetched (ADR-0005)")
+	fs.StringVar(&o.egressMode, "egress", "", "instead of serving: "+egressModePrint+" the netfilter rule set this sandbox's signed policy implies, "+egressModeInstall+" it in the kernel and read it back, or "+egressModeProbe+" it by attempting the egress the policy forbids")
+	fs.StringVar(&o.egressProbeExtra, "egress-probe", "", "with -egress "+egressModeProbe+": extra targets to attempt, comma separated, each tcp:ADDR:PORT or udp:ADDR:PORT")
+	fs.BoolVar(&o.selfCheck, "self-check", false, "after starting, ask this platform for evidence and judge it with this sandbox's own reference value set, so the console says whether the set admits the machine it is on before any peer arrives")
 	if err := fs.Parse(args); err != nil {
 		return exitRefusedToStart
 	}
 	logf := func(format string, a ...any) { fmt.Fprintf(out, "tunneld: "+format+"\n", a...) }
 
-	if *runPath == "" {
-		*runPath = filepath.Join(*configDir, runConfigName)
+	if o.runPath == "" {
+		o.runPath = filepath.Join(o.configDir, runConfigName)
 	}
-	cfg, err := loadRunConfig(*runPath)
+	cfg, err := loadRunConfig(o.runPath)
 	if err != nil {
 		logf("refusing to start: %v", err)
 		return exitRefusedToStart
 	}
-	peers, err := loadPeerTable(filepath.Join(*configDir, peerTableName))
+	peers, err := loadPeerTable(filepath.Join(o.configDir, peerTableName))
 	if err != nil {
 		logf("refusing to start: %v", err)
 		return exitRefusedToStart
 	}
-	author, err := readAuthorKey(*authorPath)
+	author, err := readAuthorKey(o.authorPath)
 	if err != nil {
 		logf("refusing to start: %v", err)
 		return exitRefusedToStart
 	}
 
 	logf("sandbox %q", cfg.SandboxID)
-	logf("author key %s (%s, inside the launch measurement)", abbreviate(hex.EncodeToString(author)), *authorPath)
+	logf("author key %s (%s, inside the launch measurement)", abbreviate(hex.EncodeToString(author)), o.authorPath)
 	for _, name := range sortedKeys(peers) {
 		logf("peer table: %s = %s", name, peers[name])
 	}
 
-	if cfg.Link != nil {
-		if err := cfg.Link.configure(); err != nil {
-			logf("refusing to start: bringing up %s: %v", cfg.Link.Interface, err)
-			return exitRefusedToStart
-		}
-		logf("link %s up with %s/%d", cfg.Link.Interface, cfg.Link.Address, cfg.Link.PrefixLength)
+	// The egress modes end here: they read the same three documents a serving
+	// tunneld reads, do one thing to the kernel or to the network, and exit.
+	// They are modes of this binary rather than a second one because the rule
+	// set is generated from the signed policy, and the author key that judges
+	// that signature is the one baked into this image (egress.go).
+	if o.egressMode != "" {
+		return runEgressMode(o.egressMode, o.egressProbeExtra, o.configDir, cfg, peers, author, logf, out)
 	}
 
-	limits, clamped := cfg.limits()
-	if clamped != "" {
-		logf("CLAMPED %s", clamped)
+	return serve(&o, cfg, peers, author, logf)
+}
+
+// serve is everything the three documents left to decide: bring the link up,
+// build the two halves of the vendor seam, start one tunneld on them, say what
+// it is, and exercise it. It is a function of its own so that [run] above is
+// the flags, the documents both paths read, and the choice between them —
+// which is the whole of what a reader has to hold to know which mode ran.
+func serve(o *options, cfg *runConfig, peers map[string]string, author ed25519.PublicKey, logf func(string, ...any)) int {
+	if !bringUpLink(cfg, logf) {
+		return exitRefusedToStart
 	}
 
-	// The two halves of the vendor seam, both real: this platform's report
-	// interface for our own evidence, and go-sev-guest under attest/verify for
-	// peers'. Neither reaches the network — the chain is the one the config
-	// device holds (ADR-0005) and the vendor root is the one embedded in the
-	// verification library.
-	logf("report interface %s: %s", *reportDir, reportInterface(*reportDir))
-	acquirer, err := tsm.New(tsm.Options{ChainDir: *configDir, ReportDir: *reportDir, RequestName: "tunneld"})
+	limits := resolveLimits(cfg, logf)
+
+	acquirer, routed, err := newVendorSeam(o.configDir, o.reportDir, o.tdxCollateralDir, logf)
 	if err != nil {
 		logf("refusing to start: %v", err)
 		return exitRefusedToStart
 	}
-	verifier, err := verify.New(verify.Options{})
-	if err != nil {
-		logf("refusing to start: %v", err)
-		return exitRefusedToStart
-	}
-	watched := newWatchedVerifier(verifier, logf)
+	watched := newWatchedVerifier(routed, logf)
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
@@ -203,17 +240,14 @@ func run(args []string, out io.Writer) int {
 		SandboxID:             cfg.SandboxID,
 		Acquirer:              acquirer,
 		Verifier:              watched,
-		ReferenceValueSetPath: filepath.Join(*configDir, referenceValueSetName),
+		ReferenceValueSetPath: filepath.Join(o.configDir, referenceValueSetName),
+		PolicyPath:            filepath.Join(o.configDir, policyName),
 		AuthorPublicKey:       author,
 		Peers:                 tunneld.PeerTable(peers),
 		ListenAddr:            cfg.Listen,
 		Handler:               echo(cfg.SandboxID),
 		Limits:                limits,
-		RefusalLog: func(r *attest.Refusal) {
-			// The one place a reason surfaces (spec, Error surface): the peer
-			// sees an aborted handshake and a caller sees ErrNotEstablished.
-			logf("REFUSED %s", r.LogString())
-		},
+		RefusalLog:            refusalLogger(logf),
 	})
 	if err != nil {
 		logf("refusing to start: %s", withoutPackagePrefix(err))
@@ -224,12 +258,143 @@ func run(args []string, out io.Writer) int {
 	}
 	defer td.Close()
 
+	logStartupSummary(td, acquirer, limits, logf)
+
+	if o.selfCheck {
+		if err := performSelfCheck(ctx, acquirer, routed, filepath.Join(o.configDir, referenceValueSetName), author, td.PolicyDigest(), logf); err != nil {
+			logf("SELFCHECK FAILED %v", err)
+		}
+	}
+
+	return exerciseAndHold(ctx, cfg, td, watched, logf)
+}
+
+// bringUpLink sets the address on this guest's interface from the run
+// configuration, because the guest's init cannot: it is inside the launch
+// measurement and every byte in there is a byte in M (the package comment,
+// "Bringing up the link"). A run configuration that names no link leaves the
+// host's own addressing alone and says so by doing nothing. It reports whether
+// this tunneld may go on, and names the interface itself when it may not,
+// because the interface is the one fact the caller does not have.
+func bringUpLink(cfg *runConfig, logf func(string, ...any)) bool {
+	if cfg.Link == nil {
+		return true
+	}
+	if err := cfg.Link.configure(); err != nil {
+		logf("refusing to start: bringing up %s: %v", cfg.Link.Interface, err)
+		return false
+	}
+	logf("link %s up with %s/%d", cfg.Link.Interface, cfg.Link.Address, cfg.Link.PrefixLength)
+	return true
+}
+
+// resolveLimits is the run configuration's limits with whatever clamp they
+// triggered said out loud. A harness that asked for a bound this build will not
+// honour should read why on the console rather than infer it from a timing.
+func resolveLimits(cfg *runConfig, logf func(string, ...any)) tunneld.Limits {
+	limits, clamped := cfg.limits()
+	if clamped != "" {
+		logf("CLAMPED %s", clamped)
+	}
+	return limits
+}
+
+// refusalLogger is the sink this command gives a tunneld for the peers it
+// refuses. It is the one place a reason surfaces (spec, Error surface): the
+// peer sees an aborted handshake and a caller sees ErrNotEstablished.
+func refusalLogger(logf func(string, ...any)) func(*attest.Refusal) {
+	return func(r *attest.Refusal) {
+		logf("REFUSED %s", r.LogString())
+	}
+}
+
+// newVendorSeam builds the two halves of the vendor seam, both real: this
+// platform's report interface for our own evidence, and go-sev-guest under
+// attest/verify for peers'. Neither reaches the network — the chain is the one
+// the config device holds (ADR-0005) and the vendor root is the one embedded in
+// the verification library.
+//
+// The verifier it returns is the routed one, so a caller holds a single half
+// whatever the peer turns out to be running on.
+func newVendorSeam(configDir, reportDir, tdxCollateralDir string, logf func(string, ...any)) (*tsm.Acquirer, attest.Verifier, error) {
+	logf("report interface %s: %s", reportDir, reportInterface(reportDir))
+	acquirer, err := tsm.New(tsm.Options{ChainDir: configDir, ReportDir: reportDir, RequestName: "tunneld"})
+	if err != nil {
+		return nil, nil, err
+	}
+	snp, err := verify.New(verify.Options{})
+	if err != nil {
+		return nil, nil, err
+	}
+	verifiers := []attest.Verifier{snp}
+
+	// The second vendor is opt in, and it is opt in because it needs something
+	// the config device may not carry: Intel's collateral, provisioned ahead of
+	// use like the AMD chain beside it. A tunneld without it admits no Intel
+	// peer, which is the honest state — it holds nothing that could judge one —
+	// rather than a tunneld that would try and then reach the network.
+	if tdxCollateralDir != "" {
+		tdx, err := verify.NewTDX(verify.TDXOptions{CollateralDir: tdxCollateralDir})
+		if err != nil {
+			return nil, nil, err
+		}
+		verifiers = append(verifiers, tdx)
+		logf("intel tdx collateral %s (provisioned, never fetched — ADR-0005)", tdxCollateralDir)
+	}
+	routed, err := attest.Dispatch(verifiers...)
+	if err != nil {
+		return nil, nil, err
+	}
+	logf("verifying evidence from %s", routed.Vendor())
+	return acquirer, routed, nil
+}
+
+// logStartupSummary is what an operator reads off the console once the tunneld
+// is up: what the report interface observed, the digest a peer's policy has to
+// list to admit this sandbox, whom this sandbox will dial, which reference
+// values admit any policy at all, and where it is listening.
+func logStartupSummary(td *tunneld.Tunneld, acquirer *tsm.Acquirer, limits tunneld.Limits, logf func(string, ...any)) {
 	if observation, ok := acquirer.LastObservation(); ok {
 		logf("%s", observation)
 	}
+	// The number a peer's operator needs, printed where the only diagnostic
+	// surface a measured guest has can carry it (spec, user story 48). It is
+	// SHA-256 over the bytes the reference value author signed over the policy,
+	// so it is not what sha256sum of policy.json prints; emit-refvals prints the
+	// same number when it writes the document and this prints it at run time,
+	// from the file the guest actually loaded.
+	logf("policy digest %s (sha256 over the signed policy; put it in a peer's policy_digest)",
+		td.PolicyDigest())
+
+	// And whom this sandbox's own policy says it will dial. An empty list is a
+	// sandbox that answers and never calls, which is a legitimate thing to
+	// deploy and an expensive thing to diagnose from a failed dial alone.
+	forward := td.ForwardTo()
+	if len(forward) == 0 {
+		logf("policy forward_to is empty: this sandbox dials nobody")
+	}
+	for _, m := range forward {
+		logf("policy forward_to: measurement %s", abbreviate(hex.EncodeToString(m)))
+	}
+
+	// And the entries that will admit any policy at all. This is the one place
+	// this design reads an absent field the weaker way, so it says so out loud,
+	// once per entry, every start — rather than leaving an operator to notice
+	// by reading a file they did not write.
+	for _, u := range td.Unconstrained() {
+		logf("reference value %d (%s, measurement %s) is unconstrained: it admits any policy",
+			u.Index, u.Vendor, abbreviate(hex.EncodeToString(u.Measurement)))
+	}
+
 	logf("listening on %s as %q; idle %s, maximum age %s",
 		td.Addr(), td.SandboxID(), limits.IdleTimeout, limits.MaxAge)
+}
 
+// exerciseAndHold is the last thing a serving tunneld does, and the only part
+// of it that decides an exit status: Milestone 3's stand-in caller (the package
+// comment's exercise), then the hold that keeps the listener up for peers still
+// dialing, then the count of what was refused while it ran.
+func exerciseAndHold(ctx context.Context, cfg *runConfig, td *tunneld.Tunneld, watched *watchedVerifier, logf func(string, ...any)) int {
 	code := exitOK
 	if cfg.Exercise != nil {
 		if err := cfg.Exercise.perform(ctx, td, watched, logf); err != nil {
@@ -312,7 +477,15 @@ func abbreviate(s string) string {
 	return s[:16] + "…"
 }
 
-func sortedKeys(m map[string]string) []string {
+// sortedKeys is the order every table in this command is printed in: its keys,
+// ascending, so that two runs of the same tunneld write the same lines.
+//
+// The value type is a parameter because what is being ordered is the keys, and
+// the peer table a start log prints and the table of peers a run saw are the
+// same map of names to something. The sort is written out rather than called
+// for: these tables are a handful of peers, and a command that reads three
+// files and dials them owes its reader no more than that.
+func sortedKeys[V any](m map[string]V) []string {
 	names := make([]string, 0, len(m))
 	for k := range m {
 		names = append(names, k)

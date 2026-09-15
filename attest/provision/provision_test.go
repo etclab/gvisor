@@ -22,11 +22,11 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"gvisor.dev/gvisor/attest"
+	"gvisor.dev/gvisor/attest/internal/fixture"
+	"gvisor.dev/gvisor/attest/internal/snpfake"
 	"gvisor.dev/gvisor/attest/provision"
-	"gvisor.dev/gvisor/attest/snpfake"
 	"gvisor.dev/gvisor/attest/verify"
 )
 
@@ -35,37 +35,20 @@ import (
 // used to show what would be asked for without asking.
 
 var (
-	chainCreatedAt     = time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
-	whenChainsAreValid = chainCreatedAt.Add(30 * 24 * time.Hour)
-
 	platformTCB = attest.TCB{Bootloader: 9, TEE: 0, SNP: 23, Microcode: 72}
 	updatedTCB  = attest.TCB{Bootloader: 9, TEE: 0, SNP: 24, Microcode: 72}
-	chipID      = bytes.Repeat([]byte{0x5A}, 64)
 )
 
 // capturedReport is the report ticket 01 read out of a real confidential guest
 // on this host, whose chip and TCB are recorded in docs/snp/evidence.
 const capturedReport = "../../docs/snp/evidence/report.bin"
 
-func platform(t *testing.T, tcb attest.TCB) *snpfake.Platform {
-	t.Helper()
-	p, err := snpfake.New(snpfake.Config{TCB: tcb, ChipID: chipID, Policy: snpfake.Policy{SMT: true}, Now: chainCreatedAt})
-	if err != nil {
-		t.Fatalf("snpfake.New: %v", err)
-	}
-	return p
-}
-
 // report obtains a report from the platform the way the tsm acquirer does:
 // the evidence bytes, with the platform's own bundled chain discarded, because
 // on real hardware there is none.
 func report(t *testing.T, p *snpfake.Platform) []byte {
 	t.Helper()
-	ev, err := p.Acquire(context.Background(), [attest.CallerSuppliedBytesSize]byte{})
-	if err != nil {
-		t.Fatalf("acquiring a report: %v", err)
-	}
-	return ev.Bytes
+	return fixture.AcquireZero(t, p).Bytes
 }
 
 func options(p *snpfake.Platform, kds provision.Getter) provision.Options {
@@ -73,7 +56,7 @@ func options(p *snpfake.Platform, kds provision.Getter) provision.Options {
 		Getter:        kds,
 		VendorRootPEM: p.VendorRootPEM(),
 		ProductLine:   p.ProductLine(),
-		Now:           whenChainsAreValid,
+		Now:           fixture.WhenChainsAreValid,
 	}
 }
 
@@ -111,14 +94,14 @@ func refused(t *testing.T, err error, wantInDetail string) {
 // that platform's evidence with — which is the entire purpose of provisioning
 // it.
 func TestAProvisionedChainVerifiesThePlatformsEvidence(t *testing.T) {
-	p := platform(t, platformTCB)
+	p := fixture.SNPPlatformAtTCB(t, platformTCB)
 	dir, written := fetchAndWrite(t, p)
 
 	if written.Vendor != attest.VendorAMDSEVSNP || written.ProductLine != p.ProductLine() {
 		t.Errorf("chain is for %q/%q; want %q/%q", written.Vendor, written.ProductLine, attest.VendorAMDSEVSNP, p.ProductLine())
 	}
-	if !bytes.Equal(written.ChipID, chipID) || written.TCB != platformTCB {
-		t.Errorf("chain recorded for chip %x at %+v; want %x at %+v", written.ChipID, written.TCB, chipID, platformTCB)
+	if !bytes.Equal(written.ChipID, fixture.ChipID) || written.TCB != platformTCB {
+		t.Errorf("chain recorded for chip %x at %+v; want %x at %+v", written.ChipID, written.TCB, fixture.ChipID, platformTCB)
 	}
 
 	// The consumer side: the acquirer loads it for the platform's current
@@ -132,11 +115,9 @@ func TestAProvisionedChainVerifiesThePlatformsEvidence(t *testing.T) {
 	if !bytes.Equal(loaded.Bytes, written.Bytes) {
 		t.Fatal("the chain read back differs from the chain written")
 	}
-	v, err := verify.New(verify.Options{VendorRootPEM: p.VendorRootPEM(), ProductLine: p.ProductLine(), Now: whenChainsAreValid})
-	if err != nil {
-		t.Fatalf("verify.New: %v", err)
-	}
+	v := fixture.VerifierTrusting(t, p)
 	set := attest.ReferenceValueSet{Values: []attest.ReferenceValue{{
+		Vendor:            attest.VendorAMDSEVSNP,
 		LaunchMeasurement: bytes.Repeat([]byte{0xA5}, 48),
 		MinimumTCB:        platformTCB,
 		GuestPolicy:       attest.GuestPolicy{AllowSMT: true},
@@ -152,16 +133,13 @@ func TestAProvisionedChainVerifiesThePlatformsEvidence(t *testing.T) {
 // well-formed and roots correctly to *its* root, and none of it is for this
 // chip.
 func TestAChainThatDoesNotValidateIsNeverWritten(t *testing.T) {
-	p := platform(t, platformTCB)
-	other, err := snpfake.New(snpfake.Config{TCB: platformTCB, ChipID: bytes.Repeat([]byte{0x11}, 64), Now: chainCreatedAt})
-	if err != nil {
-		t.Fatal(err)
-	}
+	p := fixture.SNPPlatformAtTCB(t, platformTCB)
+	other := fixture.SNPPlatform(t, snpfake.Config{TCB: platformTCB, ChipID: bytes.Repeat([]byte{0x11}, 64)})
 	// A service that serves the other platform's certificates at whatever URL
 	// is asked for.
 	impostor := &servesAnything{from: other}
 
-	_, err = provision.Fetch(context.Background(), report(t, p), options(p, impostor))
+	_, err := provision.Fetch(context.Background(), report(t, p), options(p, impostor))
 	if err == nil {
 		t.Fatal("a chain for another chip was accepted at provisioning time")
 	}
@@ -186,11 +164,11 @@ func (s *servesAnything) Get(_ context.Context, url string) ([]byte, error) {
 // and the acquirer must refuse the chain rather than bundle it and let the
 // peer discover the mismatch as "malformed evidence".
 func TestAStaleChainIsRefusedLocallyAndNamesTheADR(t *testing.T) {
-	before := platform(t, platformTCB)
+	before := fixture.SNPPlatformAtTCB(t, platformTCB)
 	dir, _ := fetchAndWrite(t, before)
 
 	// The same chip, after a TCB update.
-	after := platform(t, updatedTCB)
+	after := fixture.SNPPlatformAtTCB(t, updatedTCB)
 	_, err := provision.LoadFor(dir, report(t, after))
 	refused(t, err, "stale")
 	if !strings.Contains(err.Error(), "malformed evidence") {
@@ -203,11 +181,8 @@ func TestAStaleChainIsRefusedLocallyAndNamesTheADR(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load: %v", err)
 	}
-	v, err := verify.New(verify.Options{VendorRootPEM: after.VendorRootPEM(), ProductLine: after.ProductLine(), Now: whenChainsAreValid})
-	if err != nil {
-		t.Fatal(err)
-	}
-	set := attest.ReferenceValueSet{Values: []attest.ReferenceValue{{LaunchMeasurement: bytes.Repeat([]byte{0xA5}, 48), MinimumTCB: platformTCB, GuestPolicy: attest.GuestPolicy{AllowSMT: true}}}}
+	v := fixture.VerifierTrusting(t, after)
+	set := attest.ReferenceValueSet{Values: []attest.ReferenceValue{{Vendor: attest.VendorAMDSEVSNP, LaunchMeasurement: bytes.Repeat([]byte{0xA5}, 48), MinimumTCB: platformTCB, GuestPolicy: attest.GuestPolicy{AllowSMT: true}}}}
 	_, err = v.Verify(context.Background(), attest.Evidence{Vendor: attest.VendorAMDSEVSNP, Bytes: report(t, after), Chain: stale.Bytes}, set)
 	if got := attest.ReasonOf(err); got != attest.ReasonMalformedEvidence {
 		t.Fatalf("a peer refused the stale chain with %v; want %v", got, attest.ReasonMalformedEvidence)
@@ -221,12 +196,9 @@ func TestAStaleChainIsRefusedLocallyAndNamesTheADR(t *testing.T) {
 
 // TestAChainForAnotherChipIsRefused: a config device moved between hosts.
 func TestAChainForAnotherChipIsRefused(t *testing.T) {
-	dir, _ := fetchAndWrite(t, platform(t, platformTCB))
-	other, err := snpfake.New(snpfake.Config{TCB: platformTCB, ChipID: bytes.Repeat([]byte{0x11}, 64), Now: chainCreatedAt})
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = provision.LoadFor(dir, report(t, other))
+	dir, _ := fetchAndWrite(t, fixture.SNPPlatformAtTCB(t, platformTCB))
+	other := fixture.SNPPlatform(t, snpfake.Config{TCB: platformTCB, ChipID: bytes.Repeat([]byte{0x11}, 64)})
+	_, err := provision.LoadFor(dir, report(t, other))
 	refused(t, err, "chip")
 }
 
@@ -234,7 +206,7 @@ func TestAChainForAnotherChipIsRefused(t *testing.T) {
 // consumer half cannot even be handed a service to fetch from, so the check
 // here is that a missing chain is a refusal naming ADR-0005 and not an absence.
 func TestAMissingChainIsRefusedNotFetched(t *testing.T) {
-	p := platform(t, platformTCB)
+	p := fixture.SNPPlatformAtTCB(t, platformTCB)
 	dir := t.TempDir()
 
 	_, err := provision.LoadFor(dir, report(t, p))
@@ -267,8 +239,8 @@ func TestAMissingChainIsRefusedNotFetched(t *testing.T) {
 // what makes staleness detectable, so a metadata file left behind from a
 // different provisioning run must not vouch for a chain it does not describe.
 func TestMetadataThatDoesNotDescribeTheChainBesideItIsRefused(t *testing.T) {
-	dirBefore, _ := fetchAndWrite(t, platform(t, platformTCB))
-	dirAfter, _ := fetchAndWrite(t, platform(t, updatedTCB))
+	dirBefore, _ := fetchAndWrite(t, fixture.SNPPlatformAtTCB(t, platformTCB))
+	dirAfter, _ := fetchAndWrite(t, fixture.SNPPlatformAtTCB(t, updatedTCB))
 
 	mixed := t.TempDir()
 	cp(t, filepath.Join(dirAfter, provision.MetadataFileName), filepath.Join(mixed, provision.MetadataFileName))
@@ -329,6 +301,7 @@ func TestTheCapturedPlatformsProvisionedChainVerifiesItsReport(t *testing.T) {
 	// The report's own measurement and policy; the point is authenticity
 	// against AMD's real root, not admission.
 	set := attest.ReferenceValueSet{Values: []attest.ReferenceValue{{
+		Vendor:            attest.VendorAMDSEVSNP,
 		LaunchMeasurement: mustHex(t, "84aaf62f431f0a943944e10b0569c7c899bf5e9cfd0c6176af3f70033e241ac1e9d807f5605fd7dd08bf1bf1f09b5da5"),
 		MinimumTCB:        chain.TCB,
 		GuestPolicy:       attest.GuestPolicy{AllowSMT: true},

@@ -443,14 +443,21 @@ func (c *Channel) Exchange(ctx context.Context, request []byte) ([]byte, error) 
 		return nil, err
 	}
 	response, err := conn.Exchange(ctx, request)
+	return response, c.lost(conn, err)
+}
+
+// lost is what a failure becomes when the tunnel under it has gone.
+//
+// The cache had not yet heard: Live is the last thing this side was told, not a
+// promise about the next instant. To the caller it is the same event as a
+// tunnel found gone before the call started, and both of a channel's verbs say
+// so in the same sentence. Anything else is the caller's own error, returned
+// unchanged.
+func (c *Channel) lost(conn *tunnel.Conn, err error) error {
 	if err != nil && !conn.Live() {
-		// The tunnel was gone, or went, under this exchange. The cache had
-		// not yet heard: Live is the last thing this side was told, not a
-		// promise about the next instant. To the caller it is the same
-		// event as a tunnel found gone before the exchange started.
-		return nil, fmt.Errorf("%w: %q at %s: %v", ErrNotEstablished, c.name, c.addr, err)
+		return fmt.Errorf("%w: %q at %s: %v", ErrNotEstablished, c.name, c.addr, err)
 	}
-	return response, err
+	return err
 }
 
 // tunnelTo is what both of a channel's verbs do before they do anything: refuse

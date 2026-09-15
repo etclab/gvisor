@@ -104,10 +104,7 @@ func (c *Channel) OpenStream(ctx context.Context) (*tunnel.Stream, error) {
 		return nil, err
 	}
 	s, err := conn.OpenStream(ctx)
-	if err != nil && !conn.Live() {
-		return nil, fmt.Errorf("%w: %q at %s: %v", ErrNotEstablished, c.name, c.addr, err)
-	}
-	return s, err
+	return s, c.lost(conn, err)
 }
 
 // PolicyChecked wraps the sandbox beside this tunneld so that tunneld reads the

@@ -438,19 +438,9 @@ func (c *Channel) Peer() string { return c.name }
 // caller whose exchange dies in flight sees the error, and its next exchange
 // runs over a new tunnel.
 func (c *Channel) Exchange(ctx context.Context, request []byte) ([]byte, error) {
-	if c.t == nil {
-		// A Channel nobody's Peer returned: exported type, unexported fields,
-		// so &Channel{} compiles and reaches no peer. It is refused the way a
-		// closed one is rather than dereferencing the tunneld it has not got
-		// (spike E2).
-		return nil, fmt.Errorf("%w: %q", ErrNoTunneld, c.name)
-	}
-	if c.closed.Load() {
-		return nil, fmt.Errorf("%w: %q", ErrChannelClosed, c.name)
-	}
-	conn, err := c.t.dialed.Get(ctx, c.addr)
+	conn, err := c.tunnelTo(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %q at %s: %v", ErrNotEstablished, c.name, c.addr, err)
+		return nil, err
 	}
 	response, err := conn.Exchange(ctx, request)
 	if err != nil && !conn.Live() {
@@ -461,6 +451,30 @@ func (c *Channel) Exchange(ctx context.Context, request []byte) ([]byte, error) 
 		return nil, fmt.Errorf("%w: %q at %s: %v", ErrNotEstablished, c.name, c.addr, err)
 	}
 	return response, err
+}
+
+// tunnelTo is what both of a channel's verbs do before they do anything: refuse
+// a channel no tunneld made, refuse one its holder has closed, and take the
+// tunnel to this peer out of the cache at the moment it is asked for — which is
+// where it is dialed if there is none, and re-dialed and re-attested if the one
+// that was there is gone or has reached its maximum age.
+//
+// A Channel nobody's Peer returned is the first of those: the type is exported
+// and its fields are not, so &Channel{} compiles and reaches no peer. It is
+// refused the way a closed one is rather than dereferencing the tunneld it has
+// not got (spike E2).
+func (c *Channel) tunnelTo(ctx context.Context) (*tunnel.Conn, error) {
+	if c.t == nil {
+		return nil, fmt.Errorf("%w: %q", ErrNoTunneld, c.name)
+	}
+	if c.closed.Load() {
+		return nil, fmt.Errorf("%w: %q", ErrChannelClosed, c.name)
+	}
+	conn, err := c.t.dialed.Get(ctx, c.addr)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %q at %s: %v", ErrNotEstablished, c.name, c.addr, err)
+	}
+	return conn, nil
 }
 
 // Close gives up this channel. It does not end the tunnel: the tunnel is

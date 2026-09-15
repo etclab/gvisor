@@ -99,15 +99,9 @@ func (t *Tunneld) Accept(ctx context.Context) (sandbox.Stream, sandbox.Attested,
 // The stream is the caller's and the tunnel under it is not: several streams
 // share one tunnel, and closing a stream leaves it alone.
 func (c *Channel) OpenStream(ctx context.Context) (*tunnel.Stream, error) {
-	if c.t == nil {
-		return nil, fmt.Errorf("%w: %q", ErrNoTunneld, c.name)
-	}
-	if c.closed.Load() {
-		return nil, fmt.Errorf("%w: %q", ErrChannelClosed, c.name)
-	}
-	conn, err := c.t.dialed.Get(ctx, c.addr)
+	conn, err := c.tunnelTo(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %q at %s: %v", ErrNotEstablished, c.name, c.addr, err)
+		return nil, err
 	}
 	s, err := conn.OpenStream(ctx)
 	if err != nil && !conn.Live() {

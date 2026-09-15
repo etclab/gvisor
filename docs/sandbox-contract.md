@@ -330,6 +330,13 @@ remaining 17 are acked in `attest/.ripwire_quality_acks` with the reason, and ar
 collisions a second lifecycle beside tunneld's inevitably spells the same way across a package
 boundary neither side may cross.
 
+## What proves it on hardware
+
+`docs/sandbox-contract-on-hardware.md` is this contract on two SEV-SNP guests: a policy
+pushed over an attested tunnel and applied by the null sandbox at the far end, a second one
+refused, and the egress ceiling refusing from inside each guest what the measurement says it
+must. The recorded run is `docs/snp/evidence/ticket22/`.
+
 ## What is not built
 
 - ~~**Nobody pushes a policy yet.**~~ Built, in ticket 22's other half: a delegator pushes on

@@ -107,9 +107,16 @@ cannot widen it, because a pushed policy reaches a sandbox and never the netfilt
 
 The honest statement of the trust, then, is: **a policy is as trustworthy as the peer that
 pushed it, and the peer is exactly as trustworthy as its evidence made it.** A host that
-rewrites a config device cannot inject one — there is no policy on the device any more
-(`attest/cmd/tunneld/main.go`, "policy.json is not on that list"), and the push arrives inside
-the tunnel.
+rewrites the *receiving* guest's config device cannot inject one — there is no policy on that
+device any more (`attest/cmd/tunneld/main.go`, "policy.json is not on that list"), and the push
+arrives inside the tunnel.
+
+What a host can do is choose what the *pushing* guest pushes. The document `-push-policy` names
+is read off that guest's config device, which is outside its launch measurement, and the live
+run does exactly that: `/config/push-policy.json`, deliberately not `policy.json`
+(`docs/sandbox-contract-on-hardware.md`). That is not a hole in the argument, it is the
+argument — what the receiver trusts is the pusher's evidence, and a verifier reading the
+pusher's image learns its ceiling and not its delegation.
 
 ## PolicyNotApplied, and when the tunnel closes
 
@@ -286,6 +293,16 @@ two helpers one parameter over the bar.
 `attest-tool` built at this branch tip are byte-identical from line 2 onward to the same list
 replayed at `e2fd17f26`, and the exit-status histogram is the same (8 / 15 / 37 / 4). The tenth
 reason changed no verdict, because no verdict on evidence can reach it.
+
+## What proves it on hardware
+
+Everything above is offline, on the loopback harness. `docs/sandbox-contract-on-hardware.md`
+is the same thing on two SEV-SNP guests: guest A pushes a version 1 policy at guest B over a
+tunnel both sides attested, B's null sandbox applies it and A is handed a stream only then;
+a second run pushes version 2, B refuses it at the boundary without waking a sandbox, and the
+tunnel goes with the refusal. The digest A printed before it dialled and the digest B printed
+when it applied are the same number, on two consoles. The recorded run is
+`docs/snp/evidence/ticket22/`.
 
 ## What is not built
 

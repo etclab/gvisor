@@ -3,8 +3,9 @@
 #
 # Mounts the kernel filesystems (all noexec), loads the report interface
 # driver, proves to the console that no writable path is executable, brings
-# loopback up, installs the egress ceiling the binary carries, runs that
-# binary, and proves the ceiling held. When it exits the guest powers off: no
+# loopback up, installs the egress ceiling the binary carries, runs that binary
+# — with the policy to push, if the config device carries one — and proves the
+# ceiling held. When it exits the guest powers off: no
 # shell is ever spawned (the busybox that runs this script is present, but
 # nothing listens and nothing else is run), no getty, nothing else.
 export PATH=/bin:/sbin:/usr/bin
@@ -83,8 +84,27 @@ if ! /usr/bin/tunneld -egress install; then
   poweroff -f
 fi
 
-say "running /usr/bin/tunneld"
-/usr/bin/tunneld
+# A policy to push, if the config device carries one (ticket 22,
+# docs/policy-push.md). The file is looked for rather than named
+# unconditionally, because no policy is the ordinary case — it is what every
+# scenario recorded before ticket 22 runs — and a tunneld handed a path it
+# cannot read refuses to start.
+#
+# The name is deliberately not policy.json. That document and its signature are
+# what ticket 22 took OFF the config device, and tunneld refuses to start on a
+# device carrying either half of it. This is a different document with a
+# different life: nothing here loads it, parses it or enforces it. It is handed
+# to a peer over a tunnel that peer was already admitted on, and what makes it
+# trustworthy there is the evidence this guest presented — not the disk it was
+# read from, which is the host's and is not measured.
+PUSH=
+if [ -f /config/push-policy.json ]; then
+  PUSH="-push-policy /config/push-policy.json"
+  say "the config device carries a policy to push: /config/push-policy.json"
+fi
+
+say "running /usr/bin/tunneld $PUSH"
+/usr/bin/tunneld $PUSH
 rc=$?
 say "tunneld exited with status $rc"
 

@@ -34,6 +34,13 @@
 #             policy digest nobody presents. A admits B and B refuses A as a
 #             policy mismatch, whichever side dials, so no tunnel completes in
 #             either direction.
+#   push-v1   (ticket 22) guest A pushes a version 1 policy at guest B on the
+#             tunnel it has just established. B's null sandbox applies it and
+#             acknowledges, the digest A said it was pushing is the digest B
+#             says it applied, and only then is A handed a stream.
+#   push-v2   the same pair with a version 2 document. B's tunneld refuses it
+#             at the boundary without waking any sandbox, the tunnel closes
+#             with the refusal, and A is told its policy did not land.
 #   mutual    (ticket 19) each guest's set names the other's policy digest and
 #             no other, and neither entry is unconstrained. Both admit, the
 #             tunnel is established and exchanged over in both directions. This
@@ -46,7 +53,16 @@
 # connection to it, and it copies ethernet frames between them. There is no
 # gateway on that segment, no resolver, and no route off it, so no guest can
 # reach AMD's key distribution service or anything else during the run — egress
-# is absent rather than filtered. And because every frame between the two
+# is absent rather than filtered. Since ticket 22 it is also filtered, and the
+# two facts are kept apart on purpose: the ceiling compiled into the image goes
+# into the kernel before the link is up, and each guest proves it by attempting
+# the egress it forbids and reporting the errno — a rule refusing (EPERM,
+# ECONNREFUSED) rather than a routing table with nothing to say (ENETUNREACH).
+# That proof needs the routing table to have something to say, so the guest's
+# init adds an on-link default route for it after the exercise is over; nothing
+# leaves on it, because the output hook rejects those packets before the kernel
+# resolves a neighbour, and the segment carries no ARP for any of them
+# (docs/snp/image/init.rootfs). And because every frame between the two
 # guests passes through it, it is also the on-path attacker: it records every
 # datagram to a pcap file and searches each one for the plaintext an exchange
 # carries. The legitimate exchange and the relay's failure to read it are the
@@ -597,6 +613,136 @@ scenario_live() {
   fi
 }
 
+# ---- scenario: a policy pushed over the tunnel (ticket 22) -----------------
+# The sandbox contract's other half, on hardware. Guest A dials guest B and
+# pushes a policy at it on the tunnel it has just established — after both have
+# judged the other's evidence, and before anything else crosses. B's tunneld
+# reads the envelope, hands the document to the sandbox beside it, and answers.
+#
+# A is the dialer here, where scenario_live has B dial. It costs nothing and it
+# makes the two consoles read the way the ticket is written: A pushes, B applies
+# or refuses.
+#
+# The document is the smallest thing that is a policy: the envelope tunneld
+# reads, and the three lists it does not. Nothing in this tree parses n, f or x
+# (docs/policy-push.md), so a larger document would be a test of the framing
+# rather than of the contract.
+push_document() { # FILE VERSION
+  printf '{"format":"policy","version":%s,"n":[],"f":[],"x":[]}\n' "$2" > "$1"
+}
+
+# What one console said it was about to push, and what the other said it
+# applied. The two lines carry the same four fields; these read the digest off
+# each, so that "the same document arrived" is a comparison and not an
+# assertion.
+pushed_digest()  { sed -n 's/.*tunneld: push policy .*sha256=\([0-9a-f]\{64\}\).*/\1/p' "$1" | head -1; }
+applied_digest() { sed -n 's/.*tunneld: SANDBOX applied .*sha256=\([0-9a-f]\{64\}\).*/\1/p' "$1" | head -1; }
+
+# image_ceiling_digest — the digest a guest booted from this image presents,
+# read off the manifest the build wrote. Since ticket 22 that is sha256 over the
+# egress ceiling compiled into the measured tunneld and not the digest of any
+# document on a config device, and it is the number each guest prints at start.
+image_ceiling_digest() { sed -n 's/^policy_digest: //p' "$IMAGE/manifest.txt"; }
+
+scenario_push() { # NAME VERSION SECONDS
+  local name="$1" version="$2" seconds="$3"
+  local work="$OUT/$name"
+  echo
+  echo "### $name: guest A pushes a version $version policy at guest B over the tunnel"
+  mkdir -p "$work"
+  local doc="$work/push-policy.json" want ceiling
+  push_document "$doc" "$version"
+  want=$(sha256sum "$doc" | cut -d' ' -f1)
+  ceiling=$(image_ceiling_digest)
+  echo "    the document A will push : $(cat "$doc")"
+  echo "    sha256                   : $want ($(stat -c %s "$doc") bytes)"
+  echo "    it goes on A's config device as /config/$PUSH_POLICY_NAME, which is not the name"
+  echo "    ticket 22 took off the device, and A's init passes it to tunneld as -push-policy."
+
+  # B answers and outlives A's whole run; A dials, pushes, and exercises what it
+  # is given. Both are configured alike otherwise, as everywhere else here.
+  make_config "$work/config-b" guest-b 10.14.0.3 guest-a 10.14.0.2:4433 "$(answerer_json guest-b 10.14.0.3 "$((seconds + 90))s")"
+  make_config "$work/config-a" guest-a 10.14.0.2 guest-b 10.14.0.3:4433 "$(dialer_json guest-a 10.14.0.2 guest-b "${seconds}s" 90s)" -push "$doc"
+  boot_pair "$work" "$IMAGE" "$IMAGE" "$((seconds + 240))" 1
+
+  local a="$work/console-a.txt" b="$work/console-b.txt"
+  [ -f "$a" ] && [ -f "$b" ] || { fail "$name: one of the guests left no console"; return; }
+  assert_booted "$a" "guest-a"; assert_booted "$b" "guest-b"
+  if [ "$SNP" = 0 ]; then
+    check "control boot: neither guest can attest, and both refuse to start rather than proceed" \
+          in_file "$a" "refusing to start"
+    return
+  fi
+  assert_attested "$a" "guest-a"; assert_attested "$b" "guest-b"
+
+  # What each guest holds before a byte crosses.
+  check "guest-a read the policy off its config device and said what it was about to push" \
+        in_file "$a" "tunneld: push policy /config/$PUSH_POLICY_NAME: format=policy version=$version"
+  check "guest-b was given nothing to push, so a push on this segment has one direction" \
+        not_in_file "$b" "tunneld: push policy"
+  check "neither guest found the document ticket 22 took off the config device" \
+        not_in_file "$a" "the config device carries policy.json"
+  check "the digest guest-a presents is the ceiling compiled into its image, not a document on its disk" \
+        test "$(console_policy_digest "$a")" = "$ceiling"
+  check "and guest-b presents the same one, because they boot the same image" \
+        test "$(console_policy_digest "$b")" = "$ceiling"
+  check "neither guest's set admits a peer under any policy at all" \
+        test "$(unconstrained_lines "$a")" = "0" -a "$(unconstrained_lines "$b")" = "0"
+
+  case "$version" in
+    1)
+      check "guest-b's null sandbox applied it and said so"  in_file "$b" "tunneld: SANDBOX applied format=policy version=1"
+      check "it is the same document on both consoles: the digest A said it was pushing is the digest B says it applied" \
+            test -n "$(applied_digest "$b")" -a "$(pushed_digest "$a")" = "$(applied_digest "$b")"
+      check "and that digest is of the file this scenario wrote" \
+            test "$(applied_digest "$b")" = "$want"
+      check "guest-a established a tunnel"                   in_file "$a" "kind=establish"
+      check "guest-b was opened to only after the acknowledgement was in" \
+            in_file "$b" 'tunneld: SANDBOX stream from peer="guest-a"'
+      check "guest-b answered guest-a's exchanges"           in_file "$a" 'answered_by="guest-b"'
+      check "guest-a's exercise completed"                   in_file "$a" "init: tunneld exited with status 0"
+      check "guest-a refused nothing"                        not_in_file "$a" "tunneld: REFUSED"
+      check "and guest-b refused nothing"                    not_in_file "$b" "tunneld: REFUSED"
+      ;;
+    *)
+      check "guest-b refused a version it does not read: the tenth reason, on the receiving side" \
+            in_file "$b" "REFUSED verification refused: the policy pushed to the peer was not applied"
+      check "guest-a was told its policy did not land, under that same reason" \
+            in_file "$a" "REFUSED verification refused: the policy pushed to the peer was not applied"
+      check "no sandbox was woken: guest-b applied nothing" \
+            not_in_file "$b" "SANDBOX applied"
+      check "and nothing reached guest-b on that tunnel: no stream was opened on it at all" \
+            not_in_file "$b" "SANDBOX stream from peer="
+      check "guest-a got no exchange answered either"        not_in_file "$a" 'answered_by="guest-b"'
+      check "guest-a's exercise failed rather than carrying on without its policy" \
+            in_file "$a" "init: tunneld exited with status 2"
+      ;;
+  esac
+
+  {
+    echo "# $name: the two numbers this scenario turns on."
+    echo "#"
+    echo "# A pushed policy is not signed and not measured. What makes it trustworthy is"
+    echo "# the tunnel it arrived on, and what makes the transcript a claim is that the"
+    echo "# digest the pushing guest printed before it sent anything is the digest the"
+    echo "# receiving guest printed when it applied it (docs/policy-push.md)."
+    echo
+    echo "launch measurement, both guests : $MEASUREMENT"
+    echo "egress ceiling digest           : $ceiling"
+    echo "    sha256 over attest/ceiling/ceiling.nft, compiled into the measured tunneld."
+    echo "    It is what each guest prints at start and what each set admits; no document"
+    echo "    on either config device is named by it."
+    echo
+    echo "the pushed document                : $(cat "$doc")"
+    echo "its sha256, as this script wrote it: $want"
+    echo "as guest A said it was pushing it  : $(pushed_digest "$a")"
+    echo "as guest B said it applied it      : $(applied_digest "$b")"
+    echo "    An empty line above is the answer for the version 2 run: B's tunneld reads"
+    echo "    the envelope before any sandbox does, so a version it does not read is"
+    echo "    refused at the boundary and nothing is ever applied."
+  } > "$work/digests.txt"
+}
+
 # ---- scenario: a guest booted from a modified image ------------------------
 scenario_modified() {
   local work="$OUT/modified"
@@ -1129,6 +1275,8 @@ for s in "${SCENARIOS[@]}"; do
   case "$s" in
     live)       scenario_live live "$RUN_FOR" ;;
     live-again) scenario_live live-again 150 ;;
+    push-v1)    scenario_push push-v1 1 150 ;;
+    push-v2)    scenario_push push-v2 2 150 ;;
     modified)   scenario_modified ;;
     tcbfloor)   scenario_tcbfloor ;;
     nosnp)      scenario_nosnp ;;
@@ -1158,7 +1306,7 @@ if [ -n "$CAPTURE" ]; then
        "$d"/mutated-measurement.txt "$d"/digests.txt "$d"/set-a.json "$d"/set-a.json.sig \
        "$d"/set-b.json "$d"/set-b.json.sig \
        "$d"/policy-a.json "$d"/policy-a.json.sig "$d"/policy-b.json "$d"/policy-b.json.sig \
-       "$d"/push-policy.json "$d"/push-policy-b.json \
+       "$d"/push-policy.json \
        "$CAPTURE/$n/" 2>/dev/null || true
 
     # The egress record, cut out of each console into a file of its own: the

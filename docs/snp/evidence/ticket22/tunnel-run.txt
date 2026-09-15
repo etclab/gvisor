@@ -1,0 +1,323 @@
+=== two attested guests, from image-ticket22 ===
+date        : 2026-09-15T21:27:53Z
+repo        : aa8669a4a9c66de4d01d321ca5c229d9c40a8291 on ticket-22-sandbox-contract
+image       : /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket22
+mode        : SEV-SNP (privileged, through the spool)
+scenarios   : live push-v1 push-v2
+
+predicted launch measurement of the image both guests boot:
+  b02657728efac22dbdd72b0388186aaa6a2c59e6c43ab92e48d6060b1e37ee342c083c34463ebc2c3537c5998d8529cc
+the reference value set on both config devices names exactly that, signed by the
+author key baked into the image at /etc/attested-tunnel/author.pub (ADR-0004),
+and the policy beside it is signed by the same key under its own domain.
+
+spool       : /home/pniroula/Projects/gvisor/docs/snp/root-spool
+
+### live: two attested guests, an exchange, and the latency table
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config device written to /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket22-run/live/config-a.img (8c5694e8cb183393…, not measured)
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config device written to /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket22-run/live/config-b.img (d43da9eb6d62a8d6…, not measured)
+spooled /home/pniroula/Projects/gvisor/docs/snp/root-spool/tunnel-2033924-live.job; waiting up to 1480s for the runner
+live finished, rc=0
+    | shell-init: error retrieving current directory: getcwd: cannot access parent directories: No such file or directory
+    | shell-init: error retrieving current directory: getcwd: cannot access parent directories: No such file or directory
+    | shell-init: error retrieving current directory: getcwd: cannot access parent directories: No such file or directory
+    | guest A qemu exited 0
+    | guest B qemu exited 0
+relay:
+    | l2relay: RELAYED a_to_b_frames=2594 b_to_a_frames=2569 a_to_b_bytes=287356 b_to_a_bytes=289408 tampered=0
+    | l2relay: MARKER not found hits=0 marker='attested-tunnel-plaintext-marker' in 5163 frames carrying 576764 bytes
+    | l2relay: what was on the segment:
+    |   ethertypes : IPv4=5093, ARP=70
+    |   ip protocols: UDP=5093
+    |   arp targets : 10.14.0.2, 10.14.0.3
+    |   10.14.0.2 -> 10.14.0.3 proto=UDP frames=2559
+    |   10.14.0.3 -> 10.14.0.2 proto=UDP frames=2534
+PASS  guest-a: booted the measured image and ran the packaged tunneld
+PASS  guest-a: no writable path in the image is executable
+PASS  guest-a: read the author key from inside the launch measurement
+PASS  guest-a: read the reference value set and chain from the config device
+PASS  guest-b: booted the measured image and ran the packaged tunneld
+PASS  guest-b: no writable path in the image is executable
+PASS  guest-b: read the author key from inside the launch measurement
+PASS  guest-b: read the reference value set and chain from the config device
+PASS  guest-a: acquired its own evidence from the platform
+PASS  guest-a: bundled the chain provisioned on its config device, not the platform's
+PASS  guest-a: is listening
+PASS  guest-b: acquired its own evidence from the platform
+PASS  guest-b: bundled the chain provisioned on its config device, not the platform's
+PASS  guest-b: is listening
+PASS  guest-a admitted its peer's evidence
+PASS  guest-b admitted its peer's evidence
+PASS  guest-b established a tunnel
+PASS  guest-b exchanged over it, warm
+PASS  guest-b ran concurrent exchanges on one tunnel
+PASS  guest-a answered guest-b's exchanges
+PASS  guest-b's exercise completed
+PASS  neither guest refused the other
+    guest-a presented key 0380a1c0d963c3b44364ab560eccdd0bc65ec74c1abc1ef7b730954428d61063b92b2cdf3a528bf188900305873558c03489922e2febd7997df89cb4a3f1cfcf
+    guest-b presented key a7367e9e31424f9a217f062d9e6f0be17f2723ccabbe499d2487fb70e2340709104396b0ea11d0119a0df87efe35ed2ac4a0d8ecc28347362815a7c5569d5d3b
+    both presented chain  0957b4aa0678b511c89d6f9b49742ab114043b662408b13e9f7b43d1033d5a81 / 0957b4aa0678b511c89d6f9b49742ab114043b662408b13e9f7b43d1033d5a81
+PASS  the two guests presented distinct keys
+PASS  the two guests presented the same chain, which is what one chip means
+PASS  each guest reported the measurement predicted offline for the image both booted
+PASS  the exchange went through the relay
+PASS  the relay found no plaintext on the wire
+    addresses resolved on the segment: 10.14.0.2, 10.14.0.3
+PASS  no guest looked for a gateway or anything else off the segment
+    passes: 34, of which cost a verification: 2 (maximum age 15m, run 1000s)
+PASS  asking for a warm peer again cost no handshake
+PASS  the tunnel was re-attested when it reached its maximum age
+
+### push-v1: guest A pushes a version 1 policy at guest B over the tunnel
+    the document A will push : {"format":"policy","version":1,"n":[],"f":[],"x":[]}
+    sha256                   : c067e20134c6ba70a95ece8b2f877b11f34943dd72d0ceff5038036431903e6c (53 bytes)
+    it goes on A's config device as /config/push-policy.json, which is not the name
+    ticket 22 took off the device, and A's init passes it to tunneld as -push-policy.
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config device written to /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket22-run/push-v1/config-b.img (94ca93b8307d6e63…, not measured)
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config device written to /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket22-run/push-v1/config-a.img (01dfc6da2c80297b…, not measured)
+spooled /home/pniroula/Projects/gvisor/docs/snp/root-spool/tunnel-2033924-push-v1.job; waiting up to 630s for the runner
+push-v1 finished, rc=0
+    | shell-init: error retrieving current directory: getcwd: cannot access parent directories: No such file or directory
+    | shell-init: error retrieving current directory: getcwd: cannot access parent directories: No such file or directory
+    | shell-init: error retrieving current directory: getcwd: cannot access parent directories: No such file or directory
+    | guest A qemu exited 0
+    | guest B qemu exited 0
+relay:
+    | l2relay: RELAYED a_to_b_frames=399 b_to_a_frames=387 a_to_b_bytes=55052 b_to_a_bytes=52756 tampered=0
+    | l2relay: MARKER not found hits=0 marker='attested-tunnel-plaintext-marker' in 786 frames carrying 107808 bytes
+    | l2relay: what was on the segment:
+    |   ethertypes : IPv4=773, ARP=13
+    |   ip protocols: UDP=773
+    |   arp targets : 10.14.0.2, 10.14.0.3
+    |   10.14.0.2 -> 10.14.0.3 proto=UDP frames=394
+    |   10.14.0.3 -> 10.14.0.2 proto=UDP frames=379
+PASS  guest-a: booted the measured image and ran the packaged tunneld
+PASS  guest-a: no writable path in the image is executable
+PASS  guest-a: read the author key from inside the launch measurement
+PASS  guest-a: read the reference value set and chain from the config device
+PASS  guest-b: booted the measured image and ran the packaged tunneld
+PASS  guest-b: no writable path in the image is executable
+PASS  guest-b: read the author key from inside the launch measurement
+PASS  guest-b: read the reference value set and chain from the config device
+PASS  guest-a: acquired its own evidence from the platform
+PASS  guest-a: bundled the chain provisioned on its config device, not the platform's
+PASS  guest-a: is listening
+PASS  guest-b: acquired its own evidence from the platform
+PASS  guest-b: bundled the chain provisioned on its config device, not the platform's
+PASS  guest-b: is listening
+PASS  guest-a read the policy off its config device and said what it was about to push
+PASS  guest-b was given nothing to push, so a push on this segment has one direction
+PASS  neither guest found the document ticket 22 took off the config device
+PASS  the digest guest-a presents is the ceiling compiled into its image, not a document on its disk
+PASS  and guest-b presents the same one, because they boot the same image
+PASS  neither guest's set admits a peer under any policy at all
+PASS  guest-b's null sandbox applied it and said so
+PASS  it is the same document on both consoles: the digest A said it was pushing is the digest B says it applied
+PASS  and that digest is of the file this scenario wrote
+PASS  guest-a established a tunnel
+PASS  guest-b was opened to only after the acknowledgement was in
+PASS  guest-b answered guest-a's exchanges
+PASS  guest-a's exercise completed
+PASS  guest-a refused nothing
+PASS  and guest-b refused nothing
+
+### push-v2: guest A pushes a version 2 policy at guest B over the tunnel
+    the document A will push : {"format":"policy","version":2,"n":[],"f":[],"x":[]}
+    sha256                   : 4fba57ad28783d815aaae4fa4e840d0f3391e1f49eef25b48f431e9dc1e6ed6e (53 bytes)
+    it goes on A's config device as /config/push-policy.json, which is not the name
+    ticket 22 took off the device, and A's init passes it to tunneld as -push-policy.
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config device written to /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket22-run/push-v2/config-b.img (78ccb2f31e7d0565…, not measured)
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config device written to /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket22-run/push-v2/config-a.img (a66d5eb9ab5f529a…, not measured)
+spooled /home/pniroula/Projects/gvisor/docs/snp/root-spool/tunnel-2033924-push-v2.job; waiting up to 630s for the runner
+push-v2 finished, rc=0
+    | shell-init: error retrieving current directory: getcwd: cannot access parent directories: No such file or directory
+    | shell-init: error retrieving current directory: getcwd: cannot access parent directories: No such file or directory
+    | shell-init: error retrieving current directory: getcwd: cannot access parent directories: No such file or directory
+    | guest A qemu exited 0
+    | guest B qemu exited 0
+relay:
+    | l2relay: RELAYED a_to_b_frames=2605 b_to_a_frames=2721 a_to_b_bytes=2019961 b_to_a_bytes=1775357 tampered=0
+    | l2relay: MARKER not found hits=0 marker='attested-tunnel-plaintext-marker' in 5326 frames carrying 3795318 bytes
+    | l2relay: what was on the segment:
+    |   ethertypes : IPv4=5308, ARP=18
+    |   ip protocols: UDP=5308
+    |   arp targets : 10.14.0.2, 10.14.0.3
+    |   10.14.0.3 -> 10.14.0.2 proto=UDP frames=2712
+    |   10.14.0.2 -> 10.14.0.3 proto=UDP frames=2596
+PASS  guest-a: booted the measured image and ran the packaged tunneld
+PASS  guest-a: no writable path in the image is executable
+PASS  guest-a: read the author key from inside the launch measurement
+PASS  guest-a: read the reference value set and chain from the config device
+PASS  guest-b: booted the measured image and ran the packaged tunneld
+PASS  guest-b: no writable path in the image is executable
+PASS  guest-b: read the author key from inside the launch measurement
+PASS  guest-b: read the reference value set and chain from the config device
+PASS  guest-a: acquired its own evidence from the platform
+PASS  guest-a: bundled the chain provisioned on its config device, not the platform's
+PASS  guest-a: is listening
+PASS  guest-b: acquired its own evidence from the platform
+PASS  guest-b: bundled the chain provisioned on its config device, not the platform's
+PASS  guest-b: is listening
+PASS  guest-a read the policy off its config device and said what it was about to push
+PASS  guest-b was given nothing to push, so a push on this segment has one direction
+PASS  neither guest found the document ticket 22 took off the config device
+PASS  the digest guest-a presents is the ceiling compiled into its image, not a document on its disk
+PASS  and guest-b presents the same one, because they boot the same image
+PASS  neither guest's set admits a peer under any policy at all
+PASS  guest-b refused a version it does not read: the tenth reason, on the receiving side
+PASS  guest-a was told its policy did not land, under that same reason
+PASS  no sandbox was woken: guest-b applied nothing
+PASS  and nothing reached guest-b on that tunnel: no stream was opened on it at all
+PASS  guest-a got no exchange answered either
+PASS  guest-a's exercise failed rather than carrying on without its policy
+
+=== latency, as the guests measured it ===
+  LATENCY pass=1 peer=guest-a kind=establish ms=100.010 attempts=1 verifier_calls=1
+  LATENCY pass=1 peer=guest-a kind=warm_exchange n=20 min_ms=2.539 p50_ms=3.686 p90_ms=5.616 max_ms=7.206 mean_ms=3.796 answered_by="guest-a"
+  LATENCY pass=1 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=24.338 min_ms=4.596 p50_ms=6.397 p90_ms=7.880 max_ms=7.944 mean_ms=6.344
+  LATENCY pass=2 peer=guest-a kind=establish ms=0.052 attempts=1 verifier_calls=0
+  LATENCY pass=2 peer=guest-a kind=warm_exchange n=20 min_ms=2.908 p50_ms=3.319 p90_ms=4.442 max_ms=5.794 mean_ms=3.464 answered_by="guest-a"
+  LATENCY pass=2 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=20.500 min_ms=3.590 p50_ms=5.121 p90_ms=6.108 max_ms=6.119 mean_ms=4.926
+  LATENCY pass=3 peer=guest-a kind=establish ms=0.062 attempts=1 verifier_calls=0
+  LATENCY pass=3 peer=guest-a kind=warm_exchange n=20 min_ms=2.179 p50_ms=3.222 p90_ms=4.466 max_ms=15.365 mean_ms=3.792 answered_by="guest-a"
+  LATENCY pass=3 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=27.499 min_ms=3.510 p50_ms=6.028 p90_ms=7.869 max_ms=8.240 mean_ms=6.005
+  LATENCY pass=4 peer=guest-a kind=establish ms=0.175 attempts=1 verifier_calls=0
+  LATENCY pass=4 peer=guest-a kind=warm_exchange n=20 min_ms=2.409 p50_ms=2.747 p90_ms=3.799 max_ms=4.178 mean_ms=2.893 answered_by="guest-a"
+  LATENCY pass=4 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=25.404 min_ms=5.438 p50_ms=6.814 p90_ms=9.136 max_ms=9.376 mean_ms=7.195
+  LATENCY pass=5 peer=guest-a kind=establish ms=0.439 attempts=1 verifier_calls=0
+  LATENCY pass=5 peer=guest-a kind=warm_exchange n=20 min_ms=2.075 p50_ms=2.680 p90_ms=7.236 max_ms=21.647 mean_ms=4.100 answered_by="guest-a"
+  LATENCY pass=5 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=27.758 min_ms=2.965 p50_ms=8.315 p90_ms=11.990 max_ms=12.204 mean_ms=7.608
+  LATENCY pass=6 peer=guest-a kind=establish ms=0.050 attempts=1 verifier_calls=0
+  LATENCY pass=6 peer=guest-a kind=warm_exchange n=20 min_ms=3.109 p50_ms=4.196 p90_ms=5.760 max_ms=5.927 mean_ms=4.175 answered_by="guest-a"
+  LATENCY pass=6 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=31.378 min_ms=4.772 p50_ms=6.798 p90_ms=8.968 max_ms=8.973 mean_ms=6.954
+  LATENCY pass=7 peer=guest-a kind=establish ms=0.070 attempts=1 verifier_calls=0
+  LATENCY pass=7 peer=guest-a kind=warm_exchange n=20 min_ms=3.077 p50_ms=4.243 p90_ms=5.861 max_ms=6.298 mean_ms=4.236 answered_by="guest-a"
+  LATENCY pass=7 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=40.516 min_ms=3.453 p50_ms=5.373 p90_ms=24.187 max_ms=24.300 mean_ms=11.312
+  LATENCY pass=8 peer=guest-a kind=establish ms=0.052 attempts=1 verifier_calls=0
+  LATENCY pass=8 peer=guest-a kind=warm_exchange n=20 min_ms=2.549 p50_ms=3.580 p90_ms=4.223 max_ms=4.755 mean_ms=3.502 answered_by="guest-a"
+  LATENCY pass=8 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=31.865 min_ms=3.959 p50_ms=5.898 p90_ms=17.664 max_ms=17.708 mean_ms=7.164
+  LATENCY pass=9 peer=guest-a kind=establish ms=0.145 attempts=1 verifier_calls=0
+  LATENCY pass=9 peer=guest-a kind=warm_exchange n=20 min_ms=3.071 p50_ms=4.324 p90_ms=5.452 max_ms=12.235 mean_ms=4.668 answered_by="guest-a"
+  LATENCY pass=9 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=38.302 min_ms=3.679 p50_ms=5.907 p90_ms=24.199 max_ms=24.242 mean_ms=9.306
+  LATENCY pass=10 peer=guest-a kind=establish ms=0.069 attempts=1 verifier_calls=0
+  LATENCY pass=10 peer=guest-a kind=warm_exchange n=20 min_ms=3.012 p50_ms=4.053 p90_ms=5.593 max_ms=11.887 mean_ms=4.506 answered_by="guest-a"
+  LATENCY pass=10 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=17.449 min_ms=2.945 p50_ms=4.981 p90_ms=5.952 max_ms=5.954 mean_ms=4.857
+  LATENCY pass=11 peer=guest-a kind=establish ms=0.249 attempts=1 verifier_calls=0
+  LATENCY pass=11 peer=guest-a kind=warm_exchange n=20 min_ms=2.980 p50_ms=4.042 p90_ms=4.934 max_ms=19.625 mean_ms=4.857 answered_by="guest-a"
+  LATENCY pass=11 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=28.117 min_ms=4.530 p50_ms=5.865 p90_ms=9.105 max_ms=9.583 mean_ms=6.345
+  LATENCY pass=12 peer=guest-a kind=establish ms=0.059 attempts=1 verifier_calls=0
+  LATENCY pass=12 peer=guest-a kind=warm_exchange n=20 min_ms=2.771 p50_ms=3.773 p90_ms=4.236 max_ms=6.072 mean_ms=3.751 answered_by="guest-a"
+  LATENCY pass=12 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=25.723 min_ms=5.207 p50_ms=6.905 p90_ms=8.660 max_ms=8.855 mean_ms=6.823
+  LATENCY pass=13 peer=guest-a kind=establish ms=0.070 attempts=1 verifier_calls=0
+  LATENCY pass=13 peer=guest-a kind=warm_exchange n=20 min_ms=2.971 p50_ms=3.465 p90_ms=4.767 max_ms=5.574 mean_ms=3.595 answered_by="guest-a"
+  LATENCY pass=13 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=25.141 min_ms=4.035 p50_ms=7.142 p90_ms=9.114 max_ms=9.208 mean_ms=6.885
+  LATENCY pass=14 peer=guest-a kind=establish ms=0.072 attempts=1 verifier_calls=0
+  LATENCY pass=14 peer=guest-a kind=warm_exchange n=20 min_ms=2.949 p50_ms=4.296 p90_ms=5.291 max_ms=5.350 mean_ms=4.222 answered_by="guest-a"
+  LATENCY pass=14 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=27.557 min_ms=4.152 p50_ms=7.109 p90_ms=8.758 max_ms=8.823 mean_ms=6.809
+  LATENCY pass=15 peer=guest-a kind=establish ms=0.113 attempts=1 verifier_calls=0
+  LATENCY pass=15 peer=guest-a kind=warm_exchange n=20 min_ms=2.340 p50_ms=3.671 p90_ms=4.654 max_ms=5.465 mean_ms=3.766 answered_by="guest-a"
+  LATENCY pass=15 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=18.287 min_ms=3.235 p50_ms=4.569 p90_ms=5.417 max_ms=5.486 mean_ms=4.526
+  LATENCY pass=16 peer=guest-a kind=establish ms=0.089 attempts=1 verifier_calls=0
+  LATENCY pass=16 peer=guest-a kind=warm_exchange n=20 min_ms=3.324 p50_ms=4.051 p90_ms=4.730 max_ms=18.072 mean_ms=4.791 answered_by="guest-a"
+  LATENCY pass=16 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=21.019 min_ms=2.903 p50_ms=5.184 p90_ms=6.586 max_ms=6.859 mean_ms=5.034
+  LATENCY pass=17 peer=guest-a kind=establish ms=0.323 attempts=1 verifier_calls=0
+  LATENCY pass=17 peer=guest-a kind=warm_exchange n=20 min_ms=3.004 p50_ms=3.570 p90_ms=4.366 max_ms=6.325 mean_ms=3.699 answered_by="guest-a"
+  LATENCY pass=17 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=24.875 min_ms=4.297 p50_ms=5.835 p90_ms=8.140 max_ms=8.373 mean_ms=5.871
+  LATENCY pass=18 peer=guest-a kind=establish ms=0.108 attempts=1 verifier_calls=0
+  LATENCY pass=18 peer=guest-a kind=warm_exchange n=20 min_ms=3.312 p50_ms=4.075 p90_ms=4.938 max_ms=6.108 mean_ms=4.141 answered_by="guest-a"
+  LATENCY pass=18 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=27.501 min_ms=4.239 p50_ms=8.846 p90_ms=10.342 max_ms=10.542 mean_ms=7.886
+  LATENCY pass=19 peer=guest-a kind=establish ms=0.258 attempts=1 verifier_calls=0
+  LATENCY pass=19 peer=guest-a kind=warm_exchange n=20 min_ms=3.096 p50_ms=4.431 p90_ms=5.589 max_ms=7.768 mean_ms=4.495 answered_by="guest-a"
+  LATENCY pass=19 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=21.247 min_ms=4.017 p50_ms=5.248 p90_ms=6.866 max_ms=7.349 mean_ms=5.376
+  LATENCY pass=20 peer=guest-a kind=establish ms=0.071 attempts=1 verifier_calls=0
+  LATENCY pass=20 peer=guest-a kind=warm_exchange n=20 min_ms=2.701 p50_ms=3.962 p90_ms=5.414 max_ms=9.696 mean_ms=4.148 answered_by="guest-a"
+  LATENCY pass=20 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=27.652 min_ms=4.547 p50_ms=6.182 p90_ms=10.431 max_ms=11.067 mean_ms=7.107
+  LATENCY pass=21 peer=guest-a kind=establish ms=0.062 attempts=1 verifier_calls=0
+  LATENCY pass=21 peer=guest-a kind=warm_exchange n=20 min_ms=3.257 p50_ms=4.191 p90_ms=6.378 max_ms=14.893 mean_ms=4.757 answered_by="guest-a"
+  LATENCY pass=21 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=23.160 min_ms=4.170 p50_ms=5.775 p90_ms=8.141 max_ms=8.666 mean_ms=5.998
+  LATENCY pass=22 peer=guest-a kind=establish ms=0.071 attempts=1 verifier_calls=0
+  LATENCY pass=22 peer=guest-a kind=warm_exchange n=20 min_ms=3.065 p50_ms=3.656 p90_ms=4.512 max_ms=5.659 mean_ms=3.680 answered_by="guest-a"
+  LATENCY pass=22 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=34.659 min_ms=4.105 p50_ms=5.553 p90_ms=20.894 max_ms=21.690 mean_ms=10.457
+  LATENCY pass=23 peer=guest-a kind=establish ms=0.156 attempts=1 verifier_calls=0
+  LATENCY pass=23 peer=guest-a kind=warm_exchange n=20 min_ms=2.991 p50_ms=3.699 p90_ms=4.271 max_ms=6.215 mean_ms=3.725 answered_by="guest-a"
+  LATENCY pass=23 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=20.201 min_ms=3.697 p50_ms=4.928 p90_ms=7.617 max_ms=7.623 mean_ms=5.260
+  LATENCY pass=24 peer=guest-a kind=establish ms=0.048 attempts=1 verifier_calls=0
+  LATENCY pass=24 peer=guest-a kind=warm_exchange n=20 min_ms=1.952 p50_ms=3.305 p90_ms=4.780 max_ms=4.785 mean_ms=3.522 answered_by="guest-a"
+  LATENCY pass=24 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=18.375 min_ms=2.956 p50_ms=4.236 p90_ms=5.003 max_ms=5.145 mean_ms=4.113
+  LATENCY pass=25 peer=guest-a kind=establish ms=0.074 attempts=1 verifier_calls=0
+  LATENCY pass=25 peer=guest-a kind=warm_exchange n=20 min_ms=2.117 p50_ms=2.700 p90_ms=3.720 max_ms=14.068 mean_ms=3.288 answered_by="guest-a"
+  LATENCY pass=25 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=28.512 min_ms=6.545 p50_ms=8.282 p90_ms=9.737 max_ms=9.995 mean_ms=8.193
+  LATENCY pass=26 peer=guest-a kind=establish ms=0.069 attempts=1 verifier_calls=0
+  LATENCY pass=26 peer=guest-a kind=warm_exchange n=20 min_ms=2.749 p50_ms=3.266 p90_ms=4.774 max_ms=9.101 mean_ms=3.596 answered_by="guest-a"
+  LATENCY pass=26 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=16.674 min_ms=3.234 p50_ms=4.666 p90_ms=5.707 max_ms=6.209 mean_ms=4.456
+  LATENCY pass=27 peer=guest-a kind=establish ms=0.087 attempts=1 verifier_calls=0
+  LATENCY pass=27 peer=guest-a kind=warm_exchange n=20 min_ms=2.959 p50_ms=3.432 p90_ms=4.609 max_ms=10.872 mean_ms=3.901 answered_by="guest-a"
+  LATENCY pass=27 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=23.781 min_ms=3.076 p50_ms=6.595 p90_ms=9.441 max_ms=10.280 mean_ms=6.387
+  LATENCY pass=28 peer=guest-a kind=establish ms=0.076 attempts=1 verifier_calls=0
+  LATENCY pass=28 peer=guest-a kind=warm_exchange n=20 min_ms=2.679 p50_ms=3.991 p90_ms=4.534 max_ms=4.938 mean_ms=3.846 answered_by="guest-a"
+  LATENCY pass=28 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=16.172 min_ms=2.294 p50_ms=4.247 p90_ms=5.021 max_ms=5.080 mean_ms=4.229
+  LATENCY pass=29 peer=guest-a kind=establish ms=0.071 attempts=1 verifier_calls=0
+  LATENCY pass=29 peer=guest-a kind=warm_exchange n=20 min_ms=2.844 p50_ms=3.570 p90_ms=5.016 max_ms=14.539 mean_ms=4.260 answered_by="guest-a"
+  LATENCY pass=29 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=25.168 min_ms=4.530 p50_ms=5.981 p90_ms=7.741 max_ms=7.836 mean_ms=6.323
+  LATENCY pass=30 peer=guest-a kind=establish ms=0.075 attempts=1 verifier_calls=0
+  LATENCY pass=30 peer=guest-a kind=warm_exchange n=20 min_ms=2.912 p50_ms=4.318 p90_ms=5.729 max_ms=6.607 mean_ms=4.477 answered_by="guest-a"
+  LATENCY pass=30 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=30.466 min_ms=4.036 p50_ms=8.563 p90_ms=11.561 max_ms=11.808 mean_ms=7.993
+  LATENCY pass=31 peer=guest-a kind=establish ms=50.298 attempts=1 verifier_calls=1
+  LATENCY pass=31 peer=guest-a kind=warm_exchange n=20 min_ms=2.563 p50_ms=3.762 p90_ms=4.254 max_ms=4.377 mean_ms=3.592 answered_by="guest-a"
+  LATENCY pass=31 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=24.174 min_ms=4.567 p50_ms=6.555 p90_ms=8.484 max_ms=8.857 mean_ms=6.577
+  LATENCY pass=32 peer=guest-a kind=establish ms=0.069 attempts=1 verifier_calls=0
+  LATENCY pass=32 peer=guest-a kind=warm_exchange n=20 min_ms=2.600 p50_ms=3.616 p90_ms=4.604 max_ms=12.541 mean_ms=4.009 answered_by="guest-a"
+  LATENCY pass=32 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=19.242 min_ms=3.081 p50_ms=5.272 p90_ms=6.286 max_ms=6.733 mean_ms=5.027
+  LATENCY pass=33 peer=guest-a kind=establish ms=0.339 attempts=1 verifier_calls=0
+  LATENCY pass=33 peer=guest-a kind=warm_exchange n=20 min_ms=2.910 p50_ms=3.484 p90_ms=4.235 max_ms=5.569 mean_ms=3.587 answered_by="guest-a"
+  LATENCY pass=33 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=30.824 min_ms=3.676 p50_ms=5.695 p90_ms=15.030 max_ms=16.091 mean_ms=8.235
+  LATENCY pass=34 peer=guest-a kind=establish ms=0.065 attempts=1 verifier_calls=0
+  LATENCY pass=34 peer=guest-a kind=warm_exchange n=20 min_ms=2.772 p50_ms=4.047 p90_ms=5.073 max_ms=5.194 mean_ms=4.038 answered_by="guest-a"
+  LATENCY pass=34 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=24.067 min_ms=3.675 p50_ms=6.086 p90_ms=8.816 max_ms=8.960 mean_ms=5.967
+  LATENCY pass=1 peer=guest-b kind=establish ms=154.735 attempts=1 verifier_calls=1
+  LATENCY pass=1 peer=guest-b kind=warm_exchange n=20 min_ms=2.082 p50_ms=3.183 p90_ms=4.059 max_ms=7.914 mean_ms=3.314 answered_by="guest-b"
+  LATENCY pass=1 peer=guest-b kind=concurrent streams=8 rounds=3 n=24 wall_ms=26.702 min_ms=4.026 p50_ms=7.703 p90_ms=8.796 max_ms=9.441 mean_ms=7.086
+  LATENCY pass=2 peer=guest-b kind=establish ms=0.077 attempts=1 verifier_calls=0
+  LATENCY pass=2 peer=guest-b kind=warm_exchange n=20 min_ms=3.294 p50_ms=4.071 p90_ms=5.157 max_ms=6.097 mean_ms=4.065 answered_by="guest-b"
+  LATENCY pass=2 peer=guest-b kind=concurrent streams=8 rounds=3 n=24 wall_ms=23.488 min_ms=3.869 p50_ms=5.923 p90_ms=7.977 max_ms=8.141 mean_ms=6.095
+  LATENCY pass=3 peer=guest-b kind=establish ms=0.076 attempts=1 verifier_calls=0
+  LATENCY pass=3 peer=guest-b kind=warm_exchange n=20 min_ms=3.091 p50_ms=3.937 p90_ms=5.038 max_ms=14.909 mean_ms=4.474 answered_by="guest-b"
+  LATENCY pass=3 peer=guest-b kind=concurrent streams=8 rounds=3 n=24 wall_ms=45.690 min_ms=3.516 p50_ms=10.366 p90_ms=27.095 max_ms=27.497 mean_ms=12.965
+  LATENCY pass=4 peer=guest-b kind=establish ms=0.080 attempts=1 verifier_calls=0
+  LATENCY pass=4 peer=guest-b kind=warm_exchange n=20 min_ms=2.960 p50_ms=3.722 p90_ms=3.962 max_ms=4.760 mean_ms=3.674 answered_by="guest-b"
+  LATENCY pass=4 peer=guest-b kind=concurrent streams=8 rounds=3 n=24 wall_ms=41.645 min_ms=3.238 p50_ms=6.181 p90_ms=27.043 max_ms=27.461 mean_ms=12.566
+  LATENCY pass=5 peer=guest-b kind=establish ms=0.392 attempts=1 verifier_calls=0
+  LATENCY pass=5 peer=guest-b kind=warm_exchange n=20 min_ms=3.183 p50_ms=4.116 p90_ms=5.565 max_ms=5.946 mean_ms=4.255 answered_by="guest-b"
+  LATENCY pass=5 peer=guest-b kind=concurrent streams=8 rounds=3 n=24 wall_ms=26.050 min_ms=4.419 p50_ms=7.466 p90_ms=8.374 max_ms=8.576 mean_ms=6.930
+
+=== 85 passed, 0 failed ===

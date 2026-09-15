@@ -28,6 +28,12 @@ import (
 // parse, when it comes from hardware nobody here implements, and when its chain
 // is simply absent — and "something definite" must not be an acceptance, and
 // must not be a reason that claims more than is known.
+//
+// A tenth was added by ticket 22, and it is the one reason here that is not a
+// verdict on evidence at all: a peer that was admitted and then did not apply
+// the policy pushed at it (docs/policy-push.md). The two tests at the foot of
+// this file are what keeps that distinction from blurring — it has a sentence
+// of its own, and nothing at this seam can produce it.
 
 // TestEvidenceThatDoesNotParseIsRefused: attacker-supplied bytes reach the
 // parser before anything else does, and the parser is not a place to be
@@ -112,5 +118,61 @@ func TestAMissingCertificateChainFailsClosedRatherThanFetching(t *testing.T) {
 	}
 	if strings.Contains(r.Detail(), "refusing to fetch") {
 		t.Errorf("verification tried to fetch a certificate: %s", r.LogString())
+	}
+}
+
+// TestEveryReasonInTheTaxonomyHasASentenceOfItsOwn: reasons are typed so that
+// an operator can read which check refused a peer, and two reasons that print
+// the same sentence are one reason wearing two names.
+//
+// The end of the taxonomy is found by asking for the first reason that prints
+// Reason(n), so that adding one here is adding one line in attest/refusal.go
+// and nothing else — and so that a reason added with no sentence at all is
+// found by the test rather than by an operator.
+func TestEveryReasonInTheTaxonomyHasASentenceOfItsOwn(t *testing.T) {
+	named := map[string]attest.Reason{}
+	for r := attest.Reason(0); !strings.HasPrefix(r.String(), "Reason("); r++ {
+		if other, taken := named[r.String()]; taken {
+			t.Errorf("%v and %v both print %q", other, r, r.String())
+		}
+		named[r.String()] = r
+	}
+	// And it reaches the last of them. A reason declared after the first one
+	// with no sentence would be invisible to the loop above, and invisible in
+	// an operator's log for the same reason.
+	for _, want := range []attest.Reason{attest.ReasonNone, attest.ReasonUnknownBindingContext, attest.ReasonPolicyNotApplied} {
+		if _, ok := named[want.String()]; !ok {
+			t.Errorf("the taxonomy stops before %v, which prints %q", want, want.String())
+		}
+	}
+}
+
+// TestNoVerdictOnEvidenceIsAPolicyNotApplied is the tenth reason's boundary.
+//
+// It is reached after a peer has been admitted, when the policy pushed to it
+// over the established tunnel was not applied, and no [attest.Verifier] can
+// return it: there is no policy at this seam and no peer to push one to. A
+// verifier that started returning it would be claiming a peer had done
+// something with a document it was never sent.
+func TestNoVerdictOnEvidenceIsAPolicyNotApplied(t *testing.T) {
+	f := newGuest(t, defaultConfig())
+	v := verification(t, f, defaultSet())
+
+	accepts(t, v, f)
+
+	garbage := attest.Evidence{Vendor: attest.VendorAMDSEVSNP, Bytes: []byte{0x01, 0x02, 0x03}, Chain: f.evidence.Chain}
+	elsewhere := f.evidence
+	elsewhere.Vendor = "intel-tdx"
+	unprovisioned := attest.Evidence{Vendor: attest.VendorAMDSEVSNP, Bytes: f.evidence.Bytes}
+	for name, ev := range map[string]attest.Evidence{
+		"no evidence at all":           {},
+		"evidence that does not parse": garbage,
+		"another vendor":               elsewhere,
+		"no provisioned chain":         unprovisioned,
+	} {
+		_, err := v.Verify(context.Background(), ev, f.binding)
+		if got := attest.ReasonOf(err); got == attest.ReasonPolicyNotApplied {
+			t.Errorf("%s was refused as %v; that reason is reached after admission and never here", name, got)
+		}
 	}
 }

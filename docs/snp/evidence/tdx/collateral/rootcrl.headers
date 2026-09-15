@@ -6,11 +6,11 @@ x-amz-server-side-encryption: AES256
 x-amz-version-id: f2FY9v6BmcG11MrdDIsyVYNLKiHrbdVG
 accept-ranges: bytes
 server: AmazonS3
-date: Tue, 08 Sep 2026 19:56:30 GMT
+date: Tue, 15 Sep 2026 19:05:49 GMT
 etag: "a3d246a50122dbdb11caf9749a4fc40f"
 x-cache: Hit from cloudfront
-via: 1.1 513345163ac68041d8347fbccae18b9c.cloudfront.net (CloudFront)
+via: 1.1 9b9a066c240ddede25e109bd9f493f86.cloudfront.net (CloudFront)
 x-amz-cf-pop: IAD61-P6
-x-amz-cf-id: hVi-HefI9xVbULpE17fN_6nOt_S29Uk2q-FpLWln3ZAtTjFqPyqoiQ==
-age: 63
+x-amz-cf-id: 4WgWj-a6YUWpw0kQfkKpqKmcKZA_ZqAVCrgw-XNtad1caGodzuBtiQ==
+age: 4
 

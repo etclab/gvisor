@@ -101,7 +101,7 @@ func startLifecycle(t *testing.T, sandbox string, image []byte, admits attest.Re
 		Acquirer:              p,
 		Verifier:              n.verifier,
 		ReferenceValueSetPath: writeSet(t, admits, authorPriv),
-		PolicyPath:            writePolicy(t, everyImage(), authorPriv),
+		PolicyDigest:          somePolicyDigest(sandbox),
 		AuthorPublicKey:       authorPub,
 		Peers:                 peers,
 		ListenAddr:            addr,

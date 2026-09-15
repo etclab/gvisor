@@ -1,0 +1,5 @@
+$ e4drv -config C4 -author author-t19.pub
+e4drv: tunneld.New refused: tunneld: refusing to start: attest: policy refused: reading the signature at $W/cfg/C4/policy.json.sig: open $W/cfg/C4/policy.json.sig: no such file or directory
+e4drv: errors.Is(err, attest.ErrSetRefused)    = false
+e4drv: errors.Is(err, attest.ErrPolicyRefused) = true
+EXIT_STATUS=1

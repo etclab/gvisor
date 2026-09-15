@@ -1,0 +1,5 @@
+$ e4drv -config C2 -author author-t19.pub
+e4drv: tunneld.New refused: tunneld: refusing to start: ratls: acquiring evidence: E4 stub acquirer: this host has no report interface; reaching this line means both config-device documents loaded
+e4drv: errors.Is(err, attest.ErrSetRefused)    = false
+e4drv: errors.Is(err, attest.ErrPolicyRefused) = false
+EXIT_STATUS=1

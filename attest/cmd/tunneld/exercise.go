@@ -18,11 +18,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"sort"
 	"strings"
 	"sync"
 	"time"
 
+	"gvisor.dev/gvisor/attest/sandbox"
 	"gvisor.dev/gvisor/attest/tunneld"
 )
 
@@ -119,7 +121,7 @@ func (e *exercise) withDefaults() exercise {
 // is a failed run and not a fatal one: the other peers' figures are worth
 // having, and a console that stops at the first failure is a console that
 // answers one question.
-func (e *exercise) perform(ctx context.Context, td *tunneld.Tunneld, watched *watchedVerifier, logf func(string, ...any)) error {
+func (e *exercise) perform(ctx context.Context, box sandbox.Sandbox, watched *watchedVerifier, logf func(string, ...any)) error {
 	cfg := e.withDefaults()
 	logf("exercise: dialing %s; %d warm exchanges, %d concurrent × %d rounds, marker %q",
 		strings.Join(cfg.Dial, ", "), cfg.Exchanges, cfg.Concurrency, cfg.Rounds, cfg.Payload)
@@ -128,7 +130,7 @@ func (e *exercise) perform(ctx context.Context, td *tunneld.Tunneld, watched *wa
 	deadline := time.Now().Add(cfg.RunFor.Duration)
 	for pass := 1; ; pass++ {
 		for _, peer := range cfg.Dial {
-			if err := cfg.pass(ctx, td, watched, logf, pass, peer); err != nil {
+			if err := cfg.pass(ctx, box, watched, logf, pass, peer); err != nil {
 				logf("exercise: pass=%d peer=%s FAILED: %v", pass, peer, err)
 				failures = append(failures, fmt.Sprintf("pass %d, peer %s: %v", pass, peer, err))
 			}
@@ -153,48 +155,52 @@ func (e *exercise) perform(ctx context.Context, td *tunneld.Tunneld, watched *wa
 	return nil
 }
 
-func (c exercise) pass(ctx context.Context, td *tunneld.Tunneld, watched *watchedVerifier, logf func(string, ...any), pass int, peer string) error {
-	channel, err := c.establish(ctx, td, watched, logf, pass, peer)
-	if err != nil {
+func (c exercise) pass(ctx context.Context, box sandbox.Sandbox, watched *watchedVerifier, logf func(string, ...any), pass int, peer string) error {
+	if err := c.establish(ctx, box, watched, logf, pass, peer); err != nil {
 		return err
 	}
-	defer channel.Close()
-
 	if c.Exchanges > 0 {
-		if err := c.warm(ctx, channel, logf, pass, peer); err != nil {
+		if err := c.warm(ctx, box, logf, pass, peer); err != nil {
 			return err
 		}
 	}
 	if c.Concurrency > 0 && c.Rounds > 0 {
-		if err := c.concurrent(ctx, channel, logf, pass, peer); err != nil {
+		if err := c.concurrent(ctx, box, logf, pass, peer); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// establish asks for the peer, retrying a peer that is not up yet, and times
-// the attempt that succeeded. The attempts before it are reported as a count
-// and deliberately not folded into the figure: what user story 50 asks for is
-// the cost of establishing a tunnel, not the cost of waiting for another
-// machine to finish booting.
-func (c exercise) establish(ctx context.Context, td *tunneld.Tunneld, watched *watchedVerifier, logf func(string, ...any), pass int, peer string) (*tunneld.Channel, error) {
+// establish asks the sandbox for a stream to the peer, retrying a peer that is
+// not up yet, and times the attempt that succeeded. The attempts before it are
+// reported as a count and deliberately not folded into the figure: what user
+// story 50 asks for is the cost of establishing a tunnel, not the cost of
+// waiting for another machine to finish booting.
+//
+// What is timed is one Open, and on the first pass an Open is the whole of
+// admission: no tunnel to that peer exists, so tunneld dials one, both sides
+// judge the other's evidence, and only then is there a stream. The stream is
+// given straight back — this figure is about the tunnel underneath it, and the
+// exchanges that follow open their own.
+func (c exercise) establish(ctx context.Context, box sandbox.Sandbox, watched *watchedVerifier, logf func(string, ...any), pass int, peer string) error {
 	deadline := time.Now().Add(c.Wait.Duration)
 	const retryAfter = time.Second
 	for attempt := 1; ; attempt++ {
 		before := watched.count()
 		attemptCtx, cancel := context.WithTimeout(ctx, c.Timeout.Duration)
 		start := time.Now()
-		channel, err := td.Peer(attemptCtx, peer)
+		stream, err := box.Open(attemptCtx, peer)
 		took := time.Since(start)
 		cancel()
 		if err == nil {
+			stream.Close()
 			logf("LATENCY pass=%d peer=%s kind=establish ms=%s attempts=%d verifier_calls=%d",
 				pass, peer, ms(took), attempt, watched.count()-before)
-			return channel, nil
+			return nil
 		}
 		if errors.Is(err, tunneld.ErrUnknownPeer) || ctx.Err() != nil || !time.Now().Before(deadline) {
-			return nil, fmt.Errorf("after %d attempt(s) over %s: %w", attempt, c.Wait.Duration, err)
+			return fmt.Errorf("after %d attempt(s) over %s: %w", attempt, c.Wait.Duration, err)
 		}
 		if attempt == 1 {
 			logf("exercise: pass=%d peer=%s not up yet, retrying until %s elapses (%v)", pass, peer, c.Wait.Duration, err)
@@ -202,18 +208,18 @@ func (c exercise) establish(ctx context.Context, td *tunneld.Tunneld, watched *w
 		select {
 		case <-time.After(retryAfter):
 		case <-ctx.Done():
-			return nil, ctx.Err()
+			return ctx.Err()
 		}
 	}
 }
 
 // warm times exchanges one at a time on an established tunnel.
-func (c exercise) warm(ctx context.Context, channel *tunneld.Channel, logf func(string, ...any), pass int, peer string) error {
+func (c exercise) warm(ctx context.Context, box sandbox.Sandbox, logf func(string, ...any), pass int, peer string) error {
 	took := make([]time.Duration, 0, c.Exchanges)
 	var answerer string
 	for i := 0; i < c.Exchanges; i++ {
 		start := time.Now()
-		response, err := c.exchange(ctx, channel, pass, i)
+		response, err := c.exchange(ctx, box, peer, pass, i)
 		if err != nil {
 			return fmt.Errorf("warm exchange %d: %w", i, err)
 		}
@@ -230,7 +236,7 @@ func (c exercise) warm(ctx context.Context, channel *tunneld.Channel, logf func(
 // exchange per stream bought anything: a transport with head-of-line blocking
 // would show it as the sum of the per-exchange times rather than close to the
 // slowest one.
-func (c exercise) concurrent(ctx context.Context, channel *tunneld.Channel, logf func(string, ...any), pass int, peer string) error {
+func (c exercise) concurrent(ctx context.Context, box sandbox.Sandbox, logf func(string, ...any), pass int, peer string) error {
 	var (
 		mu    sync.Mutex
 		took  []time.Duration
@@ -245,7 +251,7 @@ func (c exercise) concurrent(ctx context.Context, channel *tunneld.Channel, logf
 			go func(seq int) {
 				defer wg.Done()
 				at := time.Now()
-				_, err := c.exchange(ctx, channel, pass, seq)
+				_, err := c.exchange(ctx, box, peer, pass, seq)
 				elapsed := time.Since(at)
 				mu.Lock()
 				defer mu.Unlock()
@@ -270,11 +276,20 @@ func (c exercise) concurrent(ctx context.Context, channel *tunneld.Channel, logf
 // the answering sandbox's identifier, a colon, and the request unchanged. The
 // identifier is returned so that a run records which guest answered rather
 // than only that somebody did.
-func (c exercise) exchange(ctx context.Context, channel *tunneld.Channel, pass, seq int) (string, error) {
+//
+// One exchange is one stream, as it has been since ticket 11, and now it is one
+// stream the sandbox asked for: what this holds is the contract, and under the
+// contract is a tunnel it is told nothing about.
+func (c exercise) exchange(ctx context.Context, box sandbox.Sandbox, peer string, pass, seq int) (string, error) {
 	request := fmt.Sprintf("pass=%d seq=%d %s", pass, seq, c.Payload)
 	exchangeCtx, cancel := context.WithTimeout(ctx, c.Timeout.Duration)
 	defer cancel()
-	response, err := channel.Exchange(exchangeCtx, []byte(request))
+	stream, err := box.Open(exchangeCtx, peer)
+	if err != nil {
+		return "", err
+	}
+	defer stream.Close()
+	response, err := roundTrip(stream, []byte(request))
 	if err != nil {
 		return "", err
 	}
@@ -283,6 +298,29 @@ func (c exercise) exchange(ctx context.Context, channel *tunneld.Channel, pass, 
 		return "", fmt.Errorf("peer answered %q, want <sandbox>:%q", response, request)
 	}
 	return answerer, nil
+}
+
+// roundTrip is the whole of the protocol the exercise runs over a stream: send
+// the request, say it is finished, read the answer to its end.
+//
+// The two half-closes are the framing, and they are why [sandbox.Stream] has
+// CloseWrite in it at all. Without this side's, the peer waits for a request it
+// has already received; without the peer's, this waits for a response it
+// already has. Nothing declares a length, because the end of a direction is the
+// length — the same bargain package tunnel's exchange frame makes, arrived at
+// from the other side.
+func roundTrip(s sandbox.Stream, request []byte) ([]byte, error) {
+	if _, err := s.Write(request); err != nil {
+		return nil, fmt.Errorf("sending the request: %w", err)
+	}
+	if err := s.CloseWrite(); err != nil {
+		return nil, fmt.Errorf("ending the request: %w", err)
+	}
+	response, err := io.ReadAll(s)
+	if err != nil {
+		return nil, fmt.Errorf("reading the response: %w", err)
+	}
+	return response, nil
 }
 
 // summarize is the distribution, not the mean alone: a handshake hidden inside

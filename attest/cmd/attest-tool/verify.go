@@ -17,7 +17,6 @@ package main
 import (
 	"context"
 	"crypto/ed25519"
-	"encoding/hex"
 	"errors"
 	"flag"
 	"fmt"
@@ -296,7 +295,7 @@ func (o options) readTrust(p *presented) error {
 	if p.binding, err = o.bindingFor(p.publicKey); err != nil {
 		return err
 	}
-	if p.authorKey, err = readAuthorKey(o.author); err != nil {
+	if p.authorKey, err = attest.ReadAuthorKey(o.author); err != nil {
 		return err
 	}
 	if o.now != "" {
@@ -475,25 +474,6 @@ func digestList(values [][]byte) string {
 		parts[i] = fmt.Sprintf("%x", v)
 	}
 	return strings.Join(parts, " | ")
-}
-
-// readAuthorKey reads the reference value author's public key from a file
-// holding either the 32 raw bytes or their hexadecimal, with surrounding
-// whitespace ignored. Both exist in the wild: emit-refvals prints hexadecimal
-// and a key derived with openssl is raw.
-func readAuthorKey(path string) (ed25519.PublicKey, error) {
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("reading the reference value author's public key: %w", err)
-	}
-	if len(raw) == ed25519.PublicKeySize {
-		return ed25519.PublicKey(raw), nil
-	}
-	decoded, err := hex.DecodeString(strings.TrimSpace(string(raw)))
-	if err != nil || len(decoded) != ed25519.PublicKeySize {
-		return nil, fmt.Errorf("%s is neither %d raw bytes nor their hexadecimal", path, ed25519.PublicKeySize)
-	}
-	return ed25519.PublicKey(decoded), nil
 }
 
 // admittedPolicy renders the peer policy a reference value admits, saying so in

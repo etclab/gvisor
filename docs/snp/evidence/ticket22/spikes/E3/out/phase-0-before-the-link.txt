@@ -1,0 +1,36 @@
+e3: ================ PHASE 0: the ceiling before the link ================
+e3: the namespace as it stands, before anything is installed:
+e3: link: 1: lo: <LOOPBACK> mtu 65536 qdisc noop state DOWN mode DEFAULT group default qlen 1000\    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+e3: (an empty ruleset above means the kernel is holding nothing yet)
+e3: installing /home/pniroula/Projects/gvisor-t22/docs/snp/evidence/ticket22/spikes/E3/ceiling.nft — a constant file; no config device has been looked for yet
+e3: installed, with no eth0 in this namespace and lo still down:
+table inet attested_tunnel {
+	chain input {
+		type filter hook input priority filter; policy drop;
+		iifname "lo" accept
+		meta nfproto ipv4 iifname "eth0" udp sport 4433 accept
+		meta nfproto ipv4 iifname "eth0" udp dport 4433 accept
+	}
+
+	chain output {
+		type filter hook output priority filter; policy drop;
+		oifname "lo" accept
+		meta l4proto tcp reject with tcp reset
+		ip daddr 169.254.0.0/16 reject with icmpx admin-prohibited
+		meta nfproto ipv4 oifname "eth0" udp dport 4433 accept
+		meta nfproto ipv4 oifname "eth0" udp sport 4433 accept
+		reject with icmpx admin-prohibited
+	}
+
+	chain forward {
+		type filter hook forward priority filter; policy drop;
+	}
+}
+e3: why iifname and not iif: the same rule in the index-matching spelling,
+e3: against this same namespace with no eth0 in it:
+e3: nft: /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t22/dea855a8-a093-4031-b06c-61e8610e847c/scratchpad/E3/final/config/../e3-iif-variant.nft:4:5-10: Error: Interface does not exist
+e3: nft: oif "eth0" accept
+e3: nft:     ^^^^^^
+e3: nft -f with the oif spelling exited 1 (non-zero: Interface does not exist)
+e3: the ruleset is unchanged; the ceiling installed above is still the only table:
+table inet attested_tunnel

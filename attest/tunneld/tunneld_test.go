@@ -78,9 +78,13 @@ func admitting(measurements ...[]byte) attest.ReferenceValueSet {
 	return set
 }
 
-// somePolicyDigest stands in for the digest of a peer's own signed policy, where
-// a test builds a peer out of ratls directly instead of starting a tunneld to
-// build one.
+// somePolicyDigest is the digest a test peer presents, minted from its name.
+//
+// Since ticket 22 that is all a digest is to the code under test: a number its
+// caller gives it, which the measured guest's command takes from the egress
+// ceiling compiled into its image and a test takes from here. These tests wrote
+// and hashed a policy document for it until then, because the tunneld loaded
+// one off its config device and presented what it found.
 //
 // Every set these tests write lists no policy_digest on any value, so every
 // entry admits any policy and the number here decides nothing. What matters is
@@ -88,45 +92,6 @@ func admitting(measurements ...[]byte) attest.ReferenceValueSet {
 // v2 must. The tests that are about the digest name their own.
 func somePolicyDigest(who string) attest.PolicyDigest {
 	return sha256.Sum256([]byte("a test peer's policy: " + who))
-}
-
-// everyImage is what a test tunneld's own policy forwards to: all three images
-// this package's fixtures use.
-//
-// forward_to is the dialing side's check and it is not what most of these tests
-// are about, so the default policy says yes to every peer they can build and the
-// verdicts stay the reference value set's. The tests that *are* about forward_to
-// write their own policy.
-func everyImage() [][]byte { return [][]byte{imageA, imageB, imageNone} }
-
-// writePolicy writes a signed policy forwarding to the given images and returns
-// the document path. It is the second document a tunneld loads, beside the set,
-// and its digest is the identity that tunneld presents.
-func writePolicy(t *testing.T, forwardTo [][]byte, key ed25519.PrivateKey) string {
-	t.Helper()
-	doc, err := attest.MarshalPolicy(attest.Policy{ForwardTo: forwardTo})
-	if err != nil {
-		t.Fatalf("marshal policy: %v", err)
-	}
-	sig, err := attest.SignPolicy(doc, key)
-	if err != nil {
-		t.Fatalf("sign policy: %v", err)
-	}
-	path := filepath.Join(t.TempDir(), "policy.json")
-	fixture.WriteSigned(t, path, doc, sig)
-	return path
-}
-
-// policyDigestOf is the digest a tunneld loading a policy forwarding to these
-// images will present. It renders the document exactly as writePolicy does, so
-// the two agree by construction.
-func policyDigestOf(t *testing.T, forwardTo [][]byte) attest.PolicyDigest {
-	t.Helper()
-	doc, err := attest.MarshalPolicy(attest.Policy{ForwardTo: forwardTo})
-	if err != nil {
-		t.Fatalf("marshal policy: %v", err)
-	}
-	return attest.PolicyDigestOf(doc)
 }
 
 // writeSet writes a signed reference value set and returns the document path.
@@ -160,21 +125,31 @@ func echo(prefix string, n *node) tunneld.Handler {
 
 // start runs a tunneld on an ephemeral port: its platform measures image,
 // its set admits admits, and it knows peers.
-func start(t *testing.T, sandbox string, image []byte, admits attest.ReferenceValueSet, peers tunneld.PeerTable) *node {
+//
+// adjust, if any is given, gets a hand on the configuration before the tunneld
+// is built. It is how a test whose subject is a field the four parameters above
+// do not carry states it — the policy this tunneld pushes, how long it waits
+// for the acknowledgement, and where its refusals go (push_test.go) — without a
+// second starter beside this one.
+func start(t *testing.T, sandbox string, image []byte, admits attest.ReferenceValueSet, peers tunneld.PeerTable, adjust ...func(*tunneld.Config)) *node {
 	t.Helper()
 	p := platform(t, image)
 	n := &node{}
-	td, err := tunneld.New(context.Background(), tunneld.Config{
+	cfg := tunneld.Config{
 		SandboxID:             sandbox,
 		Acquirer:              p,
 		Verifier:              fixture.VerifierTrusting(t, p),
 		ReferenceValueSetPath: writeSet(t, admits, authorPriv),
-		PolicyPath:            writePolicy(t, everyImage(), authorPriv),
+		PolicyDigest:          somePolicyDigest(sandbox),
 		AuthorPublicKey:       authorPub,
 		Peers:                 peers,
 		ListenAddr:            "127.0.0.1:0",
 		Handler:               echo(sandbox+":", n),
-	})
+	}
+	for _, hand := range adjust {
+		hand(&cfg)
+	}
+	td, err := tunneld.New(context.Background(), cfg)
 	if err != nil {
 		t.Fatalf("tunneld.New(%s): %v", sandbox, err)
 	}
@@ -285,7 +260,7 @@ func TestPeerPresentingNoEvidenceIsRefused(t *testing.T) {
 		Acquirer:              evidenceless{p},
 		Verifier:              fixture.VerifierTrusting(t, p),
 		ReferenceValueSetPath: writeSet(t, admitting(imageB), authorPriv),
-		PolicyPath:            writePolicy(t, everyImage(), authorPriv),
+		PolicyDigest:          somePolicyDigest("a"),
 		AuthorPublicKey:       authorPub,
 		Peers:                 tunneld.PeerTable{"b": b.Addr().String()},
 		ListenAddr:            "127.0.0.1:0",
@@ -303,13 +278,15 @@ func TestPeerPresentingNoEvidenceIsRefused(t *testing.T) {
 	}
 }
 
-// TestRefusesToStartWithoutAnAcceptedSetOrPolicy: a tunneld loads two signed
-// documents and there is no path that starts without either.
+// TestRefusesToStartWithoutAnAcceptedSet: a tunneld loads one signed document
+// and there is no path that starts without it.
 //
-// The two failures keep separate sentinels. A caller that asked why a guest will
-// not boot should not have to read the text to learn which of the two files on
-// the config device is the one to fix.
-func TestRefusesToStartWithoutAnAcceptedSetOrPolicy(t *testing.T) {
+// It loaded two until ticket 22 — its set and its own policy — and the two
+// failures kept separate sentinels so that a caller asking why a guest will not
+// boot did not have to read the text to learn which file to fix. The policy is
+// not on the config device any more and there is one document left, so
+// [attest.ErrSetRefused] is the whole of the answer.
+func TestRefusesToStartWithoutAnAcceptedSet(t *testing.T) {
 	p := platform(t, imageA)
 	base := tunneld.Config{
 		SandboxID:             "a",
@@ -318,7 +295,7 @@ func TestRefusesToStartWithoutAnAcceptedSetOrPolicy(t *testing.T) {
 		AuthorPublicKey:       authorPub,
 		ListenAddr:            "127.0.0.1:0",
 		ReferenceValueSetPath: writeSet(t, admitting(imageB), authorPriv),
-		PolicyPath:            writePolicy(t, everyImage(), authorPriv),
+		PolicyDigest:          somePolicyDigest("a"),
 	}
 	_, otherAuthor, _ := ed25519.GenerateKey(rand.Reader)
 
@@ -336,30 +313,15 @@ func TestRefusesToStartWithoutAnAcceptedSetOrPolicy(t *testing.T) {
 			t.Errorf("%s set: New = %v, %v; want ErrSetRefused", name, td, err)
 		}
 	}
-	for name, path := range map[string]string{
-		"missing":               filepath.Join(t.TempDir(), "absent.json"),
-		"signed by another":     writePolicy(t, everyImage(), otherAuthor),
-		"a reference value set": writeSet(t, admitting(imageB), authorPriv),
-	} {
-		cfg := base
-		cfg.PolicyPath = path
-		td, err := tunneld.New(context.Background(), cfg)
-		if !errors.Is(err, attest.ErrPolicyRefused) {
-			if td != nil {
-				td.Close()
-			}
-			t.Errorf("%s policy: New = %v, %v; want ErrPolicyRefused", name, td, err)
-		}
-	}
 
-	// Control: the same configuration with both documents accepted starts, and
-	// presents the digest of the policy it loaded.
+	// Control: the same configuration with the set accepted starts, and
+	// presents the digest it was given.
 	td, err := tunneld.New(context.Background(), base)
 	if err != nil {
-		t.Fatalf("control: New with an accepted set and policy: %v", err)
+		t.Fatalf("control: New with an accepted set: %v", err)
 	}
 	defer td.Close()
-	if got, want := td.PolicyDigest(), policyDigestOf(t, everyImage()); got != want {
-		t.Errorf("the tunneld presents policy %s; its own document is %s", got, want)
+	if got, want := td.PolicyDigest(), somePolicyDigest("a"); got != want {
+		t.Errorf("the tunneld presents policy %s; it was given %s", got, want)
 	}
 }

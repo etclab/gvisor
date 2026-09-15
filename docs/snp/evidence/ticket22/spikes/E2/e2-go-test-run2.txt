@@ -1,0 +1,14 @@
+=== RUN   TestE2PushTiming
+2026/09/15 15:12:34 failed to sufficiently increase receive buffer size (was: 208 kiB, wanted: 7168 kiB, got: 416 kiB). See https://github.com/quic-go/quic-go/wiki/UDP-Buffer-Sizes for details.
+    e2_policypush_test.go:486: 200 iterations after 20 warmup, one tunnel, 127.0.0.1, milliseconds
+    e2_policypush_test.go:487: series                           req B     resp B      p50      p90      p99      min      max     mean
+    e2_policypush_test.go:489: round-trip floor (5 B echo)          5         15    0.472    0.757    2.034    0.332    2.764    0.536
+    e2_policypush_test.go:489: push 2 KiB                        2048         45    0.868    1.118    1.784    0.568    2.423    0.899
+    e2_policypush_test.go:489: echo 2 KiB                        2048       2058    0.947    1.300    1.704    0.594    4.099    0.996
+    e2_policypush_test.go:489: push 64 KiB                      65536         45    4.956    7.205   14.807    2.959   21.147    5.432
+    e2_policypush_test.go:489: echo 64 KiB                      65536      65546    6.659    9.583   19.003    3.086   20.841    7.129
+    e2_policypush_test.go:492: b answered 1100 exchanges, 440 pushes, 440 acked
+    e2_policypush_test.go:495: frame payload bound is 16777216 bytes (attest/tunnel/tunnel.go:348); 64 KiB is 0.39% of it
+--- PASS: TestE2PushTiming (3.72s)
+PASS
+ok  	gvisor.dev/gvisor/attest/tunneld	3.784s

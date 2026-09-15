@@ -236,6 +236,9 @@ ticket 05 and 08 replay tests import it. The three-part rule failed on its secon
 this would mean a package both import, which is a new exported surface for a key file reader, and
 the ticket removes rather than redesigns.
 
+*(Taken up by ticket 22, which rebuilt the image: it is `attest.ReadAuthorKey` now, beside the
+loader every caller hands the key to.)*
+
 **Two console strings that name commands that no longer exist.**
 `cmd/tunneld/selfcheck.go:132` tells an operator to feed the base64 evidence to
 `attest/cmd/verify-evidence`, and `:144` calls the key file `verify-evidence -key`.
@@ -245,6 +248,11 @@ reason the flag-set names were kept: `cmd/tunneld` is the measured binary and `a
 frozen, and changing a string inside either means a new measurement or a change to a package this
 ticket promised not to touch. A later ticket that rebuilds the image can change the tunneld string
 in the same commit that re-measures it.
+
+*(Ticket 22 was that ticket, for the two `cmd/tunneld` strings: they say `attest-tool verify`
+now, and the image was re-measured around them —
+`docs/snp/evidence/ticket22/ceiling-digest.txt`. `attest/tsm/tsm.go:116` is untouched and still
+frozen.)*
 
 **`tdxfake.Config.TeeTCBSvn` and `.CollateralNextUpdate`.** No test sets either, and no code
 outside the fake mentions them. They are read where they are declared — `tdxfake.go:283` and

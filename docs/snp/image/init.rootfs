@@ -2,10 +2,12 @@
 # /sbin/init of the measured root filesystem.
 #
 # Mounts the kernel filesystems (all noexec), loads the report interface
-# driver, proves to the console that no writable path is executable, and runs
-# the embedded binary. When it exits the guest powers off: no shell is ever
-# spawned (the busybox that runs this script is present, but nothing listens
-# and nothing else is run), no getty, nothing else.
+# driver, proves to the console that no writable path is executable, brings
+# loopback up, installs the egress ceiling the binary carries, runs that binary
+# — with the policy to push, if the config device carries one — and proves the
+# ceiling held. When it exits the guest powers off: no
+# shell is ever spawned (the busybox that runs this script is present, but
+# nothing listens and nothing else is run), no getty, nothing else.
 export PATH=/bin:/sbin:/usr/bin
 say() { echo "init: $*"; }
 
@@ -45,9 +47,108 @@ if [ $bad != 0 ]; then
 fi
 say "no writable path is executable"
 
-say "running /usr/bin/tunneld"
-/usr/bin/tunneld
+# Loopback, before the ceiling and before anything that could be refused.
+#
+# It is not a convenience. The ceiling's output chain ends in rejects rather
+# than in its drop policy so that a socket learns at once that a rule refused
+# it, and netfilter delivers the refusal it builds — a TCP reset, an ICMP
+# "administratively prohibited" — back at the local socket over lo. With lo
+# down that refusal is dropped on the way back and the attempt reads as a
+# timeout, which is what a black hole, a missing route and a firewall all look
+# like (attest/cmd/tunneld/egress.go, attest/ceiling/ceiling.nft). Measured
+# rather than assumed, in a namespace addressed like this guest: with lo down
+# the two TCP probes below time out and with it up all four are refused.
+#
+# lo carries nothing between the guests — the segment is eth0, which tunneld
+# brings up out of the run configuration — so this widens nothing. The ceiling
+# accepts lo in both directions and always has.
+# The netfilter modules the ceiling is installed through, in dependency order.
+# There is no modprobe in this guest and the kernel's request_module has no
+# userspace helper to call, so each one is named and loaded here. Without them
+# the install below fails with "socket: protocol not supported" and this guest
+# powers off rather than running with no ceiling at all.
+for m in nfnetlink nf_tables nf_reject_ipv4 nf_reject_ipv6 nft_reject nft_reject_inet; do
+  insmod "/lib/modules/$m.ko" || say "WARNING: $m.ko did not load; the ceiling will not install"
+done
+say "netfilter loaded: nf_tables, and the reject expressions the ceiling's output chain ends in"
+
+say "bringing loopback up (the kernel delivers a rule's refusal to the local socket over it)"
+ip link set lo up || say "WARNING: loopback would not come up; a refused attempt will read as a timeout"
+
+# The egress ceiling, before tunneld and therefore before the link: tunneld
+# brings its own interface up out of the run configuration, so this is the last
+# moment at which nothing in this guest can address a packet. The rule set is a
+# constant inside the binary and inside the measurement with it (attest/ceiling,
+# attest/cmd/tunneld/egress.go) — it reads no file, takes no argument and names
+# no peer, so it needs neither the config device nor the author key. It went in
+# after the config device was read until ticket 22, because it was generated
+# from the signed policy that lived there.
+#
+# A ceiling that will not install is a guest that would run unconstrained, so
+# this powers off rather than continuing. It needs the nf_tables modules loaded
+# above; if a build of this image drops one of them, this is where that shows,
+# as "socket: protocol not supported".
+say "installing the egress ceiling this image carries"
+if ! /usr/bin/tunneld -egress install; then
+  say "FATAL: the egress ceiling would not install; powering off without running tunneld"
+  sync
+  poweroff -f
+fi
+
+# A policy to push, if the config device carries one (ticket 22,
+# docs/policy-push.md). The file is looked for rather than named
+# unconditionally, because no policy is the ordinary case — it is what every
+# scenario recorded before ticket 22 runs — and a tunneld handed a path it
+# cannot read refuses to start.
+#
+# The name is deliberately not policy.json. That document and its signature are
+# what ticket 22 took OFF the config device, and tunneld refuses to start on a
+# device carrying either half of it. This is a different document with a
+# different life: nothing here loads it, parses it or enforces it. It is handed
+# to a peer over a tunnel that peer was already admitted on, and what makes it
+# trustworthy there is the evidence this guest presented — not the disk it was
+# read from, which is the host's and is not measured.
+PUSH=
+if [ -f /config/push-policy.json ]; then
+  PUSH="-push-policy /config/push-policy.json"
+  say "the config device carries a policy to push: /config/push-policy.json"
+fi
+
+say "running /usr/bin/tunneld $PUSH"
+/usr/bin/tunneld $PUSH
 rc=$?
-say "tunneld exited with status $rc; powering off"
+say "tunneld exited with status $rc"
+
+# ---- the proof that the ceiling held --------------------------------------
+# The probe attempts the egress the ceiling forbids and reports the errno, so
+# that "nothing left this guest" is told apart from "nothing was tried": EACCES
+# or EPERM is a rule refusing, ENETUNREACH is the routing table having nothing
+# to say, and the probe says as much itself on every line it writes.
+#
+# It runs here, after tunneld has exited, and that is the one thing about this
+# guest that differs from docs/snp/cloud/tdx/init.tdx, where the probe is step
+# 6. On TDX the initrd stands the link up itself and can prove the ceiling
+# before the workload; here tunneld is what brings this guest's link up, out of
+# the run configuration on the config device that this script never reads. Ahead
+# of tunneld there is no address, so every attempt would fail in the routing
+# table without reaching a rule and the transcript would demonstrate nothing.
+# The ceiling itself is installed before the link either way, which is the
+# property that matters: the window in which this guest is up and unconstrained
+# has length zero.
+#
+# The default route is added for that same reason and for nothing else. Each of
+# the four built-in probes names an address off this segment, so the routing
+# table has to have something to say about them or the rule is never reached;
+# an on-link default route is the smallest thing that says it. Nothing leaves
+# on it: the output hook rejects these packets before the kernel ever resolves
+# a neighbour, so the segment carries no ARP for any of the four. And it is
+# added after the exercise is over, on a guest that powers off in the next
+# breath, so it can widen nothing that ran.
+say "proving the egress ceiling held, from inside the guest:"
+ip route add default dev eth0 2>/dev/null \
+  || say "no default route could be added; the attempts below will read as unrouted rather than refused"
+/usr/bin/tunneld -egress probe || say "WARNING: the egress probe reached something the ceiling forbids"
+
+say "powering off"
 sync
 poweroff -f

@@ -34,3 +34,68 @@ content-type: binary/octet-stream
 date: Tue, 08 Sep 2026 19:56:30 GMT
 sha256 c114be5d5ca7aab2d37817eca55aa8a2353853809904ff3695b31c26bcb7465b  rootcrl.body
 
+=== Intel PCS collateral re-fetch, 2026-09-15T19:05:51Z ===
+The 2026-09-08 copy above expires 2026-10-08, and ADR-0007 makes re-provisioning before that
+date a calendar task rather than an incident: past it this directory refuses every TDX peer,
+however healthy. Same four requests, same FMSPC 00806f050000 and PCK CA 'platform', same URLs,
+issued with `curl -sS -D <name>.headers -o <name>.body`. All eight files in this directory are
+the ones this fetch wrote; the previous copy is not kept here (git has it).
+
+--- tcbinfo-00806f050000
+GET https://api.trustedservices.intel.com/tdx/certification/v4/tcb?fmspc=00806f050000
+http 200, 7953 bytes, 0.198645s
+Content-Type: application/json
+TCB-Info-Issuer-Chain: <PEM chain, url-encoded, kept in the .headers file>
+Date: Tue, 15 Sep 2026 19:05:51 GMT
+sha256 f8e22141176bb08292952ae94aa908900bdd1163358275ab73adcaa8116293ba  tcbinfo-00806f050000.body
+
+--- qeidentity
+GET https://api.trustedservices.intel.com/tdx/certification/v4/qe/identity
+http 200, 624 bytes, 0.147337s
+Content-Type: application/json
+SGX-Enclave-Identity-Issuer-Chain: <PEM chain, url-encoded, kept in the .headers file>
+Date: Tue, 15 Sep 2026 19:05:51 GMT
+sha256 516868aab1f065da154a609d50b16c015153738386572a7712f24ed73afc7239  qeidentity.body
+
+--- pckcrl-platform
+GET https://api.trustedservices.intel.com/sgx/certification/v4/pckcrl?ca=platform&encoding=der
+http 200, 3356 bytes, 0.152321s
+Content-Type: application/pkix-crl
+SGX-PCK-CRL-Issuer-Chain: <PEM chain, url-encoded, kept in the .headers file>
+Date: Tue, 15 Sep 2026 19:05:51 GMT
+sha256 e71cf6bea348a90ee83cf05b7d84ad2002701d797b75c7b63a31807383026bb9  pckcrl-platform.body
+
+--- rootcrl
+GET https://certificates.trustedservices.intel.com/IntelSGXRootCA.der
+http 200, 294 bytes, 0.287626s
+content-type: binary/octet-stream
+date: Tue, 15 Sep 2026 19:05:49 GMT
+sha256 c114be5d5ca7aab2d37817eca55aa8a2353853809904ff3695b31c26bcb7465b  rootcrl.body
+(byte for byte the body fetched on 2026-09-08 -- Intel has not reissued the root CA CRL since
+2026-02-26. Only rootcrl.headers changed, and only in its Date and CloudFront fields.)
+
+--- validity window this fetch bought
+tcbinfo-00806f050000  issueDate 2026-09-15T18:50:02Z  nextUpdate 2026-10-15T18:50:02Z
+qeidentity            issueDate 2026-09-15T18:17:59Z  nextUpdate 2026-10-15T18:17:59Z
+pckcrl-platform       thisUpdate 2026-09-15T17:59:38Z nextUpdate 2026-10-15T17:59:38Z
+rootcrl               thisUpdate 2026-02-26T13:04:00Z nextUpdate 2027-02-26T13:04:00Z
+
+The earliest of the four -- what TDXCollateral.EarliestExpiry reports, and so the date this
+directory has to be re-provisioned before -- is the PCK CRL's, 2026-10-15T17:59:38Z. The three
+signing chains are far outside it: Intel SGX TCB Signing notAfter 2032-05-06T09:25:00Z, Intel
+SGX PCK Platform CA notAfter 2033-05-21T10:50:10Z, Intel SGX Root CA notAfter 2049-12-31.
+
+--- what did not change
+tcbEvaluationDataNumber is still 20, and the six TCB levels are identical to the 2026-09-08
+copy, component for component, tcbDate for tcbDate, status for status; qeidentity still holds
+the one level, isvsvn 4, UpToDate. So there has been no TCB recovery between the two fetches:
+the recorded platform is UpToDate at evaluation number 20 exactly as collateral.txt describes,
+and no reference value's `minimum_tcb` floor has to move. The issuer chains in the three
+.headers files are byte identical to the previous fetch; what differs in them is Intel's
+per-request Date and Request-ID.
+
+Replayed with the ticket 21 harness (docs/snp/evidence/ticket21/harness/) across all 64 live
+invocations, exactly one transcript changes, and only inside a quoted date: tdx-smoke-future,
+which pins -now 2030-01-01 and is refused for expired collateral either way, now names
+2026-10-15T18:50:02Z where it named 2026-10-08T19:20:02Z. Every other verdict, reason and exit
+status is byte identical, and `go test ./... -count=1` in attest/ passes unchanged.

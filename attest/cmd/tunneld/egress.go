@@ -15,13 +15,11 @@
 package main
 
 import (
-	"crypto/ed25519"
 	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
 	"net"
-	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -32,37 +30,46 @@ import (
 	"github.com/google/nftables/expr"
 	"golang.org/x/sys/unix"
 
-	"gvisor.dev/gvisor/attest"
+	"gvisor.dev/gvisor/attest/ceiling"
 )
 
-// The egress policy: the netfilter rule set this sandbox's own signed policy
-// implies, the code that installs it, and the probe that proves it holds.
+// The egress ceiling: the netfilter rule set every guest built from this image
+// installs, the code that installs it, and the probe that proves it holds.
 //
-// # Why this lives in tunneld and not in a second binary
+// # Why the rule set is a constant
 //
-// The rule set is generated from `policy.json` — the document whose digest
-// every peer checks — and a document is only worth generating rules from if the
-// generator checked the author's signature over it first. tunneld already holds
-// the author key that arrived inside the launch measurement
-// (/etc/attested-tunnel/author.pub, ADR-0004) and already knows how to refuse a
-// policy that key did not sign. A separate installer would be a second loader
-// and a second signature check, and two loaders that disagree about what a
-// policy says is exactly the failure this design cannot survive. So the guest's
-// init runs this binary in a mode that ends after the rules are in the kernel,
-// and then runs it again to serve.
+// It was generated from `policy.json` until ticket 22, and the argument for
+// generating it here was that tunneld already held the author key that judged
+// that document's signature, so no second loader could disagree about what the
+// policy said. The argument was sound and the arrangement was still wrong. A
+// rule set derived from a document on the config device is a rule set the host
+// supplies the inputs to; it cannot be installed until that device has been
+// found and mounted, so the guest ran unconstrained for as long as finding a
+// disk takes; and a verifier reading the image could not say what the guest
+// would enforce. What replaces it is shorter and stronger: the rule set is a
+// constant in the measured image ([ceiling]), so there is no document to check,
+// nothing outside the launch measurement contributes a byte of it, and it goes
+// in before the link is up.
 //
-// # What the policy contributes and what the peer table contributes
+// # What the ceiling grants, and what decides whom this sandbox talks to
 //
-// [attest.Egress] says one thing today, and it says it in the fail-closed
-// direction: `unattested: false` — no traffic may leave this sandbox to a peer
-// nothing judged. That is the whole of the rule set's *shape*: both base chains
-// default to drop, and the output chain ends in a reject. The peer table then
-// says which addresses are the exception, and the run configuration says on
-// which port. A policy claiming `unattested: true` never reaches here, because
-// attest/policyfile.go refuses to load one — nothing implements permitting it,
-// and a digest that vouched for a promise nobody keeps would be worse than no
-// digest at all. It is checked again here anyway, because this is the code that
-// would have to honour it.
+// Loopback in both directions, and udp/[ceiling.Port] on [ceiling.Interface] to
+// and from any address. Nothing else: no DHCP, no DNS, no NTP, no ICMP, no
+// IPv6, no forwarding, and not the provider's metadata server, which is carved
+// out of the tunnel-port grant by name because 169.254.169.254 is an address
+// and "any address" would otherwise include it.
+//
+// The ceiling names no peer and must not. peers.json is on the config device,
+// and a ceiling that read it would be a ceiling the config device could widen,
+// which is the whole of what ticket 22 removes. Whom this sandbox will speak to
+// is decided at the attestation layer — the per-verifier allow-list in
+// reference-values.json — and by tunneld's own peer table, which refuses a name
+// it does not hold before a socket is opened. Two mechanisms, disjoint: this
+// one bounds what the guest can reach at all, that one decides whom it will
+// speak to. The cost is stated plainly: under the ceiling alone a compromised
+// guest could send udp/4433 to any address on the VPC. It cannot establish
+// anything there without evidence the allow-list admits, and it cannot reach
+// the metadata server at all.
 //
 // # Reject rather than drop, on the way out
 //
@@ -123,128 +130,74 @@ type egressChain struct {
 	rules  []egressRule
 }
 
-// An egressRuleSet is the whole rule set a policy, a peer table and a run
-// configuration imply.
+// An egressRuleSet is the whole rule set. Since ticket 22 there is one of them
+// and it takes no inputs, so there is nothing here but the chains.
 type egressRuleSet struct {
-	// SandboxID, ListenPort and Peers are the inputs, kept so that the
-	// rendering can name them.
-	SandboxID  string
-	ListenPort uint16
-	Peers      []egressPeer
-
 	chains []egressChain
 }
 
-// An egressPeer is one entry of the peer table, resolved.
-type egressPeer struct {
-	Name string
-	IP   net.IP
-	Port uint16
-}
+// ceilingLinkLocal is the block the ceiling refuses before it reaches the
+// tunnel-port grant: 169.254.0.0/16, which is where every cloud provider's
+// metadata server lives. It is universal rather than per-image, which is why it
+// is not one of [ceiling]'s two constants.
+var ceilingLinkLocal = net.IPNet{IP: net.IPv4(169, 254, 0, 0).To4(), Mask: net.CIDRMask(16, 32)}
 
-// buildEgressRuleSet derives the rule set from the loaded policy, the peer
-// table and the run configuration.
+// buildCeiling is the ceiling, as the kernel has to be handed it.
 //
-// It takes a loaded [attest.Policy] rather than a path, because a policy that
-// was not loaded is a policy whose signature nobody checked, and there is no
-// way to obtain one of those from attest/policyfile.go by accident.
-func buildEgressRuleSet(policy attest.Policy, peers map[string]string, listen string) (*egressRuleSet, error) {
-	if policy.Egress.Unattested {
-		return nil, errors.New("the policy permits unattested egress; nothing here generates rules for that, and a policy claiming it does not load")
-	}
-	listenPort, err := portOf(listen)
-	if err != nil {
-		return nil, fmt.Errorf("the run configuration's listen address %q: %w", listen, err)
-	}
-	rs := &egressRuleSet{ListenPort: listenPort}
-	for _, name := range sortedKeys(peers) {
-		host, port, err := net.SplitHostPort(peers[name])
-		if err != nil {
-			return nil, fmt.Errorf("peer %q is %q, which is not host:port: %w", name, peers[name], err)
-		}
-		ip := net.ParseIP(host)
-		if ip == nil || ip.To4() == nil {
-			// A name would have to be resolved, and a guest that resolves
-			// names has a resolver to reach, which is the egress this rule set
-			// exists to forbid.
-			return nil, fmt.Errorf("peer %q is %q; the rule set needs a literal IPv4 address, because a guest that could resolve a name could reach a resolver", name, peers[name])
-		}
-		n, err := strconv.ParseUint(port, 10, 16)
-		if err != nil {
-			return nil, fmt.Errorf("peer %q has port %q: %w", name, port, err)
-		}
-		rs.Peers = append(rs.Peers, egressPeer{Name: name, IP: ip.To4(), Port: uint16(n)})
-	}
-
+// Note the signature: no policy, no peer table, no listen address, and no error
+// return, because a constant cannot fail to be built. The text beside it —
+// [ceiling.Text] — is the same rule set for a reader, and a guard test in this
+// package's tests holds the two together.
+func buildCeiling() *egressRuleSet {
 	input := egressChain{name: egressChainInput, hook: nftables.ChainHookInput, policy: nftables.ChainPolicyDrop}
 	output := egressChain{name: egressChainOutput, hook: nftables.ChainHookOutput, policy: nftables.ChainPolicyDrop}
 	forward := egressChain{name: egressChainForward, hook: nftables.ChainHookForward, policy: nftables.ChainPolicyDrop}
 
-	input.rules = append(input.rules, ifaceRule(expr.MetaKeyIIFNAME, "lo", "iif \"lo\" accept"))
-	output.rules = append(output.rules, ifaceRule(expr.MetaKeyOIFNAME, "lo", "oif \"lo\" accept"))
+	// Loopback, so that the kernel can deliver a rule's own refusal back to the
+	// socket that tripped it.
+	input.rules = append(input.rules, ifaceRule(expr.MetaKeyIIFNAME, "lo", "iifname \"lo\" accept"))
+	output.rules = append(output.rules, ifaceRule(expr.MetaKeyOIFNAME, "lo", "oifname \"lo\" accept"))
 
-	for _, p := range rs.Peers {
-		// Outbound: this sandbox dialing the peer's listener, and this
-		// sandbox answering from its own listener. Two rules rather than one,
-		// because the ephemeral port of whichever side dialled is not
-		// something either side may name in advance.
-		output.rules = append(output.rules,
-			peerRule(peerRuleSpec{
-				addrOffset: 16, addrLabel: "ip daddr",
-				portOffset: 2, portLabel: "udp dport",
-				ip: p.IP, port: p.Port,
-				why: fmt.Sprintf("dial peer %q", p.Name),
-			}),
-			peerRule(peerRuleSpec{
-				addrOffset: 16, addrLabel: "ip daddr",
-				portOffset: 0, portLabel: "udp sport",
-				ip: p.IP, port: rs.ListenPort,
-				why: fmt.Sprintf("answer peer %q from this sandbox's listener", p.Name),
-			}),
-		)
-		// Inbound: the peer answering a dial of ours, and the peer dialing
-		// this sandbox's listener.
-		input.rules = append(input.rules,
-			peerRule(peerRuleSpec{
-				addrOffset: 12, addrLabel: "ip saddr",
-				portOffset: 0, portLabel: "udp sport",
-				ip: p.IP, port: p.Port,
-				why: fmt.Sprintf("peer %q answering", p.Name),
-			}),
-			peerRule(peerRuleSpec{
-				addrOffset: 12, addrLabel: "ip saddr",
-				portOffset: 2, portLabel: "udp dport",
-				ip: p.IP, port: rs.ListenPort,
-				why: fmt.Sprintf("peer %q dialing this sandbox's listener", p.Name),
-			}),
-		)
-	}
+	// The tunnel port on the VPC link, to and from any address. Two rules per
+	// direction for the same reason the policy-driven set had two per peer: the
+	// ephemeral port of whichever side dialled is not something either side may
+	// name in advance.
+	input.rules = append(input.rules,
+		portRule(expr.MetaKeyIIFNAME, "iifname", 0, "udp sport", "a peer answering a dial of ours"),
+		portRule(expr.MetaKeyIIFNAME, "iifname", 2, "udp dport", "a peer dialing this sandbox's listener"),
+	)
 
-	// Two refusals rather than one, because the kernel turns them into an
-	// answer at the socket by two different routes and only one of them works
-	// for TCP. A dropped or ICMP-rejected SYN leaves connect() waiting: the
-	// error ip_local_out returns is swallowed by tcp_connect, which ignores
-	// everything but ECONNREFUSED and lets the retransmit timer take over, and
-	// the ICMP that nf_reject builds arrives too late to matter. A reset does
-	// reach it, because a RST on a socket in SYN_SENT is exactly the thing TCP
-	// is listening for. UDP needs no such help: a datagram dropped in the
-	// output hook fails the sendmsg with EPERM there and then.
+	// The reset is hoisted above everything in the output chain. The ceiling
+	// permits no TCP at all, every accept below it is UDP-only, and a TCP
+	// attempt that fell through to the ICMP refusal at the bottom — or to the
+	// link-local carve-out under this line — reaches the socket as
+	// EHOSTUNREACH, which the probe classifies, correctly, as UNROUTED: "the
+	// rule was never reached; this does not demonstrate the policy". The same
+	// packets are refused either way; only the transcript differs, and the
+	// transcript is the deliverable (ticket 22, spike E3, finding 4).
 	output.rules = append(output.rules, egressRule{
-		text: "meta l4proto tcp reject with tcp reset        # so that connect() fails now rather than in a minute",
+		text: "meta l4proto tcp reject with tcp reset        # so that connect() fails now rather than in a minute, and says a rule did it",
 		exprs: []expr.Any{
 			&expr.Meta{Key: expr.MetaKeyL4PROTO, Register: 1},
 			&expr.Cmp{Op: expr.CmpOpEq, Register: 1, Data: []byte{unix.IPPROTO_TCP}},
 			&expr.Reject{Type: unix.NFT_REJECT_TCP_RST},
 		},
-	}, egressRule{
-		text: "reject with icmpx admin-prohibited            # everything else the policy did not permit",
+	})
+	// And the carve-out before the grant, so that the grant's "any address"
+	// does not include the provider's metadata server.
+	output.rules = append(output.rules, linkLocalRefusal())
+	output.rules = append(output.rules,
+		portRule(expr.MetaKeyOIFNAME, "oifname", 2, "udp dport", "dialing a peer"),
+		portRule(expr.MetaKeyOIFNAME, "oifname", 0, "udp sport", "answering a peer from this sandbox's listener"),
+	)
+	output.rules = append(output.rules, egressRule{
+		text: "reject with icmpx admin-prohibited            # everything the ceiling does not permit",
 		exprs: []expr.Any{
 			&expr.Reject{Type: unix.NFT_REJECT_ICMPX_UNREACH, Code: unix.NFT_REJECT_ICMPX_ADMIN_PROHIBITED},
 		},
 	})
 
-	rs.chains = []egressChain{input, output, forward}
-	return rs, nil
+	return &egressRuleSet{chains: []egressChain{input, output, forward}}
 }
 
 // ifaceRule matches one interface by name and accepts. The kernel compares the
@@ -262,58 +215,57 @@ func ifaceRule(key expr.MetaKey, name, text string) egressRule {
 	}
 }
 
-// peerRuleSpec describes one accept rule: which address field, which port
-// field, and what to put in them.
-type peerRuleSpec struct {
-	addrOffset uint32
-	addrLabel  string
-	portOffset uint32
-	portLabel  string
-	ip         net.IP
-	port       uint16
-	why        string
-}
-
-// peerRule renders and compiles one accept rule.
+// portRule accepts the tunnel port on the VPC link, in one direction, from and
+// to any address. It is what peerRule was before ticket 22, with the address
+// test taken out and an interface test put in — so it names no address, and
+// nothing on the config device can reach it.
 //
 // The nfproto test in front is not decoration. This is an `inet` table, so the
-// same chain sees IPv4 and IPv6 packets, and a payload offset counted from the
-// network header means different fields in the two. Without it the rule would
-// read some other part of an IPv6 header and accept on a coincidence.
-func peerRule(s peerRuleSpec) egressRule {
+// same chain sees IPv4 and IPv6 packets, and the tunnel is IPv4: without it an
+// IPv6 packet would be measured against an offset counted from a header it does
+// not have. With it, IPv6 falls through to the chain's drop policy.
+func portRule(ifaceKey expr.MetaKey, ifaceLabel string, portOffset uint32, portLabel, why string) egressRule {
+	padded := make([]byte, unix.IFNAMSIZ)
+	copy(padded, ceiling.Interface)
 	port := make([]byte, 2)
-	binary.BigEndian.PutUint16(port, s.port)
+	binary.BigEndian.PutUint16(port, ceiling.Port)
 	return egressRule{
-		text: fmt.Sprintf("meta nfproto ipv4 %s %s meta l4proto udp %s %d accept   # %s",
-			s.addrLabel, s.ip.String(), s.portLabel, s.port, s.why),
+		text: fmt.Sprintf("meta nfproto ipv4 %s %q meta l4proto udp %s %d accept   # %s",
+			ifaceLabel, ceiling.Interface, portLabel, ceiling.Port, why),
 		exprs: []expr.Any{
 			&expr.Meta{Key: expr.MetaKeyNFPROTO, Register: 1},
 			&expr.Cmp{Op: expr.CmpOpEq, Register: 1, Data: []byte{unix.NFPROTO_IPV4}},
-			&expr.Payload{DestRegister: 1, Base: expr.PayloadBaseNetworkHeader, Offset: s.addrOffset, Len: 4},
-			&expr.Cmp{Op: expr.CmpOpEq, Register: 1, Data: append([]byte(nil), s.ip.To4()...)},
+			&expr.Meta{Key: ifaceKey, Register: 1},
+			&expr.Cmp{Op: expr.CmpOpEq, Register: 1, Data: padded},
 			&expr.Meta{Key: expr.MetaKeyL4PROTO, Register: 1},
 			&expr.Cmp{Op: expr.CmpOpEq, Register: 1, Data: []byte{unix.IPPROTO_UDP}},
-			&expr.Payload{DestRegister: 1, Base: expr.PayloadBaseTransportHeader, Offset: s.portOffset, Len: 2},
+			&expr.Payload{DestRegister: 1, Base: expr.PayloadBaseTransportHeader, Offset: portOffset, Len: 2},
 			&expr.Cmp{Op: expr.CmpOpEq, Register: 1, Data: port},
 			&expr.Verdict{Kind: expr.VerdictAccept},
 		},
 	}
 }
 
-// portOf reads the port out of a host:port address.
-func portOf(addr string) (uint16, error) {
-	_, port, err := net.SplitHostPort(addr)
-	if err != nil {
-		return 0, err
+// linkLocalRefusal refuses [ceilingLinkLocal] outright.
+//
+// A prefix match is a mask-and-compare in the kernel: load the destination
+// address, AND it with the mask, compare the result with the network address.
+// It is the only rule this file emits that is not an exact comparison, and
+// [renderExprs] has a case for the Bitwise expression only because of it.
+func linkLocalRefusal() egressRule {
+	network := ceilingLinkLocal.IP.To4()
+	mask := []byte(ceilingLinkLocal.Mask)
+	return egressRule{
+		text: fmt.Sprintf("meta nfproto ipv4 ip daddr %s reject with icmpx admin-prohibited   # the provider's metadata server is an address, and the grant below says \"any\"", ceilingLinkLocal.String()),
+		exprs: []expr.Any{
+			&expr.Meta{Key: expr.MetaKeyNFPROTO, Register: 1},
+			&expr.Cmp{Op: expr.CmpOpEq, Register: 1, Data: []byte{unix.NFPROTO_IPV4}},
+			&expr.Payload{DestRegister: 1, Base: expr.PayloadBaseNetworkHeader, Offset: 16, Len: 4},
+			&expr.Bitwise{SourceRegister: 1, DestRegister: 1, Len: 4, Mask: mask, Xor: []byte{0, 0, 0, 0}},
+			&expr.Cmp{Op: expr.CmpOpEq, Register: 1, Data: append([]byte(nil), network...)},
+			&expr.Reject{Type: unix.NFT_REJECT_ICMPX_UNREACH, Code: unix.NFT_REJECT_ICMPX_ADMIN_PROHIBITED},
+		},
 	}
-	n, err := strconv.ParseUint(port, 10, 16)
-	if err != nil {
-		return 0, err
-	}
-	if n == 0 {
-		return 0, errors.New("port 0 asks the kernel to choose, and a rule set cannot name a port nobody has chosen yet")
-	}
-	return uint16(n), nil
 }
 
 // Render writes the rule set in nft's own syntax.
@@ -482,6 +434,15 @@ func hookWord(h *nftables.ChainHook) string {
 // by its Go type rather than guessing at it: a rule set read back is evidence,
 // and evidence that quietly prettifies what it did not understand is worth
 // less than one that says it did not understand.
+//
+// An interface test renders as iifname or oifname, and the distinction is not
+// cosmetic: iif compares an interface index resolved when the rule is loaded,
+// which fails outright against a namespace where the interface does not exist
+// yet, while iifname compares the name when a packet arrives — which is what
+// lets the ceiling go in before the link is up. This file has always built the
+// name form ([ifaceRule] and [portRule] pass MetaKeyIIFNAME and MetaKeyOIFNAME)
+// and until ticket 22 only the rendering said otherwise, so every egress
+// capture recorded before it described a rule the guest did not install.
 func renderExprs(exprs []expr.Any) string {
 	out := ""
 	add := func(format string, a ...any) {
@@ -491,16 +452,18 @@ func renderExprs(exprs []expr.Any) string {
 		out += fmt.Sprintf(format, a...)
 	}
 	// The comparison that follows a load is rendered with it, so a reader sees
-	// "ip daddr 10.128.0.41" rather than a register dance.
+	// "ip daddr 10.128.0.41" rather than a register dance, and the mask a
+	// Bitwise left behind is carried to the comparison it belongs to.
 	var pending string
+	var mask []byte
 	for _, e := range exprs {
 		switch v := e.(type) {
 		case *expr.Meta:
 			switch v.Key {
 			case expr.MetaKeyIIFNAME:
-				pending = "iif"
+				pending = "iifname"
 			case expr.MetaKeyOIFNAME:
-				pending = "oif"
+				pending = "oifname"
 			case expr.MetaKeyNFPROTO:
 				pending = "meta nfproto"
 			case expr.MetaKeyL4PROTO:
@@ -509,21 +472,16 @@ func renderExprs(exprs []expr.Any) string {
 				pending = fmt.Sprintf("meta key%d", v.Key)
 			}
 		case *expr.Payload:
-			switch {
-			case v.Base == expr.PayloadBaseNetworkHeader && v.Offset == 12 && v.Len == 4:
-				pending = "ip saddr"
-			case v.Base == expr.PayloadBaseNetworkHeader && v.Offset == 16 && v.Len == 4:
-				pending = "ip daddr"
-			case v.Base == expr.PayloadBaseTransportHeader && v.Offset == 0 && v.Len == 2:
-				pending = "sport"
-			case v.Base == expr.PayloadBaseTransportHeader && v.Offset == 2 && v.Len == 2:
-				pending = "dport"
-			default:
-				pending = fmt.Sprintf("payload base%d offset %d len %d", v.Base, v.Offset, v.Len)
-			}
+			pending = payloadField(v)
+		// A prefix match is a mask-and-compare, and without this the mask is
+		// lost and the rule reads as an exact match on the network address —
+		// which is a different rule from the one the kernel is enforcing.
+		case *expr.Bitwise:
+			mask = v.Mask
 		case *expr.Cmp:
-			add("%s %s", pending, cmpValue(pending, v.Data))
+			add("%s %s", pending, cmpValue(pending, v.Data, mask))
 			pending = ""
+			mask = nil
 		case *expr.Verdict:
 			switch v.Kind {
 			case expr.VerdictAccept:
@@ -554,11 +512,30 @@ func renderExprs(exprs []expr.Any) string {
 	return out
 }
 
-// cmpValue renders the right-hand side of a comparison in whatever shape the
-// left-hand side made it.
-func cmpValue(field string, data []byte) string {
+// payloadField names the header field a load put in a register, for the four
+// this file reads. Anything else is described by its offset rather than named,
+// because a name guessed at is worth less than the numbers it was guessed from.
+func payloadField(p *expr.Payload) string {
 	switch {
-	case (field == "iif" || field == "oif") && len(data) == unix.IFNAMSIZ:
+	case p.Base == expr.PayloadBaseNetworkHeader && p.Offset == 12 && p.Len == 4:
+		return "ip saddr"
+	case p.Base == expr.PayloadBaseNetworkHeader && p.Offset == 16 && p.Len == 4:
+		return "ip daddr"
+	case p.Base == expr.PayloadBaseTransportHeader && p.Offset == 0 && p.Len == 2:
+		return "sport"
+	case p.Base == expr.PayloadBaseTransportHeader && p.Offset == 2 && p.Len == 2:
+		return "dport"
+	}
+	return fmt.Sprintf("payload base%d offset %d len %d", p.Base, p.Offset, p.Len)
+}
+
+// cmpValue renders the right-hand side of a comparison in whatever shape the
+// left-hand side made it, and under whatever mask a preceding [expr.Bitwise]
+// left for it: an address comparison behind a mask is a prefix and says so,
+// rather than pretending to be exact.
+func cmpValue(field string, data, mask []byte) string {
+	switch {
+	case (field == "iifname" || field == "oifname") && len(data) == unix.IFNAMSIZ:
 		name := data
 		for i, b := range data {
 			if b == 0 {
@@ -568,6 +545,10 @@ func cmpValue(field string, data []byte) string {
 		}
 		return fmt.Sprintf("%q", string(name))
 	case (field == "ip saddr" || field == "ip daddr") && len(data) == 4:
+		if len(mask) == 4 {
+			ones, _ := net.IPMask(mask).Size()
+			return fmt.Sprintf("%s/%d", net.IP(data), ones)
+		}
 		return net.IP(data).String()
 	case (field == "sport" || field == "dport") && len(data) == 2:
 		return strconv.Itoa(int(binary.BigEndian.Uint16(data)))
@@ -608,6 +589,11 @@ func defaultEgressProbes() []egressProbe {
 		{Network: "tcp", Address: "169.254.169.254:80", Why: "the provider's metadata server"},
 		{Network: "tcp", Address: "8.8.8.8:53", Why: "a public resolver, over TCP"},
 		{Network: "udp", Address: "8.8.8.8:53", Why: "a public resolver, over UDP"},
+		// The attempt the ceiling's own grant would otherwise permit: the grant
+		// is the tunnel port to any address, and the metadata server is an
+		// address. It is refused by the carve-out above the grant, and this is
+		// the probe that says so (ticket 22, spike E3).
+		{Network: "udp", Address: "169.254.169.254:4433", Why: "the metadata server, on the one port the ceiling grants"},
 	}
 }
 
@@ -697,42 +683,37 @@ func classifyEgressError(err error) string {
 	return "REFUSED-OTHER"
 }
 
-// runEgressMode is the whole of -egress: load the three documents, and then do
-// one thing.
+// runEgressMode is the whole of -egress: one thing to the kernel or to the
+// network, and then this process ends.
 //
-// It loads this sandbox's own policy here rather than taking it from a running
-// [tunneld.Tunneld], because these modes run before there is one — the rules
-// have to be in the kernel before anything opens a socket. The load is the same
-// call tunneld makes and refuses in the same way: no signature, no rules.
-func runEgressMode(mode, extra, configDir string, cfg *runConfig, peers map[string]string, author ed25519.PublicKey, logf func(string, ...any), out io.Writer) int {
-	policyPath := filepath.Join(configDir, policyName)
-	policy, err := attest.LoadPolicyFile(policyPath, author)
-	if err != nil {
-		logf("refusing to touch the network: %v", err)
-		return exitRefusedToStart
-	}
-	logf("policy %s loaded under the author key; digest %s", policyPath, policy.Digest)
-	logf("policy egress: version %d, unattested egress permitted: %v", policy.Egress.Version, policy.Egress.Unattested)
-
+// It reads nothing. Until ticket 22 it loaded this sandbox's signed policy
+// first and derived the rule set from it, which is why the guest's init could
+// not install anything before it had found and mounted the config device. The
+// ceiling is compiled in, so these modes need no config device, no author key
+// and no policy — which is what lets init run `tunneld -egress install`
+// immediately after nf_tables loads, with the window in which a measured guest
+// is unconstrained closed to zero.
+func runEgressMode(mode, extra string, logf func(string, ...any), out io.Writer) int {
 	switch mode {
-	case egressModePrint, egressModeInstall:
-		rs, err := buildEgressRuleSet(policy, peers, cfg.Listen)
-		if err != nil {
-			logf("refusing to touch the network: %v", err)
-			return exitRefusedToStart
-		}
-		rs.SandboxID = cfg.SandboxID
-		logf("sandbox %q listens on udp/%d; %d peer(s) in the table", rs.SandboxID, rs.ListenPort, len(rs.Peers))
-		logf("EGRESS RULES as the signed policy and the peer table imply them:")
+	case egressModePrint:
+		// The ceiling's own text and nothing else on the stream, so that this
+		// output and the file in the record can be compared byte for byte —
+		// and so that the file in the record is regenerated from the binary
+		// that enforces it rather than maintained beside it.
+		fmt.Fprint(out, ceiling.Text())
+		return exitOK
+
+	case egressModeInstall:
+		logf("EGRESS CEILING %s (sha256 over the compiled-in ceiling; %s, udp/%d)",
+			ceiling.DigestHex(), ceiling.Interface, ceiling.Port)
+		rs := buildCeiling()
+		logf("EGRESS CEILING as this image carries it:")
 		rs.Render(out)
-		if mode == egressModePrint {
-			return exitOK
-		}
 		if err := rs.Install(); err != nil {
-			logf("refusing to continue: installing the rule set: %v", err)
+			logf("refusing to continue: installing the ceiling: %v", err)
 			return exitRefusedToStart
 		}
-		logf("EGRESS RULES INSTALLED; as the kernel holds them:")
+		logf("EGRESS CEILING INSTALLED; as the kernel holds it:")
 		if err := readInstalledRuleSet(out); err != nil {
 			logf("refusing to continue: reading the rule set back: %v", err)
 			return exitRefusedToStart
@@ -747,7 +728,7 @@ func runEgressMode(mode, extra, configDir string, cfg *runConfig, peers map[stri
 			return exitRefusedToStart
 		}
 		probes = append(probes, more...)
-		logf("EGRESS PROBE: %d attempt(s) at addresses this policy permits nothing to reach", len(probes))
+		logf("EGRESS PROBE: %d attempt(s) at addresses the ceiling permits nothing to reach", len(probes))
 		leaked := runEgressProbes(probes, logf)
 		if leaked != 0 {
 			logf("EGRESS PROBE FAILED: %d of %d attempt(s) left the sandbox", leaked, len(probes))

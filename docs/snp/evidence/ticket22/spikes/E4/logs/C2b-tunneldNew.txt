@@ -1,0 +1,5 @@
+$ e4drv -config C2b -author author-t19.pub
+e4drv: tunneld.New refused: tunneld: refusing to start: attest: policy refused: the signature is not this reference value author's signature over these bytes; either the document was modified in delivery, or it was signed by a different key, or it is a signature over some other document this author signed — a reference value set's signature is not a policy's, and each covers its own domain
+e4drv: errors.Is(err, attest.ErrSetRefused)    = false
+e4drv: errors.Is(err, attest.ErrPolicyRefused) = true
+EXIT_STATUS=1

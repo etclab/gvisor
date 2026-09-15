@@ -1,0 +1,498 @@
+// Copyright 2026 The gVisor Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Ticket 22, experiment E2: push a policy blob over the framing that already
+// exists.
+//
+// This file is a SPIKE and is not part of the tree. It is kept under
+// docs/snp/evidence/ticket22/spikes/E2/ and copied into attest/tunneld/ to be
+// run; see that directory's README.md for the command.
+//
+// The question it answers: does one [tunnel.Conn.Exchange] suffice to carry the
+// delegator's policy blob to the peer and bring back an acknowledgement, or
+// does the push need a stream type of its own? It changes nothing in the
+// transport: it uses the same Channel.Exchange every application exchange uses,
+// and the only new thing is what the two ends agree the bytes mean.
+//
+// The harness is the one ticket 13 left behind: tunneld_test.go's start (:163),
+// two tunnelds on 127.0.0.1 with the fake SNP platform injected through Config,
+// each admitting the other's image, mutually attested at the handshake.
+
+package tunneld_test
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"os"
+	"sort"
+	"strings"
+	"sync/atomic"
+	"testing"
+	"time"
+
+	"gvisor.dev/gvisor/attest"
+	"gvisor.dev/gvisor/attest/internal/fixture"
+	"gvisor.dev/gvisor/attest/tunnel"
+	"gvisor.dev/gvisor/attest/tunneld"
+)
+
+// The wire, such as it is. tunneld is opaque to everything below except the
+// format and version fields, exactly as ticket 22 states the contract.
+
+// pushEnvelope is what a receiver parses out of a request before it knows what
+// the request is. Everything else in a policy document stays the policy
+// track's business.
+type pushEnvelope struct {
+	Format  string `json:"format"`
+	Version int    `json:"version"`
+	Millis  int    `json:"ms,omitempty"`
+}
+
+// policyDoc is the provisional policy blob of ticket 22: a format, a version,
+// and three opaque lists.
+type policyDoc struct {
+	Format  string   `json:"format"`
+	Version int      `json:"version"`
+	N       []string `json:"n"`
+	F       []string `json:"f"`
+	X       []string `json:"x"`
+}
+
+const (
+	ackOK      = `{"format":"policy-ack","version":1,"ok":true}`
+	ackRefused = `{"format":"policy-ack","version":1,"ok":false,"reason":"unsupported policy version"}`
+)
+
+// blob builds a document of the given shape padded to exactly size bytes.
+// Padding is plain ASCII inside the list entries, so a byte of padding is a
+// byte of document and the second marshal lands on the target exactly.
+func blob(t *testing.T, format string, version, nN, nF, nX, size int) []byte {
+	t.Helper()
+	fill := func(n int, prefix string) []string {
+		out := make([]string, n)
+		for i := range out {
+			out[i] = fmt.Sprintf("%s-%04d", prefix, i)
+		}
+		return out
+	}
+	doc := policyDoc{Format: format, Version: version, N: fill(nN, "n"), F: fill(nF, "f"), X: fill(nX, "x")}
+	b, err := json.Marshal(doc)
+	if err != nil {
+		t.Fatalf("marshal %s blob: %v", format, err)
+	}
+	deficit := size - len(b)
+	if deficit < 0 {
+		t.Fatalf("a %d entry %s document is already %d bytes, over the %d byte target", nN+nF+nX, format, len(b), size)
+	}
+	lists := [][]string{doc.N, doc.F, doc.X}
+	entries := nN + nF + nX
+	each, extra, seen := deficit/entries, deficit%entries, 0
+	for _, l := range lists {
+		for i := range l {
+			n := each
+			if seen < extra {
+				n++
+			}
+			seen++
+			l[i] += strings.Repeat("a", n)
+		}
+	}
+	b, err = json.Marshal(doc)
+	if err != nil {
+		t.Fatalf("marshal padded %s blob: %v", format, err)
+	}
+	if len(b) != size {
+		t.Fatalf("padded %s blob is %d bytes; want %d", format, len(b), size)
+	}
+	return b
+}
+
+// pushHandler is B's Serve handler: it recognises a policy push by its format
+// and version and answers with an ack, and otherwise behaves exactly as the
+// harness's echo handler did. A request that does not parse, or parses as
+// something else, is an ordinary application exchange and is echoed — which is
+// the comparison the timings below need.
+func pushHandler(prefix string, n *node, pushes, acks *atomic.Int32) tunneld.Handler {
+	return func(_ context.Context, request []byte) ([]byte, error) {
+		n.served.Add(1)
+		var env pushEnvelope
+		if err := json.Unmarshal(request, &env); err == nil {
+			switch env.Format {
+			case "policy":
+				pushes.Add(1)
+				if env.Version != 1 {
+					return []byte(ackRefused), nil
+				}
+				acks.Add(1)
+				return []byte(ackOK), nil
+			case "slow":
+				time.Sleep(time.Duration(env.Millis) * time.Millisecond)
+				return []byte(`{"format":"slow-done","version":1}`), nil
+			}
+		}
+		return append([]byte(prefix), request...), nil
+	}
+}
+
+// startPushing is tunneld_test.go's start with the handler supplied, so that B
+// can answer a push. Everything else — the fake platform, the signed set, the
+// signed policy, the ephemeral loopback port — is that harness unchanged.
+func startPushing(t *testing.T, sandbox string, image []byte, admits attest.ReferenceValueSet, peers tunneld.PeerTable, h tunneld.Handler) *node {
+	t.Helper()
+	p := platform(t, image)
+	n := &node{}
+	if h == nil {
+		h = echo(sandbox+":", n)
+	}
+	td, err := tunneld.New(context.Background(), tunneld.Config{
+		SandboxID:             sandbox,
+		Acquirer:              p,
+		Verifier:              fixture.VerifierTrusting(t, p),
+		ReferenceValueSetPath: writeSet(t, admits, authorPriv),
+		PolicyPath:            writePolicy(t, everyImage(), authorPriv),
+		AuthorPublicKey:       authorPub,
+		Peers:                 peers,
+		ListenAddr:            "127.0.0.1:0",
+		Handler:               h,
+	})
+	if err != nil {
+		t.Fatalf("tunneld.New(%s): %v", sandbox, err)
+	}
+	n.Tunneld = td
+	t.Cleanup(func() { td.Close() })
+	return n
+}
+
+// pair brings up B (answering pushes) and A (knowing B), and returns A's
+// channel to B — which exists only because both sides admitted the other.
+func pair(t *testing.T) (a, b *node, ch *tunneld.Channel, pushes, acks *atomic.Int32) {
+	t.Helper()
+	pushes, acks = &atomic.Int32{}, &atomic.Int32{}
+	b = startPushingCounted(t, "sandbox-b", imageB, admitting(imageA), pushes, acks)
+	a = startPushing(t, "sandbox-a", imageA, admitting(imageB), tunneld.PeerTable{"b": b.Addr().String()}, nil)
+	ch, err := a.Peer(ctx(t), "b")
+	if err != nil {
+		t.Fatalf("a.Peer(b): %v", err)
+	}
+	t.Cleanup(func() { ch.Close() })
+	return a, b, ch, pushes, acks
+}
+
+// startPushingCounted is startPushing with the push-aware handler, wired to the
+// node it counts on.
+func startPushingCounted(t *testing.T, sandbox string, image []byte, admits attest.ReferenceValueSet, pushes, acks *atomic.Int32) *node {
+	t.Helper()
+	p := platform(t, image)
+	n := &node{}
+	td, err := tunneld.New(context.Background(), tunneld.Config{
+		SandboxID:             sandbox,
+		Acquirer:              p,
+		Verifier:              fixture.VerifierTrusting(t, p),
+		ReferenceValueSetPath: writeSet(t, admits, authorPriv),
+		PolicyPath:            writePolicy(t, everyImage(), authorPriv),
+		AuthorPublicKey:       authorPub,
+		Peers:                 nil,
+		ListenAddr:            "127.0.0.1:0",
+		Handler:               pushHandler(sandbox+":", n, pushes, acks),
+	})
+	if err != nil {
+		t.Fatalf("tunneld.New(%s): %v", sandbox, err)
+	}
+	n.Tunneld = td
+	t.Cleanup(func() { td.Close() })
+	return n
+}
+
+// TestE2PushCarriesAPolicyAndBringsBackAnAck is the functional half: one
+// unchanged Exchange carries the blob and returns the ack, at both sizes, and
+// a version the peer does not know comes back refused rather than acked.
+func TestE2PushCarriesAPolicyAndBringsBackAnAck(t *testing.T) {
+	_, b, ch, pushes, acks := pair(t)
+
+	for _, c := range []struct {
+		name             string
+		nN, nF, nX, size int
+	}{
+		{"2KiB, 10/20/10", 10, 20, 10, 2 << 10},
+		{"64KiB, 320/640/320", 320, 640, 320, 64 << 10},
+		{"1MiB, 5120/10240/5120", 5120, 10240, 5120, 1 << 20},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			req := blob(t, "policy", 1, c.nN, c.nF, c.nX, c.size)
+			got, err := ch.Exchange(ctx(t), req)
+			if err != nil {
+				t.Fatalf("push of %d bytes: %v", len(req), err)
+			}
+			if string(got) != ackOK {
+				t.Errorf("push of %d bytes answered %q; want %q", len(req), got, ackOK)
+			}
+		})
+	}
+
+	t.Run("unknown version refused", func(t *testing.T) {
+		req := blob(t, "policy", 99, 10, 20, 10, 2<<10)
+		got, err := ch.Exchange(ctx(t), req)
+		if err != nil {
+			t.Fatalf("push at version 99: %v", err)
+		}
+		if string(got) != ackRefused {
+			t.Errorf("push at version 99 answered %q; want %q", got, ackRefused)
+		}
+	})
+
+	t.Run("an ordinary exchange still echoes", func(t *testing.T) {
+		got, err := ch.Exchange(ctx(t), []byte("hello"))
+		if err != nil {
+			t.Fatalf("echo exchange: %v", err)
+		}
+		if want := "sandbox-b:hello"; string(got) != want {
+			t.Errorf("echo answered %q; want %q", got, want)
+		}
+	})
+
+	t.Logf("b answered %d exchanges, %d of them pushes, %d acked", b.served.Load(), pushes.Load(), acks.Load())
+}
+
+// TestE2FrameCeiling records what the framing would let a policy be. The bound
+// is tunnel.maxFramePayload (attest/tunnel/tunnel.go:348), 16 MiB, and it is
+// refused by the sender before a byte reaches the wire.
+func TestE2FrameCeiling(t *testing.T) {
+	_, _, ch, _, _ := pair(t)
+
+	const maxFramePayload = 16 << 20
+	req := blob(t, "policy", 1, 1, 1, 1, maxFramePayload+1)
+	got, err := ch.Exchange(ctx(t), req)
+	if err == nil {
+		t.Fatalf("a %d byte push was carried, answered %q; want a framing refusal", len(req), got)
+	}
+	t.Logf("a %d byte push (one over the %d byte frame bound) is refused: %v", len(req), maxFramePayload, err)
+
+	// The connection survives it: the bound is checked by the sender, so the
+	// peer never sees a violation and the tunnel is not torn down.
+	if _, err := ch.Exchange(ctx(t), []byte("still here")); err != nil {
+		t.Errorf("the tunnel did not survive an oversized push: %v", err)
+	}
+}
+
+// TestE2PushDoesNotInterleaveWithAnApplicationExchange is the ordering half.
+// Exchange opens a stream of its own per call (attest/tunnel/tunnel.go:480) and
+// Serve answers each stream on its own goroutine (:521), so a push started
+// while a slow application exchange is in flight neither waits for it nor is
+// confused with it.
+func TestE2PushDoesNotInterleaveWithAnApplicationExchange(t *testing.T) {
+	_, _, ch, _, _ := pair(t)
+
+	const slowMillis = 400
+	type outcome struct {
+		body []byte
+		err  error
+		at   time.Time
+	}
+	slowDone := make(chan outcome, 1)
+	go func() {
+		body, err := ch.Exchange(ctx(t), []byte(fmt.Sprintf(`{"format":"slow","version":1,"ms":%d}`, slowMillis)))
+		slowDone <- outcome{body, err, time.Now()}
+	}()
+
+	time.Sleep(50 * time.Millisecond) // let the slow exchange reach B's handler
+	req := blob(t, "policy", 1, 10, 20, 10, 2<<10)
+	start := time.Now()
+	got, err := ch.Exchange(ctx(t), req)
+	pushAt := time.Now()
+	if err != nil {
+		t.Fatalf("push while an exchange was in flight: %v", err)
+	}
+	if string(got) != ackOK {
+		t.Fatalf("push answered %q; want the ack %q", got, ackOK)
+	}
+	if took := pushAt.Sub(start); took > slowMillis/2*time.Millisecond {
+		t.Errorf("the push took %v, which is long enough to have waited on the slow exchange", took)
+	}
+
+	slow := <-slowDone
+	if slow.err != nil {
+		t.Fatalf("the slow exchange: %v", slow.err)
+	}
+	if want := `{"format":"slow-done","version":1}`; string(slow.body) != want {
+		t.Errorf("the slow exchange answered %q; want %q", slow.body, want)
+	}
+	if !pushAt.Before(slow.at) {
+		t.Errorf("the push finished at %v, not before the slow exchange at %v", pushAt, slow.at)
+	}
+	t.Logf("push returned in %v while a %dms exchange was in flight; the slow one returned %v later",
+		pushAt.Sub(start), slowMillis, slow.at.Sub(pushAt))
+}
+
+// TestE2PushBeforeAdmissionIsImpossible records what makes it impossible today,
+// from outside the packages. There is no exported way to build a
+// [tunneld.Channel] or a [tunnel.Conn]; the only source of either is a dial
+// that both sides admitted.
+func TestE2PushBeforeAdmissionIsImpossible(t *testing.T) {
+	// b admits only imageNone; a runs imageA, so b aborts the handshake.
+	pushes, acks := &atomic.Int32{}, &atomic.Int32{}
+	b := startPushingCounted(t, "sandbox-b", imageB, admitting(imageNone), pushes, acks)
+	a := startPushing(t, "sandbox-a", imageA, admitting(imageB), tunneld.PeerTable{"b": b.Addr().String()}, nil)
+
+	ch, err := a.Peer(ctx(t), "b")
+	if ch != nil || err == nil {
+		t.Fatalf("a.Peer(b) = %v, %v; want no channel and an error", ch, err)
+	}
+	if b.served.Load() != 0 || pushes.Load() != 0 {
+		t.Errorf("b answered %d exchanges (%d pushes) over a refused tunnel", b.served.Load(), pushes.Load())
+	}
+	t.Logf("no channel to an unadmitted peer, so nothing to push on: %v", err)
+
+	// And a Channel a caller manufactured reaches nobody. [tunneld.Channel] is
+	// an exported struct whose fields are all unexported, so a composite
+	// literal compiles but names no peer and holds no tunneld — and
+	// Channel.Exchange (attest/tunneld/tunneld.go:420) dereferences that nil
+	// tunneld rather than checking it.
+	//
+	// So a push before admission is impossible in the sense that matters — no
+	// bytes reach a peer — but it is impossible by panic, not by refusal. That
+	// is the gap the ticket's "impossible by construction, with a test that
+	// says so" should close: either unexport the struct behind an interface, or
+	// have Exchange refuse a Channel with no tunneld.
+	func() {
+		defer func() {
+			switch r := recover(); r {
+			case nil:
+				t.Errorf("a manufactured Channel returned from Exchange; want no peer reached")
+			default:
+				t.Logf("a manufactured Channel reaches no peer, but panics rather than refusing: %v", r)
+			}
+		}()
+		zero := &tunneld.Channel{}
+		if _, err := zero.Exchange(ctx(t), []byte(`{"format":"policy","version":1}`)); err == nil {
+			t.Errorf("a manufactured Channel carried a push")
+		}
+	}()
+}
+
+// TestE2PushTiming is the measurement: the wall time of one push exchange
+// against the wall time of the ordinary application exchange of the same size,
+// on one tunnel, after warmup.
+func TestE2PushTiming(t *testing.T) {
+	if testing.Short() {
+		t.Skip("timing runs long")
+	}
+	_, b, ch, pushes, acks := pair(t)
+
+	const (
+		iterations = 200
+		warmup     = 20
+	)
+
+	series := []struct {
+		name             string
+		format           string
+		nN, nF, nX, size int
+	}{
+		{"round-trip floor (5 B echo)", "echo", 1, 1, 1, 0}, // size 0 means the 5 byte literal
+		{"push 2 KiB", "policy", 10, 20, 10, 2 << 10},
+		{"echo 2 KiB", "echo", 10, 20, 10, 2 << 10},
+		{"push 64 KiB", "policy", 320, 640, 320, 64 << 10},
+		{"echo 64 KiB", "echo", 320, 640, 320, 64 << 10},
+	}
+
+	var csv *os.File
+	if path := os.Getenv("E2_RAW_CSV"); path != "" {
+		f, err := os.Create(path)
+		if err != nil {
+			t.Fatalf("raw timing file: %v", err)
+		}
+		csv = f
+		defer csv.Close()
+		fmt.Fprintln(csv, "series,iteration,request_bytes,response_bytes,nanoseconds")
+	}
+
+	type row struct {
+		name                string
+		reqBytes, respBytes int
+		p50, p90, p99       time.Duration
+		mmin, mmax, mean    time.Duration
+	}
+	var table []row
+
+	for _, s := range series {
+		var req []byte
+		if s.size == 0 {
+			req = []byte("hello")
+		} else {
+			req = blob(t, s.format, 1, s.nN, s.nF, s.nX, s.size)
+		}
+		// One context for the whole series, taken out before the clock starts,
+		// so that nothing but the exchange is inside the measured window.
+		sctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+		var respBytes int
+		for i := 0; i < warmup; i++ {
+			resp, err := ch.Exchange(sctx, req)
+			if err != nil {
+				cancel()
+				t.Fatalf("%s warmup: %v", s.name, err)
+			}
+			respBytes = len(resp)
+		}
+		samples := make([]time.Duration, 0, iterations)
+		for i := 0; i < iterations; i++ {
+			start := time.Now()
+			resp, err := ch.Exchange(sctx, req)
+			took := time.Since(start)
+			if err != nil {
+				t.Fatalf("%s iteration %d: %v", s.name, i, err)
+			}
+			if s.format == "policy" && string(resp) != ackOK {
+				t.Fatalf("%s iteration %d answered %q; want the ack", s.name, i, resp)
+			}
+			samples = append(samples, took)
+			respBytes = len(resp)
+			if csv != nil {
+				fmt.Fprintf(csv, "%s,%d,%d,%d,%d\n", s.name, i, len(req), len(resp), took.Nanoseconds())
+			}
+		}
+		cancel()
+		sorted := append([]time.Duration(nil), samples...)
+		sort.Slice(sorted, func(i, j int) bool { return sorted[i] < sorted[j] })
+		var total time.Duration
+		for _, d := range samples {
+			total += d
+		}
+		table = append(table, row{
+			name:      s.name,
+			reqBytes:  len(req),
+			respBytes: respBytes,
+			p50:       sorted[len(sorted)*50/100],
+			p90:       sorted[len(sorted)*90/100],
+			p99:       sorted[len(sorted)*99/100],
+			mmin:      sorted[0],
+			mmax:      sorted[len(sorted)-1],
+			mean:      total / time.Duration(len(samples)),
+		})
+	}
+
+	ms := func(d time.Duration) string { return fmt.Sprintf("%.3f", float64(d.Nanoseconds())/1e6) }
+	t.Logf("%d iterations after %d warmup, one tunnel, 127.0.0.1, milliseconds", iterations, warmup)
+	t.Logf("%-28s %9s %10s %8s %8s %8s %8s %8s %8s", "series", "req B", "resp B", "p50", "p90", "p99", "min", "max", "mean")
+	for _, r := range table {
+		t.Logf("%-28s %9d %10d %8s %8s %8s %8s %8s %8s",
+			r.name, r.reqBytes, r.respBytes, ms(r.p50), ms(r.p90), ms(r.p99), ms(r.mmin), ms(r.mmax), ms(r.mean))
+	}
+	t.Logf("b answered %d exchanges, %d pushes, %d acked", b.served.Load(), pushes.Load(), acks.Load())
+
+	// The framing bound, for the record.
+	t.Logf("frame payload bound is %d bytes (attest/tunnel/tunnel.go:348); 64 KiB is %.2f%% of it",
+		16<<20, 100*float64(64<<10)/float64(16<<20))
+	_ = tunnel.ErrFraming
+}

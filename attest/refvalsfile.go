@@ -317,6 +317,40 @@ func LoadReferenceValueSetFile(path string, author ed25519.PublicKey) (Reference
 	return loadReferenceValueSet(document, signature, author)
 }
 
+// ReadAuthorKey reads the reference value author's public key from the file at
+// path: either the 32 raw bytes or their hexadecimal, with surrounding
+// whitespace ignored. Both forms exist in the wild — emit-refvals prints
+// hexadecimal, docs/snp/image/build-image.sh bakes one line of 64 lowercase hex
+// into the measured image at /etc/attested-tunnel/author.pub (ADR-0004), and a
+// key derived with openssl is raw — and a reader that took only one of them
+// would refuse a correctly provisioned guest.
+//
+// It lives here, beside the loader, because the key and the set are one input:
+// every caller reads a key in order to hand it straight to
+// [LoadReferenceValueSetFile], and there is nothing else in this module to do
+// with one. It was two byte-identical unexported copies until ticket 22, in
+// cmd/tunneld and cmd/attest-tool, and neither command gains an import edge by
+// calling it here: both already import this package for the set it loads.
+//
+// A file this refuses is a provisioning mistake, so the error names the two
+// encodings that would have been read rather than passing on whatever
+// hex.DecodeString made of the bytes. The usual cause is the wrong file, not a
+// corrupt one.
+func ReadAuthorKey(path string) (ed25519.PublicKey, error) {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("reading the reference value author's public key: %w", err)
+	}
+	if len(raw) == ed25519.PublicKeySize {
+		return ed25519.PublicKey(raw), nil
+	}
+	decoded, err := hex.DecodeString(strings.TrimSpace(string(raw)))
+	if err != nil || len(decoded) != ed25519.PublicKeySize {
+		return nil, fmt.Errorf("%s is neither %d raw bytes nor their hexadecimal", path, ed25519.PublicKeySize)
+	}
+	return ed25519.PublicKey(decoded), nil
+}
+
 // signedBytes is what the author's key actually signs over a reference value
 // set: the domain separation prefix followed by the document's exact bytes. It
 // is used by the signer and the verifier, so the two cannot drift.

@@ -1,0 +1,50 @@
+# 2026-09-15T15:18:02-04:00
+# Linux shs1 6.11.0-rc3-snp-host-85ef1ac03941 #2 SMP Fri Sep 27 13:59:12 EDT 2024 x86_64 x86_64 x86_64 GNU/Linux
+# go version go1.26.3 linux/amd64
+# nproc=64 loadavg=1.68 2.61 2.13
+# cpufreq governor=conservative
+# net.core.rmem_max=212992
+
+2026/09/15 15:18:02 failed to sufficiently increase receive buffer size (was: 208 kiB, wanted: 7168 kiB, got: 416 kiB). See https://github.com/quic-go/quic-go/wiki/UDP-Buffer-Sizes for details.
+parent pid 1755799: QUIC 127.0.0.1:35001 -> 127.0.0.1:47319, control socket @ticket22-e1-1755799
+child pid 1755870: received fd 7 over SCM_RIGHTS, tag "stream"
+run 1/7 done
+child pid 1756001: received fd 7 over SCM_RIGHTS, tag "stream"
+run 2/7 done
+child pid 1756272: received fd 7 over SCM_RIGHTS, tag "stream"
+run 3/7 done
+child pid 1756359: received fd 7 over SCM_RIGHTS, tag "stream"
+run 4/7 done
+child pid 1756570: received fd 7 over SCM_RIGHTS, tag "stream"
+run 5/7 done
+child pid 1756656: received fd 7 over SCM_RIGHTS, tag "stream"
+run 6/7 done
+child pid 1756887: received fd 7 over SCM_RIGHTS, tag "stream"
+run 7/7 done
+child pid 1756975: received fd 7 over SCM_RIGHTS, tag "echo"
+child pid 1756981: received fd 7 over SCM_RIGHTS, tag "udp"
+runs=7  go=go1.26.3  quic-go v0.59.0  kernel=6.11.0-rc3-snp-host-85ef1ac03941
+round-trip byte verification: 0 mismatches across every phase of every run
+
+phase              metric                     direct      proxied        delta    ratio
+lat-64B            median RTT (us)            193.18       393.84      +200.66    2.039
+lat-64B            best RTT (us)              106.32       189.97       +83.66    1.787
+lat-64B            p90 RTT (us)               316.10       619.32      +303.22    1.959
+lat-4KiB           median RTT (us)            508.05       781.75      +273.70    1.539
+lat-4KiB           best RTT (us)              277.92       427.40      +149.47    1.538
+lat-4KiB           p90 RTT (us)               706.46      1089.50      +383.04    1.542
+bulk-up-64MiB      throughput (MiB/s)         124.95       116.48        -8.46    0.932
+bulk-down-64MiB    throughput (MiB/s)         120.03       120.91        +0.88    1.007
+
+bare socketpair round trip to the child, 64 B, no QUIC (the floor the proxy pays twice over):
+  median 40.88 us, best 21.20 us, p90 59.70 us over 2000 round trips
+
+UDP socket descriptor passed to the child:
+  getpeername_err    transport endpoint is not connected
+  getsockname        &{35001 [127 0 0 1] {0 0 [0 0 0 0] [0 0 0 0 0 0 0 0]}}
+  parent_local_addr  127.0.0.1:35001
+  parent_peer_addr   127.0.0.1:47319
+  recvfrom_err       resource temporarily unavailable
+  so_type            2 (SOCK_DGRAM=2, SOCK_STREAM=1)
+  write_err          destination address required
+wrote /home/pniroula/Projects/gvisor-t22/docs/snp/evidence/ticket22/spikes/E1/results.json

@@ -28,10 +28,6 @@
 //	                                   INSIDE the launch measurement (ADR-0004)
 //	/config/reference-values.json      the reference value set, outside it
 //	/config/reference-values.json.sig  its detached signature (ADR-0006)
-//	/config/policy.json                this sandbox's own signed policy: what
-//	                                   leaves it, and whom it will dial
-//	/config/policy.json.sig            its detached signature, under the same
-//	                                   author key and its own domain
 //	/config/peers.json                 the peer table
 //	/config/certificate-chain.bin      the chain provisioned for this chip and
 //	                                   TCB (ADR-0005)
@@ -39,17 +35,31 @@
 //	/config/tunneld.json               this run: the sandbox identifier, the
 //	                                   address to listen on, the link to bring
 //	                                   up, the limits, and what to exercise
+//	/config/collateral/                Intel's provisioned TCB info, quoting
+//	                                   enclave identity and revocation lists
 //
-// One file on that list is new here, and the reason it is safe to add is the
-// reason the others are safe to deliver on an untrusted device. Nothing on the
-// config device can admit a peer. The trust root is the author key inside the
-// measurement; the set is refused unless that key signed it; the chain is
-// public and self-validating; the peer table resolves names to addresses and a
-// wrong address is a failed handshake rather than a compromised one. A run
-// configuration is the same kind of thing: it says which peers this tunneld
-// asks for and how hard it exercises them, and a host that rewrites it can
-// make this guest talk to nobody, or to a peer that refuses it. It cannot make
-// it talk to an unattested one.
+// Nothing on that list can admit a peer, and that is why it is safe to deliver
+// on an untrusted device. The trust root is the author key inside the
+// measurement; the set is refused unless that key signed it; the chain and the
+// collateral are public and self-validating; the peer table resolves names to
+// addresses and a wrong address is a failed handshake rather than a compromised
+// one. A run configuration is the same kind of thing: it says which peers this
+// tunneld asks for and how hard it exercises them, and a host that rewrites it
+// can make this guest talk to nobody, or to a peer that refuses it. It cannot
+// make it talk to an unattested one.
+//
+// # policy.json is not on that list, and a device carrying one is refused
+//
+// It was until ticket 22: a second signed document saying what this sandbox is
+// — the egress rules to install, and the images it would dial. Both halves left
+// the device. The egress ceiling is a constant compiled into this binary and
+// into the measurement with it (attest/ceiling), so a verifier reading the
+// image knows what the guest enforces; and what this sandbox may delegate to
+// whom is a contract pushed over the tunnel after attestation, by a peer whose
+// evidence has already been judged, rather than a list read off a disk the host
+// supplies. Nothing here reads a policy document any more, so a device still
+// carrying one would be obeyed in no respect and noticed in none — which is why
+// [run] refuses to start on one rather than ignoring it.
 //
 // # The exercise is Milestone 3's stand-in for the agent
 //
@@ -82,7 +92,9 @@ package main
 import (
 	"context"
 	"crypto/ed25519"
+	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -94,6 +106,8 @@ import (
 	"time"
 
 	"gvisor.dev/gvisor/attest"
+	"gvisor.dev/gvisor/attest/ceiling"
+	"gvisor.dev/gvisor/attest/sandbox"
 	"gvisor.dev/gvisor/attest/tsm"
 	"gvisor.dev/gvisor/attest/tunneld"
 	"gvisor.dev/gvisor/attest/verify"
@@ -114,9 +128,9 @@ const (
 	// there rather than being told (ADR-0006).
 	referenceValueSetName = "reference-values.json"
 
-	// This sandbox's own policy, beside the set and signed the same way under
-	// its own domain. Two documents since ticket 19: the set says whom this
-	// sandbox admits, and this says what it is.
+	// The document ticket 22 took off the config device. The name is kept
+	// because this command still looks for it — to refuse the device, not to
+	// read it — and a refusal has to name the file the operator has to remove.
 	policyName = "policy.json"
 )
 
@@ -156,6 +170,8 @@ type options struct {
 	egressMode       string
 	egressProbeExtra string
 	selfCheck        bool
+	sandboxSocket    string
+	pushPolicy       string
 }
 
 func run(args []string, out io.Writer) int {
@@ -167,13 +183,32 @@ func run(args []string, out io.Writer) int {
 	fs.StringVar(&o.reportDir, "report-dir", tsm.DefaultReportDir, "the kernel's vendor-neutral report interface")
 	fs.StringVar(&o.runPath, "run", "", "the run configuration; empty means <config>/"+runConfigName)
 	fs.StringVar(&o.tdxCollateralDir, "tdx-collateral-dir", "", "directory holding Intel's provisioned TCB info, quoting-enclave identity and revocation lists; empty means this tunneld admits no Intel TDX peers. Never fetched (ADR-0005)")
-	fs.StringVar(&o.egressMode, "egress", "", "instead of serving: "+egressModePrint+" the netfilter rule set this sandbox's signed policy implies, "+egressModeInstall+" it in the kernel and read it back, or "+egressModeProbe+" it by attempting the egress the policy forbids")
+	fs.StringVar(&o.egressMode, "egress", "", "instead of serving: "+egressModePrint+" the egress ceiling this image carries, "+egressModeInstall+" it in the kernel and read it back, or "+egressModeProbe+" it by attempting the egress it forbids. None of the three reads the config device")
 	fs.StringVar(&o.egressProbeExtra, "egress-probe", "", "with -egress "+egressModeProbe+": extra targets to attempt, comma separated, each tcp:ADDR:PORT or udp:ADDR:PORT")
 	fs.BoolVar(&o.selfCheck, "self-check", false, "after starting, ask this platform for evidence and judge it with this sandbox's own reference value set, so the console says whether the set admits the machine it is on before any peer arrives")
+	fs.StringVar(&o.sandboxSocket, "sandbox-socket", "", "listen on this unix socket for a sandbox in another process to open and accept streams over (docs/sandbox-contract.md); conventionally "+conventionalSandboxSocket+". Empty runs the in-process null sandbox alone, which is what every recorded scenario does")
+	fs.StringVar(&o.pushPolicy, "push-policy", "", "the policy document to push to every peer this tunneld dials, once each tunnel is established and before anything is sent over it (docs/policy-push.md). Empty pushes nothing, which is what every recorded scenario does")
 	if err := fs.Parse(args); err != nil {
 		return exitRefusedToStart
 	}
 	logf := func(format string, a ...any) { fmt.Fprintf(out, "tunneld: "+format+"\n", a...) }
+
+	if stale := aPolicyOnTheConfigDevice(o.configDir); stale != "" {
+		logf("refusing to start: %s", stale)
+		return exitRefusedToStart
+	}
+
+	// The egress modes end here, and they end here *before* anything is read.
+	// The ceiling is a constant in this binary (egress.go, attest/ceiling), so
+	// these modes need no config device, no author key and no policy — which is
+	// what lets the guest's init install the ceiling immediately after
+	// nf_tables loads, before it has looked for a disk and before the link is
+	// up (docs/snp/cloud/tdx/init.tdx). Until ticket 22 this branch sat below
+	// the three loads, because the rule set was generated from a document on
+	// the config device.
+	if o.egressMode != "" {
+		return runEgressMode(o.egressMode, o.egressProbeExtra, logf, out)
+	}
 
 	if o.runPath == "" {
 		o.runPath = filepath.Join(o.configDir, runConfigName)
@@ -188,7 +223,7 @@ func run(args []string, out io.Writer) int {
 		logf("refusing to start: %v", err)
 		return exitRefusedToStart
 	}
-	author, err := readAuthorKey(o.authorPath)
+	author, err := attest.ReadAuthorKey(o.authorPath)
 	if err != nil {
 		logf("refusing to start: %v", err)
 		return exitRefusedToStart
@@ -200,19 +235,50 @@ func run(args []string, out io.Writer) int {
 		logf("peer table: %s = %s", name, peers[name])
 	}
 
-	// The egress modes end here: they read the same three documents a serving
-	// tunneld reads, do one thing to the kernel or to the network, and exit.
-	// They are modes of this binary rather than a second one because the rule
-	// set is generated from the signed policy, and the author key that judges
-	// that signature is the one baked into this image (egress.go).
-	if o.egressMode != "" {
-		return runEgressMode(o.egressMode, o.egressProbeExtra, o.configDir, cfg, peers, author, logf, out)
-	}
-
 	return serve(&o, cfg, peers, author, logf)
 }
 
-// serve is everything the three documents left to decide: bring the link up,
+// The digest this sandbox presents to every peer is [ceiling.Digest], the name
+// of the ceiling compiled into this image, and not the digest of any document
+// on the config device (ticket 22). It is this command that knows which,
+// because the ceiling is this binary's constant and package tunneld holds no
+// opinion about netfilter.
+//
+// aPolicyOnTheConfigDevice is the refusal a device still carrying the document
+// ticket 22 removed has earned, and is empty when it carries neither half.
+//
+// Both names are checked because a half-updated device is what a partial
+// rebuild leaves behind, and because the orphan is the harder of the two to
+// notice: a lone policy.json.sig used to produce a refusal that named the
+// *document* as missing, so nobody ever saw the signature. Whichever is found
+// is named, so the operator removes the file they have rather than the file
+// this command expected.
+//
+// It is a stat rather than a load. After ticket 22 nothing calls the policy
+// loader on a config-device path at all, so there is no loader left to refuse
+// in; and the loader was deliberately built never to wrap [io/fs.ErrNotExist],
+// so that no caller could read an absence as permission to proceed. A presence
+// check on a file nobody reads is the opposite statement and belongs here, in
+// the command that owns the device's layout — package tunneld is never told a
+// directory and could not check something it was not told.
+//
+// It is before the mode split because all three of a guest's per-boot
+// invocations run through it (docs/snp/cloud/tdx/init.tdx): checked inside
+// serve, `-egress install` would still run against a stale device, and checked
+// inside the egress modes, the serving tunneld would.
+func aPolicyOnTheConfigDevice(configDir string) string {
+	for _, name := range []string{policyName, policyName + attest.SignatureFileSuffix} {
+		if _, err := os.Stat(filepath.Join(configDir, name)); err == nil {
+			return fmt.Sprintf("the config device carries %s, which ticket 22 moved off the config device; "+
+				"policy is pushed over the tunnel after attestation and the egress ceiling is compiled into "+
+				"this binary. Nothing here reads that file, so leaving it there would say something this "+
+				"guest does not do: re-build the config device without it", name)
+		}
+	}
+	return ""
+}
+
+// serve is everything the config device left to decide: bring the link up,
 // build the two halves of the vendor seam, start one tunneld on them, say what
 // it is, and exercise it. It is a function of its own so that [run] above is
 // the flags, the documents both paths read, and the choice between them —
@@ -231,6 +297,12 @@ func serve(o *options, cfg *runConfig, peers map[string]string, author ed25519.P
 	}
 	watched := newWatchedVerifier(routed, logf)
 
+	pushed, err := loadPushPolicy(o.pushPolicy, logf)
+	if err != nil {
+		logf("refusing to start: %v", err)
+		return exitRefusedToStart
+	}
+
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
@@ -241,11 +313,12 @@ func serve(o *options, cfg *runConfig, peers map[string]string, author ed25519.P
 		Acquirer:              acquirer,
 		Verifier:              watched,
 		ReferenceValueSetPath: filepath.Join(o.configDir, referenceValueSetName),
-		PolicyPath:            filepath.Join(o.configDir, policyName),
 		AuthorPublicKey:       author,
+		PolicyDigest:          attest.PolicyDigest(ceiling.Digest()),
 		Peers:                 tunneld.PeerTable(peers),
 		ListenAddr:            cfg.Listen,
 		Handler:               echo(cfg.SandboxID),
+		PushPolicy:            pushed,
 		Limits:                limits,
 		RefusalLog:            refusalLogger(logf),
 	})
@@ -266,7 +339,13 @@ func serve(o *options, cfg *runConfig, peers map[string]string, author ed25519.P
 		}
 	}
 
-	return exerciseAndHold(ctx, cfg, td, watched, logf)
+	// The sandbox contract (ticket 22, nullsandbox.go). Everything above this
+	// line is a tunneld; everything below it goes through the boundary the
+	// sandbox beside it sees.
+	box, detach := attachSandbox(ctx, td, o.sandboxSocket, cfg.SandboxID, logf)
+	defer detach()
+
+	return exerciseAndHold(ctx, cfg, box, watched, logf)
 }
 
 // bringUpLink sets the address on this guest's interface from the run
@@ -351,31 +430,28 @@ func newVendorSeam(configDir, reportDir, tdxCollateralDir string, logf func(stri
 
 // logStartupSummary is what an operator reads off the console once the tunneld
 // is up: what the report interface observed, the digest a peer's policy has to
-// list to admit this sandbox, whom this sandbox will dial, which reference
-// values admit any policy at all, and where it is listening.
+// list to admit this sandbox, which reference values admit any policy at all,
+// and where it is listening.
+//
+// Whom this sandbox will dial was on that list until ticket 22, off its own
+// signed policy's `forward_to`. It is not a fact this process holds any more:
+// the peer table says whom it may ask for, and what it may delegate arrives
+// over the tunnel after attestation.
 func logStartupSummary(td *tunneld.Tunneld, acquirer *tsm.Acquirer, limits tunneld.Limits, logf func(string, ...any)) {
 	if observation, ok := acquirer.LastObservation(); ok {
 		logf("%s", observation)
 	}
 	// The number a peer's operator needs, printed where the only diagnostic
-	// surface a measured guest has can carry it (spec, user story 48). It is
-	// SHA-256 over the bytes the reference value author signed over the policy,
-	// so it is not what sha256sum of policy.json prints; emit-refvals prints the
-	// same number when it writes the document and this prints it at run time,
-	// from the file the guest actually loaded.
-	logf("policy digest %s (sha256 over the signed policy; put it in a peer's policy_digest)",
+	// surface a measured guest has can carry it (spec, user story 48). Since
+	// ticket 22 it is SHA-256 over the ceiling this image carries — the text
+	// `tunneld -egress print` writes and docs/snp/evidence/ticket22/spikes/E3/
+	// ceiling.nft records — rather than over a document on the config device.
+	// A peer's policy_digest naming it still means something and means
+	// something narrower: this enforcer, this ceiling.
+	logf("policy digest %s (sha256 over the compiled-in egress ceiling; put it in a peer's policy_digest)",
 		td.PolicyDigest())
-
-	// And whom this sandbox's own policy says it will dial. An empty list is a
-	// sandbox that answers and never calls, which is a legitimate thing to
-	// deploy and an expensive thing to diagnose from a failed dial alone.
-	forward := td.ForwardTo()
-	if len(forward) == 0 {
-		logf("policy forward_to is empty: this sandbox dials nobody")
-	}
-	for _, m := range forward {
-		logf("policy forward_to: measurement %s", abbreviate(hex.EncodeToString(m)))
-	}
+	logf("egress ceiling %s on udp/%d; `tunneld -egress print` writes the text this names",
+		ceiling.Interface, ceiling.Port)
 
 	// And the entries that will admit any policy at all. This is the one place
 	// this design reads an absent field the weaker way, so it says so out loud,
@@ -394,10 +470,10 @@ func logStartupSummary(td *tunneld.Tunneld, acquirer *tsm.Acquirer, limits tunne
 // of it that decides an exit status: Milestone 3's stand-in caller (the package
 // comment's exercise), then the hold that keeps the listener up for peers still
 // dialing, then the count of what was refused while it ran.
-func exerciseAndHold(ctx context.Context, cfg *runConfig, td *tunneld.Tunneld, watched *watchedVerifier, logf func(string, ...any)) int {
+func exerciseAndHold(ctx context.Context, cfg *runConfig, box sandbox.Sandbox, watched *watchedVerifier, logf func(string, ...any)) int {
 	code := exitOK
 	if cfg.Exercise != nil {
-		if err := cfg.Exercise.perform(ctx, td, watched, logf); err != nil {
+		if err := cfg.Exercise.perform(ctx, box, watched, logf); err != nil {
 			logf("exercise failed: %v", err)
 			code = exitExerciseFailed
 		}
@@ -425,22 +501,44 @@ func echo(sandboxID string) tunneld.Handler {
 	}
 }
 
-// readAuthorKey reads the reference value author's public key from the file
-// the image baked into the measurement: 32 raw bytes or their hexadecimal,
-// which is what build-image.sh writes (one line of 64 lowercase hex).
-func readAuthorKey(path string) (ed25519.PublicKey, error) {
+// loadPushPolicy reads the policy this tunneld pushes to every peer it dials,
+// and says on the console what it is about to push: the format, the version,
+// the length and the digest of exactly those bytes. No path is no policy and no
+// push, which is what every recorded scenario runs.
+//
+// The two envelope fields are read here so that the console can carry them, and
+// so that a file that is not a policy at all is an operator's mistake refused at
+// startup rather than one a peer has to discover. The version is deliberately
+// not checked against this build's: which versions may be *applied* is the
+// receiving peer's question and its tunneld answers it (docs/policy-push.md), so
+// a delegator that refused to carry a version its own sandbox does not read
+// would be answering a question that is not its own. The format is checked,
+// because the format is what tells a push from an ordinary exchange on the wire
+// — a document with another one would not reach a sandbox at all.
+//
+// The digest is the line that makes a two-guest transcript a claim: the number
+// here and the number on the peer's SANDBOX applied line are the same, or the
+// push carried something else.
+func loadPushPolicy(path string, logf func(string, ...any)) ([]byte, error) {
+	if path == "" {
+		return nil, nil
+	}
 	raw, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("reading the reference value author's public key: %w", err)
+		return nil, fmt.Errorf("reading the policy to push: %w", err)
 	}
-	if len(raw) == ed25519.PublicKeySize {
-		return ed25519.PublicKey(raw), nil
+	var envelope sandbox.Envelope
+	if err := json.Unmarshal(raw, &envelope); err != nil {
+		return nil, fmt.Errorf("%s is %d bytes that are not a JSON object: %v", path, len(raw), err)
 	}
-	decoded, err := hex.DecodeString(strings.TrimSpace(string(raw)))
-	if err != nil || len(decoded) != ed25519.PublicKeySize {
-		return nil, fmt.Errorf("%s is neither %d raw bytes nor their hexadecimal", path, ed25519.PublicKeySize)
+	if envelope.Format != sandbox.PolicyFormat {
+		return nil, fmt.Errorf("%s says it is format %q, not %q; a document with another format is not a push and would reach no sandbox",
+			path, envelope.Format, sandbox.PolicyFormat)
 	}
-	return ed25519.PublicKey(decoded), nil
+	sum := sha256.Sum256(raw)
+	logf("push policy %s: format=%s version=%d bytes=%d sha256=%s",
+		path, envelope.Format, envelope.Version, len(raw), hex.EncodeToString(sum[:]))
+	return raw, nil
 }
 
 // reportInterface says what is at the kernel's report interface, and it is

@@ -17,6 +17,13 @@ split the policy into its own document, `policy.json`, after which two guests di
 nothing but which policy digest their reference value names admit each other in both directions
 at once.
 
+> **Ticket 22 narrowed what the digest slot names.** The policy is no longer delivered on the
+> config device and the digest a guest presents is the name of the egress ceiling compiled into
+> its image. The binding format did not change and neither did the allow-list field; what
+> changed is what the number means and where it comes from. Everything below this line describes
+> tickets 18 and 19 as they ran, and [After ticket 22](#after-ticket-22-the-digest-names-the-ceiling)
+> at the end says which parts of it are now history.
+
 ---
 
 ## What was built
@@ -346,6 +353,68 @@ neither, so its set is unconstrained and its policy forwards to the image's own 
 which is what lets two guests booted from it call each other. The `mutual` scenario authors its
 own four documents with the image's author key.
 
+## After ticket 22: the digest names the ceiling
+
+Ticket 22 took `policy.json` off the config device. Both halves of what it carried went
+somewhere else, and neither went to the host:
+
+- **The egress section became a constant in the measured image.** `attest/ceiling` holds the
+  whole rule set as text, `attest/cmd/tunneld/egress.go` installs it, and the two compiled-in
+  values are the VPC interface and the tunnel's UDP port. A guest installs it before it brings
+  its link up and before it looks for a config device, so the window in which a measured guest is
+  running and unconstrained has length zero rather than "however long finding a disk takes"
+  (`docs/snp/evidence/ticket22/spikes/E3/`).
+- **`forward_to` stopped being enforced.** It was the dialing side's admission check, run by each
+  guest against a document on a disk the host supplies. What a sandbox may delegate to whom is
+  decided by the contract pushed over the tunnel after attestation, by a peer whose evidence has
+  already been judged (`docs/snp/evidence/ticket22/spikes/E2/`).
+
+**The digest slot carries the ceiling's digest.** `Binding.PolicyDigest` and the allow-list's
+`policy_digest` are unchanged in width, position and meaning-as-a-check: a verifier still
+compares the number a peer presented against the number its own reference value names, and
+refuses on a mismatch. What the number *names* is now SHA-256 over the ceiling's canonical text —
+`197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973` for the ceiling this branch
+carries (`docs/snp/evidence/ticket22/ceiling-digest.txt`). An allow-list entry therefore still
+says something, and says something narrower than it did: *this enforcer version, this ceiling*.
+The number is printed by `attest-tool ceiling -digest`, which reads nothing, needs no key and
+needs no guest; the image build puts it in the manifest's `policy_digest` line and the smoke
+harness takes it from the tool rather than from a document.
+
+**Binding context version 2 is kept and is not bumped to 3.** The format did not change: the same
+64 bytes, the same layout, the same digest width, the same check. What narrowed is what a
+well-behaved guest puts in the slot, and a version number records a format a verifier has to
+parse differently. Bumping it would have made every recorded bundle from tickets 18 and 19
+unverifiable by the current binary for no reason a reader could point at in the bytes — the
+opposite of what the version exists for. `attest.BindingContextV1` is still there for the
+pre-ticket-18 recordings, and v2 now covers two eras of guest with one parse.
+
+**The digest is no longer load-bearing for delegation.** It was, in ticket 19's arrangement: A
+admitted B because A's set named the digest of B's policy, and B's policy said whom B would dial.
+Now both sides of a pair booted from one image present the *same* digest, because they carry the
+same ceiling, so the digest cannot distinguish them and is not asked to. It is a statement about
+what a guest will enforce on the network, checked at admission; who may ask whom for what is the
+pushed contract's question. Two mechanisms, disjoint, which is the same shape the egress ceiling
+and the peer table already had.
+
+**Ticket 19's scenario two is an older-format record.** It authored two guests whose sets named
+the same policy digest and watched the mismatched side refuse. That arrangement is not
+expressible after this ticket — one image, one ceiling, one digest — so the run stays as a record
+of what the code did then, exactly as the ticket 05 and ticket 08 bundles already are. Its
+`config-src/` directories are records too and not inputs: they carry a `policy.json`, and tunneld
+now refuses to start on a device that does. So does `mkconfigdev.sh`, rather than building one.
+
+**What survives in `attest/policyfile.go`, and why.** `PolicyDigestOf`, `ParsePolicyDigest`,
+`MarshalPolicy` and `SignPolicy` are untouched: the first two are how a digest is computed and
+read back, and the second two are how a policy is authored and signed — which is exactly what the
+pushed contract is. `LoadPolicyFile` is **kept** although its config-device caller is gone,
+because it still has a live one: `emit-refvals -emit-policy` loads back what it just signed
+before it claims to have written anything, which is this repository's standing rule of shipping
+only what has been read back through the same loader. Removing it would delete that check to tidy
+away a name. `Policy.Forwards` is **removed**: it existed only to answer the dialing side's
+`forward_to` question, that question is not asked here any more, and a predicate nothing calls is
+a claim nobody tests. The `ForwardTo` field and the document format stay, so every policy tickets
+18 and 19 recorded still loads and still hashes to the digest those records name.
+
 ## What this does not establish
 
 - **Anything in a cloud.** Both guests are on this host, one chip, one certificate chain,
@@ -367,11 +436,16 @@ own four documents with the image's author key.
   netfilter rule set at boot, and thirty attempts at forbidden egress across six guests were
   refused before they left. What the section still does not decide is which addresses are
   excepted — those come from the unsigned peer table, because `forward_to` names measurements
-  and a measurement is not an address (`docs/two-guests-on-tdx.md`).
+  and a measurement is not an address (`docs/two-guests-on-tdx.md`). *Ticket 22 takes the
+  section out of the document altogether:* the rule set is a constant in the measured image, so
+  what the guest enforces is a property of the image a verifier has read rather than of a
+  document the host delivered, and no address on the config device can widen it.
 - **That `forward_to` stops traffic at the network layer.** It stops this tunneld dialing a peer
   whose image its policy does not name, which is a refusal at the handshake and is tested in
   both the live run and the unit tests. It is not a filter: a sandbox with another way onto the
-  network is not constrained by it, which is the same gap the egress section has.
+  network is not constrained by it, which is the same gap the egress section has. *Ticket 22
+  removes the mechanism rather than closing the gap:* nothing here enforces `forward_to` any
+  more, and what a sandbox may delegate arrives over the tunnel after attestation.
 - **A policy that changes under a live tunnel.** No run here outlives the maximum age, so
   nothing shows a peer being re-verified against a policy that moved after it was admitted.
   Ticket 19's scenario one does outlive it and is re-attested twice, and that changes nothing

@@ -20,24 +20,30 @@
 // generates its key at startup and never persists it; it takes the sandbox
 // identifier as a parameter, synthetic until the sentry integration supplies
 // a real one, so that the key lifecycle here is already the final one. It
-// loads two signed documents against the author public key it was started
-// with — its reference value set through [attest.LoadReferenceValueSetFile]
-// and its policy through [attest.LoadPolicyFile] — and there is no path that
-// starts without either.
+// loads one signed document against the author public key it was started with
+// — its reference value set, through [attest.LoadReferenceValueSetFile] — and
+// there is no path that starts without it.
 //
-// # The set and the policy are different questions
+// # The set and the digest are different questions
 //
 // The set is whom this sandbox admits: measurement and policy_digest pairs,
-// enforced on every peer in either role. The policy is what this sandbox is:
-// its egress section, and the measurements it will dial. Its digest is the
-// identity this sandbox presents, and `forward_to` is the one check that runs
-// on the dialing side alone — a peer this sandbox would happily answer may
-// still be one its own policy does not say it will call.
+// enforced on every peer in either role. The digest in [Config.PolicyDigest]
+// is what this sandbox presents about itself, for a peer's set to check
+// against; what it names is the caller's to say, and the measured guest's
+// command names the egress ceiling compiled into its image.
 //
-// They were one document until ticket 19. Splitting them is what makes mutual
-// pinning expressible at all: while a sandbox's policy was its own allow-list,
-// A's set would have had to name the digest of B's set and B's the digest of
-// A's, and neither digest can be fixed before the other.
+// The two were one document until ticket 19. Splitting them is what makes
+// mutual pinning expressible at all: while a sandbox's policy was its own
+// allow-list, A's set would have had to name the digest of B's set and B's the
+// digest of A's, and neither digest can be fixed before the other.
+//
+// A second signed document — this sandbox's own policy, with its `forward_to`
+// list — was loaded here beside the set until ticket 22, off the config
+// device, and its digest was the one presented. Both are gone from this
+// package: the ceiling that document used to carry is compiled into the
+// measured image, and what a sandbox may delegate to whom is a contract pushed
+// over the tunnel after attestation, not a list read off a disk the host
+// supplies (docs/policy-binding.md).
 //
 // The vendor is injected through [Config]: an [attest.Acquirer] for this
 // platform's evidence and an [attest.Verifier] for its peers'. Tests inject
@@ -63,9 +69,11 @@ import (
 	"os"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"gvisor.dev/gvisor/attest"
 	"gvisor.dev/gvisor/attest/ratls"
+	"gvisor.dev/gvisor/attest/sandbox"
 	"gvisor.dev/gvisor/attest/tunnel"
 )
 
@@ -104,12 +112,17 @@ type Config struct {
 	ReferenceValueSetPath string
 	AuthorPublicKey       ed25519.PublicKey
 
-	// PolicyPath locates this sandbox's own signed policy, authorised by the
-	// same AuthorPublicKey under its own domain. It is required: the digest of
-	// this document is the identity this tunneld presents, and a tunneld
-	// without one would ask every peer to admit it on its measurement alone.
-	// A policy that fails to load refuses startup.
-	PolicyPath string
+	// PolicyDigest is the digest this tunneld presents to every peer it meets,
+	// bound into its evidence under ADR-0002's amendment and checked against
+	// the peer's own allow-list.
+	//
+	// It is required, and it is the caller's to choose because the caller is
+	// the one thing that knows what this sandbox is: the command that builds
+	// the measured guest passes the name of the egress ceiling compiled into
+	// its image ([ceiling.Digest], ticket 22). It was the digest of the policy
+	// at PolicyPath until then, which made the number a statement about a
+	// document on a device the host supplies rather than about the image.
+	PolicyDigest attest.PolicyDigest
 
 	// Peers is the peer table.
 	Peers PeerTable
@@ -125,6 +138,25 @@ type Config struct {
 	// Limits bound how long a tunnel lives. The zero value takes the defaults,
 	// which are 60 seconds idle and 15 minutes of age.
 	Limits Limits
+
+	// PushPolicy is the policy this tunneld pushes to every peer it dials,
+	// after that peer has been admitted and before any stream or exchange
+	// reaches it (push.go, docs/policy-push.md). Empty pushes nothing, which is
+	// what every scenario recorded before ticket 22 does.
+	//
+	// The bytes are opaque and are not checked here, deliberately: a document
+	// this side's own reader would refuse is still one a peer may read, and the
+	// version that decides a push is the peer's. What a badly built one costs
+	// is that peer's refusal, on the console, naming it. One policy goes to
+	// every peer — per-peer delegation is what this field becomes when
+	// something needs it, and a table keyed by peer name today would be a
+	// second peer table with no test behind it.
+	PushPolicy []byte
+
+	// PushTimeout bounds how long a push waits for its acknowledgement. Zero
+	// takes [DefaultPushTimeout], which New resolves once at startup the way
+	// [Limits] resolves its own.
+	PushTimeout time.Duration
 
 	// RefusalLog receives every peer this tunneld refuses at the handshake,
 	// whichever role it was in, with the typed reason that refused it. It is
@@ -156,11 +188,10 @@ type Tunneld struct {
 	cfg      Config
 	listener *tunnel.Listener
 
-	// policy is this sandbox's own signed policy, and unconstrained the values
-	// in its set that list no policy of their own. Both are read off disk at
-	// startup and never change: the two documents are loaded once, and the
-	// identity bound to the policy is held for the life of the process.
-	policy        attest.Policy
+	// unconstrained is the values in this tunneld's set that list no policy of
+	// their own. It is read off disk at startup and never changes: the set is
+	// loaded once, and the identity bound to [Config.PolicyDigest] is held for
+	// the life of the process.
 	unconstrained []attest.UnconstrainedValue
 
 	// dialed holds the tunnels this tunneld opened, one per peer, and is what
@@ -169,17 +200,38 @@ type Tunneld struct {
 	// identity this tunneld has.
 	dialed *tunnel.Cache
 
+	// The sandbox contract's three fields (sandbox.go): what the listening side
+	// concluded about each peer it admitted, the streams peers have opened and
+	// nobody has accepted yet, and the channel that closes when this tunneld
+	// does so that a sandbox waiting in Accept is told rather than left there.
+	verdicts *verdictBook
+	incoming chan accepted
+	done     chan struct{}
+
+	// pushes is the policy push made on each tunnel this tunneld dialed, so
+	// that one tunnel carries one push however many callers raced for it
+	// (push.go).
+	pushes *pushBook
+
+	// refusals is where every reason this tunneld reaches is written: the
+	// handshake's, through ratls, and a pushed policy that was not applied
+	// (push.go). One sink, because an operator reading a console has one place
+	// to look.
+	refusals RefusalLog
+
 	mu       sync.Mutex
 	closed   bool
 	accepted []*tunnel.Conn
-	wg       sync.WaitGroup
+	// box is the sandbox a pushed policy is handed to, set by [Tunneld.Attach]
+	// and nil until it is (push.go).
+	box sandbox.Sandbox
+	wg  sync.WaitGroup
 }
 
-// New starts a tunneld: loads and checks the reference value set and the
-// policy, generates the key, acquires this platform's evidence, and begins
-// listening. Any failure is a refusal to start; in particular a reference value
-// set that does not load returns an error wrapping [attest.ErrSetRefused], and
-// a policy that does not load one wrapping [attest.ErrPolicyRefused].
+// New starts a tunneld: loads and checks the reference value set, generates the
+// key, acquires this platform's evidence, and begins listening. Any failure is
+// a refusal to start; in particular a reference value set that does not load
+// returns an error wrapping [attest.ErrSetRefused].
 func New(ctx context.Context, cfg Config) (*Tunneld, error) {
 	if cfg.SandboxID == "" {
 		return nil, errors.New("tunneld: no sandbox identifier")
@@ -187,11 +239,13 @@ func New(ctx context.Context, cfg Config) (*Tunneld, error) {
 	if cfg.Acquirer == nil || cfg.Verifier == nil {
 		return nil, errors.New("tunneld: both halves of the vendor seam are required")
 	}
-	set, err := attest.LoadReferenceValueSetFile(cfg.ReferenceValueSetPath, cfg.AuthorPublicKey)
-	if err != nil {
-		return nil, fmt.Errorf("tunneld: refusing to start: %w", err)
+	if cfg.PolicyDigest == (attest.PolicyDigest{}) {
+		return nil, errors.New("tunneld: no policy digest; a tunneld that presented none would ask every peer to admit it on its measurement alone")
 	}
-	policy, err := attest.LoadPolicyFile(cfg.PolicyPath, cfg.AuthorPublicKey)
+	if cfg.PushTimeout <= 0 {
+		cfg.PushTimeout = DefaultPushTimeout
+	}
+	set, err := attest.LoadReferenceValueSetFile(cfg.ReferenceValueSetPath, cfg.AuthorPublicKey)
 	if err != nil {
 		return nil, fmt.Errorf("tunneld: refusing to start: %w", err)
 	}
@@ -199,9 +253,9 @@ func New(ctx context.Context, cfg Config) (*Tunneld, error) {
 	if err != nil {
 		return nil, fmt.Errorf("tunneld: refusing to start: %w", err)
 	}
-	// The policy's digest is what the identity binds into the evidence and what
-	// a peer checks against its own allow-list.
-	identity, err := ratls.NewIdentity(ctx, cfg.Acquirer, policy.Digest)
+	// The digest the caller named is what the identity binds into the evidence
+	// and what a peer checks against its own allow-list.
+	identity, err := ratls.NewIdentity(ctx, cfg.Acquirer, cfg.PolicyDigest)
 	if err != nil {
 		return nil, fmt.Errorf("tunneld: refusing to start: %w", err)
 	}
@@ -209,21 +263,32 @@ func New(ctx context.Context, cfg Config) (*Tunneld, error) {
 	if addr == "" {
 		addr = "127.0.0.1:0"
 	}
-	refusals := ratls.WithRefusalLog(refusalLog(cfg))
-	listener, err := tunnel.Listen(addr, identity.ServerConfig(verification, refusals), cfg.Limits)
+	logRefusal := refusalLog(cfg)
+	refusals := ratls.WithRefusalLog(logRefusal)
+	// The listening side asks nothing more of a peer than verification did, so
+	// its admission hook keeps the verdict instead (sandbox.go, verdictBook):
+	// it is what names the peer that opened a stream to the sandbox.
+	verdicts := newVerdictBook()
+	listener, err := tunnel.Listen(addr, identity.ServerConfig(verification, refusals, ratls.WithAdmission(verdicts.remember)), cfg.Limits)
 	if err != nil {
 		return nil, fmt.Errorf("tunneld: refusing to start: %w", err)
 	}
-	// Only the dialing side is built with the forward_to gate. Whom this
-	// sandbox calls is its own policy's business; whom it answers is the
-	// reference value set's, and the set is enforced in both roles alike.
-	client := identity.ClientConfig(verification, refusals, ratls.WithAdmission(forwardTo(policy)))
+	// Both roles are built from the same set, and since ticket 22 there is
+	// nothing else in either: the dialing side carried one extra check until
+	// then, this sandbox's own `forward_to`, and the document it came from does
+	// not reach this package any more. [ratls.WithAdmission] is where a check
+	// of that kind goes when the pushed contract brings one back.
+	client := identity.ClientConfig(verification, refusals)
 	t := &Tunneld{
 		cfg:           cfg,
 		listener:      listener,
-		policy:        policy,
 		unconstrained: set.Unconstrained(),
 		dialed:        tunnel.NewCache(client, cfg.Limits),
+		verdicts:      verdicts,
+		incoming:      make(chan accepted),
+		done:          make(chan struct{}),
+		pushes:        newPushBook(),
+		refusals:      logRefusal,
 	}
 	t.wg.Add(1)
 	go t.accept()
@@ -248,52 +313,15 @@ func (t *Tunneld) SandboxID() string { return t.cfg.SandboxID }
 // Addr is the address peers reach this tunneld at.
 func (t *Tunneld) Addr() net.Addr { return t.listener.Addr() }
 
-// PolicyDigest is the digest of the policy this tunneld loaded, which is what
-// it presents to every peer it meets (ADR-0002's amendment).
+// PolicyDigest is the digest this tunneld presents to every peer it meets
+// (ADR-0002's amendment), which is the one its caller gave it.
 //
 // It is here so that the process around a tunneld can print it: a peer admits
 // this sandbox only if one of its own reference values lists this number, and
-// the only way an operator gets it is off a start log. It is a digest of a
-// document that travels on an untrusted device, so nothing about publishing it
-// is a disclosure.
-func (t *Tunneld) PolicyDigest() attest.PolicyDigest { return t.policy.Digest }
-
-// ForwardTo is the images this tunneld's own policy says it will dial, in the
-// order the document lists them.
-//
-// It is exposed for the same reason as [Tunneld.PolicyDigest] — the process
-// around a tunneld prints it at start, and an empty list is a sandbox that
-// dials nobody, which is worth reading on a console rather than inferring from
-// a failed dial. The slices are copies: the list decides whom this sandbox
-// calls, and a caller holding the loader's arrays could rewrite that at a
-// distance.
-func (t *Tunneld) ForwardTo() [][]byte {
-	out := make([][]byte, len(t.policy.ForwardTo))
-	for i, m := range t.policy.ForwardTo {
-		out[i] = append([]byte(nil), m...)
-	}
-	return out
-}
-
-// forwardTo is the dialing side's admission check: a peer whose evidence has
-// verified and whose policy this side's set admits is dialed only if this
-// side's own policy says it forwards to the image that peer is running.
-//
-// It is [attest.ReasonPolicyMismatch] because it is the same kind of statement
-// as the digest check — the right image under the wrong arrangement — and the
-// detail says which of the two it was, so an operator reading a console does
-// not have to guess whether to edit a set or a policy.
-func forwardTo(p attest.Policy) ratls.Admission {
-	return func(a attest.Attested) error {
-		if p.Forwards(a.Claims.LaunchMeasurement) {
-			return nil
-		}
-		return attest.Refuse(attest.ReasonPolicyMismatch,
-			"peer runs measurement %x, which is not in forward_to: this sandbox's policy names %d "+
-				"measurement(s) it will dial and this is not one of them",
-			a.Claims.LaunchMeasurement, len(p.ForwardTo))
-	}
-}
+// the only way an operator gets it is off a start log. It names something a
+// reader of the image can recompute for themselves, so nothing about
+// publishing it is a disclosure.
+func (t *Tunneld) PolicyDigest() attest.PolicyDigest { return t.cfg.PolicyDigest }
 
 // Unconstrained is the values in this tunneld's own set that list no policy
 // digest, and so admit a peer running the named image under any policy at all.
@@ -324,7 +352,13 @@ func (t *Tunneld) accept() {
 		// it here would mean nothing did.
 		t.accepted = append(live(t.accepted), conn)
 		t.mu.Unlock()
-		go conn.Serve(t.handle)
+		// A policy push is one of the exchanges this tunnel carries, and the
+		// handler is bound to the connection so that a push it refuses can end
+		// it (push.go).
+		go conn.Serve(t.handleFor(conn))
+		// And beside the exchanges, the streams: Serve tells the two apart and
+		// this carries the raw ones to the sandbox (sandbox.go).
+		go t.acceptStreams(conn)
 	}
 }
 
@@ -358,24 +392,58 @@ func (t *Tunneld) handle(ctx context.Context, request []byte) ([]byte, error) {
 // visible where the caller asked for the peer. A channel handed back before
 // anything was verified would be a channel that fails later for a reason the
 // caller cannot see, which is the shape this design refuses everywhere else.
+//
+// It establishes by asking the channel it is about to hand back for its tunnel,
+// rather than by reaching for the cache itself, so that there is one path to a
+// tunnel and everything on it — the dial, the attestation, the policy pushed
+// and acknowledged — happens once and in one order.
 func (t *Tunneld) Peer(ctx context.Context, name string) (*Channel, error) {
 	addr, ok := t.cfg.Peers[name]
 	if !ok {
 		return nil, fmt.Errorf("%w: %q is not in the peer table", ErrUnknownPeer, name)
 	}
-	if _, err := t.dialed.Get(ctx, addr); err != nil {
+	c := &Channel{name: name, addr: addr, t: t}
+	if _, err := c.tunnelTo(ctx); err != nil {
+		return nil, err
+	}
+	return c, nil
+}
+
+// admitted is the tunnel to a peer, established and under this tunneld's
+// policy: the cache dials and attests one if there is none, and the policy this
+// tunneld pushes goes out on it and is acknowledged before it is handed back
+// (push.go).
+//
+// Everything that reaches a peer comes through here — [Tunneld.Peer] and both
+// of a channel's verbs — which is what makes "nothing is sent before the
+// acknowledgement" a property of the type rather than of remembering to ask.
+// The push cannot precede admission for the same reason: there is no
+// connection to make it on until the cache has returned one, and the cache
+// returns what Dial established or the error it failed with.
+func (t *Tunneld) admitted(ctx context.Context, name, addr string) (*tunnel.Conn, error) {
+	conn, err := t.dialed.Get(ctx, addr)
+	if err != nil {
 		return nil, fmt.Errorf("%w: %q at %s: %v", ErrNotEstablished, name, addr, err)
 	}
-	return &Channel{name: name, addr: addr, t: t}, nil
+	if err := t.pushPolicy(ctx, conn, name, addr); err != nil {
+		return nil, err
+	}
+	return conn, nil
 }
 
 // Close stops listening and ends every tunnel, dialed and accepted.
 func (t *Tunneld) Close() error {
 	t.mu.Lock()
+	was := t.closed
 	t.closed = true
 	accepted := t.accepted
 	t.accepted = nil
 	t.mu.Unlock()
+	if !was {
+		// Once, so that closing twice is not a panic: a sandbox waiting in
+		// Accept is released here.
+		close(t.done)
+	}
 	err := t.listener.Close()
 	t.dialed.Close()
 	for _, c := range accepted {
@@ -414,22 +482,47 @@ func (c *Channel) Peer() string { return c.name }
 // caller whose exchange dies in flight sees the error, and its next exchange
 // runs over a new tunnel.
 func (c *Channel) Exchange(ctx context.Context, request []byte) ([]byte, error) {
+	conn, err := c.tunnelTo(ctx)
+	if err != nil {
+		return nil, err
+	}
+	response, err := conn.Exchange(ctx, request)
+	return response, c.lost(conn, err)
+}
+
+// lost is what a failure becomes when the tunnel under it has gone.
+//
+// The cache had not yet heard: Live is the last thing this side was told, not a
+// promise about the next instant. To the caller it is the same event as a
+// tunnel found gone before the call started, and both of a channel's verbs say
+// so in the same sentence. Anything else is the caller's own error, returned
+// unchanged.
+func (c *Channel) lost(conn *tunnel.Conn, err error) error {
+	if err != nil && !conn.Live() {
+		return fmt.Errorf("%w: %q at %s: %v", ErrNotEstablished, c.name, c.addr, err)
+	}
+	return err
+}
+
+// tunnelTo is what both of a channel's verbs do before they do anything: refuse
+// a channel no tunneld made, refuse one its holder has closed, and take the
+// tunnel to this peer out of the cache at the moment it is asked for — which is
+// where it is dialed if there is none, re-dialed and re-attested if the one
+// that was there is gone or has reached its maximum age, and where this
+// tunneld's policy is pushed to the peer and acknowledged ([Tunneld.admitted]).
+//
+// A Channel nobody's Peer returned is the first of those: the type is exported
+// and its fields are not, so &Channel{} compiles and reaches no peer. It is
+// refused the way a closed one is rather than dereferencing the tunneld it has
+// not got (spike E2).
+func (c *Channel) tunnelTo(ctx context.Context) (*tunnel.Conn, error) {
+	if c.t == nil {
+		return nil, fmt.Errorf("%w: %q", ErrNoTunneld, c.name)
+	}
 	if c.closed.Load() {
 		return nil, fmt.Errorf("%w: %q", ErrChannelClosed, c.name)
 	}
-	conn, err := c.t.dialed.Get(ctx, c.addr)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %q at %s: %v", ErrNotEstablished, c.name, c.addr, err)
-	}
-	response, err := conn.Exchange(ctx, request)
-	if err != nil && !conn.Live() {
-		// The tunnel was gone, or went, under this exchange. The cache had
-		// not yet heard: Live is the last thing this side was told, not a
-		// promise about the next instant. To the caller it is the same
-		// event as a tunnel found gone before the exchange started.
-		return nil, fmt.Errorf("%w: %q at %s: %v", ErrNotEstablished, c.name, c.addr, err)
-	}
-	return response, err
+	return c.t.admitted(ctx, c.name, c.addr)
 }
 
 // Close gives up this channel. It does not end the tunnel: the tunnel is

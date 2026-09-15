@@ -1,0 +1,123 @@
+The egress ceiling's digest, ticket 22
+======================================
+
+197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+
+That is SHA-256 over the whole of attest/ceiling/ceiling.nft, commentary
+included, and since ticket 22 it is:
+
+  * the number every guest built from this source binds into its evidence and
+    prints on its console at start ("tunneld: policy digest ..."), where the
+    digest of /config/policy.json used to be; and
+  * the number an operator puts in a reference value's policy_digest to admit
+    such a guest (docs/policy-binding.md).
+
+The commentary is inside the digest deliberately. It is the justification for
+every rule under it, and an edit to a justification that did not change the
+number would be an edit nobody had to defend.
+
+How it is produced
+------------------
+
+The text is compiled into the measured binary, so the two ways of asking are
+the binary itself and the workstation tool built from the same source:
+
+  $ cd attest && go build -o /tmp/b/tunneld ./cmd/tunneld
+  $ /tmp/b/tunneld -egress print | sed '/^tunneld: EXIT status=/d' > ceiling.nft
+  $ sha256sum ceiling.nft
+  197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973  ceiling.nft
+
+  $ cd attest && go run ./cmd/attest-tool ceiling -digest
+  197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+
+  $ sha256sum attest/ceiling/ceiling.nft
+  197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+
+`-egress print` writes the ceiling and nothing else on its stream; the one line
+`sed` removes is the exit status main() prints after run() returns. The three
+agree because there is one text: attest/ceiling embeds ceiling.nft, and
+TestTheCompiledInCeilingIsTheRecordedOne holds that file byte-identical to
+docs/snp/evidence/ticket22/spikes/E3/ceiling.nft, which is the file spike E3
+installed and probed. TestTheTextAndTheRulesAreTheSameCeiling holds the text
+and the expressions tunneld hands the kernel together, line for line, so the
+number names what is enforced and not only what is written.
+
+What it does NOT cover
+----------------------
+
+The digest is over the ceiling's description, not over the binary, the initrd
+or the image. It says which rule set this guest came up with; the launch
+measurement (RTMR2 on TDX, the launch digest on SEV-SNP) is what says the guest
+is running the image that carries it. A verifier needs both, which is why the
+reference value carries a measurement and a policy_digest rather than either
+alone.
+
+The image that was built, and what moved
+---------------------------------------
+
+The note that stood here said no image had been rebuilt for this ticket and
+listed what a rebuild would move. It has been rebuilt. This is the record of
+it, produced on 2026-09-15 by
+
+  docs/snp/image/package-tunneld.sh
+
+with AUTHOR_KEY pointing at ticket 14's key, because the public half of that key
+is inside the launch measurement and a new key would be a different image for a
+reason that has nothing to do with this ticket.
+
+  SEV-SNP launch measurement, before   a234bfa378d30bbde9c5cc3b3c7649c35ea8a7ab
+  (ticket 18's rebuild, $STACK/         f783fe95f22a44b0aeb0fc38cae92689256a5dd4
+   image-ticket19)                      2197dfa1b87f7723
+
+  SEV-SNP launch measurement, after    b02657728efac22dbdd72b0388186aaa6a2c59e6
+  ($STACK/image-ticket22)               c43ab92e48d6060b1e37ee342c083c34463ebc2c
+                                        3537c5998d8529cc
+
+  manifest policy_digest, before       ee2225534af9014bf0dc4c347473a4df91cdf6bb
+  (the emitted policy's digest, which   d733073b87100b2893cede74
+   is the meaning ticket 22 retired)
+
+  manifest policy_digest, after        197d4aae216ff9c22268fba6646edc3d976e924f
+  (the egress ceiling's digest, above)  4ccec4e8e5461d60f76ab973
+
+The measurement moved and the ceiling digest is the number at the top of this
+file, unchanged, because it is a digest over a text and not over an image: the
+rule set a guest comes up with is the same rule set, and the measurement is what
+says which guest came up with it. A verifier needs both, and the reference value
+set this build emitted names both — the measurement in its own field and the
+ceiling in its policy_digest, which is a pair no set on this branch could carry
+before, because the old policy_digest named a document that has stopped being
+delivered.
+
+Four things inside the measurement changed, and every one of them is a byte in
+rootfs.img or in the binary it carries:
+
+  * attest/cmd/tunneld — the two ticket 21 leftovers. selfcheck.go's two console
+    strings now name `attest-tool verify`, which is what that command has been
+    called since ticket 21, and readAuthorKey is one exported function in
+    package attest instead of two byte-identical unexported copies.
+  * docs/snp/image/init.rootfs — loopback comes up before the ceiling is
+    installed, the six netfilter modules the ceiling needs are loaded, the
+    policy to push is passed to tunneld when the config device carries one, and
+    the ceiling is probed from inside the guest after the exercise is over.
+  * docs/snp/image/build-image.sh — the `ip` busybox applet, and the six
+    netfilter modules, both now in the root filesystem.
+  * the emitted policy, which is not measured but is emitted beside the image:
+    its digest is 09a7c6974d34357f5401e70871fbca39d7ce802576756304fc501b9c8cd92d41,
+    and it is recorded in the manifest as emitted_policy_digest, beside
+    policy_digest, which is the ceiling digest above. That swap is what ticket
+    22 did to the manifest: the number a peer pins is the ceiling now.
+
+The first boot of the first rebuild is worth keeping, because it is the thing
+nothing offline could have told us. It came up, proved no writable path was
+executable, brought loopback up, and then:
+
+  tunneld: refusing to continue: installing the ceiling: committing the rule set: socket: protocol not supported
+  tunneld: EXIT status=1
+  init: FATAL: the egress ceiling would not install; powering off without running tunneld
+
+This guest kernel builds nf_tables as a module and the image shipped none, so
+there was no ceiling to install. The guest powered off rather than running
+unconstrained, which is what init.rootfs is written to do and the first time it
+has had to do it. The fix is the six modules above, and the second image is the
+one every file in this directory was produced from.

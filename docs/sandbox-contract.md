@@ -68,7 +68,9 @@ process boundary in the middle (`host.go:46`). A `context.Context` is on each me
 `Accept` blocks and Go has one way of saying so; nothing else was added to the three verbs.
 
 `Apply` returns `nil` for an acknowledgement and an error for a refusal. Refusals of the
-envelope wrap `sandbox.ErrPolicyRefused` (`policy.go:54`).
+envelope wrap `sandbox.ErrPolicyRefused` (`policy.go:54`). Its caller is a peer: a delegator
+pushes the policy over the tunnel once that peer has been admitted, and the `nil` or the error
+here is what becomes the acknowledgement or the refusal on the wire — `docs/policy-push.md`.
 
 `CloseWrite` is the half that makes `Stream` more than an `io.ReadWriteCloser`, and it is not
 decoration: every protocol a sandbox will run over a stream ends a request by saying it has
@@ -252,8 +254,10 @@ SANDBOX applied format=policy version=1 bytes=69 sha256=8c1062e8310ede7c8b9c0ff2
 ```
 
 — which is what makes "B acknowledged the policy A pushed" a claim a console transcript can
-support: the digest on both sides is the same number, or the push carried something else. It
-parses nothing beyond the envelope and never looks at `n`, `f` or `x`.
+support: the digest on both sides is the same number, or the push carried something else. Since
+ticket 22's other half that line is written when a peer pushes, beside the delegator's own
+`push policy … sha256=…` (`docs/policy-push.md`); the two numbers are the claim. It parses
+nothing beyond the envelope and never looks at `n`, `f` or `x`.
 
 It is not a placeholder for a sandbox that will do more. A sandbox is not where anything is
 enforced in this design — enforcement is the netfilter rule set the signed policy implies
@@ -263,8 +267,10 @@ that records a policy and says it has it is the honest implementation of the con
 **The envelope, checked at the boundary.** A pushed policy is opaque versioned JSON,
 `{"format":"policy","version":1,"n":[…],"f":[…],"x":[…]}`. Tunneld reads two fields of it and
 nothing else, before the sandbox is woken: `tunneld.PolicyChecked`
-(`attest/tunneld/sandbox.go:130`) wraps the sandbox and refuses anything that is not
-`policy`/version 1. Where the check runs is the point of it — an acknowledgement then means a
+(`attest/tunneld/sandbox.go:121`) wraps the sandbox and refuses anything that is not
+`policy`/version 1. `Tunneld.Attach` (`attest/tunneld/push.go:128`) is what puts a sandbox
+behind that wrapper, so the check holds whichever one is beside this tunneld — the null one in
+process, or a `Host` with another process behind it. Where the check runs is the point of it — an acknowledgement then means a
 sandbox with *that* policy on every implementation of the contract, rather than meaning whatever
 the sandbox beside a particular tunneld made of a document it could not read. Unknown fields are
 ignored, which is the opposite of how this module loads its signed documents and deliberately
@@ -310,6 +316,7 @@ only diagnostic surface a measured guest has can carry it (spec, user story 48).
 | a sandbox **in another process** opens, accepts with the identity, round-trips bytes both ways through the received descriptor, and answers two pushes | `attest/sandbox/socket_test.go`, which re-executes the test binary as the sandbox |
 | the pump carries the end of the stream each way | same file |
 | a push at a tunneld with no sandbox attached is refused rather than acknowledged | same file |
+| a policy pushed **over the tunnel** reaches this contract's `Apply`, and what that returns decides the peer's tunnel | `attest/tunneld/push_test.go`, and `docs/policy-push.md` for the whole of it |
 | the exercise's three figures keep their shape | `attest/cmd/tunneld/exercise_test.go` |
 | the measured binary still reaches no fixture, no fake and no `testing` | `attest/cmd/tunneld/importgraph_test.go`, `packaged_test.go`, unchanged |
 
@@ -325,10 +332,10 @@ boundary neither side may cross.
 
 ## What is not built
 
-- **Nobody pushes a policy yet.** `Apply` exists on both sides of the contract and is exercised
-  by tests; the path that carries a policy from one tunneld to another over a framed exchange is
-  ticket 22's other half (E2 measured it at 0.83 ms median for a 2 KiB blob, and found that the
-  16 MiB framing bound is nowhere near the size of a policy).
+- ~~**Nobody pushes a policy yet.**~~ Built, in ticket 22's other half: a delegator pushes on
+  every tunnel it dials, once, and hands out no stream until the peer's sandbox has
+  acknowledged it. The wire, the refusal reason and the ordering are `docs/policy-push.md`;
+  what this contract contributes is `Apply` and the envelope, both unchanged.
 - **Nothing enforces a policy.** The null sandbox records and acknowledges. `n`, `f` and `x` are
   unparsed by every line of code in this tree.
 - **No reset signal.** See the pump, above.

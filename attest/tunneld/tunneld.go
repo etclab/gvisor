@@ -69,6 +69,7 @@ import (
 	"os"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"gvisor.dev/gvisor/attest"
 	"gvisor.dev/gvisor/attest/ratls"
@@ -138,6 +139,25 @@ type Config struct {
 	// which are 60 seconds idle and 15 minutes of age.
 	Limits Limits
 
+	// PushPolicy is the policy this tunneld pushes to every peer it dials,
+	// after that peer has been admitted and before any stream or exchange
+	// reaches it (push.go, docs/policy-push.md). Empty pushes nothing, which is
+	// what every scenario recorded before ticket 22 does.
+	//
+	// The bytes are opaque and are not checked here, deliberately: a document
+	// this side's own reader would refuse is still one a peer may read, and the
+	// version that decides a push is the peer's. What a badly built one costs
+	// is that peer's refusal, on the console, naming it. One policy goes to
+	// every peer — per-peer delegation is what this field becomes when
+	// something needs it, and a table keyed by peer name today would be a
+	// second peer table with no test behind it.
+	PushPolicy []byte
+
+	// PushTimeout bounds how long a push waits for its acknowledgement. Zero
+	// takes [DefaultPushTimeout], which New resolves once at startup the way
+	// [Limits] resolves its own.
+	PushTimeout time.Duration
+
 	// RefusalLog receives every peer this tunneld refuses at the handshake,
 	// whichever role it was in, with the typed reason that refused it. It is
 	// the only place the reason surfaces: the peer sees an aborted handshake
@@ -188,6 +208,11 @@ type Tunneld struct {
 	incoming chan accepted
 	done     chan struct{}
 
+	// pushes is the policy push made on each tunnel this tunneld dialed, so
+	// that one tunnel carries one push however many callers raced for it
+	// (push.go).
+	pushes *pushBook
+
 	// refusals is where every reason this tunneld reaches is written: the
 	// handshake's, through ratls, and a pushed policy that was not applied
 	// (push.go). One sink, because an operator reading a console has one place
@@ -216,6 +241,9 @@ func New(ctx context.Context, cfg Config) (*Tunneld, error) {
 	}
 	if cfg.PolicyDigest == (attest.PolicyDigest{}) {
 		return nil, errors.New("tunneld: no policy digest; a tunneld that presented none would ask every peer to admit it on its measurement alone")
+	}
+	if cfg.PushTimeout <= 0 {
+		cfg.PushTimeout = DefaultPushTimeout
 	}
 	set, err := attest.LoadReferenceValueSetFile(cfg.ReferenceValueSetPath, cfg.AuthorPublicKey)
 	if err != nil {
@@ -259,6 +287,7 @@ func New(ctx context.Context, cfg Config) (*Tunneld, error) {
 		verdicts:      verdicts,
 		incoming:      make(chan accepted),
 		done:          make(chan struct{}),
+		pushes:        newPushBook(),
 		refusals:      logRefusal,
 	}
 	t.wg.Add(1)
@@ -363,15 +392,43 @@ func (t *Tunneld) handle(ctx context.Context, request []byte) ([]byte, error) {
 // visible where the caller asked for the peer. A channel handed back before
 // anything was verified would be a channel that fails later for a reason the
 // caller cannot see, which is the shape this design refuses everywhere else.
+//
+// It establishes by asking the channel it is about to hand back for its tunnel,
+// rather than by reaching for the cache itself, so that there is one path to a
+// tunnel and everything on it — the dial, the attestation, the policy pushed
+// and acknowledged — happens once and in one order.
 func (t *Tunneld) Peer(ctx context.Context, name string) (*Channel, error) {
 	addr, ok := t.cfg.Peers[name]
 	if !ok {
 		return nil, fmt.Errorf("%w: %q is not in the peer table", ErrUnknownPeer, name)
 	}
-	if _, err := t.dialed.Get(ctx, addr); err != nil {
+	c := &Channel{name: name, addr: addr, t: t}
+	if _, err := c.tunnelTo(ctx); err != nil {
+		return nil, err
+	}
+	return c, nil
+}
+
+// admitted is the tunnel to a peer, established and under this tunneld's
+// policy: the cache dials and attests one if there is none, and the policy this
+// tunneld pushes goes out on it and is acknowledged before it is handed back
+// (push.go).
+//
+// Everything that reaches a peer comes through here — [Tunneld.Peer] and both
+// of a channel's verbs — which is what makes "nothing is sent before the
+// acknowledgement" a property of the type rather than of remembering to ask.
+// The push cannot precede admission for the same reason: there is no
+// connection to make it on until the cache has returned one, and the cache
+// returns what Dial established or the error it failed with.
+func (t *Tunneld) admitted(ctx context.Context, name, addr string) (*tunnel.Conn, error) {
+	conn, err := t.dialed.Get(ctx, addr)
+	if err != nil {
 		return nil, fmt.Errorf("%w: %q at %s: %v", ErrNotEstablished, name, addr, err)
 	}
-	return &Channel{name: name, addr: addr, t: t}, nil
+	if err := t.pushPolicy(ctx, conn, name, addr); err != nil {
+		return nil, err
+	}
+	return conn, nil
 }
 
 // Close stops listening and ends every tunnel, dialed and accepted.
@@ -450,8 +507,9 @@ func (c *Channel) lost(conn *tunnel.Conn, err error) error {
 // tunnelTo is what both of a channel's verbs do before they do anything: refuse
 // a channel no tunneld made, refuse one its holder has closed, and take the
 // tunnel to this peer out of the cache at the moment it is asked for — which is
-// where it is dialed if there is none, and re-dialed and re-attested if the one
-// that was there is gone or has reached its maximum age.
+// where it is dialed if there is none, re-dialed and re-attested if the one
+// that was there is gone or has reached its maximum age, and where this
+// tunneld's policy is pushed to the peer and acknowledged ([Tunneld.admitted]).
 //
 // A Channel nobody's Peer returned is the first of those: the type is exported
 // and its fields are not, so &Channel{} compiles and reaches no peer. It is
@@ -464,11 +522,7 @@ func (c *Channel) tunnelTo(ctx context.Context) (*tunnel.Conn, error) {
 	if c.closed.Load() {
 		return nil, fmt.Errorf("%w: %q", ErrChannelClosed, c.name)
 	}
-	conn, err := c.t.dialed.Get(ctx, c.addr)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %q at %s: %v", ErrNotEstablished, c.name, c.addr, err)
-	}
-	return conn, nil
+	return c.t.admitted(ctx, c.name, c.addr)
 }
 
 // Close gives up this channel. It does not end the tunnel: the tunnel is

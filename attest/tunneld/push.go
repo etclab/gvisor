@@ -18,6 +18,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"sync"
 	"time"
 
 	"gvisor.dev/gvisor/attest"
@@ -222,3 +224,145 @@ func (t *Tunneld) refusePush(conn *tunnel.Conn, sentence string, why error) stri
 // same sink the handshake's refusals go to, because an operator reading a
 // console has one place to look and a reason is a reason.
 func (t *Tunneld) refuse(r *attest.Refusal) { t.refusals(r) }
+
+// DefaultPushTimeout bounds how long a push waits for its acknowledgement when
+// [Config.PushTimeout] says nothing.
+//
+// A push is one round trip on a tunnel that is already established — spike E2
+// measured 0.83 ms at the median for a 2 KiB policy on loopback — so the bound
+// is not a performance number and is not tuned like one. It is there so that a
+// peer which never answers is a refusal this side reaches on its own, rather
+// than a caller left waiting on whatever context it happened to pass in.
+const DefaultPushTimeout = 10 * time.Second
+
+// A pushBook is the pushes this tunneld has made, one per tunnel it dialed.
+//
+// It is keyed by the connection and not by the peer, because "once" means once
+// per tunnel: a tunnel that was lost, or that reached its maximum age and was
+// re-attested, is a new handshake and the policy has to be pushed to it again.
+// Nothing here outlives a tunnel — dead connections are dropped as new ones are
+// entered, the way the accepted list is (tunneld.go, live).
+type pushBook struct {
+	mu sync.Mutex
+	m  map[*tunnel.Conn]*onePush
+}
+
+// onePush is one tunnel's push and its outcome, shared by everyone who asked
+// for that peer while it was in flight. Several callers racing on a fresh
+// tunnel make one push between them and all wait on it, which is what keeps
+// "before any stream is handed out" true under concurrency rather than only in
+// the test that asks for one stream.
+type onePush struct {
+	done chan struct{}
+	err  error
+}
+
+func newPushBook() *pushBook { return &pushBook{m: map[*tunnel.Conn]*onePush{}} }
+
+// begin returns this tunnel's push, and whether this caller is the one that has
+// to make it.
+func (b *pushBook) begin(conn *tunnel.Conn) (*onePush, bool) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if p, ok := b.m[conn]; ok {
+		return p, false
+	}
+	for c := range b.m {
+		if !c.Live() {
+			delete(b.m, c)
+		}
+	}
+	p := &onePush{done: make(chan struct{})}
+	b.m[conn] = p
+	return p, true
+}
+
+// settle publishes the outcome to everyone waiting on it.
+func (p *onePush) settle(err error) {
+	p.err = err
+	close(p.done)
+}
+
+// pushPolicy is what stands between an established tunnel and the first thing
+// anybody sends over it: this tunneld's policy, pushed once, acknowledged
+// before the tunnel is handed back.
+//
+// A tunneld with no policy to push does nothing here, which is what keeps every
+// recorded scenario's behaviour exactly what it was.
+func (t *Tunneld) pushPolicy(ctx context.Context, conn *tunnel.Conn, name, addr string) error {
+	if len(t.cfg.PushPolicy) == 0 {
+		return nil
+	}
+	p, mine := t.pushes.begin(conn)
+	if mine {
+		p.settle(t.makePush(ctx, conn, name, addr))
+	}
+	select {
+	case <-p.done:
+		return p.err
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+// makePush is the exchange itself, and everything a failed one costs.
+//
+// Refused, answered in a version this side does not read, answered with
+// something that is not an acknowledgement at all, or not answered inside the
+// deadline: all four are one outcome, because all four leave this side unable
+// to say the peer is running under the policy it was sent. The tunnel is closed
+// so that nothing is carried over it in the meantime, the refusal is logged
+// with its reason, and the caller is told it was refused.
+func (t *Tunneld) makePush(ctx context.Context, conn *tunnel.Conn, name, addr string) error {
+	err := t.exchangePush(ctx, conn)
+	if err == nil {
+		return nil
+	}
+	r := attest.Refuse(attest.ReasonPolicyNotApplied,
+		"%q at %s did not apply the policy pushed to it: %v", name, addr, err)
+	t.refuse(r)
+	conn.Close()
+	return r
+}
+
+// exchangePush sends the policy and waits for the answer, or for the deadline.
+//
+// The wait is here rather than in the exchange because [tunnel.Conn.Exchange]
+// takes a context for opening its stream and then reads the response without
+// one: a peer that accepts a push and never answers it would otherwise hold
+// this caller until the tunnel died of idleness, which is a minute of a sandbox
+// waiting for a stream. The goroutine left behind ends when the read does, and
+// the read ends because the caller closes the connection on every failure.
+func (t *Tunneld) exchangePush(ctx context.Context, conn *tunnel.Conn) error {
+	deadline, cancel := context.WithTimeout(ctx, t.cfg.PushTimeout)
+	defer cancel()
+	answered := make(chan error, 1)
+	go func() { answered <- readAck(conn.Exchange(deadline, t.cfg.PushPolicy)) }()
+	select {
+	case err := <-answered:
+		return err
+	case <-deadline.Done():
+		return fmt.Errorf("it was not acknowledged within %s: %w", t.cfg.PushTimeout, deadline.Err())
+	}
+}
+
+// readAck is what an answer has to be for a push to have landed: this side's
+// format, this side's version, and ok. It takes the exchange's error beside its
+// response because a push that never got an answer and a push that got the
+// wrong one are the same outcome to the caller.
+func readAck(response []byte, err error) error {
+	if err != nil {
+		return err
+	}
+	var a policyAck
+	if err := json.Unmarshal(response, &a); err != nil {
+		return fmt.Errorf("the answer is %d bytes that are not a JSON object: %v", len(response), err)
+	}
+	switch {
+	case a.Format != ackFormat || a.Version != ackVersion:
+		return fmt.Errorf("the answer is format %q version %d, not %q version %d", a.Format, a.Version, ackFormat, ackVersion)
+	case !a.OK:
+		return fmt.Errorf("the peer refused it: %s", a.Reason)
+	}
+	return nil
+}

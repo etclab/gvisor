@@ -30,8 +30,11 @@ package tunneld_test
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"strings"
 	"sync"
@@ -68,8 +71,10 @@ type recordingSandbox struct {
 	refusal error
 
 	// takes is how long Apply spends before it answers, for the tests that are
-	// about what may happen while it is answering.
+	// about what may happen while it is answering; holds, when set, is a
+	// sandbox that never answers at all until the test closes it.
 	takes time.Duration
+	holds chan struct{}
 
 	// applied is every policy this sandbox was handed, in order, and events —
 	// when a test wires one — is the log where "applied" is written beside
@@ -92,6 +97,9 @@ func (s *recordingSandbox) Apply(_ context.Context, policy []byte) error {
 	if s.takes > 0 {
 		time.Sleep(s.takes)
 	}
+	if s.holds != nil {
+		<-s.holds
+	}
 	s.applied.record(string(policy))
 	s.events.record("applied")
 	return s.refusal
@@ -101,9 +109,10 @@ func (s *recordingSandbox) Apply(_ context.Context, policy []byte) error {
 // or the things a peer's tunneld did around them. A nil log records nothing, so
 // a test that is not about ordering wires none.
 //
-// It is read as a count and as one string rather than as a slice, because those
-// are the two questions an assertion asks of an order and the second prints
-// legibly when it fails.
+// It is read as one string rather than as a slice or a count, because every
+// question these tests ask of an order — did this happen before that, was this
+// pushed once or twice or not at all — is answered by the whole of it, and a
+// failure then prints what happened instead of how many things did.
 type eventLog struct {
 	mu sync.Mutex
 	in []string
@@ -118,12 +127,6 @@ func (l *eventLog) record(what string) {
 	l.mu.Unlock()
 }
 
-func (l *eventLog) count() int {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	return len(l.in)
-}
-
 func (l *eventLog) order() string {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -135,20 +138,35 @@ func (l *eventLog) order() string {
 type pushNode struct {
 	*node
 	refusals *refusalRecorder
-	box      *recordingSandbox
 }
 
-// startPushNode starts a tunneld with a recording sandbox attached to it, which
-// is what makes it a tunneld a policy can be pushed to at all. A nil sandbox is
-// a tunneld with none attached, which is one of the ways a push does not land.
-func startPushNode(t *testing.T, name string, image []byte, admits attest.ReferenceValueSet, box *recordingSandbox) *pushNode {
+// startPushNode starts a tunneld with a recording sandbox beside it and its
+// operator log captured, which is what makes it a tunneld a policy can be
+// pushed to and a refusal read off. A nil sandbox is a tunneld with none
+// attached, which is one of the ways a push does not land — and is why the
+// check is here rather than at a call site, since a typed nil is a sandbox as
+// far as an interface is concerned.
+func startPushNode(t *testing.T, name string, image []byte, admits attest.ReferenceValueSet, box *recordingSandbox, adjust ...func(*tunneld.Config)) *pushNode {
 	t.Helper()
 	refusals := newRefusalRecorder()
-	n := start(t, name, image, admits, nil, func(cfg *tunneld.Config) { cfg.RefusalLog = refusals.record })
+	hands := append([]func(*tunneld.Config){func(cfg *tunneld.Config) { cfg.RefusalLog = refusals.record }}, adjust...)
+	n := start(t, name, image, admits, nil, hands...)
 	if box != nil {
 		n.Attach(box)
 	}
-	return &pushNode{node: n, refusals: refusals, box: box}
+	return &pushNode{node: n, refusals: refusals}
+}
+
+// toward is the peer table of a tunneld that knows one peer: that name, at that
+// node's address.
+func toward(name string, n *pushNode) func(*tunneld.Config) {
+	return func(cfg *tunneld.Config) { cfg.Peers = tunneld.PeerTable{name: n.Addr().String()} }
+}
+
+// pushing is the configuration a delegator is started with: the policy it
+// pushes to every peer it dials.
+func pushing(policy string) func(*tunneld.Config) {
+	return func(cfg *tunneld.Config) { cfg.PushPolicy = []byte(policy) }
 }
 
 // pushed sends the policy bytes as the plain exchange a push is, and returns
@@ -193,7 +211,8 @@ func endsWithin(t *testing.T, s *tunnel.Stream, d time.Duration) error {
 // a request that says it is a policy goes to the sandbox and not to the
 // application handler, and the answer says the sandbox has it.
 func TestAPushedPolicyReachesTheSandboxAndIsAcknowledged(t *testing.T) {
-	b := startPushNode(t, "sandbox-b", imageB, admitting(imageA), &recordingSandbox{})
+	box := &recordingSandbox{}
+	b := startPushNode(t, "sandbox-b", imageB, admitting(imageA), box)
 	a := start(t, "sandbox-a", imageA, admitting(imageB), tunneld.PeerTable{"b": b.Addr().String()})
 
 	ch, err := a.Peer(ctx(t), "b")
@@ -205,7 +224,7 @@ func TestAPushedPolicyReachesTheSandboxAndIsAcknowledged(t *testing.T) {
 	if answer := pushed(t, ch, policyV1); !answer.OK {
 		t.Fatalf("the push was refused: %q", answer.Reason)
 	}
-	if got := b.box.applied.order(); got != policyV1 {
+	if got := box.applied.order(); got != policyV1 {
 		t.Errorf("the sandbox was handed %q; want exactly the pushed bytes", got)
 	}
 	if b.served.Load() != 0 {
@@ -239,23 +258,22 @@ func TestAPushTheSandboxRefusesClosesTheTunnel(t *testing.T) {
 		box     *recordingSandbox
 		policy  string
 		says    string
-		applied int
+		applied string
 	}{
 		{
 			name:    "the sandbox will not take it",
 			box:     &recordingSandbox{refusal: errors.New("this sandbox will not run that")},
 			policy:  policyV1,
 			says:    "the sandbox beside this tunneld did not apply it",
-			applied: 1,
+			applied: policyV1,
 		},
 		{
 			// Refused at the boundary, so that an acknowledgement means a
 			// sandbox with that policy on every implementation of the contract.
-			name:    "the version is not one this tunneld reads",
-			box:     &recordingSandbox{},
-			policy:  policyV2,
-			says:    "this tunneld does not read a policy of that format and version",
-			applied: 0,
+			name:   "the version is not one this tunneld reads",
+			box:    &recordingSandbox{},
+			policy: policyV2,
+			says:   "this tunneld does not read a policy of that format and version",
 		},
 		{
 			// An acknowledgement means a sandbox has the policy, and there is
@@ -289,8 +307,8 @@ func TestAPushTheSandboxRefusesClosesTheTunnel(t *testing.T) {
 			if answer.Reason != c.says {
 				t.Errorf("the refusal says %q; want %q", answer.Reason, c.says)
 			}
-			if c.box != nil && c.box.applied.count() != c.applied {
-				t.Errorf("the sandbox was handed %d policies; want %d", c.box.applied.count(), c.applied)
+			if c.box != nil && c.box.applied.order() != c.applied {
+				t.Errorf("the sandbox was handed %q; want %q", c.box.applied.order(), c.applied)
 			}
 			r := b.refusals.next(t)
 			if got := r.Reason(); got != attest.ReasonPolicyNotApplied {
@@ -303,5 +321,263 @@ func TestAPushTheSandboxRefusesClosesTheTunnel(t *testing.T) {
 				t.Errorf("the tunnel survived a refused push")
 			}
 		})
+	}
+}
+
+// The delegator's half. Everything below starts A with a policy to push and
+// asks it for a peer: what is asserted is what B was handed, in what order, and
+// what A was told when B would not take it.
+
+// TestNoStreamIsHandedOutBeforeThePushIsAcknowledged is the push at its
+// ordinary size: A opens to B, B's null sandbox takes the policy, and only then
+// does A hold a stream.
+//
+// The null sandbox is the one under test here rather than this file's recording
+// one, because the line it writes is half the claim: the digest on B's console
+// is the digest of the bytes A sent, or the push carried something else.
+func TestNoStreamIsHandedOutBeforeThePushIsAcknowledged(t *testing.T) {
+	console := &eventLog{}
+	b := startPushNode(t, "sandbox-b", imageB, admitting(imageA), nil)
+	b.Attach(sandbox.NewNull(b.Tunneld, func(format string, args ...any) {
+		console.record(fmt.Sprintf(format, args...))
+	}))
+	a := startPushNode(t, "sandbox-a", imageA, admitting(imageB), nil, toward("b", b), pushing(policyV1))
+
+	stream, err := a.Open(ctx(t), "b")
+	if err != nil {
+		t.Fatalf("opening a stream to b: %v", err)
+	}
+	defer stream.Close()
+
+	sum := sha256.Sum256([]byte(policyV1))
+	want := fmt.Sprintf("SANDBOX applied format=policy version=1 bytes=%d sha256=%s", len(policyV1), hex.EncodeToString(sum[:]))
+	if got := console.order(); got != want {
+		t.Errorf("b's console says\n %s\nwant\n %s", got, want)
+	}
+	if logged := b.refusals.none(); len(logged) != 0 {
+		t.Errorf("b refused something: %s", logged[0].LogString())
+	}
+}
+
+// TestAPeerThatWillNotApplyThePolicyIsRefused is every way a push can fail to
+// land, from the delegator's side: no stream, the tenth reason, the tunnel
+// closed, and a next attempt that dials and pushes afresh rather than
+// inheriting the verdict.
+func TestAPeerThatWillNotApplyThePolicyIsRefused(t *testing.T) {
+	never := make(chan struct{})
+	t.Cleanup(func() { close(never) })
+
+	for _, c := range []struct {
+		name    string
+		box     *recordingSandbox
+		policy  string
+		timeout time.Duration
+		applied string
+	}{
+		{
+			name: "the sandbox refuses it",
+			box:  &recordingSandbox{refusal: errors.New("this sandbox will not run that")},
+			// Pushed twice: the tunnel the first refusal closed is not the
+			// tunnel the second attempt dials.
+			policy:  policyV1,
+			applied: policyV1 + ", " + policyV1,
+		},
+		{
+			// Refused by B's tunneld before its sandbox is woken, which is why
+			// the sandbox is handed nothing at all.
+			name:   "the version is not one the peer reads",
+			box:    &recordingSandbox{},
+			policy: policyV2,
+		},
+		{
+			// A sandbox that never answers is a push that is never
+			// acknowledged, and an acknowledgement that has not arrived is not
+			// one that might still.
+			name:    "nobody acknowledges it",
+			box:     &recordingSandbox{holds: never},
+			policy:  policyV1,
+			timeout: 250 * time.Millisecond,
+		},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			b := startPushNode(t, "sandbox-b", imageB, admitting(imageA), c.box)
+			a := startPushNode(t, "sandbox-a", imageA, admitting(imageB), nil,
+				toward("b", b), pushing(c.policy), func(cfg *tunneld.Config) { cfg.PushTimeout = c.timeout })
+
+			stream, err := a.Open(ctx(t), "b")
+			if err == nil {
+				stream.Close()
+				t.Fatalf("a stream was handed out over a policy that was not applied")
+			}
+			if got := attest.ReasonOf(err); got != attest.ReasonPolicyNotApplied {
+				t.Errorf("a's caller was told %v (%v); want %v", got, err, attest.ReasonPolicyNotApplied)
+			}
+			if r := a.refusals.next(t); r.Reason() != attest.ReasonPolicyNotApplied {
+				t.Errorf("a logged %s; want the push refused", r.LogString())
+			}
+
+			// The tunnel went, so the next ask is a new handshake and a new
+			// push rather than the same verdict handed out again.
+			if _, err := a.Open(ctx(t), "b"); attest.ReasonOf(err) != attest.ReasonPolicyNotApplied {
+				t.Errorf("the second open returned %v; want the push refused again", err)
+			}
+			// What the sandbox was handed over both attempts: the policy
+			// twice where it refused it, and nothing at all where its tunneld
+			// refused the document before waking it.
+			if c.applied != "" && c.box.applied.order() != c.applied {
+				t.Errorf("b's sandbox was handed %q; want %q — the second attempt must push again", c.box.applied.order(), c.applied)
+			}
+			if c.policy == policyV2 && c.box.applied.order() != "" {
+				t.Errorf("b's sandbox was handed %q; a version its tunneld does not read must not reach it", c.box.applied.order())
+			}
+		})
+	}
+}
+
+// TestNothingReachesAPeerBeforeItsSandboxAppliedThePolicy is the ordering, read
+// off the side that would see it broken: B records what it was asked to do, and
+// the policy is the first line whatever A does next.
+func TestNothingReachesAPeerBeforeItsSandboxAppliedThePolicy(t *testing.T) {
+	events := &eventLog{}
+	box := &recordingSandbox{takes: 100 * time.Millisecond, events: events}
+	b := startPushNode(t, "sandbox-b", imageB, admitting(imageA), box, func(cfg *tunneld.Config) {
+		cfg.Handler = func(context.Context, []byte) ([]byte, error) {
+			events.record("exchange")
+			return []byte("sandbox-b:"), nil
+		}
+	})
+	a := startPushNode(t, "sandbox-a", imageA, admitting(imageB), nil, toward("b", b), pushing(policyV1))
+
+	accepted := make(chan struct{})
+	go func() {
+		defer close(accepted)
+		stream, _, err := b.Accept(ctx(t))
+		if err != nil {
+			return
+		}
+		events.record("stream")
+		stream.Close()
+	}()
+
+	channel, err := a.Peer(ctx(t), "b")
+	if err != nil {
+		t.Fatalf("a.Peer(b): %v", err)
+	}
+	defer channel.Close()
+	if _, err := channel.Exchange(ctx(t), []byte("hello")); err != nil {
+		t.Fatalf("exchange: %v", err)
+	}
+	stream, err := channel.OpenStream(ctx(t))
+	if err != nil {
+		t.Fatalf("opening a stream: %v", err)
+	}
+	defer stream.Close()
+	<-accepted
+
+	if got, want := events.order(), "applied, exchange, stream"; got != want {
+		t.Errorf("b saw %q; want %q — nothing may reach it before the policy did", got, want)
+	}
+	// And one push for one tunnel, however many times it is asked for: the
+	// exchange and the stream above already ran over the tunnel the first ask
+	// established.
+	if got := box.applied.order(); got != policyV1 {
+		t.Errorf("b's sandbox was handed %q; want the policy once — one tunnel is one push", got)
+	}
+}
+
+// TestAFreshTunnelIsPushedToAgain: the push is per tunnel and not per peer, so
+// a tunnel that reached its maximum age and was re-attested carries the policy
+// again. A re-attested peer is a peer judged afresh, and a policy applied by
+// the tunnel before it is not a fact about this one.
+func TestAFreshTunnelIsPushedToAgain(t *testing.T) {
+	box := &recordingSandbox{}
+	b := startPushNode(t, "sandbox-b", imageB, admitting(imageA), box)
+	a := startPushNode(t, "sandbox-a", imageA, admitting(imageB), nil,
+		toward("b", b), pushing(policyV1), func(cfg *tunneld.Config) {
+			cfg.Limits = tunneld.Limits{IdleTimeout: 30 * time.Second, MaxAge: 200 * time.Millisecond}
+		})
+
+	for i := 0; i < 2; i++ {
+		stream, err := a.Open(ctx(t), "b")
+		if err != nil {
+			t.Fatalf("opening a stream to b: %v", err)
+		}
+		stream.Close()
+		time.Sleep(250 * time.Millisecond)
+	}
+	if want := policyV1 + ", " + policyV1; box.applied.order() != want {
+		t.Errorf("b's sandbox was handed %q over two tunnels; want %q", box.applied.order(), want)
+	}
+}
+
+// TestConcurrentOpensShareOnePush: several callers arriving on a fresh tunnel
+// make one push between them and all wait for it. A second push would be a
+// second policy in flight beside the first, and a caller that did not wait
+// would be the stream this design says cannot exist.
+func TestConcurrentOpensShareOnePush(t *testing.T) {
+	box := &recordingSandbox{takes: 100 * time.Millisecond}
+	b := startPushNode(t, "sandbox-b", imageB, admitting(imageA), box)
+	a := startPushNode(t, "sandbox-a", imageA, admitting(imageB), nil, toward("b", b), pushing(policyV1))
+
+	var wg sync.WaitGroup
+	errs := make([]error, 8)
+	for i := range errs {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			stream, err := a.Open(ctx(t), "b")
+			if err == nil {
+				stream.Close()
+			}
+			errs[i] = err
+		}()
+	}
+	wg.Wait()
+	for i, err := range errs {
+		if err != nil {
+			t.Errorf("caller %d: %v", i, err)
+		}
+	}
+	if got := box.applied.order(); got != policyV1 {
+		t.Errorf("b's sandbox was handed %q; want the policy once — one tunnel is one push", got)
+	}
+}
+
+// TestAPushBeforeAdmissionIsImpossible is the construction, asserted.
+//
+// There is no moment at which a push could precede admission: a push is an
+// exchange on a tunnel, a tunnel exists only where Dial established one, and
+// Dial returns after the QUIC handshake in which ratls judged the peer (spike
+// E2, "A push before admission", with the file and line of every step). So a
+// peer that refuses this side is a peer this side never pushes to, and what its
+// caller is told is that the tunnel was not established — not that a policy was
+// not applied, which would be a claim about a peer nobody reached.
+//
+// The other half of the construction is the manufactured channel, which
+// TestAChannelNoTunneldMadeRefusesRatherThanPanicking (sandbox_test.go) covers:
+// &Channel{} reaches no peer and refuses rather than dereferencing the tunneld
+// it has not got.
+func TestAPushBeforeAdmissionIsImpossible(t *testing.T) {
+	// b's set does not admit a's image, so b aborts the handshake.
+	box := &recordingSandbox{}
+	b := startPushNode(t, "sandbox-b", imageB, admitting(imageNone), box)
+	a := startPushNode(t, "sandbox-a", imageA, admitting(imageB), nil, toward("b", b), pushing(policyV1))
+
+	stream, err := a.Open(ctx(t), "b")
+	if err == nil {
+		stream.Close()
+		t.Fatalf("a stream was handed out to a peer that refused this side")
+	}
+	if !errors.Is(err, tunneld.ErrNotEstablished) {
+		t.Errorf("a's caller was told %v; want ErrNotEstablished", err)
+	}
+	if got := attest.ReasonOf(err); got != attest.ReasonNone {
+		t.Errorf("a's caller was told %v; a peer that was never admitted cannot have failed to apply a policy", got)
+	}
+	if got := box.applied.order(); got != "" {
+		t.Errorf("b's sandbox was handed %q over a tunnel that was never established", got)
+	}
+	if b.served.Load() != 0 {
+		t.Errorf("b answered %d exchanges over a refused tunnel", b.served.Load())
 	}
 }

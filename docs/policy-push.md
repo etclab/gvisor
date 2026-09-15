@@ -261,6 +261,19 @@ Every test is offline, on the loopback harness with the fake platform injected t
 push paths pass under `-race`. The two guard tests in `attest/cmd/tunneld` are unchanged and
 still hold: the measured binary reaches no fixture, no fake platform and no `testing`.
 
+`ripwire attest --quality-delta=e2fd17f26..HEAD` reports `gating="0"`. It reported 32 gating
+rows first, and four fixes took it to 17 before anything was acked: the ack's marshalling folded
+into one site so that `applyOrRefuse` returns the sentence and `applyPushed` writes the
+document; `start` grew a variadic hand on the configuration instead of a second starter beside
+it; `Peer` now establishes by asking the channel it is about to return for its tunnel, so there
+is one path to a tunnel rather than two that looked alike; and the push timeout resolves once in
+`New` the way the limits do. The 23 acked rows are in `attest/.ripwire_quality_acks` with the
+reason: 17 are line counts that follow from documenting a tenth refusal reason in a const block
+whose line count is every constant's, and 6 are idiom collisions between one mutex-guarded
+accessor and another across package boundaries neither side may cross. What is left unacked is
+non-gating and deliberately visible — the dead-code rows every new test function produces, and
+two helpers one parameter over the bar.
+
 **Ticket 21's replay harness passes unchanged**: the 64 live verdict invocations
 (`docs/snp/evidence/ticket21/harness/verdict-invocations-v2.txt`) replayed against an
 `attest-tool` built at this branch tip are byte-identical from line 2 onward to the same list

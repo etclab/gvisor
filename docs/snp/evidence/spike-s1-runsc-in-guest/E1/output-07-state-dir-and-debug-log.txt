@@ -1,0 +1,51 @@
+none / 9p ro,trans=fd,rfdno=3,wfdno=3,aname=/,dfltuid=4294967294,dfltgid=4294967294,dcache=1000,cache=fscache,disable_fifo_open,overlayfs_stale_read,directfs 0 0
+none /sys sysfs rw,dentry_cEXIT=0
+
+######## E. the --root state dir WHILE a container lives
+drwx------ 4096 $SCRATCH/e1/state
+-r-------- 0 $SCRATCH/e1/state/null-netns
+srwx------ 0 $SCRATCH/e1/state/runsc-s1-live.sock
+-rw------- 0 $SCRATCH/e1/state/s1-live_sandbox:s1-live.lock
+-rw------- 2095 $SCRATCH/e1/state/s1-live_sandbox:s1-live.state
+---- the container state file, in full
+== s1-live_sandbox:s1-live.state
+{"id":"s1-live","spec":{"ociVersion":"1.0.0","process":{"user":{"uid":0,"gid":0},"args":["/bin/busybox","sleep","60"],"env":["PATH=/bin","TERM=xterm"],"cwd":"/","capabilities":{},"rlimits":[{"type":"RLIMIT_NOFILE","hard":1024,"soft":1024}]},"root":{"path":"$SCRATCH/e1/bundle-sleep/rootfs","readonly":true},"hostname":"s1","mounts":[{"destination":"/proc","type":"proc","source":"$SCRATCH/e1/bundle-sleep/proc"}],"linux":{"uidMappings":[{"containerID":0,"hostID":0,"size":1}],"gidMappings":[{"containerID":0,"hostID":0,"size":1}],"cgroupsPath":"/s1-live","namespaces":[{"type":"pid"},{"type":"mount"},{"type":"ipc"},{"type":"uts"},{"type":"user"}]}},"bundleDir":"$SCRATCH/e1/bundle-sleep","createdAt":"2026-09-15T19:26:39.284546907-04:00","owner":"pniroula","consoleSocket":"","status":"running","goferPid":2590111,"sandbox":{"id":"s1-live","podName":"","namespace":"","pid":2590112,"uid":0,"gid":0,"cgroup":{"cgroupunknown":null},"originalOomScoreAdj":0,"registeredMetrics":null,"metricMetadata":{"coretags":"false","cpuarch":"amd64","experiment":"","fsmode":"directfs","go":"go1.26.3","network":"none","numcores":"64","overlay":"root:self","platform":"systrap","version":"0.0.0"},"metricServerAddress":"","controlSocketPath":"$SCRATCH/e1/state/runsc-s1-live.sock","mountHints":{"mounts":{}},"startTime":"2026-09-15T19:26:39.267498937-04:00","checkpointed":false,"restored":false,"cpuTimeSaved":0,"wallTimeSaved":0},"compatCgroup":{"cgroupunknown":null},"saver":{"rootDir":"$SCRATCH/e1/state","id":{"sandboxId":"s1-live","containerId":"s1-live"}},"goferMountConfs":[{"lower":1,"upper":0}]}
+SLEEP_EXIT=0
+---- the same directory after the container exits
+drwx------ 4096 $SCRATCH/e1/state
+-r-------- 0 $SCRATCH/e1/state/null-netns
+
+######## F. where --debug wrote its log
+    total 140
+    drwx------ 2 pniroula 253477  4096 Sep 15 19:27 .
+    drwx------ 8 pniroula 253477  4096 Sep 15 19:27 ..
+    -rw------- 1 pniroula 253477 12315 Sep 15 19:27 runsc.log.20260915-192739.680878.run.txt
+    -rw------- 1 pniroula 253477 61363 Sep 15 19:27 runsc.log.20260915-192739.723877.boot.txt
+    -rw------- 1 pniroula 253477 26856 Sep 15 19:27 runsc.log.20260915-192739.723877.gofer.txt
+    -rw------- 1 pniroula 253477 27056 Sep 15 19:27 runsc.log.20260915-192739.723877.run.txt
+---- the chroot and pivot_root lines from the sandbox debug log
+I0915 19:27:39.809958       1 cli.go:278] Args: [runsc-sandbox --platform=systrap --rootless=true --ignore-cgroups=true --root=$SCRATCH/e1/state --debug=true --debug-log=$SCRATCH/e1/debug/ --network=none --debug-log-fd=3 boot --bundle=$SCRATCH/e1/bundle --gofer-mount-confs=lisafs:none --apply-caps=true --setup-root --total-host-memory 807732506624 --total-memory 807732506624 --attached --io-fds=4 --dev-io-fd=-1 --mounts-fd=5 --start-sync-fd=6 --pin-ring-fd=7 --controller-fd=8 --spec-fd=9 --stdio-fds=10 --stdio-fds=11 --stdio-fds=12 s1-dbg]
+D0915 19:27:39.811396       1 config.go:577] Config.NVProxyAllowedDriverCapabilities (--nvproxy-allowed-driver-capabilities): utility,compute
+I0915 19:27:39.825176       1 chroot.go:142] Setting up sandbox chroot in "/tmp"
+D0915 19:27:39.826299       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint chroot base mounted at 19:27:39.826260359 (unix nanos: 1789514859826260359)
+I0915 19:27:39.826721       1 chroot.go:41] Mounting "proc" at "/tmp/proc/sandbox-proc"
+D0915 19:27:39.827254       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint chroot proc mounted at 19:27:39.827246819 (unix nanos: 1789514859827246819)
+D0915 19:27:39.828067       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint chroot procfs set up at 19:27:39.828055415 (unix nanos: 1789514859828055415)
+D0915 19:27:39.828236       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint chroot sealed read-only at 19:27:39.828232098 (unix nanos: 1789514859828232098)
+D0915 19:27:39.830799       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint chroot set up at 19:27:39.830788469 (unix nanos: 1789514859830788469)
+    "capabilities": {},
+D0915 19:27:39.831430       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint sandbox capabilities computed at 19:27:39.831426250 (unix nanos: 1789514859831426250)
+D0915 19:27:39.831997       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint current capabilities read at 19:27:39.831991292 (unix nanos: 1789514859831991292)
+D0915 19:27:39.846286       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint capabilities applied at 19:27:39.846283959 (unix nanos: 1789514859846283959)
+I0915 19:27:39.969065       1 vfs.go:660] Mounting root with 9p, ioFD: 4
+D0915 19:27:39.970956       1 vfs.go:872] Mounting "" to "/sys", type: sysfs, options: []
+D0915 19:27:39.974699       1 vfs.go:872] Mounting "" to "/dev", type: dev, options: []
+D0915 19:27:39.975845       1 vfs.go:872] Mounting "$SCRATCH/e1/bundle/proc" to "/proc", type: proc, options: []
+D0915 19:27:39.984473       1 vfs.go:872] Mounting "" to "/dev/pts", type: devpts, options: []
+I0915 19:27:39.984921       1 vfs.go:1293] Mounting internal tmpfs on top of empty "/tmp"
+I0915 19:27:39.984997       1 vfs.go:1062] Mounted "" to "/tmp" type: tmpfs, internal-options: "mode=01777"
+[19:27:39.826260]	 +1 286µs ▍           	├─ chroot base mounted: 1 286µs      
+[19:27:39.827246]	   +986µs ▎           	├─ chroot proc mounted: 986µs        
+[19:27:39.828055]	   +808µs ▎           	├─ chroot procfs set up: 808µs       
+[19:27:39.828232]	   +176µs             	├─ chroot sealed read-only: 176µs    
+[19:27:39.830788]	 +2 556µs █           	├─ chroot set up: 2 556µs            

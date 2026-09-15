@@ -1,0 +1,24 @@
+
+######## V1 bundle form, exactly the asked-for flag set
+$ $SCRATCH/e1/../bin/runsc --root=$SCRATCH/e1/state --platform=systrap --network=none --ignore-cgroups --rootless run --bundle $SCRATCH/e1/bundle s1-v1
+EXIT=0
+
+######## V2 same, with --debug so the failure path is legible
+$ $SCRATCH/e1/../bin/runsc --root=$SCRATCH/e1/state --platform=systrap --network=none --ignore-cgroups --rootless --debug --debug-log=$SCRATCH/e1/debug-v2/ run --bundle $SCRATCH/e1/bundle s1-v2
+EXIT=0
+
+######## V3 --directfs=false (drops the userns-in-spec requirement in sandbox.go:1143)
+$ $SCRATCH/e1/../bin/runsc --root=$SCRATCH/e1/state --platform=systrap --network=none --ignore-cgroups --rootless --directfs=false run --bundle $SCRATCH/e1/bundle s1-v3
+EXIT=0
+
+######## V4 --overlay2=root:memory (what runsc/cmd/sandboxexec.go:288 sets)
+$ $SCRATCH/e1/../bin/runsc --root=$SCRATCH/e1/state --platform=systrap --network=none --ignore-cgroups --rootless --overlay2=root:memory run --bundle $SCRATCH/e1/bundle s1-v4
+EXIT=0
+
+######## V5 --TESTONLY-unsafe-nonroot=true, as the Makefile dev target does
+$ $SCRATCH/e1/../bin/runsc --root=$SCRATCH/e1/state --platform=systrap --network=none --ignore-cgroups --rootless --TESTONLY-unsafe-nonroot=true run --bundle $SCRATCH/e1/bundle s1-v5
+EXIT=0
+
+######## V6 do form
+$ $SCRATCH/e1/../bin/runsc --root=$SCRATCH/e1/state --platform=systrap --network=none --ignore-cgroups --rootless do /bin/busybox true
+EXIT=0

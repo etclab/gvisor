@@ -1,0 +1,111 @@
+E1 — exact commands, in the order they were run.
+
+$SCRATCH stands for the session scratch directory
+  /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-s1/c95870d0-0fd4-43e1-a909-68b46d194ebe/scratchpad
+The runsc binary lives there, not in the repo. Everything ran as the
+unprivileged user pniroula (uid 253477), from /home/pniroula/Projects/gvisor-s1.
+
+--- the tree and the tools -------------------------------------------------
+
+$ git rev-parse HEAD
+ebbe8cba8e0f600fb5ba3db98e3f02cc610f9d19
+$ git status --porcelain
+(empty)
+$ /usr/local/go/bin/go version
+go version go1.26.3 linux/amd64
+$ /usr/local/bin/bazel --version
+bazel 8.3.1
+$ uname -r
+6.11.0-rc3-snp-host-85ef1ac03941
+$ id
+uid=253477(pniroula) gid=253477 groups=253477,27(sudo),108(kvm),120(libvirt),999(docker)
+$ which strace capsh unshare busybox
+/usr/bin/strace  /usr/sbin/capsh  /usr/bin/unshare  /usr/bin/busybox
+
+--- 1. go build, as instructed. FAILS ---------------------------------------
+
+$ /usr/local/go/bin/go build -o $SCRATCH/bin/runsc ./runsc
+  -> output-01-go-build-fail.txt
+
+--- 2. native bazel. FAILS --------------------------------------------------
+
+$ /usr/local/bin/bazel build -c opt //runsc:runsc
+$ /usr/local/bin/bazel build -c opt --verbose_failures --keep_going //runsc:runsc
+  -> output-02-bazel-native-fail.txt
+
+--- 3. the project's own build. WORKS ---------------------------------------
+
+$ make runsc
+$ cp <bazel-bin>/runsc/runsc_/runsc $SCRATCH/bin/runsc
+$ $SCRATCH/bin/runsc --version
+  -> output-03-build.txt
+
+--- 4. the OCI bundle -------------------------------------------------------
+
+config.json was written by hand (it is in this directory in full, and is the
+same file the sandbox stored in its state: see output-07). The rootfs is one
+static binary and symlinks to it:
+
+$ mkdir -p $SCRATCH/e1/bundle/rootfs/{bin,proc,dev,sys,tmp}
+$ cp /usr/bin/busybox $SCRATCH/e1/bundle/rootfs/bin/busybox
+$ for a in sh true cat sleep ls; do ln -sf busybox $SCRATCH/e1/bundle/rootfs/bin/$a; done
+
+$ file /usr/bin/busybox
+/usr/bin/busybox: ELF 64-bit LSB executable, x86-64, statically linked, stripped
+
+Two further bundles differ only in process.args:
+  bundle-sleep   ["/bin/busybox","sleep","60"]
+  bundle-mounts  ["/bin/busybox","sh","-c","cat /proc/mounts; sleep 1"]
+
+--- 5. the flag variations --------------------------------------------------
+
+With BASE = --root=$SCRATCH/e1/state --platform=systrap --network=none \
+             --ignore-cgroups --rootless
+
+$ $SCRATCH/bin/runsc $BASE run --bundle $SCRATCH/e1/bundle s1-v1
+$ $SCRATCH/bin/runsc $BASE --debug --debug-log=$SCRATCH/e1/debug-v2/ run --bundle ... s1-v2
+$ $SCRATCH/bin/runsc $BASE --directfs=false run --bundle ... s1-v3
+$ $SCRATCH/bin/runsc $BASE --overlay2=root:memory run --bundle ... s1-v4
+$ $SCRATCH/bin/runsc $BASE --TESTONLY-unsafe-nonroot=true run --bundle ... s1-v5
+$ $SCRATCH/bin/runsc $BASE do /bin/busybox true
+  -> output-04-flag-variations.txt
+
+--- 6. the host side, while a sandbox lives ---------------------------------
+
+$ $SCRATCH/bin/runsc $BASE run --bundle $SCRATCH/e1/bundle-sleep s1-sleep &
+$ $SCRATCH/bin/runsc $BASE list
+# comm is "exe" for every re-exec'd runsc process; argv[0] names them, so the
+# processes were found by reading /proc/*/exe and /proc/*/cmdline:
+$ for p in /proc/[0-9]*; do readlink $p/exe | grep -q bin/runsc && \
+      echo "${p#/proc/} $(tr '\0' '\n' < $p/cmdline | head -1)"; done
+$ cat /proc/<sandbox>/mounts /proc/<sandbox>/mountinfo /proc/<sandbox>/uid_map
+$ grep -E '^(Uid|Gid|Cap|NoNewPrivs|Seccomp)' /proc/<sandbox>/status
+$ capsh --decode=<CapEff>
+$ ls -l /proc/<sandbox>/ns
+# and the same for the gofer
+$ wc -l /proc/mounts ; grep -c runsc /proc/mounts
+  -> output-05-host-side.txt
+
+--- 7. the mount table inside the sandbox -----------------------------------
+
+$ $SCRATCH/bin/runsc $BASE run --bundle $SCRATCH/e1/bundle-mounts s1-inside \
+      > $SCRATCH/e1/inside-mounts.txt 2>&1
+  -> output-06-in-sandbox-mounts.txt
+# It goes to its own file on purpose: runsc hands the caller's fd 1 straight to
+# the sandbox, and writing both streams into one file clobbers the workload's
+# output at the shared offset.
+
+--- 8. state dir and debug log ----------------------------------------------
+
+$ find $SCRATCH/e1/state -printf '%M %s %p\n'      # during and after a run
+$ cat $SCRATCH/e1/state/*.state
+$ $SCRATCH/bin/runsc $BASE --debug --debug-log=$SCRATCH/e1/debug/ run --bundle ... s1-dbg
+$ ls -la $SCRATCH/e1/debug
+  -> output-07-state-dir-and-debug-log.txt
+
+--- 9. strace ---------------------------------------------------------------
+
+$ strace -f -e trace=mount,open,openat,mkdir,mkdirat,unshare,clone,clone3,chroot,pivot_root,execve \
+      -o $SCRATCH/e1/strace-raw.txt \
+      $SCRATCH/bin/runsc $BASE run --bundle $SCRATCH/e1/bundle s1-strace
+  -> output-08-strace-trimmed.txt   (2072 raw lines, trimmed; see its header)

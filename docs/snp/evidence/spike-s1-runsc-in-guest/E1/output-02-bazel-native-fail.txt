@@ -1,0 +1,39 @@
+# Trimmed: the two native bazel runs produced 108 and 325 lines; kept are the
+# ERROR lines and the one missing tool they all name.
+
+ERROR: /home/pniroula/Projects/gvisor-s1/vdso/BUILD:17:8: Executing genrule //vdso:vdso failed: (Exit 127): bash failed: error executing Genrule command
+    (from target //vdso:vdso) 
+ERROR: /home/pniroula/Projects/gvisor-s1/pkg/sentry/platform/systrap/sysmsg/BUILD:15:11: Executing genrule //pkg/sentry/platform/systrap/sysmsg:sighandler failed: (Exit 127): bash failed: error executing Genrule command
+    (from target //pkg/sentry/platform/systrap/sysmsg:sighandler) 
+ERROR: /home/pniroula/Projects/gvisor-s1/pkg/sentry/platform/systrap/sysmsg/BUILD:31:11: Executing genrule //pkg/sentry/platform/systrap/sysmsg:sysmsg_lib failed: (Exit 127): bash failed: error executing Genrule command
+    (from target //pkg/sentry/platform/systrap/sysmsg:sysmsg_lib) 
+ERROR: /home/pniroula/Projects/gvisor-s1/pkg/sentry/platform/systrap/sysmsg/BUILD:42:11: Executing genrule //pkg/sentry/platform/systrap/sysmsg:sysrestorer failed: (Exit 127): bash failed: error executing Genrule command
+    (from target //pkg/sentry/platform/systrap/sysmsg:sysrestorer) 
+ERROR: /home/pniroula/Projects/gvisor-s1/pkg/sentry/platform/systrap/sysmsg/BUILD:51:11: Executing genrule //pkg/sentry/platform/systrap/sysmsg:syshandler failed: (Exit 127): bash failed: error executing Genrule command
+    (from target //pkg/sentry/platform/systrap/sysmsg:syshandler) 
+ERROR: /home/pniroula/Projects/gvisor-s1/vdso/BUILD:17:8: Executing genrule //vdso:vdso [for tool] failed: (Exit 127): bash failed: error executing Genrule command
+    (from target //vdso:vdso) 
+ERROR: /home/pniroula/Projects/gvisor-s1/pkg/sentry/platform/systrap/sysmsg/BUILD:51:11: Executing genrule //pkg/sentry/platform/systrap/sysmsg:syshandler [for tool] failed: (Exit 127): bash failed: error executing Genrule command
+    (from target //pkg/sentry/platform/systrap/sysmsg:syshandler) 
+ERROR: /home/pniroula/Projects/gvisor-s1/pkg/sentry/platform/systrap/sysmsg/BUILD:31:11: Executing genrule //pkg/sentry/platform/systrap/sysmsg:sysmsg_lib [for tool] failed: (Exit 127): bash failed: error executing Genrule command
+    (from target //pkg/sentry/platform/systrap/sysmsg:sysmsg_lib) 
+ERROR: /home/pniroula/Projects/gvisor-s1/pkg/sentry/platform/systrap/sysmsg/BUILD:42:11: Executing genrule //pkg/sentry/platform/systrap/sysmsg:sysrestorer [for tool] failed: (Exit 127): bash failed: error executing Genrule command
+    (from target //pkg/sentry/platform/systrap/sysmsg:sysrestorer) 
+ERROR: /home/pniroula/Projects/gvisor-s1/pkg/sentry/platform/systrap/sysmsg/BUILD:15:11: Executing genrule //pkg/sentry/platform/systrap/sysmsg:sighandler [for tool] failed: (Exit 127): bash failed: error executing Genrule command
+    (from target //pkg/sentry/platform/systrap/sysmsg:sighandler) 
+ERROR: Build did NOT complete successfully
+
+# the single cause, common to all eleven failing actions:
+  /bin/bash -c 'source external/bazel_tools/tools/genrule/genrule-setup.sh; /usr/bin/aarch64-linux-gnu-gcc     -DPAGE_SIZE=4096 -Wall -Werror -Wno-unused-command-line-argument -fpie -O1 -mno-outline-atomics  -fno-builtin -ffreestanding -mgeneral-regs-only -g0 -Wa,--noexecstack -fno-asynchronous-unwind-tables -fno-stack-protector -c $(echo pkg/sentry/platform/systrap/sysmsg/atomic.h pkg/sentry/platform/systrap/sysmsg/sysmsg.h pkg/sentry/platform/systrap/sysmsg/sysmsg_lib.c pkg/sentry/platform/systrap/sysmsg/sysmsg_offsets.h | tr '\'' '\'' '\''
+  /bin/bash -c 'source external/bazel_tools/tools/genrule/genrule-setup.sh; /usr/bin/aarch64-linux-gnu-gcc     -DPAGE_SIZE=4096 -Wall -Werror -Wno-unused-command-line-argument -fpie -O1 -mno-outline-atomics  -fno-builtin -ffreestanding -mgeneral-regs-only -g0 -Wa,--noexecstack -fno-asynchronous-unwind-tables -fno-stack-protector -c $(echo pkg/sentry/platform/systrap/sysmsg/sighandler_arm64.c pkg/sentry/platform/systrap/sysmsg/atomic.h pkg/sentry/platform/systrap/sysmsg/sysmsg.h pkg/sentry/platform/systrap/sysmsg/sysmsg_offsets.h | tr '\'' '\'' '\''
+  /bin/bash -c 'source external/bazel_tools/tools/genrule/genrule-setup.sh; /usr/bin/aarch64-linux-gnu-gcc     -DPAGE_SIZE=4096 -Wall -Werror -Wno-unused-command-line-argument -fpie -O1 -mno-outline-atomics  -fno-builtin -ffreestanding -mgeneral-regs-only -g0 -Wa,--noexecstack -fno-asynchronous-unwind-tables -fno-stack-protector -c $(echo pkg/sentry/platform/systrap/sysmsg/sigrestorer_arm64.S | tr '\'' '\'' '\''
+  /bin/bash -c 'source external/bazel_tools/tools/genrule/genrule-setup.sh; /usr/bin/aarch64-linux-gnu-gcc     -DPAGE_SIZE=4096 -Wall -Werror -Wno-unused-command-line-argument -fpie -O1 -mno-outline-atomics  -fno-builtin -ffreestanding -mgeneral-regs-only -g0 -Wa,--noexecstack -fno-asynchronous-unwind-tables -fno-stack-protector -c $(echo pkg/sentry/platform/systrap/sysmsg/syshandler_arm64.S pkg/sentry/platform/systrap/sysmsg/sysmsg_offsets.h | tr '\'' '\'' '\''
+  /bin/bash -c 'source external/bazel_tools/tools/genrule/genrule-setup.sh; /usr/bin/aarch64-linux-gnu-gcc  -I. -O2 -std=c++11 -fPIC -fno-sanitize=all -fno-stack-protector -shared -nostdlib -Wl,-soname=linux-vdso.so.1 -Wl,--hash-style=sysv -Wl,--no-undefined -Wl,-Bsymbolic -Wl,-z,max-page-size=4096 -Wl,-z,common-page-size=4096 -Wl,-Tvdso/vdso_arm64.lds -o bazel-out/aarch64-opt-exec-ST-c1691d43938d/bin/vdso/vdso.so vdso/vdso.cc vdso/vdso_time.cc')
+  /bin/bash -c 'source external/bazel_tools/tools/genrule/genrule-setup.sh; /usr/bin/aarch64-linux-gnu-gcc  -I. -O2 -std=c++11 -fPIC -fno-sanitize=all -fno-stack-protector -shared -nostdlib -Wl,-soname=linux-vdso.so.1 -Wl,--hash-style=sysv -Wl,--no-undefined -Wl,-Bsymbolic -Wl,-z,max-page-size=4096 -Wl,-z,common-page-size=4096 -Wl,-Tvdso/vdso_arm64.lds -o bazel-out/aarch64-opt-ST-c1691d43938d/bin/vdso/vdso.so vdso/vdso.cc vdso/vdso_time.cc')
+/bin/bash: line 1: /usr/bin/aarch64-linux-gnu-gcc: No such file or directory
+
+INFO: Found 1 target...
+Target //runsc:runsc failed to build
+INFO: Elapsed time: 677.281s, Critical Path: 649.17s
+INFO: 4081 processes: 907 action cache hit, 624 internal, 3415 linux-sandbox, 42 local.
+ERROR: Build did NOT complete successfully

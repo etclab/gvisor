@@ -1,0 +1,32 @@
+# strace -f -e trace=mount,open,openat,mkdir,mkdirat,unshare,clone,clone3,chroot,pivot_root,execve
+# The raw trace is 2072 lines. Trimmed here to every mount(2), chroot(2),
+# pivot_root(2) and namespace-creating clone(2), in order, with the open/openat
+# noise dropped. $SCRATCH stands for the scratch directory.
+#
+# NOTE: under strace the run did NOT complete:
+running container: creating container: cannot create sandbox: cannot read client sync file: waiting for sandbox to start: EOF
+# systrap drives its stubs through ptrace and strace takes the tracer slot away
+# from it. The trace is complete through the gofer's chroot(2), which is what
+# this experiment wanted from it; the sandbox never reached the workload.
+
+2592415 clone(child_stack=NULL, flags=CLONE_PIDFD|CLONE_NEWNS|CLONE_NEWUSER|SIGCHLD, parent_tid=[12]) = 2592417
+2592441 clone(child_stack=NULL, flags=CLONE_PIDFD|CLONE_NEWNS|CLONE_NEWUTS|CLONE_NEWIPC|CLONE_NEWUSER|CLONE_NEWPID|CLONE_NEWNET|SIGCHLD, parent_tid=[31]) = 2592459
+2592441 mount("/proc/2592459/ns/net", "$SCRATCH/e1/state/null-netns", 0x297d863aa138, MS_BIND, NULL) = 0
+2592417 clone(child_stack=NULL, flags=CLONE_PIDFD|CLONE_NEWNS|CLONE_NEWUTS|CLONE_NEWIPC|CLONE_NEWUSER|CLONE_NEWPID|CLONE_NEWNET|SIGCHLD <unfinished ...>
+2592464 mount("", "/proc/self/fd/15", 0x3a56616987e1, MS_REC|MS_SLAVE, NULL) = 0
+2592464 mount("runsc-root", "/proc/self/fd/15", "tmpfs", MS_NOSUID|MS_NODEV|MS_NOEXEC, NULL) = 0
+2592464 mount("", "/proc/fs", 0x3a5661698829, MS_UNBINDABLE, NULL) = 0
+2592464 mount("/proc", "/proc/fs/proc", 0x3a566169886e, MS_RDONLY|MS_NOSUID|MS_NODEV|MS_NOEXEC|MS_BIND|MS_REC, NULL <unfinished ...>
+2592464 mount("/proc/fs/proc/self/fd", "/proc/fs//proc/fs", 0x3a566169886f, MS_RDONLY|MS_NOSUID|MS_NODEV|MS_NOEXEC|MS_BIND, NULL) = 0
+2592464 mount("$SCRATCH/e1/bundle/rootfs", "$SCRATCH/e1/bundle/rootfs", 0x3a566169887f, MS_BIND|MS_REC, NULL) = 0
+2592464 mount("", "$SCRATCH/e1/bundle/rootfs", 0x3a5661698881, MS_REC|MS_SLAVE, NULL) = 0
+2592464 mount("$SCRATCH/e1/bundle/rootfs", "/proc/fs/proc/self/fd/15", 0x3a566169889d, MS_BIND|MS_REC, NULL) = 0
+2592464 mount("/proc/fs/root", "/proc/fs/proc/self/fd/15", 0x3a56615bc400, MS_RDONLY|MS_NOSUID|MS_NODEV|MS_REMOUNT|MS_BIND, NULL) = 0
+2592464 pivot_root(".", ".")            = 0
+2592493 mount("", "/proc/self/fd/18", 0x15710f3982b3, MS_REC|MS_SLAVE, NULL) = 0
+2592493 mount("runsc-root", "/proc/self/fd/18", "tmpfs", MS_NOSUID|MS_NODEV|MS_NOEXEC, NULL) = 0
+2592493 mount("runsc-proc", "/proc/self/fd/18", "tmpfs", MS_NOSUID|MS_NODEV|MS_NOEXEC, NULL <unfinished ...>
+2592493 mount("proc", "/proc/self/fd/18", "proc", MS_RDONLY|MS_NOSUID|MS_NODEV|MS_NOEXEC, NULL <unfinished ...>
+2592493 mount("", "/proc/self/fd/18", 0x15710f39845d, MS_RDONLY|MS_REMOUNT|MS_BIND, NULL) = 0
+2592493 pivot_root(".", "." <unfinished ...>
+2592464 chroot("/root")                 = 0

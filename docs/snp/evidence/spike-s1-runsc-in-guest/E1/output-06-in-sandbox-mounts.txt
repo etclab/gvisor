@@ -1,0 +1,6 @@
+none / 9p ro,trans=fd,rfdno=3,wfdno=3,aname=/,dfltuid=4294967294,dfltgid=4294967294,dcache=1000,cache=fscache,disable_fifo_open,overlayfs_stale_read,directfs 0 0
+none /sys sysfs rw,dentry_cache_limit=1000 0 0
+none /dev dev rw,mode=0755 0 0
+none /proc proc rw,dentry_cache_limit=1000 0 0
+none /dev/pts devpts rw 0 0
+none /tmp tmpfs rw,mode=01777 0 0

@@ -1,0 +1,49 @@
+runsc/cli/cli.go:34:2: found packages refs (refcounter.go) and refs_template (refs_template.go) in /home/pniroula/Projects/gvisor-s1/pkg/refs
+pkg/eventchannel/event.go:30:2: no required module provides package gvisor.dev/gvisor/pkg/eventchannel/eventchannel_go_proto; to add it:
+	go get gvisor.dev/gvisor/pkg/eventchannel/eventchannel_go_proto
+pkg/eventfd/eventfd.go:25:2: found packages safecopy (safecopy.go) and safecopy_x (safecopy_amd64_test.go) in /home/pniroula/Projects/gvisor-s1/pkg/safecopy
+pkg/metric/condmetric.go:20:2: no required module provides package gvisor.dev/gvisor/pkg/metric/metric_go_proto; to add it:
+	go get gvisor.dev/gvisor/pkg/metric/metric_go_proto
+pkg/sentry/seccheck/seccheck.go:25:2: no required module provides package gvisor.dev/gvisor/pkg/sentry/seccheck/points/points_go_proto; to add it:
+	go get gvisor.dev/gvisor/pkg/sentry/seccheck/points/points_go_proto
+pkg/devutil/devutil.go:26:2: found packages lisafs (channel.go) and connection (connection_test.go) in /home/pniroula/Projects/gvisor-s1/pkg/lisafs
+pkg/sentry/arch/arch_x86.go:29:2: no required module provides package gvisor.dev/gvisor/pkg/sentry/arch/registers_go_proto; to add it:
+	go get gvisor.dev/gvisor/pkg/sentry/arch/registers_go_proto
+pkg/sentry/fscheckpoint/fscheckpoint.go:46:2: no required module provides package gvisor.dev/gvisor/pkg/sentry/fscheckpoint/fscheckpoint_proto_go_proto; to add it:
+	go get gvisor.dev/gvisor/pkg/sentry/fscheckpoint/fscheckpoint_proto_go_proto
+pkg/sentry/vfs/mount_promise.go:26:2: no required module provides package gvisor.dev/gvisor/pkg/sentry/vfs/events_go_proto; to add it:
+	go get gvisor.dev/gvisor/pkg/sentry/vfs/events_go_proto
+pkg/sentry/pgalloc/save_restore.go:40:2: no required module provides package gvisor.dev/gvisor/pkg/sentry/pgalloc/pgalloc_metadata_go_proto; to add it:
+	go get gvisor.dev/gvisor/pkg/sentry/pgalloc/pgalloc_metadata_go_proto
+pkg/sentry/kernel/fscheckpoint.go:30:2: found packages benchmark (benchmark_test.go) and tmpfs (device_file.go) in /home/pniroula/Projects/gvisor-s1/pkg/sentry/fsimpl/tmpfs
+pkg/sentry/inet/inet.go:21:2: found packages nlmsg (message.go) and message (message_test.go) in /home/pniroula/Projects/gvisor-s1/pkg/sentry/socket/netlink/nlmsg
+pkg/sentry/inet/inet.go:24:2: found packages stack (addressable_endpoint_state.go) and bridge (bridge_test.go) in /home/pniroula/Projects/gvisor-s1/pkg/tcpip/stack
+pkg/sentry/kernel/task_signals.go:29:2: no required module provides package gvisor.dev/gvisor/pkg/sentry/kernel/uncaught_signal_go_proto; to add it:
+	go get gvisor.dev/gvisor/pkg/sentry/kernel/uncaught_signal_go_proto
+pkg/sentry/loader/vdsodata/vdsodata_amd64.go:26:12: pattern vdso_amd64.so: no matching files found
+pkg/seccomp/precompiledseccomp/example/example.go:23:2: import "gvisor.dev/gvisor/pkg/seccomp/precompiledseccomp" is a program, not an importable package
+pkg/sentry/platform/platform.go:32:2: found packages main (precompile_gen.go) and precompiled (precompiled_lib.tmpl.go) in /home/pniroula/Projects/gvisor-s1/pkg/seccomp/precompiledseccomp
+pkg/sentry/platform/platform.go:32:2: import "gvisor.dev/gvisor/pkg/seccomp/precompiledseccomp" is a program, not an importable package
+pkg/sentry/kernel/kernel.go:82:2: found packages unimpl (events.go) and events (events_test.go) in /home/pniroula/Projects/gvisor-s1/pkg/sentry/unimpl
+pkg/sentry/kernel/kernel.go:89:2: no required module provides package gvisor.dev/gvisor/pkg/sentry/unimpl/unimplemented_syscall_go_proto; to add it:
+	go get gvisor.dev/gvisor/pkg/sentry/unimpl/unimplemented_syscall_go_proto
+pkg/sentry/socket/netstack/netstack.go:57:2: no required module provides package gvisor.dev/gvisor/pkg/sentry/socket/netstack/events_go_proto; to add it:
+	go get gvisor.dev/gvisor/pkg/sentry/socket/netstack/events_go_proto
+pkg/sentry/control/lifecycle.go:29:2: no required module provides package gvisor.dev/gvisor/pkg/sentry/control/control_api_go_proto; to add it:
+	go get gvisor.dev/gvisor/pkg/sentry/control/control_api_go_proto
+pkg/sentry/control/tpu_control.go:30:2: no required module provides package gvisor.dev/gvisor/pkg/sentry/control/tpu_control_proto_go_proto; to add it:
+	go get gvisor.dev/gvisor/pkg/sentry/control/tpu_control_proto_go_proto
+pkg/sentry/control/state_cuda.go:29:2: found packages nvproxy (frontend.go) and nvproxy_driver_parity (nvproxy_driver_parity_test.go) in /home/pniroula/Projects/gvisor-s1/pkg/sentry/devices/nvproxy
+pkg/sentry/strace/strace.go:33:2: no required module provides package gvisor.dev/gvisor/pkg/sentry/strace/strace_go_proto; to add it:
+	go get gvisor.dev/gvisor/pkg/sentry/strace/strace_go_proto
+pkg/sentry/platform/systrap/sysmsg/sysmsg_amd64.go:30:12: pattern sighandler.built-in.amd64.bin: no matching files found
+pkg/sentry/platform/systrap/filters.go:23:2: import "gvisor.dev/gvisor/pkg/seccomp/precompiledseccomp" is a program, not an importable package
+runsc/boot/network.go:35:2: found packages fifo (fifo.go) and qdisc (qdisc_test.go) in /home/pniroula/Projects/gvisor-s1/pkg/tcpip/link/qdisc/fifo
+runsc/boot/filter/config/config.go:27:2: import "gvisor.dev/gvisor/pkg/seccomp/precompiledseccomp" is a program, not an importable package
+runsc/boot/loader.go:87:2: found packages filter (filter.go) and filter_bench (filter_bench_test.go) in /home/pniroula/Projects/gvisor-s1/runsc/boot/filter
+runsc/cmd/checkpoint.go:29:2: found packages container (console_test.go) and serialization (serialization_test.go) in /home/pniroula/Projects/gvisor-s1/runsc/container
+runsc/cmd/gofer.go:40:2: found packages fsgofer (lisafs.go) and lisafs (lisafs_test.go) in /home/pniroula/Projects/gvisor-s1/runsc/fsgofer
+runsc/cmd/sandboxexec.go:36:2: no required module provides package gvisor.dev/gvisor/sandboxexec/proto/sandbox_options_go_proto; to add it:
+	go get gvisor.dev/gvisor/sandboxexec/proto/sandbox_options_go_proto
+runsc/gvisorbinaries/embed/embed.go:25:2: import "gvisor.dev/gvisor/runsc/checkpointgofer" is a program, not an importable package
+EXIT=1

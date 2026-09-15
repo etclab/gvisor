@@ -1,0 +1,20 @@
+# push-v1: the two numbers this scenario turns on.
+#
+# A pushed policy is not signed and not measured. What makes it trustworthy is
+# the tunnel it arrived on, and what makes the transcript a claim is that the
+# digest the pushing guest printed before it sent anything is the digest the
+# receiving guest printed when it applied it (docs/policy-push.md).
+
+launch measurement, both guests : b02657728efac22dbdd72b0388186aaa6a2c59e6c43ab92e48d6060b1e37ee342c083c34463ebc2c3537c5998d8529cc
+egress ceiling digest           : 197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+    sha256 over attest/ceiling/ceiling.nft, compiled into the measured tunneld.
+    It is what each guest prints at start and what each set admits; no document
+    on either config device is named by it.
+
+the pushed document                : {"format":"policy","version":1,"n":[],"f":[],"x":[]}
+its sha256, as this script wrote it: c067e20134c6ba70a95ece8b2f877b11f34943dd72d0ceff5038036431903e6c
+as guest A said it was pushing it  : c067e20134c6ba70a95ece8b2f877b11f34943dd72d0ceff5038036431903e6c
+as guest B said it applied it      : c067e20134c6ba70a95ece8b2f877b11f34943dd72d0ceff5038036431903e6c
+    An empty line above is the answer for the version 2 run: B's tunneld reads
+    the envelope before any sandbox does, so a version it does not read is
+    refused at the boundary and nothing is ever applied.

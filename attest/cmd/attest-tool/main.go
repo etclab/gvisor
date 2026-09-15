@@ -20,6 +20,7 @@
 //	attest-tool acquire   [-chain-dir DIR] [-out DIR] [-report-dir DIR] [-base64]
 //	attest-tool provision fetch -report REPORT.bin -out DIR
 //	attest-tool provision check -report REPORT.bin -dir DIR
+//	attest-tool ceiling   [-digest]
 //
 // The three were three programs until ticket 21 — cmd/verify-evidence,
 // cmd/acquire-evidence and cmd/provision-chain — and they are one here because
@@ -32,6 +33,11 @@
 // transcript recorded before ticket 21 and one recorded after it say the same
 // thing about the same run. What the subcommands share is what they had copies
 // of: the author key reader and the policy-digest parser.
+//
+// ceiling is the fourth and is newer than that arrangement (ticket 22). It
+// reads nothing and judges nothing: it prints the egress ceiling compiled into
+// the measured image and the digest a peer's policy_digest names to admit a
+// guest built from this source.
 package main
 
 import (
@@ -53,6 +59,8 @@ func main() {
 		}
 	case "provision":
 		runProvision(os.Args[2:])
+	case "ceiling":
+		os.Exit(runCeiling(os.Args[2:], os.Stdout))
 	default:
 		usage()
 	}
@@ -66,6 +74,7 @@ func usage() {
   attest-tool acquire   [-chain-dir DIR] [-out DIR] [-report-dir DIR] [-base64]
   attest-tool provision fetch -report REPORT.bin -out DIR
   attest-tool provision check -report REPORT.bin -dir DIR
+  attest-tool ceiling   [-digest]
 
 each subcommand's own flags: attest-tool SUBCOMMAND -h`)
 	os.Exit(2)

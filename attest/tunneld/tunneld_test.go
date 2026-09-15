@@ -170,6 +170,7 @@ func start(t *testing.T, sandbox string, image []byte, admits attest.ReferenceVa
 		Verifier:              fixture.VerifierTrusting(t, p),
 		ReferenceValueSetPath: writeSet(t, admits, authorPriv),
 		PolicyPath:            writePolicy(t, everyImage(), authorPriv),
+		PolicyDigest:          policyDigestOf(t, everyImage()),
 		AuthorPublicKey:       authorPub,
 		Peers:                 peers,
 		ListenAddr:            "127.0.0.1:0",
@@ -286,6 +287,7 @@ func TestPeerPresentingNoEvidenceIsRefused(t *testing.T) {
 		Verifier:              fixture.VerifierTrusting(t, p),
 		ReferenceValueSetPath: writeSet(t, admitting(imageB), authorPriv),
 		PolicyPath:            writePolicy(t, everyImage(), authorPriv),
+		PolicyDigest:          policyDigestOf(t, everyImage()),
 		AuthorPublicKey:       authorPub,
 		Peers:                 tunneld.PeerTable{"b": b.Addr().String()},
 		ListenAddr:            "127.0.0.1:0",
@@ -319,6 +321,7 @@ func TestRefusesToStartWithoutAnAcceptedSetOrPolicy(t *testing.T) {
 		ListenAddr:            "127.0.0.1:0",
 		ReferenceValueSetPath: writeSet(t, admitting(imageB), authorPriv),
 		PolicyPath:            writePolicy(t, everyImage(), authorPriv),
+		PolicyDigest:          policyDigestOf(t, everyImage()),
 	}
 	_, otherAuthor, _ := ed25519.GenerateKey(rand.Reader)
 

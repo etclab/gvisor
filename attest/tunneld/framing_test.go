@@ -123,6 +123,7 @@ func startWith(t *testing.T, sandbox string, image []byte, admits attest.Referen
 		Verifier:              fixture.VerifierTrusting(t, p),
 		ReferenceValueSetPath: writeSet(t, admits, authorPriv),
 		PolicyPath:            writePolicy(t, everyImage(), authorPriv),
+		PolicyDigest:          policyDigestOf(t, everyImage()),
 		AuthorPublicKey:       authorPub,
 		Peers:                 peers,
 		ListenAddr:            "127.0.0.1:0",

@@ -2,10 +2,11 @@
 # /sbin/init of the measured root filesystem.
 #
 # Mounts the kernel filesystems (all noexec), loads the report interface
-# driver, proves to the console that no writable path is executable, and runs
-# the embedded binary. When it exits the guest powers off: no shell is ever
-# spawned (the busybox that runs this script is present, but nothing listens
-# and nothing else is run), no getty, nothing else.
+# driver, proves to the console that no writable path is executable, installs
+# the egress ceiling the binary carries, and runs that binary. When it exits
+# the guest powers off: no shell is ever spawned (the busybox that runs this
+# script is present, but nothing listens and nothing else is run), no getty,
+# nothing else.
 export PATH=/bin:/sbin:/usr/bin
 say() { echo "init: $*"; }
 
@@ -44,6 +45,25 @@ if [ $bad != 0 ]; then
   poweroff -f
 fi
 say "no writable path is executable"
+
+# The egress ceiling, before tunneld and therefore before the link: tunneld
+# brings its own interface up out of the run configuration, so this is the last
+# moment at which nothing in this guest can address a packet. The rule set is a
+# constant inside the binary and inside the measurement with it (attest/ceiling,
+# attest/cmd/tunneld/egress.go) — it reads no file, takes no argument and names
+# no peer, so it needs neither the config device nor the author key. It went in
+# after the config device was read until ticket 22, because it was generated
+# from the signed policy that lived there.
+#
+# A ceiling that will not install is a guest that would run unconstrained, so
+# this powers off rather than continuing. It needs nf_tables in this kernel; if
+# a build of this image drops it, this is where that shows.
+say "installing the egress ceiling this image carries"
+if ! /usr/bin/tunneld -egress install; then
+  say "FATAL: the egress ceiling would not install; powering off without running tunneld"
+  sync
+  poweroff -f
+fi
 
 say "running /usr/bin/tunneld"
 /usr/bin/tunneld

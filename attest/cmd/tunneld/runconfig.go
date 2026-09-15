@@ -18,9 +18,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net"
 	"os"
+	"strconv"
 	"time"
 
+	"gvisor.dev/gvisor/attest/ceiling"
 	"gvisor.dev/gvisor/attest/tunnel"
 	"gvisor.dev/gvisor/attest/tunneld"
 )
@@ -145,6 +148,9 @@ func loadRunConfig(path string) (*runConfig, error) {
 	if c.SandboxID == "" {
 		return nil, fmt.Errorf("%s: no sandbox_id; a tunneld is one sandbox's identity and has to be told which", path)
 	}
+	if err := c.listenPortAgreesWithTheCeiling(); err != nil {
+		return nil, fmt.Errorf("%s: %w", path, err)
+	}
 	if c.Link != nil {
 		if err := c.Link.validate(); err != nil {
 			return nil, fmt.Errorf("%s: link: %w", path, err)
@@ -156,6 +162,35 @@ func loadRunConfig(path string) (*runConfig, error) {
 		}
 	}
 	return &c, nil
+}
+
+// listenPortAgreesWithTheCeiling refuses a run configuration asking to listen
+// on any port but the one the egress ceiling grants.
+//
+// The port is an image constant since ticket 22 ([ceiling.Port]): the ceiling
+// is compiled in, it names one UDP port, and nothing on the config device can
+// widen it. A tunneld that honoured a different `listen` would come up with a
+// listener whose traffic the kernel silently drops — which looks like a network
+// fault, is diagnosed as one, and is a configuration error. So it is refused
+// here, in the measured binary, for the reason the maximum age is clamped a few
+// lines below: the ceiling lives where the host cannot reach it.
+//
+// An empty `listen` is left alone. It is not a port the ceiling has an opinion
+// about — package tunneld takes an ephemeral one on loopback for it — and that
+// is a dress rehearsal on a workstation rather than a guest.
+func (c *runConfig) listenPortAgreesWithTheCeiling() error {
+	if c.Listen == "" {
+		return nil
+	}
+	_, port, err := net.SplitHostPort(c.Listen)
+	if err != nil {
+		return fmt.Errorf("listen %q is not host:port: %w", c.Listen, err)
+	}
+	if port != strconv.Itoa(int(ceiling.Port)) {
+		return fmt.Errorf("listen %q asks for port %s; the egress ceiling compiled into this image grants udp/%d and nothing else, "+
+			"so a listener on any other port would be one the kernel drops without a word (ticket 22)", c.Listen, port, ceiling.Port)
+	}
+	return nil
 }
 
 // limits fills in the defaults here rather than leaving them to the transport,

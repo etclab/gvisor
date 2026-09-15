@@ -65,6 +65,7 @@ package tunneld_test
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"crypto/x509"
 	"errors"
 	"fmt"
@@ -111,6 +112,7 @@ func startOnVM(t *testing.T, sandbox string, vm *snpfake.Platform, admits attest
 		Verifier:              n.verifier,
 		ReferenceValueSetPath: writeSet(t, admits, authorPriv),
 		PolicyPath:            writePolicy(t, everyImage(), authorPriv),
+		PolicyDigest:          policyDigestOf(t, everyImage()),
 		AuthorPublicKey:       authorPub,
 		Peers:                 peers,
 		ListenAddr:            "127.0.0.1:0",
@@ -528,5 +530,52 @@ func TestBothTunneldsExchangeConcurrently(t *testing.T) {
 	}
 	if n := b.served.Load(); n != 2*each {
 		t.Errorf("the peer answered %d exchanges; want %d", n, 2*each)
+	}
+}
+
+// The digest a tunneld presents is the one its caller named, and nothing else.
+//
+// It was the digest of the policy this tunneld loaded off the config device
+// until ticket 22, and it is now the name of the egress ceiling compiled into
+// the measured image — a number package tunneld has no way to compute and no
+// business choosing. So the only thing this package can be asked to guarantee
+// is that it presents what it was given, which is what the first half below
+// pins: a tunneld handed a digest that is deliberately not its policy's
+// presents the one it was handed.
+//
+// The second half is the refusal that keeps "was given" from meaning "was not
+// given": a tunneld with no digest at all would ask every peer to admit it on
+// its launch measurement alone, which is the one thing ADR-0002's amendment
+// exists to prevent.
+func TestATunneldPresentsTheDigestItsCallerNamed(t *testing.T) {
+	p := platform(t, imageA)
+	named := sha256.Sum256([]byte("ticket 22: the name of an egress ceiling, not of a document"))
+	base := tunneld.Config{
+		SandboxID:             "a",
+		Acquirer:              p,
+		Verifier:              fixture.VerifierTrusting(t, p),
+		ReferenceValueSetPath: writeSet(t, admitting(imageB), authorPriv),
+		PolicyPath:            writePolicy(t, everyImage(), authorPriv),
+		PolicyDigest:          named,
+		AuthorPublicKey:       authorPub,
+		ListenAddr:            "127.0.0.1:0",
+	}
+	td, err := tunneld.New(context.Background(), base)
+	if err != nil {
+		t.Fatalf("tunneld.New: %v", err)
+	}
+	defer td.Close()
+	if got := td.PolicyDigest(); got != attest.PolicyDigest(named) {
+		t.Errorf("the tunneld presents %s; its caller named %s", got, attest.PolicyDigest(named))
+	}
+	if got := td.PolicyDigest(); got == policyDigestOf(t, everyImage()) {
+		t.Error("the tunneld presents the digest of the policy on its config device; since ticket 22 that document does not name this sandbox")
+	}
+
+	without := base
+	without.PolicyDigest = attest.PolicyDigest{}
+	if td, err := tunneld.New(context.Background(), without); err == nil {
+		td.Close()
+		t.Error("a tunneld with no policy digest started; it would ask every peer to admit it on its measurement alone")
 	}
 }

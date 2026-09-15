@@ -105,11 +105,21 @@ type Config struct {
 	AuthorPublicKey       ed25519.PublicKey
 
 	// PolicyPath locates this sandbox's own signed policy, authorised by the
-	// same AuthorPublicKey under its own domain. It is required: the digest of
-	// this document is the identity this tunneld presents, and a tunneld
-	// without one would ask every peer to admit it on its measurement alone.
-	// A policy that fails to load refuses startup.
+	// same AuthorPublicKey under its own domain. A policy that fails to load
+	// refuses startup.
 	PolicyPath string
+
+	// PolicyDigest is the digest this tunneld presents to every peer it meets,
+	// bound into its evidence under ADR-0002's amendment and checked against
+	// the peer's own allow-list.
+	//
+	// It is required, and it is the caller's to choose because the caller is
+	// the one thing that knows what this sandbox is: the command that builds
+	// the measured guest passes the name of the egress ceiling compiled into
+	// its image ([ceiling.Digest], ticket 22). It was the digest of the policy
+	// at PolicyPath until then, which made the number a statement about a
+	// document on a device the host supplies rather than about the image.
+	PolicyDigest attest.PolicyDigest
 
 	// Peers is the peer table.
 	Peers PeerTable
@@ -159,7 +169,8 @@ type Tunneld struct {
 	// policy is this sandbox's own signed policy, and unconstrained the values
 	// in its set that list no policy of their own. Both are read off disk at
 	// startup and never change: the two documents are loaded once, and the
-	// identity bound to the policy is held for the life of the process.
+	// identity bound to [Config.PolicyDigest] is held for the life of the
+	// process.
 	policy        attest.Policy
 	unconstrained []attest.UnconstrainedValue
 
@@ -187,6 +198,9 @@ func New(ctx context.Context, cfg Config) (*Tunneld, error) {
 	if cfg.Acquirer == nil || cfg.Verifier == nil {
 		return nil, errors.New("tunneld: both halves of the vendor seam are required")
 	}
+	if cfg.PolicyDigest == (attest.PolicyDigest{}) {
+		return nil, errors.New("tunneld: no policy digest; a tunneld that presented none would ask every peer to admit it on its measurement alone")
+	}
 	set, err := attest.LoadReferenceValueSetFile(cfg.ReferenceValueSetPath, cfg.AuthorPublicKey)
 	if err != nil {
 		return nil, fmt.Errorf("tunneld: refusing to start: %w", err)
@@ -199,9 +213,9 @@ func New(ctx context.Context, cfg Config) (*Tunneld, error) {
 	if err != nil {
 		return nil, fmt.Errorf("tunneld: refusing to start: %w", err)
 	}
-	// The policy's digest is what the identity binds into the evidence and what
-	// a peer checks against its own allow-list.
-	identity, err := ratls.NewIdentity(ctx, cfg.Acquirer, policy.Digest)
+	// The digest the caller named is what the identity binds into the evidence
+	// and what a peer checks against its own allow-list.
+	identity, err := ratls.NewIdentity(ctx, cfg.Acquirer, cfg.PolicyDigest)
 	if err != nil {
 		return nil, fmt.Errorf("tunneld: refusing to start: %w", err)
 	}
@@ -248,15 +262,15 @@ func (t *Tunneld) SandboxID() string { return t.cfg.SandboxID }
 // Addr is the address peers reach this tunneld at.
 func (t *Tunneld) Addr() net.Addr { return t.listener.Addr() }
 
-// PolicyDigest is the digest of the policy this tunneld loaded, which is what
-// it presents to every peer it meets (ADR-0002's amendment).
+// PolicyDigest is the digest this tunneld presents to every peer it meets
+// (ADR-0002's amendment), which is the one its caller gave it.
 //
 // It is here so that the process around a tunneld can print it: a peer admits
 // this sandbox only if one of its own reference values lists this number, and
-// the only way an operator gets it is off a start log. It is a digest of a
-// document that travels on an untrusted device, so nothing about publishing it
-// is a disclosure.
-func (t *Tunneld) PolicyDigest() attest.PolicyDigest { return t.policy.Digest }
+// the only way an operator gets it is off a start log. It names something a
+// reader of the image can recompute for themselves, so nothing about
+// publishing it is a disclosure.
+func (t *Tunneld) PolicyDigest() attest.PolicyDigest { return t.cfg.PolicyDigest }
 
 // ForwardTo is the images this tunneld's own policy says it will dial, in the
 // order the document lists them.

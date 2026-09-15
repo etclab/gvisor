@@ -161,6 +161,7 @@ func startRefusalNodeUnder(t *testing.T, name string, acquirer attest.Acquirer, 
 		Verifier:              verifier,
 		ReferenceValueSetPath: writeSet(t, admits, authorPriv),
 		PolicyPath:            writePolicy(t, forwardTo, authorPriv),
+		PolicyDigest:          policyDigestOf(t, forwardTo),
 		AuthorPublicKey:       authorPub,
 		Peers:                 peers,
 		ListenAddr:            "127.0.0.1:0", // ephemeral: the suite runs concurrently with itself

@@ -94,6 +94,7 @@ import (
 	"time"
 
 	"gvisor.dev/gvisor/attest"
+	"gvisor.dev/gvisor/attest/ceiling"
 	"gvisor.dev/gvisor/attest/tsm"
 	"gvisor.dev/gvisor/attest/tunneld"
 	"gvisor.dev/gvisor/attest/verify"
@@ -167,13 +168,25 @@ func run(args []string, out io.Writer) int {
 	fs.StringVar(&o.reportDir, "report-dir", tsm.DefaultReportDir, "the kernel's vendor-neutral report interface")
 	fs.StringVar(&o.runPath, "run", "", "the run configuration; empty means <config>/"+runConfigName)
 	fs.StringVar(&o.tdxCollateralDir, "tdx-collateral-dir", "", "directory holding Intel's provisioned TCB info, quoting-enclave identity and revocation lists; empty means this tunneld admits no Intel TDX peers. Never fetched (ADR-0005)")
-	fs.StringVar(&o.egressMode, "egress", "", "instead of serving: "+egressModePrint+" the netfilter rule set this sandbox's signed policy implies, "+egressModeInstall+" it in the kernel and read it back, or "+egressModeProbe+" it by attempting the egress the policy forbids")
+	fs.StringVar(&o.egressMode, "egress", "", "instead of serving: "+egressModePrint+" the egress ceiling this image carries, "+egressModeInstall+" it in the kernel and read it back, or "+egressModeProbe+" it by attempting the egress it forbids. None of the three reads the config device")
 	fs.StringVar(&o.egressProbeExtra, "egress-probe", "", "with -egress "+egressModeProbe+": extra targets to attempt, comma separated, each tcp:ADDR:PORT or udp:ADDR:PORT")
 	fs.BoolVar(&o.selfCheck, "self-check", false, "after starting, ask this platform for evidence and judge it with this sandbox's own reference value set, so the console says whether the set admits the machine it is on before any peer arrives")
 	if err := fs.Parse(args); err != nil {
 		return exitRefusedToStart
 	}
 	logf := func(format string, a ...any) { fmt.Fprintf(out, "tunneld: "+format+"\n", a...) }
+
+	// The egress modes end here, and they end here *before* anything is read.
+	// The ceiling is a constant in this binary (egress.go, attest/ceiling), so
+	// these modes need no config device, no author key and no policy — which is
+	// what lets the guest's init install the ceiling immediately after
+	// nf_tables loads, before it has looked for a disk and before the link is
+	// up (docs/snp/cloud/tdx/init.tdx). Until ticket 22 this branch sat below
+	// the three loads, because the rule set was generated from a document on
+	// the config device.
+	if o.egressMode != "" {
+		return runEgressMode(o.egressMode, o.egressProbeExtra, logf, out)
+	}
 
 	if o.runPath == "" {
 		o.runPath = filepath.Join(o.configDir, runConfigName)
@@ -200,18 +213,15 @@ func run(args []string, out io.Writer) int {
 		logf("peer table: %s = %s", name, peers[name])
 	}
 
-	// The egress modes end here: they read the same three documents a serving
-	// tunneld reads, do one thing to the kernel or to the network, and exit.
-	// They are modes of this binary rather than a second one because the rule
-	// set is generated from the signed policy, and the author key that judges
-	// that signature is the one baked into this image (egress.go).
-	if o.egressMode != "" {
-		return runEgressMode(o.egressMode, o.egressProbeExtra, o.configDir, cfg, peers, author, logf, out)
-	}
-
 	return serve(&o, cfg, peers, author, logf)
 }
 
+// The digest this sandbox presents to every peer is [ceiling.Digest], the name
+// of the ceiling compiled into this image, and not the digest of any document
+// on the config device (ticket 22). It is this command that knows which,
+// because the ceiling is this binary's constant and package tunneld holds no
+// opinion about netfilter.
+//
 // serve is everything the three documents left to decide: bring the link up,
 // build the two halves of the vendor seam, start one tunneld on them, say what
 // it is, and exercise it. It is a function of its own so that [run] above is
@@ -243,6 +253,7 @@ func serve(o *options, cfg *runConfig, peers map[string]string, author ed25519.P
 		ReferenceValueSetPath: filepath.Join(o.configDir, referenceValueSetName),
 		PolicyPath:            filepath.Join(o.configDir, policyName),
 		AuthorPublicKey:       author,
+		PolicyDigest:          attest.PolicyDigest(ceiling.Digest()),
 		Peers:                 tunneld.PeerTable(peers),
 		ListenAddr:            cfg.Listen,
 		Handler:               echo(cfg.SandboxID),
@@ -358,13 +369,16 @@ func logStartupSummary(td *tunneld.Tunneld, acquirer *tsm.Acquirer, limits tunne
 		logf("%s", observation)
 	}
 	// The number a peer's operator needs, printed where the only diagnostic
-	// surface a measured guest has can carry it (spec, user story 48). It is
-	// SHA-256 over the bytes the reference value author signed over the policy,
-	// so it is not what sha256sum of policy.json prints; emit-refvals prints the
-	// same number when it writes the document and this prints it at run time,
-	// from the file the guest actually loaded.
-	logf("policy digest %s (sha256 over the signed policy; put it in a peer's policy_digest)",
+	// surface a measured guest has can carry it (spec, user story 48). Since
+	// ticket 22 it is SHA-256 over the ceiling this image carries — the text
+	// `tunneld -egress print` writes and docs/snp/evidence/ticket22/spikes/E3/
+	// ceiling.nft records — rather than over a document on the config device.
+	// A peer's policy_digest naming it still means something and means
+	// something narrower: this enforcer, this ceiling.
+	logf("policy digest %s (sha256 over the compiled-in egress ceiling; put it in a peer's policy_digest)",
 		td.PolicyDigest())
+	logf("egress ceiling %s on udp/%d; `tunneld -egress print` writes the text this names",
+		ceiling.Interface, ceiling.Port)
 
 	// And whom this sandbox's own policy says it will dial. An empty list is a
 	// sandbox that answers and never calls, which is a legitimate thing to

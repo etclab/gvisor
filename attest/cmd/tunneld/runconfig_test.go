@@ -17,6 +17,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -98,10 +99,52 @@ func TestRunConfigRefusals(t *testing.T) {
 			`{"format": "gvisor.dev/gvisor/attest/tunneld-run", "version": 1, "sandbox_id": "a", "exercise": {"exchanges": 4}}`},
 		{"a duration written as a number",
 			`{"format": "gvisor.dev/gvisor/attest/tunneld-run", "version": 1, "sandbox_id": "a", "hold": 30}`},
+		{"a listen port the compiled-in egress ceiling does not grant",
+			`{"format": "gvisor.dev/gvisor/attest/tunneld-run", "version": 1, "sandbox_id": "a", "listen": "10.14.0.2:5555"}`},
+		{"a listen address that is not host:port",
+			`{"format": "gvisor.dev/gvisor/attest/tunneld-run", "version": 1, "sandbox_id": "a", "listen": "10.14.0.2"}`},
 	} {
 		if _, err := loadRunConfig(write(t, "tunneld.json", c.document)); err == nil {
 			t.Errorf("loaded a configuration with %s; want a refusal", c.name)
 		}
+	}
+}
+
+// The tunnel port became an image constant in ticket 22: the egress ceiling is
+// compiled in and grants one UDP port, so tunneld.json may agree with it and
+// may not choose. A configuration asking for another port is refused at load
+// rather than honoured, because a listener the kernel silently drops looks like
+// a network fault and is diagnosed as one.
+func TestTheListenPortMayOnlyAgreeWithTheCeiling(t *testing.T) {
+	document := func(listen string) string {
+		return `{"format": "gvisor.dev/gvisor/attest/tunneld-run", "version": 1, "sandbox_id": "a", "listen": "` + listen + `"}`
+	}
+	cfg, err := loadRunConfig(write(t, "tunneld.json", document("10.14.0.2:4433")))
+	if err != nil {
+		t.Fatalf("the ceiling's own port was refused: %v", err)
+	}
+	if cfg.Listen != "10.14.0.2:4433" {
+		t.Errorf("listen %q; want the address the document named", cfg.Listen)
+	}
+	// A port one away from it, which is the mistake a copied configuration
+	// makes and the one that is hardest to read off a console.
+	_, err = loadRunConfig(write(t, "tunneld.json", document("10.14.0.2:4434")))
+	if err == nil {
+		t.Fatal("a listen port the ceiling does not grant was accepted")
+	}
+	if !strings.Contains(err.Error(), "4433") {
+		t.Errorf("the refusal is %q; it has to name the port the ceiling does grant", err)
+	}
+	// And an address with no port at all is refused here rather than reaching
+	// the listener, where it would be a different sentence about a later thing.
+	if _, err := loadRunConfig(write(t, "tunneld.json", document("10.14.0.2"))); err == nil {
+		t.Error("a listen address with no port was accepted")
+	}
+	// An absent listen is a dress rehearsal on a workstation and is left alone:
+	// package tunneld takes an ephemeral port on loopback for it.
+	if _, err := loadRunConfig(write(t, "tunneld.json",
+		`{"format": "gvisor.dev/gvisor/attest/tunneld-run", "version": 1, "sandbox_id": "a"}`)); err != nil {
+		t.Errorf("a configuration naming no listen address was refused: %v", err)
 	}
 }
 

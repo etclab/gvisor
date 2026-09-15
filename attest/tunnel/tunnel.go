@@ -352,6 +352,28 @@ const maxFramePayload = 16 << 20
 // protocol violation and the connection it happened on does not survive it.
 var ErrFraming = errors.New("tunnel: framing violation")
 
+// rawStreamMarker is the four bytes a raw stream opens with, where an exchange
+// would have put its payload length. It is the whole of the wire change ticket
+// 22 needed, and it is a change no existing exchange can see.
+//
+// A frame header is a length and a length is at most maxFramePayload, so every
+// value above that bound was already a framing violation — "peer declared N
+// bytes, over the maximum" — and exactly one of them is now a stream kind
+// instead. An exchange's bytes are therefore byte-identical to what they were
+// before this constant existed: the sender still writes a length it could
+// always have written, and the receiver still reads it the same way. What
+// changes is only what happens to a peer that writes 0x52415731 ("RAW1") as a
+// length, which was a torn-down connection and is now a stream the sandbox
+// beside this tunneld may accept.
+//
+// Only the side that runs [Conn.Serve] recognises it, which is the side that
+// accepted the connection. A raw stream is therefore opened by the dialer and
+// accepted by the listener, the same way an exchange is; bytes then flow both
+// ways on it. A marker arriving where an exchange *response* was expected is
+// still a framing violation, because [Conn.Exchange] reads a frame and nothing
+// else.
+const rawStreamMarker uint32 = 0x52415731
+
 // writeFrame sends payload as one frame and closes the write side, which is
 // the end-of-stream the peer reads to.
 func writeFrame(s *quic.Stream, payload []byte) error {
@@ -374,13 +396,30 @@ func writeFrame(s *quic.Stream, payload []byte) error {
 // length, short payload, or anything at all after the payload — comes back
 // wrapping ErrFraming.
 func readFrame(s *quic.Stream) ([]byte, error) {
+	header, err := readHeader(s)
+	if err != nil {
+		return nil, err
+	}
+	return readFramePayload(s, header)
+}
+
+// readHeader reads the four bytes every stream starts with. It is split out of
+// readFrame because those four bytes are also what says whether this is a frame
+// at all: [Conn.Serve] reads them once and then either finishes the frame or
+// hands a raw stream over.
+func readHeader(s *quic.Stream) ([frameHeaderSize]byte, error) {
 	var header [frameHeaderSize]byte
 	if _, err := io.ReadFull(s, header[:]); err != nil {
 		if isEOF(err) {
-			return nil, fmt.Errorf("%w: stream ended inside the frame header", ErrFraming)
+			return header, fmt.Errorf("%w: stream ended inside the frame header", ErrFraming)
 		}
-		return nil, err
+		return header, err
 	}
+	return header, nil
+}
+
+// readFramePayload is the rest of the frame, given its header.
+func readFramePayload(s *quic.Stream, header [frameHeaderSize]byte) ([]byte, error) {
 	length := binary.BigEndian.Uint32(header[:])
 	if length > maxFramePayload {
 		return nil, fmt.Errorf("%w: peer declared %d bytes, over the %d byte maximum", ErrFraming, length, maxFramePayload)
@@ -417,6 +456,15 @@ type Conn struct {
 	establishedAt time.Time
 	maxAge        time.Duration
 	expiry        *time.Timer
+
+	// raw carries the streams Serve found a rawStreamMarker on, from the
+	// goroutine that read the marker to whoever is in AcceptStream. It is
+	// unbuffered on purpose: a stream nobody is waiting for is a stream that
+	// waits, and the goroutine holding it is one per stream, so nothing else
+	// is held up by it. A peer that opens raw streams nobody accepts leaves
+	// them parked until the connection reaches its idle timeout or its maximum
+	// age, which is the bound on how many there can be.
+	raw chan *quic.Stream
 }
 
 // newConn wraps an established QUIC connection and starts the clock on it.
@@ -435,7 +483,7 @@ type Conn struct {
 // on a busy peer would come to be relied on indefinitely. The caller sees a
 // failed exchange and its next one runs over a freshly attested tunnel.
 func newConn(c *quic.Conn, limits Limits) *Conn {
-	conn := &Conn{c: c, establishedAt: time.Now(), maxAge: limits.MaxAge}
+	conn := &Conn{c: c, establishedAt: time.Now(), maxAge: limits.MaxAge, raw: make(chan *quic.Stream)}
 	conn.expiry = time.AfterFunc(limits.MaxAge, conn.closeExpired)
 	// A tunnel that ends before its time — closed by either side, or dropped
 	// for idleness — has nothing left to expire.
@@ -495,6 +543,98 @@ func (c *Conn) Exchange(ctx context.Context, request []byte) ([]byte, error) {
 	return response, nil
 }
 
+// A Stream is a raw byte stream on a tunnel: bytes both ways, an end in each
+// direction, and none of the exchange framing.
+//
+// It exists because a sandbox beside this tunneld consumes a stream and not a
+// request-response (ticket 22). Everything above this package sees it through
+// an interface of exactly these four methods, so that the same sandbox runs
+// against one end of a socketpair in another process, where a *quic.Stream
+// cannot go (spike E1).
+type Stream struct {
+	s *quic.Stream
+}
+
+// Read reads what the peer has sent, ending in io.EOF once the peer has
+// half-closed.
+func (s *Stream) Read(p []byte) (int, error) { return s.s.Read(p) }
+
+// Write sends to the peer.
+func (s *Stream) Write(p []byte) (int, error) { return s.s.Write(p) }
+
+// CloseWrite ends this side's half of the stream, which the peer reads as
+// end-of-file. It is QUIC's own FIN: this side may still read.
+func (s *Stream) CloseWrite() error { return s.s.Close() }
+
+// Close gives up the stream in both directions: this side's half is ended and
+// the peer is told to stop sending.
+//
+// The two are asymmetric on the wire — a FIN out, a STOP_SENDING back — and
+// deliberately not surfaced as such. A caller that wants only the first calls
+// CloseWrite; a caller that is done calls this.
+func (s *Stream) Close() error {
+	err := s.s.Close()
+	s.s.CancelRead(0)
+	return err
+}
+
+// OpenStream opens a raw stream to the peer.
+//
+// The four-byte marker goes out here rather than with the first write, so that
+// a stream exists on the peer's side as soon as it exists here — a sandbox that
+// opened a stream and then waited to be spoken to first would otherwise wait
+// for a stream the peer has not been told about.
+func (c *Conn) OpenStream(ctx context.Context) (*Stream, error) {
+	s, err := c.c.OpenStreamSync(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("tunnel: opening a stream: %w", err)
+	}
+	var marker [frameHeaderSize]byte
+	binary.BigEndian.PutUint32(marker[:], rawStreamMarker)
+	if _, err := s.Write(marker[:]); err != nil {
+		s.CancelWrite(0)
+		s.CancelRead(0)
+		return nil, fmt.Errorf("tunnel: opening a stream: %w", err)
+	}
+	return &Stream{s: s}, nil
+}
+
+// AcceptStream returns the next raw stream the peer opened. It is answered out
+// of [Conn.Serve], which is what tells a stream that carries an exchange from
+// one that does not, so a connection nobody is serving accepts no streams.
+func (c *Conn) AcceptStream(ctx context.Context) (*Stream, error) {
+	select {
+	case s := <-c.raw:
+		return &Stream{s: s}, nil
+	case <-c.c.Context().Done():
+		return nil, fmt.Errorf("tunnel: accepting a stream: %w", c.c.Context().Err())
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+}
+
+// PeerCertificate is the DER of the leaf certificate the peer presented at the
+// handshake, or nil if it presented none.
+//
+// This package knows nothing about attestation and this does not change that:
+// it is the TLS leaf as TLS saw it, handed up to whoever does know — package
+// ratls reads the evidence and the binding out of it, and package tunneld
+// reads the identity out of that. It is here because a connection is where the
+// certificate is, and because re-deriving it anywhere else would mean holding
+// the peer's identity in a second place.
+func (c *Conn) PeerCertificate() []byte {
+	certs := c.c.ConnectionState().TLS.PeerCertificates
+	if len(certs) == 0 {
+		return nil
+	}
+	return certs[0].Raw
+}
+
+// RemoteAddr is the address the peer reached this side from. It is the peer's
+// source address, which for an accepted connection is an ephemeral port and not
+// the address that peer listens on.
+func (c *Conn) RemoteAddr() net.Addr { return c.c.RemoteAddr() }
+
 // refuse ends the connection when err is a framing violation. A peer that
 // cannot frame is not one to keep a tunnel to, and leaving the connection up
 // would mean the bytes it smuggled were merely discarded rather than
@@ -508,10 +648,16 @@ func (c *Conn) refuse(err error) {
 // Handler answers one exchange.
 type Handler func(ctx context.Context, request []byte) ([]byte, error)
 
-// Serve answers exchanges on c until the connection ends. Each stream is one
-// exchange, answered on its own goroutine so that a slow handler holds up
-// only its own caller; a handler error closes that stream without a
-// response, and a peer that breaks the framing ends the connection.
+// Serve answers exchanges on c until the connection ends, and hands every
+// stream that is not an exchange to [Conn.AcceptStream]. Each stream is read on
+// its own goroutine so that a slow handler holds up only its own caller; a
+// handler error closes that stream without a response, and a peer that breaks
+// the framing ends the connection.
+//
+// The two kinds are told apart by the four bytes every stream opens with, and
+// by nothing else: a length is an exchange, and rawStreamMarker is a raw
+// stream. Reading those four bytes is the first thing done to any stream either
+// way, so neither kind pays for the other's existence.
 func (c *Conn) Serve(handler Handler) error {
 	for {
 		s, err := c.c.AcceptStream(c.c.Context())
@@ -519,7 +665,18 @@ func (c *Conn) Serve(handler Handler) error {
 			return err
 		}
 		go func() {
-			request, err := readFrame(s)
+			header, err := readHeader(s)
+			if err != nil {
+				s.CancelWrite(0)
+				s.CancelRead(0)
+				c.refuse(err)
+				return
+			}
+			if binary.BigEndian.Uint32(header[:]) == rawStreamMarker {
+				c.handOver(s)
+				return
+			}
+			request, err := readFramePayload(s, header)
 			if err != nil {
 				s.CancelWrite(0)
 				s.CancelRead(0)
@@ -535,6 +692,17 @@ func (c *Conn) Serve(handler Handler) error {
 				s.CancelWrite(0)
 			}
 		}()
+	}
+}
+
+// handOver parks a raw stream until somebody accepts it, or until the
+// connection ends and there is nobody left who could.
+func (c *Conn) handOver(s *quic.Stream) {
+	select {
+	case c.raw <- s:
+	case <-c.c.Context().Done():
+		s.CancelWrite(0)
+		s.CancelRead(0)
 	}
 }
 

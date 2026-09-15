@@ -223,7 +223,7 @@ func run(args []string, out io.Writer) int {
 		logf("refusing to start: %v", err)
 		return exitRefusedToStart
 	}
-	author, err := readAuthorKey(o.authorPath)
+	author, err := attest.ReadAuthorKey(o.authorPath)
 	if err != nil {
 		logf("refusing to start: %v", err)
 		return exitRefusedToStart
@@ -539,24 +539,6 @@ func loadPushPolicy(path string, logf func(string, ...any)) ([]byte, error) {
 	logf("push policy %s: format=%s version=%d bytes=%d sha256=%s",
 		path, envelope.Format, envelope.Version, len(raw), hex.EncodeToString(sum[:]))
 	return raw, nil
-}
-
-// readAuthorKey reads the reference value author's public key from the file
-// the image baked into the measurement: 32 raw bytes or their hexadecimal,
-// which is what build-image.sh writes (one line of 64 lowercase hex).
-func readAuthorKey(path string) (ed25519.PublicKey, error) {
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("reading the reference value author's public key: %w", err)
-	}
-	if len(raw) == ed25519.PublicKeySize {
-		return ed25519.PublicKey(raw), nil
-	}
-	decoded, err := hex.DecodeString(strings.TrimSpace(string(raw)))
-	if err != nil || len(decoded) != ed25519.PublicKeySize {
-		return nil, fmt.Errorf("%s is neither %d raw bytes nor their hexadecimal", path, ed25519.PublicKeySize)
-	}
-	return ed25519.PublicKey(decoded), nil
 }
 
 // reportInterface says what is at the kernel's report interface, and it is

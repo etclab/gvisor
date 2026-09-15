@@ -165,6 +165,19 @@ install -m 755 "$TUNNELD" "$R/usr/bin/tunneld"
 install -m 444 author.pub "$R/etc/attested-tunnel/author.pub"
 install -m 444 "$MODDIR/drivers/virt/coco/guest/tsm_report.ko"   "$R/lib/modules/"
 install -m 444 "$MODDIR/drivers/virt/coco/sev-guest/sev-guest.ko" "$R/lib/modules/"
+# The netfilter modules the egress ceiling needs (ticket 22). This kernel builds
+# nf_tables as a module, so without them a guest comes up with no ceiling at all
+# and its init powers it off rather than running unconstrained — which is what
+# the first boot of this image did, and what this line is the fix for. Six and no
+# more: nfnetlink and nf_tables are the table, and the four reject modules are
+# what lets the output chain end in a refusal the local socket can read instead
+# of a silent drop (attest/ceiling/ceiling.nft). They are in rootfs.img and so
+# inside the launch measurement, like every other byte the guest runs.
+for m in net/netfilter/nfnetlink.ko net/netfilter/nf_tables.ko \
+         net/ipv4/netfilter/nf_reject_ipv4.ko net/ipv6/netfilter/nf_reject_ipv6.ko \
+         net/netfilter/nft_reject.ko net/netfilter/nft_reject_inet.ko; do
+  install -m 444 "$MODDIR/$m" "$R/lib/modules/"
+done
 
 # squashfs: read-only by construction, 4 KiB padded, timestamps zeroed, all root.
 mksquashfs "$R" rootfs.squashfs -comp zstd -noappend -no-xattrs -all-root \
@@ -355,7 +368,8 @@ EMITTED_POLICY_DIGEST=$(printf '%s\n' "$EMITTED_POLICY" | sed -n 's/^policy dige
   sed "s#$B/[a-z]*/##; s#$B/##" initrd.list
   echo
   echo "## Guest kernel modules"
-  for m in dm-bufio dm-verity tsm_report sev-guest; do
+  for m in dm-bufio dm-verity tsm_report sev-guest \
+           nfnetlink nf_tables nf_reject_ipv4 nf_reject_ipv6 nft_reject nft_reject_inet; do
     f=$(find "$MODDIR" -name "$m.ko"); echo "$m.ko $(sha256sum "$f" | cut -d' ' -f1) vermagic=$(modinfo -F vermagic "$f")"
   done
 } > "$OUT/manifest.txt"

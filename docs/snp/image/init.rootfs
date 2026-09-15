@@ -62,6 +62,16 @@ say "no writable path is executable"
 # lo carries nothing between the guests — the segment is eth0, which tunneld
 # brings up out of the run configuration — so this widens nothing. The ceiling
 # accepts lo in both directions and always has.
+# The netfilter modules the ceiling is installed through, in dependency order.
+# There is no modprobe in this guest and the kernel's request_module has no
+# userspace helper to call, so each one is named and loaded here. Without them
+# the install below fails with "socket: protocol not supported" and this guest
+# powers off rather than running with no ceiling at all.
+for m in nfnetlink nf_tables nf_reject_ipv4 nf_reject_ipv6 nft_reject nft_reject_inet; do
+  insmod "/lib/modules/$m.ko" || say "WARNING: $m.ko did not load; the ceiling will not install"
+done
+say "netfilter loaded: nf_tables, and the reject expressions the ceiling's output chain ends in"
+
 say "bringing loopback up (the kernel delivers a rule's refusal to the local socket over it)"
 ip link set lo up || say "WARNING: loopback would not come up; a refused attempt will read as a timeout"
 
@@ -75,8 +85,9 @@ ip link set lo up || say "WARNING: loopback would not come up; a refused attempt
 # from the signed policy that lived there.
 #
 # A ceiling that will not install is a guest that would run unconstrained, so
-# this powers off rather than continuing. It needs nf_tables in this kernel; if
-# a build of this image drops it, this is where that shows.
+# this powers off rather than continuing. It needs the nf_tables modules loaded
+# above; if a build of this image drops one of them, this is where that shows,
+# as "socket: protocol not supported".
 say "installing the egress ceiling this image carries"
 if ! /usr/bin/tunneld -egress install; then
   say "FATAL: the egress ceiling would not install; powering off without running tunneld"

@@ -1,0 +1,329 @@
+# A contract between tunneld and its sandbox
+
+Ticket 22. Tunneld is now the network boundary for whatever sandbox sits beside it, in its
+process or in another one, and the boundary is three verbs wide: open a stream to a named peer,
+accept an incoming stream with the peer's attested identity on it, receive a pushed policy and
+acknowledge it. The echo exercise Milestone 3 runs is the first client of it. Nothing under
+`pkg/` or `runsc/` changed, and neither did the exchange framing: an exchange's bytes are what
+they were before this ticket existed.
+
+**In one sentence:** a sandbox sees no evidence, no key and no trust decision — it gets a stream
+or an error, and a policy or nothing — and the shape of the contract is fixed by the thing that
+cannot cross a process boundary, since a QUIC stream is not a kernel object (spike E1) and what
+a sandbox in another process receives is therefore one end of a socketpair that tunneld pumps.
+
+The two spikes this stands on are recorded under `docs/snp/evidence/ticket22/spikes/`: **E1**,
+which established that stream-as-descriptor is impossible and measured what the socketpair costs
+(40–80 µs of added round-trip latency, under a quarter of single-stream bulk throughput), and
+**E2**, which established that one unchanged framed `Exchange` carries a policy push and its
+acknowledgement in under a millisecond, and which found the manufactured-`Channel` panic this
+ticket closes.
+
+---
+
+## The invariant
+
+> A sandbox sees no evidence, no key and no trust decision. It gets a stream or an error, and a
+> policy or nothing.
+
+Every export in `attest/sandbox` is chosen to make that checkable rather than aspirational:
+
+| what a sandbox gets | what it does not get |
+| --- | --- |
+| a byte stream, with an end in each direction | the evidence, which stays below the vendor seam |
+| four public strings naming the peer | any key; tunneld's identity key never leaves `attest/ratls` |
+| an error saying the stream did not happen | the reason a peer was refused — a refusal is an aborted handshake and an operator's log line, and there is no stream for it to arrive on |
+| the bytes of a pushed policy | the reference value that admitted the peer, which is a fact about this side's allow-list |
+
+The import graph says it too: `attest/sandbox` imports nothing from `gvisor.dev/gvisor/attest`
+— only the standard library and `golang.org/x/sys/unix`. Package `tunneld` is what adapts, and
+the two guard tests in `attest/cmd/tunneld` still hold, so none of this is inside the launch
+measurement by accident.
+
+## The interface
+
+`attest/sandbox/sandbox.go`:
+
+```go
+type Stream interface {
+	io.ReadWriteCloser
+	CloseWrite() error
+}
+
+type Network interface {
+	Open(ctx context.Context, peer string) (Stream, error)
+	Accept(ctx context.Context) (Stream, Attested, error)
+}
+
+type Sandbox interface {
+	Network
+	Apply(ctx context.Context, policy []byte) error
+}
+```
+
+`Network` (`sandbox.go:154`) is tunneld's half and `*tunneld.Tunneld` implements it
+(`attest/tunneld/sandbox.go:62`, `:84`). `Sandbox` (`sandbox.go:172`) is the whole contract;
+`*sandbox.Null` implements it in process (`null.go:46`) and `*sandbox.Host` implements it with a
+process boundary in the middle (`host.go:46`). A `context.Context` is on each method because
+`Accept` blocks and Go has one way of saying so; nothing else was added to the three verbs.
+
+`Apply` returns `nil` for an acknowledgement and an error for a refusal. Refusals of the
+envelope wrap `sandbox.ErrPolicyRefused` (`policy.go:54`).
+
+`CloseWrite` is the half that makes `Stream` more than an `io.ReadWriteCloser`, and it is not
+decoration: every protocol a sandbox will run over a stream ends a request by saying it has
+finished sending, and the exercise's own round trip is exactly that
+(`attest/cmd/tunneld/exercise.go`, `roundTrip`). One end of a socketpair satisfies `Stream` as
+it stands — `*net.UnixConn` already has `CloseWrite` — and so does package tunnel's raw stream
+(`attest/tunnel/tunnel.go:554`), and neither had to learn about the other.
+
+## What `Attested` carries, and why nothing more
+
+`sandbox.go:120`. Four strings, and that is the whole of what a sandbox is told about who is at
+the other end of a stream:
+
+| field | what it is |
+| --- | --- |
+| `Peer` | the name the peer table gives this peer, or empty |
+| `Vendor` | `amd-sev-snp` or `intel-tdx` |
+| `Measurement` | the peer's launch measurement in lowercase hexadecimal — the SEV-SNP launch digest, or RTMR2 for TDX |
+| `PolicyDigest` | the digest of the signed policy the peer presented, lowercase hexadecimal |
+
+All four are public. The measurement and the digest are in the reference value sets on both
+sides' config devices, which are untrusted media by construction (ADR-0004), so a sandbox
+holding them holds nothing it could not have read off a disk somebody else wrote. They are at
+full width and never abbreviated, because the whole use of either is comparing it with a number
+an operator wrote down elsewhere and a truncated identity is one an attacker gets to choose
+collisions in.
+
+`Peer` is empty more often than the other three, and that is a normal state rather than a
+failure. An accepted connection arrives from an ephemeral source port, so the peer table can
+only be matched on the address: exactly one entry matching gives the name, and none or several
+give nothing (`attest/tunneld/sandbox.go:210`). Naming binds to nothing (spec, *Reference values
+and naming*) — what identifies the peer is the measurement and the digest sitting beside the
+name in the same value.
+
+Where the measurement comes from is worth one paragraph, because it is the only field that is
+not on the certificate. The verdict is reached inside the TLS handshake, in
+`ratls.PeerVerifier`, which hands it to nothing: a refusal goes to the refusal log and an
+acceptance goes nowhere, because until a sandbox had to be told who opened a stream, nothing
+above needed it. The listening side asks nothing further of a peer — whom this sandbox *dials*
+is its own policy's business, and that check is on the dialing configuration — so its admission
+hook was free, and tunneld uses it to keep the verdict rather than adding a second way for one
+to leave the handshake (`verdictBook`, `attest/tunneld/sandbox.go:252`). It is keyed by the
+caller-supplied bytes the evidence was acquired over, which is a hash over the binding context,
+the policy digest and the public key TLS proved possession of, and which
+`attest.Verification.Verify` has already refused the peer unless the evidence carries precisely
+it (`attest/verification.go:142`). Looking a connection's certificate up under that key
+therefore finds the verdict for that certificate or finds nothing. Nothing is re-verified and
+nothing is decided a second time.
+
+## The stream, and the four bytes that mark it
+
+`attest/tunnel` exposed one framed `Exchange` per stream and nothing else. It now also has a raw
+stream: `Conn.OpenStream` (`tunnel.go:587`), `Conn.AcceptStream` (`tunnel.go:605`) and the
+`Stream` type over them (`tunnel.go:554`), whose `CloseWrite` is QUIC's own FIN and whose
+`Close` is that plus a `STOP_SENDING`.
+
+The two kinds are told apart by the four bytes every stream opens with, and by nothing else. An
+exchange opens with a big-endian payload length, which is at most `maxFramePayload`
+(`tunnel.go:348`, 16 MiB), so **every value above that bound was already a framing violation** —
+"peer declared N bytes, over the maximum" — and exactly one of them is now a stream kind
+instead: `rawStreamMarker = 0x52415731`, `"RAW1"` (`tunnel.go:375`).
+
+That is the whole of the wire change, and it is a change no existing exchange can see. A sender
+still writes a length it could always have written and a receiver still reads it the same way,
+so an exchange is byte-identical to what it was; what changed is only the fate of a peer that
+writes `0x52415731` where a length belongs, which was a torn-down connection and is now a stream
+the sandbox may accept. The one test that puts an oversized length on the wire uses
+`math.MaxUint32` (`attest/tunneld/framing_test.go:150`) and still gets its framing violation.
+
+Only the side running `Conn.Serve` recognises the marker (`tunnel.go:661`), which is the side
+that accepted the connection, so a raw stream is opened by the dialer and accepted by the
+listener exactly as an exchange is; bytes then flow both ways on it. A marker arriving where an
+exchange *response* was expected is still a framing violation, because `Conn.Exchange` reads a
+frame and nothing else. Reading the four bytes is the first thing done to any stream either way,
+so neither kind pays for the other's existence.
+
+Above that, `Channel.OpenStream` (`attest/tunneld/sandbox.go:101`) is `Channel.Exchange`'s
+neighbour: same cache, same re-dial, same re-attestation before further use. `Tunneld.Accept`
+takes streams from every accepted tunnel in the order they arrive, which is why it is on the
+tunneld rather than on a channel — a channel is a handle on a peer this sandbox dialed, and an
+incoming stream belongs to a peer that dialed it.
+
+**The manufactured channel, closed.** `Channel` is an exported struct whose fields are all
+unexported, so `&tunneld.Channel{}` compiles, and spike E2 recorded that calling `Exchange` on
+one panicked with a nil pointer dereference rather than refusing. It now returns
+`tunneld.ErrNoTunneld`, and so does `OpenStream`. No bytes ever left the process either way;
+what changed is that it says so.
+
+## The local socket protocol
+
+For a sandbox in another process. Tunneld listens on an `AF_UNIX SOCK_STREAM` socket
+(`sandbox.Listen`, `host.go:70`, mode 0600, the directory created if missing, a socket left by a
+previous run replaced and anything else at the path refused). Every message is a four-byte
+big-endian length and that many bytes of JSON — the same framing package tunnel uses on a
+stream, and deliberately the dullest thing that works.
+
+| message | direction | carries |
+| --- | --- | --- |
+| `{"id":1,"type":"open","peer":"b"}` | sandbox → tunneld | the peer's name |
+| `{"id":1,"type":"stream"}` | tunneld → sandbox | **one descriptor**, in `SCM_RIGHTS` |
+| `{"id":2,"type":"accept"}` | sandbox → tunneld | nothing; blocks until a peer opens a stream |
+| `{"id":2,"type":"stream","attested":{…}}` | tunneld → sandbox | **one descriptor**, plus the four `Attested` fields |
+| `{"id":n,"type":"error","error":"…"}` | tunneld → sandbox | tunneld's own sentence, unchanged |
+| `{"id":7,"type":"apply","policy":"<base64>"}` | tunneld → sandbox | the opaque policy bytes |
+| `{"id":7,"type":"ack"}` | sandbox → tunneld | the acknowledgement |
+| `{"id":7,"type":"refusal","error":"…"}` | sandbox → tunneld | the sandbox's refusal |
+
+Requests travel in both directions — the sandbox asks for streams, tunneld pushes policy — so
+each side numbers its own requests and a reply carries the id of the request it answers. The two
+id spaces never collide, because the types say which direction a message came from: nothing the
+sandbox sends is a type tunneld sends. Requests may be outstanding concurrently and are answered
+as they finish; in particular an `apply` sent while an `accept` is waiting for a peer is
+answered without waiting for it, which the test asserts by pushing exactly there.
+
+A declared length over 4 MiB is refused (`socket.go:101`) for the same reason package tunnel
+bounds a frame. `error` messages carry tunneld's own text — an unknown peer, an unreachable one,
+a handshake that did not complete — which is the same text an in-process sandbox is handed; no
+refusal reason travels in it, because none reaches the contract in the first place.
+
+**The descriptor.** A `stream` reply is written with one `sendmsg` carrying one end of a
+socketpair in its ancillary data; tunneld keeps the other end and pumps. This relies on one
+guarantee about unix stream sockets: the kernel never merges bytes written with descriptors
+attached into a read of bytes written without them, so a receiver that reads a four-byte header
+gets that message's descriptor with it and never the next message's (`wire.readHeader`,
+`socket.go:198`). A descriptor sent the other way is closed on arrival: descriptors travel one
+way.
+
+The client half is `sandbox.Dial` (`client.go:62`), which is a `Network`, so a sandbox written
+against the in-process contract runs unchanged over the socket. That is the property the whole
+boundary exists for, and the composition is three lines:
+
+```go
+var null *sandbox.Null
+c, err := sandbox.Dial(path, func(ctx context.Context, p []byte) error { return null.Apply(ctx, p) })
+null = sandbox.NewNull(c, logf)
+```
+
+In the command, `-sandbox-socket` turns it on; the conventional path is
+`/run/tunneld/sandbox.sock` (`attest/cmd/tunneld/nullsandbox.go:48`). It is **off by default**,
+which is a deliberate departure from "a path under the run directory": a tunneld with nobody to
+attach would otherwise create a socket at every start, including inside the measured image where
+there is no second process, and every recorded scenario would carry a line about it. With a
+socket configured the command's own echo stands down and the attached sandbox accepts, because
+there is one queue of incoming streams and a sandbox in another process is *the* sandbox.
+
+## The pump
+
+`sandbox.pump` (`socket.go:278`), the shape `fdhandoff.go` proved in E1: two `io.Copy`
+goroutines, and a half-close carried at the end of each.
+
+```
+socketpair EOF  →  Stream.CloseWrite()   (a FIN on the QUIC stream)
+stream EOF      →  UnixConn.CloseWrite() (end-of-file for the sandbox)
+```
+
+Both, and not one: the sandbox finishing what it had to say must reach the peer, or the peer
+waits for a request it has already received; the peer finishing its answer must reach the
+sandbox, or the sandbox waits for a response it already has. A copy loop that moved only bytes
+would deadlock both sides of every request-response protocol anybody would put over this. When
+both directions have ended, both ends are closed.
+
+**What the pump cannot carry is a reset.** `SOCK_STREAM` has no signal for one, so a peer that
+cancelled a stream and a peer that finished it look alike from inside a sandbox in another
+process (E1, *What this decides for the contract*). The contract does not pretend otherwise: it
+carries the end of the stream in each direction and leaves "why it ended" out, rather than
+inventing an in-process signal that cannot be delivered out of process. A protocol over this
+that needs to tell a truncated answer from a complete one has to say so in its own bytes.
+
+The cost is E1's and is paid per stream: one extra hop each way, ~40–80 µs of added round-trip
+latency, and ≲25 % of single-stream bulk throughput. There is no cheaper variant to hold out
+for, because the bytes are in tunneld's userspace either way.
+
+## The null sandbox, and the exercise inside it
+
+`sandbox.Null` (`null.go:46`) passes streams through to the `Network` it was given and records
+the policies pushed at it: format, version, length and the SHA-256 of exactly the bytes that
+arrived, one line per push —
+
+```
+SANDBOX applied format=policy version=1 bytes=69 sha256=8c1062e8310ede7c8b9c0ff20057b17681fa6d6f6e8b236535ae2bc75978cea4
+```
+
+— which is what makes "B acknowledged the policy A pushed" a claim a console transcript can
+support: the digest on both sides is the same number, or the push carried something else. It
+parses nothing beyond the envelope and never looks at `n`, `f` or `x`.
+
+It is not a placeholder for a sandbox that will do more. A sandbox is not where anything is
+enforced in this design — enforcement is the netfilter rule set the signed policy implies
+(`docs/policy-binding.md`) and the reference value set that admits a peer at all — so a sandbox
+that records a policy and says it has it is the honest implementation of the contract.
+
+**The envelope, checked at the boundary.** A pushed policy is opaque versioned JSON,
+`{"format":"policy","version":1,"n":[…],"f":[…],"x":[…]}`. Tunneld reads two fields of it and
+nothing else, before the sandbox is woken: `tunneld.PolicyChecked`
+(`attest/tunneld/sandbox.go:130`) wraps the sandbox and refuses anything that is not
+`policy`/version 1. Where the check runs is the point of it — an acknowledgement then means a
+sandbox with *that* policy on every implementation of the contract, rather than meaning whatever
+the sandbox beside a particular tunneld made of a document it could not read. Unknown fields are
+ignored, which is the opposite of how this module loads its signed documents and deliberately
+so: there an unknown field is a constraint the loader cannot see, and here the unknown fields
+*are* the policy.
+
+**The exercise maps onto the contract verb for verb.** It used to hold a `*tunneld.Channel`; it
+now holds a `sandbox.Sandbox` and can see no tunnel at all.
+
+| exercise, before | exercise, now |
+| --- | --- |
+| `establish`: `td.Peer(ctx, peer)`, timed | `box.Open(ctx, peer)`, timed, the stream given straight back |
+| `exchange`: `channel.Exchange(ctx, request)` | `box.Open` → write → `CloseWrite` → read to end-of-file |
+| the answering side: `Handler` on `tunneld.Config`, one framed exchange | `box.Accept` in `answer` (`nullsandbox.go:93`), one stream |
+
+The figures keep their shape. An `Open` on the first pass is still the whole cost of admission —
+no tunnel to that peer exists, so tunneld dials one and both sides judge the other's evidence —
+and warm and concurrent exchanges are still one stream each on the tunnel that left behind. The
+three `LATENCY` lines are unchanged field for field, which
+`TestTheExercisePrintsTheSameThreeFiguresOverTheContract`
+(`attest/cmd/tunneld/exercise_test.go`) asserts against the regular expressions a harness would
+use. The framed `Handler` is still wired and still answers exchanges; what no longer reaches it
+is the exercise.
+
+One line was added to the console, at most once per distinct peer rather than once per stream:
+
+```
+SANDBOX stream from peer="<name>" vendor=amd-sev-snp measurement=<16 hex chars>… policy_digest=<16 hex chars>…
+```
+
+That is the whole of what a sandbox is told about who is at the other end, printed where the
+only diagnostic surface a measured guest has can carry it (spec, user story 48).
+
+## What proves it
+
+| claim | where |
+| --- | --- |
+| a sandbox opens a stream to an attested peer, the other accepts it with the identity attached, and an exchange on the same tunnel still reaches the handler | `attest/tunneld/sandbox_test.go`, over the loopback harness with the fake platform |
+| an ambiguous peer table names nobody, and the measurement is still right | same file |
+| `Accept` is released when the tunneld closes, and closing twice is not a panic | same file |
+| a manufactured `Channel` refuses rather than panicking | same file |
+| tunneld refuses an unknown version before the sandbox sees it, and the null sandbox acks a version 1 blob | same file |
+| a sandbox **in another process** opens, accepts with the identity, round-trips bytes both ways through the received descriptor, and answers two pushes | `attest/sandbox/socket_test.go`, which re-executes the test binary as the sandbox |
+| the pump carries the end of the stream each way | same file |
+| a push at a tunneld with no sandbox attached is refused rather than acknowledged | same file |
+| the exercise's three figures keep their shape | `attest/cmd/tunneld/exercise_test.go` |
+| the measured binary still reaches no fixture, no fake and no `testing` | `attest/cmd/tunneld/importgraph_test.go`, `packaged_test.go`, unchanged |
+
+`go test ./... -count=1` in `attest/` passes, and so does the same run under `-race` for the
+three packages this touched.
+
+## What is not built
+
+- **Nobody pushes a policy yet.** `Apply` exists on both sides of the contract and is exercised
+  by tests; the path that carries a policy from one tunneld to another over a framed exchange is
+  ticket 22's other half (E2 measured it at 0.83 ms median for a 2 KiB blob, and found that the
+  16 MiB framing bound is nowhere near the size of a policy).
+- **Nothing enforces a policy.** The null sandbox records and acknowledges. `n`, `f` and `x` are
+  unparsed by every line of code in this tree.
+- **No reset signal.** See the pump, above.
+- **No runsc sandbox.** The socket exists and a forked test binary speaks it; the sandbox that
+  will consume these descriptors as FD-backed endpoints is Milestone 4's.

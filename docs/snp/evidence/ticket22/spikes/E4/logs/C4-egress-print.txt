@@ -1,0 +1,7 @@
+$ tunneld -config C4 -author author-t19.pub -egress print
+tunneld: sandbox "e4-guest-a"
+tunneld: author key 665053d10032f5b9… ($W/cfg/author-t19.pub, inside the launch measurement)
+tunneld: peer table: guest-b = 127.0.0.1:4434
+tunneld: refusing to touch the network: attest: policy refused: reading the signature at $W/cfg/C4/policy.json.sig: open $W/cfg/C4/policy.json.sig: no such file or directory
+tunneld: EXIT status=1
+EXIT_STATUS=1

@@ -1,0 +1,29 @@
+$ tunneld -config C2 -author author-t19.pub -egress print
+tunneld: sandbox "e4-guest-a"
+tunneld: author key 665053d10032f5b9… ($W/cfg/author-t19.pub, inside the launch measurement)
+tunneld: peer table: guest-b = 127.0.0.1:4434
+tunneld: policy $W/cfg/C2/policy.json loaded under the author key; digest d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b
+tunneld: policy egress: version 1, unattested egress permitted: false
+tunneld: sandbox "e4-guest-a" listens on udp/4433; 1 peer(s) in the table
+tunneld: EGRESS RULES as the signed policy and the peer table imply them:
+table inet attested_tunnel {
+	chain input {
+		type filter hook input priority 0; policy drop;
+		iif "lo" accept
+		meta nfproto ipv4 ip saddr 127.0.0.1 meta l4proto udp udp sport 4434 accept   # peer "guest-b" answering
+		meta nfproto ipv4 ip saddr 127.0.0.1 meta l4proto udp udp dport 4433 accept   # peer "guest-b" dialing this sandbox's listener
+	}
+	chain output {
+		type filter hook output priority 0; policy drop;
+		oif "lo" accept
+		meta nfproto ipv4 ip daddr 127.0.0.1 meta l4proto udp udp dport 4434 accept   # dial peer "guest-b"
+		meta nfproto ipv4 ip daddr 127.0.0.1 meta l4proto udp udp sport 4433 accept   # answer peer "guest-b" from this sandbox's listener
+		meta l4proto tcp reject with tcp reset        # so that connect() fails now rather than in a minute
+		reject with icmpx admin-prohibited            # everything else the policy did not permit
+	}
+	chain forward {
+		type filter hook forward priority 0; policy drop;
+	}
+}
+tunneld: EXIT status=0
+EXIT_STATUS=0

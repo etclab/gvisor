@@ -1,0 +1,7 @@
+invocations: 64
+exit status histogram:
+  exit 0: 8
+  exit 1: 15
+  exit 2: 37
+  exit 3: 4
+transcripts in $W/replay-v2

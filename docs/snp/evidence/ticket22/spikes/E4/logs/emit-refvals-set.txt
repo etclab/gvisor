@@ -1,0 +1,3 @@
+author public key: 6778376c48b925964f70ec53c874c6110da5637d63acf676baa8e02d7685bd99
+wrote /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t22/dea855a8-a093-4031-b06c-61e8610e847c/scratchpad/E4/cfg/fresh/reference-values.json and /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t22/dea855a8-a093-4031-b06c-61e8610e847c/scratchpad/E4/cfg/fresh/reference-values.json.sig (loads back through attest.LoadReferenceValueSetFile)
+admits any peer policy (no -policy-digest given; the guest logs one line per unconstrained value)

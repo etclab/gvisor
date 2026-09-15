@@ -1,0 +1,8 @@
+$ tunneld -config C2 -author author-t19.pub -tdx-collateral-dir C2/collateral
+tunneld: sandbox "e4-guest-a"
+tunneld: author key 665053d10032f5b9… ($W/cfg/author-t19.pub, inside the launch measurement)
+tunneld: peer table: guest-b = 127.0.0.1:4434
+tunneld: report interface /sys/kernel/config/tsm/report: absent (open /sys/kernel/config/tsm/report: no such file or directory) — this kernel exposes no report interface, or configfs is not mounted; a platform with nothing to ask has no evidence to present
+tunneld: refusing to start: tsm: no report interface at /sys/kernel/config/tsm/report: this is not a confidential guest, or configfs is not mounted and the platform's guest driver is not loaded (docs/snp-host-stack.md): mkdir /sys/kernel/config/tsm/report/tunneld-1744932-0: no such file or directory
+tunneld: EXIT status=1
+EXIT_STATUS=1

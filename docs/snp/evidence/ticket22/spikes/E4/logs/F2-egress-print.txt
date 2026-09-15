@@ -1,0 +1,7 @@
+$ tunneld -config F2 -author author-fresh.pub -egress print
+tunneld: sandbox "e4-guest-a"
+tunneld: author key 6778376c48b92596… ($W/cfg/author-fresh.pub, inside the launch measurement)
+tunneld: peer table: guest-b = 127.0.0.1:4434
+tunneld: refusing to touch the network: attest: policy refused: the signature is not this reference value author's signature over these bytes; either the document was modified in delivery, or it was signed by a different key, or it is a signature over some other document this author signed — a reference value set's signature is not a policy's, and each covers its own domain
+tunneld: EXIT status=1
+EXIT_STATUS=1

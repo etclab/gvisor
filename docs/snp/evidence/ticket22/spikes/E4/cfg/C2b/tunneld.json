@@ -1,0 +1,9 @@
+{
+  "format": "gvisor.dev/gvisor/attest/tunneld-run",
+  "version": 1,
+  "sandbox_id": "e4-guest-a",
+  "listen": "127.0.0.1:4433",
+  "limits": {"idle_timeout": "5m", "max_age": "3m"},
+  "start_timeout": "10s",
+  "hold": "5s"
+}

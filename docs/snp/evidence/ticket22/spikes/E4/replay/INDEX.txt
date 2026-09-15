@@ -1,0 +1,72 @@
+# replay-verdicts.sh
+# list    : $REPO/docs/snp/evidence/ticket21/harness/verdict-invocations-v2.txt
+# prefix  : $W/bin/attest-tool verify
+# cwd     : $REPO/attest
+# @REPO@  : $REPO
+# @AUTHORED@: $REPO/docs/snp/evidence/ticket21/harness/authored
+#
+# NN	slug	exit
+001	snp-t05-v2-default	3
+002	snp-t05-v2-digest	3
+003	snp-t05-v2-zerodigest	3
+004	snp-t05-badhex	1
+005	snp-t05-shortdigest	1
+006	snp-t05-badvendor	1
+007	snp-t05-evmissing	1
+008	snp-t05-keymissing	1
+009	snp-t05-authormissing	1
+010	snp-t05-authorbad	1
+011	usage-noargs	1
+012	usage-norefvals	1
+013	usage-nobundle	1
+014	usage-badflag	1
+015	tdx-smoke	0
+016	tdx-smoke-nodigest	2
+017	tdx-smoke-wrongdigest	2
+018	tdx-smoke-intelroot	1
+019	tdx-smoke-chainflag	1
+020	tdx-smoke-withoutchain	1
+021	tdx-smoke-nocollateral	1
+022	tdx-smoke-nocolldir	2
+023	tdx-smoke-future	2
+024	tdx-smoke-snpvendor	2
+025	tdx-one-a-seta	2
+026	tdx-one-a-setb	0
+027	tdx-one-b-seta	0
+028	tdx-one-b-setb	2
+029	tdx-two-a-seta	0
+030	tdx-two-a-setb	0
+031	tdx-two-b-seta	2
+032	tdx-two-b-setb	2
+033	tdx-three-a-seta	2
+034	tdx-three-a-setb	0
+035	tdx-three-b-seta	2
+036	tdx-three-b-setb	2
+037	tdx-rtmr0-one-disk	2
+038	tdx-rtmr0-two-disks	2
+039	tdx-eventlog-quote	2
+040	tdx-refvals-unsigned	3
+041	snp-authored-v2	2
+042	snp-authored-v2-digest	2
+043	snp-authored-tdxvendor	2
+044	tdx-eventlog-wrongmap	2
+045	tdx-mutate-baseline	2
+046	tdx-mutate-cmdline	2
+047	tdx-mutate-initrd	2
+048	tdx-mutate-control-reboot	2
+049	tdx-probe-a	2
+050	tdx-probe-b	2
+051	tdx-probe-c-baseline	2
+052	tdx-probe-c-cmdline	2
+053	tdx-probe-c-initrd	2
+054	tdx-predict-upgrade-baseline	2
+055	tdx-predict-upgrade-kernel	2
+056	tdx-predict-upgrade-recordfail	2
+057	tdx-predict-upgrade-updategrub	2
+058	tdx-predict-upgkernel-baseline	2
+059	tdx-predict-upgkernel-kernel	2
+060	tdx-stepzero-baseline	2
+061	tdx-stepzero-initrd	2
+062	tdx-smoke-imagea-set	0
+063	tdx-smoke-imageb-set	2
+064	tdx-smoke-configsrc-set	0

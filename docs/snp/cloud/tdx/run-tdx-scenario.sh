@@ -578,11 +578,11 @@ rm -f "$CONSOLE_A.state" "$CONSOLE_B.state"
 echo
 echo "---- guest A, the lines that matter ----"
 grep -E '^initrd: (loaded|config device|link|loopback|EXIT|FATAL|report interface)|^tunneld: (EGRESS|SELFCHECK VERDICT|SELFCHECK measurement|SELFCHECK mrtd|SELFCHECK rtmr|SELFCHECK tcb|SELFCHECK \(unverified|CLAMPED|policy |reference value|listening|PEER |PEERS |REFUSED|LATENCY|EXIT|refusing|exercise)' \
-  "$CONSOLE_A" | grep -v 'EGRESS RULES' | sed 's/^/    a| /' || true
+  "$CONSOLE_A" | grep -v 'EGRESS CEILING' | sed 's/^/    a| /' || true
 echo
 echo "---- guest B, the lines that matter ----"
 grep -E '^initrd: (loaded|config device|link|loopback|EXIT|FATAL|report interface)|^tunneld: (EGRESS|SELFCHECK VERDICT|SELFCHECK measurement|SELFCHECK mrtd|SELFCHECK rtmr|SELFCHECK tcb|SELFCHECK \(unverified|CLAMPED|policy |reference value|listening|PEER |PEERS |REFUSED|LATENCY|EXIT|refusing|exercise)' \
-  "$CONSOLE_B" | grep -v 'EGRESS RULES' | sed 's/^/    b| /' || true
+  "$CONSOLE_B" | grep -v 'EGRESS CEILING' | sed 's/^/    b| /' || true
 
 # ---- 7. the quotes, judged here rather than there -------------------------
 echo
@@ -699,7 +699,7 @@ for which in a b; do
   check "guest $g: the initrd ran and loaded the TDX guest driver" in_file "$c" "initrd: loaded tdx-guest"
   check "guest $g: the config device was found and mounted read-only" in_file "$c" "initrd: config device mounted at /config (ro,noexec,nosuid,nodev)"
   check "guest $g: the address on the config device came up with the VPC's gateway route" in_file "$c" "initrd: link eth0 up: $ip/32 mtu $MTU, gateway $GATEWAY"
-  check "guest $g: the egress rule set the signed policy implies was installed and read back out of the kernel" in_file "$c" "tunneld: EGRESS RULES INSTALLED; as the kernel holds them:"
+  check "guest $g: the egress ceiling this image carries was installed and read back out of the kernel" in_file "$c" "tunneld: EGRESS CEILING INSTALLED; as the kernel holds it:"
   check "guest $g: every attempt at the egress the policy forbids was refused before it left" in_file "$c" "tunneld: EGRESS PROBE PASSED: every attempt was refused before it left"
   check "guest $g: the provider's metadata server is in the refused set" in_file "$c" "EGRESS REFUSED tcp/169.254.169.254:80"
   check "guest $g: it read the author key from inside the launch measurement" in_file "$c" "tunneld: author key ${AUTHOR_PUB:0:16}… (/etc/attested-tunnel/author.pub, inside the launch measurement)"
@@ -841,7 +841,7 @@ for which in a b; do
   {
     echo "### scenario $SCENARIO, guest $g: the rule set as the kernel holds it, and every attempt refused"
     echo
-    awk '/EGRESS RULES/{f=1} f{print} /^}/{if(f)f=0}' "$c"
+    awk '/EGRESS CEILING/{f=1} f{print} /^}/{if(f)f=0}' "$c"
     echo
     grep -E '^tunneld: (EGRESS PROBE|EGRESS REFUSED|EGRESS PERMITTED|EGRESS UNROUTED|EGRESS TIMEOUT)' "$c" || true
     echo

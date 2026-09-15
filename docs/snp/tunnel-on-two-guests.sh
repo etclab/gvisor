@@ -1134,7 +1134,33 @@ if [ -n "$CAPTURE" ]; then
        "$d"/mutated-measurement.txt "$d"/digests.txt "$d"/set-a.json "$d"/set-a.json.sig \
        "$d"/set-b.json "$d"/set-b.json.sig \
        "$d"/policy-a.json "$d"/policy-a.json.sig "$d"/policy-b.json "$d"/policy-b.json.sig \
+       "$d"/push-policy.json "$d"/push-policy-b.json \
        "$CAPTURE/$n/" 2>/dev/null || true
+
+    # The egress record, cut out of each console into a file of its own: the
+    # ceiling as this image carries it, the same rule set as the kernel handed
+    # it back, and the verdict on every attempt to leave. One file per guest,
+    # in the shape ticket 19's TDX run recorded
+    # (docs/snp/evidence/ticket19/egress/).
+    #
+    # The awk turns on at each EGRESS CEILING line and off at the closing brace
+    # of the table under it, which is how both blocks come out whole — the text
+    # the image carries and the read-back, in that order. The grep is not
+    # anchored: a console is a serial line with a kernel writing to it too, and
+    # a probe verdict that arrived mid-line is still the verdict.
+    for g in a b; do
+      c="$d/console-$g.txt"
+      [ -f "$c" ] || continue
+      mkdir -p "$CAPTURE/egress"
+      {
+        echo "### scenario $n, guest $g: the ceiling as the kernel holds it, and every attempt to leave"
+        echo
+        awk '/EGRESS CEILING/{f=1} f{print} /^}/{if(f)f=0}' "$c"
+        echo
+        grep -E 'tunneld: (EGRESS PROBE|EGRESS REFUSED|EGRESS PERMITTED|EGRESS UNROUTED|EGRESS TIMEOUT)' "$c" || true
+        echo
+      } > "$CAPTURE/egress/$n-guest-$g.txt"
+    done
   done
   cp "$IMAGE/manifest.txt" "$IMAGE/reference-values.json" "$IMAGE/reference-values.json.sig" \
      "$IMAGE/policy.json" "$IMAGE/policy.json.sig" \

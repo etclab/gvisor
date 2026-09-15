@@ -313,8 +313,15 @@ only diagnostic surface a measured guest has can carry it (spec, user story 48).
 | the exercise's three figures keep their shape | `attest/cmd/tunneld/exercise_test.go` |
 | the measured binary still reaches no fixture, no fake and no `testing` | `attest/cmd/tunneld/importgraph_test.go`, `packaged_test.go`, unchanged |
 
-`go test ./... -count=1` in `attest/` passes, and so does the same run under `-race` for the
-three packages this touched.
+`go test ./... -count=1` in `attest/` passes, `go vet ./...` is clean, and the same run under
+`-race` passes for the three packages this touched.
+`ripwire attest --quality-delta=32a18ba24..HEAD` reports `gating="0" stale="0"`, having gone
+from 36 gating rows to 17 by two fixes in production code — `Channel.tunnelTo` and
+`Channel.lost`, which took the preamble and the lost-tunnel postamble out of the channel's two
+verbs — and by writing the new tests without cloning `internal/fixture`'s helper shape; the
+remaining 17 are acked in `attest/.ripwire_quality_acks` with the reason, and are the idiom
+collisions a second lifecycle beside tunneld's inevitably spells the same way across a package
+boundary neither side may cross.
 
 ## What is not built
 

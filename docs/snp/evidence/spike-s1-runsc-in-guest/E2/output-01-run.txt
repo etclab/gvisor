@@ -1,0 +1,107 @@
+######## 0. the guest init's check, before runsc has run
+/dev/md0p1 / ext4 ro,relatime,stripe=64 0 0
+proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,uid=253477,gid=253477,inode64 0 0
+tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,uid=253477,gid=253477,inode64 0 0
+tmpfs /dev tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,uid=253477,gid=253477,inode64 0 0
+udev /dev/null devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/zero devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/full devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/random devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/urandom devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/tty devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+---- check ----
+no writable path is executable
+CHECK_EXIT=0
+
+######## 1. the workload, root filesystem read-only, every writable mount noexec
+$ /runsc --root=/run/runsc-state --platform=systrap --network=none --ignore-cgroups --rootless run --bundle /bundle s1-e2
+EXIT=0
+
+######## 2. same, but the workload prints the sandbox-internal mount table
+EXIT=0
+none / 9p ro,trans=fd,rfdno=3,wfdno=3,aname=/,dfltuid=4294967294,dfltgid=4294967294,dcache=1000,cache=fscache,disable_fifo_open,overlayfs_stale_read,directfs 0 0
+none /sys sysfs rw,dentry_cache_limit=1000 0 0
+none /dev dev rw,mode=0755 0 0
+none /proc proc rw,dentry_cache_limit=1000 0 0
+none /dev/pts devpts rw 0 0
+none /tmp tmpfs rw,mode=01777 0 0
+
+######## 3. a sleeping workload, so the host side can be read while it lives
+runsc processes seen:
+  178 /runsc --root=/run/runsc-state --platform=systrap --network=none --ignore-cgroups --rootless run --bundle /bundle-sleep s1-e2-sleep
+  191 {exe} runsc-gofer --root=/run/runsc-state --network=none --platform=systrap --rootless=true --ignore-cgroups=true gofer --bundle /bundle-sleep --gofer-mount-confs=lisafs:none --spec-fd=3 --mounts-fd=4 --rpc-fd=5 --pin-ring-fd=6 --sync-sentry-exit-fd=7 --io-fds=8 --sync-chroot-fd=9 s1-e2-sleep
+  192 {exe} runsc-sandbox --root=/run/runsc-state --network=none --platform=systrap --rootless=true --ignore-cgroups=true boot --bundle=/bundle-sleep --gofer-mount-confs=lisafs:none --apply-caps=true --setup-root --total-host-memory 807732506624 --total-memory 807732506624 --attached --io-fds=3 --dev-io-fd=-1 --mounts-fd=4 --start-sync-fd=5 --pin-ring-fd=6 --controller-fd=7 --spec-fd=8 --stdio-fds=9 --stdio-fds=10 --stdio-fds=11 s1-e2-sleep
+
+---- /proc/191/cmdline
+runsc-gofer --root=/run/runsc-state --network=none --platform=systrap --rootless=true --ignore-cgroups=true gofer --bundle /bundle-sleep --gofer-mount-confs=lisafs:none --spec-fd=3 --mounts-fd=4 --rpc-fd=5 --pin-ring-fd=6 --sync-sentry-exit-fd=7 --io-fds=8 --sync-chroot-fd=9 s1-e2-sleep 
+---- /proc/191/mounts
+/dev/md0p1 / ext4 ro,nosuid,nodev,relatime,stripe=64 0 0
+---- /proc/191/uid_map
+         0          0          1
+---- /proc/191/gid_map
+         0          0          1
+---- Cap* from /proc/191/status
+CapInh:	000000000004001f
+CapPrm:	000000000004001f
+CapEff:	000000000004001f
+CapBnd:	000000000004001f
+CapAmb:	000000000004001f
+---- the guest init's check against /proc/191/mounts
+no writable path is executable
+CHECK_EXIT=0
+
+---- /proc/192/cmdline
+runsc-sandbox --root=/run/runsc-state --network=none --platform=systrap --rootless=true --ignore-cgroups=true boot --bundle=/bundle-sleep --gofer-mount-confs=lisafs:none --apply-caps=true --setup-root --total-host-memory 807732506624 --total-memory 807732506624 --attached --io-fds=3 --dev-io-fd=-1 --mounts-fd=4 --start-sync-fd=5 --pin-ring-fd=6 --controller-fd=7 --spec-fd=8 --stdio-fds=9 --stdio-fds=10 --stdio-fds=11 s1-e2-sleep 
+---- /proc/192/mounts
+runsc-root / tmpfs ro,relatime,uid=253477,gid=253477,inode64 0 0
+runsc-proc /proc tmpfs rw,nosuid,nodev,noexec,relatime,uid=253477,gid=253477,inode64 0 0
+proc /proc/sandbox-proc proc ro,nosuid,nodev,noexec,relatime 0 0
+---- /proc/192/uid_map
+         0          0          1
+---- /proc/192/gid_map
+         0          0          1
+---- Cap* from /proc/192/status
+CapInh:	0000000000000000
+CapPrm:	000000000008001f
+CapEff:	000000000008001f
+CapBnd:	000000000008001f
+CapAmb:	0000000000000000
+---- the guest init's check against /proc/192/mounts
+no writable path is executable
+CHECK_EXIT=0
+
+######## 4. the guest init's check against /proc/mounts while the sandbox lives
+/dev/md0p1 / ext4 ro,relatime,stripe=64 0 0
+proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,uid=253477,gid=253477,inode64 0 0
+tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,uid=253477,gid=253477,inode64 0 0
+tmpfs /dev tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,uid=253477,gid=253477,inode64 0 0
+udev /dev/null devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/zero devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/full devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/random devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/urandom devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/tty devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+nsfs /run/runsc-state/null-netns nsfs rw 0 0
+---- check ----
+WRITABLE AND EXECUTABLE: /run/runsc-state/null-netns (nsfs,rw)
+FATAL: writable executable path present; powering off without running tunneld
+CHECK_EXIT=1
+SLEEP_WORKLOAD_EXIT=0
+
+######## 5. what runsc left in the state dir, after the container exited
+drwx------    2 0        0               60 Sep 15 23:31 /run/runsc-state
+-r--r--r--    1 65534    65534            0 Sep 15 23:30 /run/runsc-state/null-netns
+---- and the check again, after everything exited
+WRITABLE AND EXECUTABLE: /run/runsc-state/null-netns (nsfs,rw)
+FATAL: writable executable path present; powering off without running tunneld
+CHECK_EXIT=1
+
+######## 6. variation: the bundle and its rootfs on a NOEXEC writable mount
+   (/tmp is rw,noexec; the workload binary then lives on a noexec mount)
+$ /runsc --root=/run/runsc-state --platform=systrap --network=none --ignore-cgroups --rootless run --bundle /tmp/bundle-noexec s1-e2-noexec
+EXIT=128
+running container: creating container: cannot create sandbox: cannot read client sync file: waiting for sandbox to start: EOF

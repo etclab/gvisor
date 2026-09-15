@@ -1,0 +1,39 @@
+=== RUN   TestE2PushCarriesAPolicyAndBringsBackAnAck
+2026/09/15 15:12:08 failed to sufficiently increase receive buffer size (was: 208 kiB, wanted: 7168 kiB, got: 416 kiB). See https://github.com/quic-go/quic-go/wiki/UDP-Buffer-Sizes for details.
+=== RUN   TestE2PushCarriesAPolicyAndBringsBackAnAck/2KiB,_10/20/10
+=== RUN   TestE2PushCarriesAPolicyAndBringsBackAnAck/64KiB,_320/640/320
+=== RUN   TestE2PushCarriesAPolicyAndBringsBackAnAck/1MiB,_5120/10240/5120
+=== RUN   TestE2PushCarriesAPolicyAndBringsBackAnAck/unknown_version_refused
+=== RUN   TestE2PushCarriesAPolicyAndBringsBackAnAck/an_ordinary_exchange_still_echoes
+=== NAME  TestE2PushCarriesAPolicyAndBringsBackAnAck
+    e2_policypush_test.go:265: b answered 5 exchanges, 4 of them pushes, 3 acked
+--- PASS: TestE2PushCarriesAPolicyAndBringsBackAnAck (0.53s)
+    --- PASS: TestE2PushCarriesAPolicyAndBringsBackAnAck/2KiB,_10/20/10 (0.00s)
+    --- PASS: TestE2PushCarriesAPolicyAndBringsBackAnAck/64KiB,_320/640/320 (0.01s)
+    --- PASS: TestE2PushCarriesAPolicyAndBringsBackAnAck/1MiB,_5120/10240/5120 (0.15s)
+    --- PASS: TestE2PushCarriesAPolicyAndBringsBackAnAck/unknown_version_refused (0.00s)
+    --- PASS: TestE2PushCarriesAPolicyAndBringsBackAnAck/an_ordinary_exchange_still_echoes (0.00s)
+=== RUN   TestE2FrameCeiling
+    e2_policypush_test.go:280: a 16777217 byte push (one over the 16777216 byte frame bound) is refused: tunnel: sending the request: tunnel: framing violation: 16777217 bytes exceeds the 16777216 byte maximum
+--- PASS: TestE2FrameCeiling (0.63s)
+=== RUN   TestE2PushDoesNotInterleaveWithAnApplicationExchange
+    e2_policypush_test.go:334: push returned in 959.28µs while a 400ms exchange was in flight; the slow one returned 350.58419ms later
+--- PASS: TestE2PushDoesNotInterleaveWithAnApplicationExchange (0.72s)
+=== RUN   TestE2PushBeforeAdmissionIsImpossible
+tunneld[sandbox-b]: verification refused: launch measurement not in the reference value set: launch measurement matches none of the 1 reference values in the set
+    e2_policypush_test.go:355: no channel to an unadmitted peer, so nothing to push on: tunneld: tunnel not established: "b" at 127.0.0.1:49076: tunnel: dialing 127.0.0.1:49076: CRYPTO_ERROR 0x12a (remote): tls: bad certificate
+    e2_policypush_test.go:374: a manufactured Channel reaches no peer, but panics rather than refusing: runtime error: invalid memory address or nil pointer dereference
+--- PASS: TestE2PushBeforeAdmissionIsImpossible (0.41s)
+=== RUN   TestE2PushTiming
+    e2_policypush_test.go:486: 200 iterations after 20 warmup, one tunnel, 127.0.0.1, milliseconds
+    e2_policypush_test.go:487: series                           req B     resp B      p50      p90      p99      min      max     mean
+    e2_policypush_test.go:489: round-trip floor (5 B echo)          5         15    0.492    0.681    0.889    0.262    1.260    0.510
+    e2_policypush_test.go:489: push 2 KiB                        2048         45    0.832    1.167    1.954    0.427    2.078    0.875
+    e2_policypush_test.go:489: echo 2 KiB                        2048       2058    0.780    0.998    1.425    0.481    1.567    0.807
+    e2_policypush_test.go:489: push 64 KiB                      65536         45    4.273    6.041   11.986    2.297   13.619    4.369
+    e2_policypush_test.go:489: echo 64 KiB                      65536      65546    7.002   10.251   16.246    3.912   18.664    7.426
+    e2_policypush_test.go:492: b answered 1100 exchanges, 440 pushes, 440 acked
+    e2_policypush_test.go:495: frame payload bound is 16777216 bytes (attest/tunnel/tunnel.go:348); 64 KiB is 0.39% of it
+--- PASS: TestE2PushTiming (3.55s)
+PASS
+ok  	gvisor.dev/gvisor/attest/tunneld	5.939s

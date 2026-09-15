@@ -169,6 +169,14 @@ type Tunneld struct {
 	// identity this tunneld has.
 	dialed *tunnel.Cache
 
+	// The sandbox contract's three fields (sandbox.go): what the listening side
+	// concluded about each peer it admitted, the streams peers have opened and
+	// nobody has accepted yet, and the channel that closes when this tunneld
+	// does so that a sandbox waiting in Accept is told rather than left there.
+	verdicts *verdictBook
+	incoming chan accepted
+	done     chan struct{}
+
 	mu       sync.Mutex
 	closed   bool
 	accepted []*tunnel.Conn
@@ -210,7 +218,11 @@ func New(ctx context.Context, cfg Config) (*Tunneld, error) {
 		addr = "127.0.0.1:0"
 	}
 	refusals := ratls.WithRefusalLog(refusalLog(cfg))
-	listener, err := tunnel.Listen(addr, identity.ServerConfig(verification, refusals), cfg.Limits)
+	// The listening side asks nothing more of a peer than verification did, so
+	// its admission hook keeps the verdict instead (sandbox.go, verdictBook):
+	// it is what names the peer that opened a stream to the sandbox.
+	verdicts := newVerdictBook()
+	listener, err := tunnel.Listen(addr, identity.ServerConfig(verification, refusals, ratls.WithAdmission(verdicts.remember)), cfg.Limits)
 	if err != nil {
 		return nil, fmt.Errorf("tunneld: refusing to start: %w", err)
 	}
@@ -224,6 +236,9 @@ func New(ctx context.Context, cfg Config) (*Tunneld, error) {
 		policy:        policy,
 		unconstrained: set.Unconstrained(),
 		dialed:        tunnel.NewCache(client, cfg.Limits),
+		verdicts:      verdicts,
+		incoming:      make(chan accepted),
+		done:          make(chan struct{}),
 	}
 	t.wg.Add(1)
 	go t.accept()
@@ -325,6 +340,9 @@ func (t *Tunneld) accept() {
 		t.accepted = append(live(t.accepted), conn)
 		t.mu.Unlock()
 		go conn.Serve(t.handle)
+		// And beside the exchanges, the streams: Serve tells the two apart and
+		// this carries the raw ones to the sandbox (sandbox.go).
+		go t.acceptStreams(conn)
 	}
 }
 
@@ -372,10 +390,16 @@ func (t *Tunneld) Peer(ctx context.Context, name string) (*Channel, error) {
 // Close stops listening and ends every tunnel, dialed and accepted.
 func (t *Tunneld) Close() error {
 	t.mu.Lock()
+	was := t.closed
 	t.closed = true
 	accepted := t.accepted
 	t.accepted = nil
 	t.mu.Unlock()
+	if !was {
+		// Once, so that closing twice is not a panic: a sandbox waiting in
+		// Accept is released here.
+		close(t.done)
+	}
 	err := t.listener.Close()
 	t.dialed.Close()
 	for _, c := range accepted {
@@ -414,6 +438,13 @@ func (c *Channel) Peer() string { return c.name }
 // caller whose exchange dies in flight sees the error, and its next exchange
 // runs over a new tunnel.
 func (c *Channel) Exchange(ctx context.Context, request []byte) ([]byte, error) {
+	if c.t == nil {
+		// A Channel nobody's Peer returned: exported type, unexported fields,
+		// so &Channel{} compiles and reaches no peer. It is refused the way a
+		// closed one is rather than dereferencing the tunneld it has not got
+		// (spike E2).
+		return nil, fmt.Errorf("%w: %q", ErrNoTunneld, c.name)
+	}
 	if c.closed.Load() {
 		return nil, fmt.Errorf("%w: %q", ErrChannelClosed, c.name)
 	}

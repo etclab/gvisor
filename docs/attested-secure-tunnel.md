@@ -43,11 +43,20 @@ verification is a large body of code handling attacker-supplied bytes, which doe
 belong in the sentry; and evidence acquisition needs VM-level access to
 `/sys/kernel/config/tsm/`, which the sentry deliberately does not have.
 
+Since ticket 22 the supervisor is `tunneld`, and it does not know what sandbox it serves.
+The sandbox beside it, the sentry above or the null sandbox of today's exercise, reaches it
+only through the contract in `docs/sandbox-contract.md`: open a stream to a named peer,
+accept a stream with the peer's attested identity attached, receive a pushed policy and
+acknowledge it. Which sandbox sits there is decided by the agent runtime needed, and a
+different sandbox is only a different measured image (ADR-0008).
+
 Invariants:
 
 1. **There is no path off the VM except the tunnel.** The sentry is the sandbox's network
    stack, so this is structural rather than a matter of egress configuration — there is
-   nothing to misconfigure.
+   nothing to misconfigure. Beneath it the measured image's compiled-in ceiling refuses
+   every packet but the tunnel port, so the invariant holds at the VM boundary even before
+   a sentry exists.
 2. **The agent holds no key and sees no trust decision.** It asks for a named peer and gets
    a channel or an error. An agent able to evaluate evidence could ignore it, and a
    hijacked one would.

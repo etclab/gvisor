@@ -1,0 +1,39 @@
+=== RUN   TestSpike23E2AgentBehindTheNullSandbox
+2026/09/15 21:40:30 failed to sufficiently increase receive buffer size (was: 208 kiB, wanted: 7168 kiB, got: 416 kiB). See https://github.com/quic-go/quic-go/wiki/UDP-Buffer-Sizes for details.
+model=claude-sonnet-5 max_tokens=4096 endpoint=https://api.anthropic.com/v1/messages
+task="Fetch the document at https://www.rfc-editor.org/rfc/rfc8446.txt, write a summary of it in at most five sentences, and save the summary to the file summary.txt in the current directory using write_file. Then reply with the word DONE."
+
+B SANDBOX applied format=policy version=1 bytes=86 sha256=8218d19995d73e12fd704da2c2e203e221fdc9158e134800f10b45330dc7543a
+DIAL 1: api.anthropic.com:443 over Open("b") in 34ms
+EXIT accepted a stream from peer="" vendor=amd-sev-snp measurement=1111111111111111… policy_digest=f604ea0683385679…
+EXIT resolved and dialed api.anthropic.com:443 -> 160.79.104.10:443 in 12ms
+request 1: proto=HTTP/2.0 stop_reason=tool_use input_tokens=657 output_tokens=86 in 1.425s
+DIAL 2: www.rfc-editor.org:443 over Open("b") in 0s
+EXIT accepted a stream from peer="" vendor=amd-sev-snp measurement=1111111111111111… policy_digest=f604ea0683385679…
+EXIT resolved and dialed www.rfc-editor.org:443 -> 104.18.21.81:443 in 33ms
+  tool_use fetch_url {"url":"https://www.rfc-editor.org/rfc/rfc8446.txt"} -> 20502 bytes, is_error=false
+request 2: proto=HTTP/2.0 stop_reason=tool_use input_tokens=6919 output_tokens=545 in 5.758s
+  tool_use write_file {"path":"summary.txt","content":"RFC 8446 specifies version 1.3 of the Transport Layer Security (TLS) protocol, which pr… -> 31 bytes, is_error=false
+request 3: proto=HTTP/2.0 stop_reason=end_turn input_tokens=7485 output_tokens=5 in 748ms
+
+final text: DONE
+
+tool calls, in order:
+  1. fetch_url(https://www.rfc-editor.org/rfc/rfc8446.txt)
+  2. write_file(summary.txt)
+
+totals: input_tokens=15061 output_tokens=636
+cost: $0.036482  (input $2.00/M, output $10.00/M for claude-sonnet-5)
+wall time: 8.115s
+
+THE RUN COMPLETED
+wall time behind the contract: 8.115s
+Open 1: 34ms for api.anthropic.com:443
+Open 2: 0s for www.rfc-editor.org:443
+summary.txt: 1397 bytes written in /tmp/pniroula/TestSpike23E2AgentBehindTheNullSandbox582860858/001
+B applied 1: format=policy version=1 bytes=86 sha256=8218d19995d73e12fd704da2c2e203e221fdc9158e134800f10b45330dc7543a
+EXIT to api.anthropic.com:443: 50007 bytes, <nil>
+EXIT to www.rfc-editor.org:443: 2001 bytes, <nil>
+--- PASS: TestSpike23E2AgentBehindTheNullSandbox (8.44s)
+PASS
+ok  	gvisor.dev/gvisor/attest/tunneld	8.482s

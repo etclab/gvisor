@@ -16,47 +16,20 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"net"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
 	"gvisor.dev/gvisor/attest/sandbox"
 )
 
-// recorder is the log the contract path writes as it runs, kept so that a test
-// can say which of the path's parts were reached and not merely that bytes
-// arrived somehow.
-type recorder struct {
-	mu    sync.Mutex
-	lines []string
-}
-
-func (r *recorder) logf(format string, a ...any) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	r.lines = append(r.lines, strings.TrimSpace(fmt.Sprintf(format, a...)))
-}
-
-func (r *recorder) saw(prefix string) bool {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	for _, line := range r.lines {
-		if strings.HasPrefix(line, prefix) {
-			return true
-		}
-	}
-	return false
-}
-
-func (r *recorder) all() string {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	return strings.Join(r.lines, "\n")
-}
+// quiet is the log a test does not read. What the contract path did is
+// asserted on what came back through it and on counted, below: a line saying
+// the exit dialed is the exit's word for it, and the model's answer arriving
+// is the path itself.
+func quiet(string, ...any) {}
 
 func TestTheNullNetworkCarriesTheWholeLoopThroughOpenAndTheExit(t *testing.T) {
 	// The fake model is on loopback and is reached the way api.anthropic.com
@@ -64,23 +37,31 @@ func TestTheNullNetworkCarriesTheWholeLoopThroughOpenAndTheExit(t *testing.T) {
 	// address travels as the CONNECT line, and the exit resolves and dials it.
 	// Plain HTTP is enough here — in the real run TLS is end to end from the
 	// loop to the model and the exit sees ciphertext only (spike E2).
-	doc := document(t, "RFC 8446 defines TLS 1.3.")
+	doc, docHost := document(t, "RFC 8446 defines TLS 1.3.")
 	work := t.TempDir()
-	canned(t,
+	model := canned(t,
 		turnUsing(100, 20, use("tu_1", "fetch_url", `{"url":"`+doc+`/rfc8446.txt"}`)),
 		turnUsing(200, 30, use("tu_2", "write_file", `{"path":"summary.txt","content":"one sentence"}`)),
 		endTurn(300, 40, "DONE"))
 
-	seen := &recorder{}
-	box := sandbox.NewNull(&localExit{logf: seen.logf}, seen.logf)
-	w := behindTheContract(box, "b", seen.logf)
+	// The exit's list names exactly the two destinations this run may reach.
+	// A run that completes is therefore a run whose CONNECT lines said those
+	// two names and were checked against them — which is a stronger statement
+	// than counting streams, and it is the enforcement point the study is
+	// about standing in the path rather than beside it.
+	allow, err := parseAllow(model.host + "," + docHost)
+	if err != nil {
+		t.Fatalf("the allow list: %v", err)
+	}
+	box := sandbox.NewNull(&localExit{logf: quiet, allow: allow}, quiet)
+	w := behindTheContract(box, "b", quiet)
 	defer w.close()
 
 	ctx, cancel := context.WithTimeout(context.Background(), deadline)
 	defer cancel()
 	res, err := Run(ctx, w.client, Summarize(), Tools{FetchURL: true, WriteDir: work}, io.Discard)
 	if err != nil {
-		t.Fatalf("the agent behind the contract: %v\n%s", err, seen.all())
+		t.Fatalf("the agent behind the contract: %v", err)
 	}
 	if res.Final != "DONE" {
 		t.Errorf("the final text is %q; want DONE", res.Final)
@@ -88,11 +69,8 @@ func TestTheNullNetworkCarriesTheWholeLoopThroughOpenAndTheExit(t *testing.T) {
 	if len(res.Calls) != 2 {
 		t.Errorf("the run made %d tool calls; want the fetch and the write", len(res.Calls))
 	}
-	// Both halves of the path have to appear, or the bytes went somewhere else.
-	for _, prefix := range []string{`OPEN a local stream`, "DIAL ", "EXIT dialed "} {
-		if !seen.saw(prefix) {
-			t.Errorf("no %q line; the run did not go through the contract:\n%s", prefix, seen.all())
-		}
+	if res.ToolError {
+		t.Error("a tool failed behind the contract; both destinations were in the exit's list")
 	}
 }
 
@@ -106,8 +84,7 @@ func TestTheExitRefusesADestinationTheAllowListDoesNotName(t *testing.T) {
 	if err != nil {
 		t.Fatalf("-allow %s: %v", addr, err)
 	}
-	seen := &recorder{}
-	dial := dialThrough(&localExit{logf: seen.logf, allow: allow}, "b", seen.logf)
+	dial := dialThrough(&localExit{logf: quiet, allow: allow}, "b", quiet)
 
 	ctx, cancel := context.WithTimeout(context.Background(), deadline)
 	defer cancel()
@@ -116,7 +93,7 @@ func TestTheExitRefusesADestinationTheAllowListDoesNotName(t *testing.T) {
 	// half-close carried.
 	conn, err := dial(ctx, "tcp", addr)
 	if err != nil {
-		t.Fatalf("the exit would not dial %s, which is in -allow: %v\n%s", addr, err, seen.all())
+		t.Fatalf("the exit would not dial %s, which is in -allow: %v", addr, err)
 	}
 	io.WriteString(conn, "hello")
 	conn.(*streamConn).CloseWrite()
@@ -138,9 +115,6 @@ func TestTheExitRefusesADestinationTheAllowListDoesNotName(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "REFUSED 127.0.0.1:9") {
 		t.Errorf("the dial failed with %v; want the exit's REFUSED line", err)
-	}
-	if !seen.saw(`EXIT refused "127.0.0.1:9"`) {
-		t.Errorf("the exit did not say locally why it refused:\n%s", seen.all())
 	}
 }
 

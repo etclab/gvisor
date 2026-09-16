@@ -170,28 +170,153 @@ function callOf(name: string, input: Record<string, unknown>): string {
   return `${name}()`;
 }
 
-async function main(): Promise<number> {
-  const request = await waitForRun();
-  if (request === "") {
-    console.log("RUN assumed: stdin ended without a request, which is how the sandbox starts this process");
-  } else if (request === "RUN") {
-    console.log("RUN accepted");
-  } else {
-    console.log(`agent: ${JSON.stringify(request)} is not a request`);
-    return 2;
-  }
-
-  let key: string | undefined;
+// readKey is the one secret this process holds, and only because the sandbox
+// that started it granted --allow-env for exactly this name. A policy without
+// that grant ends the run here, which is the shape of a denial and not a bug.
+function readKey(): string | null {
   try {
-    key = Deno.env.get("ANTHROPIC_API_KEY");
+    const key = Deno.env.get("ANTHROPIC_API_KEY");
+    if (key) return key;
+    console.log("TOOL_ERROR agent: ANTHROPIC_API_KEY is not set");
   } catch (e) {
     console.log("TOOL_ERROR agent: reading ANTHROPIC_API_KEY: " + how(e));
-    return 1;
   }
-  if (!key) {
-    console.log("TOOL_ERROR agent: ANTHROPIC_API_KEY is not set");
-    return 1;
+  return null;
+}
+
+// askModel sends one request and returns the model's reply, or null when the
+// run cannot go on — which it says in the transcript before it says it here.
+// The model endpoint is a destination like any other and a policy that left it
+// out denies it, so this is the one denial the agent cannot work around.
+async function askModel(key: string, body: string, turn: number): Promise<Reply | null> {
+  const started = performance.now();
+  let resp: Response;
+  try {
+    resp = await fetch(ENDPOINT, {
+      method: "POST",
+      headers: {
+        "x-api-key": key,
+        "anthropic-version": API_VER,
+        "content-type": "application/json",
+      },
+      body,
+    });
+  } catch (e) {
+    console.log(`TOOL_ERROR agent: request ${turn}: ` + how(e));
+    return null;
   }
+  const raw = await resp.text();
+  const took = Math.round(performance.now() - started);
+  if (resp.status !== 200) {
+    console.log(`TOOL_ERROR agent: request ${turn}: HTTP ${resp.status}: ${clip(raw, 400)}`);
+    return null;
+  }
+  let reply: Reply;
+  try {
+    reply = JSON.parse(raw);
+  } catch (e) {
+    console.log(`TOOL_ERROR agent: request ${turn}: the response is not JSON: ` + how(e));
+    return null;
+  }
+  console.log(
+    `request ${turn}: stop_reason=${reply.stop_reason} input_tokens=${reply.usage.input_tokens} output_tokens=${reply.usage.output_tokens} in ${took}ms`,
+  );
+  return reply;
+}
+
+// toolPass runs every tool_use block of one assistant turn and returns the
+// results, appending what each call reached to calls. One line per call, and
+// one TOOL_ERROR line for each that failed, in the shape the delegating side
+// reads: it scans this transcript as text for TOOL_ERROR and for nothing else,
+// because a tool error is all it is entitled to know.
+// deno-lint-ignore no-explicit-any
+async function toolPass(reply: Reply, calls: string[]): Promise<any[]> {
+  // deno-lint-ignore no-explicit-any
+  const results: any[] = [];
+  for (const b of reply.content) {
+    if (b.type !== "tool_use") continue;
+    const input = (b.input ?? {}) as Record<string, unknown>;
+    const [text, failed] = await runTool(b.name!, input);
+    calls.push(callOf(b.name!, input));
+    console.log(
+      `  tool_use ${b.name} ${clip(JSON.stringify(input), 120)} -> ${text.length} bytes, is_error=${failed}`,
+    );
+    if (failed) console.log(`TOOL_ERROR ${b.name}: ${clip(text, 400)}`);
+    results.push({
+      type: "tool_result",
+      tool_use_id: b.id,
+      content: text,
+      is_error: failed,
+    });
+  }
+  return results;
+}
+
+// report is the last thing a run prints: what it did, what it cost and how
+// long it took, in the same shape and the same arithmetic as the Go loop's.
+function report(calls: string[], totalIn: number, totalOut: number, began: number) {
+  const cost = totalIn / 1e6 * IN_PER_M + totalOut / 1e6 * OUT_PER_M;
+  console.log("\ntool calls, in order:");
+  calls.forEach((c, i) => console.log(`  ${i + 1}. ${c}`));
+  console.log(`\ntotals: input_tokens=${totalIn} output_tokens=${totalOut}`);
+  console.log(
+    `cost: $${cost.toFixed(6)}  (input $${IN_PER_M.toFixed(2)}/M, output $${OUT_PER_M.toFixed(2)}/M for ${MODEL})`,
+  );
+  console.log(`wall time: ${((performance.now() - began) / 1000).toFixed(3)}s`);
+}
+
+// accepted reads the gate's answer and says whether this process should work.
+// Which of the two ways it was started is the first line of the transcript,
+// because the two are different arrangements and a record that did not say
+// which would be a record of neither.
+function accepted(request: string): boolean {
+  if (request === "") {
+    console.log(
+      "RUN assumed: stdin ended without a request, which is how the sandbox starts this process",
+    );
+    return true;
+  }
+  if (request === "RUN") {
+    console.log("RUN accepted");
+    return true;
+  }
+  console.log(`agent: ${JSON.stringify(request)} is not a request`);
+  return false;
+}
+
+// stopped is the two stop reasons that are answers rather than turns: a
+// refusal and a truncated turn each leave the conversation in a state where
+// sending it back would be asking the model to continue what it did not
+// finish.
+function stopped(reply: Reply): boolean {
+  if (reply.stop_reason === "refusal") {
+    console.log(
+      "TOOL_ERROR agent: the model refused: " + JSON.stringify(reply.stop_details),
+    );
+    return true;
+  }
+  if (reply.stop_reason === "max_tokens") {
+    console.log(
+      `TOOL_ERROR agent: the model hit max_tokens=${MAX_TOKENS} and the turn is truncated`,
+    );
+    return true;
+  }
+  return false;
+}
+
+// finalText is the model's last word, which for a run that was denied
+// something is the word it says anyway.
+function finalText(reply: Reply) {
+  for (const b of reply.content) {
+    if (b.type === "text") console.log(`\nfinal text: ${b.text}`);
+  }
+}
+
+async function main(): Promise<number> {
+  if (!accepted(await waitForRun())) return 2;
+
+  const key = readKey();
+  if (key === null) return 1;
 
   const tools = JSON.parse(TOOL_DEFS);
   // deno-lint-ignore no-explicit-any
@@ -211,84 +336,22 @@ async function main(): Promise<number> {
       tools,
       messages,
     });
-    const started = performance.now();
-    let resp: Response;
-    try {
-      resp = await fetch(ENDPOINT, {
-        method: "POST",
-        headers: {
-          "x-api-key": key,
-          "anthropic-version": API_VER,
-          "content-type": "application/json",
-        },
-        body,
-      });
-    } catch (e) {
-      // The model endpoint is a destination like any other, and a policy that
-      // left it out denies it here. It is the one denial this agent cannot
-      // work around, so it ends the run.
-      console.log(`TOOL_ERROR agent: request ${turn}: ` + how(e));
-      return 1;
-    }
-    const raw = await resp.text();
-    const took = Math.round(performance.now() - started);
-    if (resp.status !== 200) {
-      console.log(`TOOL_ERROR agent: request ${turn}: HTTP ${resp.status}: ${clip(raw, 400)}`);
-      return 1;
-    }
-    let reply: Reply;
-    try {
-      reply = JSON.parse(raw);
-    } catch (e) {
-      console.log(`TOOL_ERROR agent: request ${turn}: the response is not JSON: ` + how(e));
-      return 1;
-    }
+    const reply = await askModel(key, body, turn);
+    if (reply === null) return 1;
     totalIn += reply.usage.input_tokens;
     totalOut += reply.usage.output_tokens;
-    console.log(
-      `request ${turn}: stop_reason=${reply.stop_reason} input_tokens=${reply.usage.input_tokens} output_tokens=${reply.usage.output_tokens} in ${took}ms`,
-    );
 
-    if (reply.stop_reason === "refusal") {
-      console.log("TOOL_ERROR agent: the model refused: " + JSON.stringify(reply.stop_details));
-      return 1;
-    }
-    if (reply.stop_reason === "max_tokens") {
-      console.log(`TOOL_ERROR agent: the model hit max_tokens=${MAX_TOKENS} and the turn is truncated`);
-      return 1;
-    }
+    if (stopped(reply)) return 1;
 
     // The assistant turn goes back as the raw blocks it arrived as.
     messages.push({ role: "assistant", content: reply.content });
 
     if (reply.stop_reason !== "tool_use") {
-      for (const b of reply.content) {
-        if (b.type === "text") console.log(`\nfinal text: ${b.text}`);
-      }
+      finalText(reply);
       break;
     }
 
-    // deno-lint-ignore no-explicit-any
-    const results: any[] = [];
-    for (const b of reply.content) {
-      if (b.type !== "tool_use") continue;
-      const input = (b.input ?? {}) as Record<string, unknown>;
-      const [text, failed] = await runTool(b.name!, input);
-      calls.push(callOf(b.name!, input));
-      console.log(
-        `  tool_use ${b.name} ${clip(JSON.stringify(input), 120)} -> ${text.length} bytes, is_error=${failed}`,
-      );
-      // One line per failed tool, in the shape the delegating side reads: it
-      // scans this transcript as text for TOOL_ERROR and for nothing else,
-      // because a tool error is all it is entitled to know.
-      if (failed) console.log(`TOOL_ERROR ${b.name}: ${clip(text, 400)}`);
-      results.push({
-        type: "tool_result",
-        tool_use_id: b.id,
-        content: text,
-        is_error: failed,
-      });
-    }
+    const results = await toolPass(reply, calls);
     if (results.length === 0) {
       console.log(`TOOL_ERROR agent: request ${turn}: stop_reason tool_use with no tool_use block`);
       return 1;
@@ -297,14 +360,7 @@ async function main(): Promise<number> {
     messages.push({ role: "user", content: results });
   }
 
-  const cost = totalIn / 1e6 * IN_PER_M + totalOut / 1e6 * OUT_PER_M;
-  console.log("\ntool calls, in order:");
-  calls.forEach((c, i) => console.log(`  ${i + 1}. ${c}`));
-  console.log(`\ntotals: input_tokens=${totalIn} output_tokens=${totalOut}`);
-  console.log(
-    `cost: $${cost.toFixed(6)}  (input $${IN_PER_M.toFixed(2)}/M, output $${OUT_PER_M.toFixed(2)}/M for ${MODEL})`,
-  );
-  console.log(`wall time: ${((performance.now() - began) / 1000).toFixed(3)}s`);
+  report(calls, totalIn, totalOut, began);
   // end_turn is exit 0 even when a tool failed. The model works around a
   // denied resource and says DONE (E4, case ii), so the exit status says
   // whether the agent ran and the TOOL_ERROR lines say what it could not

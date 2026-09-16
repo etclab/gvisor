@@ -23,7 +23,6 @@ import (
 	"net"
 	"os"
 	"strings"
-	"sync"
 
 	"golang.org/x/sys/unix"
 	"gvisor.dev/gvisor/attest/sandbox"
@@ -115,18 +114,22 @@ func (a *allowList) String() string {
 	return strings.Join(names, ",")
 }
 
-// serveExit accepts streams from n and serves each one until ctx is done. It
+// ServeExit accepts streams from n and serves each one until ctx is done. It
 // is a package-level function rather than a method so that an in-process
 // harness runs exactly what -exit runs.
-func serveExit(ctx context.Context, n sandbox.Network, allow *allowList, logf func(string, ...any)) error {
+func ServeExit(ctx context.Context, n sandbox.Network, allow *allowList, logf func(string, ...any)) error {
 	logf("EXIT serving, allow=%s", allow)
 	for {
 		s, who, err := n.Accept(ctx)
 		if err != nil {
 			return err
 		}
+		// The two identities go in at full width, as sandbox.Attested says
+		// they must: the whole use of either is comparing it with a number an
+		// operator wrote down somewhere else, and a truncated one is a number
+		// an attacker gets to choose collisions in.
 		logf("EXIT accepted a stream from peer=%q vendor=%s measurement=%s policy_digest=%s",
-			who.Peer, who.Vendor, short(who.Measurement), short(who.PolicyDigest))
+			who.Peer, who.Vendor, who.Measurement, who.PolicyDigest)
 		go serveConnect(s, allow, logf)
 	}
 }
@@ -183,19 +186,20 @@ func refuse(s sandbox.Stream, target string, logf func(string, ...any), why stri
 // from is the reader that read the CONNECT line, not the stream, because it
 // may hold bytes that arrived behind it.
 func pump(s sandbox.Stream, from io.Reader, remote net.Conn) {
-	var wg sync.WaitGroup
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
-		io.Copy(remote, from)
-		closeWrite(remote)
-	}()
-	go func() {
-		defer wg.Done()
-		io.Copy(s, remote)
-		s.CloseWrite()
-	}()
-	wg.Wait()
+	ended := make(chan struct{}, 2)
+	go carry(remote, from, func() { closeWrite(remote) }, ended)
+	go carry(s, remote, func() { s.CloseWrite() }, ended)
+	<-ended
+	<-ended
+}
+
+// carry is one direction of the pump: everything the source has, and then the
+// half-close that says there is no more of it. The two directions end
+// independently, which is what carrying a half-close each way means.
+func carry(dst io.Writer, src io.Reader, end func(), ended chan<- struct{}) {
+	io.Copy(dst, src)
+	end()
+	ended <- struct{}{}
 }
 
 // closeWrite ends this side of the TCP connection, so that a client which has
@@ -272,41 +276,22 @@ func streamPair() (*net.UnixConn, *net.UnixConn, error) {
 	if err != nil {
 		return nil, nil, fmt.Errorf("agent-probe: socketpair: %w", err)
 	}
-	near, err := connOf(fds[0], "near")
-	if err != nil {
-		unix.Close(fds[1])
-		return nil, nil, err
+	// net.FileConn dups the descriptor it is given, so both files are closed
+	// here whatever happens and only the connections are kept.
+	near, far := os.NewFile(uintptr(fds[0]), "near"), os.NewFile(uintptr(fds[1]), "far")
+	defer near.Close()
+	defer far.Close()
+	var ends []*net.UnixConn
+	for _, f := range []*os.File{near, far} {
+		c, err := net.FileConn(f)
+		u, ok := c.(*net.UnixConn)
+		if !ok {
+			for _, made := range ends {
+				made.Close()
+			}
+			return nil, nil, fmt.Errorf("agent-probe: the %s end of the socketpair is a %T: %v", f.Name(), c, err)
+		}
+		ends = append(ends, u)
 	}
-	far, err := connOf(fds[1], "far")
-	if err != nil {
-		near.Close()
-		return nil, nil, err
-	}
-	return near, far, nil
-}
-
-// connOf turns one descriptor into a connection. net.FileConn dups it, so the
-// file wrapping it is closed here and the caller keeps only the connection.
-func connOf(fd int, name string) (*net.UnixConn, error) {
-	f := os.NewFile(uintptr(fd), name)
-	defer f.Close()
-	c, err := net.FileConn(f)
-	if err != nil {
-		return nil, fmt.Errorf("agent-probe: %s end of the socketpair: %w", name, err)
-	}
-	u, ok := c.(*net.UnixConn)
-	if !ok {
-		c.Close()
-		return nil, fmt.Errorf("agent-probe: the %s end is a %T, not a unix socket", name, c)
-	}
-	return u, nil
-}
-
-// short is a hexadecimal identity as a log line wants it: enough to recognise,
-// never enough to compare. The full width is in tunneld's own log.
-func short(hex string) string {
-	if len(hex) <= 16 {
-		return hex
-	}
-	return hex[:16] + "…"
+	return ends[0], ends[1], nil
 }

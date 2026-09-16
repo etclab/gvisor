@@ -61,14 +61,16 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"flag"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
-	"sync"
+	"sync/atomic"
 	"time"
 
 	"gvisor.dev/gvisor/attest/sandbox"
@@ -79,7 +81,7 @@ func main() {
 	c.flags(flag.CommandLine)
 	flag.Parse()
 
-	out := &say{w: os.Stdout}
+	out := newRecord(os.Stdout)
 	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
 	defer cancel()
 
@@ -126,7 +128,7 @@ func (c *config) flags(fs *flag.FlagSet) {
 }
 
 // runAgent is the first role: the loop, over whatever -network built.
-func runAgent(ctx context.Context, c config, out *say) error {
+func runAgent(ctx context.Context, c config, out *record) error {
 	w, err := wire(c, out.logf)
 	if err != nil {
 		return err
@@ -164,7 +166,7 @@ func chosen(c config, w *wiring) (Task, Tools, error) {
 }
 
 // runExit is the second role: accept streams and dial what they name.
-func runExit(ctx context.Context, c config, out *say) error {
+func runExit(ctx context.Context, c config, out *record) error {
 	if c.network != "socket" {
 		return errors.New("agent-probe: -exit accepts streams, which needs a tunneld to accept them from: -network socket")
 	}
@@ -177,7 +179,7 @@ func runExit(ctx context.Context, c config, out *say) error {
 		return err
 	}
 	defer client.Close()
-	return serveExit(ctx, box, allow, out.logf)
+	return ServeExit(ctx, box, allow, out.logf)
 }
 
 // wiring is what -network decides: the client the loop runs on, the peer the
@@ -239,63 +241,53 @@ func behindTheContract(box sandbox.Network, peer string, logf func(string, ...an
 // the socket is acknowledged and its digest recorded while streams pass
 // through untouched.
 //
-// The knot is that Dial takes the function that answers a push before the
-// thing that answers it exists, so the answer goes through a holder rather
-// than a variable a push could race with.
+// The knot is that Dial takes the function which answers a push before the
+// thing that answers it exists, and it starts reading the socket at once. So
+// the answer reaches the sandbox through a pointer stored afterwards, and a
+// push that wins that race is refused rather than acknowledged: a sandbox that
+// acknowledged a policy it had not recorded would be making the
+// acknowledgement mean nothing.
 func socketSandbox(path string, logf func(string, ...any)) (*sandbox.Null, *sandbox.Client, error) {
 	if path == "" {
 		return nil, nil, errors.New("agent-probe: -sandbox-socket is the path tunneld serves the contract on, and it is empty")
 	}
-	var held holder
-	client, err := sandbox.Dial(path, held.apply)
+	var ready atomic.Pointer[sandbox.Null]
+	client, err := sandbox.Dial(path, func(ctx context.Context, policy []byte) error {
+		box := ready.Load()
+		if box == nil {
+			return errors.New("agent-probe: a policy arrived before this sandbox was ready to record it")
+		}
+		return box.Apply(ctx, policy)
+	})
 	if err != nil {
 		return nil, nil, err
 	}
 	box := sandbox.NewNull(client, logf)
-	held.set(box)
+	ready.Store(box)
 	return box, client, nil
 }
 
-// holder is the null sandbox as it exists between sandbox.Dial returning and
-// the sandbox being built over what it returned.
-type holder struct {
-	mu  sync.Mutex
-	box *sandbox.Null
+// record is this binary's one sink. The loop prints its transcript to it, and
+// the dialer, the exit and the sandbox print their lines to it from their own
+// goroutines, so it has to serialise — and a log.Logger already does, which is
+// why there is no lock here. One line is one Print, so two goroutines cannot
+// tear each other's sentences in half.
+type record struct {
+	to *log.Logger
 }
 
-func (h *holder) set(box *sandbox.Null) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	h.box = box
+func newRecord(w io.Writer) *record {
+	return &record{to: log.New(w, "", 0)}
 }
 
-// apply answers a push, and refuses the one that arrives in the moment before
-// there is anything to answer it with. Refusing is right rather than merely
-// safe: a sandbox that acknowledged a policy it had not yet recorded would be
-// making the acknowledgement mean nothing.
-func (h *holder) apply(ctx context.Context, policy []byte) error {
-	h.mu.Lock()
-	box := h.box
-	h.mu.Unlock()
-	if box == nil {
-		return errors.New("agent-probe: a policy arrived before this sandbox was ready to record it")
-	}
-	return box.Apply(ctx, policy)
+// Write is the io.Writer the loop is given. fmt writes a whole line at a time
+// and log.Logger ends every line itself, so the newline fmt added is taken off
+// again rather than doubled.
+func (r *record) Write(p []byte) (int, error) {
+	r.to.Print(string(bytes.TrimSuffix(p, []byte("\n"))))
+	return len(p), nil
 }
 
-// say is stdout, serialised: the loop, the dialer and the exit all write the
-// record, and some of them from their own goroutines.
-type say struct {
-	mu sync.Mutex
-	w  io.Writer
-}
-
-func (s *say) Write(p []byte) (int, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return s.w.Write(p)
-}
-
-func (s *say) logf(format string, a ...any) {
-	fmt.Fprintf(s, format+"\n", a...)
+func (r *record) logf(format string, a ...any) {
+	r.to.Printf(format, a...)
 }

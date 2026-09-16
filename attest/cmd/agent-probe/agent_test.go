@@ -28,6 +28,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -44,12 +45,21 @@ import (
 // and keeps the request bodies, because what this loop must get right is as
 // much what it sends as what it does with what comes back.
 type script struct {
+	// host is where the fake model listens, which is what the CONNECT line
+	// carries when the loop runs behind the contract.
+	host string
+
+	// turns counts the requests as they arrive, so that a test can say how
+	// many the loop made without taking the lock the bodies are under.
+	turns atomic.Int64
+
 	mu      sync.Mutex
 	replies []string
 	bodies  [][]byte
 }
 
 func (s *script) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	s.turns.Add(1)
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -86,12 +96,6 @@ func (s *script) sent(t *testing.T, n int) []message {
 	return req.Messages
 }
 
-func (s *script) requests() int {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return len(s.bodies)
-}
-
 // canned starts the fake model and points the loop at it for this test only.
 func canned(t *testing.T, replies ...string) *script {
 	t.Helper()
@@ -99,6 +103,7 @@ func canned(t *testing.T, replies ...string) *script {
 	s := &script{replies: replies}
 	srv := httptest.NewServer(s)
 	t.Cleanup(srv.Close)
+	s.host = srv.Listener.Addr().String()
 	was := modelEndpoint
 	modelEndpoint = srv.URL + "/v1/messages"
 	t.Cleanup(func() { modelEndpoint = was })
@@ -107,9 +112,13 @@ func canned(t *testing.T, replies ...string) *script {
 
 // The canned turns, in the shapes the API sends them.
 
+func turn(stop string, in, out int, blocks ...string) string {
+	return fmt.Sprintf(`{"stop_reason":%q,"content":[%s],"usage":{"input_tokens":%d,"output_tokens":%d}}`,
+		stop, strings.Join(blocks, ","), in, out)
+}
+
 func turnUsing(in, out int, blocks ...string) string {
-	return fmt.Sprintf(`{"stop_reason":"tool_use","content":[%s],"usage":{"input_tokens":%d,"output_tokens":%d}}`,
-		strings.Join(blocks, ","), in, out)
+	return turn("tool_use", in, out, blocks...)
 }
 
 func use(id, name, input string) string {
@@ -117,22 +126,22 @@ func use(id, name, input string) string {
 }
 
 func endTurn(in, out int, text string) string {
-	return fmt.Sprintf(`{"stop_reason":"end_turn","content":[{"type":"text","text":%q}],"usage":{"input_tokens":%d,"output_tokens":%d}}`,
-		text, in, out)
+	return turn("end_turn", in, out, fmt.Sprintf(`{"type":"text","text":%q}`, text))
 }
 
-// document is something for fetch_url to fetch that is not the model.
-func document(t *testing.T, text string) string {
+// document is something for fetch_url to fetch that is not the model: its URL,
+// and the host and port an exit would be asked to dial for it.
+func document(t *testing.T, text string) (string, string) {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		io.WriteString(w, text)
 	}))
 	t.Cleanup(srv.Close)
-	return srv.URL
+	return srv.URL, srv.Listener.Addr().String()
 }
 
 func TestTheLoopRunsTheToolCallsTheModelAsksForInOrderAndPricesTheRun(t *testing.T) {
-	doc := document(t, "RFC 8446 defines TLS 1.3.")
+	doc, _ := document(t, "RFC 8446 defines TLS 1.3.")
 	work := t.TempDir()
 	s := canned(t,
 		turnUsing(100, 20, use("tu_1", "fetch_url", `{"url":"`+doc+`/rfc8446.txt"}`)),
@@ -149,8 +158,8 @@ func TestTheLoopRunsTheToolCallsTheModelAsksForInOrderAndPricesTheRun(t *testing
 	if got := res.Calls; len(got) != len(want) || got[0] != want[0] || got[1] != want[1] {
 		t.Errorf("the tool calls were %q; want %q", got, want)
 	}
-	if s.requests() != 3 {
-		t.Errorf("the loop made %d requests; want 3", s.requests())
+	if s.turns.Load() != 3 {
+		t.Errorf("the loop made %d requests; want 3", s.turns.Load())
 	}
 	if res.InputTokens != 600 || res.OutputTokens != 90 {
 		t.Errorf("the totals are input=%d output=%d; want 600 and 90", res.InputTokens, res.OutputTokens)
@@ -181,7 +190,7 @@ func TestTheLoopRunsTheToolCallsTheModelAsksForInOrderAndPricesTheRun(t *testing
 }
 
 func TestEveryToolResultOfOneTurnGoesBackInOneUserMessage(t *testing.T) {
-	doc := document(t, "RFC 8446 defines TLS 1.3.")
+	doc, _ := document(t, "RFC 8446 defines TLS 1.3.")
 	work := t.TempDir()
 	s := canned(t,
 		turnUsing(10, 5,
@@ -222,8 +231,8 @@ func TestARefusalStopsTheLoopWithAnErrorThatNamesIt(t *testing.T) {
 	if !errors.Is(err, ErrModelRefused) {
 		t.Fatalf("the loop returned %v; want ErrModelRefused", err)
 	}
-	if s.requests() != 1 {
-		t.Errorf("the loop made %d requests after a refusal; want 1", s.requests())
+	if s.turns.Load() != 1 {
+		t.Errorf("the loop made %d requests after a refusal; want 1", s.turns.Load())
 	}
 	// A run that stopped still says what it spent.
 	if res.InputTokens != 7 || res.Cost == 0 {

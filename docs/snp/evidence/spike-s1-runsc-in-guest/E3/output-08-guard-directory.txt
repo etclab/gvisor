@@ -1,0 +1,51 @@
+######## CASE guard-dir
+---- writable mounts before runsc runs:
+proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,uid=253477,gid=253477,inode64 0 0
+tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,uid=253477,gid=253477,inode64 0 0
+tmpfs /dev tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,uid=253477,gid=253477,inode64 0 0
+udev /dev/null devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/zero devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/full devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/random devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/urandom devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/tty devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+---- check before runsc runs ----
+no writable path is executable
+CHECK_EXIT=0
+
+/run/st-guard-dir:
+total 0
+drwx------    3 0        0               60 Sep 15 23:43 .
+drwxr-xr-x    3 0        0               60 Sep 15 23:43 ..
+drwx------    2 0        0               60 Sep 15 23:43 null-netns
+
+/run/st-guard-dir/null-netns:
+total 4
+drwx------    2 0        0               60 Sep 15 23:43 .
+drwx------    3 0        0               60 Sep 15 23:43 ..
+-rw-------    1 0        0                6 Sep 15 23:43 .keep
+$ /runsc --root=/run/st-guard-dir --platform=systrap --network=none --ignore-cgroups --rootless --debug --debug-log=/tmp/dbg-guard-dir/ run --bundle /bundle e3-guard-dir
+EXIT=0
+---- what the debug log says about the null network namespace:
+No usable null network namespace at "/run/st-guard-dir/null-netns" ("/run/st-guard-dir/null-netns" is not a namespace mount); creating a new one. This issue is slowing down your sandboxes' startup.
+Unable to pin the gofer's network namespace at "/run/st-guard-dir/null-netns" (creating mount point: open /run/st-guard-dir/null-netns: is a directory); future gofers will create new network namespaces. This slows down gVisor startup.
+---- /proc/mounts lines mentioning null-netns:
+   (none)
+---- the guest init's check (docs/snp/image/init.rootfs:31-44) ----
+no writable path is executable
+CHECK_EXIT=0
+
+---- the guard survived the run?
+total 0
+drwx------    3 0        0               60 Sep 15 23:43 .
+drwxr-xr-x    3 0        0               60 Sep 15 23:43 ..
+drwx------    2 0        0               60 Sep 15 23:43 null-netns
+---- a second container in the same state directory:
+EXIT=0
+---- /proc/mounts lines mentioning null-netns:
+   (none)
+---- the guest init's check (docs/snp/image/init.rootfs:31-44) ----
+no writable path is executable
+CHECK_EXIT=0

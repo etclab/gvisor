@@ -1,0 +1,22 @@
+$ make runsc            # tools/bazel.mk runs bazel inside gvisor.dev/images/default
+Analyzing: target //runsc:runsc (0 packages loaded, 0 targets configured)
+INFO: Analyzed target //runsc:runsc (0 packages loaded, 0 targets configured).
+INFO: Found 1 target...
+INFO: Elapsed time: 1.502s, Critical Path: 0.00s
+INFO: 0 processes.
+INFO: Build completed successfully, 0 total actions
+/home/pniroula/.cache/bazel/_bazel_pniroula/65a4bdee390d14c86e83a6d1aa580325/execroot/_main/bazel-out/k8-opt/bin/runsc/runsc_/runsc
+MAKE_EXIT=0
+
+$ ls -l <bazel-bin>/runsc/runsc_/runsc
+-r-xr-xr-x 1 pniroula 253477 108668311 Sep 15 19:19 /home/pniroula/.cache/bazel/_bazel_pniroula/65a4bdee390d14c86e83a6d1aa580325/execroot/_main/bazel-out/k8-opt/bin/runsc/runsc_/runsc
+
+$ file $SCRATCH/bin/runsc
+$SCRATCH/bin/runsc: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, Go BuildID=redacted, BuildID[sha1]=498919aff001d8366249403a2544fba2d833084f, with debug_info, not stripped
+
+$ sha256sum $SCRATCH/bin/runsc
+8070bcdf0b7889d8ed3710f5920f06cf909682434b21437eb9df8d7fb6c72518  $SCRATCH/bin/runsc
+
+$ $SCRATCH/bin/runsc --version
+runsc version 0.0.0
+spec: 1.2.1

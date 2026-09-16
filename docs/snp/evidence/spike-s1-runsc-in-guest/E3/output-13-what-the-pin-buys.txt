@@ -1,0 +1,49 @@
+######## CASE timing
+---- writable mounts before runsc runs:
+proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,uid=253477,gid=253477,inode64 0 0
+tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,uid=253477,gid=253477,inode64 0 0
+tmpfs /dev tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,uid=253477,gid=253477,inode64 0 0
+udev /dev/null devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/zero devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/full devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/random devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/urandom devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/tty devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+---- check before runsc runs ----
+no writable path is executable
+CHECK_EXIT=0
+
+---- --gofer-network-namespace=null (the default): run 1 pins, runs 2-3 reuse
+run 1:
+real	0m 0.38s
+user	0m 0.32s
+sys	0m 0.51s
+run 2:
+real	0m 0.34s
+user	0m 0.29s
+sys	0m 0.42s
+run 3:
+real	0m 0.32s
+user	0m 0.30s
+sys	0m 0.42s
+---- --gofer-network-namespace=new: every run creates its own
+run 1:
+real	0m 0.32s
+user	0m 0.31s
+sys	0m 0.39s
+run 2:
+real	0m 0.39s
+user	0m 0.29s
+sys	0m 0.42s
+run 3:
+real	0m 0.36s
+user	0m 0.29s
+sys	0m 0.48s
+---- /proc/mounts lines mentioning null-netns:
+nsfs /run/st-timing-null/null-netns nsfs rw 0 0
+---- the guest init's check (docs/snp/image/init.rootfs:31-44) ----
+WRITABLE AND EXECUTABLE: /run/st-timing-null/null-netns (nsfs,rw)
+FATAL: writable executable path present; powering off without running tunneld
+CHECK_EXIT=1

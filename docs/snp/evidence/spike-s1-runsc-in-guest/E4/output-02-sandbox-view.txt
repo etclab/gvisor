@@ -1,0 +1,33 @@
+The sandbox's own view of its filesystem, printed from inside the sentry by
+the workload
+
+    /bin/busybox sh -c 'cat /proc/mounts; ls -la /; id; cat /proc/self/status | grep -i cap'
+
+run with E2's configuration (inside the guest-like namespace, --rootless,
+root.readonly true, every writable mount of the namespace noexec). This is
+lines 54-73 of output-01-workloads.txt, unedited; nothing else is in this file.
+
+---- cat /proc/mounts ----
+none / 9p ro,trans=fd,rfdno=3,wfdno=3,aname=/,dfltuid=4294967294,dfltgid=4294967294,dcache=1000,cache=fscache,disable_fifo_open,overlayfs_stale_read,directfs 0 0
+none /sys sysfs rw,dentry_cache_limit=1000 0 0
+none /dev dev rw,mode=0755 0 0
+none /proc proc rw,dentry_cache_limit=1000 0 0
+none /dev/pts devpts rw 0 0
+none /tmp tmpfs rw,mode=01777 0 0
+---- ls -la / ----
+total 12
+drwxr-xr-x    7 0        0             4096 Sep 15 23:42 .
+drwxr-xr-x    7 0        0             4096 Sep 15 23:42 ..
+drwxr-xr-x    2 0        0             4096 Sep 15 23:42 bin
+drwxr-xr-x    6 0        0              360 Sep 15 23:42 dev
+dr-xr-xr-x    9 0        0                0 Sep 15 23:42 proc
+drwxr-xr-x   12 0        0                0 Sep 15 23:42 sys
+drwxrwxrwt    2 0        0               40 Sep 15 23:42 tmp
+---- id ----
+uid=0 gid=0
+---- cat /proc/self/status | grep -i cap ----
+CapInh:	0000000000000000
+CapPrm:	0000000000000000
+CapEff:	0000000000000000
+CapBnd:	0000000000000000
+CapAmb:	0000000000000000

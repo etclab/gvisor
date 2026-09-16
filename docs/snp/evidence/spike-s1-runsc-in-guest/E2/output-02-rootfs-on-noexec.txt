@@ -1,0 +1,50 @@
+######## the bundle and its rootfs on /tmp, which is rw,noexec
+tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,uid=253477,gid=253477,inode64 0 0
+$ /runsc --root=/run/runsc-state --platform=systrap --network=none --ignore-cgroups --rootless --debug --debug-log=/tmp/dbg/ run --bundle /tmp/bundle-noexec s1-noexec
+EXIT=128
+running container: creating container: cannot create sandbox: cannot read client sync file: waiting for sandbox to start: EOF
+
+---- the last lines of each debug log
+== /tmp/dbg/runsc.log.20260915-233159.359224.boot.txt
+W0915 23:31:59.484430       1 util.go:107] FATAL ERROR: Error reading mounts file: error unmarshaling mounts: unexpected end of JSON input
+JSON bytes:
+
+Error reading mounts file: error unmarshaling mounts: unexpected end of JSON input
+JSON bytes:
+
+== /tmp/dbg/runsc.log.20260915-233159.359224.gofer.txt
+D0915 23:31:59.427546       1 fs.go:156] Waiting on chroot sync FD 10...
+D0915 23:31:59.427900       1 fs.go:163] Synced on chroot sync FD 10.
+W0915 23:31:59.428835       1 gofer_mount.go:168] Failed to copy /etc/localtime: open /etc/localtime: no such file or directory. UTC timezone will be used.
+I0915 23:31:59.431792       1 gofer_mount.go:249] Remounting root as readonly: "/proc/fs/root"
+W0915 23:31:59.431985       1 util.go:107] FATAL ERROR: Error setting up root FS: remounting root as read-only with source: "/proc/fs/root", target: "/proc/fs/root", flags: 0x1027, err: mount("/proc/fs/root", "/proc/fs/proc/self/fd/16", "bind", 0x1027, "") failed: operation not permitted
+Error setting up root FS: remounting root as read-only with source: "/proc/fs/root", target: "/proc/fs/root", flags: 0x1027, err: mount("/proc/fs/root", "/proc/fs/proc/self/fd/16", "bind", 0x1027, "") failed: operation not permitted
+== /tmp/dbg/runsc.log.20260915-233159.359224.run.txt
+D0915 23:31:59.495340      29 sandbox.go:1567] Destroying sandbox "s1-noexec"
+D0915 23:31:59.495506      29 sandbox.go:1577] Killing sandbox "s1-noexec"
+D0915 23:31:59.495841      29 container.go:929] Destroy container, cid: s1-noexec
+D0915 23:31:59.495944      29 container.go:1292] Killing gofer for container, cid: s1-noexec, PID: 51
+W0915 23:31:59.496238      29 util.go:107] FATAL ERROR: running container: creating container: cannot create sandbox: cannot read client sync file: waiting for sandbox to start: EOF
+W0915 23:31:59.496380      29 cli.go:325] Failure to execute command, err: 1
+
+---- every line mentioning EACCES / permission / noexec / exec format
+/tmp/dbg/runsc.log.20260915-233159.359224.run.txt:D0915 23:31:59.366890      29 config.go:577] Config.PanicSignal (--panic-signal): -1
+/tmp/dbg/runsc.log.20260915-233159.359224.run.txt:D0915 23:31:59.377639      29 config.go:577] Config.TestOnlyAFSSyscallPanic (--TESTONLY-afs-syscall-panic): false
+/tmp/dbg/runsc.log.20260915-233159.359224.run.txt:    "path": "/tmp/bundle-noexec/rootfs",
+/tmp/dbg/runsc.log.20260915-233159.359224.run.txt:      "source": "/tmp/bundle-noexec/proc"
+/tmp/dbg/runsc.log.20260915-233159.359224.run.txt:D0915 23:31:59.378713      29 container.go:570] Run container, cid: s1-noexec, rootDir: "/run/runsc-state"
+/tmp/dbg/runsc.log.20260915-233159.359224.run.txt:D0915 23:31:59.378804      29 container.go:217] Create container, cid: s1-noexec, rootDir: "/run/runsc-state"
+/tmp/dbg/runsc.log.20260915-233159.359224.run.txt:D0915 23:31:59.379254      29 container.go:345] Creating new sandbox for container, cid: s1-noexec
+/tmp/dbg/runsc.log.20260915-233159.359224.run.txt:I0915 23:31:59.380395      29 container.go:1681] Starting gofer with command: [runsc-gofer --ignore-cgroups=true --root=/run/runsc-state --debug=true --debug-log=/tmp/dbg/ --network=none --platform=systrap --rootless=true --debug-log-fd=3 gofer --bundle /tmp/bundle-noexec --gofer-mount-confs=lisafs:none --spec-fd=4 --mounts-fd=5 --rpc-fd=6 --pin-ring-fd=7 --sync-sentry-exit-fd=8 --io-fds=9 --sync-chroot-fd=10 s1-noexec]
+/tmp/dbg/runsc.log.20260915-233159.359224.run.txt:D0915 23:31:59.380615      29 donation.go:31] Donating FD 4: "/tmp/bundle-noexec/config.json"
+/tmp/dbg/runsc.log.20260915-233159.359224.run.txt:D0915 23:31:59.380702      29 container.go:1686] Starting gofer: /proc/self/exe [runsc-gofer --ignore-cgroups=true --root=/run/runsc-state --debug=true --debug-log=/tmp/dbg/ --network=none --platform=systrap --rootless=true --debug-log-fd=3 gofer --bundle /tmp/bundle-noexec --gofer-mount-confs=lisafs:none --spec-fd=4 --mounts-fd=5 --rpc-fd=6 --pin-ring-fd=7 --sync-sentry-exit-fd=8 --io-fds=9 --sync-chroot-fd=10 s1-noexec]
+/tmp/dbg/runsc.log.20260915-233159.359224.run.txt:D0915 23:31:59.394383      29 sandbox.go:104] Attempting to create socket file "/run/runsc-state/runsc-s1-noexec.sock"
+/tmp/dbg/runsc.log.20260915-233159.359224.run.txt:D0915 23:31:59.394502      29 sandbox.go:107] Using socket file "/run/runsc-state/runsc-s1-noexec.sock"
+/tmp/dbg/runsc.log.20260915-233159.359224.run.txt:I0915 23:31:59.394525      29 sandbox.go:1047] Control socket path: "/run/runsc-state/runsc-s1-noexec.sock"
+/tmp/dbg/runsc.log.20260915-233159.359224.run.txt:D0915 23:31:59.395609      29 donation.go:31] Donating FD 9: "/tmp/bundle-noexec/config.json"
+/tmp/dbg/runsc.log.20260915-233159.359224.run.txt:D0915 23:31:59.395671      29 sandbox.go:1403] Starting sandbox: /proc/self/exe [runsc-sandbox --debug-log=/tmp/dbg/ --network=none --platform=systrap --rootless=true --ignore-cgroups=true --root=/run/runsc-state --debug=true --debug-log-fd=3 boot --bundle=/tmp/bundle-noexec --gofer-mount-confs=lisafs:none --apply-caps=true --setup-root --total-host-memory 807732506624 --total-memory 807732506624 --attached --io-fds=4 --dev-io-fd=-1 --mounts-fd=5 --start-sync-fd=6 --pin-ring-fd=7 --controller-fd=8 --spec-fd=9 --stdio-fds=10 --stdio-fds=11 --stdio-fds=12 s1-noexec]
+/tmp/dbg/runsc.log.20260915-233159.359224.run.txt:D0915 23:31:59.495340      29 sandbox.go:1567] Destroying sandbox "s1-noexec"
+/tmp/dbg/runsc.log.20260915-233159.359224.run.txt:D0915 23:31:59.495506      29 sandbox.go:1577] Killing sandbox "s1-noexec"
+/tmp/dbg/runsc.log.20260915-233159.359224.run.txt:D0915 23:31:59.495841      29 container.go:929] Destroy container, cid: s1-noexec
+/tmp/dbg/runsc.log.20260915-233159.359224.run.txt:D0915 23:31:59.495944      29 container.go:1292] Killing gofer for container, cid: s1-noexec, PID: 51
+/tmp/dbg/runsc.log.20260915-233159.359224.run.txt:W0915 23:31:59.496238      29 util.go:107] FATAL ERROR: running container: creating container: cannot create sandbox: cannot read client sync file: waiting for sandbox to start: EOF

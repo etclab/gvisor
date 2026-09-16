@@ -1,0 +1,83 @@
+######## 0. the guest init's check, before runsc has run
+/dev/md0p1 / ext4 ro,relatime,stripe=64 0 0
+proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,uid=253477,gid=253477,inode64 0 0
+tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,uid=253477,gid=253477,inode64 0 0
+tmpfs /dev tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,uid=253477,gid=253477,inode64 0 0
+udev /dev/null devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/zero devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/full devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/random devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/urandom devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/tty devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+---- check ----
+no writable path is executable
+CHECK_EXIT=0
+
+######## 1. the E1/E2 trivial workload: /bin/busybox true
+$ /runsc --root=/run/state-true --platform=systrap --network=none --ignore-cgroups --rootless run --bundle /bundle-true s1-e4-true
+EXIT=0
+---- stdout+stderr of the workload ----
+---- state dir after the container exited ----
+/run/state-true
+/run/state-true/null-netns
+---- the guest init's check against /proc/mounts ----
+WRITABLE AND EXECUTABLE: /run/state-true/null-netns (nsfs,rw)
+FATAL: writable executable path present; powering off without running tunneld
+CHECK_EXIT=1
+
+######## 2. E4's workload: /bin/busybox sh -c 'echo hi; ls /'
+$ /runsc --root=/run/state-hi --platform=systrap --network=none --ignore-cgroups --rootless run --bundle /bundle-hi s1-e4-hi
+EXIT=0
+---- stdout+stderr of the workload ----
+hi
+bin
+dev
+proc
+sys
+tmp
+---- state dir after the container exited ----
+/run/state-hi
+/run/state-hi/null-netns
+---- the guest init's check against /proc/mounts ----
+WRITABLE AND EXECUTABLE: /run/state-true/null-netns (nsfs,rw)
+WRITABLE AND EXECUTABLE: /run/state-hi/null-netns (nsfs,rw)
+FATAL: writable executable path present; powering off without running tunneld
+CHECK_EXIT=1
+
+######## 3. E4's second workload: the sandbox's view of its filesystem
+   /bin/busybox sh -c 'cat /proc/mounts; ls -la /; id; cat /proc/self/status | grep -i cap'
+$ /runsc --root=/run/state-view --platform=systrap --network=none --ignore-cgroups --rootless run --bundle /bundle-view s1-e4-view
+EXIT=0
+---- stdout+stderr of the workload ----
+none / 9p ro,trans=fd,rfdno=3,wfdno=3,aname=/,dfltuid=4294967294,dfltgid=4294967294,dcache=1000,cache=fscache,disable_fifo_open,overlayfs_stale_read,directfs 0 0
+none /sys sysfs rw,dentry_cache_limit=1000 0 0
+none /dev dev rw,mode=0755 0 0
+none /proc proc rw,dentry_cache_limit=1000 0 0
+none /dev/pts devpts rw 0 0
+none /tmp tmpfs rw,mode=01777 0 0
+total 12
+drwxr-xr-x    7 0        0             4096 Sep 15 23:42 .
+drwxr-xr-x    7 0        0             4096 Sep 15 23:42 ..
+drwxr-xr-x    2 0        0             4096 Sep 15 23:42 bin
+drwxr-xr-x    6 0        0              360 Sep 15 23:42 dev
+dr-xr-xr-x    9 0        0                0 Sep 15 23:42 proc
+drwxr-xr-x   12 0        0                0 Sep 15 23:42 sys
+drwxrwxrwt    2 0        0               40 Sep 15 23:42 tmp
+uid=0 gid=0
+CapInh:	0000000000000000
+CapPrm:	0000000000000000
+CapEff:	0000000000000000
+CapBnd:	0000000000000000
+CapAmb:	0000000000000000
+---- state dir after the container exited ----
+/run/state-view
+/run/state-view/null-netns
+---- the guest init's check against /proc/mounts ----
+WRITABLE AND EXECUTABLE: /run/state-true/null-netns (nsfs,rw)
+WRITABLE AND EXECUTABLE: /run/state-hi/null-netns (nsfs,rw)
+WRITABLE AND EXECUTABLE: /run/state-view/null-netns (nsfs,rw)
+FATAL: writable executable path present; powering off without running tunneld
+CHECK_EXIT=1
+

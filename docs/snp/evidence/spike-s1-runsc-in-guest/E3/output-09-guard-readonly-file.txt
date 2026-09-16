@@ -1,0 +1,32 @@
+######## CASE guard-file
+---- writable mounts before runsc runs:
+proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,uid=253477,gid=253477,inode64 0 0
+tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,uid=253477,gid=253477,inode64 0 0
+tmpfs /dev tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,uid=253477,gid=253477,inode64 0 0
+udev /dev/null devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/zero devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/full devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/random devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/urandom devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/tty devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+---- check before runsc runs ----
+no writable path is executable
+CHECK_EXIT=0
+
+total 0
+drwx------    2 0        0               60 Sep 15 23:43 .
+drwxr-xr-x    3 0        0               60 Sep 15 23:43 ..
+-r--r--r--    1 0        0                0 Sep 15 23:43 null-netns
+$ /runsc --root=/run/st-guard-file --platform=systrap --network=none --ignore-cgroups --rootless --debug --debug-log=/tmp/dbg-guard-file/ run --bundle /bundle e3-guard-file
+EXIT=0
+---- what the debug log says about the null network namespace:
+No usable null network namespace at "/run/st-guard-file/null-netns" ("/run/st-guard-file/null-netns" is not a namespace mount); creating a new one. This issue is slowing down your sandboxes' startup.
+Pinned null network namespace at "/run/st-guard-file/null-netns"
+---- /proc/mounts lines mentioning null-netns:
+nsfs /run/st-guard-file/null-netns nsfs rw 0 0
+---- the guest init's check (docs/snp/image/init.rootfs:31-44) ----
+WRITABLE AND EXECUTABLE: /run/st-guard-file/null-netns (nsfs,rw)
+FATAL: writable executable path present; powering off without running tunneld
+CHECK_EXIT=1

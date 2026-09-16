@@ -1,0 +1,137 @@
+none / 9p ro,trans=fd,rfdno=3,wfdno=3,aname=/,dfltuid=4294967294,dfltgid=4294967294,dcache=1000,cache=fscache,disable_fifo_open,overlayfs_stale_read,directfs 0 0
+none /sys sysfs rw,dentEXIT=0
+
+######## B. a sleeping workload; the host side read while it lives
+---- runsc list
+ID          PID         STATUS      BUNDLE                                                                                                                          CREATED                              OWNER
+s1-sleep    2582916     running     $SCRATCH/e1/bundle-sleep   2026-09-15T19:24:21.35836328-04:00   pniroula
+
+---- every process whose exe is this runsc (pid argv[0])
+2582838 $SCRATCH/e1/../bin/runsc
+2582850 /proc/self/exe
+2582906 runsc-gofer
+2582916 runsc-sandbox
+2582983 
+2583003 
+2583006 
+
+---- the sandbox process's full command line
+runsc-sandbox --root=$SCRATCH/e1/state --network=none --platform=systrap --rootless=true --ignore-cgroups=true boot --bundle=$SCRATCH/e1/bundle-sleep --gofer-mount-confs=lisafs:none --apply-caps=true --setup-root --total-host-memory 807732506624 --total-memory 807732506624 --attached --io-fds=3 --dev-io-fd=-1 --mounts-fd=4 --start-sync-fd=5 --pin-ring-fd=6 --controller-fd=7 --spec-fd=8 --stdio-fds=9 --stdio-fds=10 --stdio-fds=11 s1-sleep 
+
+---- the gofer process's full command line
+runsc-gofer --rootless=true --ignore-cgroups=true --root=$SCRATCH/e1/state --network=none --platform=systrap gofer --bundle $SCRATCH/e1/bundle-sleep --gofer-mount-confs=lisafs:none --spec-fd=3 --mounts-fd=4 --rpc-fd=5 --pin-ring-fd=6 --sync-sentry-exit-fd=7 --io-fds=8 --sync-chroot-fd=9 s1-sleep 
+
+================ pid 2582916 (runsc-sandbox)
+---- /proc/2582916/mounts
+runsc-root / tmpfs ro,relatime,uid=253477,gid=253477,inode64 0 0
+runsc-proc /proc tmpfs rw,nosuid,nodev,noexec,relatime,uid=253477,gid=253477,inode64 0 0
+proc /proc/sandbox-proc proc ro,nosuid,nodev,noexec,relatime 0 0
+---- /proc/2582916/mountinfo
+863 2474 0:88 / / ro,relatime - tmpfs runsc-root rw,uid=253477,gid=253477,inode64
+864 863 0:94 / /proc rw,nosuid,nodev,noexec,relatime - tmpfs runsc-proc rw,uid=253477,gid=253477,inode64
+865 864 0:106 / /proc/sandbox-proc ro,nosuid,nodev,noexec,relatime - proc proc ro
+---- /proc/2582916/uid_map
+         0     253477          1
+---- /proc/2582916/gid_map
+         0     253477          1
+---- /proc/2582916/status (identity, caps, seccomp)
+Uid:	253477	253477	253477	253477
+Gid:	253477	253477	253477	253477
+CapInh:	0000000000000000
+CapPrm:	000000000008001f
+CapEff:	000000000008001f
+CapBnd:	000000000008001f
+CapAmb:	0000000000000000
+NoNewPrivs:	1
+Seccomp:	2
+Seccomp_filters:	1
+---- capsh --decode=000000000008001f   (CapPrm)
+0x000000000008001f=cap_chown,cap_dac_override,cap_dac_read_search,cap_fowner,cap_fsetid,cap_sys_ptrace
+---- capsh --decode=000000000008001f   (CapEff)
+0x000000000008001f=cap_chown,cap_dac_override,cap_dac_read_search,cap_fowner,cap_fsetid,cap_sys_ptrace
+---- capsh --decode=000000000008001f   (CapBnd)
+0x000000000008001f=cap_chown,cap_dac_override,cap_dac_read_search,cap_fowner,cap_fsetid,cap_sys_ptrace
+---- capsh --decode=0000000000000000   (CapAmb)
+0x0000000000000000=
+---- namespaces of pid 2582916
+cgroup -> cgroup:[4026531835]
+ipc -> ipc:[4026536024]
+mnt -> mnt:[4026536022]
+net -> net:[4026536026]
+pid -> pid:[4026536025]
+pid_for_children -> pid:[4026536025]
+time -> time:[4026531834]
+time_for_children -> time:[4026531834]
+user -> user:[4026536021]
+uts -> uts:[4026536023]
+---- /proc/2582916/root and cwd
+    lrwxrwxrwx 1 pniroula 253477 0 Sep 15 19:24 /proc/2582916/cwd -> /
+    lrwxrwxrwx 1 pniroula 253477 0 Sep 15 19:24 /proc/2582916/root -> /
+
+================ pid 2582906 (runsc-gofer)
+---- /proc/2582906/mounts
+/dev/md0p1 / ext4 ro,nosuid,nodev,relatime,stripe=64 0 0
+---- /proc/2582906/mountinfo
+2552 2546 259:8 $SCRATCH/e1/bundle-sleep/rootfs / ro,nosuid,nodev,relatime master:1 - ext4 /dev/md0p1 rw,stripe=64
+---- /proc/2582906/uid_map
+         0     253477          1
+---- /proc/2582906/gid_map
+         0     253477          1
+---- /proc/2582906/status (identity, caps, seccomp)
+Uid:	253477	253477	253477	253477
+Gid:	253477	253477	253477	253477
+CapInh:	000000000004001f
+CapPrm:	000000000004001f
+CapEff:	000000000004001f
+CapBnd:	000000000004001f
+CapAmb:	000000000004001f
+NoNewPrivs:	1
+Seccomp:	2
+Seccomp_filters:	1
+---- capsh --decode=000000000004001f   (CapPrm)
+0x000000000004001f=cap_chown,cap_dac_override,cap_dac_read_search,cap_fowner,cap_fsetid,cap_sys_chroot
+---- capsh --decode=000000000004001f   (CapEff)
+0x000000000004001f=cap_chown,cap_dac_override,cap_dac_read_search,cap_fowner,cap_fsetid,cap_sys_chroot
+---- capsh --decode=000000000004001f   (CapBnd)
+0x000000000004001f=cap_chown,cap_dac_override,cap_dac_read_search,cap_fowner,cap_fsetid,cap_sys_chroot
+---- capsh --decode=000000000004001f   (CapAmb)
+0x000000000004001f=cap_chown,cap_dac_override,cap_dac_read_search,cap_fowner,cap_fsetid,cap_sys_chroot
+---- namespaces of pid 2582906
+cgroup -> cgroup:[4026531835]
+ipc -> ipc:[4026535936]
+mnt -> mnt:[4026535934]
+net -> net:[4026535938]
+pid -> pid:[4026535937]
+pid_for_children -> pid:[4026535937]
+time -> time:[4026531834]
+time_for_children -> time:[4026531834]
+user -> user:[4026535933]
+uts -> uts:[4026535935]
+---- /proc/2582906/root and cwd
+    lrwxrwxrwx 1 pniroula 253477 0 Sep 15 19:24 /proc/2582906/cwd -> /root
+    lrwxrwxrwx 1 pniroula 253477 0 Sep 15 19:24 /proc/2582906/root -> /root
+
+---- namespaces of the calling shell, for contrast
+cgroup -> cgroup:[4026531835]
+ipc -> ipc:[4026531839]
+mnt -> mnt:[4026531841]
+net -> net:[4026531840]
+pid -> pid:[4026531836]
+pid_for_children -> pid:[4026531836]
+time -> time:[4026531834]
+time_for_children -> time:[4026531834]
+user -> user:[4026531837]
+uts -> uts:[4026531838]
+
+---- host /proc/mounts line count while the sandbox runs (nothing of runsc's is in it)
+57 /proc/mounts
+0
+0 lines in the host mount table mention runsc
+SLEEP_EXIT=0
+
+######## C. what runsc wrote into the --root state dir, during and after
+ 36873124      4 drwx------   2 pniroula 253477       4096 Sep 15 19:25 $SCRATCH/e1/state
+ 36873164      0 -r--------   1 pniroula 253477          0 Sep 15 19:24 $SCRATCH/e1/state/null-netns
+
+######## D. the caller's /tmp after the run (the sentry chroot is a private tmpfs at os.TempDir())
+-rw-rw-r--  1 root     root     9050 Sep  8 12:13 runsc-debug.log

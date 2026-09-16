@@ -1,0 +1,95 @@
+E3 — exact commands, in the order they were run.
+
+$SCRATCH stands for the session scratch directory
+  /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-s1/c95870d0-0fd4-43e1-a909-68b46d194ebe/scratchpad
+$EV stands for docs/snp/evidence/spike-s1-runsc-in-guest in this repo.
+
+Same runsc binary as E1 and E2 (sha256 8070bcdf0b7889d8ed3710f5920f06cf909682434b21437eb9df8d7fb6c72518),
+nothing rebuilt. Tree: spike-s1-runsc-in-guest at 686716227 (clean, plus this
+directory). Same unprivileged user (pniroula, uid 253477). No sudo, no
+hardware, workstation only.
+
+All output-*.txt files are the complete output of the command that produced
+them; nothing is trimmed. Where a command inside a case script already trims
+(`head`, `tail`), the trimming is visible in case.sh.
+
+--- 1. reading the tree (no experiment) -------------------------------------
+
+$ grep -rn 'pinNullNetNS|goferNetworkNamespace\(|UnmountNullNetNS' runsc | grep -v _test.go
+$ sed -n '1695,1703p;1728,1770p' runsc/container/container.go
+$ sed -n '70,82p'   runsc/container/null_netns.go
+$ sed -n '793,812p;585,592p' runsc/config/config.go
+$ sed -n '160p'     runsc/config/flags.go
+$ sed -n '313,324p' runsc/specutils/namespace.go
+$ $SCRATCH/bin/runsc flags 2>&1 | grep -A2 -E "^  -(gofer-network-namespace|shared-root)"
+  -> output-01-where-the-pin-is-decided.txt
+
+$ sed -n '52,70p' docs/snp/image/init.initrd
+$ sed -n '14,20p;31,48p' docs/snp/image/init.rootfs
+$ sed -n '182,199p' docs/snp/image/build-image.sh
+  -> output-10-guest-root-and-writables.txt
+
+--- 2. the harness ----------------------------------------------------------
+
+Reused from E2, byte for byte, not copied into this directory:
+  $EV/E2/guest-like-ns.sh      the guest-shaped mount namespace
+  $EV/E2/init-mount-check.sh   the verbatim check from init.rootfs:31-44
+
+New here:
+  build-img.sh   assembles the read-only image, same as E2's plus two empty
+                 directories (/roshared, /roroot) that exist only so that a
+                 read-only path can be handed to --shared-root and --root
+  case.sh        one candidate per invocation
+
+$ export EV=<repo>/docs/snp/evidence/spike-s1-runsc-in-guest
+$ export SCRATCH=<the scratch directory above>
+$ bash $EV/E3/build-img.sh
+$ cp $EV/E2/guest-like-ns.sh $SCRATCH/e3/guest-like-ns.sh
+
+One `unshare` per case, deliberately: the null-netns pin is not transient, so
+a single namespace could only ever fail once and then stay failed. Each case
+therefore starts from a namespace in which the check passes, and every case's
+output begins by showing that.
+
+$ unshare -Urmnpf $SCRATCH/e3/guest-like-ns.sh $SCRATCH/e3/img \
+      /busybox sh /case.sh <case>
+
+with, inside the namespace,
+  BASE  = --platform=systrap --network=none --ignore-cgroups --rootless
+  STATE = /run/st-<case>     (on the rw,noexec tmpfs, as in E2)
+  TMPDIR= /tmp               (rw,noexec)
+  bundle= /bundle            (on the read-only image root, root.readonly true)
+
+--- 3. the cases ------------------------------------------------------------
+
+<case>          what it runs (all of them then run init-mount-check.sh)
+
+baseline        runsc $BASE run, once plain and once with --debug
+                -> output-02-baseline-e2-again.txt            FAIL (as E2)
+gnn-new         + --gofer-network-namespace=new, twice in one state dir
+                -> output-03-gofer-netns-new.txt              PASS
+gnn-host        + --gofer-network-namespace=host, twice
+                -> output-04-gofer-netns-host.txt             PASS
+shared-ro       + --shared-root=/roshared  (read-only image root; --root
+                  stays on the writable tmpfs)
+                -> output-05-shared-root-read-only.txt        PASS
+root-ro         --root=/roroot             (read-only image root)
+                -> output-06-root-read-only.txt               runsc cannot run
+nested          busybox unshare -m around runsc, sleeping workload, and the
+                check run at guest level while the sandbox lives
+                -> output-07-nested-unshare-m.txt             PASS
+guard-dir       $STATE/null-netns pre-created as a non-empty directory,
+                then two containers
+                -> output-08-guard-directory.txt              PASS
+guard-file      $STATE/null-netns pre-created as a 0444 regular file
+                -> output-09-guard-readonly-file.txt          FAIL
+characterise    baseline, then stat -f / stat / ls -la / mountinfo on the
+                pinned path, and every attempt to write, chmod, read or
+                execute it
+                -> output-11-what-nsfs-is.txt
+noexec-rootfs   the bundle and its rootfs copied to /tmp (rw,noexec), with
+                --debug; then the same bundle on the read-only image root
+                -> output-12-rootfs-on-noexec.txt
+timing          three containers with the default `null` against three with
+                `new`, busybox `time` around each
+                -> output-13-what-the-pin-buys.txt

@@ -1,0 +1,89 @@
+E2 — exact commands, in the order they were run.
+
+$SCRATCH stands for the session scratch directory
+  /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-s1/c95870d0-0fd4-43e1-a909-68b46d194ebe/scratchpad
+Same runsc binary as E1 (sha256 8070bcdf0b7889d8ed3710f5920f06cf909682434b21437eb9df8d7fb6c72518),
+same tree (ebbe8cba8), same unprivileged user (pniroula, uid 253477), no sudo.
+
+--- the check ---------------------------------------------------------------
+
+init-mount-check.sh in this directory carries the writable-must-be-noexec loop
+from docs/snp/image/init.rootfs lines 32-39 byte for byte, with `say` = echo.
+Verified:
+
+$ diff <(sed -n '32,39p' docs/snp/image/init.rootfs) \
+       <(sed -n '/^bad=0/,/^  esac$/p' init-mount-check.sh)
+(no output)
+
+The only change is that it reads `$SRC` instead of a hard-coded /proc/mounts,
+so it can also be pointed at /proc/<pid>/mounts, which this experiment needs.
+
+--- the namespace -----------------------------------------------------------
+
+guest-like-ns.sh in this directory builds a mount namespace shaped like the
+measured guest's, then execs its argument in it:
+
+  /                  read-only bind of the image  (the guest root is a squashfs,
+                     read-only by construction — docs/snp/image/build-image.sh:183 —
+                     so it is `ro` and still executable)
+  /proc /sys         nosuid,nodev,noexec           (init.rootfs:15-16)
+  /run /tmp /dev     tmpfs rw,nosuid,nodev,noexec  (init.rootfs:17-18)
+
+The image ($SCRATCH/e2/img) carries the runsc binary, busybox, the three OCI
+bundles from E1 and the two scripts. Assembled by build-img.sh; `chmod -R a+rX`
+and then mounted read-only, so nothing is written into it during a run.
+
+$ unshare -Urmnpf $SCRATCH/e2/guest-like-ns.sh $SCRATCH/e2/img \
+      /busybox sh /run-inside.sh
+
+  -U -r  user namespace, caller mapped to uid 0
+  -m     mount namespace
+  -n     network namespace   (needed: mounting a fresh sysfs requires the netns
+                              to be owned by the current userns)
+  -p -f  PID namespace       (needed: mounting a fresh procfs requires the pidns
+                              to be owned by the current userns; without it the
+                              mount fails with EPERM)
+
+--- inside the namespace ----------------------------------------------------
+
+run-inside.sh in this directory. With
+FLAGS = --platform=systrap --network=none --ignore-cgroups --rootless
+and the state dir on /run, which is rw,noexec, and TMPDIR=/tmp, also rw,noexec:
+
+  0. sh init-mount-check.sh /proc/mounts                    before runsc runs
+  1. /runsc --root=/run/runsc-state $FLAGS run --bundle /bundle s1-e2
+  2. ... --bundle /bundle-mounts s1-e2-mounts               prints the sandbox's
+                                                            own mount table
+  3. ... --bundle /bundle-sleep s1-e2-sleep &               then, while it lives:
+       cat /proc/<sandbox>/mounts /proc/<sandbox>/uid_map /proc/<sandbox>/gid_map
+       grep Cap /proc/<sandbox>/status
+       sh init-mount-check.sh /proc/<sandbox>/mounts
+       (and the same for the gofer)
+  4. sh init-mount-check.sh /proc/mounts                    while the sandbox lives
+  5. find /run/runsc-state ; sh init-mount-check.sh /proc/mounts   after it exits
+  6. cp -a /bundle /tmp/bundle-noexec                       variation: the bundle
+     /runsc --root=/run/runsc-state $FLAGS run --bundle /tmp/bundle-noexec ...   and
+                                                            its rootfs on a
+                                                            writable NOEXEC mount
+
+  -> output-01-run.txt
+
+Each runsc invocation writes to its own file inside the namespace, because
+runsc hands the caller's fd 1 straight to the sandbox and a shared file offset
+clobbers the workload's output.
+
+--- the failing variation, with --debug -------------------------------------
+
+$ unshare -Urmnpf $SCRATCH/e2/guest-like-ns.sh $SCRATCH/e2/img \
+      /busybox sh /noexec-rootfs.sh
+  which runs
+  /runsc --root=/run/runsc-state $FLAGS --debug --debug-log=/tmp/dbg/ \
+         run --bundle /tmp/bundle-noexec s1-noexec
+  -> output-02-rootfs-on-noexec.txt
+
+--- context -----------------------------------------------------------------
+
+The same check against this workstation's own /proc/mounts, for contrast:
+
+$ sh init-mount-check.sh /proc/mounts
+  -> output-03-workstation-baseline.txt   (25 offending mounts)

@@ -339,7 +339,7 @@ only diagnostic surface a measured guest has can carry it (spec, user story 48).
 | the pump carries the end of the stream each way | same file |
 | a push at a tunneld with no sandbox attached is refused rather than acknowledged | same file |
 | a policy pushed **over the tunnel** reaches this contract's `Apply`, and what that returns decides the peer's tunnel | `attest/tunneld/push_test.go`, and `docs/policy-push.md` for the whole of it |
-| a read deadline expires with `os.ErrDeadlineExceeded` on both implementations — the tunnel's raw stream, and the socketpair end a sandbox receives over the socket — with no peer data and the stream still open | `TestAReadDeadlineOnAStreamExpires` (`attest/tunneld/sandbox_test.go`) and `TestAReadDeadlineOnAStreamOverTheSocketExpires` (`attest/sandbox/socket_test.go`) |
+| a read deadline expires with `os.ErrDeadlineExceeded` on both implementations — the tunnel's raw stream, and the socketpair end a sandbox receives over the socket with tunneld's pump between it and the tunnel — the peer having sent nothing and the stream still open | `TestAReadDeadlineOnAStreamExpires` (`attest/tunneld/sandbox_test.go`), one subtest each |
 | the exercise's three figures keep their shape | `attest/cmd/tunneld/exercise_test.go` |
 | the measured binary still reaches no fixture, no fake and no `testing` | `attest/cmd/tunneld/importgraph_test.go`, `packaged_test.go`, unchanged |
 

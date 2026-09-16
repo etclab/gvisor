@@ -20,6 +20,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -235,37 +236,66 @@ func TestTunneldChecksTheEnvelopeBeforeTheSandboxSeesThePolicy(t *testing.T) {
 	}
 }
 
-// TestAReadDeadlineOnAStreamExpires is the contract's deadline on the tunnel's
-// own stream (ticket 23): a sandbox waiting for bytes the peer has not sent
-// gets its Read back when it said it would, instead of waiting for a stream
-// that may never say anything.
+// TestAReadDeadlineOnAStreamExpires is the contract's deadline (ticket 23) at
+// both implementations of it: the tunnel's own stream, held in this process,
+// and the socketpair end a sandbox in another process is handed, with tunneld's
+// pump between it and the same kind of tunnel. A deadline is the one thing the
+// two carry by different machinery — quic-go's timer for the first, the
+// kernel's `SO_RCVTIMEO`-shaped one for the second — so the claim worth making
+// is that a sandbox cannot tell which it has.
 //
-// The peer here accepts the stream and never writes, which is the state an
-// agent's HTTP client sets a deadline for: the tunnel is up, the stream is
-// established, and the answer is late or is not coming.
+// The peer accepts each stream and never writes to it, which is the state an
+// agent's HTTP client sets a deadline for (spike E2): the tunnel is up, the
+// stream is established, and the answer is late or is not coming. Before this
+// the read waited for it with no way to stop.
 func TestAReadDeadlineOnAStreamExpires(t *testing.T) {
 	b := start(t, "sandbox-b", imageB, admitting(imageA), tunneld.PeerTable{})
 	a := start(t, "sandbox-a", imageA, admitting(imageB), tunneld.PeerTable{"b": b.Addr().String()})
 
-	stream, err := sandbox.NewNull(a.Tunneld, nil).Open(ctx(t), "b")
+	// The socket a sandbox in another process attaches to, with this tunneld
+	// behind it. It is dialed from this process, because what is asked here is
+	// whether the descriptor takes a deadline and that question does not need a
+	// second process to answer.
+	host, err := sandbox.Listen(filepath.Join(t.TempDir(), "sandbox.sock"), a.Tunneld, nil)
 	if err != nil {
-		t.Fatalf("opening a stream to b: %v", err)
+		t.Fatalf("listening for a sandbox: %v", err)
 	}
-	defer stream.Close()
+	defer host.Close()
+	client, err := sandbox.Dial(host.Path(), nil)
+	if err != nil {
+		t.Fatalf("dialing %s: %v", host.Path(), err)
+	}
+	defer client.Close()
 
-	if err := stream.SetReadDeadline(time.Now().Add(100 * time.Millisecond)); err != nil {
-		t.Fatalf("setting a read deadline: %v", err)
-	}
-	var one [1]byte
-	began := time.Now()
-	n, err := stream.Read(one[:])
-	if !errors.Is(err, os.ErrDeadlineExceeded) {
-		t.Fatalf("a read past its deadline returned %d bytes and %v; want os.ErrDeadlineExceeded", n, err)
-	}
-	if n != 0 {
-		t.Errorf("a read past its deadline returned %d bytes; the peer sent none", n)
-	}
-	if waited := time.Since(began); waited < 50*time.Millisecond {
-		t.Errorf("the read gave up after %v; the deadline was 100ms away, so it did not block", waited)
+	for _, held := range []struct {
+		what string
+		by   sandbox.Network
+	}{
+		{"the tunnel's own stream", sandbox.NewNull(a.Tunneld, nil)},
+		{"the socketpair end, over the socket", client},
+	} {
+		t.Run(held.what, func(t *testing.T) {
+			stream, err := held.by.Open(ctx(t), "b")
+			if err != nil {
+				t.Fatalf("opening a stream to b: %v", err)
+			}
+			defer stream.Close()
+
+			if err := stream.SetReadDeadline(time.Now().Add(100 * time.Millisecond)); err != nil {
+				t.Fatalf("setting a read deadline: %v", err)
+			}
+			var one [1]byte
+			began := time.Now()
+			n, err := stream.Read(one[:])
+			if !errors.Is(err, os.ErrDeadlineExceeded) {
+				t.Fatalf("a read past its deadline returned %d bytes and %v; want os.ErrDeadlineExceeded", n, err)
+			}
+			if n != 0 {
+				t.Errorf("a read past its deadline returned %d bytes; the peer sent none", n)
+			}
+			if waited := time.Since(began); waited < 50*time.Millisecond {
+				t.Errorf("the read gave up after %v, with the deadline 100ms away; it did not block at all", waited)
+			}
+		})
 	}
 }

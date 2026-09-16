@@ -1,0 +1,45 @@
+== --allow-run and the path it matches on (/bin is a symlink to /usr/bin here) ==
+### grant /usr/bin/true, run /bin/true
+$ deno run --no-prompt --allow-run=/usr/bin/true /home/pniroula/Projects/gvisor-t23/docs/snp/evidence/ticket23/spikes/E3/probe-run.ts /bin/true
+ERROR NotCapable: Requires run access to "/bin/true", run again with the --allow-run flag
+EXIT=0
+
+### grant /usr/bin/true, run /usr/bin/true
+$ deno run --no-prompt --allow-run=/usr/bin/true /home/pniroula/Projects/gvisor-t23/docs/snp/evidence/ticket23/spikes/E3/probe-run.ts /usr/bin/true
+OK code=0 stdout="" stderr=""
+EXIT=0
+
+
+== --allow-write and a file that does not exist yet ==
+ls: cannot access '/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t23/e68fd7d8-f508-481e-af2b-2b65a6e20244/scratchpad/e3work/summary.txt': No such file or directory
+### write ./summary.txt, which does not exist, granted by that exact path
+$ deno run --no-prompt --allow-write=./summary.txt /home/pniroula/Projects/gvisor-t23/docs/snp/evidence/ticket23/spikes/E3/probe-write.ts ./summary.txt
+OK wrote ./summary.txt
+EXIT=0
+
+-rw------- 1 pniroula 253477 3 Sep 15 21:50 /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t23/e68fd7d8-f508-481e-af2b-2b65a6e20244/scratchpad/e3work/summary.txt
+### write ./summary.txt when the grant names the directory .
+$ deno run --no-prompt --allow-write=. /home/pniroula/Projects/gvisor-t23/docs/snp/evidence/ticket23/spikes/E3/probe-write.ts ./summary.txt
+OK wrote ./summary.txt
+EXIT=0
+
+### write ./other.txt under --allow-write=./summary.txt (a sibling)
+$ deno run --no-prompt --allow-write=./summary.txt /home/pniroula/Projects/gvisor-t23/docs/snp/evidence/ticket23/spikes/E3/probe-write.ts ./other.txt
+ERROR NotCapable: Requires write access to "./other.txt", run again with the --allow-write flag
+EXIT=0
+
+### write summary.txt (no ./) under --allow-write=./summary.txt
+$ deno run --no-prompt --allow-write=./summary.txt /home/pniroula/Projects/gvisor-t23/docs/snp/evidence/ticket23/spikes/E3/probe-write.ts summary.txt
+OK wrote summary.txt
+EXIT=0
+
+### write /tmp/e3-elsewhere.txt under --allow-write=./summary.txt
+$ deno run --no-prompt --allow-write=./summary.txt /home/pniroula/Projects/gvisor-t23/docs/snp/evidence/ticket23/spikes/E3/probe-write.ts /tmp/e3-elsewhere.txt
+ERROR NotCapable: Requires write access to "/tmp/e3-elsewhere.txt", run again with the --allow-write flag
+EXIT=0
+
+-- is the grant resolved against the cwd at start? --
+$ (cwd=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t23/e68fd7d8-f508-481e-af2b-2b65a6e20244/scratchpad/e3work/sub) deno run --no-prompt --allow-write=./summary.txt probe-write.ts ./summary.txt
+OK wrote ./summary.txt
+EXIT=0
+-rw------- 1 pniroula 253477 3 Sep 15 21:50 /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t23/e68fd7d8-f508-481e-af2b-2b65a6e20244/scratchpad/e3work/sub/summary.txt

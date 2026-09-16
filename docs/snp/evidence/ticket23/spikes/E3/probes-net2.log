@@ -1,0 +1,55 @@
+== what a CIDR entry actually grants ==
+### states under --allow-net=0.0.0.0/0:443
+$ deno run --no-prompt --allow-net=0.0.0.0/0:443 /home/pniroula/Projects/gvisor-t23/docs/snp/evidence/ticket23/spikes/E3/probe-perms.ts
+net api.anthropic.com:443 = prompt
+net api.anthropic.com (any port) = prompt
+net www.rfc-editor.org:443 = prompt
+net 160.79.104.10:443 (api's A record) = granted
+net 104.18.20.81:443 (rfc-editor A record) = granted
+net 127.0.0.53:53 (the resolver) = prompt
+read /etc/ssl/certs (the trust store) = prompt
+read /etc/ssl/certs/ca-certificates.crt = prompt
+read /etc/resolv.conf = prompt
+read /etc/nsswitch.conf = prompt
+write ./summary.txt = prompt
+env ANTHROPIC_API_KEY = prompt
+env PATH = prompt
+run /bin/true = prompt
+sys (uname, hostname, cpus…) = prompt
+ffi = prompt
+import = prompt
+EXIT=0
+
+### states under --allow-net=160.79.104.10:443
+$ deno run --no-prompt --allow-net=160.79.104.10:443 /home/pniroula/Projects/gvisor-t23/docs/snp/evidence/ticket23/spikes/E3/probe-perms.ts
+net api.anthropic.com:443 = prompt
+net api.anthropic.com (any port) = prompt
+net www.rfc-editor.org:443 = prompt
+net 160.79.104.10:443 (api's A record) = granted
+net 104.18.20.81:443 (rfc-editor A record) = prompt
+net 127.0.0.53:53 (the resolver) = prompt
+read /etc/ssl/certs (the trust store) = prompt
+read /etc/ssl/certs/ca-certificates.crt = prompt
+read /etc/resolv.conf = prompt
+read /etc/nsswitch.conf = prompt
+write ./summary.txt = prompt
+env ANTHROPIC_API_KEY = prompt
+env PATH = prompt
+run /bin/true = prompt
+sys (uname, hostname, cpus…) = prompt
+ffi = prompt
+import = prompt
+EXIT=0
+
+== the IP-literal fetch, with its cause ==
+### IP literal in the URL under --allow-net=160.79.104.10:443
+$ deno run --no-prompt --allow-net=160.79.104.10:443 /home/pniroula/Projects/gvisor-t23/docs/snp/evidence/ticket23/spikes/E3/probe-net.ts https://160.79.104.10/v1/messages
+ERROR TypeError: fetch failed
+  cause 1: Error: error sending request for url (https://160.79.104.10/v1/messages): client error (Connect): received fatal alert: HandshakeFailure
+EXIT=0
+
+### the hostname under the IP grant, with its cause
+$ deno run --no-prompt --allow-net=160.79.104.10:443 /home/pniroula/Projects/gvisor-t23/docs/snp/evidence/ticket23/spikes/E3/probe-net.ts https://api.anthropic.com/v1/messages
+ERROR NotCapable: Requires net access to "api.anthropic.com:443", run again with the --allow-net flag
+EXIT=0
+

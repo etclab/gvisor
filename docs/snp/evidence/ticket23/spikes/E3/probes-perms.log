@@ -1,0 +1,44 @@
+== PERMISSION STATES under the E1-derived flag set ==
+### the flag set the agent ran under
+$ deno run --no-prompt --allow-net=api.anthropic.com:443,www.rfc-editor.org:443 --allow-write=./summary.txt --allow-env=ANTHROPIC_API_KEY /home/pniroula/Projects/gvisor-t23/docs/snp/evidence/ticket23/spikes/E3/probe-perms.ts
+net api.anthropic.com:443 = granted
+net api.anthropic.com (any port) = prompt
+net www.rfc-editor.org:443 = granted
+net 160.79.104.10:443 (api's A record) = prompt
+net 104.18.20.81:443 (rfc-editor A record) = prompt
+net 127.0.0.53:53 (the resolver) = prompt
+read /etc/ssl/certs (the trust store) = prompt
+read /etc/ssl/certs/ca-certificates.crt = prompt
+read /etc/resolv.conf = prompt
+read /etc/nsswitch.conf = prompt
+write ./summary.txt = granted
+env ANTHROPIC_API_KEY = granted
+env PATH = prompt
+run /bin/true = prompt
+sys (uname, hostname, cpus…) = prompt
+ffi = prompt
+import = prompt
+EXIT=0
+
+== PERMISSION STATES with no flags at all ==
+### no flags
+$ deno run --no-prompt /home/pniroula/Projects/gvisor-t23/docs/snp/evidence/ticket23/spikes/E3/probe-perms.ts
+net api.anthropic.com:443 = prompt
+net api.anthropic.com (any port) = prompt
+net www.rfc-editor.org:443 = prompt
+net 160.79.104.10:443 (api's A record) = prompt
+net 104.18.20.81:443 (rfc-editor A record) = prompt
+net 127.0.0.53:53 (the resolver) = prompt
+read /etc/ssl/certs (the trust store) = prompt
+read /etc/ssl/certs/ca-certificates.crt = prompt
+read /etc/resolv.conf = prompt
+read /etc/nsswitch.conf = prompt
+write ./summary.txt = prompt
+env ANTHROPIC_API_KEY = prompt
+env PATH = prompt
+run /bin/true = prompt
+sys (uname, hostname, cpus…) = prompt
+ffi = prompt
+import = prompt
+EXIT=0
+

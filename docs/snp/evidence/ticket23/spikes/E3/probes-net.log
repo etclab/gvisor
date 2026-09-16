@@ -1,0 +1,57 @@
+== --allow-net and the provisional n entries ==
+-- the destination as a CIDR, the shape ticket 22 left: {"cidr":"0.0.0.0/0","ports":[443]} --
+### --allow-net=0.0.0.0/0:443, hostname in the URL
+$ deno run --no-prompt --allow-net=0.0.0.0/0:443 /home/pniroula/Projects/gvisor-t23/docs/snp/evidence/ticket23/spikes/E3/probe-net.ts https://www.rfc-editor.org/rfc/rfc8446.txt
+ERROR NotCapable: Requires net access to "www.rfc-editor.org:443", run again with the --allow-net flag
+EXIT=0
+
+### --allow-net=0.0.0.0/0, no port
+$ deno run --no-prompt --allow-net=0.0.0.0/0 /home/pniroula/Projects/gvisor-t23/docs/snp/evidence/ticket23/spikes/E3/probe-net.ts https://www.rfc-editor.org/rfc/rfc8446.txt
+ERROR NotCapable: Requires net access to "www.rfc-editor.org:443", run again with the --allow-net flag
+EXIT=0
+
+### --allow-net=:443, a port with no host
+$ deno run --no-prompt --allow-net=:443 /home/pniroula/Projects/gvisor-t23/docs/snp/evidence/ticket23/spikes/E3/probe-net.ts https://www.rfc-editor.org/rfc/rfc8446.txt
+ERROR NotCapable: Requires net access to "www.rfc-editor.org:443", run again with the --allow-net flag
+EXIT=0
+
+### --allow-net=160.79.104.10:443, an IP, hostname in the URL
+$ deno run --no-prompt --allow-net=160.79.104.10:443 /home/pniroula/Projects/gvisor-t23/docs/snp/evidence/ticket23/spikes/E3/probe-net.ts https://api.anthropic.com/v1/messages
+ERROR NotCapable: Requires net access to "api.anthropic.com:443", run again with the --allow-net flag
+EXIT=0
+
+### --allow-net=160.79.104.10:443, the same IP literally in the URL
+$ deno run --no-prompt --allow-net=160.79.104.10:443 /home/pniroula/Projects/gvisor-t23/docs/snp/evidence/ticket23/spikes/E3/probe-net.ts https://160.79.104.10/v1/messages
+ERROR TypeError: fetch failed
+EXIT=0
+
+### --allow-net bare (all hosts, all ports), for the control
+$ deno run --no-prompt --allow-net /home/pniroula/Projects/gvisor-t23/docs/snp/evidence/ticket23/spikes/E3/probe-net.ts https://www.rfc-editor.org/rfc/rfc8446.txt
+OK status=200 bytes=337736
+EXIT=0
+
+### --allow-net=api.anthropic.com:443 only, fetching rfc-editor (the negative)
+$ deno run --no-prompt --allow-net=api.anthropic.com:443 /home/pniroula/Projects/gvisor-t23/docs/snp/evidence/ticket23/spikes/E3/probe-net.ts https://www.rfc-editor.org/rfc/rfc8446.txt
+ERROR NotCapable: Requires net access to "www.rfc-editor.org:443", run again with the --allow-net flag
+EXIT=0
+
+### --allow-net=www.rfc-editor.org (no port)
+$ deno run --no-prompt --allow-net=www.rfc-editor.org /home/pniroula/Projects/gvisor-t23/docs/snp/evidence/ticket23/spikes/E3/probe-net.ts https://www.rfc-editor.org/rfc/rfc8446.txt
+OK status=200 bytes=337736
+EXIT=0
+
+### --allow-net=www.rfc-editor.org:80, wrong port
+$ deno run --no-prompt --allow-net=www.rfc-editor.org:80 /home/pniroula/Projects/gvisor-t23/docs/snp/evidence/ticket23/spikes/E3/probe-net.ts https://www.rfc-editor.org/rfc/rfc8446.txt
+ERROR NotCapable: Requires net access to "www.rfc-editor.org:443", run again with the --allow-net flag
+EXIT=0
+
+### --allow-net=nonsense///, is a malformed entry rejected at parse time?
+$ deno run --no-prompt --allow-net=nonsense/// /home/pniroula/Projects/gvisor-t23/docs/snp/evidence/ticket23/spikes/E3/probe-net.ts https://www.rfc-editor.org/rfc/rfc8446.txt
+[0m[1m[31merror[0m: invalid host 'nonsense///': invalid char found in FQDN
+
+Caused by:
+    0: invalid host 'nonsense///': invalid char found in FQDN
+    1: invalid host 'nonsense///': invalid char found in FQDN
+    2: invalid char found in FQDN
+EXIT=1
+

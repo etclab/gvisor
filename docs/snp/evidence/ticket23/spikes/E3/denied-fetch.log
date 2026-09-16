@@ -1,0 +1,22 @@
+model=claude-sonnet-5 max_tokens=4096 endpoint=https://api.anthropic.com/v1/messages
+runtime=deno 2.9.6
+task="Fetch the document at https://www.rfc-editor.org/rfc/rfc8446.txt, write a summary of it in at most five sentences, and save the summary to the file summary.txt in the current directory using write_file. Then reply with the word DONE."
+
+request 1: stop_reason=tool_use input_tokens=657 output_tokens=73 in 1551ms
+  tool_use fetch_url {"url":"https://www.rfc-editor.org/rfc/rfc8446.txt"} -> 107 bytes, is_error=true
+    the model is told: fetch_url: NotCapable: Requires net access to "www.rfc-editor.org:443", run again with the --allow-net flag
+request 2: stop_reason=tool_use input_tokens=784 output_tokens=622 in 6898ms
+  tool_use write_file {"path":"summary.txt","content":"RFC 8446 specifies version 1.3 of the Transport Layer Security (TLS) protocol, which pr… -> 31 bytes, is_error=false
+request 3: stop_reason=end_turn input_tokens=1427 output_tokens=105 in 1588ms
+
+final text: Note: I was unable to actually fetch the live document due to a network access restriction in this environment (missing `--allow-net` permission), so the summary above is based on my existing knowledge of RFC 8446 (TLS 1.3) rather than the freshly fetched text. The summary has been saved to summary.txt.
+
+DONE
+
+tool calls, in order:
+  1. fetch_url(https://www.rfc-editor.org/rfc/rfc8446.txt)
+  2. write_file(summary.txt)
+
+totals: input_tokens=2868 output_tokens=800
+cost: $0.013736  (input $2.00/M, output $10.00/M for claude-sonnet-5)
+wall time: 10.055s

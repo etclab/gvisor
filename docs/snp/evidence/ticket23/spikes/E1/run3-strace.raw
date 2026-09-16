@@ -1,0 +1,668 @@
+2778410 execve("./agent", ["./agent"], 0x7ffd34cb9eb8 /* 51 vars */) = 0
+2778410 access("/etc/ld.so.preload", R_OK) = -1 ENOENT (No such file or directory)
+2778410 openat(AT_FDCWD, "/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 3
+2778410 openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libc.so.6", O_RDONLY|O_CLOEXEC) = 3
+2778410 openat(AT_FDCWD, "/proc/self/maps", O_RDONLY|O_CLOEXEC) = 3
+2778410 openat(AT_FDCWD, "/sys/kernel/mm/transparent_hugepage/hpage_pmd_size", O_RDONLY) = 3
+2778410 openat(AT_FDCWD, "/proc/self/cgroup", O_RDONLY|O_CLOEXEC) = 3
+2778410 openat(AT_FDCWD, "/proc/self/mountinfo", O_RDONLY|O_CLOEXEC) = 3
+2778410 openat(AT_FDCWD, "/sys/fs/cgroup/user.slice/user-253477.slice/session-5.scope/cpu.max", O_RDONLY|O_CLOEXEC) = 3
+2778410 clone3({flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, child_tid=0x788881600990, parent_tid=0x788881600990, exit_signal=0, stack=0x788880e00000, stack_size=0x7fff80, tls=0x7888816006c0} => {parent_tid=[2778411]}, 88) = 2778411
+2778410 clone3({flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, child_tid=0x788878c00990, parent_tid=0x788878c00990, exit_signal=0, stack=0x788878400000, stack_size=0x7fff80, tls=0x788878c006c0} => {parent_tid=[2778412]}, 88) = 2778412
+2778410 clone3({flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, child_tid=0x788880c00990, parent_tid=0x788880c00990, exit_signal=0, stack=0x788880400000, stack_size=0x7fff80, tls=0x788880c006c0} => {parent_tid=[2778413]}, 88) = 2778413
+2778412 clone3({flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, child_tid=0x78887be00990, parent_tid=0x78887be00990, exit_signal=0, stack=0x78887b600000, stack_size=0x7fff80, tls=0x78887be006c0} => {parent_tid=[2778414]}, 88) = 2778414
+2778410 clone3({flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, child_tid=0x78887b400990, parent_tid=0x78887b400990, exit_signal=0, stack=0x78887ac00000, stack_size=0x7fff80, tls=0x78887b4006c0} => {parent_tid=[2778415]}, 88) = 2778415
+2778411 tgkill(2778410, 2778410, SIGURG) = 0
+2778410 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778410 openat(AT_FDCWD, "/etc/resolv.conf", O_RDONLY|O_CLOEXEC) = 6
+2778411 tgkill(2778410, 2778410, SIGURG) = 0
+2778410 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778414 openat(AT_FDCWD, "/etc/nsswitch.conf", O_RDONLY|O_CLOEXEC) = 6
+2778414 socket(AF_UNIX, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, 0) = 6
+2778414 connect(6, {sa_family=AF_UNIX, sun_path="/var/run/nscd/socket"}, 110) = -1 ENOENT (No such file or directory)
+2778414 socket(AF_UNIX, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, 0) = 6
+2778414 connect(6, {sa_family=AF_UNIX, sun_path="/var/run/nscd/socket"}, 110) = -1 ENOENT (No such file or directory)
+2778414 newfstatat(AT_FDCWD, "/etc/nsswitch.conf", {st_mode=S_IFREG|0644, st_size=521, ...}, 0) = 0
+2778414 newfstatat(AT_FDCWD, "/", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+2778414 openat(AT_FDCWD, "/etc/nsswitch.conf", O_RDONLY|O_CLOEXEC) = 6
+2778414 newfstatat(AT_FDCWD, "/etc/resolv.conf", {st_mode=S_IFREG|0644, st_size=928, ...}, 0) = 0
+2778414 openat(AT_FDCWD, "/etc/host.conf", O_RDONLY|O_CLOEXEC) = 6
+2778414 openat(AT_FDCWD, "/etc/resolv.conf", O_RDONLY|O_CLOEXEC) = 6
+2778414 openat(AT_FDCWD, "/etc/hosts", O_RDONLY|O_CLOEXEC) = 6
+2778414 socket(AF_INET, SOCK_DGRAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 6
+2778414 setsockopt(6, SOL_IP, IP_RECVERR, [1], 4) = 0
+2778414 connect(6, {sa_family=AF_INET, sin_port=htons(53), sin_addr=inet_addr("127.0.0.53")}, 16) = 0
+2778414 sendmmsg(6, [{msg_hdr={msg_name=NULL, msg_namelen=0, msg_iov=[{iov_base="[X\1 \0\1\0\0\0\0\0\1\3api\tanthropic\3com\0\0\1\0\1\0\0)\4\260\0\0\0\0\0\0", iov_len=46}], msg_iovlen=1, msg_controllen=0, msg_flags=0}, msg_len=46}, {msg_hdr={msg_name=NULL, msg_namelen=0, msg_iov=[{iov_base="de\1 \0\1\0\0\0\0\0\1\3api\tanthropic\3com\0\0\34\0\1\0\0)\4\260\0\0\0\0\0\0", iov_len=46}], msg_iovlen=1, msg_controllen=0, msg_flags=0}, msg_len=46}], 2, MSG_NOSIGNAL) = 2
+2778414 recvfrom(6, "[X\201\200\0\1\0\1\0\0\0\1\3api\tanthropic\3com\0\0\1\0\1\300\f\0\1\0\1\0\0\1\31\0\4\240Oh\n\0\0)\377\326\0\0\0\0\0\0", 2048, 0, {sa_family=AF_INET, sin_port=htons(53), sin_addr=inet_addr("127.0.0.53")}, [28 => 16]) = 62
+2778414 recvfrom(6, "de\201\200\0\1\0\1\0\0\0\1\3api\tanthropic\3com\0\0\34\0\1\300\f\0\34\0\1\0\0\0\27\0\20&\7k\300\0\0\0\0\0\0\0\0\0\0\0\20\0\0)\377\326\0\0\0\0\0\0", 65536, 0, {sa_family=AF_INET, sin_port=htons(53), sin_addr=inet_addr("127.0.0.53")}, [28 => 16]) = 74
+2778414 openat(AT_FDCWD, "/etc/gai.conf", O_RDONLY|O_CLOEXEC) = 6
+2778414 socket(AF_NETLINK, SOCK_RAW|SOCK_CLOEXEC, NETLINK_ROUTE) = 6
+2778414 bind(6, {sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, 12) = 0
+2778414 getsockname(6, {sa_family=AF_NETLINK, nl_pid=2778410, nl_groups=00000000}, [12]) = 0
+2778414 sendto(6, [{nlmsg_len=20, nlmsg_type=RTM_GETADDR, nlmsg_flags=NLM_F_REQUEST|NLM_F_DUMP, nlmsg_seq=1789522458, nlmsg_pid=0}, {ifa_family=AF_UNSPEC, ...}], 20, 0, {sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, 12) = 20
+2778414 recvmsg(6, {msg_name={sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, msg_namelen=12, msg_iov=[{iov_base=[[{nlmsg_len=76, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522458, nlmsg_pid=2778410}, {ifa_family=AF_INET, ifa_prefixlen=8, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_HOST, ifa_index=if_nametoindex("lo")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("127.0.0.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("127.0.0.1")], [{nla_len=7, nla_type=IFA_LABEL}, "lo"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=1012, tstamp=1012}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522458, nlmsg_pid=2778410}, {ifa_family=AF_INET, ifa_prefixlen=12, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("enp129s0f0np0")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("172.16.24.11")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("172.16.24.11")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("172.31.255.255")], [{nla_len=18, nla_type=IFA_LABEL}, "enp129s0f0np0"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=1762, tstamp=23980116}]]], [{nlmsg_len=88, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522458, nlmsg_pid=2778410}, {ifa_family=AF_INET, ifa_prefixlen=24, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("virbr1")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.50.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.50.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.50.255")], [{nla_len=11, nla_type=IFA_LABEL}, "virbr1"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2224, tstamp=2224}]]], [{nlmsg_len=88, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522458, nlmsg_pid=2778410}, {ifa_family=AF_INET, ifa_prefixlen=24, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("virbr2")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.61.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.61.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.61.255")], [{nla_len=11, nla_type=IFA_LABEL}, "virbr2"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2245, tstamp=2245}]]], [{nlmsg_len=88, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522458, nlmsg_pid=2778410}, {ifa_family=AF_INET, ifa_prefixlen=24, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("virbr0")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.122.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.122.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.122.255")], [{nla_len=11, nla_type=IFA_LABEL}, "virbr0"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2273, tstamp=2273}]]], [{nlmsg_len=88, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522458, nlmsg_pid=2778410}, {ifa_family=AF_INET, ifa_prefixlen=24, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("virbr4")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.83.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.83.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.83.255")], [{nla_len=11, nla_type=IFA_LABEL}, "virbr4"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2291, tstamp=2291}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522458, nlmsg_pid=2778410}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("br-d564a52702f6")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.64.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.64.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.79.255")], [{nla_len=20, nla_type=IFA_LABEL}, "br-d564a52702f6"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2517, tstamp=2517}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522458, nlmsg_pid=2778410}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("docker_gwbridge")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.16.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.16.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.31.255")], [{nla_len=20, nla_type=IFA_LABEL}, "docker_gwbridge"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2533, tstamp=2533}]]], [{nlmsg_len=88, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522458, nlmsg_pid=2778410}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("docker0")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.0.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.0.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.15.255")], [{nla_len=12, nla_type=IFA_LABEL}, "docker0"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2550, tstamp=2550}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522458, nlmsg_pid=2778410}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("br-5140c59d6152")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.144.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.144.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.159.255")], [{nla_len=20, nla_type=IFA_LABEL}, "br-5140c59d6152"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2563, tstamp=2563}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522458, nlmsg_pid=2778410}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("br-5d6342ce11bf")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.32.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.32.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.47.255")], [{nla_len=20, nla_type=IFA_LABEL}, "br-5d6342ce11bf"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2579, tstamp=2579}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522458, nlmsg_pid=2778410}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("br-7ba450de6007")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.96.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.96.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.111.255")], [{nla_len=20, nla_type=IFA_LABEL}, "br-7ba450de6007"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2616, tstamp=2616}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522458, nlmsg_pid=2778410}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("br-92a829545622")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.128.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.128.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.143.255")], [{nla_len=20, nla_type=IFA_LABEL}, "br-92a829545622"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2629, tstamp=2629}]]], [{nlmsg_len=72, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522458, nlmsg_pid=2778410}, {ifa_family=AF_INET6, ifa_prefixlen=128, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_HOST, ifa_index=if_nametoindex("lo")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "::1")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=1013, tstamp=1013}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT|IFA_F_NOPREFIXROUTE]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522458, nlmsg_pid=2778410}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("enp129s0f0np0")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::7ec2:55ff:fe46:292c")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=1755, tstamp=1755}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522458, nlmsg_pid=2778410}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("docker_gwbridge")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::c86d:3bff:fe57:cd8f")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=3089, tstamp=3089}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522458, nlmsg_pid=2778410}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("docker0")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::e03e:ff:fe35:4604")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2829, tstamp=2829}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=72, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522458, nlmsg_pid=2778410}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_NODAD|IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("br-5d6342ce11bf")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fc00:f853:ccd:e793::1")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2579, tstamp=2579}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_NODAD|IFA_F_PERMANENT]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522458, nlmsg_pid=2778410}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("br-5d6342ce11bf")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::8847:eaff:fe57:996f")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2861, tstamp=2861}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522458, nlmsg_pid=2778410}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("veth49d7c3e")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::e439:25ff:feca:3a1a")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2829, tstamp=2829}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522458, nlmsg_pid=2778410}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("vethf821cfb")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::1c3d:17ff:fe2a:b0df")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2861, tstamp=2861}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522458, nlmsg_pid=2778410}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("veth99b1031")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::9461:b1ff:fe27:cfeb")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2861, tstamp=2861}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522458, nlmsg_pid=2778410}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("veth0c2737a")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::e881:8cff:fe4d:9773")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2869, tstamp=2869}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522458, nlmsg_pid=2778410}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("veth22c136c")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::e861:dcff:feba:584e")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2864, tstamp=2864}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522458, nlmsg_pid=2778410}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("veth83d5692")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::442f:62ff:fe2f:6038")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=3089, tstamp=3089}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522458, nlmsg_pid=2778410}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("veth4bf7b26")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::b074:44ff:feb4:8910")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=63024042, tstamp=63024042}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]]], iov_len=4096}], msg_iovlen=1, msg_controllen=0, msg_flags=0}, 0) = 2212
+2778414 recvmsg(6, {msg_name={sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, msg_namelen=12, msg_iov=[{iov_base=[{nlmsg_len=20, nlmsg_type=NLMSG_DONE, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522458, nlmsg_pid=2778410}, 0], iov_len=4096}], msg_iovlen=1, msg_controllen=0, msg_flags=0}, 0) = 20
+2778414 socket(AF_INET, SOCK_DGRAM|SOCK_CLOEXEC, IPPROTO_IP) = 6
+2778414 connect(6, {sa_family=AF_INET, sin_port=htons(0), sin_addr=inet_addr("160.79.104.10")}, 16) = 0
+2778414 getsockname(6, {sa_family=AF_INET, sin_port=htons(44876), sin_addr=inet_addr("172.16.24.11")}, [28 => 16]) = 0
+2778414 socket(AF_INET6, SOCK_DGRAM|SOCK_CLOEXEC, IPPROTO_IP) = 6
+2778414 connect(6, {sa_family=AF_INET6, sin6_port=htons(0), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2607:6bc0::10", &sin6_addr), sin6_scope_id=0}, 28) = -1 ENETUNREACH (Network is unreachable)
+2778414 socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 6
+2778414 connect(6, {sa_family=AF_INET, sin_port=htons(443), sin_addr=inet_addr("160.79.104.10")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2778411 tgkill(2778410, 2778414, SIGURG) = 0
+2778414 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778412 getsockopt(6, SOL_SOCKET, SO_ERROR, [0], [4]) = 0
+2778412 getpeername(6, {sa_family=AF_INET, sin_port=htons(443), sin_addr=inet_addr("160.79.104.10")}, [112 => 16]) = 0
+2778412 getsockname(6, {sa_family=AF_INET, sin_port=htons(46474), sin_addr=inet_addr("172.16.24.11")}, [112 => 16]) = 0
+2778412 setsockopt(6, SOL_TCP, TCP_NODELAY, [1], 4) = 0
+2778412 setsockopt(6, SOL_SOCKET, SO_KEEPALIVE, [1], 4) = 0
+2778412 setsockopt(6, SOL_TCP, TCP_KEEPIDLE, [30], 4) = 0
+2778412 setsockopt(6, SOL_TCP, TCP_KEEPINTVL, [15], 4) = 0
+2778412 setsockopt(6, SOL_TCP, TCP_KEEPCNT, [9], 4) = 0
+2778413 openat(AT_FDCWD, "/etc/ssl/certs/ca-certificates.crt", O_RDONLY|O_CLOEXEC) = 7
+2778411 tgkill(2778410, 2778413, SIGURG <unfinished ...>
+2778413 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778411 <... tgkill resumed>)           = 0
+2778413 openat(AT_FDCWD, "/etc/ssl/certs", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 7
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/002c0b4f.0", "GlobalSign_Root_R46.pem", 128) = 23
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/0179095f.0", "BJCA_Global_Root_CA1.pem", 128) = 24
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/062cdee6.0", "GlobalSign_Root_CA_-_R3.pem", 128) = 27
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/064e0aa9.0", "QuoVadis_Root_CA_2_G3.pem", 128) = 25
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/06dc52d5.0", "SSL.com_EV_Root_Certification_Authority_RSA_R2.pem", 128) = 50
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/09789157.0", "Starfield_Services_Root_Certificate_Authority_-_G2.pem", 128) = 54
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/0a775a30.0", "GTS_Root_R3.pem", 128) = 15
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/0b1b94ef.0", "CFCA_EV_ROOT.pem", 128) = 16
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/0b9bc432.0", "ISRG_Root_X2.pem", 128) = 16
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/0bf05006.0", "SSL.com_Root_Certification_Authority_ECC.pem", 128) = 44
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/0f5dc4f3.0", "UCA_Extended_Validation_Root.pem", 128) = 32
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/0f6fa695.0", "GDCA_TrustAUTH_R5_ROOT.pem", 128) = 26
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/1001acf7.0", "GTS_Root_R1.pem", 128) = 15
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/14bc7599.0", "emSign_ECC_Root_CA_-_G3.pem", 128) = 27
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/1cef98f5.0", "TrustAsia_Global_Root_CA_G4.pem", 128) = 31
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/1d3472b9.0", "GlobalSign_ECC_Root_CA_-_R5.pem", 128) = 31
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/1e08bfd1.0", "IdenTrust_Public_Sector_Root_CA_1.pem", 128) = 37
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/1e09d511.0", "T-TeleSec_GlobalRoot_Class_2.pem", 128) = 32
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/2923b3f9.0", "emSign_Root_CA_-_G1.pem", 128) = 23
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/2ae6433e.0", "CA_Disig_Root_R2.pem", 128) = 20
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/2ccbdda3.0", "TrustAsia_TLS_ECC_Root_CA.pem", 128) = 29
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/30e1580d.0", "OISTE_Server_Root_RSA_G1.pem", 128) = 28
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/32888f65.0", "Hellenic_Academic_and_Research_Institutions_RootCA_2015.pem", 128) = 59
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/3bde41ac.0", "Autoridad_de_Certificacion_Firmaprofesional_CIF_A62634068.pem", 128) = 61
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/3e359ba6.0", "BJCA_Global_Root_CA2.pem", 128) = 24
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/3fb36b73.0", "NAVER_Global_Root_Certification_Authority.pem", 128) = 45
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/40193066.0", "Certum_Trusted_Network_CA_2.pem", 128) = 31
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/4042bcee.0", "ISRG_Root_X1.pem", 128) = 16
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/406c9bb1.0", "emSign_Root_CA_-_C1.pem", 128) = 23
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/48bec511.0", "Certum_Trusted_Network_CA.pem", 128) = 29
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/4b718d9b.0", "emSign_ECC_Root_CA_-_C3.pem", 128) = 27
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/4bfab552.0", "Starfield_Root_Certificate_Authority_-_G2.pem", 128) = 45
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/5443e9e3.0", "T-TeleSec_GlobalRoot_Class_3.pem", 128) = 32
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/54657681.0", "Buypass_Class_2_Root_CA.pem", 128) = 27
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/5860aaa6.0", "Security_Communication_ECC_RootCA1.pem", 128) = 38
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/5931b5bc.0", "D-TRUST_EV_Root_CA_1_2020.pem", 128) = 29
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/593d93c5.0", "calypso-ca.pem", 128) = 14
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/5f15c80c.0", "TWCA_Global_Root_CA.pem", 128) = 23
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/5f618aec.0", "certSIGN_Root_CA_G2.pem", 128) = 23
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/607986c7.0", "DigiCert_Global_Root_G2.pem", 128) = 27
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/616816f6.0", "SecureSign_Root_CA12.pem", 128) = 24
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/6805c744.0", "OISTE_Server_Root_ECC_G1.pem", 128) = 28
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/68dd7389.0", "Hongkong_Post_Root_CA_3.pem", 128) = 27
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/6a9bdba3.0", "SecureSign_Root_CA15.pem", 128) = 24
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/6b99d060.0", "Entrust_Root_Certification_Authority.pem", 128) = 40
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/6d41d539.0", "Amazon_Root_CA_2.pem", 128) = 20
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/6dd0eb7d.0", "ca.pem", 128) = 6
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/6fa5da56.0", "SSL.com_Root_Certification_Authority_RSA.pem", 128) = 44
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/749e9e03.0", "QuoVadis_Root_CA_1_G3.pem", 128) = 25
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/75d1b2ed.0", "DigiCert_Trusted_Root_G4.pem", 128) = 28
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/7719f463.0", "Hellenic_Academic_and_Research_Institutions_ECC_RootCA_2015.pem", 128) = 63
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/773e07ad.0", "OISTE_WISeKey_Global_Root_GC_CA.pem", 128) = 35
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/7a3adc42.0", "vTrus_Root_CA.pem", 128) = 17
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/7a780d93.0", "Certainly_Root_R1.pem", 128) = 21
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/7f3d5d1d.0", "DigiCert_Assured_ID_Root_G3.pem", 128) = 31
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/7fa05551.0", "Telekom_Security_TLS_RSA_Root_2023.pem", 128) = 38
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/8160b96c.0", "Microsec_e-Szigno_Root_CA_2009.pem", 128) = 34
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/8508e720.0", "Certainly_Root_E1.pem", 128) = 21
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/865fbdf9.0", "SSL.com_TLS_ECC_Root_CA_2022.pem", 128) = 32
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/878d9bca.0", "SecureSign_Root_CA14.pem", 128) = 24
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/8cb5ee0f.0", "Amazon_Root_CA_3.pem", 128) = 20
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/8d89cda1.0", "Microsoft_ECC_Root_Certificate_Authority_2017.pem", 128) = 49
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/8f103249.0", "Telia_Root_CA_v2.pem", 128) = 20
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/9046744a.0", "Sectigo_Public_Server_Authentication_Root_R46.pem", 128) = 49
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/90c5a3c8.0", "HiPKI_Root_CA_-_G1.pem", 128) = 22
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/930ac5d2.0", "Actalis_Authentication_Root_CA.pem", 128) = 34
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/9482e63a.0", "Certum_EC-384_CA.pem", 128) = 20
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/9846683b.0", "DigiCert_TLS_ECC_P384_Root_G5.pem", 128) = 33
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/988a38cb.0", "NetLock_Arany_=Class_Gold=_F\305\221tan\303\272s\303\255tv\303\241ny.pem", 128) = 48
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/9b46e03d.0", "Atos_TrustedRoot_Root_CA_RSA_TLS_2021.pem", 128) = 41
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/9bf03295.0", "TrustAsia_Global_Root_CA_G3.pem", 128) = 31
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/9d04f354.0", "DigiCert_Assured_ID_Root_G2.pem", 128) = 31
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/9e654b62.0", "SwissSign_RSA_TLS_Root_CA_2022_-_1.pem", 128) = 38
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/9ef4a08a.0", "D-TRUST_BR_Root_CA_1_2020.pem", 128) = 29
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/9f727ac7.0", "HARICA_TLS_RSA_Root_CA_2021.pem", 128) = 31
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/ACCVRAIZ1.pem", "/usr/share/ca-certificates/mozilla/ACCVRAIZ1.crt", 128) = 48
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/AC_RAIZ_FNMT-RCM.pem", "/usr/share/ca-certificates/mozilla/AC_RAIZ_FNMT-RCM.crt", 128) = 55
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/AC_RAIZ_FNMT-RCM_SERVIDORES_SEGUROS.pem", "/usr/share/ca-certificates/mozilla/AC_RAIZ_FNMT-RCM_SERVIDORES_SEGUROS.crt", 128) = 74
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/ANF_Secure_Server_Root_CA.pem", "/usr/share/ca-certificates/mozilla/ANF_Secure_Server_Root_CA.crt", 128) = 64
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/Actalis_Authentication_Root_CA.pem", "/usr/share/ca-certificates/mozilla/Actalis_Authentication_Root_CA.crt", 128) = 69
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/Amazon_Root_CA_1.pem", "/usr/share/ca-certificates/mozilla/Amazon_Root_CA_1.crt", 128) = 55
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/Amazon_Root_CA_2.pem", "/usr/share/ca-certificates/mozilla/Amazon_Root_CA_2.crt", 128) = 55
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/Amazon_Root_CA_3.pem", "/usr/share/ca-certificates/mozilla/Amazon_Root_CA_3.crt", 128) = 55
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/Amazon_Root_CA_4.pem", "/usr/share/ca-certificates/mozilla/Amazon_Root_CA_4.crt", 128) = 55
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/Atos_TrustedRoot_2011.pem", "/usr/share/ca-certificates/mozilla/Atos_TrustedRoot_2011.crt", 128) = 60
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/Atos_TrustedRoot_Root_CA_ECC_TLS_2021.pem", "/usr/share/ca-certificates/mozilla/Atos_TrustedRoot_Root_CA_ECC_TLS_2021.crt", 128) = 76
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/Atos_TrustedRoot_Root_CA_RSA_TLS_2021.pem", "/usr/share/ca-certificates/mozilla/Atos_TrustedRoot_Root_CA_RSA_TLS_2021.crt", 128) = 76
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/Autoridad_de_Certificacion_Firmaprofesional_CIF_A62634068.pem", "/usr/share/ca-certificates/mozilla/Autoridad_de_Certificacion_Firmaprofesional_CIF_A62634068.crt", 128) = 96
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/BJCA_Global_Root_CA1.pem", "/usr/share/ca-certificates/mozilla/BJCA_Global_Root_CA1.crt", 128) = 59
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/BJCA_Global_Root_CA2.pem", "/usr/share/ca-certificates/mozilla/BJCA_Global_Root_CA2.crt", 128) = 59
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/Buypass_Class_2_Root_CA.pem", "/usr/share/ca-certificates/mozilla/Buypass_Class_2_Root_CA.crt", 128) = 62
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/Buypass_Class_3_Root_CA.pem", "/usr/share/ca-certificates/mozilla/Buypass_Class_3_Root_CA.crt", 128) = 62
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/CA_Disig_Root_R2.pem", "/usr/share/ca-certificates/mozilla/CA_Disig_Root_R2.crt", 128) = 55
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/CFCA_EV_ROOT.pem", "/usr/share/ca-certificates/mozilla/CFCA_EV_ROOT.crt", 128) = 51
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/COMODO_ECC_Certification_Authority.pem", "/usr/share/ca-certificates/mozilla/COMODO_ECC_Certification_Authority.crt", 128) = 73
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/COMODO_RSA_Certification_Authority.pem", "/usr/share/ca-certificates/mozilla/COMODO_RSA_Certification_Authority.crt", 128) = 73
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/Certainly_Root_E1.pem", "/usr/share/ca-certificates/mozilla/Certainly_Root_E1.crt", 128) = 56
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/Certainly_Root_R1.pem", "/usr/share/ca-certificates/mozilla/Certainly_Root_R1.crt", 128) = 56
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/Certigna_Root_CA.pem", "/usr/share/ca-certificates/mozilla/Certigna_Root_CA.crt", 128) = 55
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/Certum_EC-384_CA.pem", "/usr/share/ca-certificates/mozilla/Certum_EC-384_CA.crt", 128) = 55
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/Certum_Trusted_Network_CA.pem", "/usr/share/ca-certificates/mozilla/Certum_Trusted_Network_CA.crt", 128) = 64
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/Certum_Trusted_Network_CA_2.pem", "/usr/share/ca-certificates/mozilla/Certum_Trusted_Network_CA_2.crt", 128) = 66
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/Certum_Trusted_Root_CA.pem", "/usr/share/ca-certificates/mozilla/Certum_Trusted_Root_CA.crt", 128) = 61
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/D-TRUST_BR_Root_CA_1_2020.pem", "/usr/share/ca-certificates/mozilla/D-TRUST_BR_Root_CA_1_2020.crt", 128) = 64
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/D-TRUST_BR_Root_CA_2_2023.pem", "/usr/share/ca-certificates/mozilla/D-TRUST_BR_Root_CA_2_2023.crt", 128) = 64
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/D-TRUST_EV_Root_CA_1_2020.pem",  <unfinished ...>
+2778411 tgkill(2778410, 2778413, SIGURG <unfinished ...>
+2778413 <... readlinkat resumed>"/usr/share/ca-certificates/mozilla/D-TRUST_EV_Root_CA_1_2020.crt", 128) = 64
+2778411 <... tgkill resumed>)           = 0
+2778413 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/D-TRUST_EV_Root_CA_2_2023.pem", "/usr/share/ca-certificates/mozilla/D-TRUST_EV_Root_CA_2_2023.crt", 128) = 64
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/D-TRUST_Root_Class_3_CA_2_2009.pem", "/usr/share/ca-certificates/mozilla/D-TRUST_Root_Class_3_CA_2_2009.crt", 128) = 69
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/D-TRUST_Root_Class_3_CA_2_EV_2009.pem", "/usr/share/ca-certificates/mozilla/D-TRUST_Root_Class_3_CA_2_EV_2009.crt", 128) = 72
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/DigiCert_Assured_ID_Root_G2.pem", "/usr/share/ca-certificates/mozilla/DigiCert_Assured_ID_Root_G2.crt", 128) = 66
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/DigiCert_Assured_ID_Root_G3.pem", "/usr/share/ca-certificates/mozilla/DigiCert_Assured_ID_Root_G3.crt", 128) = 66
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/DigiCert_Global_Root_G2.pem", "/usr/share/ca-certificates/mozilla/DigiCert_Global_Root_G2.crt", 128) = 62
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/DigiCert_Global_Root_G3.pem", "/usr/share/ca-certificates/mozilla/DigiCert_Global_Root_G3.crt", 128) = 62
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/DigiCert_TLS_ECC_P384_Root_G5.pem", "/usr/share/ca-certificates/mozilla/DigiCert_TLS_ECC_P384_Root_G5.crt", 128) = 68
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/DigiCert_TLS_RSA4096_Root_G5.pem", "/usr/share/ca-certificates/mozilla/DigiCert_TLS_RSA4096_Root_G5.crt", 128) = 67
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/DigiCert_Trusted_Root_G4.pem", "/usr/share/ca-certificates/mozilla/DigiCert_Trusted_Root_G4.crt", 128) = 63
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/Entrust_Root_Certification_Authority.pem", "/usr/share/ca-certificates/mozilla/Entrust_Root_Certification_Authority.crt", 128) = 75
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/GDCA_TrustAUTH_R5_ROOT.pem", "/usr/share/ca-certificates/mozilla/GDCA_TrustAUTH_R5_ROOT.crt", 128) = 61
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/GTS_Root_R1.pem", "/usr/share/ca-certificates/mozilla/GTS_Root_R1.crt", 128) = 50
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/GTS_Root_R3.pem", "/usr/share/ca-certificates/mozilla/GTS_Root_R3.crt", 128) = 50
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/GTS_Root_R4.pem", "/usr/share/ca-certificates/mozilla/GTS_Root_R4.crt", 128) = 50
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/GlobalSign_ECC_Root_CA_-_R4.pem", "/usr/share/ca-certificates/mozilla/GlobalSign_ECC_Root_CA_-_R4.crt", 128) = 66
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/GlobalSign_ECC_Root_CA_-_R5.pem", "/usr/share/ca-certificates/mozilla/GlobalSign_ECC_Root_CA_-_R5.crt", 128) = 66
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/GlobalSign_Root_CA_-_R3.pem", "/usr/share/ca-certificates/mozilla/GlobalSign_Root_CA_-_R3.crt", 128) = 62
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/GlobalSign_Root_CA_-_R6.pem", "/usr/share/ca-certificates/mozilla/GlobalSign_Root_CA_-_R6.crt", 128) = 62
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/GlobalSign_Root_E46.pem", "/usr/share/ca-certificates/mozilla/GlobalSign_Root_E46.crt", 128) = 58
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/GlobalSign_Root_R46.pem", "/usr/share/ca-certificates/mozilla/GlobalSign_Root_R46.crt", 128) = 58
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/Go_Daddy_Root_Certificate_Authority_-_G2.pem", "/usr/share/ca-certificates/mozilla/Go_Daddy_Root_Certificate_Authority_-_G2.crt", 128) = 79
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/HARICA_TLS_ECC_Root_CA_2021.pem", "/usr/share/ca-certificates/mozilla/HARICA_TLS_ECC_Root_CA_2021.crt", 128) = 66
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/HARICA_TLS_RSA_Root_CA_2021.pem", "/usr/share/ca-certificates/mozilla/HARICA_TLS_RSA_Root_CA_2021.crt", 128) = 66
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/Hellenic_Academic_and_Research_Institutions_ECC_RootCA_2015.pem", "/usr/share/ca-certificates/mozilla/Hellenic_Academic_and_Research_Institutions_ECC_RootCA_2015.crt", 128) = 98
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/Hellenic_Academic_and_Research_Institutions_RootCA_2015.pem", "/usr/share/ca-certificates/mozilla/Hellenic_Academic_and_Research_Institutions_RootCA_2015.crt", 128) = 94
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/HiPKI_Root_CA_-_G1.pem", "/usr/share/ca-certificates/mozilla/HiPKI_Root_CA_-_G1.crt", 128) = 57
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/Hongkong_Post_Root_CA_3.pem", "/usr/share/ca-certificates/mozilla/Hongkong_Post_Root_CA_3.crt", 128) = 62
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/ISRG_Root_X1.pem", "/usr/share/ca-certificates/mozilla/ISRG_Root_X1.crt", 128) = 51
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/ISRG_Root_X2.pem", "/usr/share/ca-certificates/mozilla/ISRG_Root_X2.crt", 128) = 51
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/IdenTrust_Commercial_Root_CA_1.pem", "/usr/share/ca-certificates/mozilla/IdenTrust_Commercial_Root_CA_1.crt", 128) = 69
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/IdenTrust_Public_Sector_Root_CA_1.pem", "/usr/share/ca-certificates/mozilla/IdenTrust_Public_Sector_Root_CA_1.crt", 128) = 72
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/Izenpe.com.pem", "/usr/share/ca-certificates/mozilla/Izenpe.com.crt", 128) = 49
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/Microsec_e-Szigno_Root_CA_2009.pem", "/usr/share/ca-certificates/mozilla/Microsec_e-Szigno_Root_CA_2009.crt", 128) = 69
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/Microsoft_ECC_Root_Certificate_Authority_2017.pem", "/usr/share/ca-certificates/mozilla/Microsoft_ECC_Root_Certificate_Authority_2017.crt", 128) = 84
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/Microsoft_RSA_Root_Certificate_Authority_2017.pem", "/usr/share/ca-certificates/mozilla/Microsoft_RSA_Root_Certificate_Authority_2017.crt", 128) = 84
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/NAVER_Global_Root_Certification_Authority.pem", "/usr/share/ca-certificates/mozilla/NAVER_Global_Root_Certification_Authority.crt", 128) = 80
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/NetLock_Arany_=Class_Gold=_F\305\221tan\303\272s\303\255tv\303\241ny.pem", "/usr/share/ca-certificates/mozilla/NetLock_Arany_=Class_Gold=_F\305\221tan\303\272s\303\255tv\303\241ny.crt", 128) = 83
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/OISTE_Server_Root_ECC_G1.pem", "/usr/share/ca-certificates/mozilla/OISTE_Server_Root_ECC_G1.crt", 128) = 63
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/OISTE_Server_Root_RSA_G1.pem", "/usr/share/ca-certificates/mozilla/OISTE_Server_Root_RSA_G1.crt", 128) = 63
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/OISTE_WISeKey_Global_Root_GB_CA.pem", "/usr/share/ca-certificates/mozilla/OISTE_WISeKey_Global_Root_GB_CA.crt", 128) = 70
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/OISTE_WISeKey_Global_Root_GC_CA.pem", "/usr/share/ca-certificates/mozilla/OISTE_WISeKey_Global_Root_GC_CA.crt", 128) = 70
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/QuoVadis_Root_CA_1_G3.pem", "/usr/share/ca-certificates/mozilla/QuoVadis_Root_CA_1_G3.crt", 128) = 60
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/QuoVadis_Root_CA_2_G3.pem", "/usr/share/ca-certificates/mozilla/QuoVadis_Root_CA_2_G3.crt", 128) = 60
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/QuoVadis_Root_CA_3_G3.pem", "/usr/share/ca-certificates/mozilla/QuoVadis_Root_CA_3_G3.crt", 128) = 60
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/SSL.com_EV_Root_Certification_Authority_ECC.pem", "/usr/share/ca-certificates/mozilla/SSL.com_EV_Root_Certification_Authority_ECC.crt", 128) = 82
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/SSL.com_EV_Root_Certification_Authority_RSA_R2.pem", "/usr/share/ca-certificates/mozilla/SSL.com_EV_Root_Certification_Authority_RSA_R2.crt", 128) = 85
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/SSL.com_Root_Certification_Authority_ECC.pem", "/usr/share/ca-certificates/mozilla/SSL.com_Root_Certification_Authority_ECC.crt", 128) = 79
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/SSL.com_Root_Certification_Authority_RSA.pem", "/usr/share/ca-certificates/mozilla/SSL.com_Root_Certification_Authority_RSA.crt", 128) = 79
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/SSL.com_TLS_ECC_Root_CA_2022.pem", "/usr/share/ca-certificates/mozilla/SSL.com_TLS_ECC_Root_CA_2022.crt", 128) = 67
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/SSL.com_TLS_RSA_Root_CA_2022.pem", "/usr/share/ca-certificates/mozilla/SSL.com_TLS_RSA_Root_CA_2022.crt", 128) = 67
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/SZAFIR_ROOT_CA2.pem", "/usr/share/ca-certificates/mozilla/SZAFIR_ROOT_CA2.crt", 128) = 54
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/Sectigo_Public_Server_Authentication_Root_E46.pem", "/usr/share/ca-certificates/mozilla/Sectigo_Public_Server_Authentication_Root_E46.crt", 128) = 84
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/Sectigo_Public_Server_Authentication_Root_R46.pem", "/usr/share/ca-certificates/mozilla/Sectigo_Public_Server_Authentication_Root_R46.crt", 128) = 84
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/SecureSign_Root_CA12.pem", "/usr/share/ca-certificates/mozilla/SecureSign_Root_CA12.crt", 128) = 59
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/SecureSign_Root_CA14.pem", "/usr/share/ca-certificates/mozilla/SecureSign_Root_CA14.crt", 128) = 59
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/SecureSign_Root_CA15.pem", "/usr/share/ca-certificates/mozilla/SecureSign_Root_CA15.crt", 128) = 59
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/Security_Communication_ECC_RootCA1.pem", "/usr/share/ca-certificates/mozilla/Security_Communication_ECC_RootCA1.crt", 128) = 73
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/Security_Communication_RootCA2.pem", "/usr/share/ca-certificates/mozilla/Security_Communication_RootCA2.crt", 128) = 69
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/Starfield_Root_Certificate_Authority_-_G2.pem", "/usr/share/ca-certificates/mozilla/Starfield_Root_Certificate_Authority_-_G2.crt", 128) = 80
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/Starfield_Services_Root_Certificate_Authority_-_G2.pem", "/usr/share/ca-certificates/mozilla/Starfield_Services_Root_Certificate_Authority_-_G2.crt", 128) = 89
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/SwissSign_RSA_TLS_Root_CA_2022_-_1.pem", "/usr/share/ca-certificates/mozilla/SwissSign_RSA_TLS_Root_CA_2022_-_1.crt", 128) = 73
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/T-TeleSec_GlobalRoot_Class_2.pem",  <unfinished ...>
+2778411 tgkill(2778410, 2778413, SIGURG <unfinished ...>
+2778413 <... readlinkat resumed>"/usr/share/ca-certificates/mozilla/T-TeleSec_GlobalRoot_Class_2.crt", 128) = 67
+2778411 <... tgkill resumed>)           = 0
+2778413 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/T-TeleSec_GlobalRoot_Class_3.pem", "/usr/share/ca-certificates/mozilla/T-TeleSec_GlobalRoot_Class_3.crt", 128) = 67
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/TUBITAK_Kamu_SM_SSL_Kok_Sertifikasi_-_Surum_1.pem", "/usr/share/ca-certificates/mozilla/TUBITAK_Kamu_SM_SSL_Kok_Sertifikasi_-_Surum_1.crt", 128) = 84
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/TWCA_CYBER_Root_CA.pem", "/usr/share/ca-certificates/mozilla/TWCA_CYBER_Root_CA.crt", 128) = 57
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/TWCA_Global_Root_CA.pem", "/usr/share/ca-certificates/mozilla/TWCA_Global_Root_CA.crt", 128) = 58
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/TWCA_Root_Certification_Authority.pem", "/usr/share/ca-certificates/mozilla/TWCA_Root_Certification_Authority.crt", 128) = 72
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/Telekom_Security_TLS_ECC_Root_2020.pem", "/usr/share/ca-certificates/mozilla/Telekom_Security_TLS_ECC_Root_2020.crt", 128) = 73
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/Telekom_Security_TLS_RSA_Root_2023.pem", "/usr/share/ca-certificates/mozilla/Telekom_Security_TLS_RSA_Root_2023.crt", 128) = 73
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/Telia_Root_CA_v2.pem", "/usr/share/ca-certificates/mozilla/Telia_Root_CA_v2.crt", 128) = 55
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/TrustAsia_Global_Root_CA_G3.pem", "/usr/share/ca-certificates/mozilla/TrustAsia_Global_Root_CA_G3.crt", 128) = 66
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/TrustAsia_Global_Root_CA_G4.pem", "/usr/share/ca-certificates/mozilla/TrustAsia_Global_Root_CA_G4.crt", 128) = 66
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/TrustAsia_TLS_ECC_Root_CA.pem", "/usr/share/ca-certificates/mozilla/TrustAsia_TLS_ECC_Root_CA.crt", 128) = 64
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/TrustAsia_TLS_RSA_Root_CA.pem", "/usr/share/ca-certificates/mozilla/TrustAsia_TLS_RSA_Root_CA.crt", 128) = 64
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/TunTrust_Root_CA.pem", "/usr/share/ca-certificates/mozilla/TunTrust_Root_CA.crt", 128) = 55
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/UCA_Extended_Validation_Root.pem", "/usr/share/ca-certificates/mozilla/UCA_Extended_Validation_Root.crt", 128) = 67
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/UCA_Global_G2_Root.pem", "/usr/share/ca-certificates/mozilla/UCA_Global_G2_Root.crt", 128) = 57
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/USERTrust_ECC_Certification_Authority.pem", "/usr/share/ca-certificates/mozilla/USERTrust_ECC_Certification_Authority.crt", 128) = 76
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/USERTrust_RSA_Certification_Authority.pem", "/usr/share/ca-certificates/mozilla/USERTrust_RSA_Certification_Authority.crt", 128) = 76
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/a09a51ae.0", "D-TRUST_EV_Root_CA_2_2023.pem", 128) = 29
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/a3418fda.0", "GTS_Root_R4.pem", 128) = 15
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/a89d74c2.0", "SSL.com_TLS_RSA_Root_CA_2022.pem", 128) = 32
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/a94d09e5.0", "ACCVRAIZ1.pem", 128) = 13
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/b0d5255e.0", "TrustAsia_TLS_RSA_Root_CA.pem", 128) = 29
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/b0e59380.0", "GlobalSign_ECC_Root_CA_-_R4.pem", 128) = 31
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/b433981b.0", "ANF_Secure_Server_Root_CA.pem", 128) = 29
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/b7a5b843.0", "TWCA_Root_Certification_Authority.pem", 128) = 37
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/b81b93f0.0", "AC_RAIZ_FNMT-RCM_SERVIDORES_SEGUROS.pem", 128) = 39
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/b8d25de6.0", "TWCA_CYBER_Root_CA.pem", 128) = 22
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/bf53fb88.0", "Microsoft_RSA_Root_Certificate_Authority_2017.pem", 128) = 49
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/c01eb047.0", "UCA_Global_G2_Root.pem", 128) = 22
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/c28a8a30.0", "D-TRUST_Root_Class_3_CA_2_2009.pem", 128) = 34
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/ca.pem", "/usr/local/share/ca-certificates/ca.crt", 128) = 39
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/ca6e4ad9.0", "ePKI_Root_Certification_Authority.pem", 128) = 37
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/calypso-ca.pem", "/usr/local/share/ca-certificates/calypso-ca.crt", 128) = 47
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/cbf06781.0", "Go_Daddy_Root_Certificate_Authority_-_G2.pem", 128) = 44
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/cc450945.0", "Izenpe.com.pem", 128) = 14
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/cd58d51e.0", "Security_Communication_RootCA2.pem", 128) = 34
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/cd8c0d63.0", "AC_RAIZ_FNMT-RCM.pem", 128) = 20
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/ce5e74ef.0", "Amazon_Root_CA_1.pem", 128) = 20
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/certSIGN_Root_CA_G2.pem", "/usr/share/ca-certificates/mozilla/certSIGN_Root_CA_G2.crt", 128) = 58
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/d4dae3dd.0", "D-TRUST_Root_Class_3_CA_2_EV_2009.pem", 128) = 37
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/d52c538d.0", "DigiCert_TLS_RSA4096_Root_G5.pem", 128) = 32
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/d6325660.0", "COMODO_RSA_Certification_Authority.pem", 128) = 38
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/da0cfd1d.0", "Sectigo_Public_Server_Authentication_Root_E46.pem", 128) = 49
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/dc4d6a89.0", "GlobalSign_Root_CA_-_R6.pem", 128) = 27
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/dd8e9d41.0", "DigiCert_Global_Root_G3.pem", 128) = 27
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/ddcda989.0", "Telekom_Security_TLS_ECC_Root_2020.pem", 128) = 38
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/de6d66f3.0", "Amazon_Root_CA_4.pem", 128) = 20
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/e-Szigno_Root_CA_2017.pem", "/usr/share/ca-certificates/mozilla/e-Szigno_Root_CA_2017.crt", 128) = 60
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/e-Szigno_TLS_Root_CA_2023.pem", "/usr/share/ca-certificates/mozilla/e-Szigno_TLS_Root_CA_2023.crt", 128) = 64
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/e18bfb83.0", "QuoVadis_Root_CA_3_G3.pem", 128) = 25
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/e35234b1.0", "Certum_Trusted_Root_CA.pem", 128) = 26
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/e36a6752.0", "Atos_TrustedRoot_2011.pem", 128) = 25
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/e73d606e.0", "OISTE_WISeKey_Global_Root_GB_CA.pem", 128) = 35
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/e868b802.0", "e-Szigno_Root_CA_2017.pem", 128) = 25
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/e8de2f56.0", "Buypass_Class_3_Root_CA.pem", 128) = 27
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/ePKI_Root_Certification_Authority.pem", "/usr/share/ca-certificates/mozilla/ePKI_Root_Certification_Authority.crt", 128) = 72
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/ecccd8db.0", "HARICA_TLS_ECC_Root_CA_2021.pem", 128) = 31
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/ed858448.0", "vTrus_ECC_Root_CA.pem", 128) = 21
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/eed8c118.0", "COMODO_ECC_Certification_Authority.pem", 128) = 38
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/ef954a4e.0", "IdenTrust_Commercial_Root_CA_1.pem", 128) = 34
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/emSign_ECC_Root_CA_-_C3.pem", "/usr/share/ca-certificates/mozilla/emSign_ECC_Root_CA_-_C3.crt", 128) = 62
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/emSign_ECC_Root_CA_-_G3.pem", "/usr/share/ca-certificates/mozilla/emSign_ECC_Root_CA_-_G3.crt", 128) = 62
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/emSign_Root_CA_-_C1.pem", "/usr/share/ca-certificates/mozilla/emSign_Root_CA_-_C1.crt", 128) = 58
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/emSign_Root_CA_-_G1.pem", "/usr/share/ca-certificates/mozilla/emSign_Root_CA_-_G1.crt", 128) = 58
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/f0c70a8d.0", "SSL.com_EV_Root_Certification_Authority_ECC.pem", 128) = 47
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/f30dd6ad.0", "USERTrust_ECC_Certification_Authority.pem", 128) = 41
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/f44703f1.0", "e-Szigno_TLS_Root_CA_2023.pem", 128) = 29
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/f51bb24c.0", "Certigna_Root_CA.pem", 128) = 20
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/fb717492.0", "Atos_TrustedRoot_Root_CA_ECC_TLS_2021.pem", 128) = 41
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/fc5a8f99.0", "USERTrust_RSA_Certification_Authority.pem", 128) = 41
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/fd64f3fc.0", "TunTrust_Root_CA.pem", 128) = 20
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/fe8a2cd8.0", "SZAFIR_ROOT_CA2.pem", 128) = 19
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/feffd413.0", "GlobalSign_Root_E46.pem", 128) = 23
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/ff34af3f.0", "TUBITAK_Kamu_SM_SSL_Kok_Sertifikasi_-_Surum_1.pem", 128) = 49
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/ffdd40f9.0", "D-TRUST_BR_Root_CA_2_2023.pem", 128) = 29
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/vTrus_ECC_Root_CA.pem", "/usr/share/ca-certificates/mozilla/vTrus_ECC_Root_CA.crt", 128) = 56
+2778413 readlinkat(AT_FDCWD, "/etc/ssl/certs/vTrus_Root_CA.pem", "/usr/share/ca-certificates/mozilla/vTrus_Root_CA.crt", 128) = 52
+2778413 openat(AT_FDCWD, "/etc/ssl/certs/ACCVRAIZ1.pem", O_RDONLY|O_CLOEXEC) = 7
+2778413 openat(AT_FDCWD, "/etc/ssl/certs/AC_RAIZ_FNMT-RCM.pem", O_RDONLY|O_CLOEXEC) = 7
+2778413 openat(AT_FDCWD, "/etc/ssl/certs/AC_RAIZ_FNMT-RCM_SERVIDORES_SEGUROS.pem", O_RDONLY|O_CLOEXEC) = 7
+2778413 openat(AT_FDCWD, "/etc/ssl/certs/ANF_Secure_Server_Root_CA.pem", O_RDONLY|O_CLOEXEC) = 7
+2778413 openat(AT_FDCWD, "/etc/ssl/certs/Actalis_Authentication_Root_CA.pem", O_RDONLY|O_CLOEXEC) = 7
+2778413 openat(AT_FDCWD, "/etc/ssl/certs/Amazon_Root_CA_1.pem", O_RDONLY|O_CLOEXEC) = 7
+2778413 openat(AT_FDCWD, "/etc/ssl/certs/Amazon_Root_CA_2.pem", O_RDONLY|O_CLOEXEC) = 7
+2778413 openat(AT_FDCWD, "/etc/ssl/certs/Amazon_Root_CA_3.pem", O_RDONLY|O_CLOEXEC) = 7
+2778411 tgkill(2778410, 2778413, SIGURG) = 0
+2778413 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/Amazon_Root_CA_4.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/Atos_TrustedRoot_2011.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/Atos_TrustedRoot_Root_CA_ECC_TLS_2021.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 clone3({flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, child_tid=0x78887aa00990, parent_tid=0x78887aa00990, exit_signal=0, stack=0x78887a200000, stack_size=0x7fff80, tls=0x78887aa006c0} => {parent_tid=[2778417]}, 88) = 2778417
+2778410 clone3({flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, child_tid=0x78887a000990, parent_tid=0x78887a000990, exit_signal=0, stack=0x788879800000, stack_size=0x7fff80, tls=0x78887a0006c0} => {parent_tid=[2778418]}, 88) = 2778418
+2778410 clone3({flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, child_tid=0x788879600990, parent_tid=0x788879600990, exit_signal=0, stack=0x788878e00000, stack_size=0x7fff80, tls=0x7888796006c0} => {parent_tid=[2778419]}, 88) = 2778419
+2778417 clone3({flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, child_tid=0x788873e00990, parent_tid=0x788873e00990, exit_signal=0, stack=0x788873600000, stack_size=0x7fff80, tls=0x788873e006c0} => {parent_tid=[2778420]}, 88) = 2778420
+2778410 clone3({flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, child_tid=0x788873400990, parent_tid=0x788873400990, exit_signal=0, stack=0x788872c00000, stack_size=0x7fff80, tls=0x7888734006c0} => {parent_tid=[2778421]}, 88) = 2778421
+2778420 openat(AT_FDCWD, "/sys/devices/system/cpu/online", O_RDONLY|O_CLOEXEC <unfinished ...>
+2778419 tgkill(2778410, 2778410, SIGURG <unfinished ...>
+2778420 <... openat resumed>)           = 7
+2778419 <... tgkill resumed>)           = 0
+2778410 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778421 openat(AT_FDCWD, "/sys/devices/system/cpu/online", O_RDONLY|O_CLOEXEC <unfinished ...>
+2778419 tgkill(2778410, 2778410, SIGURG <unfinished ...>
+2778421 <... openat resumed>)           = 7
+2778419 <... tgkill resumed>)           = 0
+2778418 tgkill(2778410, 2778419, SIGURG) = 0
+2778419 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778410 clone3({flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, child_tid=0x788872a00990, parent_tid=0x788872a00990, exit_signal=0, stack=0x788872200000, stack_size=0x7fff80, tls=0x788872a006c0} => {parent_tid=[2778422]}, 88) = 2778422
+2778410 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778419 tgkill(2778410, 2778410, SIGURG) = 0
+2778410 clone3({flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, child_tid=0x788872000990, parent_tid=0x788872000990, exit_signal=0, stack=0x788871800000, stack_size=0x7fff80, tls=0x7888720006c0} => {parent_tid=[2778423]}, 88) = 2778423
+2778410 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778411 tgkill(2778410, 2778410, SIGURG) = 0
+2778410 clone3({flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, child_tid=0x788871600990, parent_tid=0x788871600990, exit_signal=0, stack=0x788870e00000, stack_size=0x7fff80, tls=0x7888716006c0} => {parent_tid=[2778424]}, 88) = 2778424
+2778410 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778419 tgkill(2778410, 2778410, SIGURG) = 0
+2778410 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778419 tgkill(2778410, 2778410, SIGURG) = 0
+2778410 clone3({flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, child_tid=0x788870c00990, parent_tid=0x788870c00990, exit_signal=0, stack=0x788870400000, stack_size=0x7fff80, tls=0x788870c006c0} => {parent_tid=[2778425]}, 88) = 2778425
+2778410 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778419 tgkill(2778410, 2778410, SIGURG) = 0
+2778410 clone3({flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, child_tid=0x788867e00990, parent_tid=0x788867e00990, exit_signal=0, stack=0x788867600000, stack_size=0x7fff80, tls=0x788867e006c0} => {parent_tid=[2778426]}, 88) = 2778426
+2778410 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778419 tgkill(2778410, 2778410, SIGURG) = 0
+2778410 clone3({flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, child_tid=0x788867400990, parent_tid=0x788867400990, exit_signal=0, stack=0x788866c00000, stack_size=0x7fff80, tls=0x7888674006c0} => {parent_tid=[2778427]}, 88) = 2778427
+2778410 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778411 tgkill(2778410, 2778419, SIGURG <unfinished ...>
+2778419 tgkill(2778410, 2778410, SIGURG <unfinished ...>
+2778411 <... tgkill resumed>)           = 0
+2778419 <... tgkill resumed>)           = 0
+2778419 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778410 clone3({flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, child_tid=0x788866a00990, parent_tid=0x788866a00990, exit_signal=0, stack=0x788866200000, stack_size=0x7fff80, tls=0x788866a006c0} => {parent_tid=[2778428]}, 88) = 2778428
+2778411 tgkill(2778410, 2778419, SIGURG <unfinished ...>
+2778410 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778411 <... tgkill resumed>)           = 0
+2778419 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778419 tgkill(2778410, 2778410, SIGURG) = 0
+2778410 clone3({flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, child_tid=0x788866000990, parent_tid=0x788866000990, exit_signal=0, stack=0x788865800000, stack_size=0x7fff80, tls=0x7888660006c0} => {parent_tid=[2778429]}, 88) = 2778429
+2778411 tgkill(2778410, 2778419, SIGURG) = 0
+2778410 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778419 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778419 tgkill(2778410, 2778410, SIGURG) = 0
+2778410 clone3({flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, child_tid=0x788865600990, parent_tid=0x788865600990, exit_signal=0, stack=0x788864e00000, stack_size=0x7fff80, tls=0x7888656006c0} => {parent_tid=[2778430]}, 88) = 2778430
+2778410 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778419 tgkill(2778410, 2778410, SIGURG) = 0
+2778411 tgkill(2778410, 2778419, SIGURG) = 0
+2778419 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778410 clone3({flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, child_tid=0x788864c00990, parent_tid=0x788864c00990, exit_signal=0, stack=0x788864400000, stack_size=0x7fff80, tls=0x788864c006c0} => {parent_tid=[2778431]}, 88) = 2778431
+2778410 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778419 tgkill(2778410, 2778410, SIGURG) = 0
+2778410 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778410 tgkill(2778410, 2778431, SIGURG) = 0
+2778431 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778431 tgkill(2778410, 2778410, SIGURG) = 0
+2778410 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/Atos_TrustedRoot_Root_CA_RSA_TLS_2021.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/Autoridad_de_Certificacion_Firmaprofesional_CIF_A62634068.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/BJCA_Global_Root_CA1.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/BJCA_Global_Root_CA2.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/Buypass_Class_2_Root_CA.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/Buypass_Class_3_Root_CA.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/CA_Disig_Root_R2.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/CFCA_EV_ROOT.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/COMODO_ECC_Certification_Authority.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/COMODO_RSA_Certification_Authority.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/Certainly_Root_E1.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/Certainly_Root_R1.pem", O_RDONLY|O_CLOEXEC) = 7
+2778411 tgkill(2778410, 2778410, SIGURG <unfinished ...>
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/Certigna_Root_CA.pem", O_RDONLY|O_CLOEXEC <unfinished ...>
+2778411 <... tgkill resumed>)           = 0
+2778410 <... openat resumed>)           = 7
+2778410 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/Certum_EC-384_CA.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/Certum_Trusted_Network_CA.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/Certum_Trusted_Network_CA_2.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/Certum_Trusted_Root_CA.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/D-TRUST_BR_Root_CA_1_2020.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/D-TRUST_BR_Root_CA_2_2023.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/D-TRUST_EV_Root_CA_1_2020.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/D-TRUST_EV_Root_CA_2_2023.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/D-TRUST_Root_Class_3_CA_2_2009.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/D-TRUST_Root_Class_3_CA_2_EV_2009.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/DigiCert_Assured_ID_Root_G2.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/DigiCert_Assured_ID_Root_G3.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/DigiCert_Global_Root_G2.pem", O_RDONLY|O_CLOEXEC) = 7
+2778411 tgkill(2778410, 2778410, SIGURG <unfinished ...>
+2778410 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778411 <... tgkill resumed>)           = 0
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/DigiCert_Global_Root_G3.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/DigiCert_TLS_ECC_P384_Root_G5.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/DigiCert_TLS_RSA4096_Root_G5.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/DigiCert_Trusted_Root_G4.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/Entrust_Root_Certification_Authority.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/GDCA_TrustAUTH_R5_ROOT.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/GTS_Root_R1.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/GTS_Root_R3.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/GTS_Root_R4.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/GlobalSign_ECC_Root_CA_-_R4.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/GlobalSign_ECC_Root_CA_-_R5.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/GlobalSign_Root_CA_-_R3.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/GlobalSign_Root_CA_-_R6.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/GlobalSign_Root_E46.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/GlobalSign_Root_R46.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/Go_Daddy_Root_Certificate_Authority_-_G2.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/HARICA_TLS_ECC_Root_CA_2021.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/HARICA_TLS_RSA_Root_CA_2021.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/Hellenic_Academic_and_Research_Institutions_ECC_RootCA_2015.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/Hellenic_Academic_and_Research_Institutions_RootCA_2015.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/HiPKI_Root_CA_-_G1.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/Hongkong_Post_Root_CA_3.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/ISRG_Root_X1.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/ISRG_Root_X2.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/IdenTrust_Commercial_Root_CA_1.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/IdenTrust_Public_Sector_Root_CA_1.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/Izenpe.com.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/Microsec_e-Szigno_Root_CA_2009.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/Microsoft_ECC_Root_Certificate_Authority_2017.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/Microsoft_RSA_Root_Certificate_Authority_2017.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/NAVER_Global_Root_Certification_Authority.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/NetLock_Arany_=Class_Gold=_F\305\221tan\303\272s\303\255tv\303\241ny.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/OISTE_Server_Root_ECC_G1.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/OISTE_Server_Root_RSA_G1.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/OISTE_WISeKey_Global_Root_GB_CA.pem", O_RDONLY|O_CLOEXEC) = 7
+2778410 openat(AT_FDCWD, "/etc/ssl/certs/OISTE_WISeKey_Global_Root_GC_CA.pem", O_RDONLY|O_CLOEXEC) = 7
+2778411 tgkill(2778410, 2778410, SIGURG) = 0
+2778410 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/QuoVadis_Root_CA_1_G3.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/QuoVadis_Root_CA_2_G3.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/QuoVadis_Root_CA_3_G3.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/SSL.com_EV_Root_Certification_Authority_ECC.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/SSL.com_EV_Root_Certification_Authority_RSA_R2.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/SSL.com_Root_Certification_Authority_ECC.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/SSL.com_Root_Certification_Authority_RSA.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/SSL.com_TLS_ECC_Root_CA_2022.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/SSL.com_TLS_RSA_Root_CA_2022.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/SZAFIR_ROOT_CA2.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/Sectigo_Public_Server_Authentication_Root_E46.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/Sectigo_Public_Server_Authentication_Root_R46.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/SecureSign_Root_CA12.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/SecureSign_Root_CA14.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/SecureSign_Root_CA15.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/Security_Communication_ECC_RootCA1.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/Security_Communication_RootCA2.pem", O_RDONLY|O_CLOEXEC) = 7
+2778411 tgkill(2778410, 2778414, SIGURG <unfinished ...>
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/Starfield_Root_Certificate_Authority_-_G2.pem", O_RDONLY|O_CLOEXEC) = 7
+2778411 <... tgkill resumed>)           = 0
+2778414 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/Starfield_Services_Root_Certificate_Authority_-_G2.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/SwissSign_RSA_TLS_Root_CA_2022_-_1.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/T-TeleSec_GlobalRoot_Class_2.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/T-TeleSec_GlobalRoot_Class_3.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/TUBITAK_Kamu_SM_SSL_Kok_Sertifikasi_-_Surum_1.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/TWCA_CYBER_Root_CA.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/TWCA_Global_Root_CA.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/TWCA_Root_Certification_Authority.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/Telekom_Security_TLS_ECC_Root_2020.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/Telekom_Security_TLS_RSA_Root_2023.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/Telia_Root_CA_v2.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/TrustAsia_Global_Root_CA_G3.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/TrustAsia_Global_Root_CA_G4.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/TrustAsia_TLS_ECC_Root_CA.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/TrustAsia_TLS_RSA_Root_CA.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/TunTrust_Root_CA.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/UCA_Extended_Validation_Root.pem", O_RDONLY|O_CLOEXEC) = 7
+2778411 tgkill(2778410, 2778414, SIGURG <unfinished ...>
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/UCA_Global_G2_Root.pem", O_RDONLY|O_CLOEXEC <unfinished ...>
+2778411 <... tgkill resumed>)           = 0
+2778414 <... openat resumed>)           = 7
+2778414 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/USERTrust_ECC_Certification_Authority.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/USERTrust_RSA_Certification_Authority.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/ca-certificates.crt", O_RDONLY|O_CLOEXEC) = 7
+2778411 tgkill(2778410, 2778414, SIGURG) = 0
+2778414 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/ca.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/calypso-ca.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/certSIGN_Root_CA_G2.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/e-Szigno_Root_CA_2017.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/e-Szigno_TLS_Root_CA_2023.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/ePKI_Root_Certification_Authority.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/emSign_ECC_Root_CA_-_C3.pem", O_RDONLY|O_CLOEXEC) = 7
+2778422 tgkill(2778410, 2778414, SIGURG) = 0
+2778414 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778426 tgkill(2778410, 2778422, SIGURG) = 0
+2778422 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778422 tgkill(2778410, 2778414, SIGURG <unfinished ...>
+2778417 clone3({flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, child_tid=0x78885be00990, parent_tid=0x78885be00990, exit_signal=0, stack=0x78885b600000, stack_size=0x7fff80, tls=0x78885be006c0} <unfinished ...>
+2778422 <... tgkill resumed>)           = 0
+2778414 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778417 <... clone3 resumed> => {parent_tid=[2778432]}, 88) = 2778432
+2778422 tgkill(2778410, 2778414, SIGURG) = 0
+2778414 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778422 tgkill(2778410, 2778414, SIGURG) = 0
+2778414 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778422 tgkill(2778410, 2778414, SIGURG) = 0
+2778414 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778422 tgkill(2778410, 2778414, SIGURG) = 0
+2778414 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778422 tgkill(2778410, 2778414, SIGURG) = 0
+2778414 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778432 openat(AT_FDCWD, "/etc/ssl/certs/emSign_ECC_Root_CA_-_G3.pem", O_RDONLY|O_CLOEXEC) = 7
+2778422 tgkill(2778410, 2778432, SIGURG) = 0
+2778432 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/emSign_Root_CA_-_C1.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/emSign_Root_CA_-_G1.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/java", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/vTrus_ECC_Root_CA.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/ssl/certs/vTrus_Root_CA.pem", O_RDONLY|O_CLOEXEC) = 7
+2778414 openat(AT_FDCWD, "/etc/pki/tls/certs", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = -1 ENOENT (No such file or directory)
+2778411 tgkill(2778410, 2778414, SIGURG <unfinished ...>
+2778414 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778411 <... tgkill resumed>)           = 0
+2778422 newfstatat(AT_FDCWD, "/etc/nsswitch.conf", {st_mode=S_IFREG|0644, st_size=521, ...}, 0) = 0
+2778422 newfstatat(AT_FDCWD, "/etc/resolv.conf", {st_mode=S_IFREG|0644, st_size=928, ...}, 0) = 0
+2778422 openat(AT_FDCWD, "/etc/hosts", O_RDONLY|O_CLOEXEC) = 7
+2778422 socket(AF_INET, SOCK_DGRAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 7
+2778422 setsockopt(7, SOL_IP, IP_RECVERR, [1], 4) = 0
+2778422 connect(7, {sa_family=AF_INET, sin_port=htons(53), sin_addr=inet_addr("127.0.0.53")}, 16) = 0
+2778422 sendmmsg(7, [{msg_hdr={msg_name=NULL, msg_namelen=0, msg_iov=[{iov_base="\4Y\1 \0\1\0\0\0\0\0\1\3www\nrfc-editor\3org\0\0\1\0\1\0\0)\4\260\0\0\0\0\0\0", iov_len=47}], msg_iovlen=1, msg_controllen=0, msg_flags=0}, msg_len=47}, {msg_hdr={msg_name=NULL, msg_namelen=0, msg_iov=[{iov_base="\10@\1 \0\1\0\0\0\0\0\1\3www\nrfc-editor\3org\0\0\34\0\1\0\0)\4\260\0\0\0\0\0\0", iov_len=47}], msg_iovlen=1, msg_controllen=0, msg_flags=0}, msg_len=47}], 2, MSG_NOSIGNAL) = 2
+2778422 recvfrom(7, "\4Y\201\200\0\1\0\2\0\0\0\1\3www\nrfc-editor\3org\0\0\1\0\1\300\f\0\1\0\1\0\0\0\306\0\4h\22\24Q\300\f\0\1\0\1\0\0\0\306\0\4h\22\25Q\0\0)\377\326\0\0\0\0\0\0", 2048, 0, {sa_family=AF_INET, sin_port=htons(53), sin_addr=inet_addr("127.0.0.53")}, [28 => 16]) = 79
+2778422 recvfrom(7, "\10@\201\200\0\1\0\2\0\0\0\1\3www\nrfc-editor\3org\0\0\34\0\1\300\f\0\34\0\1\0\0\0\306\0\20&\6G\0\0\0\0\0\0\0\0\0h\22\24Q\300\f\0\34\0\1\0\0\0\306\0\20&\6G\0\0\0\0\0\0\0\0\0h\22\25Q\0\0)\377\326\0\0\0\0\0\0", 65536, 0, {sa_family=AF_INET, sin_port=htons(53), sin_addr=inet_addr("127.0.0.53")}, [28 => 16]) = 103
+2778422 socket(AF_NETLINK, SOCK_RAW|SOCK_CLOEXEC, NETLINK_ROUTE) = 7
+2778422 bind(7, {sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, 12) = 0
+2778422 getsockname(7, {sa_family=AF_NETLINK, nl_pid=2778410, nl_groups=00000000}, [12]) = 0
+2778422 sendto(7, [{nlmsg_len=20, nlmsg_type=RTM_GETADDR, nlmsg_flags=NLM_F_REQUEST|NLM_F_DUMP, nlmsg_seq=1789522460, nlmsg_pid=0}, {ifa_family=AF_UNSPEC, ...}], 20, 0, {sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, 12) = 20
+2778422 recvmsg(7, {msg_name={sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, msg_namelen=12, msg_iov=[{iov_base=[[{nlmsg_len=76, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522460, nlmsg_pid=2778410}, {ifa_family=AF_INET, ifa_prefixlen=8, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_HOST, ifa_index=if_nametoindex("lo")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("127.0.0.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("127.0.0.1")], [{nla_len=7, nla_type=IFA_LABEL}, "lo"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=1012, tstamp=1012}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522460, nlmsg_pid=2778410}, {ifa_family=AF_INET, ifa_prefixlen=12, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("enp129s0f0np0")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("172.16.24.11")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("172.16.24.11")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("172.31.255.255")], [{nla_len=18, nla_type=IFA_LABEL}, "enp129s0f0np0"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=1762, tstamp=23980116}]]], [{nlmsg_len=88, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522460, nlmsg_pid=2778410}, {ifa_family=AF_INET, ifa_prefixlen=24, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("virbr1")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.50.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.50.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.50.255")], [{nla_len=11, nla_type=IFA_LABEL}, "virbr1"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2224, tstamp=2224}]]], [{nlmsg_len=88, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522460, nlmsg_pid=2778410}, {ifa_family=AF_INET, ifa_prefixlen=24, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("virbr2")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.61.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.61.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.61.255")], [{nla_len=11, nla_type=IFA_LABEL}, "virbr2"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2245, tstamp=2245}]]], [{nlmsg_len=88, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522460, nlmsg_pid=2778410}, {ifa_family=AF_INET, ifa_prefixlen=24, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("virbr0")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.122.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.122.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.122.255")], [{nla_len=11, nla_type=IFA_LABEL}, "virbr0"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2273, tstamp=2273}]]], [{nlmsg_len=88, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522460, nlmsg_pid=2778410}, {ifa_family=AF_INET, ifa_prefixlen=24, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("virbr4")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.83.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.83.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.83.255")], [{nla_len=11, nla_type=IFA_LABEL}, "virbr4"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2291, tstamp=2291}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522460, nlmsg_pid=2778410}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("br-d564a52702f6")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.64.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.64.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.79.255")], [{nla_len=20, nla_type=IFA_LABEL}, "br-d564a52702f6"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2517, tstamp=2517}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522460, nlmsg_pid=2778410}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("docker_gwbridge")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.16.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.16.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.31.255")], [{nla_len=20, nla_type=IFA_LABEL}, "docker_gwbridge"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2533, tstamp=2533}]]], [{nlmsg_len=88, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522460, nlmsg_pid=2778410}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("docker0")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.0.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.0.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.15.255")], [{nla_len=12, nla_type=IFA_LABEL}, "docker0"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2550, tstamp=2550}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522460, nlmsg_pid=2778410}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("br-5140c59d6152")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.144.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.144.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.159.255")], [{nla_len=20, nla_type=IFA_LABEL}, "br-5140c59d6152"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2563, tstamp=2563}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522460, nlmsg_pid=2778410}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("br-5d6342ce11bf")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.32.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.32.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.47.255")], [{nla_len=20, nla_type=IFA_LABEL}, "br-5d6342ce11bf"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2579, tstamp=2579}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522460, nlmsg_pid=2778410}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("br-7ba450de6007")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.96.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.96.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.111.255")], [{nla_len=20, nla_type=IFA_LABEL}, "br-7ba450de6007"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2616, tstamp=2616}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522460, nlmsg_pid=2778410}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("br-92a829545622")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.128.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.128.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.143.255")], [{nla_len=20, nla_type=IFA_LABEL}, "br-92a829545622"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2629, tstamp=2629}]]], [{nlmsg_len=72, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522460, nlmsg_pid=2778410}, {ifa_family=AF_INET6, ifa_prefixlen=128, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_HOST, ifa_index=if_nametoindex("lo")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "::1")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=1013, tstamp=1013}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT|IFA_F_NOPREFIXROUTE]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522460, nlmsg_pid=2778410}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("enp129s0f0np0")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::7ec2:55ff:fe46:292c")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=1755, tstamp=1755}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522460, nlmsg_pid=2778410}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("docker_gwbridge")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::c86d:3bff:fe57:cd8f")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=3089, tstamp=3089}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522460, nlmsg_pid=2778410}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("docker0")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::e03e:ff:fe35:4604")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2829, tstamp=2829}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=72, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522460, nlmsg_pid=2778410}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_NODAD|IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("br-5d6342ce11bf")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fc00:f853:ccd:e793::1")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2579, tstamp=2579}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_NODAD|IFA_F_PERMANENT]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522460, nlmsg_pid=2778410}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("br-5d6342ce11bf")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::8847:eaff:fe57:996f")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2861, tstamp=2861}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522460, nlmsg_pid=2778410}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("veth49d7c3e")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::e439:25ff:feca:3a1a")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2829, tstamp=2829}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522460, nlmsg_pid=2778410}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("vethf821cfb")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::1c3d:17ff:fe2a:b0df")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2861, tstamp=2861}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522460, nlmsg_pid=2778410}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("veth99b1031")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::9461:b1ff:fe27:cfeb")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2861, tstamp=2861}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522460, nlmsg_pid=2778410}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("veth0c2737a")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::e881:8cff:fe4d:9773")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2869, tstamp=2869}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522460, nlmsg_pid=2778410}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("veth22c136c")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::e861:dcff:feba:584e")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2864, tstamp=2864}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522460, nlmsg_pid=2778410}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("veth83d5692")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::442f:62ff:fe2f:6038")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=3089, tstamp=3089}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522460, nlmsg_pid=2778410}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("veth4bf7b26")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::b074:44ff:feb4:8910")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=63024042, tstamp=63024042}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]]], iov_len=4096}], msg_iovlen=1, msg_controllen=0, msg_flags=0}, 0) = 2212
+2778422 recvmsg(7, {msg_name={sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, msg_namelen=12, msg_iov=[{iov_base=[{nlmsg_len=20, nlmsg_type=NLMSG_DONE, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522460, nlmsg_pid=2778410}, 0], iov_len=4096}], msg_iovlen=1, msg_controllen=0, msg_flags=0}, 0) = 20
+2778422 socket(AF_INET, SOCK_DGRAM|SOCK_CLOEXEC, IPPROTO_IP) = 7
+2778422 connect(7, {sa_family=AF_INET, sin_port=htons(0), sin_addr=inet_addr("104.18.20.81")}, 16) = 0
+2778422 getsockname(7, {sa_family=AF_INET, sin_port=htons(41298), sin_addr=inet_addr("172.16.24.11")}, [28 => 16]) = 0
+2778422 connect(7, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16) = 0
+2778422 connect(7, {sa_family=AF_INET, sin_port=htons(0), sin_addr=inet_addr("104.18.21.81")}, 16) = 0
+2778422 getsockname(7, {sa_family=AF_INET, sin_port=htons(45541), sin_addr=inet_addr("172.16.24.11")}, [28 => 16]) = 0
+2778422 socket(AF_INET6, SOCK_DGRAM|SOCK_CLOEXEC, IPPROTO_IP) = 7
+2778422 connect(7, {sa_family=AF_INET6, sin6_port=htons(0), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:4700::6812:1451", &sin6_addr), sin6_scope_id=0}, 28) = -1 ENETUNREACH (Network is unreachable)
+2778422 connect(7, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16) = 0
+2778422 connect(7, {sa_family=AF_INET6, sin6_port=htons(0), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:4700::6812:1551", &sin6_addr), sin6_scope_id=0}, 28) = -1 ENETUNREACH (Network is unreachable)
+2778411 tgkill(2778410, 2778422, SIGURG <unfinished ...>
+2778422 socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP <unfinished ...>
+2778411 <... tgkill resumed>)           = 0
+2778422 <... socket resumed>)           = 7
+2778422 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778411 tgkill(2778410, 2778422, SIGURG <unfinished ...>
+2778422 connect(7, {sa_family=AF_INET, sin_port=htons(443), sin_addr=inet_addr("104.18.20.81")}, 16 <unfinished ...>
+2778411 <... tgkill resumed>)           = 0
+2778422 <... connect resumed>)          = -1 EINPROGRESS (Operation now in progress)
+2778422 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778414 getsockopt(7, SOL_SOCKET, SO_ERROR, [0], [4]) = 0
+2778414 getpeername(7, {sa_family=AF_INET, sin_port=htons(443), sin_addr=inet_addr("104.18.20.81")}, [112 => 16]) = 0
+2778414 getsockname(7, {sa_family=AF_INET, sin_port=htons(51454), sin_addr=inet_addr("172.16.24.11")}, [112 => 16]) = 0
+2778414 setsockopt(7, SOL_TCP, TCP_NODELAY, [1], 4) = 0
+2778414 setsockopt(7, SOL_SOCKET, SO_KEEPALIVE, [1], 4) = 0
+2778414 setsockopt(7, SOL_TCP, TCP_KEEPIDLE, [30], 4) = 0
+2778414 setsockopt(7, SOL_TCP, TCP_KEEPINTVL, [15], 4) = 0
+2778414 setsockopt(7, SOL_TCP, TCP_KEEPCNT, [9], 4) = 0
+2778411 tgkill(2778410, 2778422, SIGURG <unfinished ...>
+2778422 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778411 <... tgkill resumed>)           = 0
+2778411 tgkill(2778410, 2778412, SIGURG) = 0
+2778412 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778425 tgkill(2778410, 2778412, SIGURG) = 0
+2778412 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778425 tgkill(2778410, 2778412, SIGURG) = 0
+2778423 clone3({flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, child_tid=0x78885b400990, parent_tid=0x78885b400990, exit_signal=0, stack=0x78885ac00000, stack_size=0x7fff80, tls=0x78885b4006c0} <unfinished ...>
+2778412 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778423 <... clone3 resumed> => {parent_tid=[2778468]}, 88) = 2778468
+2778425 tgkill(2778410, 2778412, SIGURG) = 0
+2778412 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778425 tgkill(2778410, 2778412, SIGURG) = 0
+2778412 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778411 tgkill(2778410, 2778412, SIGURG <unfinished ...>
+2778412 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778411 <... tgkill resumed>)           = 0
+2778425 tgkill(2778410, 2778412, SIGURG) = 0
+2778412 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778425 tgkill(2778410, 2778412, SIGURG) = 0
+2778412 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778425 tgkill(2778410, 2778412, SIGURG) = 0
+2778412 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778411 tgkill(2778410, 2778412, SIGURG) = 0
+2778412 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778425 tgkill(2778410, 2778412, SIGURG) = 0
+2778412 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778425 tgkill(2778410, 2778412, SIGURG) = 0
+2778412 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778425 tgkill(2778410, 2778412, SIGURG) = 0
+2778412 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778425 tgkill(2778410, 2778412, SIGURG) = 0
+2778411 tgkill(2778410, 2778425, SIGURG <unfinished ...>
+2778412 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778411 <... tgkill resumed>)           = 0
+2778425 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778411 tgkill(2778410, 2778412, SIGURG) = 0
+2778412 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778411 tgkill(2778410, 2778425, SIGURG <unfinished ...>
+2778425 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778411 <... tgkill resumed>)           = 0
+2778411 tgkill(2778410, 2778425, SIGURG) = 0
+2778425 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778425 tgkill(2778410, 2778412, SIGURG) = 0
+2778412 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2778410, si_uid=253477} ---
+2778413 openat(AT_FDCWD, "summary.txt", O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, 0644) = 8
+2778413 exit_group(0)                   = ?
+2778468 +++ exited with 0 +++
+2778432 +++ exited with 0 +++
+2778431 +++ exited with 0 +++
+2778430 +++ exited with 0 +++
+2778429 +++ exited with 0 +++
+2778428 +++ exited with 0 +++
+2778427 +++ exited with 0 +++
+2778426 +++ exited with 0 +++
+2778425 +++ exited with 0 +++
+2778424 +++ exited with 0 +++
+2778423 +++ exited with 0 +++
+2778422 +++ exited with 0 +++
+2778421 +++ exited with 0 +++
+2778420 +++ exited with 0 +++
+2778419 +++ exited with 0 +++
+2778418 +++ exited with 0 +++
+2778417 +++ exited with 0 +++
+2778415 +++ exited with 0 +++
+2778414 +++ exited with 0 +++
+2778413 +++ exited with 0 +++
+2778411 +++ exited with 0 +++
+2778412 +++ exited with 0 +++
+2778410 +++ exited with 0 +++

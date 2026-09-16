@@ -1,0 +1,70 @@
+== --allow-run: by path, and what an argument is ==
+### grant /bin/true, run /bin/true, no arguments
+$ deno run --no-prompt --allow-run=/bin/true /home/pniroula/Projects/gvisor-t23/docs/snp/evidence/ticket23/spikes/E3/probe-run.ts /bin/true
+OK code=0 stdout="" stderr=""
+EXIT=0
+
+### grant /bin/true, run /bin/true with arguments
+$ deno run --no-prompt --allow-run=/bin/true /home/pniroula/Projects/gvisor-t23/docs/snp/evidence/ticket23/spikes/E3/probe-run.ts /bin/true --whatever -x rm -rf /
+OK code=0 stdout="" stderr=""
+EXIT=0
+
+### grant /bin/true, run /bin/false (a different path)
+$ deno run --no-prompt --allow-run=/bin/true /home/pniroula/Projects/gvisor-t23/docs/snp/evidence/ticket23/spikes/E3/probe-run.ts /bin/false
+ERROR NotCapable: Requires run access to "/bin/false", run again with the --allow-run flag
+EXIT=0
+
+### grant /bin/true, run bare 'true' (a PATH lookup)
+$ deno run --no-prompt --allow-run=/bin/true /home/pniroula/Projects/gvisor-t23/docs/snp/evidence/ticket23/spikes/E3/probe-run.ts true
+ERROR NotCapable: Requires run access to "true", run again with the --allow-run flag
+EXIT=0
+
+### grant bare 'true', run bare 'true'
+$ deno run --no-prompt --allow-run=true /home/pniroula/Projects/gvisor-t23/docs/snp/evidence/ticket23/spikes/E3/probe-run.ts true
+OK code=0 stdout="" stderr=""
+EXIT=0
+
+### grant bare 'true', run /bin/true
+$ deno run --no-prompt --allow-run=true /home/pniroula/Projects/gvisor-t23/docs/snp/evidence/ticket23/spikes/E3/probe-run.ts /bin/true
+ERROR NotCapable: Requires run access to "/bin/true", run again with the --allow-run flag
+EXIT=0
+
+### grant /bin/sh, run /bin/sh -c 'echo anything at all'
+$ deno run --no-prompt --allow-run=/bin/sh /home/pniroula/Projects/gvisor-t23/docs/snp/evidence/ticket23/spikes/E3/probe-run.ts /bin/sh -c echo anything at all; id -un
+OK code=0 stdout="anything at all\npniroula\n" stderr=""
+EXIT=0
+
+-- can a grant name a digest rather than a path? --
+### grant a sha256 in place of a path
+$ deno run --no-prompt --allow-run=sha256:f0b6a7b0c0d0 /home/pniroula/Projects/gvisor-t23/docs/snp/evidence/ticket23/spikes/E3/probe-run.ts /bin/true
+[0m[38;5;245mInfo[0m Failed to resolve 'sha256:f0b6a7b0c0d0' for allow-run: cannot find binary path
+ERROR NotCapable: Requires run access to "/bin/true", run again with the --allow-run flag
+EXIT=0
+
+### grant a path with a digest suffix
+$ deno run --no-prompt --allow-run=/bin/true@sha256:f0b6a7b0 /home/pniroula/Projects/gvisor-t23/docs/snp/evidence/ticket23/spikes/E3/probe-run.ts /bin/true
+ERROR NotCapable: Requires run access to "/bin/true", run again with the --allow-run flag
+EXIT=0
+
+-- what the descriptor can even say --
+### querying run with a command, under --allow-run=/bin/true
+$ deno run --no-prompt --allow-run=/bin/true /home/pniroula/Projects/gvisor-t23/docs/snp/evidence/ticket23/spikes/E3/probe-perms.ts
+net api.anthropic.com:443 = prompt
+net api.anthropic.com (any port) = prompt
+net www.rfc-editor.org:443 = prompt
+net 160.79.104.10:443 (api's A record) = prompt
+net 104.18.20.81:443 (rfc-editor A record) = prompt
+net 127.0.0.53:53 (the resolver) = prompt
+read /etc/ssl/certs (the trust store) = prompt
+read /etc/ssl/certs/ca-certificates.crt = prompt
+read /etc/resolv.conf = prompt
+read /etc/nsswitch.conf = prompt
+write ./summary.txt = prompt
+env ANTHROPIC_API_KEY = prompt
+env PATH = prompt
+run /bin/true = granted
+sys (uname, hostname, cpus…) = prompt
+ffi = prompt
+import = prompt
+EXIT=0
+

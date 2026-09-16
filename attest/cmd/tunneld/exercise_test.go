@@ -24,6 +24,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"gvisor.dev/gvisor/attest/sandbox"
 	"gvisor.dev/gvisor/attest/tunneld"
@@ -148,6 +149,14 @@ func (s *loopbackStream) Read(p []byte) (int, error) {
 }
 
 func (s *loopbackStream) Close() error { return nil }
+
+// The deadlines do nothing, and honestly so: this stream is two buffers, so
+// neither Read nor Write ever blocks and there is nothing for a deadline to
+// interrupt. The exercise sets none — the deadlines exist for the net.Conn
+// consumers a sandbox runs over a real stream (ticket 23).
+func (s *loopbackStream) SetDeadline(time.Time) error      { return nil }
+func (s *loopbackStream) SetReadDeadline(time.Time) error  { return nil }
+func (s *loopbackStream) SetWriteDeadline(time.Time) error { return nil }
 
 // linesf is a logf that keeps what it was told.
 type linesf struct {

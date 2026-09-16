@@ -37,10 +37,10 @@
 // what that costs: a QUIC stream is not a kernel object and cannot be handed
 // over as one, so the descriptor a sandbox receives is one end of a socketpair
 // and tunneld pumps bytes between it and the stream. That is why [Stream] is
-// an interface over an [io.ReadWriteCloser] with a half-close rather than
-// anything QUIC-shaped: one end of a socketpair satisfies it as it stands
-// (*net.UnixConn already has CloseWrite), and so does package tunnel's raw
-// stream, and neither had to learn about the other.
+// an interface over an [io.ReadWriteCloser] with a half-close and deadlines
+// rather than anything QUIC-shaped: one end of a socketpair satisfies it as it
+// stands (*net.UnixConn already has CloseWrite and the three deadlines), and so
+// does package tunnel's raw stream, and neither had to learn about the other.
 //
 // # The two halves
 //
@@ -57,10 +57,11 @@ package sandbox
 import (
 	"context"
 	"io"
+	"time"
 )
 
 // A Stream is one byte stream to or from an attested peer: bytes in both
-// directions and an end in each, and nothing else.
+// directions, an end in each, a deadline on either, and nothing else.
 //
 // CloseWrite is the half that makes this more than an io.ReadWriteCloser, and
 // it is not decoration. Every protocol a sandbox is likely to run over a
@@ -76,12 +77,45 @@ import (
 // otherwise: it carries the end of the stream in each direction and leaves
 // "why it ended" out, rather than inventing a signal in process that cannot be
 // delivered out of it.
+//
+// The three deadlines are here because the first thing anybody puts on a stream
+// is a protocol somebody else wrote. Spike E2 (docs/snp/evidence/ticket23,
+// ticket 23) put an agent's http.Transport behind this contract, and net/http
+// and crypto/tls are both net.Conn consumers: each sets deadlines to bound a
+// read that may never finish and to interrupt one when the caller's context is
+// cancelled. The shim there answered nil and did nothing, and both believed it,
+// so an agent behind the contract had no I/O timeout at all and a cancelled
+// request could not free the goroutine waiting on the stream. The contract
+// carried the *end* of a stream in each direction and nothing about *when*.
+//
+// Nothing had to be added to either implementation to say this, which is the
+// argument for saying it here rather than above: *net.UnixConn has had the
+// three methods since before this package existed and so has a *quic.Stream, so
+// the interface was hiding a capability both ends already had rather than
+// asking for one neither could keep — which is exactly what separates a
+// deadline from a reset.
 type Stream interface {
 	io.ReadWriteCloser
 
 	// CloseWrite ends this side's half of the stream. The peer reads
 	// end-of-file; this side may still read what the peer has yet to send.
 	CloseWrite() error
+
+	// SetDeadline sets the deadline for reads and writes together, as
+	// net.Conn's does. The zero time means no deadline, and a time already
+	// past ends whatever is blocked now.
+	SetDeadline(t time.Time) error
+
+	// SetReadDeadline sets it for reads alone. A Read with no bytes for it by
+	// then gives up with an error for which errors.Is(err,
+	// os.ErrDeadlineExceeded) is true; the stream is unharmed and a later
+	// deadline puts it back to work.
+	SetReadDeadline(t time.Time) error
+
+	// SetWriteDeadline sets it for writes alone. A Write that reaches its
+	// deadline may already have sent part of what it was given and says how
+	// much, as any io.Writer that stops early must.
+	SetWriteDeadline(t time.Time) error
 }
 
 // Attested is everything a sandbox may know about the peer on the other end of

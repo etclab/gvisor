@@ -1,0 +1,514 @@
+// Copyright 2026 The gVisor Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Ticket 23's spike E2: E1's agent, with every outbound TCP connection it
+// makes going through the sandbox contract's Open instead of a direct dial.
+//
+// It is a throwaway and lives here only because attest/internal/fixture is an
+// internal package and the two tunnelds this needs are the ones every test in
+// this package starts. Nothing in attest/ was changed for it, and it is
+// deleted from the tree once it has run; the copy that stays is under
+// docs/snp/evidence/ticket23/spikes/E2/.
+//
+// The shape:
+//
+//	agent → http.Transport.DialContext → boxA.Open(ctx, "b") → tunnel → B
+//	                                                              ↓
+//	                            the throwaway exit: "CONNECT host:port\n",
+//	                            then net.Dial and pump bytes both ways
+//
+// TLS runs end to end from the agent to api.anthropic.com over that, so the
+// exit sees ciphertext only.
+
+package tunneld_test
+
+import (
+	"bufio"
+	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"net"
+	"net/http"
+	"os"
+	"strings"
+	"sync"
+	"testing"
+	"time"
+
+	"gvisor.dev/gvisor/attest/sandbox"
+	"gvisor.dev/gvisor/attest/tunneld"
+)
+
+// spikeExitPeer is the one peer name the agent's whole network is. A peer name
+// is not a host:port and the contract has no other way to name a destination,
+// so every dial the agent makes asks for this one and says where it wanted to
+// go in the first line of the stream.
+const spikeExitPeer = "b"
+
+// spikeE2Policy is the provisional document ticket 22 left behind, narrowed to
+// what E1 measured: anywhere, port 443. Nothing enforces it — B's null sandbox
+// acknowledges it and that is all — and it is pushed here so that the
+// acknowledgement is on the record beside the run it did not constrain.
+const spikeE2Policy = `{"format":"policy","version":1,"n":[{"cidr":"0.0.0.0/0","ports":[443]}],"f":[],"x":[]}`
+
+// spikeSay is stdout, serialised: several goroutines write the record.
+type spikeSay struct {
+	mu sync.Mutex
+	w  io.Writer
+}
+
+func (s *spikeSay) Write(p []byte) (int, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.w.Write(p)
+}
+
+func (s *spikeSay) say(format string, a ...any) {
+	fmt.Fprintf(s, format+"\n", a...)
+}
+
+// spikeConn is the shim: the contract's Stream as a net.Conn, which is what
+// net/http dials. Everything here that is not Read, Write, Close or CloseWrite
+// is something the contract does not have and net.Conn requires.
+type spikeConn struct {
+	s    sandbox.Stream
+	peer string
+}
+
+type spikeAddr string
+
+func (a spikeAddr) Network() string { return "sandbox-contract" }
+func (a spikeAddr) String() string  { return string(a) }
+
+func (c *spikeConn) Read(p []byte) (int, error)  { return c.s.Read(p) }
+func (c *spikeConn) Write(p []byte) (int, error) { return c.s.Write(p) }
+func (c *spikeConn) Close() error                { return c.s.Close() }
+func (c *spikeConn) CloseWrite() error           { return c.s.CloseWrite() }
+func (c *spikeConn) LocalAddr() net.Addr         { return spikeAddr("sandbox-a") }
+func (c *spikeConn) RemoteAddr() net.Addr        { return spikeAddr("peer:" + c.peer) }
+
+// The three deadlines the contract has not got. Returning nil is a lie that
+// net/http and crypto/tls both believe: a deadline is silently never set, so
+// nothing this agent does over a stream can time out and a context cancelled
+// mid-handshake cannot interrupt a blocked read.
+func (c *spikeConn) SetDeadline(time.Time) error      { return nil }
+func (c *spikeConn) SetReadDeadline(time.Time) error  { return nil }
+func (c *spikeConn) SetWriteDeadline(time.Time) error { return nil }
+
+// spikeDialRecord is one Open, for the timings.
+type spikeDialRecord struct {
+	addr string
+	took time.Duration
+}
+
+func TestSpike23E2AgentBehindTheNullSandbox(t *testing.T) {
+	if os.Getenv("ANTHROPIC_API_KEY") == "" {
+		t.Skip("no ANTHROPIC_API_KEY in the environment")
+	}
+	out := &spikeSay{w: os.Stdout}
+	// write_file writes into the working directory, so the working directory
+	// is a temporary one: nothing this spike does leaves a file in the tree.
+	work := t.TempDir()
+	t.Chdir(work)
+
+	// B, the far side: its tunneld admits A, and the null sandbox beside it is
+	// what a pushed policy reaches and what the exit accepts streams through.
+	b := start(t, "sandbox-b", imageB, admitting(imageA), nil)
+	boxB := sandbox.NewNull(b.Tunneld, func(f string, a ...any) { out.say("B "+f, a...) })
+	b.Attach(boxB)
+
+	// A, the near side: it knows one peer and pushes one policy to every peer
+	// it dials, which is ticket 22's -push-policy without the command.
+	a := start(t, "sandbox-a", imageA, admitting(imageB),
+		tunneld.PeerTable{spikeExitPeer: b.Addr().String()},
+		func(cfg *tunneld.Config) { cfg.PushPolicy = []byte(spikeE2Policy) })
+	boxA := sandbox.NewNull(a.Tunneld, func(f string, r ...any) { out.say("A "+f, r...) })
+
+	// The exit behind B: accept a stream, read where it wants to go, dial it,
+	// pump. It is a throwaway and everything it does that the contract did not
+	// give it is a finding.
+	exitCtx, stopExit := context.WithCancel(context.Background())
+	defer stopExit()
+	go spikeExitLoop(exitCtx, out, boxB)
+
+	var mu sync.Mutex
+	var dials []spikeDialRecord
+	dial := func(ctx context.Context, network, addr string) (net.Conn, error) {
+		if !strings.HasPrefix(network, "tcp") {
+			return nil, fmt.Errorf("the contract carries no %s", network)
+		}
+		// addr is a host:port and never an address: net/http has not resolved
+		// anything, which is what leaves name resolution at the far end.
+		began := time.Now()
+		s, err := boxA.Open(ctx, spikeExitPeer)
+		took := time.Since(began)
+		if err != nil {
+			out.say("DIAL %s -> Open(%q) refused after %s: %v", addr, spikeExitPeer, took.Round(time.Millisecond), err)
+			return nil, err
+		}
+		if _, err := io.WriteString(s, "CONNECT "+addr+"\n"); err != nil {
+			s.Close()
+			return nil, err
+		}
+		mu.Lock()
+		dials = append(dials, spikeDialRecord{addr: addr, took: took})
+		n := len(dials)
+		mu.Unlock()
+		out.say("DIAL %d: %s over Open(%q) in %s", n, addr, spikeExitPeer, took.Round(time.Microsecond))
+		return &spikeConn{s: s, peer: spikeExitPeer}, nil
+	}
+
+	// ForceAttemptHTTP2 is not decoration: a Transport with a DialContext of
+	// its own does not configure HTTP/2 unless it is told to, and E1 ran over
+	// HTTP/2. Without this line the two experiments would not be comparable.
+	transport := &http.Transport{DialContext: dial, ForceAttemptHTTP2: true}
+	defer transport.CloseIdleConnections()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+
+	began := time.Now()
+	err := spikeRunAgent(ctx, &http.Client{Transport: transport}, out)
+	wall := time.Since(began)
+
+	out.say("")
+	if err != nil {
+		out.say("THE RUN FAILED: %v", err)
+	} else {
+		out.say("THE RUN COMPLETED")
+	}
+	out.say("wall time behind the contract: %s over %d Open call(s)", wall.Round(time.Millisecond), len(dials))
+	mu.Lock()
+	for i, d := range dials {
+		out.say("Open %d: %s for %s", i+1, d.took.Round(time.Microsecond), d.addr)
+	}
+	mu.Unlock()
+	if summary, err := os.ReadFile("summary.txt"); err == nil {
+		out.say("summary.txt: %d bytes written in %s", len(summary), work)
+	} else {
+		out.say("summary.txt: %v", err)
+	}
+	for i, r := range boxB.Applied() {
+		out.say("B applied %d: format=%s version=%d bytes=%d sha256=%s", i+1, r.Format, r.Version, r.Bytes, r.SHA256)
+	}
+	if err != nil {
+		t.Errorf("the agent behind the contract: %v", err)
+	}
+}
+
+// spikeExitLoop is the exit sandbox: every stream a peer opens to B.
+func spikeExitLoop(ctx context.Context, out *spikeSay, box sandbox.Sandbox) {
+	for {
+		s, who, err := box.Accept(ctx)
+		if err != nil {
+			return
+		}
+		out.say("EXIT accepted a stream from peer=%q vendor=%s measurement=%s… policy_digest=%s…",
+			who.Peer, who.Vendor, who.Measurement[:16], who.PolicyDigest[:16])
+		go spikeExitServe(out, s)
+	}
+}
+
+// spikeExitServe reads one "CONNECT host:port" line, dials it and pumps.
+func spikeExitServe(out *spikeSay, s sandbox.Stream) {
+	defer s.Close()
+	// The reader is kept for the pump: a line reader that buffered past the
+	// newline has the first bytes of the TLS ClientHello in it already.
+	br := bufio.NewReader(s)
+	line, err := br.ReadString('\n')
+	if err != nil {
+		out.say("EXIT could not read the destination: %v", err)
+		return
+	}
+	target, ok := strings.CutPrefix(strings.TrimSpace(line), "CONNECT ")
+	if !ok {
+		out.say("EXIT read %q, which is not a destination", line)
+		return
+	}
+	began := time.Now()
+	remote, err := net.Dial("tcp", target)
+	if err != nil {
+		out.say("EXIT could not reach %s: %v", target, err)
+		return
+	}
+	defer remote.Close()
+	out.say("EXIT resolved and dialed %s -> %s in %s", target, remote.RemoteAddr(), time.Since(began).Round(time.Millisecond))
+
+	ended := make(chan string, 2)
+	go func() {
+		n, err := io.Copy(remote, br)
+		ended <- fmt.Sprintf("to %s: %d bytes, %v", target, n, err)
+	}()
+	go func() {
+		n, err := io.Copy(s, remote)
+		s.CloseWrite()
+		ended <- fmt.Sprintf("from %s: %d bytes, %v", target, n, err)
+	}()
+	// One direction ending ends the other: SOCK_STREAM has no reset and this
+	// exit has no protocol of its own to say which of the two it was.
+	out.say("EXIT %s", <-ended)
+}
+
+// ===== the agent, shared verbatim by E1 and E2 =====
+//
+// Everything below this line is byte-identical in E1's agent.go and in E2's
+// harness. The only thing that differs between the two experiments is the
+// *http.Client handed to spikeRunAgent: E1 gives it one over the default
+// transport, E2 gives it one whose DialContext is the sandbox contract's Open.
+
+const (
+	spikeModel     = "claude-sonnet-5"
+	spikeMaxTokens = 4096
+	spikeEndpoint  = "https://api.anthropic.com/v1/messages"
+	spikeAPIVer    = "2023-06-01"
+	spikeFetchCap  = 20 << 10 // ~20 KB of a fetched document, then truncate
+
+	// The task, fixed here verbatim so that runs replay.
+	spikeTask = "Fetch the document at https://www.rfc-editor.org/rfc/rfc8446.txt, write a summary of it in at most five sentences, and save the summary to the file summary.txt in the current directory using write_file. Then reply with the word DONE."
+
+	// claude-sonnet-5, dollars per million tokens.
+	spikeInputPerM  = 2.00
+	spikeOutputPerM = 10.00
+)
+
+// spikeToolDefs are the two tools, as the JSON the API takes.
+const spikeToolDefs = `[
+  {"name":"fetch_url",
+   "description":"HTTP GET a URL and return the response body as text, truncated to about 20 KB.",
+   "input_schema":{"type":"object","properties":{"url":{"type":"string","description":"An absolute http or https URL."}},"required":["url"]}},
+  {"name":"write_file",
+   "description":"Write text to a file, creating or truncating it.",
+   "input_schema":{"type":"object","properties":{"path":{"type":"string","description":"The file to write."},"content":{"type":"string","description":"What to write."}},"required":["path","content"]}}
+]`
+
+type spikeMessage struct {
+	Role    string `json:"role"`
+	Content any    `json:"content"`
+}
+
+// spikeBlock is as much of a content block as this agent reads. The blocks are
+// sent back to the model as the raw JSON they arrived as, so a block this
+// agent does not understand — a thinking block, say — survives the round trip.
+type spikeBlock struct {
+	Type  string          `json:"type"`
+	Text  string          `json:"text,omitempty"`
+	ID    string          `json:"id,omitempty"`
+	Name  string          `json:"name,omitempty"`
+	Input json.RawMessage `json:"input,omitempty"`
+}
+
+type spikeToolResult struct {
+	Type      string `json:"type"`
+	ToolUseID string `json:"tool_use_id"`
+	Content   string `json:"content"`
+	IsError   bool   `json:"is_error,omitempty"`
+}
+
+type spikeReply struct {
+	StopReason  string            `json:"stop_reason"`
+	StopDetails json.RawMessage   `json:"stop_details"`
+	Content     []json.RawMessage `json:"content"`
+	Usage       struct {
+		Input  int `json:"input_tokens"`
+		Output int `json:"output_tokens"`
+	} `json:"usage"`
+}
+
+// spikeRunAgent runs the fixed task to completion over hc, printing to out.
+func spikeRunAgent(ctx context.Context, hc *http.Client, out io.Writer) error {
+	key := os.Getenv("ANTHROPIC_API_KEY")
+	if key == "" {
+		return errors.New("ANTHROPIC_API_KEY is not set")
+	}
+	var tools []json.RawMessage
+	if err := json.Unmarshal([]byte(spikeToolDefs), &tools); err != nil {
+		return fmt.Errorf("the tool definitions: %w", err)
+	}
+
+	messages := []spikeMessage{{Role: "user", Content: spikeTask}}
+	var totalIn, totalOut int
+	var calls []string
+	began := time.Now()
+
+	fmt.Fprintf(out, "model=%s max_tokens=%d endpoint=%s\n", spikeModel, spikeMaxTokens, spikeEndpoint)
+	fmt.Fprintf(out, "task=%q\n\n", spikeTask)
+
+	for turn := 1; ; turn++ {
+		body, err := json.Marshal(map[string]any{
+			"model":      spikeModel,
+			"max_tokens": spikeMaxTokens,
+			"tools":      tools,
+			"messages":   messages,
+		})
+		if err != nil {
+			return fmt.Errorf("request %d: %w", turn, err)
+		}
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, spikeEndpoint, bytes.NewReader(body))
+		if err != nil {
+			return fmt.Errorf("request %d: %w", turn, err)
+		}
+		req.Header.Set("x-api-key", key)
+		req.Header.Set("anthropic-version", spikeAPIVer)
+		req.Header.Set("content-type", "application/json")
+
+		started := time.Now()
+		resp, err := hc.Do(req)
+		if err != nil {
+			return fmt.Errorf("request %d: %w", turn, err)
+		}
+		raw, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			return fmt.Errorf("request %d: reading the response: %w", turn, err)
+		}
+		took := time.Since(started).Round(time.Millisecond)
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("request %d: HTTP %d: %s", turn, resp.StatusCode, spikeClip(string(raw), 400))
+		}
+		var reply spikeReply
+		if err := json.Unmarshal(raw, &reply); err != nil {
+			return fmt.Errorf("request %d: the response is not JSON: %w", turn, err)
+		}
+		totalIn += reply.Usage.Input
+		totalOut += reply.Usage.Output
+		fmt.Fprintf(out, "request %d: proto=%s stop_reason=%s input_tokens=%d output_tokens=%d in %s\n",
+			turn, resp.Proto, reply.StopReason, reply.Usage.Input, reply.Usage.Output, took)
+
+		switch reply.StopReason {
+		case "refusal":
+			fmt.Fprintf(out, "the model refused: %s\n", string(reply.StopDetails))
+			return errors.New("stop_reason refusal")
+		case "max_tokens":
+			fmt.Fprintf(out, "the model hit max_tokens=%d and the turn is truncated\n", spikeMaxTokens)
+			return errors.New("stop_reason max_tokens")
+		}
+
+		// The assistant turn goes back as the raw blocks it arrived as.
+		messages = append(messages, spikeMessage{Role: "assistant", Content: reply.Content})
+
+		if reply.StopReason != "tool_use" {
+			for _, rb := range reply.Content {
+				var b spikeBlock
+				if json.Unmarshal(rb, &b) == nil && b.Type == "text" {
+					fmt.Fprintf(out, "\nfinal text: %s\n", b.Text)
+				}
+			}
+			break
+		}
+
+		var results []any
+		for _, rb := range reply.Content {
+			var b spikeBlock
+			if err := json.Unmarshal(rb, &b); err != nil || b.Type != "tool_use" {
+				continue
+			}
+			text, failed := spikeRunTool(ctx, hc, b.Name, b.Input)
+			calls = append(calls, spikeCallOf(b.Name, b.Input))
+			fmt.Fprintf(out, "  tool_use %s %s -> %d bytes, is_error=%v\n",
+				b.Name, spikeClip(string(b.Input), 120), len(text), failed)
+			results = append(results, spikeToolResult{
+				Type: "tool_result", ToolUseID: b.ID, Content: text, IsError: failed,
+			})
+		}
+		if len(results) == 0 {
+			return fmt.Errorf("request %d: stop_reason tool_use with no tool_use block", turn)
+		}
+		// Every tool_result for one assistant turn goes back in one user message.
+		messages = append(messages, spikeMessage{Role: "user", Content: results})
+	}
+
+	cost := float64(totalIn)/1e6*spikeInputPerM + float64(totalOut)/1e6*spikeOutputPerM
+	fmt.Fprintf(out, "\ntool calls, in order:\n")
+	for i, c := range calls {
+		fmt.Fprintf(out, "  %d. %s\n", i+1, c)
+	}
+	fmt.Fprintf(out, "\ntotals: input_tokens=%d output_tokens=%d\n", totalIn, totalOut)
+	fmt.Fprintf(out, "cost: $%.6f  (input $%.2f/M, output $%.2f/M for %s)\n",
+		cost, spikeInputPerM, spikeOutputPerM, spikeModel)
+	fmt.Fprintf(out, "wall time: %s\n", time.Since(began).Round(time.Millisecond))
+	return nil
+}
+
+// spikeRunTool executes one tool call and returns what the model is told, and
+// whether that is an error.
+func spikeRunTool(ctx context.Context, hc *http.Client, name string, input json.RawMessage) (string, bool) {
+	switch name {
+	case "fetch_url":
+		var in struct {
+			URL string `json:"url"`
+		}
+		if err := json.Unmarshal(input, &in); err != nil {
+			return "fetch_url: " + err.Error(), true
+		}
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, in.URL, nil)
+		if err != nil {
+			return "fetch_url: " + err.Error(), true
+		}
+		resp, err := hc.Do(req)
+		if err != nil {
+			return "fetch_url: " + err.Error(), true
+		}
+		defer resp.Body.Close()
+		body, err := io.ReadAll(io.LimitReader(resp.Body, spikeFetchCap))
+		if err != nil {
+			return "fetch_url: " + err.Error(), true
+		}
+		text := string(body)
+		if len(body) == spikeFetchCap {
+			text += "\n\n[truncated at 20 KB]"
+		}
+		return text, resp.StatusCode != http.StatusOK
+
+	case "write_file":
+		var in struct {
+			Path    string `json:"path"`
+			Content string `json:"content"`
+		}
+		if err := json.Unmarshal(input, &in); err != nil {
+			return "write_file: " + err.Error(), true
+		}
+		if err := os.WriteFile(in.Path, []byte(in.Content), 0o644); err != nil {
+			return "write_file: " + err.Error(), true
+		}
+		return fmt.Sprintf("wrote %d bytes to %s", len(in.Content), in.Path), false
+	}
+	return "no such tool: " + name, true
+}
+
+// spikeCallOf names one tool call for the record: the tool and the argument
+// that decides what it reaches.
+func spikeCallOf(name string, input json.RawMessage) string {
+	var in struct {
+		URL  string `json:"url"`
+		Path string `json:"path"`
+	}
+	json.Unmarshal(input, &in)
+	switch {
+	case in.URL != "":
+		return name + "(" + in.URL + ")"
+	case in.Path != "":
+		return name + "(" + in.Path + ")"
+	}
+	return name + "()"
+}
+
+func spikeClip(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+	return s[:n] + "…"
+}

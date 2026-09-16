@@ -7,6 +7,10 @@ acknowledge it. The echo exercise Milestone 3 runs is the first client of it. No
 `pkg/` or `runsc/` changed, and neither did the exchange framing: an exchange's bytes are what
 they were before this ticket existed.
 
+**Contract version 2** is ticket 23's amendment to the Go interface and nothing else: `Stream`
+gained the three `net.Conn` deadlines, and the wire protocol, the local socket protocol and the
+four `Attested` strings are exactly what version 1 made them.
+
 **In one sentence:** a sandbox sees no evidence, no key and no trust decision — it gets a stream
 or an error, and a policy or nothing — and the shape of the contract is fixed by the thing that
 cannot cross a process boundary, since a QUIC stream is not a kernel object (spike E1) and what
@@ -48,6 +52,9 @@ measurement by accident.
 type Stream interface {
 	io.ReadWriteCloser
 	CloseWrite() error
+	SetDeadline(t time.Time) error
+	SetReadDeadline(t time.Time) error
+	SetWriteDeadline(t time.Time) error
 }
 
 type Network interface {
@@ -61,8 +68,8 @@ type Sandbox interface {
 }
 ```
 
-`Network` (`sandbox.go:154`) is tunneld's half and `*tunneld.Tunneld` implements it
-(`attest/tunneld/sandbox.go:62`, `:84`). `Sandbox` (`sandbox.go:172`) is the whole contract;
+`Network` (`sandbox.go:188`) is tunneld's half and `*tunneld.Tunneld` implements it
+(`attest/tunneld/sandbox.go:62`, `:84`). `Sandbox` (`sandbox.go:206`) is the whole contract;
 `*sandbox.Null` implements it in process (`null.go:46`) and `*sandbox.Host` implements it with a
 process boundary in the middle (`host.go:46`). A `context.Context` is on each method because
 `Accept` blocks and Go has one way of saying so; nothing else was added to the three verbs.
@@ -79,9 +86,25 @@ finished sending, and the exercise's own round trip is exactly that
 it stands — `*net.UnixConn` already has `CloseWrite` — and so does package tunnel's raw stream
 (`attest/tunnel/tunnel.go:554`), and neither had to learn about the other.
 
+**The three deadlines are ticket 23's**, and they are there because the first thing anybody puts
+on a stream is a protocol somebody else wrote. Spike E2
+(`docs/snp/evidence/ticket23/spikes/E2`, break #3) put an agent's `http.Transport` behind this
+contract and had to fake `net.Conn`'s deadlines as no-ops: `net/http` and `crypto/tls` are both
+`net.Conn` consumers, and each sets deadlines to bound a read or a write that may otherwise
+never finish. Both believed the shim, so an agent behind the contract had no I/O timeout at all:
+a cancelled request still ended, because the transport closes the connection on cancellation,
+but nothing set by `SetDeadline` ever fired, and a server listening on such a stream would have
+lost its read and write timeouts the same silent way. Neither implementation had to learn anything to fix that: `*net.UnixConn`
+has had the three methods since before this package existed and so has `*quic.Stream`, which
+`tunnel.Stream` now delegates all three to (`attest/tunnel/tunnel.go:590`). The interface was
+hiding a capability both ends already had rather than adding one they did not — which is exactly
+what separates a deadline from a reset, which neither end can deliver. **The wire is unchanged,
+the local socket protocol is unchanged, and the four `Attested` strings are unchanged**: a
+deadline is a fact about one side's own blocked call and nothing about it goes anywhere.
+
 ## What `Attested` carries, and why nothing more
 
-`sandbox.go:120`. Four strings, and that is the whole of what a sandbox is told about who is at
+`sandbox.go:154`. Four strings, and that is the whole of what a sandbox is told about who is at
 the other end of a stream:
 
 | field | what it is |
@@ -123,7 +146,7 @@ nothing is decided a second time.
 ## The stream, and the four bytes that mark it
 
 `attest/tunnel` exposed one framed `Exchange` per stream and nothing else. It now also has a raw
-stream: `Conn.OpenStream` (`tunnel.go:587`), `Conn.AcceptStream` (`tunnel.go:605`) and the
+stream: `Conn.OpenStream` (`tunnel.go:605`), `Conn.AcceptStream` (`tunnel.go:623`) and the
 `Stream` type over them (`tunnel.go:554`), whose `CloseWrite` is QUIC's own FIN and whose
 `Close` is that plus a `STOP_SENDING`.
 
@@ -140,7 +163,7 @@ writes `0x52415731` where a length belongs, which was a torn-down connection and
 the sandbox may accept. The one test that puts an oversized length on the wire uses
 `math.MaxUint32` (`attest/tunneld/framing_test.go:150`) and still gets its framing violation.
 
-Only the side running `Conn.Serve` recognises the marker (`tunnel.go:661`), which is the side
+Only the side running `Conn.Serve` recognises the marker (`tunnel.go:679`), which is the side
 that accepted the connection, so a raw stream is opened by the dialer and accepted by the
 listener exactly as an exchange is; bytes then flow both ways on it. A marker arriving where an
 exchange *response* was expected is still a framing violation, because `Conn.Exchange` reads a
@@ -317,6 +340,7 @@ only diagnostic surface a measured guest has can carry it (spec, user story 48).
 | the pump carries the end of the stream each way | same file |
 | a push at a tunneld with no sandbox attached is refused rather than acknowledged | same file |
 | a policy pushed **over the tunnel** reaches this contract's `Apply`, and what that returns decides the peer's tunnel | `attest/tunneld/push_test.go`, and `docs/policy-push.md` for the whole of it |
+| a read deadline expires with `os.ErrDeadlineExceeded` on both implementations — the tunnel's raw stream, and the socketpair end a sandbox receives over the socket with tunneld's pump between it and the tunnel — the peer having sent nothing and the stream still open | `TestAReadDeadlineOnAStreamExpires` (`attest/tunneld/sandbox_test.go`), one subtest each |
 | the exercise's three figures keep their shape | `attest/cmd/tunneld/exercise_test.go` |
 | the measured binary still reaches no fixture, no fake and no `testing` | `attest/cmd/tunneld/importgraph_test.go`, `packaged_test.go`, unchanged |
 
@@ -346,5 +370,24 @@ must. The recorded run is `docs/snp/evidence/ticket22/`.
 - **Nothing enforces a policy.** The null sandbox records and acknowledges. `n`, `f` and `x` are
   unparsed by every line of code in this tree.
 - **No reset signal.** See the pump, above.
+- **A destination is not part of `Open`.** `Open` takes a peer name, and a peer is a sandbox
+  rather than an exit: a name in the peer table maps to an address this tunneld dials and
+  attests, and `api.anthropic.com:443` is neither a peer nor attestable. There is no verb, no
+  argument and no field in `attest/sandbox` that carries a destination. An agent that needs the
+  public internet from behind this contract needs an exit sandbox at a peer, and what it names to
+  that exit is a protocol *above* the contract — E2's shim invented `CONNECT host:port` as the
+  first line of the stream, and the contract neither defines that line nor sees it. Ticket 23
+  did not change this.
+- **No liveness signal from sandbox to tunneld.** `Apply` returns once and a push waits for
+  exactly one answer per tunnel. An acknowledgement therefore says a process *started* and says
+  nothing about whether it is still running: E4 measured the ack leaving `Apply` 1.856 ms after
+  `exec.Start`, the workload dead at 43 ms, and the tunnel still up. A sandbox that learns its
+  workload died has no verb to say so — no revocation, no event, no second exchange — so the
+  tunnel goes on asserting something the sandbox no longer believes. Ticket 23 did not change
+  this either.
+- **Ticket 23's record is `docs/agent-on-the-contract.md`.** What the two bullets above
+  were measured by: a real agent on this contract, what Deno could enforce of a pushed
+  policy and what it could not, the timings per hop over two delegation hops, and whether
+  `(N, F, X)` as typed is enough for the policy track.
 - **No runsc sandbox.** The socket exists and a forked test binary speaks it; the sandbox that
   will consume these descriptors as FD-backed endpoints is Milestone 4's.

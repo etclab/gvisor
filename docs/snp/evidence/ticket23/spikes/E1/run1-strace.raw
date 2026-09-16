@@ -1,0 +1,321 @@
+2774468 execve("./agent", ["./agent"], 0x7ffd089fed38 /* 51 vars */) = 0
+2774468 openat(AT_FDCWD, "/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 3
+2774468 openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libc.so.6", O_RDONLY|O_CLOEXEC) = 3
+2774468 openat(AT_FDCWD, "/proc/self/maps", O_RDONLY|O_CLOEXEC) = 3
+2774468 openat(AT_FDCWD, "/sys/kernel/mm/transparent_hugepage/hpage_pmd_size", O_RDONLY) = 3
+2774468 openat(AT_FDCWD, "/proc/self/cgroup", O_RDONLY|O_CLOEXEC) = 3
+2774468 openat(AT_FDCWD, "/proc/self/mountinfo", O_RDONLY|O_CLOEXEC) = 3
+2774468 openat(AT_FDCWD, "/sys/fs/cgroup/user.slice/user-253477.slice/session-5.scope/cpu.max", O_RDONLY|O_CLOEXEC) = 3
+2774468 openat(AT_FDCWD, "/etc/resolv.conf", O_RDONLY|O_CLOEXEC) = 6
+2774468 openat(AT_FDCWD, "/etc/nsswitch.conf", O_RDONLY|O_CLOEXEC) = 6
+2774468 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774468 socket(AF_UNIX, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, 0) = 6
+2774468 connect(6, {sa_family=AF_UNIX, sun_path="/var/run/nscd/socket"}, 110) = -1 ENOENT (No such file or directory)
+2774468 socket(AF_UNIX, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, 0) = 6
+2774468 connect(6, {sa_family=AF_UNIX, sun_path="/var/run/nscd/socket"}, 110) = -1 ENOENT (No such file or directory)
+2774468 openat(AT_FDCWD, "/etc/nsswitch.conf", O_RDONLY|O_CLOEXEC) = 6
+2774468 openat(AT_FDCWD, "/etc/host.conf", O_RDONLY|O_CLOEXEC) = 6
+2774468 openat(AT_FDCWD, "/etc/resolv.conf", O_RDONLY|O_CLOEXEC) = 6
+2774468 openat(AT_FDCWD, "/etc/hosts", O_RDONLY|O_CLOEXEC) = 6
+2774468 socket(AF_INET, SOCK_DGRAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 6
+2774468 setsockopt(6, SOL_IP, IP_RECVERR, [1], 4) = 0
+2774468 connect(6, {sa_family=AF_INET, sin_port=htons(53), sin_addr=inet_addr("127.0.0.53")}, 16) = 0
+2774468 sendmmsg(6, [{msg_hdr={msg_name=NULL, msg_namelen=0, msg_iov=[{iov_base="*\232\1 \0\1\0\0\0\0\0\1\3api\tanthropic\3com\0\0\1\0\1\0\0)\4\260\0\0\0\0\0\0", iov_len=46}], msg_iovlen=1, msg_controllen=0, msg_flags=0}, msg_len=46}, {msg_hdr={msg_name=NULL, msg_namelen=0, msg_iov=[{iov_base="x^\1 \0\1\0\0\0\0\0\1\3api\tanthropic\3com\0\0\34\0\1\0\0)\4\260\0\0\0\0\0\0", iov_len=46}], msg_iovlen=1, msg_controllen=0, msg_flags=0}, msg_len=46}], 2, MSG_NOSIGNAL) = 2
+2774468 recvfrom(6, "*\232\201\200\0\1\0\1\0\0\0\1\3api\tanthropic\3com\0\0\1\0\1\300\f\0\1\0\1\0\0\0\206\0\4\240Oh\n\0\0)\377\326\0\0\0\0\0\0", 2048, 0, {sa_family=AF_INET, sin_port=htons(53), sin_addr=inet_addr("127.0.0.53")}, [28 => 16]) = 62
+2774468 recvfrom(6, "x^\201\200\0\1\0\1\0\0\0\1\3api\tanthropic\3com\0\0\34\0\1\300\f\0\34\0\1\0\0\0\271\0\20&\7k\300\0\0\0\0\0\0\0\0\0\0\0\20\0\0)\377\326\0\0\0\0\0\0", 65536, 0, {sa_family=AF_INET, sin_port=htons(53), sin_addr=inet_addr("127.0.0.53")}, [28 => 16]) = 74
+2774468 openat(AT_FDCWD, "/etc/gai.conf", O_RDONLY|O_CLOEXEC) = 6
+2774468 socket(AF_NETLINK, SOCK_RAW|SOCK_CLOEXEC, NETLINK_ROUTE) = 6
+2774468 bind(6, {sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, 12) = 0
+2774468 getsockname(6, {sa_family=AF_NETLINK, nl_pid=2774468, nl_groups=00000000}, [12]) = 0
+2774468 sendto(6, [{nlmsg_len=20, nlmsg_type=RTM_GETADDR, nlmsg_flags=NLM_F_REQUEST|NLM_F_DUMP, nlmsg_seq=1789522297, nlmsg_pid=0}, {ifa_family=AF_UNSPEC, ...}], 20, 0, {sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, 12) = 20
+2774468 recvmsg(6, {msg_name={sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, msg_namelen=12, msg_iov=[{iov_base=[[{nlmsg_len=76, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522297, nlmsg_pid=2774468}, {ifa_family=AF_INET, ifa_prefixlen=8, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_HOST, ifa_index=if_nametoindex("lo")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("127.0.0.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("127.0.0.1")], [{nla_len=7, nla_type=IFA_LABEL}, "lo"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=1012, tstamp=1012}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522297, nlmsg_pid=2774468}, {ifa_family=AF_INET, ifa_prefixlen=12, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("enp129s0f0np0")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("172.16.24.11")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("172.16.24.11")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("172.31.255.255")], [{nla_len=18, nla_type=IFA_LABEL}, "enp129s0f0np0"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=1762, tstamp=23980116}]]], [{nlmsg_len=88, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522297, nlmsg_pid=2774468}, {ifa_family=AF_INET, ifa_prefixlen=24, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("virbr1")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.50.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.50.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.50.255")], [{nla_len=11, nla_type=IFA_LABEL}, "virbr1"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2224, tstamp=2224}]]], [{nlmsg_len=88, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522297, nlmsg_pid=2774468}, {ifa_family=AF_INET, ifa_prefixlen=24, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("virbr2")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.61.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.61.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.61.255")], [{nla_len=11, nla_type=IFA_LABEL}, "virbr2"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2245, tstamp=2245}]]], [{nlmsg_len=88, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522297, nlmsg_pid=2774468}, {ifa_family=AF_INET, ifa_prefixlen=24, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("virbr0")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.122.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.122.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.122.255")], [{nla_len=11, nla_type=IFA_LABEL}, "virbr0"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2273, tstamp=2273}]]], [{nlmsg_len=88, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522297, nlmsg_pid=2774468}, {ifa_family=AF_INET, ifa_prefixlen=24, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("virbr4")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.83.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.83.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.83.255")], [{nla_len=11, nla_type=IFA_LABEL}, "virbr4"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2291, tstamp=2291}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522297, nlmsg_pid=2774468}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("br-d564a52702f6")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.64.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.64.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.79.255")], [{nla_len=20, nla_type=IFA_LABEL}, "br-d564a52702f6"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2517, tstamp=2517}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522297, nlmsg_pid=2774468}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("docker_gwbridge")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.16.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.16.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.31.255")], [{nla_len=20, nla_type=IFA_LABEL}, "docker_gwbridge"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2533, tstamp=2533}]]], [{nlmsg_len=88, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522297, nlmsg_pid=2774468}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("docker0")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.0.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.0.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.15.255")], [{nla_len=12, nla_type=IFA_LABEL}, "docker0"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2550, tstamp=2550}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522297, nlmsg_pid=2774468}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("br-5140c59d6152")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.144.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.144.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.159.255")], [{nla_len=20, nla_type=IFA_LABEL}, "br-5140c59d6152"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2563, tstamp=2563}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522297, nlmsg_pid=2774468}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("br-5d6342ce11bf")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.32.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.32.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.47.255")], [{nla_len=20, nla_type=IFA_LABEL}, "br-5d6342ce11bf"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2579, tstamp=2579}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522297, nlmsg_pid=2774468}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("br-7ba450de6007")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.96.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.96.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.111.255")], [{nla_len=20, nla_type=IFA_LABEL}, "br-7ba450de6007"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2616, tstamp=2616}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522297, nlmsg_pid=2774468}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("br-92a829545622")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.128.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.128.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.143.255")], [{nla_len=20, nla_type=IFA_LABEL}, "br-92a829545622"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2629, tstamp=2629}]]], [{nlmsg_len=72, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522297, nlmsg_pid=2774468}, {ifa_family=AF_INET6, ifa_prefixlen=128, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_HOST, ifa_index=if_nametoindex("lo")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "::1")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=1013, tstamp=1013}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT|IFA_F_NOPREFIXROUTE]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522297, nlmsg_pid=2774468}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("enp129s0f0np0")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::7ec2:55ff:fe46:292c")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=1755, tstamp=1755}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522297, nlmsg_pid=2774468}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("docker_gwbridge")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::c86d:3bff:fe57:cd8f")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=3089, tstamp=3089}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522297, nlmsg_pid=2774468}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("docker0")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::e03e:ff:fe35:4604")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2829, tstamp=2829}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=72, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522297, nlmsg_pid=2774468}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_NODAD|IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("br-5d6342ce11bf")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fc00:f853:ccd:e793::1")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2579, tstamp=2579}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_NODAD|IFA_F_PERMANENT]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522297, nlmsg_pid=2774468}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("br-5d6342ce11bf")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::8847:eaff:fe57:996f")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2861, tstamp=2861}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522297, nlmsg_pid=2774468}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("veth49d7c3e")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::e439:25ff:feca:3a1a")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2829, tstamp=2829}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522297, nlmsg_pid=2774468}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("vethf821cfb")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::1c3d:17ff:fe2a:b0df")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2861, tstamp=2861}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522297, nlmsg_pid=2774468}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("veth99b1031")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::9461:b1ff:fe27:cfeb")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2861, tstamp=2861}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522297, nlmsg_pid=2774468}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("veth0c2737a")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::e881:8cff:fe4d:9773")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2869, tstamp=2869}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522297, nlmsg_pid=2774468}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("veth22c136c")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::e861:dcff:feba:584e")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2864, tstamp=2864}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522297, nlmsg_pid=2774468}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("veth83d5692")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::442f:62ff:fe2f:6038")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=3089, tstamp=3089}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522297, nlmsg_pid=2774468}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("veth4bf7b26")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::b074:44ff:feb4:8910")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=63024042, tstamp=63024042}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]]], iov_len=4096}], msg_iovlen=1, msg_controllen=0, msg_flags=0}, 0) = 2212
+2774468 recvmsg(6, {msg_name={sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, msg_namelen=12, msg_iov=[{iov_base=[{nlmsg_len=20, nlmsg_type=NLMSG_DONE, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522297, nlmsg_pid=2774468}, 0], iov_len=4096}], msg_iovlen=1, msg_controllen=0, msg_flags=0}, 0) = 20
+2774468 socket(AF_INET, SOCK_DGRAM|SOCK_CLOEXEC, IPPROTO_IP) = 6
+2774468 connect(6, {sa_family=AF_INET, sin_port=htons(0), sin_addr=inet_addr("160.79.104.10")}, 16) = 0
+2774468 getsockname(6, {sa_family=AF_INET, sin_port=htons(47865), sin_addr=inet_addr("172.16.24.11")}, [28 => 16]) = 0
+2774468 socket(AF_INET6, SOCK_DGRAM|SOCK_CLOEXEC, IPPROTO_IP) = 6
+2774468 connect(6, {sa_family=AF_INET6, sin6_port=htons(0), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2607:6bc0::10", &sin6_addr), sin6_scope_id=0}, 28) = -1 ENETUNREACH (Network is unreachable)
+2774468 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774468 socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 6
+2774468 connect(6, {sa_family=AF_INET, sin_port=htons(443), sin_addr=inet_addr("160.79.104.10")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2774468 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774471 getsockopt(6, SOL_SOCKET, SO_ERROR, [0], [4]) = 0
+2774471 getpeername(6, {sa_family=AF_INET, sin_port=htons(443), sin_addr=inet_addr("160.79.104.10")}, [112 => 16]) = 0
+2774471 getsockname(6, {sa_family=AF_INET, sin_port=htons(37154), sin_addr=inet_addr("172.16.24.11")}, [112 => 16]) = 0
+2774471 setsockopt(6, SOL_TCP, TCP_NODELAY, [1], 4) = 0
+2774471 setsockopt(6, SOL_SOCKET, SO_KEEPALIVE, [1], 4) = 0
+2774471 setsockopt(6, SOL_TCP, TCP_KEEPIDLE, [30], 4) = 0
+2774471 setsockopt(6, SOL_TCP, TCP_KEEPINTVL, [15], 4) = 0
+2774471 setsockopt(6, SOL_TCP, TCP_KEEPCNT, [9], 4) = 0
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/ca-certificates.crt", O_RDONLY|O_CLOEXEC) = 7
+2774468 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774468 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774468 openat(AT_FDCWD, "/etc/ssl/certs", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = 7
+2774468 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774468 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/ACCVRAIZ1.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/AC_RAIZ_FNMT-RCM.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/AC_RAIZ_FNMT-RCM_SERVIDORES_SEGUROS.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/ANF_Secure_Server_Root_CA.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/Actalis_Authentication_Root_CA.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/Amazon_Root_CA_1.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/Amazon_Root_CA_2.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/Amazon_Root_CA_3.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/Amazon_Root_CA_4.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/Atos_TrustedRoot_2011.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/Atos_TrustedRoot_Root_CA_ECC_TLS_2021.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/Atos_TrustedRoot_Root_CA_RSA_TLS_2021.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/Autoridad_de_Certificacion_Firmaprofesional_CIF_A62634068.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/BJCA_Global_Root_CA1.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/BJCA_Global_Root_CA2.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/Buypass_Class_2_Root_CA.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/Buypass_Class_3_Root_CA.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/CA_Disig_Root_R2.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/CFCA_EV_ROOT.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/COMODO_ECC_Certification_Authority.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/COMODO_RSA_Certification_Authority.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/Certainly_Root_E1.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/Certainly_Root_R1.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/Certigna_Root_CA.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/Certum_EC-384_CA.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/Certum_Trusted_Network_CA.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/Certum_Trusted_Network_CA_2.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/Certum_Trusted_Root_CA.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/D-TRUST_BR_Root_CA_1_2020.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/D-TRUST_BR_Root_CA_2_2023.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/D-TRUST_EV_Root_CA_1_2020.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/D-TRUST_EV_Root_CA_2_2023.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/D-TRUST_Root_Class_3_CA_2_2009.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/D-TRUST_Root_Class_3_CA_2_EV_2009.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/DigiCert_Assured_ID_Root_G2.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/DigiCert_Assured_ID_Root_G3.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/DigiCert_Global_Root_G2.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/DigiCert_Global_Root_G3.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/DigiCert_TLS_ECC_P384_Root_G5.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/DigiCert_TLS_RSA4096_Root_G5.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/DigiCert_Trusted_Root_G4.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/Entrust_Root_Certification_Authority.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/GDCA_TrustAUTH_R5_ROOT.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/GTS_Root_R1.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/GTS_Root_R3.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/GTS_Root_R4.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/GlobalSign_ECC_Root_CA_-_R4.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/GlobalSign_ECC_Root_CA_-_R5.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/GlobalSign_Root_CA_-_R3.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/GlobalSign_Root_CA_-_R6.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/GlobalSign_Root_E46.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/GlobalSign_Root_R46.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/Go_Daddy_Root_Certificate_Authority_-_G2.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/HARICA_TLS_ECC_Root_CA_2021.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/HARICA_TLS_RSA_Root_CA_2021.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/Hellenic_Academic_and_Research_Institutions_ECC_RootCA_2015.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/Hellenic_Academic_and_Research_Institutions_RootCA_2015.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/HiPKI_Root_CA_-_G1.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/Hongkong_Post_Root_CA_3.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/ISRG_Root_X1.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/ISRG_Root_X2.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/IdenTrust_Commercial_Root_CA_1.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/IdenTrust_Public_Sector_Root_CA_1.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/Izenpe.com.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/Microsec_e-Szigno_Root_CA_2009.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/Microsoft_ECC_Root_Certificate_Authority_2017.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/Microsoft_RSA_Root_Certificate_Authority_2017.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/NAVER_Global_Root_Certification_Authority.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/NetLock_Arany_=Class_Gold=_F\305\221tan\303\272s\303\255tv\303\241ny.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/OISTE_Server_Root_ECC_G1.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/OISTE_Server_Root_RSA_G1.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/OISTE_WISeKey_Global_Root_GB_CA.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/OISTE_WISeKey_Global_Root_GC_CA.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/QuoVadis_Root_CA_1_G3.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/QuoVadis_Root_CA_2_G3.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/QuoVadis_Root_CA_3_G3.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/SSL.com_EV_Root_Certification_Authority_ECC.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/SSL.com_EV_Root_Certification_Authority_RSA_R2.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/SSL.com_Root_Certification_Authority_ECC.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/SSL.com_Root_Certification_Authority_RSA.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/SSL.com_TLS_ECC_Root_CA_2022.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/SSL.com_TLS_RSA_Root_CA_2022.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/SZAFIR_ROOT_CA2.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/Sectigo_Public_Server_Authentication_Root_E46.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774468 openat(AT_FDCWD, "/etc/ssl/certs/Sectigo_Public_Server_Authentication_Root_R46.pem", O_RDONLY|O_CLOEXEC) = 7
+2774468 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774481 openat(AT_FDCWD, "/sys/devices/system/cpu/online", O_RDONLY|O_CLOEXEC) = 8
+2774482 openat(AT_FDCWD, "/sys/devices/system/cpu/online", O_RDONLY|O_CLOEXEC) = 8
+2774468 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774468 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774468 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774468 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774468 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774479 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774468 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774479 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774479 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774468 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774479 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774479 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774479 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774468 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774479 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774479 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774468 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774479 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774468 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774479 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774468 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774479 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774479 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774479 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774472 openat(AT_FDCWD, "/etc/ssl/certs/SecureSign_Root_CA12.pem", O_RDONLY|O_CLOEXEC <unfinished ...>
+2774479 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774472 <... openat resumed>)           = 7
+2774472 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774479 openat(AT_FDCWD, "/etc/ssl/certs/SecureSign_Root_CA14.pem", O_RDONLY|O_CLOEXEC) = 7
+2774479 openat(AT_FDCWD, "/etc/ssl/certs/SecureSign_Root_CA15.pem", O_RDONLY|O_CLOEXEC) = 7
+2774479 openat(AT_FDCWD, "/etc/ssl/certs/Security_Communication_ECC_RootCA1.pem", O_RDONLY|O_CLOEXEC) = 7
+2774479 openat(AT_FDCWD, "/etc/ssl/certs/Security_Communication_RootCA2.pem", O_RDONLY|O_CLOEXEC) = 7
+2774479 openat(AT_FDCWD, "/etc/ssl/certs/Starfield_Root_Certificate_Authority_-_G2.pem", O_RDONLY|O_CLOEXEC) = 7
+2774479 openat(AT_FDCWD, "/etc/ssl/certs/Starfield_Services_Root_Certificate_Authority_-_G2.pem", O_RDONLY|O_CLOEXEC) = 7
+2774479 openat(AT_FDCWD, "/etc/ssl/certs/SwissSign_RSA_TLS_Root_CA_2022_-_1.pem", O_RDONLY|O_CLOEXEC) = 7
+2774479 openat(AT_FDCWD, "/etc/ssl/certs/T-TeleSec_GlobalRoot_Class_2.pem", O_RDONLY|O_CLOEXEC) = 7
+2774479 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774492 openat(AT_FDCWD, "/etc/ssl/certs/T-TeleSec_GlobalRoot_Class_3.pem", O_RDONLY|O_CLOEXEC) = 7
+2774492 openat(AT_FDCWD, "/etc/ssl/certs/TUBITAK_Kamu_SM_SSL_Kok_Sertifikasi_-_Surum_1.pem", O_RDONLY|O_CLOEXEC) = 7
+2774492 openat(AT_FDCWD, "/etc/ssl/certs/TWCA_CYBER_Root_CA.pem", O_RDONLY|O_CLOEXEC) = 7
+2774492 openat(AT_FDCWD, "/etc/ssl/certs/TWCA_Global_Root_CA.pem", O_RDONLY|O_CLOEXEC) = 7
+2774492 openat(AT_FDCWD, "/etc/ssl/certs/TWCA_Root_Certification_Authority.pem", O_RDONLY|O_CLOEXEC) = 7
+2774492 openat(AT_FDCWD, "/etc/ssl/certs/Telekom_Security_TLS_ECC_Root_2020.pem", O_RDONLY|O_CLOEXEC) = 7
+2774492 openat(AT_FDCWD, "/etc/ssl/certs/Telekom_Security_TLS_RSA_Root_2023.pem", O_RDONLY|O_CLOEXEC) = 7
+2774492 openat(AT_FDCWD, "/etc/ssl/certs/Telia_Root_CA_v2.pem", O_RDONLY|O_CLOEXEC) = 7
+2774492 openat(AT_FDCWD, "/etc/ssl/certs/TrustAsia_Global_Root_CA_G3.pem", O_RDONLY|O_CLOEXEC) = 7
+2774492 openat(AT_FDCWD, "/etc/ssl/certs/TrustAsia_Global_Root_CA_G4.pem", O_RDONLY|O_CLOEXEC) = 7
+2774492 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774479 openat(AT_FDCWD, "/etc/ssl/certs/TrustAsia_TLS_ECC_Root_CA.pem", O_RDONLY|O_CLOEXEC) = 7
+2774479 openat(AT_FDCWD, "/etc/ssl/certs/TrustAsia_TLS_RSA_Root_CA.pem", O_RDONLY|O_CLOEXEC) = 7
+2774479 openat(AT_FDCWD, "/etc/ssl/certs/TunTrust_Root_CA.pem", O_RDONLY|O_CLOEXEC) = 7
+2774479 openat(AT_FDCWD, "/etc/ssl/certs/UCA_Extended_Validation_Root.pem", O_RDONLY|O_CLOEXEC) = 7
+2774479 openat(AT_FDCWD, "/etc/ssl/certs/UCA_Global_G2_Root.pem", O_RDONLY|O_CLOEXEC) = 7
+2774479 openat(AT_FDCWD, "/etc/ssl/certs/USERTrust_ECC_Certification_Authority.pem", O_RDONLY|O_CLOEXEC) = 7
+2774479 openat(AT_FDCWD, "/etc/ssl/certs/USERTrust_RSA_Certification_Authority.pem", O_RDONLY|O_CLOEXEC) = 7
+2774479 openat(AT_FDCWD, "/etc/ssl/certs/ca-certificates.crt", O_RDONLY|O_CLOEXEC) = 7
+2774479 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774479 openat(AT_FDCWD, "/etc/ssl/certs/ca.pem", O_RDONLY|O_CLOEXEC) = 7
+2774479 openat(AT_FDCWD, "/etc/ssl/certs/calypso-ca.pem", O_RDONLY|O_CLOEXEC) = 7
+2774479 openat(AT_FDCWD, "/etc/ssl/certs/certSIGN_Root_CA_G2.pem", O_RDONLY|O_CLOEXEC) = 7
+2774479 openat(AT_FDCWD, "/etc/ssl/certs/e-Szigno_Root_CA_2017.pem", O_RDONLY|O_CLOEXEC) = 7
+2774479 openat(AT_FDCWD, "/etc/ssl/certs/e-Szigno_TLS_Root_CA_2023.pem", O_RDONLY|O_CLOEXEC) = 7
+2774479 openat(AT_FDCWD, "/etc/ssl/certs/ePKI_Root_Certification_Authority.pem", O_RDONLY|O_CLOEXEC) = 7
+2774479 openat(AT_FDCWD, "/etc/ssl/certs/emSign_ECC_Root_CA_-_C3.pem", O_RDONLY|O_CLOEXEC) = 7
+2774479 openat(AT_FDCWD, "/etc/ssl/certs/emSign_ECC_Root_CA_-_G3.pem", O_RDONLY|O_CLOEXEC) = 7
+2774479 openat(AT_FDCWD, "/etc/ssl/certs/emSign_Root_CA_-_C1.pem", O_RDONLY|O_CLOEXEC) = 7
+2774479 openat(AT_FDCWD, "/etc/ssl/certs/emSign_Root_CA_-_G1.pem", O_RDONLY|O_CLOEXEC) = 7
+2774479 openat(AT_FDCWD, "/etc/ssl/certs/java", O_RDONLY|O_CLOEXEC) = 7
+2774479 openat(AT_FDCWD, "/etc/ssl/certs/vTrus_ECC_Root_CA.pem", O_RDONLY|O_CLOEXEC) = 7
+2774479 openat(AT_FDCWD, "/etc/ssl/certs/vTrus_Root_CA.pem", O_RDONLY|O_CLOEXEC) = 7
+2774479 openat(AT_FDCWD, "/etc/pki/tls/certs", O_RDONLY|O_CLOEXEC|O_DIRECTORY) = -1 ENOENT (No such file or directory)
+2774479 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774472 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774472 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774472 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774472 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774472 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774472 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774472 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774472 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774472 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774472 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774472 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774472 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774472 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774472 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774472 openat(AT_FDCWD, "/etc/hosts", O_RDONLY|O_CLOEXEC) = 7
+2774472 socket(AF_INET, SOCK_DGRAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 7
+2774472 setsockopt(7, SOL_IP, IP_RECVERR, [1], 4) = 0
+2774472 connect(7, {sa_family=AF_INET, sin_port=htons(53), sin_addr=inet_addr("127.0.0.53")}, 16) = 0
+2774472 sendmmsg(7, [{msg_hdr={msg_name=NULL, msg_namelen=0, msg_iov=[{iov_base="\262\363\1 \0\1\0\0\0\0\0\1\3www\nrfc-editor\3org\0\0\1\0\1\0\0)\4\260\0\0\0\0\0\0", iov_len=47}], msg_iovlen=1, msg_controllen=0, msg_flags=0}, msg_len=47}, {msg_hdr={msg_name=NULL, msg_namelen=0, msg_iov=[{iov_base="\t\372\1 \0\1\0\0\0\0\0\1\3www\nrfc-editor\3org\0\0\34\0\1\0\0)\4\260\0\0\0\0\0\0", iov_len=47}], msg_iovlen=1, msg_controllen=0, msg_flags=0}, msg_len=47}], 2, MSG_NOSIGNAL) = 2
+2774472 recvfrom(7, "\262\363\201\200\0\1\0\2\0\0\0\1\3www\nrfc-editor\3org\0\0\1\0\1\300\f\0\1\0\1\0\0\0003\0\4h\22\24Q\300\f\0\1\0\1\0\0\0003\0\4h\22\25Q\0\0)\377\326\0\0\0\0\0\0", 2048, 0, {sa_family=AF_INET, sin_port=htons(53), sin_addr=inet_addr("127.0.0.53")}, [28 => 16]) = 79
+2774472 recvfrom(7, "\t\372\201\200\0\1\0\2\0\0\0\1\3www\nrfc-editor\3org\0\0\34\0\1\300\f\0\34\0\1\0\0\0003\0\20&\6G\0\0\0\0\0\0\0\0\0h\22\25Q\300\f\0\34\0\1\0\0\0003\0\20&\6G\0\0\0\0\0\0\0\0\0h\22\24Q\0\0)\377\326\0\0\0\0\0\0", 65536, 0, {sa_family=AF_INET, sin_port=htons(53), sin_addr=inet_addr("127.0.0.53")}, [28 => 16]) = 103
+2774472 socket(AF_NETLINK, SOCK_RAW|SOCK_CLOEXEC, NETLINK_ROUTE) = 7
+2774472 bind(7, {sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, 12) = 0
+2774472 getsockname(7, {sa_family=AF_NETLINK, nl_pid=2774468, nl_groups=00000000}, [12]) = 0
+2774472 sendto(7, [{nlmsg_len=20, nlmsg_type=RTM_GETADDR, nlmsg_flags=NLM_F_REQUEST|NLM_F_DUMP, nlmsg_seq=1789522298, nlmsg_pid=0}, {ifa_family=AF_UNSPEC, ...}], 20, 0, {sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, 12) = 20
+2774472 recvmsg(7, {msg_name={sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, msg_namelen=12, msg_iov=[{iov_base=[[{nlmsg_len=76, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522298, nlmsg_pid=2774468}, {ifa_family=AF_INET, ifa_prefixlen=8, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_HOST, ifa_index=if_nametoindex("lo")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("127.0.0.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("127.0.0.1")], [{nla_len=7, nla_type=IFA_LABEL}, "lo"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=1012, tstamp=1012}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522298, nlmsg_pid=2774468}, {ifa_family=AF_INET, ifa_prefixlen=12, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("enp129s0f0np0")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("172.16.24.11")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("172.16.24.11")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("172.31.255.255")], [{nla_len=18, nla_type=IFA_LABEL}, "enp129s0f0np0"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=1762, tstamp=23980116}]]], [{nlmsg_len=88, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522298, nlmsg_pid=2774468}, {ifa_family=AF_INET, ifa_prefixlen=24, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("virbr1")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.50.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.50.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.50.255")], [{nla_len=11, nla_type=IFA_LABEL}, "virbr1"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2224, tstamp=2224}]]], [{nlmsg_len=88, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522298, nlmsg_pid=2774468}, {ifa_family=AF_INET, ifa_prefixlen=24, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("virbr2")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.61.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.61.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.61.255")], [{nla_len=11, nla_type=IFA_LABEL}, "virbr2"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2245, tstamp=2245}]]], [{nlmsg_len=88, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522298, nlmsg_pid=2774468}, {ifa_family=AF_INET, ifa_prefixlen=24, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("virbr0")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.122.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.122.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.122.255")], [{nla_len=11, nla_type=IFA_LABEL}, "virbr0"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2273, tstamp=2273}]]], [{nlmsg_len=88, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522298, nlmsg_pid=2774468}, {ifa_family=AF_INET, ifa_prefixlen=24, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("virbr4")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.83.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.83.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.83.255")], [{nla_len=11, nla_type=IFA_LABEL}, "virbr4"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2291, tstamp=2291}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522298, nlmsg_pid=2774468}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("br-d564a52702f6")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.64.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.64.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.79.255")], [{nla_len=20, nla_type=IFA_LABEL}, "br-d564a52702f6"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2517, tstamp=2517}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522298, nlmsg_pid=2774468}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("docker_gwbridge")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.16.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.16.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.31.255")], [{nla_len=20, nla_type=IFA_LABEL}, "docker_gwbridge"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2533, tstamp=2533}]]], [{nlmsg_len=88, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522298, nlmsg_pid=2774468}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("docker0")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.0.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.0.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.15.255")], [{nla_len=12, nla_type=IFA_LABEL}, "docker0"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2550, tstamp=2550}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522298, nlmsg_pid=2774468}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("br-5140c59d6152")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.144.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.144.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.159.255")], [{nla_len=20, nla_type=IFA_LABEL}, "br-5140c59d6152"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2563, tstamp=2563}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522298, nlmsg_pid=2774468}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("br-5d6342ce11bf")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.32.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.32.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.47.255")], [{nla_len=20, nla_type=IFA_LABEL}, "br-5d6342ce11bf"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2579, tstamp=2579}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522298, nlmsg_pid=2774468}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("br-7ba450de6007")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.96.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.96.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.111.255")], [{nla_len=20, nla_type=IFA_LABEL}, "br-7ba450de6007"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2616, tstamp=2616}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522298, nlmsg_pid=2774468}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("br-92a829545622")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.128.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.128.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.143.255")], [{nla_len=20, nla_type=IFA_LABEL}, "br-92a829545622"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2629, tstamp=2629}]]], [{nlmsg_len=72, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522298, nlmsg_pid=2774468}, {ifa_family=AF_INET6, ifa_prefixlen=128, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_HOST, ifa_index=if_nametoindex("lo")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "::1")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=1013, tstamp=1013}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT|IFA_F_NOPREFIXROUTE]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522298, nlmsg_pid=2774468}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("enp129s0f0np0")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::7ec2:55ff:fe46:292c")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=1755, tstamp=1755}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522298, nlmsg_pid=2774468}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("docker_gwbridge")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::c86d:3bff:fe57:cd8f")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=3089, tstamp=3089}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522298, nlmsg_pid=2774468}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("docker0")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::e03e:ff:fe35:4604")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2829, tstamp=2829}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=72, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522298, nlmsg_pid=2774468}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_NODAD|IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("br-5d6342ce11bf")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fc00:f853:ccd:e793::1")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2579, tstamp=2579}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_NODAD|IFA_F_PERMANENT]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522298, nlmsg_pid=2774468}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("br-5d6342ce11bf")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::8847:eaff:fe57:996f")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2861, tstamp=2861}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522298, nlmsg_pid=2774468}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("veth49d7c3e")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::e439:25ff:feca:3a1a")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2829, tstamp=2829}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522298, nlmsg_pid=2774468}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("vethf821cfb")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::1c3d:17ff:fe2a:b0df")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2861, tstamp=2861}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522298, nlmsg_pid=2774468}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("veth99b1031")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::9461:b1ff:fe27:cfeb")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2861, tstamp=2861}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522298, nlmsg_pid=2774468}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("veth0c2737a")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::e881:8cff:fe4d:9773")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2869, tstamp=2869}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522298, nlmsg_pid=2774468}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("veth22c136c")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::e861:dcff:feba:584e")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2864, tstamp=2864}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522298, nlmsg_pid=2774468}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("veth83d5692")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::442f:62ff:fe2f:6038")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=3089, tstamp=3089}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522298, nlmsg_pid=2774468}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("veth4bf7b26")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::b074:44ff:feb4:8910")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=63024042, tstamp=63024042}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]]], iov_len=4096}], msg_iovlen=1, msg_controllen=0, msg_flags=0}, 0) = 2212
+2774472 recvmsg(7, {msg_name={sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, msg_namelen=12, msg_iov=[{iov_base=[{nlmsg_len=20, nlmsg_type=NLMSG_DONE, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789522298, nlmsg_pid=2774468}, 0], iov_len=4096}], msg_iovlen=1, msg_controllen=0, msg_flags=0}, 0) = 20
+2774472 socket(AF_INET, SOCK_DGRAM|SOCK_CLOEXEC, IPPROTO_IP) = 7
+2774472 connect(7, {sa_family=AF_INET, sin_port=htons(0), sin_addr=inet_addr("104.18.20.81")}, 16) = 0
+2774472 getsockname(7, {sa_family=AF_INET, sin_port=htons(36850), sin_addr=inet_addr("172.16.24.11")}, [28 => 16]) = 0
+2774472 connect(7, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16) = 0
+2774472 connect(7, {sa_family=AF_INET, sin_port=htons(0), sin_addr=inet_addr("104.18.21.81")}, 16) = 0
+2774472 getsockname(7, {sa_family=AF_INET, sin_port=htons(44980), sin_addr=inet_addr("172.16.24.11")}, [28 => 16]) = 0
+2774472 socket(AF_INET6, SOCK_DGRAM|SOCK_CLOEXEC, IPPROTO_IP) = 7
+2774472 connect(7, {sa_family=AF_INET6, sin6_port=htons(0), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:4700::6812:1551", &sin6_addr), sin6_scope_id=0}, 28) = -1 ENETUNREACH (Network is unreachable)
+2774472 connect(7, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16) = 0
+2774472 connect(7, {sa_family=AF_INET6, sin6_port=htons(0), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:4700::6812:1451", &sin6_addr), sin6_scope_id=0}, 28) = -1 ENETUNREACH (Network is unreachable)
+2774472 socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 7
+2774472 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774472 connect(7, {sa_family=AF_INET, sin_port=htons(443), sin_addr=inet_addr("104.18.20.81")}, 16) = -1 EINPROGRESS (Operation now in progress)
+2774472 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774471 getsockopt(7, SOL_SOCKET, SO_ERROR, [0], [4]) = 0
+2774471 getpeername(7, {sa_family=AF_INET, sin_port=htons(443), sin_addr=inet_addr("104.18.20.81")}, [112 => 16]) = 0
+2774471 getsockname(7, {sa_family=AF_INET, sin_port=htons(36632), sin_addr=inet_addr("172.16.24.11")}, [112 => 16]) = 0
+2774471 setsockopt(7, SOL_TCP, TCP_NODELAY, [1], 4) = 0
+2774471 setsockopt(7, SOL_SOCKET, SO_KEEPALIVE, [1], 4) = 0
+2774471 setsockopt(7, SOL_TCP, TCP_KEEPIDLE, [30], 4) = 0
+2774471 setsockopt(7, SOL_TCP, TCP_KEEPINTVL, [15], 4) = 0
+2774471 setsockopt(7, SOL_TCP, TCP_KEEPCNT, [9], 4) = 0
+2774472 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774471 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774471 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774471 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774471 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774471 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774471 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774471 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774471 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774471 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774471 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774471 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774471 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774484 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774471 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774484 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774484 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774481 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774484 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774472 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774471 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774484 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774484 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774484 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774484 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=2774468, si_uid=253477} ---
+2774471 openat(AT_FDCWD, "summary.txt", O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC, 0644) = 8
+2774529 +++ exited with 0 +++
+2774493 +++ exited with 0 +++
+2774492 +++ exited with 0 +++
+2774491 +++ exited with 0 +++
+2774490 +++ exited with 0 +++
+2774489 +++ exited with 0 +++
+2774488 +++ exited with 0 +++
+2774487 +++ exited with 0 +++
+2774486 +++ exited with 0 +++
+2774485 +++ exited with 0 +++
+2774484 +++ exited with 0 +++
+2774483 +++ exited with 0 +++
+2774482 +++ exited with 0 +++
+2774481 +++ exited with 0 +++
+2774480 +++ exited with 0 +++
+2774479 +++ exited with 0 +++
+2774478 +++ exited with 0 +++
+2774473 +++ exited with 0 +++
+2774472 +++ exited with 0 +++
+2774471 +++ exited with 0 +++
+2774470 +++ exited with 0 +++
+2774469 +++ exited with 0 +++
+2774468 +++ exited with 0 +++

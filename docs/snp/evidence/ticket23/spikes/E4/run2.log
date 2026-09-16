@@ -1,0 +1,101 @@
+=== RUN   TestSpike23E4OneHopWithAPushedPolicy
+
+===== (i) P narrower than E1's list, and sufficient =====
+P = {"format":"policy","version":1,"n":[{"host":"api.anthropic.com","ports":[443]},{"host":"www.rfc-editor.org","ports":[443]}],"f":[{"path":"./summary.txt","modes":"w"}],"x":[],"e":[{"variable":"ANTHROPIC_API_KEY"}]}
+2026/09/15 22:00:26 failed to sufficiently increase receive buffer size (was: 208 kiB, wanted: 7168 kiB, got: 416 kiB). See https://github.com/quic-go/quic-go/wiki/UDP-Buffer-Sizes for details.
+B  APPLIED [env:ANTHROPIC_API_KEY net:api.anthropic.com:443 net:www.rfc-editor.org:443 write:./summary.txt] -> deno run --no-prompt --allow-net=api.anthropic.com:443,www.rfc-editor.org:443 --allow-write=./summary.txt --allow-env=ANTHROPIC_API_KEY  (pid 2820407, 2.704ms)
+B  accepted a stream from vendor=amd-sev-snp measurement=1111111111111111… policy_digest=c572d2129cc9f9f1…
+B  the agent ended after 7.529s: exit=0 err=<nil>
+A  the cold tunnel — dial, both sides judge, push, ack, the process starts — took 49ms
+A  received 1356 bytes:
+exit=0 first_tool_call=1.728s
+    64ms | model=claude-sonnet-5 max_tokens=4096 endpoint=https://api.anthropic.com/v1/messages
+    65ms | runtime=deno 2.9.6
+    65ms | task="Fetch the document at https://www.rfc-editor.org/rfc/rfc8446.txt, write a summary of it in at most five sentences, and save the summary to the file summary.txt in the current directory using write_file. Then reply with the word DONE."
+    65ms | 
+  1.728s | request 1: stop_reason=tool_use input_tokens=657 output_tokens=73 in 1662ms
+  1.887s |   tool_use fetch_url {"url":"https://www.rfc-editor.org/rfc/rfc8446.txt"} -> 20502 bytes, is_error=false
+  6.796s | request 2: stop_reason=tool_use input_tokens=6907 output_tokens=471 in 4908ms
+  6.799s |   tool_use write_file {"path":"summary.txt","content":"RFC 8446, published in August 2018 by E. Rescorla, specifies version 1.3 of the Transpo… -> 31 bytes, is_error=false
+  7.509s | request 3: stop_reason=end_turn input_tokens=7399 output_tokens=5 in 709ms
+  7.509s | 
+  7.509s | final text: DONE
+  7.509s | 
+  7.509s | tool calls, in order:
+  7.509s |   1. fetch_url(https://www.rfc-editor.org/rfc/rfc8446.txt)
+  7.509s |   2. write_file(summary.txt)
+  7.509s | 
+  7.509s | totals: input_tokens=14963 output_tokens=549
+   7.51s | cost: $0.035416  (input $2.00/M, output $10.00/M for claude-sonnet-5)
+   7.51s | wall time: 7.446s
+
+
+===== (iii) a second push that widens =====
+P = {"format":"policy","version":1,"n":[{"host":"api.anthropic.com","ports":[443]},{"host":"www.rfc-editor.org","ports":[443]},{"host":"example.com","ports":[443]}],"f":[{"path":"./summary.txt","modes":"w"}],"x":[],"e":[{"variable":"ANTHROPIC_API_KEY"}]}
+B  REFUSAL verification refused: the policy pushed to the peer was not applied: a peer at 127.0.0.1:53084 pushed a policy this sandbox did not apply: sandbox: policy refused: it widens [env:ANTHROPIC_API_KEY net:api.anthropic.com:443 net:www.rfc-editor.org:443 write:./summary.txt] to [env:ANTHROPIC_API_KEY net:api.anthropic.com:443 net:example.com:443 net:www.rfc-editor.org:443 write:./summary.txt]
+A(iii)  REFUSAL verification refused: the policy pushed to the peer was not applied: "b" at 127.0.0.1:33735 did not apply the policy pushed to it: the peer refused it: the sandbox beside this tunneld did not apply it
+A(iii)  Open after 40ms returned: attest: verification failed
+A(iii)  reason = the policy pushed to the peer was not applied (errors.Is ErrRefused: true)
+
+===== (iii b) a second push that narrows, for the contrast =====
+P = {"format":"policy","version":1,"n":[{"host":"api.anthropic.com","ports":[443]}],"f":[{"path":"./summary.txt","modes":"w"}],"x":[],"e":[{"variable":"ANTHROPIC_API_KEY"}]}
+B  the policy restarts the agent: the run under [env:ANTHROPIC_API_KEY net:api.anthropic.com:443 net:www.rfc-editor.org:443 write:./summary.txt] is killed and its conversation is gone
+B  APPLIED [env:ANTHROPIC_API_KEY net:api.anthropic.com:443 write:./summary.txt] -> deno run --no-prompt --allow-net=api.anthropic.com:443 --allow-write=./summary.txt --allow-env=ANTHROPIC_API_KEY  (pid 2820590, 2.009ms)
+A(iiib)  the narrowing was applied: the tunnel is up and the agent was restarted from turn 1
+B  accepted a stream from vendor=amd-sev-snp measurement=1111111111111111… policy_digest=08c07de74566d48e…
+B  the agent ended after 3ms: exit=-1 err=signal: killed
+
+===== (ii) P omits www.rfc-editor.org:443 =====
+P = {"format":"policy","version":1,"n":[{"host":"api.anthropic.com","ports":[443]}],"f":[{"path":"./summary.txt","modes":"w"}],"x":[],"e":[{"variable":"ANTHROPIC_API_KEY"}]}
+B  APPLIED [env:ANTHROPIC_API_KEY net:api.anthropic.com:443 write:./summary.txt] -> deno run --no-prompt --allow-net=api.anthropic.com:443 --allow-write=./summary.txt --allow-env=ANTHROPIC_API_KEY  (pid 2820593, 1.572ms)
+B  accepted a stream from vendor=amd-sev-snp measurement=1111111111111111… policy_digest=3e585e30dd6453bc…
+B  the agent ended after 7.882s: exit=0 err=<nil>
+A  the cold tunnel took 37ms
+A  received 1493 bytes:
+exit=0 first_tool_call=1.677s
+    78ms | model=claude-sonnet-5 max_tokens=4096 endpoint=https://api.anthropic.com/v1/messages
+    78ms | runtime=deno 2.9.6
+    78ms | task="Fetch the document at https://www.rfc-editor.org/rfc/rfc8446.txt, write a summary of it in at most five sentences, and save the summary to the file summary.txt in the current directory using write_file. Then reply with the word DONE."
+    78ms | 
+  1.677s | request 1: stop_reason=tool_use input_tokens=657 output_tokens=86 in 1598ms
+  1.686s |   tool_use fetch_url {"url":"https://www.rfc-editor.org/rfc/rfc8446.txt"} -> 107 bytes, is_error=true
+  1.686s |     the model is told: fetch_url: NotCapable: Requires net access to "www.rfc-editor.org:443", run again with the --allow-net flag
+  7.301s | request 2: stop_reason=tool_use input_tokens=797 output_tokens=479 in 5615ms
+  7.304s |   tool_use write_file {"path":"summary.txt","content":"RFC 8446 specifies version 1.3 of the Transport Layer Security (TLS) protocol, which pr… -> 31 bytes, is_error=false
+  7.866s | request 3: stop_reason=end_turn input_tokens=1297 output_tokens=5 in 560ms
+  7.866s | 
+  7.866s | final text: DONE
+  7.866s | 
+  7.866s | tool calls, in order:
+  7.867s |   1. fetch_url(https://www.rfc-editor.org/rfc/rfc8446.txt)
+  7.867s |   2. write_file(summary.txt)
+  7.867s | 
+  7.867s | totals: input_tokens=2751 output_tokens=570
+  7.867s | cost: $0.011202  (input $2.00/M, output $10.00/M for claude-sonnet-5)
+  7.868s | wall time: 7.791s
+
+
+===== (iv) the process starts, is acknowledged, and then dies =====
+P = {"format":"policy","version":1,"n":[{"host":"nonsense///","ports":[443]}],"f":[{"path":"./summary.txt","modes":"w"}],"x":[],"e":[{"variable":"ANTHROPIC_API_KEY"}]}
+B  APPLIED [env:ANTHROPIC_API_KEY net:nonsense///:443 write:./summary.txt] -> deno run --no-prompt --allow-net=nonsense///:443 --allow-write=./summary.txt --allow-env=ANTHROPIC_API_KEY  (pid 2820805, 1.266ms)
+B  accepted a stream from vendor=amd-sev-snp measurement=1111111111111111… policy_digest=ccf8c71b9086a1a4…
+B  the agent ended after 36ms: exit=1 err=exit status 1
+A  Open took 48ms, err=<nil>
+A  received 341 bytes:
+exit=1 first_tool_call=0s
+    27ms | [0m[1m[31merror[0m: invalid host 'nonsense///': invalid char found in FQDN
+    28ms | 
+    28ms | Caused by:
+    28ms |     0: invalid host 'nonsense///': invalid char found in FQDN
+    28ms |     1: invalid host 'nonsense///': invalid char found in FQDN
+    28ms |     2: invalid char found in FQDN
+
+
+===== (v) the envelope is fine and the body is not =====
+P = {"format":"policy","version":1,"n":"everywhere","f":[],"x":[]}
+B  REFUSAL verification refused: the policy pushed to the peer was not applied: a peer at 127.0.0.1:51008 pushed a policy this sandbox did not apply: sandbox: policy refused: it is not a policy this sandbox reads: json: cannot unmarshal string into Go struct field e4Policy.n of type []struct { Host string "json:\"host\""; Ports []int "json:\"ports\"" }
+A  REFUSAL verification refused: the policy pushed to the peer was not applied: "b" at 127.0.0.1:59551 did not apply the policy pushed to it: the peer refused it: the sandbox beside this tunneld did not apply it
+A  Open after 36ms returned: attest: verification failed (reason the policy pushed to the peer was not applied)
+--- PASS: TestSpike23E4OneHopWithAPushedPolicy (17.28s)
+PASS
+ok  	gvisor.dev/gvisor/attest/tunneld	17.323s

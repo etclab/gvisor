@@ -1,0 +1,529 @@
+// Copyright 2026 The gVisor Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Ticket 23's spike E4: one hop with a pushed policy, where the sandbox behind
+// B is not the null one but a throwaway adapter whose Apply means "start a
+// Deno process with these flags".
+//
+// It is a throwaway and lives here only because attest/internal/fixture is an
+// internal package and the two tunnelds this needs are the ones every test in
+// this package starts. Nothing in attest/ was changed for it, and it is
+// deleted from the tree once it has run; the copy that stays is under
+// docs/snp/evidence/ticket23/spikes/E4/.
+//
+// The arrangement, which is the cheapest honest one:
+//
+//	A ── tunnel ──▶ B         A pushes P. B's adapter turns P into Deno flags
+//	  "RUN"                   and execs E3's agent.ts under them. Deno IS the
+//	  ◀── result ──           enforcer on B; the tunnel carries the request and
+//	                          the result, and A's push is what set the flags.
+//	                     B ── the agent's own fetches go straight out ──▶ internet
+//
+// A never sees the internet and never sees a trust decision about it. What A
+// gets back is the agent's transcript and an exit status, which is the whole
+// of E4's answer to "is the refusal visible to A as a tool error".
+
+package tunneld_test
+
+import (
+	"bufio"
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"sort"
+	"strings"
+	"sync"
+	"testing"
+	"time"
+
+	"gvisor.dev/gvisor/attest"
+	"gvisor.dev/gvisor/attest/sandbox"
+	"gvisor.dev/gvisor/attest/tunneld"
+)
+
+const (
+	e4Deno   = "/home/pniroula/.deno/bin/deno" // 2.9.6, pinned
+	e4Script = "../../docs/snp/evidence/ticket23/spikes/E3/agent.ts"
+	e4Peer   = "b"
+)
+
+// ===== the policies =====
+//
+// Two departures from ticket 22's provisional bytes, both forced and both
+// recorded in the README:
+//
+//   - `n` carries `host` and not `cidr`. E3 measured that Deno's --allow-net
+//     checks the name in the URL before resolution, so a CIDR — however
+//     correctly Deno parses it — never matches the destination an agent names.
+//   - there is an `e`, because the API key is an environment resource and
+//     (N, F, X) has no letter for it. Without it the agent cannot read its key.
+
+// e4P1 is case (i): narrower than E1's list, and sufficient.
+const e4P1 = `{"format":"policy","version":1,` +
+	`"n":[{"host":"api.anthropic.com","ports":[443]},{"host":"www.rfc-editor.org","ports":[443]}],` +
+	`"f":[{"path":"./summary.txt","modes":"w"}],"x":[],"e":[{"variable":"ANTHROPIC_API_KEY"}]}`
+
+// e4P2 is case (ii): the same, without the tool's destination.
+const e4P2 = `{"format":"policy","version":1,` +
+	`"n":[{"host":"api.anthropic.com","ports":[443]}],` +
+	`"f":[{"path":"./summary.txt","modes":"w"}],"x":[],"e":[{"variable":"ANTHROPIC_API_KEY"}]}`
+
+// e4P3 is case (iii): case (i) plus one more host. A widening.
+const e4P3 = `{"format":"policy","version":1,` +
+	`"n":[{"host":"api.anthropic.com","ports":[443]},{"host":"www.rfc-editor.org","ports":[443]},{"host":"example.com","ports":[443]}],` +
+	`"f":[{"path":"./summary.txt","modes":"w"}],"x":[],"e":[{"variable":"ANTHROPIC_API_KEY"}]}`
+
+// e4P4 is case (iii b): case (i) with one host taken away. A narrowing.
+const e4P4 = e4P2
+
+// e4P5 is case (iv): a flag Deno rejects at startup, so that the process
+// starts, is acknowledged, and then dies.
+const e4P5 = `{"format":"policy","version":1,` +
+	`"n":[{"host":"nonsense///","ports":[443]}],` +
+	`"f":[{"path":"./summary.txt","modes":"w"}],"x":[],"e":[{"variable":"ANTHROPIC_API_KEY"}]}`
+
+// e4P6 is case (v): the envelope tunneld reads is fine and the body is not.
+const e4P6 = `{"format":"policy","version":1,"n":"everywhere","f":[],"x":[]}`
+
+// ===== the adapter =====
+
+// e4Policy is the whole of what this adapter reads. Unknown fields are refused:
+// a sandbox that enforces a policy cannot skip the part of it it did not
+// recognise, which is the opposite of tunneld's rule for the envelope.
+type e4Policy struct {
+	Format  string `json:"format"`
+	Version int    `json:"version"`
+	N       []struct {
+		Host  string `json:"host"`
+		Ports []int  `json:"ports"`
+	} `json:"n"`
+	F []struct {
+		Path  string `json:"path"`
+		Modes string `json:"modes"`
+	} `json:"f"`
+	X []struct {
+		Path string `json:"path"`
+	} `json:"x"`
+	E []struct {
+		Variable string `json:"variable"`
+	} `json:"e"`
+}
+
+// e4Atoms turns a policy into the set of capabilities it grants, one string
+// each. The set and not the flag strings is what a widening is judged on: two
+// flag strings differ when a host is added and also when the hosts are merely
+// reordered, and only one of those is a widening.
+func e4Atoms(policy []byte) ([]string, error) {
+	dec := json.NewDecoder(strings.NewReader(string(policy)))
+	dec.DisallowUnknownFields()
+	var p e4Policy
+	if err := dec.Decode(&p); err != nil {
+		return nil, err
+	}
+	var atoms []string
+	for _, n := range p.N {
+		if len(n.Ports) == 0 {
+			atoms = append(atoms, "net:"+n.Host)
+		}
+		for _, port := range n.Ports {
+			atoms = append(atoms, fmt.Sprintf("net:%s:%d", n.Host, port))
+		}
+	}
+	for _, f := range p.F {
+		if strings.Contains(f.Modes, "r") {
+			atoms = append(atoms, "read:"+f.Path)
+		}
+		if strings.Contains(f.Modes, "w") {
+			atoms = append(atoms, "write:"+f.Path)
+		}
+	}
+	for _, x := range p.X {
+		atoms = append(atoms, "run:"+x.Path)
+	}
+	for _, e := range p.E {
+		atoms = append(atoms, "env:"+e.Variable)
+	}
+	sort.Strings(atoms)
+	return atoms, nil
+}
+
+// e4Flags renders the capability set as the Deno command line.
+func e4Flags(atoms []string) []string {
+	by := map[string][]string{}
+	for _, a := range atoms {
+		kind, value, _ := strings.Cut(a, ":")
+		by[kind] = append(by[kind], value)
+	}
+	var flags []string
+	for _, k := range []string{"net", "read", "write", "run", "env"} {
+		if v := by[k]; len(v) > 0 {
+			flags = append(flags, "--allow-"+k+"="+strings.Join(v, ","))
+		}
+	}
+	return flags
+}
+
+// e4Subset reports whether every capability in want is in have.
+func e4Subset(want, have []string) bool {
+	in := map[string]bool{}
+	for _, h := range have {
+		in[h] = true
+	}
+	for _, w := range want {
+		if !in[w] {
+			return false
+		}
+	}
+	return true
+}
+
+// e4Sandbox is the throwaway: tunneld's Network, and an Apply that means
+// "start a Deno process with these flags".
+type e4Sandbox struct {
+	sandbox.Network
+	out *e4Say
+	dir string
+
+	mu       sync.Mutex
+	previous []string
+	proc     *e4Proc
+}
+
+var _ sandbox.Sandbox = (*e4Sandbox)(nil)
+
+// Apply is the whole of the experiment. It parses, refuses a widening, starts
+// the process, and acknowledges — and the acknowledgement means the process
+// started, which is the only thing this sandbox can truthfully say at the
+// moment it has to say something.
+func (d *e4Sandbox) Apply(_ context.Context, policy []byte) error {
+	began := time.Now()
+	atoms, err := e4Atoms(policy)
+	if err != nil {
+		return fmt.Errorf("%w: it is not a policy this sandbox reads: %v", sandbox.ErrPolicyRefused, err)
+	}
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.previous != nil && !e4Subset(atoms, d.previous) {
+		return fmt.Errorf("%w: it widens %v to %v", sandbox.ErrPolicyRefused, d.previous, atoms)
+	}
+	if d.proc != nil {
+		d.out.say("B  the policy restarts the agent: the run under %v is killed and its conversation is gone", d.previous)
+		d.proc.kill()
+	}
+	flags := e4Flags(atoms)
+	p, err := e4Start(d.dir, flags, d.out)
+	if err != nil {
+		return fmt.Errorf("%w: the process did not start: %v", sandbox.ErrPolicyRefused, err)
+	}
+	d.proc, d.previous = p, atoms
+	d.out.say("B  APPLIED %v -> deno run --no-prompt %s  (pid %d, %s)",
+		atoms, strings.Join(flags, " "), p.cmd.Process.Pid, time.Since(began).Round(time.Microsecond))
+	return nil
+}
+
+func (d *e4Sandbox) running() *e4Proc {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.proc
+}
+
+func (d *e4Sandbox) stop() {
+	if p := d.running(); p != nil {
+		p.kill()
+	}
+}
+
+// ===== the process =====
+
+// e4Proc is one Deno agent, its transcript and its end.
+type e4Proc struct {
+	cmd   *exec.Cmd
+	began time.Time
+	done  chan struct{}
+
+	mu        sync.Mutex
+	lines     []string
+	firstTool time.Duration
+	exit      int
+}
+
+// e4Start execs the agent and returns as soon as it is running. Everything the
+// process says afterwards is timestamped from here, which is what makes "the
+// first tool call" a number.
+func e4Start(dir string, flags []string, out *e4Say) (*e4Proc, error) {
+	script, err := filepath.Abs(e4Script)
+	if err != nil {
+		return nil, err
+	}
+	args := append([]string{"run", "--no-prompt"}, flags...)
+	cmd := exec.Command(e4Deno, append(args, script)...)
+	cmd.Dir = dir
+	// The key is in this process's environment and goes into the child's. That
+	// the child may read it is Deno's --allow-env and nothing else: nothing in
+	// the policy stops the adapter from putting a secret in the environ.
+	cmd.Env = os.Environ()
+	pr, pw := io.Pipe()
+	cmd.Stdout, cmd.Stderr = pw, pw
+	p := &e4Proc{cmd: cmd, began: time.Now(), done: make(chan struct{})}
+	if err := cmd.Start(); err != nil {
+		pw.Close()
+		return nil, err
+	}
+	go func() {
+		sc := bufio.NewScanner(pr)
+		sc.Buffer(make([]byte, 0, 64<<10), 1<<20)
+		for sc.Scan() {
+			took := time.Since(p.began)
+			line := sc.Text()
+			p.mu.Lock()
+			if p.firstTool == 0 && strings.Contains(line, "tool_use ") {
+				p.firstTool = took
+			}
+			p.lines = append(p.lines, fmt.Sprintf("%8s | %s", took.Round(time.Millisecond), line))
+			p.mu.Unlock()
+		}
+	}()
+	go func() {
+		err := cmd.Wait()
+		pw.Close()
+		p.mu.Lock()
+		p.exit = cmd.ProcessState.ExitCode()
+		p.mu.Unlock()
+		out.say("B  the agent ended after %s: exit=%d err=%v", time.Since(p.began).Round(time.Millisecond), cmd.ProcessState.ExitCode(), err)
+		close(p.done)
+	}()
+	return p, nil
+}
+
+func (p *e4Proc) kill() {
+	if p.cmd.Process != nil {
+		p.cmd.Process.Kill()
+	}
+	<-p.done
+}
+
+// transcript is the agent's output, timestamped, and its exit status.
+func (p *e4Proc) transcript() (string, int, time.Duration) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return strings.Join(p.lines, "\n"), p.exit, p.firstTool
+}
+
+// ===== the two ends of the stream =====
+
+// e4Serve is B's side: one stream, "RUN", wait for the agent, send back what
+// it said and how it ended.
+func e4Serve(ctx context.Context, out *e4Say, box *e4Sandbox) {
+	for {
+		s, who, err := box.Accept(ctx)
+		if err != nil {
+			return
+		}
+		out.say("B  accepted a stream from vendor=%s measurement=%s… policy_digest=%s…",
+			who.Vendor, who.Measurement[:16], who.PolicyDigest[:16])
+		go func() {
+			defer s.Close()
+			line, err := bufio.NewReader(s).ReadString('\n')
+			if err != nil || strings.TrimSpace(line) != "RUN" {
+				fmt.Fprintf(s, "B: %q is not a request\n", line)
+				s.CloseWrite()
+				return
+			}
+			p := box.running()
+			if p == nil {
+				fmt.Fprintf(s, "exit=-1\nB: no agent is running\n")
+				s.CloseWrite()
+				return
+			}
+			select {
+			case <-p.done:
+			case <-ctx.Done():
+			}
+			text, code, firstTool := p.transcript()
+			fmt.Fprintf(s, "exit=%d first_tool_call=%s\n%s\n", code, firstTool.Round(time.Millisecond), text)
+			s.CloseWrite()
+		}()
+	}
+}
+
+// e4Ask is A's side: open a stream to B, say RUN, read everything back.
+func e4Ask(ctx context.Context, out *e4Say, box sandbox.Sandbox) (string, time.Duration, error) {
+	began := time.Now()
+	s, err := box.Open(ctx, e4Peer)
+	opened := time.Since(began)
+	if err != nil {
+		return "", opened, err
+	}
+	defer s.Close()
+	if _, err := io.WriteString(s, "RUN\n"); err != nil {
+		return "", opened, err
+	}
+	s.CloseWrite()
+	body, err := io.ReadAll(s)
+	return string(body), opened, err
+}
+
+// ===== the transcript =====
+
+type e4Say struct {
+	mu sync.Mutex
+	w  io.Writer
+}
+
+func (s *e4Say) say(format string, a ...any) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	fmt.Fprintf(s.w, format+"\n", a...)
+}
+
+// e4Pair starts a B with the Deno sandbox behind it, and an A that pushes
+// policy to it.
+func e4Pair(t *testing.T, out *e4Say, name, policy string) (*e4Sandbox, sandbox.Sandbox) {
+	t.Helper()
+	b := start(t, "sandbox-b-"+name, imageB, admitting(imageA), nil,
+		func(cfg *tunneld.Config) {
+			cfg.RefusalLog = func(r *attest.Refusal) { out.say("B  REFUSAL %s", r.LogString()) }
+		})
+	box := &e4Sandbox{Network: b.Tunneld, out: out, dir: t.TempDir()}
+	t.Cleanup(box.stop)
+	b.Attach(box)
+	go e4Serve(context.Background(), out, box)
+
+	a := start(t, "sandbox-a-"+name, imageA, admitting(imageB),
+		tunneld.PeerTable{e4Peer: b.Addr().String()},
+		func(cfg *tunneld.Config) {
+			cfg.PushPolicy = []byte(policy)
+			cfg.RefusalLog = func(r *attest.Refusal) { out.say("A  REFUSAL %s", r.LogString()) }
+		})
+	return box, sandbox.NewNull(a.Tunneld, func(f string, r ...any) { out.say("A  "+f, r...) })
+}
+
+// e4Toward is a second A onto a B that is already running: a fresh tunnel is
+// the only way to make a second push, because a push is once per tunnel.
+func e4Toward(t *testing.T, out *e4Say, name string, b *e4Sandbox, addr, policy string) sandbox.Sandbox {
+	t.Helper()
+	a := start(t, "sandbox-a-"+name, imageA, admitting(imageB),
+		tunneld.PeerTable{e4Peer: addr},
+		func(cfg *tunneld.Config) {
+			cfg.PushPolicy = []byte(policy)
+			cfg.RefusalLog = func(r *attest.Refusal) { out.say("A(%s)  REFUSAL %s", name, r.LogString()) }
+		})
+	return sandbox.NewNull(a.Tunneld, func(f string, r ...any) { out.say("A(%s)  "+f, append([]any{name}, r...)...) })
+}
+
+func TestSpike23E4OneHopWithAPushedPolicy(t *testing.T) {
+	if os.Getenv("ANTHROPIC_API_KEY") == "" {
+		t.Skip("no ANTHROPIC_API_KEY in the environment")
+	}
+	if _, err := os.Stat(e4Deno); err != nil {
+		t.Skipf("no deno at %s: %v", e4Deno, err)
+	}
+	out := &e4Say{w: os.Stdout}
+	run := context.Background()
+
+	// ---- case (i): a policy narrower than E1's list, and sufficient ----
+	out.say("\n===== (i) P narrower than E1's list, and sufficient =====")
+	out.say("P = %s", e4P1)
+	box1, a1 := e4Pair(t, out, "i", e4P1)
+	addr1 := e4BAddr(t, box1)
+	c1, cancel1 := context.WithTimeout(run, 10*time.Minute)
+	defer cancel1()
+	body, opened, err := e4Ask(c1, out, a1)
+	if err != nil {
+		t.Fatalf("(i) A could not reach B: %v", err)
+	}
+	out.say("A  the cold tunnel — dial, both sides judge, push, ack, the process starts — took %s", opened.Round(time.Millisecond))
+	out.say("A  received %d bytes:\n%s", len(body), body)
+	if !strings.HasPrefix(body, "exit=0 ") {
+		t.Errorf("(i) the agent did not complete: %.60s", body)
+	}
+
+	// ---- case (iii): a widening push, on a second tunnel ----
+	out.say("\n===== (iii) a second push that widens =====")
+	out.say("P = %s", e4P3)
+	a3 := e4Toward(t, out, "iii", box1, addr1, e4P3)
+	c3, cancel3 := context.WithTimeout(run, time.Minute)
+	defer cancel3()
+	_, opened3, err3 := e4Ask(c3, out, a3)
+	out.say("A(iii)  Open after %s returned: %v", opened3.Round(time.Millisecond), err3)
+	out.say("A(iii)  reason = %v (errors.Is ErrRefused: %v)", attest.ReasonOf(err3), errors.Is(err3, attest.ErrRefused))
+	if attest.ReasonOf(err3) != attest.ReasonPolicyNotApplied {
+		t.Errorf("(iii) reason is %v; want ReasonPolicyNotApplied", attest.ReasonOf(err3))
+	}
+
+	// ---- case (iii b): a narrowing push, on a third tunnel ----
+	out.say("\n===== (iii b) a second push that narrows, for the contrast =====")
+	out.say("P = %s", e4P4)
+	a4 := e4Toward(t, out, "iiib", box1, addr1, e4P4)
+	c4, cancel4 := context.WithTimeout(run, time.Minute)
+	defer cancel4()
+	s4, err4 := a4.Open(c4, e4Peer)
+	if err4 != nil {
+		t.Errorf("(iii b) a narrowing was refused: %v", err4)
+	} else {
+		s4.Close()
+		out.say("A(iiib)  the narrowing was applied: the tunnel is up and the agent was restarted from turn 1")
+	}
+	box1.stop()
+
+	// ---- case (ii): the tool's destination is not in P ----
+	out.say("\n===== (ii) P omits www.rfc-editor.org:443 =====")
+	out.say("P = %s", e4P2)
+	_, a2 := e4Pair(t, out, "ii", e4P2)
+	c2, cancel2 := context.WithTimeout(run, 10*time.Minute)
+	defer cancel2()
+	body2, opened2, err2 := e4Ask(c2, out, a2)
+	if err2 != nil {
+		t.Fatalf("(ii) A could not reach B: %v", err2)
+	}
+	out.say("A  the cold tunnel took %s", opened2.Round(time.Millisecond))
+	out.say("A  received %d bytes:\n%s", len(body2), body2)
+
+	// ---- case (iv): a flag Deno rejects, after the ack ----
+	out.say("\n===== (iv) the process starts, is acknowledged, and then dies =====")
+	out.say("P = %s", e4P5)
+	_, a5 := e4Pair(t, out, "iv", e4P5)
+	c5, cancel5 := context.WithTimeout(run, time.Minute)
+	defer cancel5()
+	body5, opened5, err5 := e4Ask(c5, out, a5)
+	out.say("A  Open took %s, err=%v", opened5.Round(time.Millisecond), err5)
+	out.say("A  received %d bytes:\n%s", len(body5), body5)
+
+	// ---- case (v): a policy the sandbox cannot read ----
+	out.say("\n===== (v) the envelope is fine and the body is not =====")
+	out.say("P = %s", e4P6)
+	_, a6 := e4Pair(t, out, "v", e4P6)
+	c6, cancel6 := context.WithTimeout(run, time.Minute)
+	defer cancel6()
+	_, opened6, err6 := e4Ask(c6, out, a6)
+	out.say("A  Open after %s returned: %v (reason %v)", opened6.Round(time.Millisecond), err6, attest.ReasonOf(err6))
+	if attest.ReasonOf(err6) != attest.ReasonPolicyNotApplied {
+		t.Errorf("(v) reason is %v; want ReasonPolicyNotApplied", attest.ReasonOf(err6))
+	}
+}
+
+// e4BAddr is B's listen address, which a second A needs in its peer table.
+func e4BAddr(t *testing.T, box *e4Sandbox) string {
+	t.Helper()
+	n, ok := box.Network.(*tunneld.Tunneld)
+	if !ok {
+		t.Fatalf("the sandbox's network is %T, not a tunneld", box.Network)
+	}
+	return n.Addr().String()
+}

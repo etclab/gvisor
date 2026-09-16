@@ -254,10 +254,11 @@ func New(n sandbox.Network, cfg Config, logf func(string, ...any)) *Sandbox {
 	return &Sandbox{network: n, cfg: cfg, settle: settle, logf: logf}
 }
 
-// Open asks tunneld for a stream to the named peer. It is the null sandbox's
-// pass-through, verbatim: what a policy says about the network is enforced in
-// the process this sandbox starts, and a sandbox that filtered streams as well
-// would be enforcing the same rule in two places that could disagree.
+// Open asks tunneld for a stream to the named peer. It is what [sandbox.Null]
+// does and it is one line, on purpose: what a policy says about the network is
+// enforced in the process this sandbox starts, and a sandbox that filtered
+// streams as well would be enforcing the same rule in two places that could
+// disagree.
 func (s *Sandbox) Open(ctx context.Context, peer string) (sandbox.Stream, error) {
 	return s.network.Open(ctx, peer)
 }

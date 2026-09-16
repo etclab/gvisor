@@ -229,6 +229,14 @@ async function askModel(key: string, body: string, turn: number): Promise<Reply 
 // one TOOL_ERROR line for each that failed, in the shape the delegating side
 // reads: it scans this transcript as text for TOOL_ERROR and for nothing else,
 // because a tool error is all it is entitled to know.
+//
+// Each call line carries `t=<ms>`, which is when the call was made counted from
+// the start of this runtime (performance.now() is milliseconds since the
+// runtime's time origin). The two-hop record's "first tool call" is that
+// number: the delegating side only sees this process when it is over, so a
+// stamp written here is the only place the moment exists. It does not include
+// the exec — the sandbox that started this process measures from there and the
+// difference between the two is the runtime's own startup.
 // deno-lint-ignore no-explicit-any
 async function toolPass(reply: Reply, calls: string[]): Promise<any[]> {
   // deno-lint-ignore no-explicit-any
@@ -236,10 +244,13 @@ async function toolPass(reply: Reply, calls: string[]): Promise<any[]> {
   for (const b of reply.content) {
     if (b.type !== "tool_use") continue;
     const input = (b.input ?? {}) as Record<string, unknown>;
+    const at = Math.round(performance.now());
     const [text, failed] = await runTool(b.name!, input);
     calls.push(callOf(b.name!, input));
     console.log(
-      `  tool_use ${b.name} ${clip(JSON.stringify(input), 120)} -> ${text.length} bytes, is_error=${failed}`,
+      `  t=${at}ms tool_use ${b.name} ${clip(JSON.stringify(input), 120)} -> ${text.length} bytes, is_error=${failed} in ${
+        Math.round(performance.now()) - at
+      }ms`,
     );
     if (failed) console.log(`TOOL_ERROR ${b.name}: ${clip(text, 400)}`);
     results.push({

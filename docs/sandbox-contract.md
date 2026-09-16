@@ -90,10 +90,11 @@ it stands — `*net.UnixConn` already has `CloseWrite` — and so does package t
 on a stream is a protocol somebody else wrote. Spike E2
 (`docs/snp/evidence/ticket23/spikes/E2`, break #3) put an agent's `http.Transport` behind this
 contract and had to fake `net.Conn`'s deadlines as no-ops: `net/http` and `crypto/tls` are both
-`net.Conn` consumers, and each sets deadlines to bound a read that may never finish and to
-interrupt one when the caller's context is cancelled. Both believed the shim, so an agent behind
-the contract had no I/O timeout at all and a cancelled request could not free the goroutine
-waiting on the stream. Neither implementation had to learn anything to fix that: `*net.UnixConn`
+`net.Conn` consumers, and each sets deadlines to bound a read or a write that may otherwise
+never finish. Both believed the shim, so an agent behind the contract had no I/O timeout at all:
+a cancelled request still ended, because the transport closes the connection on cancellation,
+but nothing set by `SetDeadline` ever fired, and a server listening on such a stream would have
+lost its read and write timeouts the same silent way. Neither implementation had to learn anything to fix that: `*net.UnixConn`
 has had the three methods since before this package existed and so has `*quic.Stream`, which
 `tunnel.Stream` now delegates all three to (`attest/tunnel/tunnel.go:590`). The interface was
 hiding a capability both ends already had rather than adding one they did not — which is exactly

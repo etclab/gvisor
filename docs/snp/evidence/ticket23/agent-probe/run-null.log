@@ -1,0 +1,25 @@
+model=claude-sonnet-5 max_tokens=4096 endpoint=https://api.anthropic.com/v1/messages
+task=summarize
+prompt="Fetch the document at https://www.rfc-editor.org/rfc/rfc8446.txt, write a summary of it in at most five sentences, and save the summary to the file summary.txt in the current directory using write_file. Then reply with the word DONE."
+
+OPEN a local stream for peer="b"
+EXIT dialed api.anthropic.com:443 -> 160.79.104.10:443
+DIAL api.anthropic.com:443 over Open("b") in 14.713ms
+request 1: proto=HTTP/2.0 stop_reason=tool_use input_tokens=657 output_tokens=86 in 1.38s
+OPEN a local stream for peer="b"
+EXIT dialed www.rfc-editor.org:443 -> 104.18.21.81:443
+DIAL www.rfc-editor.org:443 over Open("b") in 11.551ms
+  tool_use fetch_url {"url":"https://www.rfc-editor.org/rfc/rfc8446.txt"} -> 20502 bytes, is_error=false
+request 2: proto=HTTP/2.0 stop_reason=tool_use input_tokens=6920 output_tokens=453 in 4.775s
+  tool_use write_file {"path":"summary.txt","content":"RFC 8446, published in August 2018 by E. Rescorla, specifies version 1.3 of the Transpo… -> 31 bytes, is_error=false
+request 3: proto=HTTP/2.0 stop_reason=end_turn input_tokens=7394 output_tokens=5 in 880ms
+
+final text: DONE
+
+tool calls, in order:
+  1. fetch_url(https://www.rfc-editor.org/rfc/rfc8446.txt)
+  2. write_file(summary.txt)
+
+totals: input_tokens=14971 output_tokens=544
+cost: $0.035382  (input $2.00/M, output $10.00/M for claude-sonnet-5)
+wall time: 7.243s

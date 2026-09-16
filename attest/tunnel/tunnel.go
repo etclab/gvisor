@@ -548,7 +548,7 @@ func (c *Conn) Exchange(ctx context.Context, request []byte) ([]byte, error) {
 //
 // It exists because a sandbox beside this tunneld consumes a stream and not a
 // request-response (ticket 22). Everything above this package sees it through
-// an interface of exactly these four methods, so that the same sandbox runs
+// an interface of exactly these seven methods, so that the same sandbox runs
 // against one end of a socketpair in another process, where a *quic.Stream
 // cannot go (spike E1).
 type Stream struct {
@@ -577,6 +577,24 @@ func (s *Stream) Close() error {
 	s.s.CancelRead(0)
 	return err
 }
+
+// SetDeadline, SetReadDeadline and SetWriteDeadline are QUIC's own, unchanged
+// and unwrapped.
+//
+// They are here because whatever a sandbox runs over a stream is likely to be
+// a net.Conn consumer that sets them — an HTTP client bounding a read, or a TLS
+// handshake interrupting one when its context ends (ticket 23) — and a stream
+// that took them and did nothing would be believed. Nothing is invented: a
+// *quic.Stream has had all three since before this package existed, exactly as
+// the socketpair end the other implementation hands out has.
+func (s *Stream) SetDeadline(t time.Time) error { return s.s.SetDeadline(t) }
+
+// SetReadDeadline bounds a blocked Read, which then fails with an error for
+// which errors.Is(err, os.ErrDeadlineExceeded) is true.
+func (s *Stream) SetReadDeadline(t time.Time) error { return s.s.SetReadDeadline(t) }
+
+// SetWriteDeadline bounds a blocked Write the same way.
+func (s *Stream) SetWriteDeadline(t time.Time) error { return s.s.SetWriteDeadline(t) }
 
 // OpenStream opens a raw stream to the peer.
 //

@@ -19,7 +19,9 @@ import (
 	"encoding/hex"
 	"errors"
 	"io"
+	"os"
 	"testing"
+	"time"
 
 	"gvisor.dev/gvisor/attest"
 	"gvisor.dev/gvisor/attest/sandbox"
@@ -230,5 +232,40 @@ func TestTunneldChecksTheEnvelopeBeforeTheSandboxSeesThePolicy(t *testing.T) {
 	}
 	if applied[0] != want {
 		t.Errorf("recorded %+v; want %+v", applied[0], want)
+	}
+}
+
+// TestAReadDeadlineOnAStreamExpires is the contract's deadline on the tunnel's
+// own stream (ticket 23): a sandbox waiting for bytes the peer has not sent
+// gets its Read back when it said it would, instead of waiting for a stream
+// that may never say anything.
+//
+// The peer here accepts the stream and never writes, which is the state an
+// agent's HTTP client sets a deadline for: the tunnel is up, the stream is
+// established, and the answer is late or is not coming.
+func TestAReadDeadlineOnAStreamExpires(t *testing.T) {
+	b := start(t, "sandbox-b", imageB, admitting(imageA), tunneld.PeerTable{})
+	a := start(t, "sandbox-a", imageA, admitting(imageB), tunneld.PeerTable{"b": b.Addr().String()})
+
+	stream, err := sandbox.NewNull(a.Tunneld, nil).Open(ctx(t), "b")
+	if err != nil {
+		t.Fatalf("opening a stream to b: %v", err)
+	}
+	defer stream.Close()
+
+	if err := stream.SetReadDeadline(time.Now().Add(100 * time.Millisecond)); err != nil {
+		t.Fatalf("setting a read deadline: %v", err)
+	}
+	var one [1]byte
+	began := time.Now()
+	n, err := stream.Read(one[:])
+	if !errors.Is(err, os.ErrDeadlineExceeded) {
+		t.Fatalf("a read past its deadline returned %d bytes and %v; want os.ErrDeadlineExceeded", n, err)
+	}
+	if n != 0 {
+		t.Errorf("a read past its deadline returned %d bytes; the peer sent none", n)
+	}
+	if waited := time.Since(began); waited < 50*time.Millisecond {
+		t.Errorf("the read gave up after %v; the deadline was 100ms away, so it did not block", waited)
 	}
 }

@@ -385,5 +385,9 @@ must. The recorded run is `docs/snp/evidence/ticket22/`.
   workload died has no verb to say so — no revocation, no event, no second exchange — so the
   tunnel goes on asserting something the sandbox no longer believes. Ticket 23 did not change
   this either.
+- **Ticket 23's record is `docs/agent-on-the-contract.md`.** What the two bullets above
+  were measured by: a real agent on this contract, what Deno could enforce of a pushed
+  policy and what it could not, the timings per hop over two delegation hops, and whether
+  `(N, F, X)` as typed is enough for the policy track.
 - **No runsc sandbox.** The socket exists and a forked test binary speaks it; the sandbox that
   will consume these descriptors as FD-backed endpoints is Milestone 4's.

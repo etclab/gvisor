@@ -143,6 +143,7 @@ import (
 	"encoding/hex"
 	"io"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"gvisor.dev/gvisor/attest/sandbox"
@@ -190,10 +191,16 @@ type Sandbox struct {
 	settle  time.Duration
 	logf    func(string, ...any)
 
+	// proc is written only under mu, by Apply, and read without it by Done and
+	// Exited. Whoever is watching for the workload's end is watching precisely
+	// while Apply may be holding mu — a restart can spend two seconds waiting
+	// for a process to take its SIGTERM — and a liveness signal that blocked
+	// behind the thing it reports on would not be one.
+	proc atomic.Pointer[process]
+
 	mu      sync.Mutex
 	closed  bool
 	granted []string
-	proc    *process
 }
 
 var _ sandbox.Sandbox = (*Sandbox)(nil)
@@ -209,6 +216,23 @@ func closedChannel() chan struct{} {
 	return c
 }
 
+// noNetwork is what a sandbox built without a tunneld behind it passes through
+// to: a [sandbox.Network] whose two verbs are the error [sandbox.Null] answers
+// its own with. Saying it once, here, is what lets Open and Accept below be
+// the pass-through this package claims they are rather than two copies of the
+// same guard — a sandbox without a network is a programming error, and an
+// error is how it says so rather than a panic in whichever goroutine first
+// asked it for a stream.
+type noNetwork struct{}
+
+func (noNetwork) Open(context.Context, string) (sandbox.Stream, error) {
+	return nil, sandbox.ErrNoNetwork
+}
+
+func (noNetwork) Accept(context.Context) (sandbox.Stream, sandbox.Attested, error) {
+	return nil, sandbox.Attested{}, sandbox.ErrNoNetwork
+}
+
 // New returns a sandbox that will start cfg's process when a policy is pushed
 // at it, and passes streams through to n meanwhile. logf may be nil, which
 // enforces policies without saying so.
@@ -219,6 +243,9 @@ func closedChannel() chan struct{} {
 func New(n sandbox.Network, cfg Config, logf func(string, ...any)) *Sandbox {
 	if logf == nil {
 		logf = func(string, ...any) {}
+	}
+	if n == nil {
+		n = noNetwork{}
 	}
 	settle := cfg.Settle
 	if settle <= 0 {
@@ -232,18 +259,12 @@ func New(n sandbox.Network, cfg Config, logf func(string, ...any)) *Sandbox {
 // the process this sandbox starts, and a sandbox that filtered streams as well
 // would be enforcing the same rule in two places that could disagree.
 func (s *Sandbox) Open(ctx context.Context, peer string) (sandbox.Stream, error) {
-	if s.network == nil {
-		return nil, sandbox.ErrNoNetwork
-	}
 	return s.network.Open(ctx, peer)
 }
 
 // Accept takes the next stream a peer opened, with the identity it was
 // admitted under.
 func (s *Sandbox) Accept(ctx context.Context) (sandbox.Stream, sandbox.Attested, error) {
-	if s.network == nil {
-		return nil, sandbox.Attested{}, sandbox.ErrNoNetwork
-	}
 	return s.network.Accept(ctx)
 }
 
@@ -269,12 +290,12 @@ func (s *Sandbox) Apply(ctx context.Context, policy []byte) error {
 	if extra := s.widening(atoms); len(extra) > 0 {
 		return s.refused(refuse("it widens %v by %v", s.granted, extra))
 	}
-	s.proc.stop(ctx)
+	s.proc.Load().stop(ctx)
 	p, err := s.start(atoms)
 	if err != nil {
 		return s.refused(refuse("the process did not start: %v", err))
 	}
-	s.proc = p
+	s.proc.Store(p)
 	if err := p.settle(ctx, s.settle); err != nil {
 		p.stop(context.Background())
 		return s.refused(err)
@@ -318,9 +339,8 @@ func (s *Sandbox) refused(err error) error {
 func (s *Sandbox) Close() error {
 	s.mu.Lock()
 	s.closed = true
-	p := s.proc
 	s.mu.Unlock()
-	p.stop(context.Background())
+	s.proc.Load().stop(context.Background())
 	return nil
 }
 
@@ -332,24 +352,9 @@ func (s *Sandbox) Close() error {
 // The channel belongs to one process. A caller that takes it, and is then
 // overtaken by a second Apply, is watching the process it asked about rather
 // than the one running now, which is the distinction worth keeping.
-func (s *Sandbox) Done() <-chan struct{} {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.proc == nil {
-		return noProcess
-	}
-	return s.proc.done
-}
+func (s *Sandbox) Done() <-chan struct{} { return s.proc.Load().ended() }
 
 // Exited reports how that process ended: its exit status, and whether it has
 // ended at all. It is false while the process runs and before there is one,
 // and a process killed by a signal reports -1, as os/exec does.
-func (s *Sandbox) Exited() (int, bool) {
-	s.mu.Lock()
-	p := s.proc
-	s.mu.Unlock()
-	if p == nil {
-		return 0, false
-	}
-	return p.exited()
-}
+func (s *Sandbox) Exited() (int, bool) { return s.proc.Load().exited() }

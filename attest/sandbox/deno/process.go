@@ -20,7 +20,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"sync"
 	"time"
 
 	"golang.org/x/sys/unix"
@@ -34,15 +33,17 @@ const stopGrace = 2 * time.Second
 
 // A process is one Deno run: the command, the first line it said on stderr,
 // and how it ended.
+//
+// Nothing here is guarded by a lock, and the reason is done. It is closed
+// after os/exec has reaped the process, which is after Wait has joined the
+// goroutine copying the child's stderr, so a reader that has seen done closed
+// has seen everything either of them wrote — exit status and first line both —
+// and a reader that has not seen it closed has nothing final to read.
 type process struct {
 	cmd   *exec.Cmd
 	first *firstLine
 	began time.Time
 	done  chan struct{}
-
-	mu    sync.Mutex
-	code  int
-	ended bool
 }
 
 // start execs Deno under the flags the atoms render to and returns as soon as
@@ -102,16 +103,12 @@ func granted(atoms []string, prefix string) []string {
 	return values
 }
 
-// reap waits for the process, records how it ended and says so. The console
-// line is written before done is closed, so that whoever wakes on done cannot
-// outrun the sentence that explains it.
+// reap waits for the process and says how it ended. The console line is
+// written before done is closed, so that whoever wakes on done cannot outrun
+// the sentence that explains it.
 func (p *process) reap(logf func(string, ...any)) {
 	_ = p.cmd.Wait()
-	code := p.cmd.ProcessState.ExitCode()
-	p.mu.Lock()
-	p.code, p.ended = code, true
-	p.mu.Unlock()
-	logf("SANDBOX deno exited status=%d", code)
+	logf("SANDBOX deno exited status=%d", p.cmd.ProcessState.ExitCode())
 	close(p.done)
 }
 
@@ -162,11 +159,31 @@ func (p *process) stop(ctx context.Context) {
 	<-p.done
 }
 
-// exited is the status and whether there is one yet.
+// ended is the channel closed when this run is over. A nil process is a
+// sandbox that has not started one, and the channel is closed for it because
+// "nothing is running" is already true — the nil case lives here beside stop's
+// for the same reason, that the caller asking about a run is the one place
+// that should not have to know whether there has been one.
+func (p *process) ended() <-chan struct{} {
+	if p == nil {
+		return noProcess
+	}
+	return p.done
+}
+
+// exited is the status and whether there is one yet. It reads os/exec's own
+// record rather than a copy of it, so there is one answer rather than two that
+// could disagree.
 func (p *process) exited() (int, bool) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	return p.code, p.ended
+	if p == nil {
+		return 0, false
+	}
+	select {
+	case <-p.done:
+		return p.cmd.ProcessState.ExitCode(), true
+	default:
+		return 0, false
+	}
 }
 
 // A firstLine keeps the first line a process wrote to stderr and forwards
@@ -175,10 +192,14 @@ func (p *process) exited() (int, bool) {
 // settle has to say something for itself in the refusal, and a sandbox
 // configured to discard its workload's output would otherwise refuse without a
 // reason.
+//
+// One goroutine writes it — os/exec's, copying the child's stderr — and line
+// is read after [process.done] is closed, which is after Wait has joined that
+// goroutine. That is the whole of the synchronisation, and it is why there is
+// no lock here to get wrong.
 type firstLine struct {
 	to io.Writer
 
-	mu   sync.Mutex
 	kept []byte
 	full bool
 }
@@ -187,7 +208,6 @@ type firstLine struct {
 const keepAtMost = 4 << 10
 
 func (f *firstLine) Write(p []byte) (int, error) {
-	f.mu.Lock()
 	if !f.full {
 		line, _, ended := strings.Cut(string(p), "\n")
 		f.kept = append(f.kept, line...)
@@ -196,15 +216,10 @@ func (f *firstLine) Write(p []byte) (int, error) {
 		}
 		f.full = f.full || ended
 	}
-	f.mu.Unlock()
 	if f.to == nil {
 		return len(p), nil
 	}
 	return f.to.Write(p)
 }
 
-func (f *firstLine) line() string {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	return strings.TrimSpace(string(f.kept))
-}
+func (f *firstLine) line() string { return strings.TrimSpace(string(f.kept)) }

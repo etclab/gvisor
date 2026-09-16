@@ -160,7 +160,8 @@ func TestAPolicyBecomesTheFlagsDenoIsStartedWith(t *testing.T) {
 	// The environment is built from the policy and not filtered from this
 	// process's: exactly what `e` names, and the two variables Deno itself
 	// needs.
-	wantEnv := environ(secretVar, "PATH", "HOME")
+	wantEnv := []string{secretVar + "=" + secret, "PATH=" + os.Getenv("PATH"), "HOME=" + os.Getenv("HOME")}
+	slices.Sort(wantEnv)
 	gotEnv := slices.Clone(started.Env)
 	slices.Sort(gotEnv)
 	if !slices.Equal(gotEnv, wantEnv) {
@@ -230,8 +231,8 @@ func TestANarrowingSecondPolicyRestartsTheProcessAndLosesTheWorkload(t *testing.
 	if started[0].PID == started[1].PID {
 		t.Errorf("both policies report pid %d; the second should be another process", started[0].PID)
 	}
-	if got := flagOf(started[1].Argv, "--allow-net="); got != "api.anthropic.com:443" {
-		t.Errorf("the second process was started with --allow-net=%s; want the narrowed destination", got)
+	if !slices.Contains(started[1].Argv, "--allow-net=api.anthropic.com:443") {
+		t.Errorf("the second process was started as %q; want the narrowed destination alone", started[1].Argv)
 	}
 }
 
@@ -390,28 +391,6 @@ func pids(started []run) []int {
 	for _, r := range started {
 		out = append(out, r.PID)
 	}
-	return out
-}
-
-func flagOf(argv []string, flag string) string {
-	for _, a := range argv {
-		if value, ok := strings.CutPrefix(a, flag); ok {
-			return value
-		}
-	}
-	return ""
-}
-
-// environ is what this process's named variables look like in a child's, in
-// the order a sorted comparison wants them.
-func environ(names ...string) []string {
-	var out []string
-	for _, name := range names {
-		if value, ok := os.LookupEnv(name); ok {
-			out = append(out, name+"="+value)
-		}
-	}
-	slices.Sort(out)
 	return out
 }
 

@@ -219,6 +219,12 @@ func TestAWideningSecondPolicyIsRefusedAndTheRunningProcessIsUntouched(t *testin
 func TestANarrowingSecondPolicyRestartsTheProcessAndLosesTheWorkload(t *testing.T) {
 	f := newFake(t, 0)
 	f.apply(t, twoHosts)
+	// Wait for the first process to have written itself down before narrowing,
+	// and not because the sandbox needs it: the settle says the process is
+	// alive and says nothing about whether it has done anything yet, so a
+	// restart that arrives first would kill it before it had, and the test
+	// would be measuring the machine's load rather than the restart.
+	f.runs(t, 1)
 	first := f.Done()
 	f.apply(t, narrower)
 
@@ -239,6 +245,7 @@ func TestANarrowingSecondPolicyRestartsTheProcessAndLosesTheWorkload(t *testing.
 func TestTheSameAtomsInADifferentOrderAreNotAWidening(t *testing.T) {
 	f := newFake(t, 0)
 	f.apply(t, twoHosts)
+	f.runs(t, 1)
 	f.apply(t, twoHostsReordered)
 	started := f.runs(t, 2)
 	if !slices.Equal(started[0].Argv, started[1].Argv) {

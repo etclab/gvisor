@@ -1,0 +1,125 @@
+# ticket 24 E1: variant b under --debug.
+# $ /bin/busybox unshare -Urmnpf $S/e1/guest-like-ns-procbind.sh $S/e1/img /busybox sh /debug-b-inside.sh
+# date: 2026-09-18T05:13:09-04:00
+
+### E1: /proc/mounts as the driver left it, before the namespace is built
+/dev/md0p1 / ext4 rw,relatime,stripe=64 0 0
+udev /dev devtmpfs rw,nosuid,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+devpts /dev/pts devpts rw,nosuid,noexec,relatime,gid=5,mode=620,ptmxmode=000 0 0
+tmpfs /dev/shm tmpfs rw,nosuid,nodev,inode64 0 0
+hugetlbfs /dev/hugepages hugetlbfs rw,nosuid,nodev,relatime,pagesize=2M 0 0
+mqueue /dev/mqueue mqueue rw,nosuid,nodev,noexec,relatime 0 0
+tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,size=78880128k,mode=755,inode64 0 0
+tmpfs /run/lock tmpfs rw,nosuid,nodev,noexec,relatime,size=5120k,inode64 0 0
+tmpfs /run/qemu tmpfs rw,nosuid,nodev,relatime,mode=755,inode64 0 0
+sunrpc /run/rpc_pipefs rpc_pipefs rw,relatime 0 0
+/run/tetragon/cgroup2 /run/tetragon/cgroup2 cgroup2 rw,relatime 0 0
+tmpfs /run/snapd/ns tmpfs rw,nosuid,nodev,noexec,relatime,size=78880128k,mode=755,inode64 0 0
+nsfs /run/snapd/ns/cups.mnt nsfs rw 0 0
+nsfs /run/snapd/ns/chromium.mnt nsfs rw 0 0
+tmpfs /run/user/261168 tmpfs rw,nosuid,nodev,relatime,size=78880124k,nr_inodes=19720031,mode=700,uid=261168,gid=261168,inode64 0 0
+nsfs /run/docker/netns/ef8ca46e2e99 nsfs rw 0 0
+nsfs /run/docker/netns/a50fafc06fdb nsfs rw 0 0
+nsfs /run/docker/netns/79b108765e4e nsfs rw 0 0
+nsfs /run/docker/netns/4e7354f226bc nsfs rw 0 0
+nsfs /run/docker/netns/ingress_sbox nsfs rw 0 0
+nsfs /run/docker/netns/1-j71ovr2q1j nsfs rw 0 0
+tmpfs /run/user/253477 tmpfs rw,nosuid,nodev,relatime,size=78880124k,nr_inodes=19720031,mode=700,uid=253477,gid=253477,inode64 0 0
+nsfs /run/docker/netns/dead6ee012fd nsfs rw 0 0
+sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+efivarfs /sys/firmware/efi/efivars efivarfs rw,nosuid,nodev,noexec,relatime 0 0
+securityfs /sys/kernel/security securityfs rw,nosuid,nodev,noexec,relatime 0 0
+cgroup2 /sys/fs/cgroup cgroup2 rw,nosuid,nodev,noexec,relatime 0 0
+pstore /sys/fs/pstore pstore rw,nosuid,nodev,noexec,relatime 0 0
+bpf /sys/fs/bpf bpf rw,nosuid,nodev,noexec,relatime,mode=700 0 0
+none /sys/kernel/debug debugfs rw,nosuid,nodev,noexec,relatime 0 0
+tracefs /sys/kernel/tracing tracefs rw,nosuid,nodev,noexec,relatime 0 0
+fusectl /sys/fs/fuse/connections fusectl rw,nosuid,nodev,noexec,relatime 0 0
+configfs /sys/kernel/config configfs rw,nosuid,nodev,noexec,relatime 0 0
+proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+systemd-1 /proc/sys/fs/binfmt_misc autofs rw,relatime,fd=33,pgrp=0,timeout=0,minproto=5,maxproto=5,direct,pipe_ino=3115 0 0
+binfmt_misc /proc/sys/fs/binfmt_misc binfmt_misc rw,nosuid,nodev,noexec,relatime 0 0
+/dev/loop0 /snap/bare/5 squashfs ro,nodev,relatime,errors=continue,threads=single 0 0
+/dev/loop2 /snap/core22/2437 squashfs ro,nodev,relatime,errors=continue,threads=single 0 0
+/dev/loop3 /snap/cups/1238 squashfs ro,nodev,relatime,errors=continue,threads=single 0 0
+/dev/loop4 /snap/core24/1643 squashfs ro,nodev,relatime,errors=continue,threads=single 0 0
+/dev/loop5 /snap/gtk-common-themes/1535 squashfs ro,nodev,relatime,errors=continue,threads=single 0 0
+/dev/loop6 /snap/mesa-2404/1839 squashfs ro,nodev,relatime,errors=continue,threads=single 0 0
+/dev/loop7 /snap/snapd/27710 squashfs ro,nodev,relatime,errors=continue,threads=single 0 0
+/dev/loop8 /snap/snapd/27738 squashfs ro,nodev,relatime,errors=continue,threads=single 0 0
+/dev/loop9 /snap/gnome-46-2404/164 squashfs ro,nodev,relatime,errors=continue,threads=single 0 0
+/dev/nvme1n1p1 /boot/efi vfat rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=iso8859-1,shortname=mixed,errors=remount-ro 0 0
+/dev/nvme2n1p1 /scratch ext4 rw,noatime 0 0
+overlay /var/lib/docker/overlay2/8bc60a70d8acbbc1919ba2d0114ca62b9a076c019988c402ee49c5f4c606b82b/merged overlay rw,relatime,lowerdir=/var/lib/docker/overlay2/l/CXFB3YGQFY3P2ANN3WUQ76LYCG:/var/lib/docker/overlay2/l/4D5HFWXZPPNSEBWZALZJAA6L23:/var/lib/docker/overlay2/l/DPGMO73YJSBVI67TCEUNQJOQPS,upperdir=/var/lib/docker/overlay2/8bc60a70d8acbbc1919ba2d0114ca62b9a076c019988c402ee49c5f4c606b82b/diff,workdir=/var/lib/docker/overlay2/8bc60a70d8acbbc1919ba2d0114ca62b9a076c019988c402ee49c5f4c606b82b/work 0 0
+overlay /var/lib/docker/overlay2/5a6bfc17e43c1eed4183bc982690aa23c05bd2f420dcdc485f490f631f3e4a5c/merged overlay rw,relatime,lowerdir=/var/lib/docker/overlay2/l/H3MHAZWYYMVTYONEBQIQBJXJ7R:/var/lib/docker/overlay2/l/D33DU5NDL6LYDPIEKKF25WO2U7:/var/lib/docker/overlay2/l/QZ4Q63GNI2YNWZZ4PQJYUQKVP5:/var/lib/docker/overlay2/l/SNE3X3JQBOWA3XQL5HIW7ZRAWB:/var/lib/docker/overlay2/l/U6CEED3G34ZH6AQYXD6QHSXFYV,upperdir=/var/lib/docker/overlay2/5a6bfc17e43c1eed4183bc982690aa23c05bd2f420dcdc485f490f631f3e4a5c/diff,workdir=/var/lib/docker/overlay2/5a6bfc17e43c1eed4183bc982690aa23c05bd2f420dcdc485f490f631f3e4a5c/work 0 0
+overlay /var/lib/docker/overlay2/5c3b3fb2748ef0eb9ad25fd04587dba6dfcdda3381bdb3aed28c1736dbfef385/merged overlay rw,relatime,lowerdir=/var/lib/docker/overlay2/l/RT2K43AZ6WXMU7RPAFKSOZKKOS:/var/lib/docker/overlay2/l/PVUFIXSHT6CX6OBYBDUCQ23NK6:/var/lib/docker/overlay2/l/BHSWMKJPIL5WO7ZTEAZ2POFUTG:/var/lib/docker/overlay2/l/YSWPCYPSVBCFOBQJY7ICU7B4AC:/var/lib/docker/overlay2/l/U6CEED3G34ZH6AQYXD6QHSXFYV,upperdir=/var/lib/docker/overlay2/5c3b3fb2748ef0eb9ad25fd04587dba6dfcdda3381bdb3aed28c1736dbfef385/diff,workdir=/var/lib/docker/overlay2/5c3b3fb2748ef0eb9ad25fd04587dba6dfcdda3381bdb3aed28c1736dbfef385/work 0 0
+overlay /var/lib/docker/overlay2/3b9508aeb934ad3060a0b66a9a6f8eeea84311a82c4e5eddef308a3f773c6ce9/merged overlay rw,relatime,lowerdir=/var/lib/docker/overlay2/l/TK4YUKDUEX72EF27MWUDOEG7ZD:/var/lib/docker/overlay2/l/2VF2QVCLP6TJNBNOQMLSOH2CVT:/var/lib/docker/overlay2/l/LP35FMLW6BLTCV423ZJMTQLCGY:/var/lib/docker/overlay2/l/CKL5FAJIMVBVOAVQ2TVRGDBC4O:/var/lib/docker/overlay2/l/K5LG6K3YF6N52ZBS53XB6KW6IT:/var/lib/docker/overlay2/l/2A6HKUAB4AKTBMBIDTNALQLREZ,upperdir=/var/lib/docker/overlay2/3b9508aeb934ad3060a0b66a9a6f8eeea84311a82c4e5eddef308a3f773c6ce9/diff,workdir=/var/lib/docker/overlay2/3b9508aeb934ad3060a0b66a9a6f8eeea84311a82c4e5eddef308a3f773c6ce9/work 0 0
+/dev/loop10 /snap/core24/2124 squashfs ro,nodev,relatime,errors=continue,threads=single 0 0
+/etc/auto.nfs /nfs autofs rw,relatime,fd=7,pgrp=0,timeout=120,minproto=5,maxproto=5,indirect,pipe_ino=9039303 0 0
+/dev/loop11 /snap/core22/2955 squashfs ro,nodev,relatime,errors=continue,threads=single 0 0
+/dev/loop12 /snap/chromium/3525 squashfs ro,nodev,relatime,errors=continue,threads=single 0 0
+/dev/loop13 /snap/chromium/3529 squashfs ro,nodev,relatime,errors=continue,threads=single 0 0
+overlay /var/lib/docker/overlay2/d3db8dbcc3fbb335a1c503a25bc992d41ad689f2eaa74d9e74a7132f0d06011b/merged overlay rw,relatime,lowerdir=/var/lib/docker/overlay2/l/DJYYIUO5T6JKU3Y66WYOAEYO72:/var/lib/docker/overlay2/l/7JAJJDK5EXUT6QGUES77CQGICU:/var/lib/docker/overlay2/l/MMVXJ4TPGGOYBCME7DDXISSCGZ:/var/lib/docker/overlay2/l/JB7YTWXQXTSCR4U4NGC63AZCRE:/var/lib/docker/overlay2/l/IEBCMM74BYM7NAG5RSJ7E44GWU:/var/lib/docker/overlay2/l/HU5KDXYQXKRIEL6VTEJOKUPYXB:/var/lib/docker/overlay2/l/AV7H2ENJFKEVBHFZ3XRMOFWLTC:/var/lib/docker/overlay2/l/R3MX6BRMBI2LFYAGH7HQ2DYSUM:/var/lib/docker/overlay2/l/OSFOAUY3DZVU325TGWHHFYHMW6:/var/lib/docker/overlay2/l/MAW447RO3REL34MMM2EF4PMVR7:/var/lib/docker/overlay2/l/4CLBRWFGAYSXN3ZSFL6O3JCZB5:/var/lib/docker/overlay2/l/V2XLDQQVEIMTN3AT24ELT5XI2N:/var/lib/docker/overlay2/l/W5V4HPH2PXHPLUMELKVVDMDZRS,upperdir=/var/lib/docker/overlay2/d3db8dbcc3fbb335a1c503a25bc992d41ad689f2eaa74d9e74a7132f0d06011b/diff,workdir=/var/lib/docker/overlay2/d3db8dbcc3fbb335a1c503a25bc992d41ad689f2eaa74d9e74a7132f0d06011b/work 0 0
+### E1: the /proc lines only
+proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+### E1: /proc/self/mountinfo /proc lines
+2268 560 0:25 / /proc rw,nosuid,nodev,noexec,relatime - proc proc rw
+### E1: end of the driver's view
+mount: /tmp/s1-newroot/proc: wrong fs type, bad option, bad superblock on /proc, missing codepage or helper program, or other error.
+       dmesg(1) may have more information after failed mount system call.
+### E1: plain 'mount --bind /proc' FAILED (exit 32); falling back to --rbind
+### E1: 'mount --rbind /proc' exit 0
+### E1: umount -l /tmp/s1-newroot/proc/sys/fs/binfmt_misc (attempt 1)
+umount: /tmp/s1-newroot/proc/sys/fs/binfmt_misc: not mounted.
+### E1: umount refused, the mount stays
+### E1: what is left under /tmp/s1-newroot/proc
+proc /tmp/s1-newroot/proc proc rw,nosuid,nodev,noexec,relatime 0 0
+systemd-1 /tmp/s1-newroot/proc/sys/fs/binfmt_misc autofs rw,relatime,fd=33,pgrp=0,timeout=0,minproto=5,maxproto=5,direct,pipe_ino=3115 0 0
+binfmt_misc /tmp/s1-newroot/proc/sys/fs/binfmt_misc binfmt_misc rw,nosuid,nodev,noexec,relatime 0 0
+### E1: /sys = a fresh sysfs
+---- my pid in MY pid namespace: 1 ; as the inherited procfs numbers me:
+3523978
+$ /runsc --root=/run/runsc-state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new --debug --debug-log=/tmp/dbg/ run --bundle /bundle-true t24-e1-b-debug
+EXIT=128
+running container: creating container: cannot create gofer process: gofer: fork/exec /proc/self/exe: permission denied
+
+---- every debug log, last 25 lines each
+== /tmp/dbg/runsc.log.20260918-091310.039269.gofer.txt
+== /tmp/dbg/runsc.log.20260918-091310.039269.run.txt
+  }
+}
+D0918 09:13:10.057556      34 container.go:570] Run container, cid: t24-e1-b-debug, rootDir: "/run/runsc-state"
+D0918 09:13:10.057827      34 container.go:217] Create container, cid: t24-e1-b-debug, rootDir: "/run/runsc-state"
+D0918 09:13:10.058035      34 container.go:2134] Configuring container with a new userns with identity user mappings into current userns
+D0918 09:13:10.058283      34 container.go:2190] UID Mappings:
+D0918 09:13:10.058317      34 container.go:2192] 	Container ID: 0, Host ID: 0, Range Length: 1
+D0918 09:13:10.058483      34 container.go:2190] GID Mappings:
+D0918 09:13:10.058508      34 container.go:2192] 	Container ID: 0, Host ID: 0, Range Length: 1
+D0918 09:13:10.058679      34 container.go:345] Creating new sandbox for container, cid: t24-e1-b-debug
+I0918 09:13:10.060607      34 namespace.go:201] Mapping host uid 0 to container uid 0 (size=1)
+I0918 09:13:10.060703      34 namespace.go:209] Mapping host gid 0 to container gid 0 (size=1)
+I0918 09:13:10.060904      34 container.go:1681] Starting gofer with command: [runsc-gofer --network=none --gofer-network-namespace=new --platform=systrap --rootless=true --ignore-cgroups=true --root=/run/runsc-state --debug=true --debug-log=/tmp/dbg/ --debug-log-fd=3 gofer --bundle /bundle-true --gofer-mount-confs=lisafs:none --spec-fd=4 --mounts-fd=5 --rpc-fd=6 --pin-ring-fd=7 --sync-sentry-exit-fd=8 --io-fds=9 --sync-chroot-fd=10 t24-e1-b-debug]
+D0918 09:13:10.061079      34 donation.go:31] Donating FD 3: "/tmp/dbg/runsc.log.20260918-091310.039269.gofer.txt"
+D0918 09:13:10.061240      34 donation.go:31] Donating FD 4: "/bundle-true/config.json"
+D0918 09:13:10.061266      34 donation.go:31] Donating FD 5: "|1"
+D0918 09:13:10.061288      34 donation.go:31] Donating FD 6: "gofer-rpc"
+D0918 09:13:10.061310      34 donation.go:31] Donating FD 7: "pin ring"
+D0918 09:13:10.061332      34 donation.go:31] Donating FD 8: "sentry exit sync gofer FD"
+D0918 09:13:10.061354      34 donation.go:31] Donating FD 9: "gofer IO FD"
+D0918 09:13:10.061375      34 donation.go:31] Donating FD 10: "chroot sync gofer FD"
+D0918 09:13:10.061398      34 container.go:1686] Starting gofer: /proc/self/exe [runsc-gofer --network=none --gofer-network-namespace=new --platform=systrap --rootless=true --ignore-cgroups=true --root=/run/runsc-state --debug=true --debug-log=/tmp/dbg/ --debug-log-fd=3 gofer --bundle /bundle-true --gofer-mount-confs=lisafs:none --spec-fd=4 --mounts-fd=5 --rpc-fd=6 --pin-ring-fd=7 --sync-sentry-exit-fd=8 --io-fds=9 --sync-chroot-fd=10 t24-e1-b-debug]
+D0918 09:13:10.079947      34 container.go:929] Destroy container, cid: t24-e1-b-debug
+W0918 09:13:10.080236      34 util.go:107] FATAL ERROR: running container: creating container: cannot create gofer process: gofer: fork/exec /proc/self/exe: permission denied
+W0918 09:13:10.080310      34 cli.go:325] Failure to execute command, err: 1
+
+---- lines about the mappings, the gofer and the userns
+/tmp/dbg/runsc.log.20260918-091310.039269.run.txt:I0918 09:13:10.044922      34 cli.go:278] Args: [/runsc --root=/run/runsc-state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new --debug --debug-log=/tmp/dbg/ run --bundle /bundle-true t24-e1-b-debug]
+/tmp/dbg/runsc.log.20260918-091310.039269.run.txt:D0918 09:13:10.045689      34 config.go:577] Config.GoferNetworkNamespace (--gofer-network-namespace): new
+/tmp/dbg/runsc.log.20260918-091310.039269.run.txt:D0918 09:13:10.051708      34 config.go:577] Config.Rootless (--rootless): true
+/tmp/dbg/runsc.log.20260918-091310.039269.run.txt:    "namespaces": [
+/tmp/dbg/runsc.log.20260918-091310.039269.run.txt:D0918 09:13:10.058035      34 container.go:2134] Configuring container with a new userns with identity user mappings into current userns
+/tmp/dbg/runsc.log.20260918-091310.039269.run.txt:I0918 09:13:10.060607      34 namespace.go:201] Mapping host uid 0 to container uid 0 (size=1)
+/tmp/dbg/runsc.log.20260918-091310.039269.run.txt:I0918 09:13:10.060703      34 namespace.go:209] Mapping host gid 0 to container gid 0 (size=1)
+/tmp/dbg/runsc.log.20260918-091310.039269.run.txt:I0918 09:13:10.060904      34 container.go:1681] Starting gofer with command: [runsc-gofer --network=none --gofer-network-namespace=new --platform=systrap --rootless=true --ignore-cgroups=true --root=/run/runsc-state --debug=true --debug-log=/tmp/dbg/ --debug-log-fd=3 gofer --bundle /bundle-true --gofer-mount-confs=lisafs:none --spec-fd=4 --mounts-fd=5 --rpc-fd=6 --pin-ring-fd=7 --sync-sentry-exit-fd=8 --io-fds=9 --sync-chroot-fd=10 t24-e1-b-debug]
+/tmp/dbg/runsc.log.20260918-091310.039269.run.txt:D0918 09:13:10.061398      34 container.go:1686] Starting gofer: /proc/self/exe [runsc-gofer --network=none --gofer-network-namespace=new --platform=systrap --rootless=true --ignore-cgroups=true --root=/run/runsc-state --debug=true --debug-log=/tmp/dbg/ --debug-log-fd=3 gofer --bundle /bundle-true --gofer-mount-confs=lisafs:none --spec-fd=4 --mounts-fd=5 --rpc-fd=6 --pin-ring-fd=7 --sync-sentry-exit-fd=8 --io-fds=9 --sync-chroot-fd=10 t24-e1-b-debug]
+DRIVER_EXIT=0

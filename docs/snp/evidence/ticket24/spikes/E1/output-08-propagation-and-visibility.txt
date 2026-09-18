@@ -1,0 +1,48 @@
+# ticket 24 E1: two facts the guest's init line depends on that the variants
+# above do not isolate: what mount propagation the busybox applet leaves, and
+# whether a mount made inside reaches the caller's namespace.
+# date: 2026-09-18T05:17:27-04:00
+
+================ 1. the propagation of / inside 'busybox unshare -Urm' ================
+(busybox's usage lists --propagation slave|shared|private|unchanged but names no
+ default; a 'shared:' tag on / would mean mounts made inside can propagate out)
+$ grep -E ' / / ' /proc/self/mountinfo        # the driver's own, for contrast
+32 1 259:8 / / rw,relatime shared:1 - ext4 /dev/md0p1 rw,stripe=64
+$ /bin/busybox unshare -Urm /bin/busybox sh -c 'grep -E " / / " /proc/self/mountinfo'
+560 559 259:8 / / rw,relatime - ext4 /dev/md0p1 rw,stripe=64
+$ /bin/busybox unshare -Urm --propagation unchanged /bin/busybox sh -c 'grep -E " / / " /proc/self/mountinfo'
+unshare: can't mount none on / (flags:0x0): Invalid argument
+
+================ 2. does a mount made inside reach the caller? ================
+$ mkdir -p $S/e1/vis && /bin/busybox unshare -Urm /bin/busybox sh -c 'mount -t tmpfs t $S/e1/vis; grep vis /proc/mounts'
+inside:
+t $S/e1/vis tmpfs rw,relatime,uid=253477,gid=253477,inode64 0 0
+$ grep -c vis /proc/mounts     # back outside, after it exited
+0
+(0 means the mount did not propagate to the caller's namespace)
+
+================ 3. the whole run's effect on the workstation's mount table ================
+$ wc -l /proc/mounts ; grep -c 'nsfs\|runsc' /proc/mounts
+57 /proc/mounts
+9
+(S1 E4 recorded 57 lines and zero null-netns lines before and after everything it ran)
+
+================ 4. what those nsfs lines are (nothing E1 made) ================
+$ grep -n 'nsfs\|runsc' /proc/mounts
+38:nsfs /run/snapd/ns/cups.mnt nsfs rw 0 0
+43:nsfs /run/docker/netns/ef8ca46e2e99 nsfs rw 0 0
+44:nsfs /run/docker/netns/a50fafc06fdb nsfs rw 0 0
+45:nsfs /run/docker/netns/79b108765e4e nsfs rw 0 0
+46:nsfs /run/docker/netns/4e7354f226bc nsfs rw 0 0
+47:nsfs /run/docker/netns/ingress_sbox nsfs rw 0 0
+48:nsfs /run/docker/netns/1-j71ovr2q1j nsfs rw 0 0
+55:nsfs /run/snapd/ns/chromium.mnt nsfs rw 0 0
+57:nsfs /run/docker/netns/dead6ee012fd nsfs rw 0 0
+(all nine are pre-existing snapd and docker network-namespace pins; not one is
+ runsc's null-netns, and variant d ran in this very mount namespace, so if the
+ pin had been attempted it would be here)
+$ grep -c claude-253477 /proc/mounts   # anything under the scratch directory
+0
+$ wc -l /proc/mounts
+57 /proc/mounts
+(57 lines, the same count S1 E4 recorded before and after everything it ran)

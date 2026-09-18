@@ -1,0 +1,153 @@
+# ticket 24 E1: the driver, the binary and the image, for the record.
+# The check's provenance is in output-07.
+# date: 2026-09-18T05:15:55-04:00
+
+================ 1. the busybox that both measured images embed ================
+$ ls -la /bin/busybox /usr/bin/busybox
+-rwxr-xr-x 1 root root 2124608 Aug 13  2024 /bin/busybox
+-rwxr-xr-x 1 root root 2124608 Aug 13  2024 /usr/bin/busybox
+$ readlink -f /bin/busybox
+/usr/bin/busybox
+$ sha256sum /bin/busybox /usr/bin/busybox
+dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14  /bin/busybox
+dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14  /usr/bin/busybox
+$ dpkg-query -W busybox-static
+busybox-static	1:1.36.1-6ubuntu3.1
+$ dpkg -S /usr/bin/busybox
+busybox-static: /usr/bin/busybox
+$ file /bin/busybox
+/bin/busybox: ELF 64-bit LSB executable, x86-64, version 1 (GNU/Linux), statically linked, BuildID[sha1]=351ba74c282274bdd56e030c641d226cab5c14b7, for GNU/Linux 3.2.0, stripped
+$ /bin/busybox | head -1
+BusyBox v1.36.1 (Ubuntu 1:1.36.1-6ubuntu3.1) multi-call binary.
+(docs/snp/image/build-image.sh:103,125 pins this exact package for the SNP root;
+ :191-192 symlinks the applets, and 'unshare' is already in ROOT_APPLETS)
+$ grep -n '^ROOT_APPLETS' docs/snp/image/build-image.sh
+191:ROOT_APPLETS="sh mount umount insmod cat echo sleep ls dmesg grep sed poweroff sync ip unshare"
+
+================ 2. the applet exists ================
+$ /bin/busybox --list | grep -x unshare
+unshare
+
+================ 3. /bin/busybox unshare --help, VERBATIM ================
+BusyBox v1.36.1 (Ubuntu 1:1.36.1-6ubuntu3.1) multi-call binary.
+
+Usage: unshare [OPTIONS] [PROG ARGS]
+
+	-m,--mount[=FILE]	Unshare mount namespace
+	-u,--uts[=FILE]		Unshare UTS namespace (hostname etc.)
+	-i,--ipc[=FILE]		Unshare System V IPC namespace
+	-n,--net[=FILE]		Unshare network namespace
+	-p,--pid[=FILE]		Unshare PID namespace
+	-U,--user[=FILE]	Unshare user namespace
+	-f			Fork before execing PROG
+	-r			Map current user to root (implies -U)
+	--mount-proc[=DIR]	Mount /proc filesystem first (implies -m)
+	--propagation slave|shared|private|unchanged
+				Modify mount propagation in mount namespace
+	--setgroups allow|deny	Control the setgroups syscall in user namespaces
+HELP_EXIT=0
+
+================ 4. util-linux unshare, which NEITHER measured image carries ================
+$ which unshare
+/usr/bin/unshare
+$ dpkg -S /usr/bin/unshare
+util-linux: /usr/bin/unshare
+(present on the workstation, used by spike S1; not used anywhere in E1)
+
+================ 5. the runsc binary ================
+$ tail -6 $S/make-runsc.log
+INFO: 0 processes.
+INFO: Build completed successfully, 0 total actions
+/home/pniroula/.cache/bazel/_bazel_pniroula/3ed3beb90015a069adba91df23df0f31/execroot/_main/bazel-out/k8-opt/bin/runsc/runsc_/runsc
+make runsc  3.82s user 14.15s system 2% cpu 14:28.95 total
+EXIT=0
+-r-xr-xr-x 1 pniroula 253477 108668311 Sep 18 04:59 bazel-bin/runsc/runsc_/runsc
+$ ls -la bazel-bin/runsc/runsc_/runsc
+-r-xr-xr-x 1 pniroula 253477 108668311 Sep 18 04:59 bazel-bin/runsc/runsc_/runsc
+$ sha256sum $S/bin/runsc
+8070bcdf0b7889d8ed3710f5920f06cf909682434b21437eb9df8d7fb6c72518  /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t24/46c42ff5-b5e8-48d6-a8bb-ba92dda85a78/scratchpad/bin/runsc
+$ stat -c '%s bytes' $S/bin/runsc
+108668311 bytes
+$ $S/bin/runsc --version
+runsc version 0.0.0
+spec: 1.2.1
+(S1's binary was sha256 8070bcdf0b7889d8ed3710f5920f06cf909682434b21437eb9df8d7fb6c72518:
+ the same 32 bytes, so this is bit-for-bit the binary S1 measured)
+
+================ 6. the tree and the tools ================
+$ git rev-parse HEAD
+233658709375bbadc46f8c07ec4c250559512504
+$ git rev-parse --abbrev-ref HEAD
+ticket-24-runsc-in-the-measured-guest
+$ git status --porcelain -- runsc pkg
+(nothing listed above: nothing under runsc/ or pkg/ was touched)
+$ git status --porcelain
+ M docs/snp/image/build-image.sh
+ M docs/snp/image/init.initrd
+ M docs/snp/image/init.rootfs
+ M docs/snp/image/launch-measured-guest.sh
+ M docs/snp/image/package-tunneld.sh
+ M docs/snp/tunnel-guest.sh
+ M docs/snp/tunnel-on-two-guests.sh
+?? .scratch
+?? docs/snp/evidence/ticket24/spikes/
+?? docs/snp/image/mkworkloaddev.sh
+(docs/snp/image/* and docs/snp/evidence/ticket24/* are other ticket 24 work in
+ this worktree, not E1's; E1 wrote only docs/snp/evidence/ticket24/spikes/E1/)
+$ /usr/local/go/bin/go version
+go version go1.26.3 linux/amd64
+$ /usr/local/bin/bazel --version
+bazel 8.3.1
+$ uname -r
+6.11.0-rc3-snp-host-85ef1ac03941
+$ id
+uid=253477(pniroula) gid=253477 groups=253477,27(sudo),108(kvm),120(libvirt),999(docker)
+$ cat /proc/sys/kernel/yama/ptrace_scope
+1
+$ cat /proc/sys/user/max_user_namespaces
+3080527
+
+================ 7. the image the variants ran in ================
+$ $S/e1/build-img.sh
+116M	/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t24/46c42ff5-b5e8-48d6-a8bb-ba92dda85a78/scratchpad/e1/img
+$ find $S/e1/img -maxdepth 1 | sort
+$S/e1/img
+$S/e1/img/bundle-hi
+$S/e1/img/bundle-mounts
+$S/e1/img/bundle-sleep
+$S/e1/img/bundle-true
+$S/e1/img/bundle-uname
+$S/e1/img/busybox
+$S/e1/img/debug-b-inside.sh
+$S/e1/img/dev
+$S/e1/img/init-mount-check.sh
+$S/e1/img/oldroot
+$S/e1/img/probe-procself.sh
+$S/e1/img/proc
+$S/e1/img/run
+$S/e1/img/run-inside.sh
+$S/e1/img/runsc
+$S/e1/img/sys
+$S/e1/img/tmp
+$S/e1/img/uname-inside.sh
+$S/e1/img/variant-inside.sh
+$ ls -la $S/e1/img/bundle-uname $S/e1/img/bundle-uname/rootfs/bin
+total 16
+drwxr-xr-x  3 pniroula 253477 4096 Sep 18 05:15 .
+drwxr-xr-x 13 pniroula 253477 4096 Sep 18 05:15 ..
+-rw-r--r--  1 pniroula 253477  626 Sep 18 05:15 config.json
+drwxr-xr-x  5 pniroula 253477 4096 Sep 18 05:15 rootfs
+total 2084
+drwxr-xr-x 2 pniroula 253477    4096 Sep 18 05:15 .
+drwxr-xr-x 5 pniroula 253477    4096 Sep 18 05:15 ..
+-rwxr-xr-x 1 pniroula 253477 2124608 Sep 18 05:15 busybox
+lrwxrwxrwx 1 pniroula 253477       7 Sep 18 05:15 cat -> busybox
+lrwxrwxrwx 1 pniroula 253477       7 Sep 18 05:15 grep -> busybox
+lrwxrwxrwx 1 pniroula 253477       7 Sep 18 05:15 id -> busybox
+lrwxrwxrwx 1 pniroula 253477       7 Sep 18 05:15 ls -> busybox
+lrwxrwxrwx 1 pniroula 253477       7 Sep 18 05:15 sh -> busybox
+lrwxrwxrwx 1 pniroula 253477       7 Sep 18 05:15 sleep -> busybox
+lrwxrwxrwx 1 pniroula 253477       7 Sep 18 05:15 true -> busybox
+lrwxrwxrwx 1 pniroula 253477       7 Sep 18 05:15 uname -> busybox
+$ file $S/e1/img/bundle-uname/rootfs/bin/busybox
+$S/e1/img/bundle-uname/rootfs/bin/busybox: ELF 64-bit LSB executable, x86-64, version 1 (GNU/Linux), statically linked, BuildID[sha1]=351ba74c282274bdd56e030c641d226cab5c14b7, for GNU/Linux 3.2.0, stripped

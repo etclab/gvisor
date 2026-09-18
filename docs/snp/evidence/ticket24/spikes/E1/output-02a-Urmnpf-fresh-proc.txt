@@ -1,0 +1,146 @@
+# ticket 24 E1, item 2: driver variant a-Urmnpf-fresh-proc
+# driver: /bin/busybox unshare -Urmnpf $S/e1/guest-like-ns.sh $S/e1/img /busybox sh /variant-inside.sh
+# This is item 1's configuration again, recorded by the compact per-variant
+# script so that all five variants are directly comparable; output-01 is the
+# full S1 E2 run-inside.sh.
+# PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+# date: 2026-09-18T05:21:51-04:00
+
+######## a-Urmnpf-fresh-proc 0. the driver
+$ /bin/busybox unshare -Urmnpf $S/e1/guest-like-ns.sh $S/e1/img /busybox sh /variant-inside.sh
+   (PFX='' STATE='/run/runsc-state' TMPDIR='/tmp')
+
+######## a-Urmnpf-fresh-proc 1. what the busybox unshare applet gave this caller
+---- /proc/self/uid_map
+         0     253477          1
+---- /proc/self/gid_map
+         0     253477          1
+---- /proc/self/setgroups
+deny
+---- Cap* from /proc/self/status
+CapInh:	0000000000000000
+CapPrm:	000001ffffffffff
+CapEff:	000001ffffffffff
+CapBnd:	000001ffffffffff
+CapAmb:	0000000000000000
+---- id
+uid=0 gid=0 groups=65534,65534,65534,65534,0
+---- own pid (1 means the pid namespace is ours)
+1
+---- namespace links
+total 0
+lrwxrwxrwx    1 0        0                0 Sep 18 09:21 cgroup -> cgroup:[4026531835]
+lrwxrwxrwx    1 0        0                0 Sep 18 09:21 ipc -> ipc:[4026531839]
+lrwxrwxrwx    1 0        0                0 Sep 18 09:21 mnt -> mnt:[4026535930]
+lrwxrwxrwx    1 0        0                0 Sep 18 09:21 net -> net:[4026535932]
+lrwxrwxrwx    1 0        0                0 Sep 18 09:21 pid -> pid:[4026535931]
+lrwxrwxrwx    1 0        0                0 Sep 18 09:21 pid_for_children -> pid:[4026535931]
+lrwxrwxrwx    1 0        0                0 Sep 18 09:21 time -> time:[4026531834]
+lrwxrwxrwx    1 0        0                0 Sep 18 09:21 time_for_children -> time:[4026531834]
+lrwxrwxrwx    1 0        0                0 Sep 18 09:21 user -> user:[4026535929]
+lrwxrwxrwx    1 0        0                0 Sep 18 09:21 uts -> uts:[4026531838]
+
+######## a-Urmnpf-fresh-proc 2. the guest init's check, before runsc has run
+/dev/md0p1 / ext4 ro,relatime,stripe=64 0 0
+proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,uid=253477,gid=253477,inode64 0 0
+tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,uid=253477,gid=253477,inode64 0 0
+tmpfs /dev tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,uid=253477,gid=253477,inode64 0 0
+udev /dev/null devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/zero devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/full devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/random devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/urandom devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/tty devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+---- the /proc lines
+proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+---- check ----
+no writable path is executable
+CHECK_EXIT=0
+---- check again, with mounts under /proc/ removed (harness artifact) ----
+no writable path is executable
+CHECK_EXIT=0
+
+######## a-Urmnpf-fresh-proc 3. the trivial workload, /bin/busybox true
+$ /runsc --root=/run/runsc-state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new run --bundle /bundle-true t24-e1-a-Urmnpf-fresh-proc-true
+EXIT=0
+
+######## a-Urmnpf-fresh-proc 4. S1 E4's workload, /bin/busybox sh -c 'echo hi; ls /'
+$ /runsc --root=/run/runsc-state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new run --bundle /bundle-hi t24-e1-a-Urmnpf-fresh-proc-hi
+EXIT=0
+hi
+bin
+dev
+proc
+sys
+tmp
+
+######## a-Urmnpf-fresh-proc 5. a live sleeping container, so the sandbox and gofer can be read
+$ /runsc --root=/run/runsc-state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new run --bundle /bundle-sleep t24-e1-a-Urmnpf-fresh-proc-sleep &
+runsc processes seen:
+  179 /runsc --root=/run/runsc-state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new run --bundle /bundle-sleep t24-e1-a-Urmnpf-fresh-proc-sleep
+  208 {exe} runsc-gofer --ignore-cgroups=true --root=/run/runsc-state --network=none --gofer-network-namespace=new --platform=systrap --rootless=true gofer --bundle /bundle-sleep --gofer-mount-confs=lisafs:none --spec-fd=3 --mounts-fd=4 --rpc-fd=5 --pin-ring-fd=6 --sync-sentry-exit-fd=7 --io-fds=8 --sync-chroot-fd=9 t24-e1-a-Urmnpf-fresh-proc-sleep
+  213 {exe} runsc-sandbox --ignore-cgroups=true --root=/run/runsc-state --network=none --gofer-network-namespace=new --platform=systrap --rootless=true boot --bundle=/bundle-sleep --gofer-mount-confs=lisafs:none --apply-caps=true --setup-root --total-host-memory 807732506624 --total-memory 807732506624 --attached --io-fds=3 --dev-io-fd=-1 --mounts-fd=4 --start-sync-fd=5 --pin-ring-fd=6 --controller-fd=7 --spec-fd=8 --stdio-fds=9 --stdio-fds=10 --stdio-fds=11 t24-e1-a-Urmnpf-fresh-proc-sleep
+
+---- /proc/208/cmdline
+runsc-gofer --ignore-cgroups=true --root=/run/runsc-state --network=none --gofer-network-namespace=new --platform=systrap --rootless=true gofer --bundle /bundle-sleep --gofer-mount-confs=lisafs:none --spec-fd=3 --mounts-fd=4 --rpc-fd=5 --pin-ring-fd=6 --sync-sentry-exit-fd=7 --io-fds=8 --sync-chroot-fd=9 t24-e1-a-Urmnpf-fresh-proc-sleep 
+---- /proc/208/mounts
+/dev/md0p1 / ext4 ro,nosuid,nodev,relatime,stripe=64 0 0
+---- /proc/208/uid_map
+         0          0          1
+---- /proc/208/gid_map
+         0          0          1
+---- Cap* from /proc/208/status
+CapInh:	000000000004001f
+CapPrm:	000000000004001f
+CapEff:	000000000004001f
+CapBnd:	000000000004001f
+CapAmb:	000000000004001f
+---- the guest init's check against /proc/208/mounts
+no writable path is executable
+CHECK_EXIT=0
+
+---- /proc/213/cmdline
+runsc-sandbox --ignore-cgroups=true --root=/run/runsc-state --network=none --gofer-network-namespace=new --platform=systrap --rootless=true boot --bundle=/bundle-sleep --gofer-mount-confs=lisafs:none --apply-caps=true --setup-root --total-host-memory 807732506624 --total-memory 807732506624 --attached --io-fds=3 --dev-io-fd=-1 --mounts-fd=4 --start-sync-fd=5 --pin-ring-fd=6 --controller-fd=7 --spec-fd=8 --stdio-fds=9 --stdio-fds=10 --stdio-fds=11 t24-e1-a-Urmnpf-fresh-proc-sleep 
+---- /proc/213/mounts
+runsc-root / tmpfs ro,relatime,uid=253477,gid=253477,inode64 0 0
+runsc-proc /proc tmpfs rw,nosuid,nodev,noexec,relatime,uid=253477,gid=253477,inode64 0 0
+proc /proc/sandbox-proc proc ro,nosuid,nodev,noexec,relatime 0 0
+---- /proc/213/uid_map
+         0          0          1
+---- /proc/213/gid_map
+         0          0          1
+---- Cap* from /proc/213/status
+CapInh:	0000000000000000
+CapPrm:	000000000008001f
+CapEff:	000000000008001f
+CapBnd:	000000000008001f
+CapAmb:	0000000000000000
+---- the guest init's check against /proc/213/mounts
+no writable path is executable
+CHECK_EXIT=0
+
+######## a-Urmnpf-fresh-proc 6. the check against /proc/mounts while the sandbox lives
+/dev/md0p1 / ext4 ro,relatime,stripe=64 0 0
+proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,uid=253477,gid=253477,inode64 0 0
+tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,uid=253477,gid=253477,inode64 0 0
+tmpfs /dev tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,uid=253477,gid=253477,inode64 0 0
+udev /dev/null devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/zero devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/full devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/random devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/urandom devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/tty devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+---- check ----
+no writable path is executable
+CHECK_EXIT=0
+SLEEP_WORKLOAD_EXIT=0
+
+######## a-Urmnpf-fresh-proc 7. the state dir and the check, after everything exited
+drwx------    2 0        0               40 Sep 18 09:22 /run/runsc-state
+no writable path is executable
+CHECK_EXIT=0
+DRIVER_EXIT=0

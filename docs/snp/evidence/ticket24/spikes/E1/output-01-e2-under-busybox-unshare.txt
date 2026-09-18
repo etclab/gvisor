@@ -1,0 +1,163 @@
+# ticket 24 E1, item 1: S1's E2 configuration, driven by the busybox unshare applet alone.
+# driver:
+#   /bin/busybox unshare -Urmnpf $S/e1/guest-like-ns.sh $S/e1/img /busybox sh /run-inside.sh
+# PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+# date: 2026-09-18T05:00:42-04:00
+
+######## 0. the guest init's check, before runsc has run
+/dev/md0p1 / ext4 ro,relatime,stripe=64 0 0
+proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,uid=253477,gid=253477,inode64 0 0
+tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,uid=253477,gid=253477,inode64 0 0
+tmpfs /dev tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,uid=253477,gid=253477,inode64 0 0
+udev /dev/null devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/zero devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/full devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/random devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/urandom devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/tty devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+---- check ----
+no writable path is executable
+CHECK_EXIT=0
+
+######## 0b. E1: what the busybox unshare applet gave this caller
+---- /proc/self/uid_map
+         0     253477          1
+---- /proc/self/gid_map
+         0     253477          1
+---- /proc/self/setgroups
+deny
+---- Cap* from /proc/self/status
+CapInh:	0000000000000000
+CapPrm:	000001ffffffffff
+CapEff:	000001ffffffffff
+CapBnd:	000001ffffffffff
+CapAmb:	0000000000000000
+---- id
+uid=0 gid=0 groups=65534,65534,65534,65534,0
+---- own pid (1 means the pid namespace is ours)
+1
+---- namespace links
+total 0
+lrwxrwxrwx    1 0        0                0 Sep 18 09:00 cgroup -> cgroup:[4026531835]
+lrwxrwxrwx    1 0        0                0 Sep 18 09:00 ipc -> ipc:[4026531839]
+lrwxrwxrwx    1 0        0                0 Sep 18 09:00 mnt -> mnt:[4026535930]
+lrwxrwxrwx    1 0        0                0 Sep 18 09:00 net -> net:[4026535932]
+lrwxrwxrwx    1 0        0                0 Sep 18 09:00 pid -> pid:[4026535931]
+lrwxrwxrwx    1 0        0                0 Sep 18 09:00 pid_for_children -> pid:[4026535931]
+lrwxrwxrwx    1 0        0                0 Sep 18 09:00 time -> time:[4026531834]
+lrwxrwxrwx    1 0        0                0 Sep 18 09:00 time_for_children -> time:[4026531834]
+lrwxrwxrwx    1 0        0                0 Sep 18 09:00 user -> user:[4026535929]
+lrwxrwxrwx    1 0        0                0 Sep 18 09:00 uts -> uts:[4026531838]
+
+######## 1. the workload, root filesystem read-only, every writable mount noexec
+$ /runsc --root=/run/runsc-state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new run --bundle /bundle-true s1-e2
+EXIT=0
+
+######## 2. same, but the workload prints the sandbox-internal mount table
+$ /runsc --root=/run/runsc-state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new run --bundle /bundle-mounts s1-e2-mounts
+EXIT=0
+none / 9p ro,trans=fd,rfdno=3,wfdno=3,aname=/,dfltuid=4294967294,dfltgid=4294967294,dcache=1000,cache=fscache,disable_fifo_open,overlayfs_stale_read,directfs 0 0
+none /sys sysfs rw,dentry_cache_limit=1000 0 0
+none /dev dev rw,mode=0755 0 0
+none /proc proc rw,dentry_cache_limit=1000 0 0
+none /dev/pts devpts rw 0 0
+none /tmp tmpfs rw,mode=01777 0 0
+
+######## 3. a sleeping workload, so the host side can be read while it lives
+$ /runsc --root=/run/runsc-state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new run --bundle /bundle-sleep s1-e2-sleep &
+runsc processes seen:
+  182 /runsc --root=/run/runsc-state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new run --bundle /bundle-sleep s1-e2-sleep
+  209 {exe} runsc-gofer --ignore-cgroups=true --root=/run/runsc-state --network=none --gofer-network-namespace=new --platform=systrap --rootless=true gofer --bundle /bundle-sleep --gofer-mount-confs=lisafs:none --spec-fd=3 --mounts-fd=4 --rpc-fd=5 --pin-ring-fd=6 --sync-sentry-exit-fd=7 --io-fds=8 --sync-chroot-fd=9 s1-e2-sleep
+  213 {exe} runsc-sandbox --network=none --gofer-network-namespace=new --platform=systrap --rootless=true --ignore-cgroups=true --root=/run/runsc-state boot --bundle=/bundle-sleep --gofer-mount-confs=lisafs:none --apply-caps=true --setup-root --total-host-memory 807732506624 --total-memory 807732506624 --attached --io-fds=3 --dev-io-fd=-1 --mounts-fd=4 --start-sync-fd=5 --pin-ring-fd=6 --controller-fd=7 --spec-fd=8 --stdio-fds=9 --stdio-fds=10 --stdio-fds=11 s1-e2-sleep
+
+---- /proc/209/cmdline
+runsc-gofer --ignore-cgroups=true --root=/run/runsc-state --network=none --gofer-network-namespace=new --platform=systrap --rootless=true gofer --bundle /bundle-sleep --gofer-mount-confs=lisafs:none --spec-fd=3 --mounts-fd=4 --rpc-fd=5 --pin-ring-fd=6 --sync-sentry-exit-fd=7 --io-fds=8 --sync-chroot-fd=9 s1-e2-sleep 
+---- /proc/209/mounts
+/dev/md0p1 / ext4 ro,nosuid,nodev,relatime,stripe=64 0 0
+---- /proc/209/uid_map
+         0          0          1
+---- /proc/209/gid_map
+         0          0          1
+---- Cap* from /proc/209/status
+CapInh:	000000000004001f
+CapPrm:	000000000004001f
+CapEff:	000000000004001f
+CapBnd:	000000000004001f
+CapAmb:	000000000004001f
+---- the guest init's check against /proc/209/mounts
+no writable path is executable
+CHECK_EXIT=0
+
+---- /proc/213/cmdline
+runsc-sandbox --network=none --gofer-network-namespace=new --platform=systrap --rootless=true --ignore-cgroups=true --root=/run/runsc-state boot --bundle=/bundle-sleep --gofer-mount-confs=lisafs:none --apply-caps=true --setup-root --total-host-memory 807732506624 --total-memory 807732506624 --attached --io-fds=3 --dev-io-fd=-1 --mounts-fd=4 --start-sync-fd=5 --pin-ring-fd=6 --controller-fd=7 --spec-fd=8 --stdio-fds=9 --stdio-fds=10 --stdio-fds=11 s1-e2-sleep 
+---- /proc/213/mounts
+runsc-root / tmpfs ro,relatime,uid=253477,gid=253477,inode64 0 0
+runsc-proc /proc tmpfs rw,nosuid,nodev,noexec,relatime,uid=253477,gid=253477,inode64 0 0
+proc /proc/sandbox-proc proc ro,nosuid,nodev,noexec,relatime 0 0
+---- /proc/213/uid_map
+         0          0          1
+---- /proc/213/gid_map
+         0          0          1
+---- Cap* from /proc/213/status
+CapInh:	0000000000000000
+CapPrm:	000000000008001f
+CapEff:	000000000008001f
+CapBnd:	000000000008001f
+CapAmb:	0000000000000000
+---- the guest init's check against /proc/213/mounts
+no writable path is executable
+CHECK_EXIT=0
+
+######## 4. the guest init's check against /proc/mounts while the sandbox lives
+/dev/md0p1 / ext4 ro,relatime,stripe=64 0 0
+proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,uid=253477,gid=253477,inode64 0 0
+tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,uid=253477,gid=253477,inode64 0 0
+tmpfs /dev tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,uid=253477,gid=253477,inode64 0 0
+udev /dev/null devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/zero devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/full devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/random devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/urandom devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+udev /dev/tty devtmpfs rw,nosuid,noexec,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64 0 0
+---- check ----
+no writable path is executable
+CHECK_EXIT=0
+SLEEP_WORKLOAD_EXIT=0
+
+######## 5. what runsc left in the state dir, after the container exited
+drwx------    2 0        0               40 Sep 18 09:01 /run/runsc-state
+---- and the check again, after everything exited
+no writable path is executable
+CHECK_EXIT=0
+
+######## 5b. E1: S1 E4's workload, /bin/busybox sh -c 'echo hi; ls /'
+$ /runsc --root=/run/runsc-state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new run --bundle /bundle-hi s1-e1-hi
+EXIT=0
+hi
+bin
+dev
+proc
+sys
+tmp
+
+######## 5c. E1: the new workload, /bin/sh -c 'uname -a'
+$ /runsc --root=/run/runsc-state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new run --bundle /bundle-uname s1-e1-uname
+EXIT=0
+Linux s1 4.19.0-gvisor #1 SMP Sun Jan 10 15:06:54 PST 2016 x86_64 GNU/Linux
+---- the check after those two
+no writable path is executable
+CHECK_EXIT=0
+
+######## 6. variation: the bundle and its rootfs on a NOEXEC writable mount
+   (/tmp is rw,noexec; the workload binary then lives on a noexec mount)
+$ /runsc --root=/run/runsc-state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new run --bundle /tmp/bundle-noexec s1-e2-noexec
+EXIT=128
+running container: creating container: cannot create sandbox: cannot read client sync file: waiting for sandbox to start: EOF
+---- the check, last word
+no writable path is executable
+CHECK_EXIT=0
+DRIVER_EXIT=0

@@ -11,6 +11,12 @@ they were before this ticket existed.
 gained the three `net.Conn` deadlines, and the wire protocol, the local socket protocol and the
 four `Attested` strings are exactly what version 1 made them.
 
+**Contract version 3** is ticket 26's, and it is one message: `alive`, from the sandbox, with no
+reply, carrying the digest of the policy it is enforcing. It is the verb version 2 did not have
+for the present tense — an acknowledgement is a claim about the past, and ticket 23 measured
+exactly how short a past that is. Nothing else changed: the three verbs, the stream, the
+descriptor, the pump and the four `Attested` strings are what version 1 made them.
+
 **In one sentence:** a sandbox sees no evidence, no key and no trust decision — it gets a stream
 or an error, and a policy or nothing — and the shape of the contract is fixed by the thing that
 cannot cross a process boundary, since a QUIC stream is not a kernel object (spike E1) and what
@@ -200,6 +206,12 @@ stream, and deliberately the dullest thing that works.
 | `{"id":7,"type":"apply","policy":"<base64>"}` | tunneld → sandbox | the opaque policy bytes |
 | `{"id":7,"type":"ack"}` | sandbox → tunneld | the acknowledgement |
 | `{"id":7,"type":"refusal","error":"…"}` | sandbox → tunneld | the sandbox's refusal |
+| `{"id":0,"type":"alive","digest":"<64 hex>"}` | sandbox → tunneld | the digest of the policy in force — **no reply** (v3) |
+
+The last of them is the only message here that is neither a request nor a reply, and its id is 0
+because it numbers nothing: it goes nowhere near either side's reply table, and a reply table
+that grew a slot per second would be the one part of this socket that leaked. See *Liveness*,
+below.
 
 Requests travel in both directions — the sandbox asks for streams, tunneld pushes policy — so
 each side numbers its own requests and a reply carries the id of the request it answers. The two
@@ -265,6 +277,80 @@ that needs to tell a truncated answer from a complete one has to say so in its o
 The cost is E1's and is paid per stream: one extra hop each way, ~40–80 µs of added round-trip
 latency, and ≲25 % of single-stream bulk throughput. There is no cheaper variant to hold out
 for, because the bytes are in tunneld's userspace either way.
+
+## The subset check
+
+A delegation narrows: a node pushed P0 and pushing P1 onward may hand on no more than it was
+given, and until ticket 26 nothing in this tree checked it (the finding is recorded at
+`attest/cmd/agent-probe/twohops_test.go:35`). The check is now the contract's, in
+`attest/sandbox/policy.go`, because the rule is the format's and not one sandbox's:
+
+* `sandbox.Atoms(policy)` — the grant set, sorted and deduplicated, in ticket 23's grammar:
+  `net:<host>:<port>`, `net:<host>` (every port), `read:<path>`, `write:<path>`, `run:<path>`,
+  `run:sha256:<hex>`. A CIDR is refused, because every check this design makes on a destination
+  is against the name that was asked for and a name is in no CIDR.
+* `sandbox.Widening(prev, next)` — the atoms of `next` that `prev` does not grant, grouped by
+  component. It has no notion of a first push: a nil `prev` is the empty grant, since the two
+  are indistinguishable after `Atoms` and a checker that guessed would wave through exactly the
+  push that widens from nothing.
+* `sandbox.CheckNarrows(prev, next)` — the document-level form, refusing with
+  `sandbox.ErrPolicyRefused` and the sentence `it widens n by [...]`, naming the component.
+
+The set and not the document is compared, for the reason ticket 23 gave: two documents naming
+the same hosts in a different order are the same grant. The Deno sandbox keeps its own atomiser,
+because three of its rules are facts about Deno — it has an `e` letter the policy format has
+not, it refuses a digest it has nowhere to put, and it refuses a host its flag parser would
+refuse after the exec rather than before it.
+
+## Liveness
+
+An acknowledgement is a claim about the past. Ticket 23 measured how short a past: the ack left
+`Apply` 1.856 ms after `exec.Start`, the workload was dead at 43 ms, and the tunnel was still up
+— going on asserting something the sandbox no longer believed, with no verb in the contract for
+saying so. Version 3 is that verb.
+
+> A sandbox that has acknowledged a policy sends `alive` with that policy's digest every
+> `sandbox.DefaultPulse`, until it closes. Liveness is lost when an attachment that acknowledged
+> has sent none for `sandbox.DefaultMisses` consecutive intervals, sends one whose digest is not
+> the one that was pushed, or closes its socket.
+
+The constants are **1 s** and **3**, and spike E3 (`docs/snp/evidence/ticket26/spikes/E3/`) is
+why. A pulse costs 30 µs to send and 255 µs of CPU to receive at one hertz — 0.026 % of one core
+— so cost decides nothing and must not be argued as though it did. The worst lateness of a pulse
+over a minute was 2.865 ms on a machine at load average 24, so measured jitter would justify two
+misses; the third is bought by the transients a one-minute sample does not contain (a guest
+paused, a sentry stalled) and by what a false positive costs, which is a tunnel closed and a
+handshake burned. Teardown, measured ten times per case: **≤250 ms** when the socket closes or
+the digest does not match, and **2.10–3.25 s** when the sandbox simply goes quiet, the spread
+being how old the last pulse already was.
+
+**Who sends it.** A client that acknowledges starts pulsing the SHA-256 of exactly the bytes it
+acknowledged, which is the number tunneld computed over the bytes it pushed and the number the
+null sandbox already prints. A sandbox that enforces something *other* than those bytes — a
+supervisor forwarding a policy to a sentry that answers with the digest it accepted — says so
+with `Client.Alive(digest)`, and the last thing it said is what it pulses.
+
+**Who watches, and who does not.** Only `sandbox.Host` implements the optional interface
+(`sandbox.Live`: one method, `Watch(ctx, digest) <-chan error`), so only a sandbox across a
+process boundary is watched. A sandbox in tunneld's own process — the null one, and the Deno one
+— has no liveness question: it *is* the process, and a caller wondering whether it is still
+running has been answered by the fact that it asked. Tunneld starts a watch after a push it
+acknowledged and closes that tunnel when the watch fires, under the taxonomy's eleventh reason
+(`docs/policy-push.md`).
+
+**Every attachment that acknowledged must be live**, for the same reason `Host.Apply` returns the
+first refusal rather than the last: two sandboxes on one socket are two things enforcing the
+policy, and one of them stopping is the policy no longer being enforced. In a guest that pair is
+the agent and the exit, which `agent-probe` runs as two clients on one socket, and the test
+watches both acknowledge and both pulse.
+
+**The workload's exit ends liveness, and it is the fast case.** The workload ends, the sandbox's
+client closes, the attachment goes, and the loss is reported at the next quarter-pulse — which
+is the 250 ms above and not the three seconds. The case the ticket was written for is the quick
+one.
+
+**What a sandbox that refused is not.** A watch is over the attachments that acknowledged. One
+that refused claimed nothing it could stop claiming, so it is not watched.
 
 ## The null sandbox, and the exercise inside it
 
@@ -338,6 +424,11 @@ only diagnostic surface a measured guest has can carry it (spec, user story 48).
 | tunneld refuses an unknown version before the sandbox sees it, and the null sandbox acks a version 1 blob | same file |
 | a sandbox **in another process** opens, accepts with the identity, round-trips bytes both ways through the received descriptor, and answers two pushes | `attest/sandbox/socket_test.go`, which re-executes the test binary as the sandbox |
 | the pump carries the end of the stream each way | same file |
+| a sandbox in another process pulses the digest of what it acknowledged, and a sandbox that refused is not watched | same file, the liveness tests |
+| a sandbox that is killed, that goes quiet, or that pulses another policy's digest is a policy no longer in force | same file, one test each |
+| a widening push is refused component-wise and the refusal names which of `n`, `f` and `x` widened | `attest/sandbox/policy_test.go` |
+| a tunnel whose sandbox stopped enforcing the pushed policy is closed, and one whose sandbox is in this process is not watched | `attest/tunneld/liveness_test.go` |
+| the agent's sandbox and the exit's, two clients on one socket, both acknowledge and both pulse | `attest/cmd/agent-probe/liveness_test.go` |
 | a push at a tunneld with no sandbox attached is refused rather than acknowledged | same file |
 | a policy pushed **over the tunnel** reaches this contract's `Apply`, and what that returns decides the peer's tunnel | `attest/tunneld/push_test.go`, and `docs/policy-push.md` for the whole of it |
 | a read deadline expires with `os.ErrDeadlineExceeded` on both implementations — the tunnel's raw stream, and the socketpair end a sandbox receives over the socket with tunneld's pump between it and the tunnel — the peer having sent nothing and the stream still open | `TestAReadDeadlineOnAStreamExpires` (`attest/tunneld/sandbox_test.go`), one subtest each |
@@ -378,13 +469,21 @@ must. The recorded run is `docs/snp/evidence/ticket22/`.
   that exit is a protocol *above* the contract — E2's shim invented `CONNECT host:port` as the
   first line of the stream, and the contract neither defines that line nor sees it. Ticket 23
   did not change this.
-- **No liveness signal from sandbox to tunneld.** `Apply` returns once and a push waits for
-  exactly one answer per tunnel. An acknowledgement therefore says a process *started* and says
-  nothing about whether it is still running: E4 measured the ack leaving `Apply` 1.856 ms after
-  `exec.Start`, the workload dead at 43 ms, and the tunnel still up. A sandbox that learns its
-  workload died has no verb to say so — no revocation, no event, no second exchange — so the
-  tunnel goes on asserting something the sandbox no longer believes. Ticket 23 did not change
-  this either.
+- ~~**No liveness signal from sandbox to tunneld.**~~ Built, in ticket 26: the `alive` message,
+  one a second, carrying the digest of the policy in force, and a tunnel closed when it stops.
+  See *Liveness*, above. What that bullet measured — the ack at 1.856 ms, the workload dead at
+  43 ms, the tunnel still up — is now bounded at 250 ms for a workload that exits and at 3.25 s
+  for a sandbox that goes quiet without closing.
+- **Liveness is a heartbeat and not a proof.** An `alive` message says what the sandbox says it
+  is enforcing. It is trusted for arriving on a socket inside a measured guest, exactly as a
+  pushed policy is trusted for arriving over an attested tunnel, and a sandbox that lied about
+  its digest would be a sandbox lying about its own enforcement, which the measurement and not
+  the contract is what stands behind.
+- **The loss is found by polling, at a quarter of a pulse.** A closed socket and a mismatched
+  digest are known the instant they arrive and are rounded up to the watch's 250 ms tick. Waking
+  the watcher on each pulse would make both sub-millisecond; it is one loop against a fan-out
+  from every attachment to every watch, and 250 ms is already an order of magnitude inside the
+  miss path.
 - **Ticket 23's record is `docs/agent-on-the-contract.md`.** What the two bullets above
   were measured by: a real agent on this contract, what Deno could enforce of a pushed
   policy and what it could not, the timings per hop over two delegation hops, and whether

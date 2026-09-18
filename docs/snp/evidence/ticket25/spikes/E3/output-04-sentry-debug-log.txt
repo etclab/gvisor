@@ -1,0 +1,609 @@
+I0918 07:59:48.008973       1 cli.go:275] **************** gVisor ****************
+I0918 07:59:48.009153       1 cli.go:276] Version 0.0.0, go1.26.3, amd64, 64 CPUs, linux, PID 1, PPID 0, UID 0, GID 0
+D0918 07:59:48.009215       1 cli.go:277] Page size: 0x1000 (4096 bytes)
+I0918 07:59:48.009275       1 cli.go:278] Args: [runsc-sandbox --gofer-network-namespace=new --platform=systrap --rootless=true --ignore-cgroups=true --root=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/spikes/e3/run3/state --debug=true --debug-log=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/spikes/e3/run3/logs/ --network=none --debug-log-fd=3 boot --bundle=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/spikes/e3/run3/bundle --gofer-mount-confs=lisafs:none --apply-caps=true --setup-root --total-host-memory 807732506624 --total-memory 807732506624 --attached --io-fds=4 --dev-io-fd=-1 --mounts-fd=5 --start-sync-fd=6 --pin-ring-fd=7 --controller-fd=8 --spec-fd=9 --stdio-fds=10 --stdio-fds=11 --stdio-fds=12 e3]
+I0918 07:59:48.009368       1 config.go:550] Platform: systrap
+I0918 07:59:48.009411       1 config.go:551] RootDir: /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/spikes/e3/run3/state
+I0918 07:59:48.009431       1 config.go:552] FileAccess: exclusive / Directfs: true / Overlay: root:self
+I0918 07:59:48.009462       1 config.go:553] Network: none
+I0918 07:59:48.009487       1 config.go:554] UseCPUNums: false
+I0918 07:59:48.009509       1 config.go:556] Debug: true. Strace: false, max size: 1024, syscalls: 
+W0918 07:59:48.009533       1 config.go:559] --allow-suid is disabled, SUID/SGID bits on executables will be ignored.
+D0918 07:59:48.009563       1 config.go:577] Config.RootDir (--root): /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/spikes/e3/run3/state
+D0918 07:59:48.009611       1 config.go:577] Config.Traceback (--traceback): system
+D0918 07:59:48.009639       1 config.go:577] Config.Debug (--debug): true
+D0918 07:59:48.009663       1 config.go:577] Config.LogFilename (--log): (empty)
+D0918 07:59:48.009687       1 config.go:577] Config.LogFormat (--log-format): text
+D0918 07:59:48.009709       1 config.go:577] Config.DebugLog (--debug-log): /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/spikes/e3/run3/logs/
+D0918 07:59:48.009729       1 config.go:577] Config.DebugToUserLog (--debug-to-user-log): false
+D0918 07:59:48.009827       1 config.go:577] Config.DebugCommand (--debug-command): (empty)
+D0918 07:59:48.009890       1 config.go:577] Config.PanicLog (--panic-log): (empty)
+D0918 07:59:48.009933       1 config.go:577] Config.CoverageReport (--coverage-report): (empty)
+D0918 07:59:48.009962       1 config.go:577] Config.DebugLogFormat (--debug-log-format): text
+D0918 07:59:48.010015       1 config.go:577] Config.FileAccess (--file-access): exclusive
+D0918 07:59:48.010043       1 config.go:577] Config.FileAccessMounts (--file-access-mounts): shared
+D0918 07:59:48.010064       1 config.go:577] Config.Overlay (--overlay): false
+D0918 07:59:48.010096       1 config.go:577] Config.Overlay2 (--overlay2): root:self
+D0918 07:59:48.010126       1 config.go:577] Config.FSGoferHostUDS (--fsgofer-host-uds): false
+D0918 07:59:48.010148       1 config.go:577] Config.HostUDS (--host-uds): none
+D0918 07:59:48.010181       1 config.go:577] Config.HostFifo (--host-fifo): none
+D0918 07:59:48.010208       1 config.go:577] Config.CharacterDevicePolicy (--character-device-policy): emulated-only
+D0918 07:59:48.010248       1 config.go:577] Config.HostSettings (--host-settings): check
+D0918 07:59:48.010277       1 config.go:577] Config.Network (--network): none
+D0918 07:59:48.010302       1 config.go:577] Config.GoferNetworkNamespace (--gofer-network-namespace): new
+D0918 07:59:48.010332       1 config.go:577] Config.EnableRaw (--net-raw): false
+D0918 07:59:48.010405       1 config.go:577] Config.AllowPacketEndpointWrite (--allow-packet-socket-write): false
+D0918 07:59:48.010430       1 config.go:577] Config.AllowLiveTCPMigration (--allow-live-tcp-migration): true
+D0918 07:59:48.010461       1 config.go:577] Config.HostGSO (--gso): true
+D0918 07:59:48.010501       1 config.go:577] Config.GVisorGSO (--software-gso): true
+D0918 07:59:48.010544       1 config.go:577] Config.GVisorGRO (--gvisor-gro): false
+D0918 07:59:48.010580       1 config.go:577] Config.TXChecksumOffload (--tx-checksum-offload): false
+D0918 07:59:48.010621       1 config.go:577] Config.RXChecksumOffload (--rx-checksum-offload): true
+D0918 07:59:48.010655       1 config.go:577] Config.QDisc (--qdisc): fifo
+D0918 07:59:48.010709       1 config.go:577] Config.TBFRate (--qdisc-tbf-rate): 0
+D0918 07:59:48.010795       1 config.go:577] Config.TBFBurst (--qdisc-tbf-burst): 0
+D0918 07:59:48.010822       1 config.go:577] Config.LogPackets (--log-packets): false
+D0918 07:59:48.010853       1 config.go:577] Config.PCAP (--pcap-log): (empty)
+D0918 07:59:48.010878       1 config.go:577] Config.Platform (--platform): systrap
+D0918 07:59:48.010914       1 config.go:577] Config.PlatformDevicePath (--platform_device_path): (empty)
+D0918 07:59:48.010930       1 config.go:577] Config.MetricServer (--metric-server): (empty)
+D0918 07:59:48.010951       1 config.go:577] Config.SidecarReleaseEnforcementPolicy (--sidecar-release-enforcement-policy): NEVER
+D0918 07:59:48.010977       1 config.go:577] Config.FinalMetricsLog (--final-metrics-log): (empty)
+D0918 07:59:48.010998       1 config.go:577] Config.ProfilingMetrics (--profiling-metrics): (empty)
+D0918 07:59:48.011021       1 config.go:577] Config.ProfilingMetricsLog (--profiling-metrics-log): (empty)
+D0918 07:59:48.011051       1 config.go:577] Config.ProfilingMetricsRate (--profiling-metrics-rate-us): 1000
+D0918 07:59:48.011075       1 config.go:577] Config.Strace (--strace): false
+D0918 07:59:48.011106       1 config.go:577] Config.StraceSyscalls (--strace-syscalls): (empty)
+D0918 07:59:48.011138       1 config.go:577] Config.StraceLogSize (--strace-log-size): 1024
+D0918 07:59:48.011160       1 config.go:577] Config.StraceEvent (--strace-event): false
+D0918 07:59:48.011186       1 config.go:579] Config.DisableSeccomp: false
+D0918 07:59:48.011220       1 config.go:577] Config.EnableCoreTags (--enable-core-tags): false
+D0918 07:59:48.011249       1 config.go:577] Config.WatchdogAction (--watchdog-action): log
+D0918 07:59:48.011274       1 config.go:577] Config.PanicSignal (--panic-signal): -1
+D0918 07:59:48.011315       1 config.go:577] Config.ProfileEnable (--profile): false
+D0918 07:59:48.011336       1 config.go:577] Config.ProfileBlock (--profile-block): (empty)
+D0918 07:59:48.011359       1 config.go:577] Config.ProfileCPU (--profile-cpu): (empty)
+D0918 07:59:48.011385       1 config.go:577] Config.ProfileGCInterval (--profile-gc-interval): 0s
+D0918 07:59:48.011421       1 config.go:577] Config.ProfileHeap (--profile-heap): (empty)
+D0918 07:59:48.011492       1 config.go:577] Config.ProfileMutex (--profile-mutex): (empty)
+D0918 07:59:48.011511       1 config.go:577] Config.TraceFile (--trace): (empty)
+D0918 07:59:48.011531       1 config.go:577] Config.NumNetworkChannels (--num-network-channels): 1
+D0918 07:59:48.011556       1 config.go:577] Config.NetworkProcessorsPerChannel (--network-processors-per-channel): 0
+D0918 07:59:48.011579       1 config.go:577] Config.Rootless (--rootless): true
+D0918 07:59:48.011597       1 config.go:577] Config.AlsoLogToStderr (--alsologtostderr): false
+D0918 07:59:48.011620       1 config.go:577] Config.ReferenceLeak (--ref-leak-mode): disabled
+D0918 07:59:48.011646       1 config.go:577] Config.CPUNumFromQuota (--cpu-num-from-quota): true
+D0918 07:59:48.011667       1 config.go:577] Config.AllowFlagOverride (--allow-flag-override): false
+D0918 07:59:48.011686       1 config.go:577] Config.OCISeccomp (--oci-seccomp): false
+D0918 07:59:48.011709       1 config.go:577] Config.IgnoreCgroups (--ignore-cgroups): true
+D0918 07:59:48.011767       1 config.go:577] Config.MountCgroupV2 (--mount-cgroup-v2): false
+D0918 07:59:48.011802       1 config.go:577] Config.SystemdCgroup (--systemd-cgroup): false
+D0918 07:59:48.011824       1 config.go:577] Config.PodInitConfig (--pod-init-config): (empty)
+D0918 07:59:48.011842       1 config.go:577] Config.XDP (--EXPERIMENTAL-xdp): {0 }
+D0918 07:59:48.011869       1 config.go:577] Config.AFXDPUseNeedWakeup (--EXPERIMENTAL-xdp-need-wakeup): true
+D0918 07:59:48.011890       1 config.go:577] Config.FDLimit (--fdlimit): -1
+D0918 07:59:48.011909       1 config.go:577] Config.DCache (--dcache): -1
+D0918 07:59:48.011930       1 config.go:577] Config.IOUring (--iouring): false
+D0918 07:59:48.011951       1 config.go:577] Config.DirectFS (--directfs): true
+D0918 07:59:48.011975       1 config.go:577] Config.AppHugePages (--app-huge-pages): true
+D0918 07:59:48.011995       1 config.go:577] Config.NVProxy (--nvproxy): false
+D0918 07:59:48.012015       1 config.go:577] Config.NVProxyDocker (--nvproxy-docker): false
+D0918 07:59:48.012037       1 config.go:577] Config.NVProxyDriverVersion (--nvproxy-driver-version): (empty)
+D0918 07:59:48.012058       1 config.go:577] Config.NVProxyAllowedDriverCapabilities (--nvproxy-allowed-driver-capabilities): utility,compute
+D0918 07:59:48.012082       1 config.go:577] Config.NVProxyAllowUnsupportedDriver (--nvproxy-allow-unsupported-driver): false
+D0918 07:59:48.012101       1 config.go:577] Config.TPUProxy (--tpuproxy): false
+D0918 07:59:48.012121       1 config.go:577] Config.RDMAProxy (--rdmaproxy): false
+D0918 07:59:48.012143       1 config.go:577] Config.TestOnlyAllowRunAsCurrentUserWithoutChroot (--TESTONLY-unsafe-nonroot): false
+D0918 07:59:48.012162       1 config.go:577] Config.TestOnlyTestNameEnv (--TESTONLY-test-name-env): (empty)
+D0918 07:59:48.012197       1 config.go:577] Config.TestOnlyAFSSyscallPanic (--TESTONLY-afs-syscall-panic): false
+D0918 07:59:48.012219       1 config.go:579] Config.explicitlySet: <map[string]struct {} Value> (unexported)
+D0918 07:59:48.012239       1 config.go:577] Config.ReproduceNAT (--reproduce-nat): false
+D0918 07:59:48.012279       1 config.go:577] Config.ReproduceNftables (--reproduce-nftables): false
+D0918 07:59:48.012312       1 config.go:577] Config.NetDisconnectOk (--net-disconnect-ok): true
+D0918 07:59:48.012335       1 config.go:577] Config.TestOnlyAutosaveImagePath (--TESTONLY-autosave-image-path): (empty)
+D0918 07:59:48.012356       1 config.go:577] Config.TestOnlyAutosaveResume (--TESTONLY-autosave-resume): false
+D0918 07:59:48.012376       1 config.go:577] Config.RestoreSpecValidation (--restore-spec-validation): enforce
+D0918 07:59:48.012401       1 config.go:577] Config.GVisorMarkerFile (--gvisor-marker-file): false
+D0918 07:59:48.012424       1 config.go:577] Config.OverrideProcs (--override-procs): (empty)
+D0918 07:59:48.012443       1 config.go:577] Config.SystrapDisableSyscallPatching (--systrap-disable-syscall-patching): false
+D0918 07:59:48.012461       1 config.go:577] Config.SystrapDisableFastPath (--systrap-disable-fast-path): false
+D0918 07:59:48.012482       1 config.go:577] Config.Nftables (--TESTONLY-nftables): false
+D0918 07:59:48.012504       1 config.go:577] Config.AllowSUID (--allow-suid): false
+D0918 07:59:48.012522       1 config.go:577] Config.UseCPUNums (--kvm-use-cpu-nums): false
+D0918 07:59:48.012543       1 config.go:577] Config.PauseExternalNetworking (--pause-external-networking): false
+D0918 07:59:48.012560       1 config.go:577] Config.AllowConnectedOnSave (--allow-connected-on-save): false
+D0918 07:59:48.012582       1 config.go:577] Config.AllowRootfsTarAnnotation (--allow-rootfs-tar-annotation): false
+D0918 07:59:48.012601       1 config.go:577] Config.ControlRPCStopTimeout (--control-rpc-stop-timeout): 15s
+D0918 07:59:48.012624       1 config.go:577] Config.SharedRootDir (--shared-root): (empty)
+D0918 07:59:48.012654       1 cli.go:284] runsc process spawned at 07:59:48.006675, Go started execution at 07:59:48.006909. Startup overhead: 234.227µs
+I0918 07:59:48.012719       1 cli.go:287] **************** gVisor ****************
+I0918 07:59:48.012827       1 timing.go:439] Timer for runsc boot: Starting.
+D0918 07:59:48.012912       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint Go code running at 07:59:48.006909880 (unix nanos: 1789732788006909880)
+D0918 07:59:48.012937       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint boot subcommand dispatched at 07:59:48.012934600 (unix nanos: 1789732788012934600)
+D0918 07:59:48.013831       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint CPUID initialized at 07:59:48.013826890 (unix nanos: 1789732788013826890)
+D0918 07:59:48.013875       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint ring0 initialized at 07:59:48.013871928 (unix nanos: 1789732788013871928)
+I0918 07:59:48.014004       1 boot.go:367] Setting product_name: "AS -2015CS-TNR"
+I0918 07:59:48.018896       1 boot.go:378] Setting host-thp-shmem-enabled: "never"
+I0918 07:59:48.023383       1 boot.go:388] Setting host-thp-defrag: "madvise"
+D0918 07:59:48.023469       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint host info read at 07:59:48.023451887 (unix nanos: 1789732788023451887)
+D0918 07:59:48.028646       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint spec read at 07:59:48.028635103 (unix nanos: 1789732788028635103)
+I0918 07:59:48.028765       1 chroot.go:142] Setting up sandbox chroot in "/tmp"
+D0918 07:59:48.029980       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint chroot base mounted at 07:59:48.029969012 (unix nanos: 1789732788029969012)
+I0918 07:59:48.030485       1 chroot.go:41] Mounting "proc" at "/tmp/proc/sandbox-proc"
+D0918 07:59:48.031027       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint chroot proc mounted at 07:59:48.031018596 (unix nanos: 1789732788031018596)
+D0918 07:59:48.032158       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint chroot procfs set up at 07:59:48.032142812 (unix nanos: 1789732788032142812)
+D0918 07:59:48.032380       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint chroot sealed read-only at 07:59:48.032370461 (unix nanos: 1789732788032370461)
+D0918 07:59:48.034050       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint chroot set up at 07:59:48.034042584 (unix nanos: 1789732788034042584)
+D0918 07:59:48.034292       1 specutils.go:134] Spec:
+{
+  "ociVersion": "1.0.0",
+  "process": {
+    "user": {
+      "uid": 0,
+      "gid": 0
+    },
+    "args": [
+      "/bin/sh",
+      "-c",
+      "echo workload-up; sleep 100; echo workload-done"
+    ],
+    "env": [
+      "PATH=/bin",
+      "TERM=xterm"
+    ],
+    "cwd": "/",
+    "capabilities": {},
+    "rlimits": [
+      {
+        "type": "RLIMIT_NOFILE",
+        "hard": 1024,
+        "soft": 1024
+      }
+    ]
+  },
+  "root": {
+    "path": "/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/spikes/e3/run3/bundle/rootfs",
+    "readonly": true
+  },
+  "hostname": "workload",
+  "mounts": [
+    {
+      "destination": "/proc",
+      "type": "proc",
+      "source": "/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/spikes/e3/run3/bundle/proc"
+    }
+  ],
+  "linux": {
+    "namespaces": [
+      {
+        "type": "pid"
+      },
+      {
+        "type": "mount"
+      },
+      {
+        "type": "ipc"
+      },
+      {
+        "type": "uts"
+      }
+    ]
+  }
+}
+D0918 07:59:48.034366       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint sandbox capabilities computed at 07:59:48.034363352 (unix nanos: 1789732788034363352)
+D0918 07:59:48.034648       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint current capabilities read at 07:59:48.034645933 (unix nanos: 1789732788034645933)
+D0918 07:59:48.045816       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint bounding set trimmed on all threads at 07:59:48.045811727 (unix nanos: 1789732788045811727)
+D0918 07:59:48.046116       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint capset applied on all threads at 07:59:48.046112245 (unix nanos: 1789732788046112245)
+I0918 07:59:48.046502       1 caps_unsafe.go:163] Capabilities applied to all threads: bounding=0x8001f effective=0x8001f permitted=0x8001f inheritable=0x0 ambient=0x0
+D0918 07:59:48.046555       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint capabilities applied at 07:59:48.046553703 (unix nanos: 1789732788046553703)
+D0918 07:59:48.046632       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint resolved mounts read at 07:59:48.046630988 (unix nanos: 1789732788046630988)
+D0918 07:59:48.057883       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint seccheck initialized at 07:59:48.057863191 (unix nanos: 1789732788057863191)
+D0918 07:59:48.058044       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint RNG initialized at 07:59:48.058038872 (unix nanos: 1789732788058038872)
+D0918 07:59:48.058197       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint memory usage initialized at 07:59:48.058194104 (unix nanos: 1789732788058194104)
+I0918 07:59:48.058266       1 loader.go:643] CPUs: 64
+D0918 07:59:48.058337       1 gomaxprocs.go:76] Setting GOMAXPROCS to 64
+D0918 07:59:48.058410       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint GOMAXPROCS set at 07:59:48.058407272 (unix nanos: 1789732788058407272)
+I0918 07:59:48.076848       1 loader.go:695] Remapped stdio FDs to [253, 255] in 18.383713ms
+D0918 07:59:48.076938       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint donated FDs ingested at 07:59:48.076933196 (unix nanos: 1789732788076933196)
+I0918 07:59:48.076963       1 loader.go:1089] Platform: systrap
+D0918 07:59:48.077239       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint systrap memory file created at 07:59:48.077234996 (unix nanos: 1789732788077234996)
+D0918 07:59:48.079808       1 seccomp.go:802] Ordered seccomp rules:
+D0918 07:59:48.079865       1 seccomp.go:812]   Hot non-trivial syscalls: None.
+D0918 07:59:48.079888       1 seccomp.go:815]   Cold non-trivial syscalls:
+D0918 07:59:48.079933       1 seccomp.go:822]     - Syscall   15: (rip > 0xff687cbdc15000) => allow
+D0918 07:59:48.079962       1 seccomp.go:822]     - Syscall   24: (rip > 0xff687cbdc15000) => allow
+D0918 07:59:48.079982       1 seccomp.go:822]     - Vsyscall  96: trap
+D0918 07:59:48.080033       1 seccomp.go:822]     - Syscall  158: ((arg[0].high == 0 && (arg[0].low == 0x1002 || arg[0].low == 0x1003) && rip > 0xff687cbdc14000)) => allow
+D0918 07:59:48.080053       1 seccomp.go:822]     - Vsyscall 201: trap
+D0918 07:59:48.080106       1 seccomp.go:822]     - Syscall  202: ((arg[0] > 0xff687cbdc15000 && arg[1].high == 0 && arg[3] == 0 && arg[4] == 0 && arg[5] == 0 && rip > 0xff687cbdc15000 && ((arg[1].low == 0x1 && arg[2] == 0x1) || arg[1].low == 0))) => allow
+D0918 07:59:48.080129       1 seccomp.go:822]     - Vsyscall 309: trap
+D0918 07:59:48.080145       1 seccomp.go:812]   Trivial syscalls: None.
+D0918 07:59:48.080161       1 seccomp.go:825] End of ordered seccomp rules.
+D0918 07:59:48.083453       1 seccomp.go:529] Seccomp program optimized from 262 to 72 instructions; took 2.204616ms to build and 1.468559ms to optimize
+D0918 07:59:48.083602       1 seccomp.go:802] Ordered seccomp rules:
+D0918 07:59:48.083626       1 seccomp.go:812]   Hot non-trivial syscalls: None.
+D0918 07:59:48.083645       1 seccomp.go:812]   Cold non-trivial syscalls: None.
+D0918 07:59:48.083662       1 seccomp.go:815]   Trivial syscalls:
+D0918 07:59:48.083687       1 seccomp.go:822]     - Syscall  231: unotify
+D0918 07:59:48.083707       1 seccomp.go:825] End of ordered seccomp rules.
+D0918 07:59:48.083915       1 seccomp.go:529] Seccomp program optimized from 13 to 6 instructions; took 272.676µs to build and 46.89µs to optimize
+D0918 07:59:48.084049       1 stub_unsafe.go:340] stubStart ff687cbdc14000 stubSysmsgStart ff687cbdc15000 stubSysmsgStack ffc51a9cc68000, stubContextQueue ffc51a9ce75000, stubThreadContextRegion ffc51a9ce7f000, mapLen 1221000
+D0918 07:59:48.084117       1 stub_unsafe.go:341] sysmsg.ArchState{ xsaveMode 2 fsgsbase 1 fpLen 2440 }
+D0918 07:59:48.084154       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint systrap stub initialized at 07:59:48.084146949 (unix nanos: 1789732788084146949)
+D0918 07:59:48.087677       1 seccomp.go:802] Ordered seccomp rules:
+D0918 07:59:48.087725       1 seccomp.go:812]   Hot non-trivial syscalls: None.
+D0918 07:59:48.087773       1 seccomp.go:815]   Cold non-trivial syscalls:
+D0918 07:59:48.087833       1 seccomp.go:822]     - Syscall   56: ((arg[0].high == 0 && (arg[0].low == 0x8411 || arg[0].low == 0x411 || arg[0].low == 0x2709))) => allow
+D0918 07:59:48.087862       1 seccomp.go:822]     - Syscall   62: (arg[1] == 0x13) => allow
+D0918 07:59:48.087883       1 seccomp.go:822]     - Vsyscall  96: trap
+D0918 07:59:48.087943       1 seccomp.go:822]     - Syscall  157: ((arg[0].high == 0 && arg[1].high == 0 && ((arg[0].low == 0x1 && arg[1].low == 0x9) || (arg[0].low == 0x26 && arg[1].low == 0x1) || (arg[0].low == 0x3b && arg[1].low == 0x1 && arg[2] == 0xff687cbdc14000 && arg[3] == 0x6000)))) => allow
+D0918 07:59:48.087984       1 seccomp.go:822]     - Syscall  158: ((arg[0].high == 0 && ((arg[0].low == 0x1012 && arg[1] == 0) || arg[0].low == 0x1002 || arg[0].low == 0x1003))) => allow
+D0918 07:59:48.088006       1 seccomp.go:822]     - Syscall  200: (arg[1] == 0x13) => allow
+D0918 07:59:48.088023       1 seccomp.go:822]     - Vsyscall 201: trap
+D0918 07:59:48.088053       1 seccomp.go:822]     - Syscall  202: ((arg[1].high == 0 && (arg[1].low == 0 || arg[1].low == 0x1))) => allow
+D0918 07:59:48.088071       1 seccomp.go:822]     - Vsyscall 309: trap
+D0918 07:59:48.088102       1 seccomp.go:822]     - Syscall  317: ((arg[0] == 0x1 && arg[1].high == 0 && (arg[1].low == 0 || arg[1].low == 0x8))) => allow
+D0918 07:59:48.088117       1 seccomp.go:815]   Trivial syscalls:
+D0918 07:59:48.088141       1 seccomp.go:822]     - Syscall    9: allow
+D0918 07:59:48.088158       1 seccomp.go:822]     - Syscall   11: allow
+D0918 07:59:48.088175       1 seccomp.go:822]     - Syscall   15: allow
+D0918 07:59:48.088192       1 seccomp.go:822]     - Syscall   24: allow
+D0918 07:59:48.088208       1 seccomp.go:822]     - Syscall   39: allow
+D0918 07:59:48.088225       1 seccomp.go:822]     - Syscall   60: allow
+D0918 07:59:48.088241       1 seccomp.go:822]     - Syscall   61: allow
+D0918 07:59:48.088257       1 seccomp.go:822]     - Syscall  110: allow
+D0918 07:59:48.088273       1 seccomp.go:822]     - Syscall  131: allow
+D0918 07:59:48.088289       1 seccomp.go:822]     - Syscall  186: allow
+D0918 07:59:48.088305       1 seccomp.go:822]     - Syscall  231: allow
+D0918 07:59:48.088326       1 seccomp.go:825] End of ordered seccomp rules.
+D0918 07:59:48.094364       1 seccomp.go:529] Seccomp program optimized from 453 to 107 instructions; took 4.07202ms to build and 2.718732ms to optimize
+D0918 07:59:48.103780       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint systrap source process created at 07:59:48.103703590 (unix nanos: 1789732788103703590)
+D0918 07:59:48.103916       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint waiting for membarrier at 07:59:48.103911139 (unix nanos: 1789732788103911139)
+D0918 07:59:48.103954       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint host membarrier probed at 07:59:48.103951780 (unix nanos: 1789732788103951780)
+D0918 07:59:48.103973       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint platform created at 07:59:48.103972130 (unix nanos: 1789732788103972130)
+I0918 07:59:48.104096       1 loader.go:1120] Disabling application huge pages: host shmem_enabled is "never"
+D0918 07:59:48.104246       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint memory file created at 07:59:48.104243815 (unix nanos: 1789732788104243815)
+D0918 07:59:48.104409       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint VDSO prepared at 07:59:48.104405326 (unix nanos: 1789732788104405326)
+D0918 07:59:48.104556       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint timekeeper configured at 07:59:48.104554088 (unix nanos: 1789732788104554088)
+D0918 07:59:48.105986       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint network stack created at 07:59:48.105983028 (unix nanos: 1789732788105983028)
+I0918 07:59:48.106040       1 loader.go:791] Setting total memory to 752.26 GB
+D0918 07:59:48.106825       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint kernel initialized at 07:59:48.106822329 (unix nanos: 1789732788106822329)
+D0918 07:59:48.106886       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint filesystems registered at 07:59:48.106883820 (unix nanos: 1789732788106883820)
+I0918 07:59:48.106903       1 loader.go:857] Packet logging disabled
+I0918 07:59:48.107003       1 watchdog.go:179] Watchdog waiting 30s for startup
+D0918 07:59:48.107131       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint process args created at 07:59:48.107129006 (unix nanos: 1789732788107129006)
+D0918 07:59:48.107174       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint compat logs initialized at 07:59:48.107155325 (unix nanos: 1789732788107155325)
+D0918 07:59:48.107212       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint mount hints parsed at 07:59:48.107210718 (unix nanos: 1789732788107210718)
+D0918 07:59:48.107235       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint host FS mount created at 07:59:48.107233401 (unix nanos: 1789732788107233401)
+D0918 07:59:48.108129       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint control server started at 07:59:48.108125992 (unix nanos: 1789732788108125992)
+D0918 07:59:48.108161       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint loader created at 07:59:48.108158741 (unix nanos: 1789732788108158741)
+D0918 07:59:48.108248       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint metrics initialized at 07:59:48.108246772 (unix nanos: 1789732788108246772)
+D0918 07:59:48.108284       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint notifying parent at 07:59:48.108282806 (unix nanos: 1789732788108282806)
+D0918 07:59:48.113532       1 urpc.go:422] urpc: registering client with FD 6
+D0918 07:59:48.114945       1 urpc.go:635] urpc: unmarshal success.
+D0918 07:59:48.115026       1 urpc.go:302] urpc: handling RPC call for method containerManager.SetNetworkArgs
+D0918 07:59:48.115992       1 controller.go:1246] containerManager.SetNetworkArgs
+D0918 07:59:48.116151       1 urpc.go:592] urpc: successfully marshalled 37 bytes.
+D0918 07:59:48.116200       1 urpc.go:372] urpc: RPC call for method containerManager.SetNetworkArgs succeeded.
+D0918 07:59:48.116690       1 urpc.go:635] urpc: unmarshal success.
+D0918 07:59:48.116825       1 urpc.go:302] urpc: handling RPC call for method containerManager.StartRoot
+D0918 07:59:48.116915       1 controller.go:299] containerManager.StartRoot, cid: e3
+D0918 07:59:48.116990       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint start signal received at 07:59:48.116981812 (unix nanos: 1789732788116981812)
+I0918 07:59:48.117024       1 network.go:322] Enabling loopback interface "lo" with id 1 on addresses [127.0.0.1/8 ::1/128]
+I0918 07:59:48.117440       1 network.go:565] Setting routes [127.0.0.0/8 nic 1 ::1/128 nic 1]
+D0918 07:59:48.117547       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint network configured at 07:59:48.117543299 (unix nanos: 1789732788117543299)
+D0918 07:59:48.117598       1 pinring.go:98] Pin ring: finalizing with 0 FDs (ring at FD 7)
+W0918 07:59:48.117708       1 filter.go:43] *** SECCOMP WARNING: host filesystem enabled: syscall filters less restrictive!
+D0918 07:59:48.149917       1 filter.go:49] Loaded precompiled seccomp instructions for options GOARCH="amd64" Platform="systrap" HostNetwork=false HostNetworkRawSockets=false HostFilesystem=true ProfileEnable=false Instrumentation=false NVProxy=false NVProxyCaps= TPUProxy=false RDMAProxy=false CgoEnabled=false PluginNetwork=false, using variables: map[controller_fd:8 self_pid_high32bits:0 self_pid_low32bits:1 systrap_sysmsg_thread_priority_high32bits:0 systrap_sysmsg_thread_priority_low32bits:1]
+D0918 07:59:48.150198       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint precompiled seccomp program rendered at 07:59:48.150187028 (unix nanos: 1789732788150187028)
+D0918 07:59:48.151406       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint seccomp filters installed at 07:59:48.151400246 (unix nanos: 1789732788151400246)
+D0918 07:59:48.151472       1 timing.go:167] Timer for runsc boot: Timeline runsc boot forked into child timeline runsc boot/root container at 07:59:48.151453265 (unix nanos: 1789732788151453265)
+D0918 07:59:48.151857       1 timing.go:125] Timer for runsc boot: Timeline runsc boot/root container reached midpoint FD table created at 07:59:48.151849546 (unix nanos: 1789732788151849546)
+I0918 07:59:48.152029       1 vfs.go:1550] Setting cgroupfs cpu defaults: quota=-1, period=100000 (raw quota=-1, raw period=0)
+D0918 07:59:48.152154       1 cgroupfs.go:337] cgroupfs.FilesystemType.GetFilesystem: default control values: map[cpu.cfs_period_us:100000 cpu.cfs_quota_us:-1]
+D0918 07:59:48.152218       1 loader.go:1622] Monitoring gofer health for container "e3"
+I0918 07:59:48.152829       1 vfs.go:1557] Setting cgroupfs memory defaults: limit=807732506624 bytes (752.26 GB)
+D0918 07:59:48.152905       1 cgroupfs.go:337] cgroupfs.FilesystemType.GetFilesystem: default control values: map[memory.limit_in_bytes:807732506624]
+I0918 07:59:48.153067       1 vfs.go:1583] created cgroup mounts for controllers [cpu cpuacct cpuset devices job memory pids]
+D0918 07:59:48.153128       1 timing.go:125] Timer for runsc boot: Timeline runsc boot/root container reached midpoint cgroups mounted at 07:59:48.153121512 (unix nanos: 1789732788153121512)
+I0918 07:59:48.153178       1 vfs.go:564] Configuring container's file system
+I0918 07:59:48.153251       1 vfs.go:660] Mounting root with 9p, ioFD: 4
+D0918 07:59:48.153427       1 client.go:395] send [sockComm 4] MountReq{}
+D0918 07:59:48.154353       1 client.go:395] recv [sockComm 4] MountResp{Root: Inode{ControlFD: 1, Stat: Statx{Mask: 0x1fff, Mode: S_IFDIR|0o755, UID: 0, GID: 0, Ino: 36881819, DevMajor: 259, DevMinor: 8, Size: 4096, Blocks: 8, Blksize: 4096, Nlink: 4, Atime: 2026-09-18 07:59:47.606679792 -0400 EDT, Btime: 2026-09-18 07:59:47.564680226 -0400 EDT, Ctime: 2026-09-18 07:59:47.606679792 -0400 EDT, Mtime: 2026-09-18 07:59:47.564680226 -0400 EDT, Attributes: 0, AttributesMask: 0, RdevMajor: 0, RdevMinor: 0}}, MaxMessageSize: 2093056, SupportedMs: [1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 21 22 23 24 25 26 27 28 29 30 31 32 33]}
+D0918 07:59:48.154605       1 timing.go:125] Timer for runsc boot: Timeline runsc boot/root container reached midpoint rootfs mounted at 07:59:48.154596891 (unix nanos: 1789732788154596891)
+D0918 07:59:48.154662       1 timing.go:125] Timer for runsc boot: Timeline runsc boot/root container reached midpoint submounts prepared at 07:59:48.154658603 (unix nanos: 1789732788154658603)
+D0918 07:59:48.154688       1 vfs.go:872] Mounting "" to "/sys", type: sysfs, options: []
+D0918 07:59:48.156945       1 sys.go:220] Setting product_name: "AS -2015CS-TNR"
+I0918 07:59:48.157247       1 filesystem.go:879] Failed to create remote directory "sys": read-only file system; falling back to synthetic directory
+I0918 07:59:48.157446       1 vfs.go:1062] Mounted "" to "/sys" type: sysfs, internal-options: ""
+D0918 07:59:48.157590       1 timing.go:125] Timer for runsc boot: Timeline runsc boot/root container reached midpoint mounted "/sys" at 07:59:48.157577554 (unix nanos: 1789732788157577554)
+D0918 07:59:48.157638       1 vfs.go:872] Mounting "" to "/dev", type: dev, options: []
+I0918 07:59:48.158262       1 filesystem.go:879] Failed to create remote directory "dev": read-only file system; falling back to synthetic directory
+I0918 07:59:48.158380       1 vfs.go:1062] Mounted "" to "/dev" type: dev, internal-options: ""
+D0918 07:59:48.158438       1 timing.go:125] Timer for runsc boot: Timeline runsc boot/root container reached midpoint mounted "/dev" at 07:59:48.158431547 (unix nanos: 1789732788158431547)
+D0918 07:59:48.158475       1 vfs.go:872] Mounting "/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/spikes/e3/run3/bundle/proc" to "/proc", type: proc, options: []
+I0918 07:59:48.167256       1 checkpoint.go:42] Setting up checkpoint files under [procfs]/gvisor
+I0918 07:59:48.167650       1 vfs.go:1062] Mounted "/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/spikes/e3/run3/bundle/proc" to "/proc" type: proc, internal-options: ""
+D0918 07:59:48.167766       1 timing.go:125] Timer for runsc boot: Timeline runsc boot/root container reached midpoint mounted "/proc" at 07:59:48.167759511 (unix nanos: 1789732788167759511)
+D0918 07:59:48.167804       1 vfs.go:872] Mounting "" to "/dev/pts", type: devpts, options: []
+I0918 07:59:48.167894       1 vfs.go:1062] Mounted "" to "/dev/pts" type: devpts, internal-options: ""
+D0918 07:59:48.167962       1 timing.go:125] Timer for runsc boot: Timeline runsc boot/root container reached midpoint mounted "/dev/pts" at 07:59:48.167957076 (unix nanos: 1789732788167957076)
+I0918 07:59:48.168124       1 filesystem.go:879] Failed to create remote directory "tmp": read-only file system; falling back to synthetic directory
+I0918 07:59:48.168192       1 vfs.go:1062] Mounted "" to "/tmp" type: tmpfs, internal-options: "mode=01777"
+D0918 07:59:48.168281       1 timing.go:125] Timer for runsc boot: Timeline runsc boot/root container reached midpoint submounts mounted at 07:59:48.168260258 (unix nanos: 1789732788168260258)
+D0918 07:59:48.168331       1 timing.go:125] Timer for runsc boot: Timeline runsc boot/root container reached midpoint device files created at 07:59:48.168326757 (unix nanos: 1789732788168326757)
+D0918 07:59:48.168377       1 timing.go:125] Timer for runsc boot: Timeline runsc boot/root container reached midpoint executable path resolved at 07:59:48.168373256 (unix nanos: 1789732788168373256)
+D0918 07:59:48.168434       1 timing.go:125] Timer for runsc boot: Timeline runsc boot/root container reached midpoint exec user home resolved at 07:59:48.168431954 (unix nanos: 1789732788168431954)
+I0918 07:59:48.168454       1 kernel.go:1313] EXEC: []string{"/bin/sh", "-c", "echo workload-up; sleep 100; echo workload-done"}
+D0918 07:59:48.168566       1 timing.go:125] Timer for runsc boot: Timeline runsc boot/root container reached midpoint FS context created at 07:59:48.168563289 (unix nanos: 1789732788168563289)
+D0918 07:59:48.174128       1 timing.go:125] Timer for runsc boot: Timeline runsc boot/root container reached midpoint memory manager created at 07:59:48.174120643 (unix nanos: 1789732788174120643)
+D0918 07:59:48.175057       1 timing.go:125] Timer for runsc boot: Timeline runsc boot/root container reached midpoint executable loaded at 07:59:48.175049037 (unix nanos: 1789732788175049037)
+D0918 07:59:48.175136       1 timing.go:125] Timer for runsc boot: Timeline runsc boot/root container reached midpoint VDSO mapped at 07:59:48.175132562 (unix nanos: 1789732788175132562)
+D0918 07:59:48.175162       1 syscalls.go:281] Allocating stack with size of 8388608 bytes
+D0918 07:59:48.175225       1 timing.go:125] Timer for runsc boot: Timeline runsc boot/root container reached midpoint stack allocated at 07:59:48.175222596 (unix nanos: 1789732788175222596)
+D0918 07:59:48.175555       1 timing.go:125] Timer for runsc boot: Timeline runsc boot/root container reached midpoint stack contents loaded at 07:59:48.175548652 (unix nanos: 1789732788175548652)
+D0918 07:59:48.175623       1 timing.go:125] Timer for runsc boot: Timeline runsc boot/root container reached midpoint task image loaded at 07:59:48.175621310 (unix nanos: 1789732788175621310)
+D0918 07:59:48.175794       1 timing.go:125] Timer for runsc boot: Timeline runsc boot/root container reached midpoint init task created at 07:59:48.175791213 (unix nanos: 1789732788175791213)
+D0918 07:59:48.175837       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint root container created at 07:59:48.175834157 (unix nanos: 1789732788175834157)
+D0918 07:59:48.177925       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint signal forwarding started at 07:59:48.177897002 (unix nanos: 1789732788177897002)
+I0918 07:59:48.178085       1 loader.go:1337] Process should have started...
+I0918 07:59:48.178188       1 watchdog.go:202] Starting watchdog, period: 45s, timeout: 3m0s, action: logWarning
+D0918 07:59:48.178408       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint kernel started at 07:59:48.178400573 (unix nanos: 1789732788178400573)
+D0918 07:59:48.178450       1 timing.go:246] Timer for runsc boot: Timeline runsc boot/root container ended at 07:59:48.178443477 (unix nanos: 1789732788178443477)
+D0918 07:59:48.178494       1 timing.go:246] Timer for runsc boot: Timeline runsc boot ended at 07:59:48.178491368 (unix nanos: 1789732788178491368)
+I0918 07:59:48.178524       1 timing.go:549] Timer for runsc boot: Ended.
+D0918 07:59:48.178907       1 urpc.go:592] urpc: successfully marshalled 37 bytes.
+D0918 07:59:48.179230       1 urpc.go:372] urpc: RPC call for method containerManager.StartRoot succeeded.
+D0918 07:59:48.179453       1 urpc.go:433] urpc: unregistering client with FD 6
+I0918 07:59:48.180215       1 timing.go:866] ---- runsc boot timing information ----
+[07:59:48.006675]	                      	╭─ runsc boot                        
+[07:59:48.006909]	   +234µs             	├─ Go code running: 234µs            
+[07:59:48.012934]	 +6 024µs ▉▉▏         	├─ boot subcommand dispatched: 6 024µs
+[07:59:48.013826]	   +892µs ▎           	├─ CPUID initialized: 892µs          
+[07:59:48.013871]	    +45µs             	├─ ring0 initialized: 45µs           
+[07:59:48.023451]	 +9 580µs ▉▉▉▌        	├─ host info read: 9 580µs           
+[07:59:48.028635]	 +5 183µs ▉▉          	├─ spec read: 5 183µs                
+[07:59:48.029969]	 +1 333µs ▌           	├─ chroot base mounted: 1 333µs      
+[07:59:48.031018]	 +1 049µs ▍           	├─ chroot proc mounted: 1 049µs      
+[07:59:48.032142]	 +1 124µs ▍           	├─ chroot procfs set up: 1 124µs     
+[07:59:48.032370]	   +227µs             	├─ chroot sealed read-only: 227µs    
+[07:59:48.034042]	 +1 671µs ▋           	├─ chroot set up: 1 671µs            
+[07:59:48.034363]	   +320µs ▏           	├─ sandbox capabilities computed: 320µs
+[07:59:48.034645]	   +282µs             	├─ current capabilities read: 282µs  
+[07:59:48.045811]	+11 165µs ▉▉▉▉        	├─ bounding set trimmed on all threads: 11 165µs
+[07:59:48.046112]	   +300µs             	├─ capset applied on all threads: 300µs
+[07:59:48.046553]	   +441µs ▏           	├─ capabilities applied: 441µs       
+[07:59:48.046630]	    +77µs             	├─ resolved mounts read: 77µs        
+[07:59:48.057863]	+11 232µs ▉▉▉▉▏       	├─ seccheck initialized: 11 232µs    
+[07:59:48.058038]	   +175µs             	├─ RNG initialized: 175µs            
+[07:59:48.058194]	   +155µs             	├─ memory usage initialized: 155µs   
+[07:59:48.058407]	   +213µs             	├─ GOMAXPROCS set: 213µs             
+[07:59:48.076933]	+18 525µs ▉▉▉▉▉▉█     	├─ donated FDs ingested: 18 525µs    
+[07:59:48.077234]	   +301µs             	├─ systrap memory file created: 301µs
+[07:59:48.084146]	 +6 912µs ▉▉▌         	├─ systrap stub initialized: 6 912µs 
+[07:59:48.103703]	+19 556µs ▉▉▉▉▉▉▉▏    	├─ systrap source process created: 19 556µs
+[07:59:48.103911]	   +207µs             	├─ waiting for membarrier: 207µs     
+[07:59:48.103951]	    +40µs             	├─ host membarrier probed: 40µs      
+[07:59:48.103972]	    +20µs             	├─ platform created: 20µs            
+[07:59:48.104243]	   +271µs             	├─ memory file created: 271µs        
+[07:59:48.104405]	   +161µs             	├─ VDSO prepared: 161µs              
+[07:59:48.104554]	   +148µs             	├─ timekeeper configured: 148µs      
+[07:59:48.105983]	 +1 428µs ▌           	├─ network stack created: 1 428µs    
+[07:59:48.106822]	   +839µs ▎           	├─ kernel initialized: 839µs         
+[07:59:48.106883]	    +61µs             	├─ filesystems registered: 61µs      
+[07:59:48.107129]	   +245µs             	├─ process args created: 245µs       
+[07:59:48.107155]	    +26µs             	├─ compat logs initialized: 26µs     
+[07:59:48.107210]	    +55µs             	├─ mount hints parsed: 55µs          
+[07:59:48.107233]	    +22µs             	├─ host FS mount created: 22µs       
+[07:59:48.108125]	   +892µs ▎           	├─ control server started: 892µs     
+[07:59:48.108158]	    +32µs             	├─ loader created: 32µs              
+[07:59:48.108246]	    +88µs             	├─ metrics initialized: 88µs         
+[07:59:48.108282]	    +36µs             	├─ notifying parent: 36µs            
+[07:59:48.116981]	 +8 698µs ▉▉▉▏        	├─ start signal received: 8 698µs    
+[07:59:48.117543]	   +561µs ▏           	├─ network configured: 561µs         
+[07:59:48.150187]	+32 643µs ▉▉▉▉▉▉▉▉▉▉▉▉	├─ precompiled seccomp program rendered: 32 643µs
+[07:59:48.151400]	 +1 213µs ▌           	├─ seccomp filters installed: 1 213µs
+[07:59:48.151453]	    +53µs             	├─ forked: 53µs                      	╭─ root container
+[07:59:48.151849]	   +396µs ▏           	│ ... 396µs ...                      	├─ FD table created: 396µs
+[07:59:48.153121]	 +1 271µs ▌           	│ ... 1 668µs ...                    	├─ cgroups mounted: 1 271µs
+[07:59:48.154596]	 +1 475µs ▌           	│ ... 3 143µs ...                    	├─ rootfs mounted: 1 475µs
+[07:59:48.154658]	    +61µs             	│ ... 3 205µs ...                    	├─ submounts prepared: 61µs
+[07:59:48.157577]	 +2 918µs ▉           	│ ... 6 124µs ...                    	├─ mounted "/sys": 2 918µs
+[07:59:48.158431]	   +854µs ▎           	│ ... 6 978µs ...                    	├─ mounted "/dev": 854µs
+[07:59:48.167759]	 +9 327µs ▉▉▉▍        	│ ... 16 306µs ...                   	├─ mounted "/proc": 9 327µs
+[07:59:48.167957]	   +197µs             	│ ... 16 503µs ...                   	├─ mounted "/dev/pts": 197µs
+[07:59:48.168260]	   +303µs ▏           	│ ... 16 807µs ...                   	├─ submounts mounted: 303µs
+[07:59:48.168326]	    +66µs             	│ ... 16 873µs ...                   	├─ device files created: 66µs
+[07:59:48.168373]	    +46µs             	│ ... 16 920µs ...                   	├─ executable path resolved: 46µs
+[07:59:48.168431]	    +58µs             	│ ... 16 978µs ...                   	├─ exec user home resolved: 58µs
+[07:59:48.168563]	   +131µs             	│ ... 17 110µs ...                   	├─ FS context created: 131µs
+[07:59:48.174120]	 +5 557µs ▉▉          	│ ... 22 667µs ...                   	├─ memory manager created: 5 557µs
+[07:59:48.175049]	   +928µs ▍           	│ ... 23 595µs ...                   	├─ executable loaded: 928µs
+[07:59:48.175132]	    +83µs             	│ ... 23 679µs ...                   	├─ VDSO mapped: 83µs
+[07:59:48.175222]	    +89µs             	│ ... 23 769µs ...                   	├─ stack allocated: 89µs
+[07:59:48.175548]	   +326µs ▏           	│ ... 24 095µs ...                   	├─ stack contents loaded: 326µs
+[07:59:48.175621]	    +72µs             	│ ... 24 168µs ...                   	├─ task image loaded: 72µs
+[07:59:48.175791]	   +169µs             	│ ... 24 337µs ...                   	├─ init task created: 169µs
+[07:59:48.175834]	    +43µs             	├─ root container created: 24 381µs  	│ ... 43µs ...
+[07:59:48.177897]	 +2 062µs ▊           	├─ signal forwarding started: 2 062µs	│ ... 2 105µs ...
+[07:59:48.178400]	   +503µs ▏           	├─ kernel started: 503µs             	│ ... 2 609µs ...
+[07:59:48.178443]	    +43µs             	│ ... 43µs ...                       	╰─ END 2 652µs, total 26 990µs
+[07:59:48.178491]	    +47µs             	╰─ END 90µs, total 171 815µs         
+---- End of runsc boot timing information ----
+
+D0918 07:59:48.180425       1 timing.go:873] Timer for runsc boot: time 1789732788006675653 07:59:48.006675653 start runsc boot
+D0918 07:59:48.180508       1 timing.go:875] Timer for runsc boot: time 1789732788006909880 07:59:48.006909880 mid runsc boot = Go code running
+D0918 07:59:48.180576       1 timing.go:875] Timer for runsc boot: time 1789732788012934600 07:59:48.012934600 mid runsc boot = boot subcommand dispatched
+D0918 07:59:48.180613       1 timing.go:875] Timer for runsc boot: time 1789732788013826890 07:59:48.013826890 mid runsc boot = CPUID initialized
+D0918 07:59:48.180674       1 timing.go:875] Timer for runsc boot: time 1789732788013871928 07:59:48.013871928 mid runsc boot = ring0 initialized
+D0918 07:59:48.180709       1 timing.go:875] Timer for runsc boot: time 1789732788023451887 07:59:48.023451887 mid runsc boot = host info read
+D0918 07:59:48.180858       1 timing.go:875] Timer for runsc boot: time 1789732788028635103 07:59:48.028635103 mid runsc boot = spec read
+D0918 07:59:48.180914       1 timing.go:875] Timer for runsc boot: time 1789732788029969012 07:59:48.029969012 mid runsc boot = chroot base mounted
+D0918 07:59:48.180947       1 timing.go:875] Timer for runsc boot: time 1789732788031018596 07:59:48.031018596 mid runsc boot = chroot proc mounted
+D0918 07:59:48.180995       1 timing.go:875] Timer for runsc boot: time 1789732788032142812 07:59:48.032142812 mid runsc boot = chroot procfs set up
+D0918 07:59:48.181043       1 timing.go:875] Timer for runsc boot: time 1789732788032370461 07:59:48.032370461 mid runsc boot = chroot sealed read-only
+D0918 07:59:48.181068       1 timing.go:875] Timer for runsc boot: time 1789732788034042584 07:59:48.034042584 mid runsc boot = chroot set up
+D0918 07:59:48.181143       1 timing.go:875] Timer for runsc boot: time 1789732788034363352 07:59:48.034363352 mid runsc boot = sandbox capabilities computed
+D0918 07:59:48.181172       1 timing.go:875] Timer for runsc boot: time 1789732788034645933 07:59:48.034645933 mid runsc boot = current capabilities read
+D0918 07:59:48.181220       1 timing.go:875] Timer for runsc boot: time 1789732788045811727 07:59:48.045811727 mid runsc boot = bounding set trimmed on all threads
+D0918 07:59:48.181255       1 timing.go:875] Timer for runsc boot: time 1789732788046112245 07:59:48.046112245 mid runsc boot = capset applied on all threads
+D0918 07:59:48.181364       1 timing.go:875] Timer for runsc boot: time 1789732788046553703 07:59:48.046553703 mid runsc boot = capabilities applied
+D0918 07:59:48.181442       1 timing.go:875] Timer for runsc boot: time 1789732788046630988 07:59:48.046630988 mid runsc boot = resolved mounts read
+D0918 07:59:48.181536       1 timing.go:875] Timer for runsc boot: time 1789732788057863191 07:59:48.057863191 mid runsc boot = seccheck initialized
+D0918 07:59:48.181604       1 timing.go:875] Timer for runsc boot: time 1789732788058038872 07:59:48.058038872 mid runsc boot = RNG initialized
+D0918 07:59:48.181711       1 timing.go:875] Timer for runsc boot: time 1789732788058194104 07:59:48.058194104 mid runsc boot = memory usage initialized
+D0918 07:59:48.181924       1 timing.go:875] Timer for runsc boot: time 1789732788058407272 07:59:48.058407272 mid runsc boot = GOMAXPROCS set
+D0918 07:59:48.182018       1 timing.go:875] Timer for runsc boot: time 1789732788076933196 07:59:48.076933196 mid runsc boot = donated FDs ingested
+D0918 07:59:48.182283       1 usertrap_amd64.go:225] [   1:   1] Found the pattern at ip 481a1b:sysno 218
+D0918 07:59:48.182206       1 timing.go:875] Timer for runsc boot: time 1789732788077234996 07:59:48.077234996 mid runsc boot = systrap memory file created
+D0918 07:59:48.182502       1 usertrap_amd64.go:106] [   1:   1] Map a usertrap vma at 62000
+D0918 07:59:48.182467       1 timing.go:875] Timer for runsc boot: time 1789732788084146949 07:59:48.084146949 mid runsc boot = systrap stub initialized
+D0918 07:59:48.182653       1 timing.go:875] Timer for runsc boot: time 1789732788103703590 07:59:48.103703590 mid runsc boot = systrap source process created
+D0918 07:59:48.183003       1 timing.go:875] Timer for runsc boot: time 1789732788103911139 07:59:48.103911139 mid runsc boot = waiting for membarrier
+D0918 07:59:48.183179       1 timing.go:875] Timer for runsc boot: time 1789732788103951780 07:59:48.103951780 mid runsc boot = host membarrier probed
+D0918 07:59:48.183288       1 timing.go:875] Timer for runsc boot: time 1789732788103972130 07:59:48.103972130 mid runsc boot = platform created
+D0918 07:59:48.182817       1 usertrap_amd64.go:122] [   1:   1] Allocate a new trap: 0x1f290fe003c0 1
+D0918 07:59:48.183355       1 timing.go:875] Timer for runsc boot: time 1789732788104243815 07:59:48.104243815 mid runsc boot = memory file created
+D0918 07:59:48.183466       1 timing.go:875] Timer for runsc boot: time 1789732788104405326 07:59:48.104405326 mid runsc boot = VDSO prepared
+D0918 07:59:48.183550       1 timing.go:875] Timer for runsc boot: time 1789732788104554088 07:59:48.104554088 mid runsc boot = timekeeper configured
+D0918 07:59:48.183451       1 usertrap_amd64.go:238] [   1:   1] Apply the binary patch addr 481a1b trap addr 62050 ([184 218 0 0 0 15 5] -> [255 36 37 80 32 6 0])
+D0918 07:59:48.183656       1 timing.go:875] Timer for runsc boot: time 1789732788105983028 07:59:48.105983028 mid runsc boot = network stack created
+D0918 07:59:48.184255       1 urpc.go:422] urpc: registering client with FD 6
+D0918 07:59:48.184194       1 timing.go:875] Timer for runsc boot: time 1789732788106822329 07:59:48.106822329 mid runsc boot = kernel initialized
+D0918 07:59:48.184478       1 timing.go:875] Timer for runsc boot: time 1789732788106883820 07:59:48.106883820 mid runsc boot = filesystems registered
+D0918 07:59:48.184536       1 timing.go:875] Timer for runsc boot: time 1789732788107129006 07:59:48.107129006 mid runsc boot = process args created
+D0918 07:59:48.184574       1 timing.go:875] Timer for runsc boot: time 1789732788107155325 07:59:48.107155325 mid runsc boot = compat logs initialized
+D0918 07:59:48.184607       1 timing.go:875] Timer for runsc boot: time 1789732788107210718 07:59:48.107210718 mid runsc boot = mount hints parsed
+D0918 07:59:48.184641       1 timing.go:875] Timer for runsc boot: time 1789732788107233401 07:59:48.107233401 mid runsc boot = host FS mount created
+D0918 07:59:48.184694       1 timing.go:875] Timer for runsc boot: time 1789732788108125992 07:59:48.108125992 mid runsc boot = control server started
+D0918 07:59:48.184828       1 timing.go:875] Timer for runsc boot: time 1789732788108158741 07:59:48.108158741 mid runsc boot = loader created
+D0918 07:59:48.184883       1 timing.go:875] Timer for runsc boot: time 1789732788108246772 07:59:48.108246772 mid runsc boot = metrics initialized
+D0918 07:59:48.184813       1 urpc.go:635] urpc: unmarshal success.
+D0918 07:59:48.184952       1 urpc.go:302] urpc: handling RPC call for method containerManager.Wait
+D0918 07:59:48.184967       1 usertrap_amd64.go:225] [   1:   1] Found the pattern at ip 481ae7:sysno 334
+D0918 07:59:48.184914       1 timing.go:875] Timer for runsc boot: time 1789732788108282806 07:59:48.108282806 mid runsc boot = notifying parent
+D0918 07:59:48.185155       1 timing.go:875] Timer for runsc boot: time 1789732788116981812 07:59:48.116981812 mid runsc boot = start signal received
+D0918 07:59:48.185191       1 timing.go:875] Timer for runsc boot: time 1789732788117543299 07:59:48.117543299 mid runsc boot = network configured
+D0918 07:59:48.185216       1 timing.go:875] Timer for runsc boot: time 1789732788150187028 07:59:48.150187028 mid runsc boot = precompiled seccomp program rendered
+D0918 07:59:48.185071       1 usertrap_amd64.go:122] [   1:   1] Allocate a new trap: 0x1f290fe003c0 2
+D0918 07:59:48.185216       1 controller.go:916] containerManager.Wait, cid: e3
+D0918 07:59:48.185251       1 timing.go:875] Timer for runsc boot: time 1789732788151400246 07:59:48.151400246 mid runsc boot = seccomp filters installed
+D0918 07:59:48.185337       1 usertrap_amd64.go:238] [   1:   1] Apply the binary patch addr 481ae7 trap addr 620a0 ([184 78 1 0 0 15 5] -> [255 36 37 160 32 6 0])
+D0918 07:59:48.185470       1 timing.go:875] Timer for runsc boot: time 1789732788151453265 07:59:48.151453265 mid runsc boot = forked
+D0918 07:59:48.185562       1 timing.go:873] Timer for runsc boot: time 1789732788151453265 07:59:48.151453265 start runsc boot/root container
+D0918 07:59:48.185603       1 timing.go:875] Timer for runsc boot: time 1789732788151849546 07:59:48.151849546 mid runsc boot/root container = FD table created
+D0918 07:59:48.185648       1 timing.go:875] Timer for runsc boot: time 1789732788153121512 07:59:48.153121512 mid runsc boot/root container = cgroups mounted
+D0918 07:59:48.185668       1 timing.go:875] Timer for runsc boot: time 1789732788154596891 07:59:48.154596891 mid runsc boot/root container = rootfs mounted
+D0918 07:59:48.185686       1 timing.go:875] Timer for runsc boot: time 1789732788154658603 07:59:48.154658603 mid runsc boot/root container = submounts prepared
+D0918 07:59:48.185717       1 timing.go:875] Timer for runsc boot: time 1789732788157577554 07:59:48.157577554 mid runsc boot/root container = mounted "/sys"
+D0918 07:59:48.185790       1 timing.go:875] Timer for runsc boot: time 1789732788158431547 07:59:48.158431547 mid runsc boot/root container = mounted "/dev"
+D0918 07:59:48.185814       1 timing.go:875] Timer for runsc boot: time 1789732788167759511 07:59:48.167759511 mid runsc boot/root container = mounted "/proc"
+D0918 07:59:48.185834       1 timing.go:875] Timer for runsc boot: time 1789732788167957076 07:59:48.167957076 mid runsc boot/root container = mounted "/dev/pts"
+D0918 07:59:48.185858       1 timing.go:875] Timer for runsc boot: time 1789732788168260258 07:59:48.168260258 mid runsc boot/root container = submounts mounted
+D0918 07:59:48.185874       1 timing.go:875] Timer for runsc boot: time 1789732788168326757 07:59:48.168326757 mid runsc boot/root container = device files created
+D0918 07:59:48.185903       1 timing.go:875] Timer for runsc boot: time 1789732788168373256 07:59:48.168373256 mid runsc boot/root container = executable path resolved
+D0918 07:59:48.185921       1 timing.go:875] Timer for runsc boot: time 1789732788168431954 07:59:48.168431954 mid runsc boot/root container = exec user home resolved
+D0918 07:59:48.185935       1 timing.go:875] Timer for runsc boot: time 1789732788168563289 07:59:48.168563289 mid runsc boot/root container = FS context created
+D0918 07:59:48.185963       1 timing.go:875] Timer for runsc boot: time 1789732788174120643 07:59:48.174120643 mid runsc boot/root container = memory manager created
+I0918 07:59:48.185592       1 compat.go:120] Unsupported syscall rseq(0x60ece0,0x20,0x0,0x53053053,0x0,0x6022c0). It is likely that you can safely ignore this message and that this is not the cause of any error. Please, refer to https://gvisor.dev/c/linux/amd64/rseq for more information.
+D0918 07:59:48.185993       1 timing.go:875] Timer for runsc boot: time 1789732788175049037 07:59:48.175049037 mid runsc boot/root container = executable loaded
+D0918 07:59:48.186221       1 timing.go:875] Timer for runsc boot: time 1789732788175132562 07:59:48.175132562 mid runsc boot/root container = VDSO mapped
+D0918 07:59:48.186391       1 timing.go:875] Timer for runsc boot: time 1789732788175222596 07:59:48.175222596 mid runsc boot/root container = stack allocated
+D0918 07:59:48.186443       1 timing.go:875] Timer for runsc boot: time 1789732788175548652 07:59:48.175548652 mid runsc boot/root container = stack contents loaded
+D0918 07:59:48.186519       1 timing.go:875] Timer for runsc boot: time 1789732788175621310 07:59:48.175621310 mid runsc boot/root container = task image loaded
+D0918 07:59:48.186627       1 timing.go:875] Timer for runsc boot: time 1789732788175791213 07:59:48.175791213 mid runsc boot/root container = init task created
+D0918 07:59:48.186678       1 timing.go:875] Timer for runsc boot: time 1789732788175834157 07:59:48.175834157 mid runsc boot = root container created
+D0918 07:59:48.186804       1 timing.go:875] Timer for runsc boot: time 1789732788177897002 07:59:48.177897002 mid runsc boot = signal forwarding started
+D0918 07:59:48.187066       1 timing.go:875] Timer for runsc boot: time 1789732788178400573 07:59:48.178400573 mid runsc boot = kernel started
+D0918 07:59:48.187136       1 timing.go:877] Timer for runsc boot: time 1789732788178443477 07:59:48.178443477 end runsc boot/root container
+D0918 07:59:48.187250       1 timing.go:877] Timer for runsc boot: time 1789732788178491368 07:59:48.178491368 end runsc boot
+D0918 07:59:48.187902       1 usertrap_amd64.go:225] [   1:   1] Found the pattern at ip 4272c2:sysno 318
+D0918 07:59:48.188014       1 usertrap_amd64.go:122] [   1:   1] Allocate a new trap: 0x1f290fe003c0 3
+D0918 07:59:48.188122       1 usertrap_amd64.go:238] [   1:   1] Apply the binary patch addr 4272c2 trap addr 620f0 ([184 62 1 0 0 15 5] -> [255 36 37 240 32 6 0])
+D0918 07:59:48.189029       1 usertrap_amd64.go:225] [   1:   1] Found the pattern at ip 464ea4:sysno 12
+D0918 07:59:48.189144       1 usertrap_amd64.go:122] [   1:   1] Allocate a new trap: 0x1f290fe003c0 4
+D0918 07:59:48.189209       1 usertrap_amd64.go:238] [   1:   1] Apply the binary patch addr 464ea4 trap addr 62140 ([184 12 0 0 0 15 5] -> [255 36 37 64 33 6 0])
+D0918 07:59:48.190716       1 usertrap_amd64.go:225] [   1:   1] Found the pattern at ip 466be4:sysno 10
+D0918 07:59:48.190803       1 usertrap_amd64.go:122] [   1:   1] Allocate a new trap: 0x1f290fe003c0 5
+D0918 07:59:48.190840       1 usertrap_amd64.go:238] [   1:   1] Apply the binary patch addr 466be4 trap addr 62190 ([184 10 0 0 0 15 5] -> [255 36 37 144 33 6 0])
+D0918 07:59:48.192062       1 usertrap_amd64.go:225] [   1:   1] Found the pattern at ip 4696f2:sysno 157
+D0918 07:59:48.192148       1 usertrap_amd64.go:122] [   1:   1] Allocate a new trap: 0x1f290fe003c0 6
+D0918 07:59:48.192194       1 usertrap_amd64.go:238] [   1:   1] Apply the binary patch addr 4696f2 trap addr 621e0 ([184 157 0 0 0 15 5] -> [255 36 37 224 33 6 0])
+D0918 07:59:48.192998       1 usertrap_amd64.go:225] [   1:   1] Found the pattern at ip 44cf34:sysno 102
+D0918 07:59:48.193089       1 usertrap_amd64.go:122] [   1:   1] Allocate a new trap: 0x1f290fe003c0 7
+D0918 07:59:48.193138       1 usertrap_amd64.go:238] [   1:   1] Apply the binary patch addr 44cf34 trap addr 62230 ([184 102 0 0 0 15 5] -> [255 36 37 48 34 6 0])
+D0918 07:59:48.193689       1 usertrap_amd64.go:225] [   1:   1] Found the pattern at ip 44ce84:sysno 39
+D0918 07:59:48.193722       1 usertrap_amd64.go:122] [   1:   1] Allocate a new trap: 0x1f290fe003c0 8
+D0918 07:59:48.193784       1 usertrap_amd64.go:238] [   1:   1] Apply the binary patch addr 44ce84 trap addr 62280 ([184 39 0 0 0 15 5] -> [255 36 37 128 34 6 0])
+D0918 07:59:48.193921       1 usertrap_amd64.go:225] [   1:   1] Found the pattern at ip 413f53:sysno 13
+D0918 07:59:48.193943       1 usertrap_amd64.go:122] [   1:   1] Allocate a new trap: 0x1f290fe003c0 9
+D0918 07:59:48.193965       1 usertrap_amd64.go:238] [   1:   1] Apply the binary patch addr 413f53 trap addr 622d0 ([184 13 0 0 0 15 5] -> [255 36 37 208 34 6 0])
+D0918 07:59:48.194449       1 usertrap_amd64.go:225] [   1:   1] Found the pattern at ip 44ce94:sysno 110
+D0918 07:59:48.194484       1 usertrap_amd64.go:122] [   1:   1] Allocate a new trap: 0x1f290fe003c0 10
+D0918 07:59:48.194506       1 usertrap_amd64.go:238] [   1:   1] Apply the binary patch addr 44ce94 trap addr 62320 ([184 110 0 0 0 15 5] -> [255 36 37 32 35 6 0])
+D0918 07:59:48.194602       1 usertrap_amd64.go:225] [   1:   1] Found the pattern at ip 4622f4:sysno 63
+D0918 07:59:48.194623       1 usertrap_amd64.go:122] [   1:   1] Allocate a new trap: 0x1f290fe003c0 11
+D0918 07:59:48.194643       1 usertrap_amd64.go:238] [   1:   1] Apply the binary patch addr 4622f4 trap addr 62370 ([184 63 0 0 0 15 5] -> [255 36 37 112 35 6 0])
+D0918 07:59:48.195204       1 usertrap_amd64.go:225] [   1:   1] Found the pattern at ip 462ba4:sysno 79
+D0918 07:59:48.195301       1 usertrap_amd64.go:122] [   1:   1] Allocate a new trap: 0x1f290fe003c0 12
+D0918 07:59:48.195345       1 usertrap_amd64.go:238] [   1:   1] Apply the binary patch addr 462ba4 trap addr 623c0 ([184 79 0 0 0 15 5] -> [255 36 37 192 35 6 0])
+D0918 07:59:48.195855       1 usertrap_amd64.go:225] [   1:   1] Found the pattern at ip 46430d:sysno 1
+D0918 07:59:48.195943       1 usertrap_amd64.go:122] [   1:   1] Allocate a new trap: 0x1f290fe003c0 13
+D0918 07:59:48.195972       1 usertrap_amd64.go:238] [   1:   1] Apply the binary patch addr 46430d trap addr 62410 ([184 1 0 0 0 15 5] -> [255 36 37 16 36 6 0])
+D0918 07:59:48.196267       1 usertrap_amd64.go:225] [   1:   1] Found the pattern at ip 4bd093:sysno 230
+D0918 07:59:48.196300       1 usertrap_amd64.go:122] [   1:   1] Allocate a new trap: 0x1f290fe003c0 14
+D0918 07:59:48.196328       1 usertrap_amd64.go:238] [   1:   1] Apply the binary patch addr 4bd093 trap addr 62460 ([184 230 0 0 0 15 5] -> [255 36 37 96 36 6 0])
+D0918 07:59:48.349383       1 urpc.go:422] urpc: registering client with FD 27
+D0918 07:59:48.350036       1 urpc.go:635] urpc: unmarshal success.
+D0918 07:59:48.350156       1 urpc.go:302] urpc: handling RPC call for method Spike.Attach
+I0918 07:59:48.350302       1 spike_e3.go:68] SPIKE-E3 Attach: received one FD, duped to 30, echo="127.0.0.1:46643" mode="e3"
+D0918 07:59:48.350406       1 urpc.go:592] urpc: successfully marshalled 37 bytes.
+D0918 07:59:48.350487       1 urpc.go:372] urpc: RPC call for method Spike.Attach succeeded.
+I0918 07:59:48.350527       1 spike_e3.go:85] SPIKE-E3 begin: urpc client built on the donated socketpair, under the sentry's seccomp filter
+D0918 07:59:48.350974       1 urpc.go:592] urpc: successfully marshalled 58 bytes.
+D0918 07:59:48.351494       1 urpc.go:635] urpc: unmarshal success.
+I0918 07:59:48.351560       1 spike_e3.go:91] SPIKE-E3 step0 Ping: err=<nil> rtt=923.767µs pong="pong"
+D0918 07:59:48.351653       1 urpc.go:592] urpc: successfully marshalled 57 bytes.
+D0918 07:59:48.352860       1 urpc.go:635] urpc: unmarshal success.
+I0918 07:59:48.352948       1 spike_e3.go:141] SPIKE-E3 Open(127.0.0.1:46643) stream1: OK rtt=1.342841ms id=1 mapped=127.0.0.1:46643 fd=32 duperr=<nil>
+I0918 07:59:48.353827       1 spike_e3.go:157] SPIKE-E3 hello: write n=6 err=<nil>; read n=6 err=<nil> data="hello\n"; round trip 826.812µs
+I0918 07:59:48.356224       1 spike_e3.go:205] SPIKE-E3 bulk 65536 bytes: wrote 65536 in 111.095µs (562.6 MiB/s), echoed 65536 back, full round trip 1.842566ms (33.9 MiB/s), EAGAIN=0 shortWrites=0
+I0918 07:59:48.371897       1 spike_e3.go:205] SPIKE-E3 bulk 1048576 bytes: wrote 1048576 in 5.25989ms (190.1 MiB/s), echoed 1048576 back, full round trip 8.623925ms (116.0 MiB/s), EAGAIN=0 shortWrites=0
+D0918 07:59:48.372434       1 urpc.go:592] urpc: successfully marshalled 49 bytes.
+D0918 07:59:48.373407       1 urpc.go:635] urpc: unmarshal success.
+I0918 07:59:48.373564       1 spike_e3.go:248] SPIKE-E3 close: asked the helper to close its end of stream 1: err=<nil>
+I0918 07:59:48.673984       1 spike_e3.go:253] SPIKE-E3 close: read #0 after the helper closed: n=0 err=<nil>
+I0918 07:59:48.674153       1 spike_e3.go:260] SPIKE-E3 close: write #0 after the helper closed: n=-1 err=broken pipe
+D0918 07:59:48.674336       1 urpc.go:592] urpc: successfully marshalled 57 bytes.
+D0918 07:59:48.675917       1 urpc.go:635] urpc: unmarshal success.
+I0918 07:59:48.676011       1 spike_e3.go:141] SPIKE-E3 Open(127.0.0.1:46643) stream2: OK rtt=1.722097ms id=2 mapped=127.0.0.1:46643 fd=32 duperr=<nil>
+I0918 07:59:48.676072       1 spike_e3.go:218] SPIKE-E3 nonblock: F_GETFL=0x2 err=<nil> (O_NONBLOCK=0x800)
+I0918 07:59:48.676109       1 spike_e3.go:220] SPIKE-E3 nonblock: F_SETFL O_NONBLOCK err=<nil>
+I0918 07:59:48.677073       1 spike_e3.go:229] SPIKE-E3 nonblock: write returned EAGAIN after 444864 bytes buffered in 2 calls (385.474µs)
+I0918 07:59:48.677150       1 spike_e3.go:243] SPIKE-E3 nonblock: a non-blocking read returned n=-1 err=resource temporarily unavailable
+D0918 07:59:48.677260       1 urpc.go:592] urpc: successfully marshalled 33 bytes.
+D0918 07:59:48.677683       1 urpc.go:635] urpc: unmarshal success.
+I0918 07:59:48.677793       1 spike_e3.go:115] SPIKE-E3 step3 Exit: err=<nil> rtt=557.731µs
+D0918 07:59:48.883426       1 urpc.go:433] urpc: unregistering client with FD 27
+I0918 07:59:49.106841       1 calibrated_clock.go:74] CalibratedClock(Monotonic): ready
+I0918 07:59:49.107067       1 calibrated_clock.go:74] CalibratedClock(Realtime): ready
+W0918 07:59:50.178650       1 urpc.go:578] urpc: error writing [123 34 109 101 116 104 111 100 34 58 34 72 101 108 112 101 114 46 80 105 110 103 34 44 34 97 114 103 34 58 123 34 72 101 108 108 111 34 58 34 97 102 116 101 114 45 101 120 105 116 34 125 125]: broken pipe
+I0918 07:59:50.178900       1 spike_e3.go:119] SPIKE-E3 step3 Ping after the helper exited: err=broken pipe (syscall.Errno) rtt=346.567µs
+W0918 07:59:50.178990       1 urpc.go:578] urpc: error writing [123 34 109 101 116 104 111 100 34 58 34 72 101 108 112 101 114 46 79 112 101 110 34 44 34 97 114 103 34 58 123 34 65 100 100 114 34 58 34 49 50 55 46 48 46 48 46 49 58 52 54 54 52 51 34 125 125]: broken pipe
+I0918 07:59:50.179036       1 spike_e3.go:123] SPIKE-E3 step3 Open after the helper exited: err=broken pipe (syscall.Errno) rtt=64.887µs files=0
+I0918 07:59:50.179078       1 spike_e3.go:124] SPIKE-E3 done
+D0918 08:00:33.193105       1 watchdog.go:316] Watchdog starting loop, tasks: 1, discount: 0s
+D0918 08:01:28.251396       1 task_exit.go:226] [   1:   1] Transitioning from exit state TaskExitNone to TaskExitInitiated
+I0918 08:01:28.254010       1 loader.go:1644] Gofer socket disconnected, killing container "e3"
+D0918 08:01:28.254549       1 task_exit.go:401] [   1:   1] Init process terminating, killing namespace
+D0918 08:01:28.254824       1 task_signals.go:475] [   1:   1] No task notified of signal 9
+D0918 08:01:28.254957       1 task_exit.go:226] [   1:   1] Transitioning from exit state TaskExitInitiated to TaskExitZombie
+D0918 08:01:28.255056       1 task_exit.go:226] [   1:   1] Transitioning from exit state TaskExitZombie to TaskExitDead
+D0918 08:01:28.255164       1 controller.go:918] containerManager.Wait returned, cid: e3, waitStatus: 0x0, err: <nil>
+I0918 08:01:28.255170       1 boot.go:779] application exiting with exit status 0
+D0918 08:01:28.255332       1 urpc.go:592] urpc: successfully marshalled 36 bytes.
+D0918 08:01:28.255489       1 urpc.go:372] urpc: RPC call for method containerManager.Wait succeeded.
+I0918 08:01:28.255486       1 watchdog.go:218] Stopping watchdog
+I0918 08:01:28.255656       1 watchdog.go:222] Watchdog stopped
+D0918 08:01:28.255999       1 urpc.go:433] urpc: unregistering client with FD 6
+I0918 08:01:28.256597       1 cli.go:316] Exiting with status: 0

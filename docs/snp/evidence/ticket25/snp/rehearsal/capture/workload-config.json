@@ -1,0 +1,30 @@
+{
+	"ociVersion": "1.0.0",
+	"process": {
+		"terminal": false,
+		"user": {"uid": 0, "gid": 0},
+		"args": ["/bin/sh", "/adapter-probe.sh"],
+		"env": ["PATH=/bin", "TERM=xterm"],
+		"cwd": "/",
+		"capabilities": {
+			"bounding": [], "effective": [], "inheritable": [], "permitted": []
+		},
+		"rlimits": [{"type": "RLIMIT_NOFILE", "hard": 1024, "soft": 1024}]
+	},
+	"root": {
+		"path": "rootfs",
+		"readonly": true
+	},
+	"hostname": "workload",
+	"mounts": [
+		{"destination": "/proc", "type": "proc", "source": "proc"}
+	],
+	"linux": {
+		"namespaces": [
+			{"type": "pid"},
+			{"type": "mount"},
+			{"type": "ipc"},
+			{"type": "uts"}
+		]
+	}
+}

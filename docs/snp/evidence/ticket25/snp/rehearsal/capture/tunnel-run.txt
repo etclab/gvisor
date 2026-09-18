@@ -1,0 +1,73 @@
+=== two attested guests, from image-ticket25-rehearsal ===
+date        : 2026-09-18T14:03:57Z
+repo        : 804cad384eb73f0d0c36363b39ac885357fa2ac7 on ticket-25-the-adapter-intercept-and-handoff
+image       : /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket25-rehearsal
+mode        : control boot, no SNP (unprivileged)
+scenarios   : adapter
+workload    : /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/snp/workload.img (one OCI bundle on both guests, outside the launch measurement)
+
+predicted launch measurement of the image both guests boot:
+  a74cbe08a18f98a4c83996a047b334a9ca6a4d12c688b75ea5abb9caa97a505ed37bb243d57a96a2f123f1ae0ecaffcc
+the reference value set on both config devices names exactly that, signed by the
+author key baked into the image at /etc/attested-tunnel/author.pub (ADR-0004),
+and the policy beside it is signed by the same key under its own domain.
+
+
+### adapter: two sandboxes on the adapter, a page fetched each way, and the names that are not in the table
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config: tunnel-table.json  ({"default_exit":"guest-b", "names":{"web.peer-b":{"port":80}}})
+    config: exit-allow  (web.peer-a:80)
+    config device written to /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket25-rehearsal-run/adapter/config-a.img (668eea744bf29f3f…, not measured)
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config: tunnel-table.json  ({"default_exit":"guest-a", "names":{"web.peer-a":{"port":80}}})
+    config: exit-allow  (web.peer-b:80)
+    config device written to /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket25-rehearsal-run/adapter/config-b.img (2753b9d001b6b43e…, not measured)
+running the same job without SNP, unprivileged
+    | control boot: non-verifying firmware /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/usr/local/share/qemu/OVMF.fd, not the image's
+    | control boot: non-verifying firmware /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/usr/local/share/qemu/OVMF.fd, not the image's
+    | guest A qemu exited 0
+    | guest B qemu exited 0
+relay:
+    | l2relay: RELAYED a_to_b_frames=0 b_to_a_frames=0 a_to_b_bytes=0 b_to_a_bytes=0 tampered=0
+    | l2relay: MARKER not found hits=0 marker='served-by: guest-' in 0 frames carrying 0 bytes
+    | l2relay: what was on the segment:
+    |   ethertypes : 
+    |   ip protocols: none
+    |   arp targets : none
+PASS  guest-a: booted the measured image and ran the packaged tunneld
+PASS  guest-a: no writable path in the image is executable
+PASS  guest-a: read the author key from inside the launch measurement
+PASS  guest-a: read the reference value set and chain from the config device
+PASS  guest-b: booted the measured image and ran the packaged tunneld
+PASS  guest-b: no writable path in the image is executable
+PASS  guest-b: read the author key from inside the launch measurement
+PASS  guest-b: read the reference value set and chain from the config device
+PASS  guest-a: the config device's tunnel table put this guest on the adapter path
+PASS  guest-a: tunneld was started before the workload, not after it
+PASS  guest-a: runsc was launched with the adapter's two flags
+PASS  guest-a: busybox httpd is serving the page on its own loopback
+PASS  guest-a: and the page is really being served, fetched by init before any sandbox existed
+PASS  guest-a: the boot reached the end and powered off rather than being stopped
+PASS  guest-a: no writable executable path was ever found
+PASS  guest-b: the config device's tunnel table put this guest on the adapter path
+PASS  guest-b: tunneld was started before the workload, not after it
+PASS  guest-b: runsc was launched with the adapter's two flags
+PASS  guest-b: busybox httpd is serving the page on its own loopback
+PASS  guest-b: and the page is really being served, fetched by init before any sandbox existed
+PASS  guest-b: the boot reached the end and powered off rather than being stopped
+PASS  guest-b: no writable executable path was ever found
+PASS  control boot: tunneld refused to start rather than proceeding without evidence
+PASS  control boot: init noticed there was no socket and did not start an exit into nothing
+
+=== latency, as the guests measured it ===
+  none recorded
+
+=== 24 passed, 0 failed ===

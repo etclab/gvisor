@@ -1,0 +1,85 @@
+The rehearsal of ticket 25's SNP run, 2026-09-18, worktree
+/home/pniroula/Projects/gvisor-t25 on ticket-25-the-adapter-intercept-and-handoff.
+Nothing here ran as root except the job in step 4, which went through the spool;
+no sudo was typed. The runsc measured into this image is ticket 24's STOCK
+binary, which knows neither --tunnel-socket nor --tunnel-table: the adapter did
+not exist when this ran, and the point of the rehearsal is everything around it.
+
+STACK=/home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack
+SCRATCH=<this session's scratch directory>/snp   # the stock runsc, the bundle
+                                                 # source and the workload disk:
+                                                 # none of them evidence
+
+1. the stock runsc, copied out of the bazel output base it was built in rather
+   than out of bazel-bin, which another agent is rebuilding in this worktree
+
+     cp ~/.cache/bazel/_bazel_pniroula/3ed3beb90015a069adba91df23df0f31/execroot/\
+_main/bazel-out/k8-opt/bin/runsc/runsc_/runsc $SCRATCH/runsc-stock
+     # sha256 8070bcdf0b7889d8ed3710f5920f06cf909682434b21437eb9df8d7fb6c72518
+     # 108668311 bytes — byte for byte ticket 24's E2 record
+
+2. the bundle and the workload disk (one disk, both guests)
+
+     bash docs/snp/evidence/ticket25/snp/make-bundle.sh \
+          $SCRATCH/workload-src $SCRATCH/workload.img
+     # sha256 55e33b875b08710c237dc26f4be72100c1f9370a6ce7cbe2bc12d7e90b70cb41
+     # mkworkloaddev-output.txt here is that run's untrimmed output
+
+3. the image, built and measured offline
+
+     export PATH=/usr/local/go/bin:$PATH
+     STACK=$STACK \
+     OUT=$STACK/image-ticket25-rehearsal \
+     AUTHOR_KEY=$STACK/image-ticket14-packaging/author.key \
+     RUNSC=$SCRATCH/runsc-stock \
+       bash docs/snp/image/package-tunneld.sh
+
+   AUTHOR_KEY is the key ticket 14's image was signed with, as ticket 24's E2
+   used it, because the harness re-signs sets with it and its public half has to
+   be the one inside the measurement. AGENT_PROBE is not set: package-tunneld.sh
+   builds it (step 2b) and passes it through.
+
+   predicted launch measurement
+     a74cbe08a18f98a4c83996a047b334a9ca6a4d12c688b75ea5abb9caa97a505ed37bb243d57a96a2f123f1ae0ecaffcc
+
+   The reference value set on both config devices is the one this build emitted
+   and signed, and it is the only thing pinned for the boot. Nothing else was
+   authored, and no measurement was read off any machine.
+
+4. the same prediction again, on its own, from the four measured files and
+   nothing else — before anything booted
+
+     SEV_SNP_MEASURE_VENV=$STACK/sev-snp-measure-venv-ticket14 \
+       bash docs/snp/image/predict-measurement.sh $STACK/image-ticket25-rehearsal \
+            -vcpus 4 -vcpu-type EPYC-v4 \
+            -out docs/snp/evidence/ticket25/snp/rehearsal/predicted-measurement-independent.txt
+     # a74cbe08…4b3c, equal to the number in manifest.txt
+
+5. the boot: the adapter scenario as a CONTROL boot, through the spool
+
+   jobs/t25-rehearsal-adapter-2-344917.job is the file that was dropped into
+   /home/pniroula/Projects/gvisor/docs/snp/root-spool/, and .out and .rc beside
+   it are what the runner wrote. It runs
+
+     docs/snp/tunnel-on-two-guests.sh \
+         -image $STACK/image-ticket25-rehearsal \
+         -out $STACK/image-ticket25-rehearsal-run \
+         -scenario adapter -quick -no-snp \
+         -workload $SCRATCH/workload.img \
+         -capture docs/snp/evidence/ticket25/snp/rehearsal/capture
+
+   A control boot needs only /dev/kvm and this user has it; it went through the
+   spool anyway, because the real run will and a rehearsal down a different path
+   rehearses a different thing.
+
+Files here
+   commands.txt      this file
+   jobs/             the spooled job, its output untrimmed, and its exit status
+   capture/          the harness's own capture, including both consoles whole
+   manifest.txt      every measured input of the rehearsal image
+   packaging.txt     package-tunneld.sh's record, untrimmed (it carries the guard's
+                     whole `go test -v ./cmd/tunneld` output)
+   reference-values.inputs.txt   what went into the two signed documents
+   predicted-measurement-independent.txt  step 4
+   mkworkloaddev-output.txt      step 2
+   notes.md          what the two consoles said, and what it does and does not show

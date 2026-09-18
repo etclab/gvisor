@@ -1,0 +1,11 @@
+{
+  "format": "gvisor.dev/gvisor/attest/policy",
+  "version": 1,
+  "egress": {
+    "version": 1,
+    "unattested": false
+  },
+  "forward_to": [
+    "81dbfc3818d9918c061e27c32cfb9694d06d06bc51df323d8f3436d0612a85e182e8f06b14a39ca1eff3ed7375a6add9"
+  ]
+}

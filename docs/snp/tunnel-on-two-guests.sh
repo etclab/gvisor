@@ -46,6 +46,17 @@
 #             tunnel is established and exchanged over in both directions. This
 #             is the shape ticket 18 could not author at all, and it is the
 #             strongest admitted pair this design has.
+#   adapter   (ticket 25) the same pair with a sandbox on each guest and the
+#             adapter under it. Each guest runs tunneld first with a sandbox
+#             socket, an exit attached to that socket, and a busybox httpd on its
+#             own loopback; then one runsc sandbox, --network=none, given
+#             --tunnel-socket and --tunnel-table. The one workload disk both
+#             guests get carries one bundle that fetches three URLs, and the two
+#             guests differ only in the tunnel table their config device carries,
+#             so on each guest exactly one of the three is permitted: guest A
+#             fetches guest B's page through guest B's exit, guest B fetches
+#             guest A's, and the other two names do not resolve at all. Needs
+#             -workload.
 #
 # The topology is the evidence for two of the criteria on its own, so it is
 # worth stating plainly. The guests' only network is
@@ -70,7 +81,9 @@
 #
 # -workload attaches one read-only OCI-bundle disk (docs/snp/image/mkworkloaddev.sh)
 # to BOTH guests, which their init runs under runsc after the egress ceiling and
-# before tunneld (ticket 24). It is outside the launch measurement, so it changes
+# before tunneld (ticket 24) — or after it, when the config device carries a
+# tunnel table and the sandbox is on the adapter (ticket 25, the adapter
+# scenario, which refuses to run without this flag). It is outside the launch measurement, so it changes
 # no measurement, no document and no assertion below; the workload's own console
 # lines are read by hand. Without it each guest logs that there is no bundle and
 # carries on to tunneld, which is the ordinary case and what every scenario
@@ -274,7 +287,14 @@ spool_run() {
 # two guests booted from one image can differ at all.
 #
 #   make_config DIR SANDBOX ADDRESS PEER_NAME PEER_ADDRESS RUN_JSON \
-#               [-stale] [-refvals DIR] [-policy DIR] [-push FILE]
+#               [-stale] [-refvals DIR] [-policy DIR] [-push FILE] \
+#               [-tunnel-table FILE] [-exit-allow FILE]
+#
+# The last two are ticket 25's and they are the only difference between the two
+# guests of the adapter scenario. Both go onto the device unchanged: the table is
+# what runsc is given as --tunnel-table and what the sentry enforces, and
+# exit-allow is the one line this guest's exit is started with. Neither is
+# measured — which is the point, because one image boots both guests.
 #
 # The device carried two signed documents between tickets 19 and 22: the set,
 # which says whom this guest admits, and the policy, which says what it is. They
@@ -292,12 +312,15 @@ spool_run() {
 make_config() {
   local dir="$1" sandbox="$2" address="$3" peer="$4" peeraddr="$5" runjson="$6"; shift 6
   local refvals="$IMAGE" policysrc="" pushpolicy="" chainsrc="$CHAIN" chainbin="certificate-chain.bin" chainjson="certificate-chain.json"
+  local tunneltable="" exitallow=""
   while [ -n "${1:-}" ]; do
     case "$1" in
       -stale)   chainsrc="$STALE"; chainbin="certificate-chain-stale.bin"; chainjson="certificate-chain-stale.json"; shift ;;
       -refvals) refvals="$2"; shift 2 ;;
       -policy)  policysrc="$2"; shift 2 ;;
       -push)    pushpolicy="$2"; shift 2 ;;
+      -tunnel-table) tunneltable="$2"; shift 2 ;;
+      -exit-allow)   exitallow="$2"; shift 2 ;;
       *) echo "make_config: unknown option $1" >&2; exit 2 ;;
     esac
   done
@@ -310,6 +333,8 @@ make_config() {
   printf '{"peers": {"%s": "%s"}}\n' "$peer" "$peeraddr" > "$dir/peers.json"
   printf '%s\n' "$runjson" > "$dir/tunneld.json"
   if [ -n "$pushpolicy" ]; then cp "$pushpolicy" "$dir/$PUSH_POLICY_NAME"; fi
+  if [ -n "$tunneltable" ]; then cp "$tunneltable" "$dir/tunnel-table.json"; fi
+  if [ -n "$exitallow" ];   then cp "$exitallow"   "$dir/exit-allow";        fi
   # The device, from a copy of the source with the policy left behind. The two
   # names are matched exactly rather than by pattern: a policy to push is a
   # policy too, and that one does go on the device, which is the whole point of
@@ -359,6 +384,27 @@ dialer_json() { # SANDBOX ADDRESS PEER RUN_FOR WAIT
     "run_for": "$4"
   },
   "hold": "5s"
+}
+JSON
+}
+
+# The third, ticket 25's: a tunneld that neither exercises nor answers. It has no
+# exercise block because the thing that opens a stream is the sandbox beside it
+# and not this process, and it needs no handler because with a sandbox socket
+# configured tunneld's own echo stands down and the attached exit answers
+# (attest/cmd/tunneld/nullsandbox.go). What is left is what both guests need from
+# it and nothing else: an identity, a link, a listener and a hold long enough to
+# outlive the workload that is using it.
+adapter_json() { # SANDBOX ADDRESS HOLD
+  cat <<JSON
+{
+  "format": "gvisor.dev/gvisor/attest/tunneld-run",
+  "version": 1,
+  "sandbox_id": "$1",
+  "listen": "$2:4433",
+  "link": {"interface": "eth0", "address": "$2", "prefix_length": 24},
+  "limits": {"idle_timeout": "60s", "max_age": "15m"},
+  "hold": "$3"
 }
 JSON
 }
@@ -1287,6 +1333,184 @@ scenario_mutual() {
   grep -h "LATENCY .*kind=establish" "$a" "$b" | sed 's/^/    /' || true
 }
 
+# ---- scenario: two sandboxes on the adapter (ticket 25) --------------------
+# The topology ticket 25's loopback proof runs, inside the measurement and on
+# two machines that are two SEV-SNP guests: two runsc sandboxes differing only in
+# their tunnel table, two tunnelds, and ticket 23's exit at each end.
+#
+# What each guest holds, and which half of it is measured:
+#
+#   measured   runsc, the flag set init launches it with, agent-probe, the
+#              busybox httpd applet, /srv/index.html and /etc/hosts — so the page
+#              a peer can be served and the names that reach it are in the image.
+#   not        the tunnel table (which names this guest's sandbox may reach and
+#              through which peer), exit-allow (what this guest's exit will dial
+#              for a peer), peers.json, the run configuration and the reference
+#              value set. All on the config device, which is the only reason two
+#              guests booted from one image differ at all.
+#   not        the bundle on the workload disk, which is one disk and the SAME
+#              disk on both guests.
+#
+# So the two guests run identical code over identical bytes and reach different
+# destinations, and the only thing that differs is a table on an unmeasured disk
+# that the measured sentry enforces. The bundle fetches three URLs on both
+# guests and on each guest exactly one of them is in that guest's table:
+#
+#   guest A   web.peer-b  permitted   -> peer guest-b -> B's exit -> B's httpd
+#             web.peer-a  not in A's table: the sentry's resolver says NXDOMAIN
+#             not-in-the-table.example  the same, and it is in nobody's table
+#   guest B   the mirror image.
+#
+# The fetched page names the guest that served it — /sbin/init appends the
+# sandbox_id off the config device — so "A's console says served-by: guest-b" is
+# a statement about where those bytes came from and not about what A itself is
+# running. A's own page says served-by: guest-a and init fetches it once before
+# the workload exists, which is what separates "the page was never served" from
+# "the tunnel did not carry it".
+#
+# httpd binds 127.0.0.1 and nothing else, so the ethernet segment between the two
+# guests cannot reach either page: the only route to B's httpd is B's own exit,
+# at the far end of a tunnel B admitted A on.
+#
+# The relay's marker is the page's own text for this scenario rather than the
+# exercise payload, because there is no exercise here. It is the same claim in
+# the same form: the plaintext that crossed the segment is named, every frame is
+# searched for it, and the relay reports that it found none.
+ADAPTER_INPUTS="${ADAPTER_INPUTS:-$REPO/docs/snp/evidence/ticket25/snp/config}"
+ADAPTER_MARKER="served-by: guest-"
+
+# line_of CONSOLE TEXT — the line number of the first occurrence, or nothing.
+line_of() { grep -nF -m1 -- "$2" "$1" 2>/dev/null | cut -d: -f1; }
+# before CONSOLE EARLIER LATER — both present, in that order.
+before() {
+  local e l
+  e=$(line_of "$1" "$2"); l=$(line_of "$1" "$3")
+  [ -n "$e" ] && [ -n "$l" ] && [ "$e" -lt "$l" ]
+}
+
+scenario_adapter() {
+  local work="$OUT/adapter" seconds="$1"
+  echo
+  echo "### adapter: two sandboxes on the adapter, a page fetched each way, and the names that are not in the table"
+  if [ -z "$WORKLOAD" ]; then
+    fail "adapter: needs -workload; the sandbox that does the fetching is the bundle on that disk"
+    return
+  fi
+  local side
+  for side in a b; do
+    for f in tunnel-table.json exit-allow; do
+      [ -f "$ADAPTER_INPUTS/$side/$f" ] || { fail "adapter: missing $ADAPTER_INPUTS/$side/$f"; return; }
+    done
+  done
+  mkdir -p "$work"
+  make_config "$work/config-a" guest-a 10.14.0.2 guest-b 10.14.0.3:4433 \
+      "$(adapter_json guest-a 10.14.0.2 "$((seconds + 90))s")" \
+      -tunnel-table "$ADAPTER_INPUTS/a/tunnel-table.json" -exit-allow "$ADAPTER_INPUTS/a/exit-allow"
+  make_config "$work/config-b" guest-b 10.14.0.3 guest-a 10.14.0.2:4433 \
+      "$(adapter_json guest-b 10.14.0.3 "$((seconds + 90))s")" \
+      -tunnel-table "$ADAPTER_INPUTS/b/tunnel-table.json" -exit-allow "$ADAPTER_INPUTS/b/exit-allow"
+  # The two files each guest was given, kept beside its console: a reader of the
+  # capture should not have to open an ext4 image to see what differed.
+  for side in a b; do
+    cp "$work/config-$side/tunnel-table.json" "$work/tunnel-table-$side.json" 2>/dev/null || true
+    cp "$work/config-$side/exit-allow"        "$work/exit-allow-$side"        2>/dev/null || true
+  done
+
+  local saved="$MARKER"
+  MARKER="$ADAPTER_MARKER"
+  boot_pair "$work" "$IMAGE" "$IMAGE" "$((seconds + 240))" 1
+  MARKER="$saved"
+
+  local a="$work/console-a.txt" b="$work/console-b.txt"
+  [ -f "$a" ] && [ -f "$b" ] || { fail "adapter: one of the guests left no console"; return; }
+  assert_booted "$a" "guest-a"; assert_booted "$b" "guest-b"
+
+  # The order, which is the whole shape of ticket 25's init and is checkable on
+  # a control boot too: tunneld is started before the sandbox that will use it.
+  local g
+  for g in a b; do
+    local c="$work/console-$g.txt"
+    check "guest-$g: the config device's tunnel table put this guest on the adapter path" \
+          in_file "$c" "init: the config device carries a tunnel table"
+    check "guest-$g: tunneld was started before the workload, not after it" \
+          before "$c" "in the background, ahead of the workload" "the workload device carries a bundle"
+    check "guest-$g: runsc was launched with the adapter's two flags" \
+          in_file "$c" "--tunnel-socket=/run/tunneld/sandbox.sock --tunnel-table=/config/tunnel-table.json"
+    check "guest-$g: busybox httpd is serving the page on its own loopback" \
+          in_file "$c" "init: busybox httpd is serving"
+    check "guest-$g: and the page is really being served, fetched by init before any sandbox existed" \
+          in_file "$c" "init: httpd says: served-by: guest-$g"
+    check "guest-$g: the boot reached the end and powered off rather than being stopped" \
+          in_file "$c" "init: powering off"
+    check "guest-$g: no writable executable path was ever found" \
+          not_in_file "$c" "WRITABLE AND EXECUTABLE"
+  done
+
+  if [ "$SNP" = 0 ]; then
+    # A control boot has no report interface, so tunneld refuses to start and
+    # never creates the socket. Everything above still holds and is what a
+    # control boot is for: the order, the page, and a guest that stays up.
+    check "control boot: tunneld refused to start rather than proceeding without evidence" \
+          in_file "$b" "refusing to start"
+    check "control boot: init noticed there was no socket and did not start an exit into nothing" \
+          in_file "$b" "not starting the exit"
+    return
+  fi
+
+  assert_attested "$a" "guest-a"; assert_attested "$b" "guest-b"
+  for g in a b; do
+    local c="$work/console-$g.txt"
+    check "guest-$g: the sandbox socket came up for the adapter's helper to dial" \
+          in_file "$c" "init: the sandbox socket is up at /run/tunneld/sandbox.sock"
+    check "guest-$g: tunneld handed the socket to a sandbox in another process and stopped answering itself" \
+          in_file "$c" "a sandbox in another process opens and accepts streams here"
+    check "guest-$g: the exit attached and is holding the list its config device carries" \
+          in_file "$c" "EXIT serving, allow="
+    check "guest-$g: admitted its peer's evidence" in_file "$c" "tunneld: PEER key="
+    check "guest-$g: refused nobody"              not_in_file "$c" "tunneld: REFUSED"
+  done
+
+  # The two hops, one each way. A's console can only be holding B's page if those
+  # bytes crossed the segment, and the same in the other direction.
+  check "guest-a's sandbox was served guest-b's page, through guest-b's exit" \
+        in_file "$a" "served-by: guest-b"
+  check "guest-b's sandbox was served guest-a's page, through guest-a's exit" \
+        in_file "$b" "served-by: guest-a"
+  check "guest-b's exit accepted a stream from the peer that opened it" \
+        in_file "$b" "EXIT accepted a stream from peer="
+  check "guest-a's exit accepted a stream from the peer that opened it" \
+        in_file "$a" "EXIT accepted a stream from peer="
+  check "guest-b's exit dialed the one destination its list permits" \
+        in_file "$b" "EXIT dialed web.peer-b:80"
+  check "guest-a's exit dialed the one destination its list permits" \
+        in_file "$a" "EXIT dialed web.peer-a:80"
+
+  # The controls. Two per guest, and both are the sandbox being told a name does
+  # not exist rather than a connection being refused: a name the table does not
+  # carry is not resolved at all, so wget never gets an address to dial.
+  check "guest-a: the name that is in nobody's table did not resolve inside the sandbox" \
+        in_file "$a" "bad address 'not-in-the-table.example'"
+  check "guest-b: the name that is in nobody's table did not resolve inside the sandbox" \
+        in_file "$b" "bad address 'not-in-the-table.example'"
+  check "guest-a: the peer name that is in guest-b's table and not in guest-a's did not resolve" \
+        in_file "$a" "bad address 'web.peer-a'"
+  check "guest-b: the peer name that is in guest-a's table and not in guest-b's did not resolve" \
+        in_file "$b" "bad address 'web.peer-b'"
+
+  # And the sandbox really was a sandbox: the sentry's own kernel string, which
+  # cannot have come from either guest (ticket 24's argument, unchanged).
+  check "guest-a: the fetching process was inside a gVisor sandbox" in_file "$a" "4.19.0-gvisor"
+  check "guest-b: the fetching process was inside a gVisor sandbox" in_file "$b" "4.19.0-gvisor"
+
+  check "the exchange went through the relay"      grep -q "a_to_b_frames=[1-9]" "$work/relay.txt"
+  check "the relay could not find the page's text on the wire" in_file "$work/relay.txt" "MARKER not found"
+  local targets bad
+  targets=$(sed -n 's/.*arp targets : //p' "$work/relay.txt" | head -1)
+  bad=$(printf '%s' "$targets" | tr ',' '\n' | tr -d ' ' | grep -v '^$' | grep -vE '^10\.14\.0\.(2|3)$' || true)
+  echo "    addresses resolved on the segment: ${targets:-none}"
+  check "no guest looked for a gateway or anything else off the segment" test -z "$bad"
+}
+
 # ---- run them -------------------------------------------------------------
 for s in "${SCENARIOS[@]}"; do
   case "$s" in
@@ -1302,6 +1526,7 @@ for s in "${SCENARIOS[@]}"; do
     policy-pinned)   scenario_policy_pinned ;;
     policy-mismatch) scenario_policy_mismatch ;;
     mutual)          scenario_mutual "$RUN_FOR" ;;
+    adapter)         scenario_adapter "$RUN_FOR" ;;
     *) echo "unknown scenario: $s" >&2; exit 2 ;;
   esac
 done
@@ -1324,6 +1549,7 @@ if [ -n "$CAPTURE" ]; then
        "$d"/set-b.json "$d"/set-b.json.sig \
        "$d"/policy-a.json "$d"/policy-a.json.sig "$d"/policy-b.json "$d"/policy-b.json.sig \
        "$d"/push-policy.json \
+       "$d"/tunnel-table-a.json "$d"/tunnel-table-b.json "$d"/exit-allow-a "$d"/exit-allow-b \
        "$CAPTURE/$n/" 2>/dev/null || true
 
     # The egress record, cut out of each console into a file of its own: the

@@ -55,7 +55,9 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -96,6 +98,10 @@ const (
 	// against a stock runsc wants.
 	evidenceEnv = "AGENT_PROBE_EVIDENCE"
 )
+
+// anchors is the one CA bundle file a workload needs; both rootfses copy the
+// host's, and both name it in SSL_CERT_FILE.
+const anchors = "/etc/ssl/certs/ca-certificates.crt"
 
 // The two destinations the task needs, and the port they are permitted on.
 // They are the same two the exit's -allow names and the same two ticket 23's
@@ -146,12 +152,33 @@ func TestAdapterLoopback(t *testing.T) {
 	out := newRecord(os.Stdout)
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Minute)
 	defer cancel()
-	l := newLoopback(t, ctx, out, runsc)
+	l := newLoopback(t, ctx, out, runsc, proof{
+		title: "The adapter over loopback",
+		preamble: "Two runsc sandboxes. The workload is this package built with `CGO_ENABLED=0` and run as " +
+			"`/agent-probe -network plain -task summarize -dir /tmp`, which is `&http.Client{}`: no contract, no " +
+			"dialer of its own, Go's own resolver. The only difference between the two sandboxes is the table.",
+		allow: modelHost + ":443," + docHost + ":443",
+		under: "ticket25/loopback",
+	})
+	l.buildRootfs(t)
 
 	// The table is the only variable. The control's is the same document with
 	// one name taken out of it.
-	work := l.sandbox(t, "workload", map[string]int{modelHost: tunnelledPort, docHost: tunnelledPort})
-	control := l.sandbox(t, "control", map[string]int{docHost: tunnelledPort})
+	probe := workload{
+		args: []string{"/agent-probe", "-network", "plain", "-task", "summarize", "-dir", "/tmp"},
+		env:  []string{"PATH=/", "HOME=/tmp", "SSL_CERT_FILE=" + anchors},
+		cwd:  "/tmp",
+		mounts: []any{
+			map[string]any{"destination": "/proc", "type": "proc", "source": "proc"},
+			// The one writable place in the sandbox, and where -dir puts
+			// summary.txt. It is a tmpfs in the spec so that the rootfs can
+			// stay read-only and nothing the workload writes reaches the host.
+			map[string]any{"destination": "/tmp", "type": "tmpfs", "source": "tmpfs",
+				"options": []string{"rw", "nosuid", "nodev", "mode=1777"}},
+		},
+	}
+	work := l.sandbox(t, "workload", map[string]int{modelHost: tunnelledPort, docHost: tunnelledPort}, probe)
+	control := l.sandbox(t, "control", map[string]int{docHost: tunnelledPort}, probe)
 
 	if l.adapter {
 		if work.err != nil {
@@ -193,7 +220,7 @@ func TestAdapterLoopback(t *testing.T) {
 		out.logf("\nFINDING %s=0: no --tunnel-* flags were passed and no tunnel exists. This run says the bundle, the static binary, the resolver files, the CA bundle, the key plumbing and the capture all work, and says nothing whatever about the adapter.", adapterEnv)
 	}
 
-	l.record(t, work, control)
+	l.record(t, "", work, control)
 }
 
 // ===== the world the two sandboxes run in =====
@@ -216,8 +243,9 @@ type loopback struct {
 
 	scratch string // the rootfs, the binaries, the captures: no secrets
 	shm     string // 0700 on tmpfs: the bundles, which carry the key, and the sockets
-	root    string // the rootfs both bundles use
-	socket  string // tunneld a's sandbox socket, which both sandboxes attach to
+	root    string // the rootfs every bundle of this run executes
+	socket  string // tunneld a's sandbox socket, which every sandbox attaches to
+	p       proof  // what this run is, in the words its evidence is written in
 
 	// at is the run in progress, or nil between runs. The exit logs and
 	// carries streams for whichever sandbox is running, and this is how those
@@ -225,9 +253,22 @@ type loopback struct {
 	at atomic.Pointer[stamps]
 }
 
-func newLoopback(t *testing.T, ctx context.Context, out *record, runsc string) *loopback {
+// A proof is what one of the two tests in this package is, in the terms its
+// evidence needs: what the record is called, what the first paragraph of it
+// says, where it goes under docs/snp/evidence, and what the exit may dial.
+type proof struct {
+	title    string
+	preamble string
+	allow    string
+	under    string
+}
+
+// newLoopback builds the two directories and the two tunnelds. The rootfs is
+// the caller's: the two tests in this package put different things inside the
+// sandbox and share everything around it.
+func newLoopback(t *testing.T, ctx context.Context, out *record, runsc string, p proof) *loopback {
 	t.Helper()
-	l := &loopback{ctx: ctx, out: out, runsc: runsc, adapter: os.Getenv(adapterEnv) != "0"}
+	l := &loopback{ctx: ctx, out: out, runsc: runsc, p: p, adapter: os.Getenv(adapterEnv) != "0"}
 	l.scratch = t.TempDir()
 
 	shm, err := os.MkdirTemp("/dev/shm", "t25-")
@@ -240,7 +281,6 @@ func newLoopback(t *testing.T, ctx context.Context, out *record, runsc string) *
 	l.shm = shm
 	t.Cleanup(func() { os.RemoveAll(shm) })
 
-	l.buildRootfs(t)
 	l.buildTunnelds(t)
 	if !l.adapter {
 		out.logf("%s=0: this run passes no --tunnel-socket and no --tunnel-table, and the sandbox has no network at all", adapterEnv)
@@ -289,7 +329,7 @@ func (l *loopback) buildTunnelds(t *testing.T) {
 // crossing it without the exit knowing.
 func (l *loopback) serveExit(t *testing.T, socket string) {
 	t.Helper()
-	allow, err := parseAllow(modelHost + ":443," + docHost + ":443")
+	allow, err := parseAllow(l.p.allow)
 	if err != nil {
 		t.Fatalf("the exit's allow list: %v", err)
 	}
@@ -362,7 +402,6 @@ func (l *loopback) buildRootfs(t *testing.T) {
 		}
 	}
 
-	const anchors = "/etc/ssl/certs/ca-certificates.crt"
 	certs, err := os.ReadFile(anchors)
 	if err != nil {
 		t.Skipf("no %s on this host to give the workload: %v", anchors, err)
@@ -373,11 +412,22 @@ func (l *loopback) buildRootfs(t *testing.T) {
 	l.out.logf("the rootfs is %s: one static agent-probe, resolv.conf/hosts/nsswitch.conf and %d bytes of anchors", l.root, len(certs))
 }
 
+// A workload is the part of a bundle that differs between the two tests: what
+// to run, where, with which variables beside the key, whether the rootfs may
+// be written, and what is mounted over it.
+type workload struct {
+	args     []string
+	env      []string // ANTHROPIC_API_KEY is added by bundle and is not here
+	cwd      string
+	writable bool // the rootfs is read-write, for a workload that needs a HOME
+	mounts   []any
+}
+
 // bundle writes one OCI bundle. Only config.json is written here, under the
 // tmpfs directory, because process.env carries the key; root.path is absolute
 // and points back at the rootfs in the scratch directory, which holds nothing
 // secret and is what the sandbox actually executes.
-func (l *loopback) bundle(t *testing.T, name string) string {
+func (l *loopback) bundle(t *testing.T, name string, w workload) string {
 	t.Helper()
 	dir := filepath.Join(l.shm, name)
 	if err := os.MkdirAll(dir, 0o700); err != nil {
@@ -388,27 +438,17 @@ func (l *loopback) bundle(t *testing.T, name string) string {
 		"process": map[string]any{
 			"terminal": false,
 			"user":     map[string]any{"uid": 0, "gid": 0},
-			"args":     []string{"/agent-probe", "-network", "plain", "-task", "summarize", "-dir", "/tmp"},
-			"env": []string{
-				"PATH=/",
-				"HOME=/tmp",
-				"SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt",
-				"ANTHROPIC_API_KEY=" + os.Getenv("ANTHROPIC_API_KEY"),
-			},
-			"cwd":          "/tmp",
+			"args":     w.args,
+			// The key is appended here and nowhere else, so that a caller
+			// cannot forget it and cannot put it anywhere but this file.
+			"env":          append(append([]string{}, w.env...), "ANTHROPIC_API_KEY="+os.Getenv("ANTHROPIC_API_KEY")),
+			"cwd":          w.cwd,
 			"capabilities": map[string]any{"bounding": []string{}, "effective": []string{}, "inheritable": []string{}, "permitted": []string{}},
 			"rlimits":      []any{map[string]any{"type": "RLIMIT_NOFILE", "hard": 4096, "soft": 4096}},
 		},
-		"root":     map[string]any{"path": l.root, "readonly": true},
+		"root":     map[string]any{"path": l.root, "readonly": !w.writable},
 		"hostname": "workload",
-		"mounts": []any{
-			map[string]any{"destination": "/proc", "type": "proc", "source": "proc"},
-			// The one writable place in the sandbox, and where -dir puts
-			// summary.txt. It is a tmpfs in the spec so that the rootfs can
-			// stay read-only and nothing the workload writes reaches the host.
-			map[string]any{"destination": "/tmp", "type": "tmpfs", "source": "tmpfs",
-				"options": []string{"rw", "nosuid", "nodev", "mode=1777"}},
-		},
+		"mounts":   w.mounts,
 		"linux": map[string]any{"namespaces": []any{
 			map[string]any{"type": "pid"},
 			map[string]any{"type": "mount"},
@@ -453,7 +493,9 @@ type sandboxRun struct {
 	stderr  string
 	debug   string
 	table   string
-	events  string // the seccheck receiver's output, empty when there was none
+	digest  string   // the page of what the strace log says, written after the run
+	comms   []string // the command names the sentry traced, which is what actually ran
+	events  string   // the seccheck receiver's output, empty when there was none
 	args    []string
 	status  int
 	err     error
@@ -462,7 +504,7 @@ type sandboxRun struct {
 }
 
 // sandbox writes one bundle, runs runsc over it and captures everything.
-func (l *loopback) sandbox(t *testing.T, name string, names map[string]int) *sandboxRun {
+func (l *loopback) sandbox(t *testing.T, name string, names map[string]int, w workload) *sandboxRun {
 	t.Helper()
 	r := &sandboxRun{name: name, dir: filepath.Join(l.scratch, name), at: &stamps{at: map[string]time.Duration{}}}
 	r.debug = filepath.Join(r.dir, "debug")
@@ -513,7 +555,7 @@ func (l *loopback) sandbox(t *testing.T, name string, names map[string]int) *san
 	}
 	r.args = append(r.args,
 		"--debug", "--debug-log="+r.debug+"/", "--strace",
-		"run", "--bundle", l.bundle(t, name), fmt.Sprintf("t25-%s-%d", name, os.Getpid()))
+		"run", "--bundle", l.bundle(t, name, w), fmt.Sprintf("t25-%s-%d", name, os.Getpid()))
 
 	l.out.logf("\n===== sandbox %s =====", name)
 	l.out.logf("%s  table = %s", name, text)
@@ -541,6 +583,7 @@ func (l *loopback) sandbox(t *testing.T, name string, names map[string]int) *san
 		r.status = cmd.ProcessState.ExitCode()
 	}
 
+	l.digest(t, r)
 	l.out.logf("%s  runsc ended with status %d after %s (err=%v)", name, r.status, r.elapsed.Round(time.Millisecond), r.err)
 	l.out.logf("\n%s  said on stdout:\n%s", name, l.said(r.stdout))
 	if said := strings.TrimSpace(l.said(r.stderr)); said != "" {
@@ -754,7 +797,7 @@ func (s *tappedStream) Write(p []byte) (int, error) {
 // carries it is left behind and a redacted copy is put in its place, which is
 // not a formality: runsc logs the container's spec at debug level, and the
 // spec is where process.env is.
-func (l *loopback) record(t *testing.T, runs ...*sandboxRun) {
+func (l *loopback) record(t *testing.T, notes string, runs ...*sandboxRun) {
 	t.Helper()
 	dest := os.Getenv(evidenceEnv)
 	if dest == "" {
@@ -762,7 +805,7 @@ func (l *loopback) record(t *testing.T, runs ...*sandboxRun) {
 		if err != nil {
 			t.Fatalf("the worktree root: %v", err)
 		}
-		dest = filepath.Join(tree, "docs/snp/evidence/ticket25/loopback", time.Now().Format("20060102-150405"))
+		dest = filepath.Join(tree, "docs/snp/evidence", l.p.under, time.Now().Format("20060102-150405"))
 	}
 	if err := os.MkdirAll(dest, 0o755); err != nil {
 		t.Fatalf("%s: %v", dest, err)
@@ -776,15 +819,13 @@ func (l *loopback) record(t *testing.T, runs ...*sandboxRun) {
 	}
 
 	var b strings.Builder
-	fmt.Fprintf(&b, "# The adapter over loopback: %s\n\n", time.Now().Format(time.RFC3339))
-	fmt.Fprintf(&b, "Written by `TestAdapterLoopback` (`attest/cmd/agent-probe/adapter_test.go`). runsc is `%s`; "+
-		"the adapter flags were %s.\n\n", l.runsc, present(l.adapter))
-	fmt.Fprintf(&b, "Two runsc sandboxes, the tunnelds `a` and `b` in the test's own process with the fake SNP "+
-		"platform, and ticket 23's exit — `socketSandbox` and `ServeExit`, unchanged — attached to `b` with "+
-		"`-allow %s:443,%s:443`. The workload is this package built with `CGO_ENABLED=0` and run as "+
-		"`/agent-probe -network plain -task summarize -dir /tmp`, which is `&http.Client{}`: no contract, no "+
-		"dialer of its own, Go's own resolver. The only difference between the two sandboxes is the table.\n\n",
-		modelHost, docHost)
+	fmt.Fprintf(&b, "# %s: %s\n\n", l.p.title, time.Now().Format(time.RFC3339))
+	fmt.Fprintf(&b, "runsc is `%s`; the adapter flags were %s. The tunnelds `a` and `b` are in the test's own "+
+		"process with the fake SNP platform, and ticket 23's exit — `socketSandbox` and `ServeExit`, unchanged — "+
+		"is attached to `b` with `-allow %s`.\n\n%s\n\n", l.runsc, present(l.adapter), l.p.allow, l.p.preamble)
+	fmt.Fprintf(&b, "A file here whose name ends `.redacted` is one that carried `ANTHROPIC_API_KEY`: the original "+
+		"was not copied and this is it with the key replaced. One ending `.gz` was over %d MiB and is kept "+
+		"compressed rather than trimmed.\n\n", bigFile>>20)
 
 	fmt.Fprintf(&b, "| run | the names its table carries | runsc status | wall | timings |\n|---|---|---|---|---|\n")
 	for _, r := range runs {
@@ -812,6 +853,10 @@ func (l *loopback) record(t *testing.T, runs ...*sandboxRun) {
 		}
 		fmt.Fprintf(&b, "What the seccheck receiver printed, which is the sentry's own account of the refusal and "+
 			"the only place the reason for it is written down:\n\n```\n%s\n```\n\n", strings.TrimSpace(l.said(r.events)))
+	}
+
+	if notes != "" {
+		fmt.Fprintf(&b, "%s\n", notes)
 	}
 
 	if len(withheld) != 0 {
@@ -862,19 +907,193 @@ func (l *loopback) copyInto(t *testing.T, from, to string) (int, []string) {
 				t.Errorf("%s still carries the key after redaction and is not being written anywhere", rel)
 				return nil
 			}
-			if err := os.WriteFile(out+".redacted", clean, 0o644); err != nil {
-				return err
-			}
 			withheld = append(withheld, fmt.Sprintf("`%s`: the key appears %s", filepath.Join(filepath.Base(to), rel), times(n)))
-			return nil
+			return keep(out+".redacted", clean)
 		}
 		copied++
-		return os.WriteFile(out, text, 0o644)
+		return keep(out, text)
 	})
 	if err != nil {
 		t.Errorf("copying %s: %v", from, err)
 	}
 	return copied, withheld
+}
+
+// bigFile is where "put it in the evidence as it is" turns into "put it there
+// compressed". Four mebibytes is the size of the largest thing already
+// committed under docs/.
+const bigFile = 4 << 20
+
+// keep puts one file in the evidence, gzipped once it is big enough that a
+// repository would notice. A sentry debug log with --strace is tens of
+// megabytes of repetitive text and compresses about thirteen to one, so the
+// whole of it can be kept — and a trimmed trace is not a trace, it is a claim
+// about one.
+func keep(path string, text []byte) error {
+	if len(text) < bigFile {
+		return os.WriteFile(path, text, 0o644)
+	}
+	f, err := os.Create(path + ".gz")
+	if err != nil {
+		return err
+	}
+	z := gzip.NewWriter(f)
+	if _, err := z.Write(text); err != nil {
+		f.Close()
+		return err
+	}
+	if err := z.Close(); err != nil {
+		f.Close()
+		return err
+	}
+	return f.Close()
+}
+
+// ===== what the strace log says =====
+
+// digest is a page of what a tens-of-megabytes --strace log contains: which
+// syscalls failed and with what, every exec, every bind and listen, the socket
+// families, how many datagrams went to the resolver, and what the sentry said
+// it does not implement. The log itself is kept beside it; this is the part a
+// reader reads, and it is written into the run's directory so that it is
+// copied and searched for the key like everything else.
+func (l *loopback) digest(t *testing.T, r *sandboxRun) {
+	t.Helper()
+	boot := ""
+	entries, err := os.ReadDir(r.debug)
+	if err != nil {
+		return
+	}
+	for _, e := range entries {
+		if strings.Contains(e.Name(), ".boot.") {
+			boot = filepath.Join(r.debug, e.Name())
+		}
+	}
+	if boot == "" {
+		l.out.logf("%s  no sentry debug log to digest", r.name)
+		return
+	}
+	f, err := os.Open(boot)
+	if err != nil {
+		t.Errorf("%s: %v", boot, err)
+		return
+	}
+	defer f.Close()
+
+	failed, families, unsupported, comms := map[string]int{}, map[string]int{}, map[string]int{}, map[string]int{}
+	var execs, binds []string
+	resolver := 0
+	sc := bufio.NewScanner(f)
+	// A strace line carries up to --strace-log-size of arguments, and the
+	// default scanner buffer is 64 KiB, which some of them exceed.
+	sc.Buffer(make([]byte, 0, 1<<16), 1<<22)
+	for sc.Scan() {
+		line := sc.Text()
+		if i := strings.Index(line, "Unsupported syscall "); i >= 0 {
+			if name, _, ok := strings.Cut(line[i+len("Unsupported syscall "):], "("); ok {
+				unsupported[name]++
+			}
+			continue
+		}
+		// The command name is on every traced line and is the only thing that
+		// says which binary made the call, which for the first process is the
+		// only evidence that it ran at all: the sentry execs it itself, so
+		// there is no execve line for it the way there is for its children.
+		if before, _, ok := strings.Cut(line, " E "); ok {
+			if words := strings.Fields(before); len(words) != 0 {
+				comms[words[len(words)-1]]++
+			}
+		}
+		_, call, ok := strings.Cut(line, " X ")
+		if !ok {
+			continue // an entry line says nothing about how it went
+		}
+		name, args, ok := strings.Cut(call, "(")
+		if !ok {
+			continue
+		}
+		if i := strings.Index(call, " errno="); i >= 0 {
+			// errno=2 (no such file or directory), whole: the number alone
+			// makes a reader look it up and the sentry already spelled it.
+			tail := call[i+1:]
+			if j := strings.Index(tail, ")"); j >= 0 {
+				tail = tail[:j+1]
+			}
+			failed[name+" "+tail]++
+		}
+		switch name {
+		case "execve":
+			// The third argument is the environment, and the environment is
+			// where the key is. What this digest is for is the argv — which
+			// binary was run and how — so the line is cut at the end of it.
+			if i := strings.Index(call, "], "); i >= 0 {
+				call = call[:i+1] + " <env>)"
+			}
+			execs = append(execs, call)
+		case "bind", "listen":
+			binds = append(binds, call)
+		case "socket":
+			families[firstWords(args, 1)]++
+		}
+		if strings.Contains(call, "127.0.0.53, Port: 53") {
+			resolver++
+		}
+	}
+
+	var b strings.Builder
+	fmt.Fprintf(&b, "# what %s says\n\nThe sentry's debug log with --strace, read once. Counts are of exit\n"+
+		"lines, so an entry with no exit — a syscall the process was still in when it ended — is not here.\n", filepath.Base(boot))
+	fmt.Fprintf(&b, "\n## what ran\n\n%s", tally(comms))
+	fmt.Fprintf(&b, "\n## syscalls that failed\n\n%s", tally(failed))
+	fmt.Fprintf(&b, "\n## syscalls the sentry does not implement\n\n%s", tally(unsupported))
+	fmt.Fprintf(&b, "\n## socket families\n\n%s", tally(families))
+	fmt.Fprintf(&b, "\n## datagrams and connects to 127.0.0.53:53\n\n%d\n", resolver)
+	fmt.Fprintf(&b, "\n## every execve\n\n%s\n", strings.Join(execs, "\n"))
+	fmt.Fprintf(&b, "\n## every bind and listen\n\n%s\n", strings.Join(binds, "\n"))
+
+	for name := range comms {
+		r.comms = append(r.comms, name)
+	}
+	sort.Strings(r.comms)
+	r.digest = filepath.Join(r.dir, "strace-digest.txt")
+	if err := os.WriteFile(r.digest, []byte(b.String()), 0o644); err != nil {
+		t.Errorf("%s: %v", r.digest, err)
+	}
+	l.out.logf("%s  %s: %d kinds of failure, %d unsupported, %d execs, %d resolver datagrams",
+		r.name, filepath.Base(r.digest), len(failed), len(unsupported), len(execs), resolver)
+}
+
+// firstWords is the first n space-separated words of a string, which is how a
+// syscall's errno and a socket's family are taken out of a line without a
+// second parser to keep in step with the sentry's format.
+func firstWords(text string, n int) string {
+	words := strings.Fields(strings.TrimLeft(text, " "))
+	if len(words) > n {
+		words = words[:n]
+	}
+	return strings.TrimRight(strings.Join(words, " "), ",")
+}
+
+// tally is a count table, highest first, as lines a person reads.
+func tally(counts map[string]int) string {
+	keys := make([]string, 0, len(counts))
+	for k := range counts {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		if counts[keys[i]] != counts[keys[j]] {
+			return counts[keys[i]] > counts[keys[j]]
+		}
+		return keys[i] < keys[j]
+	})
+	var b strings.Builder
+	for _, k := range keys {
+		fmt.Fprintf(&b, "%8d  %s\n", counts[k], k)
+	}
+	if b.Len() == 0 {
+		return "(none)\n"
+	}
+	return b.String()
 }
 
 // ===== small things =====

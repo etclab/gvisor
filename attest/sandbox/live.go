@@ -44,8 +44,8 @@ import (
 // of; the sandbox can answer it by not saying anything.
 const (
 	// DefaultPulse is how often a sandbox that has acknowledged a policy says
-	// so. Spike E3 measured the send at well under ten microseconds and the
-	// receiving side at a comparable cost, so a second is not a cost decision:
+	// so. Spike E3 measured the send at 17 µs at the median (30 µs mean) and
+	// the receiving side at 255 µs of CPU per pulse, so a second is not a cost decision:
 	// it is the resolution at which "the workload is gone" becomes a fact on
 	// the far side of a tunnel, and the teardown it bounds is three of them.
 	DefaultPulse = time.Second

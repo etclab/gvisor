@@ -1,0 +1,137 @@
+# what runsc.log.20260918-100609.100543.boot.txt says
+
+The sentry's debug log with --strace, read once. Counts are of exit
+lines, so an entry with no exit — a syscall the process was still in when it ended — is not here.
+
+## what ran
+
+   44425  HeapHelper
+   19204  claude
+    5000  mi-scavenger
+    1462  2
+    1440  1
+    1371  0
+    1110  3
+     780  4
+     725  5
+     675  JITWorker
+     292  JSCWarmUp
+     214  git
+     150  Client
+      15  fs.watch
+       5  page-out
+
+## syscalls that failed
+
+     957  openat errno=2 (no such file or directory)
+     907  futex errno=110 (connection timed out)
+     703  futex errno=11 (try again)
+     294  statx errno=2 (no such file or directory)
+      42  newfstatat errno=2 (no such file or directory)
+      39  access errno=2 (no such file or directory)
+      34  mkdir errno=17 (file exists)
+      22  ioctl errno=25 (not a typewriter)
+      20  stat errno=2 (no such file or directory)
+      12  rt_sigaction errno=22 (invalid argument)
+      10  futex errno=512 (to be restarted if SA_RESTART is set)
+      10  readlink errno=22 (invalid argument)
+       9  recvfrom errno=11 (request would block)
+       8  futex errno=516 (interrupted by signal)
+       7  rseq errno=38 (invalid system call number)
+       4  mkdir errno=2 (no such file or directory)
+       4  open errno=2 (no such file or directory)
+       4  unlink errno=2 (no such file or directory)
+       3  madvise errno=22 (invalid argument)
+       3  readlink errno=2 (no such file or directory)
+       2  connect errno=2 (no such file or directory)
+       2  rmdir errno=2 (no such file or directory)
+       2  rmdir errno=39 (directory not empty)
+       1  copy_file_range errno=38 (invalid system call number)
+       1  epoll_pwait errno=4 (request was interrupted)
+       1  ioctl errno=95 (operation not supported on transport endpoint)
+       1  openat errno=17 (file exists)
+       1  openat errno=20 (not a directory)
+       1  read errno=512 (to be restarted if SA_RESTART is set)
+       1  rename errno=2 (no such file or directory)
+       1  statx errno=14 (bad address)
+       1  unlinkat errno=21 (is a directory)
+
+## syscalls the sentry does not implement
+
+       1  copy_file_range
+       1  rseq
+
+## socket families
+
+     102  AF_INET
+      51  AF_NETLINK
+       3  AF_UNIX
+
+## datagrams and connects to 127.0.0.53:53
+
+102
+
+## every execve
+
+execve(0x20dc6d23eb0 /usr/bin/git, 0x20dc2efbb40 ["git", "-c", "core.hooksPath=/dev/null", "-c", "core.fsmonitor=", "-C", "/work", "ls-files", "--error-unmatch", "--", ":(icase).claude/settings.local.json"] <env>)
+execve(0x20dc6d261e0 /usr/bin/git, 0x20dc198ea00 ["/usr/bin/git", "-c", "core.askPass=", "-c", "protocol.ext.allow=never", "-c", "submodule.recurse=false", "-c", "log.showSignature=false", "-c", "gc.auto=0", "-c", "maintenance.auto=false", "-c", "core.hooksPath=/dev/null", "-c", "core.fsmonitor=", "remote", "get-url", "origin"] <env>)
+execve(0x20dc6d28bc0 /usr/bin/git, 0x20dc548d7a0 ["/usr/bin/git", "-c", "core.askPass=", "-c", "protocol.ext.allow=never", "-c", "submodule.recurse=false", "-c", "log.showSignature=false", "-c", "gc.auto=0", "-c", "maintenance.auto=false", "-c", "core.hooksPath=/dev/null", "-c", "core.fsmonitor=", "remote"] <env>)
+execve(0x20dc6087820 /usr/local/bin/claude, 0x20dc6087800 ["rg", "--version"] <env>)
+execve(0x20dc6087d20 /usr/local/bin/claude, 0x20dc4a92f40 ["rg", "--no-config", "--files", "--hidden", "--no-ignore", "--max-depth", "4", "--glob", ".orphaned_at", "/home/agent/.claude/plugins/cache"] <env>)
+execve(0x20dc608ab80 /usr/local/bin/claude, 0x20dc60a8540 ["rg", "--no-config", "--files", "--hidden", "/work"] <env>)
+
+## every bind and listen
+
+bind(0xb socket:[1], 0x7f674ffc7018 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (521.267µs)
+bind(0xb socket:[6], 0x7f675074ef58 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (13.681µs)
+bind(0xd socket:[19], 0x7f6750b50018 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (12.589µs)
+bind(0x10 socket:[28], 0x7f674ffc6f58 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (9.334µs)
+bind(0xd socket:[31], 0x7f674ffc6f58 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (15.323µs)
+bind(0xd socket:[34], 0x7f674f7c4f58 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (15.573µs)
+bind(0xd socket:[37], 0x7f674ffc6f58 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (10.186µs)
+bind(0xd socket:[40], 0x7f4832003f72 {Family: AF_UNIX, Addr: "/tmp/cc-socks/1.sock"}, 0x6e) = 0 (0x0) (77.436µs)
+listen(0xd socket:[40], 0x200) = 0 (0x0) (17.005µs)
+bind(0xe socket:[41], 0x7f675074ef58 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (9.374µs)
+bind(0xf socket:[54], 0x7f674ffc7018 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (560.365µs)
+bind(0xf socket:[57], 0x7f674ffc7018 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (15.664µs)
+bind(0xf socket:[60], 0x7f6750b50018 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (77.085µs)
+bind(0xf socket:[63], 0x7f675074f018 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (18.156µs)
+bind(0xf socket:[66], 0x7f674ffc7018 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (12.549µs)
+bind(0xf socket:[69], 0x7f674f3c3f58 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (9.545µs)
+bind(0xf socket:[72], 0x7f6750b4ff58 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (11.707µs)
+bind(0xf socket:[75], 0x7f674ffc6f58 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (16.625µs)
+bind(0xf socket:[78], 0x7f674f7c5018 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (7.221µs)
+bind(0xf socket:[81], 0x7f674f7c4f58 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (17.546µs)
+bind(0xf socket:[84], 0x7f674f7c5018 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (16.465µs)
+bind(0xf socket:[87], 0x7f6750b4ff58 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (15.182µs)
+bind(0xf socket:[90], 0x7f6750b50018 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (15.584µs)
+bind(0xf socket:[93], 0x7f674f7c5018 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (12.708µs)
+bind(0xf socket:[96], 0x7f6750b50018 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (8.833µs)
+bind(0xf socket:[99], 0x7f674f7c4f58 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (9.474µs)
+bind(0xf socket:[102], 0x7f674f7c4f58 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (9.253µs)
+bind(0xf socket:[105], 0x7f675074ef58 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (9.544µs)
+bind(0xf socket:[108], 0x7f6750b4ff58 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (13.65µs)
+bind(0xf socket:[111], 0x7f674f7c4f58 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (9.685µs)
+bind(0xf socket:[114], 0x7f675074f018 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (18.919µs)
+bind(0xf socket:[117], 0x7f674ffc7018 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (12.899µs)
+bind(0xf socket:[120], 0x7f675074ef58 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (5.929µs)
+bind(0xf socket:[123], 0x7f674edc1f58 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (13.45µs)
+bind(0xf socket:[126], 0x7f6750b50018 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (11.857µs)
+bind(0xf socket:[129], 0x7f6750b50018 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (11.847µs)
+bind(0xf socket:[132], 0x7f674f7c5018 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (10.667µs)
+bind(0xf socket:[135], 0x7f674ffc7018 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (11.607µs)
+bind(0xf socket:[138], 0x7f674f3c3f58 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (10.125µs)
+bind(0xf socket:[141], 0x7f674f3c3f58 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (11.837µs)
+bind(0xf socket:[144], 0x7f674edc1f58 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (10.125µs)
+bind(0xf socket:[147], 0x7f6750b4ff58 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (10.756µs)
+bind(0xf socket:[150], 0x7f674edc1f58 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (30.897µs)
+bind(0xf socket:[153], 0x7f6750b50018 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (9.634µs)
+bind(0xf socket:[156], 0x7f675074ef58 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (148.522µs)
+bind(0xf socket:[159], 0x7f674f3c4018 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (7.752µs)
+bind(0xf socket:[162], 0x7f674edc1f58 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (10.656µs)
+bind(0xf socket:[165], 0x7f674f3c3f58 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (12.679µs)
+bind(0xf socket:[168], 0x7f674edc2018 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (13.741µs)
+bind(0xf socket:[171], 0x7f674ffc7018 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (10.405µs)
+bind(0xf socket:[174], 0x7f674ffc7018 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (16.745µs)
+bind(0xd socket:[177], 0x7f674edc1f58 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (9.454µs)
+bind(0xd socket:[180], 0x7f675074ef58 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (14.682µs)

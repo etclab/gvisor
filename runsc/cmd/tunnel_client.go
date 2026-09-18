@@ -36,6 +36,7 @@ import (
 	"net"
 	"os"
 	"sync"
+	"time"
 
 	"golang.org/x/sys/unix"
 )
@@ -126,12 +127,28 @@ func (cl *tunneldClient) Close() error {
 }
 
 // open asks tunneld for a stream to a peer and returns the descriptor it sent.
+//
+// It is bounded. A tunneld that accepted the request and then wedged would
+// otherwise hold this call for ever, and the call this one answers is the
+// sentry's, made from the task that is inside connect(2) — so an unbounded
+// wait here is a workload thread that cannot be interrupted and, because the
+// sentry serialises calls on the helper channel, every other connect behind
+// it. The deadline covers the whole exchange; the CONNECT/OK line has its own
+// on top of it.
+//
+// The sentry side of that call is still a blocking Go call serialised by the
+// Tunnel's mutex, so the worst case is one workload thread held for this long
+// rather than for ever. Making it interruptible is a leftover.
 func (cl *tunneldClient) open(peer string) (*os.File, error) {
 	id, ch := cl.begin()
+	// end disposes of a descriptor that arrives after this returns, so a
+	// request abandoned at the deadline cannot leak the stream it was given.
 	defer cl.end(id, ch)
 	if err := cl.send(tunneldMessage{ID: id, Type: tunneldMsgOpen, Peer: peer}, -1); err != nil {
 		return nil, err
 	}
+	timer := time.NewTimer(openDeadline)
+	defer timer.Stop()
 	select {
 	case r := <-ch:
 		if r.m.Type != tunneldMsgStream {
@@ -147,6 +164,8 @@ func (cl *tunneldClient) open(peer string) (*os.File, error) {
 			return nil, fmt.Errorf("tunneld's stream reply carried no descriptor")
 		}
 		return r.f, nil
+	case <-timer.C:
+		return nil, fmt.Errorf("tunneld did not answer an open for peer %q within %v", peer, openDeadline)
 	case <-cl.done:
 		return nil, errTunneldClosed
 	}

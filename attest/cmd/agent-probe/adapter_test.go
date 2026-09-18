@@ -628,10 +628,41 @@ func (l *loopback) receiver(t *testing.T, r *sandboxRun) (string, func()) {
 // four times the ticket asks for are the first occurrence of each of four
 // things, measured from the moment runsc started.
 type stamps struct {
+	// lineLog is what the exit said during this run, and it carries its own
+	// lock: the assertions read it after the run and the exit writes it during
+	// one, which is a different question from the clock below.
+	lineLog
+
+	mu   sync.Mutex
+	zero time.Time
+	at   map[string]time.Duration
+}
+
+// A lineLog is the lines one side of a harness said, kept so that a test can
+// assert on them afterwards. There is one of it because both harnesses in this
+// package want exactly this and neither wants anything more.
+type lineLog struct {
 	mu    sync.Mutex
-	zero  time.Time
-	at    map[string]time.Duration
 	lines []string
+}
+
+func (l *lineLog) add(text string) {
+	l.mu.Lock()
+	l.lines = append(l.lines, text)
+	l.mu.Unlock()
+}
+
+// matching is the remembered lines that carry prefix.
+func (l *lineLog) matching(prefix string) []string {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	var found []string
+	for _, line := range l.lines {
+		if strings.Contains(line, prefix) {
+			found = append(found, line)
+		}
+	}
+	return found
 }
 
 // mark records the first time something happened and ignores every later one.
@@ -650,36 +681,13 @@ func (s *stamps) mark(name string) {
 // in a log line: serveConnect answers OK after it has dialed, so the line is
 // the first CONNECT having been read, checked and satisfied.
 func (s *stamps) line(text string) {
-	s.mu.Lock()
-	s.lines = append(s.lines, text)
-	s.mu.Unlock()
+	s.add(text)
 	if strings.HasPrefix(text, "EXIT accepted") {
 		s.mark("tunnel_open")
 	}
 	if strings.HasPrefix(text, "EXIT dialed") {
 		s.mark("first_connect")
 	}
-}
-
-// matching is the lines of the exit's log that carry prefix.
-func (s *stamps) matching(prefix string) []string {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return containing(s.lines, prefix)
-}
-
-// containing is the search both this file and twohops_test.go do over a slice
-// of remembered log lines. It takes the lines rather than the thing that holds
-// them because the two holders lock differently and neither lock is this
-// function's business.
-func containing(lines []string, prefix string) []string {
-	var found []string
-	for _, line := range lines {
-		if strings.Contains(line, prefix) {
-			found = append(found, line)
-		}
-	}
-	return found
 }
 
 // timings is the one line a run prints and the README repeats. A thing that

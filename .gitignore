@@ -30,3 +30,13 @@
 /docs/snp/evidence/ticket19/**/disk.raw
 /docs/snp/evidence/ticket19/**/config.raw
 /docs/snp/evidence/ticket19/**/initrd.img
+
+# Ticket 24 build outputs, the same rule as ticket 19's with the workload device
+# added: the disk, the config device, the workload device and the initrd that
+# goes inside the boot image. The manifests, the documents and the consoles are
+# the record; these are gigabytes of bytes a rebuild reproduces, and the
+# workload device is not measured at all.
+/docs/snp/evidence/ticket24/**/disk.raw
+/docs/snp/evidence/ticket24/**/config.raw
+/docs/snp/evidence/ticket24/**/workload.raw
+/docs/snp/evidence/ticket24/**/initrd.img

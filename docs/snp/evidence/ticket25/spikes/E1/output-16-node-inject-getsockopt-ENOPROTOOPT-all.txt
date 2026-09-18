@@ -1,0 +1,122 @@
+### E1a run 16: node-inject-getsockopt-ENOPROTOOPT-all
+### date: 2026-09-18T07:52:01-04:00
+### runtime: node
+### command: env E1_DIAL_IP=104.18.20.81 strace -f -yy -s 128 -e trace=%network,poll,ppoll,epoll_ctl,epoll_wait,epoll_pwait,epoll_pwait2,fcntl,ioctl,shutdown,close -e inject=getsockopt:error=ENOPROTOOPT -o <strace> /usr/bin/node /home/pniroula/Projects/gvisor-t25/docs/snp/evidence/ticket25/spikes/E1/nodeclient.js 127.0.0.1 42057 https://www.rfc-editor.org/
+### echo server: 127.0.0.1:42057   phase-2 url: https://www.rfc-editor.org/   pinned: 1 104.18.20.81
+### exit status: 0   wall: 0.88s
+### outcome: completed
+
+########## CLIENT STDOUT+STDERR ##########
+=== PHASE 1: plain TCP ===
+PHASE1 error: connect Unknown system error -28968 127.0.0.1:42057
+PHASE1 close hadError=true
+=== PHASE 2: https.get + TLS ===
+PHASE2 dial pinned to 104.18.20.81
+PHASE2 error: connect Unknown system error -28968 104.18.20.81:443
+
+########## STRACE (untrimmed) ##########
+4132153 close(3</etc/ld.so.cache>)      = 0
+4132153 close(3</usr/lib/x86_64-linux-gnu/libnode.so.109>) = 0
+4132153 close(3</usr/lib/x86_64-linux-gnu/libc.so.6>) = 0
+4132153 close(3</usr/lib/x86_64-linux-gnu/libz.so.1.3>) = 0
+4132153 close(3</usr/lib/x86_64-linux-gnu/libuv.so.1.0.0>) = 0
+4132153 close(3</usr/lib/x86_64-linux-gnu/libbrotlidec.so.1.1.0>) = 0
+4132153 close(3</usr/lib/x86_64-linux-gnu/libbrotlienc.so.1.1.0>) = 0
+4132153 close(3</usr/lib/x86_64-linux-gnu/libcares.so.2.12.0>) = 0
+4132153 close(3</usr/lib/x86_64-linux-gnu/libnghttp2.so.14.26.0>) = 0
+4132153 close(3</usr/lib/x86_64-linux-gnu/libcrypto.so.3>) = 0
+4132153 close(3</usr/lib/x86_64-linux-gnu/libssl.so.3>) = 0
+4132153 close(3</usr/lib/x86_64-linux-gnu/libicui18n.so.74.2>) = 0
+4132153 close(3</usr/lib/x86_64-linux-gnu/libicuuc.so.74.2>) = 0
+4132153 close(3</usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33>) = 0
+4132153 close(3</usr/lib/x86_64-linux-gnu/libm.so.6>) = 0
+4132153 close(3</usr/lib/x86_64-linux-gnu/libgcc_s.so.1>) = 0
+4132153 close(3</usr/lib/x86_64-linux-gnu/libbrotlicommon.so.1.1.0>) = 0
+4132153 close(3</usr/lib/x86_64-linux-gnu/libicudata.so.74.2>) = 0
+4132153 fcntl(0</dev/null<char 1:3>>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4132153 ioctl(0</dev/null<char 1:3>>, TCGETS, 0x7ffd5a928040) = -1 ENOTTY (Inappropriate ioctl for device)
+4132153 fcntl(1</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/16.stdout>, F_GETFL) = 0x8001 (flags O_WRONLY|O_LARGEFILE)
+4132153 ioctl(1</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/16.stdout>, TCGETS, 0x7ffd5a928040) = -1 ENOTTY (Inappropriate ioctl for device)
+4132153 fcntl(2</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/16.stdout>, F_GETFL) = 0x8001 (flags O_WRONLY|O_LARGEFILE)
+4132153 ioctl(2</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/16.stdout>, TCGETS, 0x7ffd5a928040) = -1 ENOTTY (Inappropriate ioctl for device)
+4132153 fcntl(0</dev/null<char 1:3>>, F_SETFD, FD_CLOEXEC) = 0
+4132153 fcntl(1</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/16.stdout>, F_SETFD, FD_CLOEXEC) = 0
+4132153 fcntl(2</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/16.stdout>, F_SETFD, FD_CLOEXEC) = 0
+4132153 fcntl(3, F_SETFD, FD_CLOEXEC)   = -1 EBADF (Bad file descriptor)
+4132153 fcntl(4, F_SETFD, FD_CLOEXEC)   = -1 EBADF (Bad file descriptor)
+4132153 fcntl(5, F_SETFD, FD_CLOEXEC)   = -1 EBADF (Bad file descriptor)
+4132153 fcntl(6, F_SETFD, FD_CLOEXEC)   = -1 EBADF (Bad file descriptor)
+4132153 fcntl(7, F_SETFD, FD_CLOEXEC)   = -1 EBADF (Bad file descriptor)
+4132153 fcntl(8, F_SETFD, FD_CLOEXEC)   = -1 EBADF (Bad file descriptor)
+4132153 fcntl(9, F_SETFD, FD_CLOEXEC)   = -1 EBADF (Bad file descriptor)
+4132153 fcntl(10, F_SETFD, FD_CLOEXEC)  = -1 EBADF (Bad file descriptor)
+4132153 fcntl(11, F_SETFD, FD_CLOEXEC)  = -1 EBADF (Bad file descriptor)
+4132153 fcntl(12, F_SETFD, FD_CLOEXEC)  = -1 EBADF (Bad file descriptor)
+4132153 fcntl(13, F_SETFD, FD_CLOEXEC)  = -1 EBADF (Bad file descriptor)
+4132153 fcntl(14, F_SETFD, FD_CLOEXEC)  = -1 EBADF (Bad file descriptor)
+4132153 fcntl(15, F_SETFD, FD_CLOEXEC)  = -1 EBADF (Bad file descriptor)
+4132153 fcntl(16, F_SETFD, FD_CLOEXEC)  = -1 EBADF (Bad file descriptor)
+4132153 close(3</etc/ssl/openssl.cnf>)  = 0
+4132153 epoll_ctl(3<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 4<anon_inode:[io_uring]>, {events=EPOLLIN, data={u32=4, u64=4}}) = 0
+4132173 epoll_ctl(11<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 12<anon_inode:[io_uring]>, {events=EPOLLIN, data={u32=12, u64=12}}) = 0
+4132173 epoll_pwait(11<anon_inode:[eventpoll]>,  <unfinished ...>
+4132153 epoll_ctl(17<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 18<anon_inode:[io_uring]>, {events=EPOLLIN, data={u32=18, u64=18}}) = 0
+4132153 close(23</proc/4132153/cgroup>) = 0
+4132153 close(23</sys/fs/cgroup/user.slice/user-253477.slice/session-5.scope/memory.max>) = 0
+4132153 close(23</sys/fs/cgroup/user.slice/user-253477.slice/session-5.scope/memory.high>) = 0
+4132153 close(23</proc/meminfo>)        = 0
+4132153 close(23</proc/4132153/maps>)   = 0
+4132153 close(23</usr/share/nodejs/cjs-module-lexer/lexer.js>) = 0
+4132153 close(23</usr/share/nodejs/cjs-module-lexer/dist/lexer.js>) = 0
+4132153 close(23</usr/share/nodejs/undici/undici-fetch.js>) = 0
+4132153 close(23</usr/share/nodejs/acorn/dist/acorn.js>) = 0
+4132153 close(23</usr/share/nodejs/acorn-walk/dist/walk.js>) = 0
+4132153 close(23</home/pniroula/Projects/gvisor-t25/docs/snp/evidence/ticket25/spikes/E1/nodeclient.js>) = 0
+4132153 ioctl(1</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/16.stdout>, TCGETS, 0x7ffd5a924580) = -1 ENOTTY (Inappropriate ioctl for device)
+4132153 ioctl(2</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/16.stdout>, TCGETS, 0x7ffd5a9243c0) = -1 ENOTTY (Inappropriate ioctl for device)
+4132153 socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 24<TCP:[30387714]>
+4132153 connect(24<TCP:[30387714]>, {sa_family=AF_INET, sin_port=htons(42057), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+4132153 epoll_pwait(17<anon_inode:[eventpoll]>, [{events=EPOLLIN, data={u32=22, u64=22}}, {events=EPOLLOUT, data={u32=24, u64=24}}], 1024, 0, NULL, 8) = 2
+4132153 getsockopt(24<TCP:[127.0.0.1:56616->127.0.0.1:42057]>, SOL_SOCKET, SO_ERROR, 0x7ffd5a9242ac, [4]) = -1 ENOPROTOOPT (Protocol not available) (INJECTED)
+4132153 close(24<TCP:[127.0.0.1:56616->127.0.0.1:42057]>) = 0
+4132153 close(24</etc/ssl/certs/ca-certificates.crt>) = 0
+4132153 close(24</run/systemd/resolve/stub-resolv.conf>) = 0
+4132153 close(24</etc/nsswitch.conf>)   = 0
+4132153 close(24</etc/host.conf>)       = 0
+4132153 socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 24<TCP:[30387715]>
+4132153 connect(24<TCP:[30387715]>, {sa_family=AF_INET, sin_port=htons(443), sin_addr=inet_addr("104.18.20.81")}, 16) = -1 EINPROGRESS (Operation now in progress)
+4132153 epoll_pwait(17<anon_inode:[eventpoll]>, [{events=EPOLLOUT, data={u32=24, u64=24}}], 1024, 0, NULL, 8) = 1
+4132153 getsockopt(24<TCP:[172.16.24.11:48648->104.18.20.81:443]>, SOL_SOCKET, SO_ERROR, 0x7ffd5a9242ac, [4]) = -1 ENOPROTOOPT (Protocol not available) (INJECTED)
+4132153 close(24<TCP:[172.16.24.11:48648->104.18.20.81:443]>) = 0
+4132153 epoll_pwait(17<anon_inode:[eventpoll]>, [], 1024, 0, NULL, 8) = 0
+4132153 epoll_pwait(17<anon_inode:[eventpoll]>, [], 1024, 0, NULL, 8) = 0
+4132153 epoll_pwait(17<anon_inode:[eventpoll]>, [], 1024, 0, NULL, 8) = 0
+4132153 fcntl(0</dev/null<char 1:3>>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4132153 fcntl(1</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/16.stdout>, F_GETFL) = 0x8001 (flags O_WRONLY|O_LARGEFILE)
+4132153 fcntl(2</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/16.stdout>, F_GETFL) = 0x8001 (flags O_WRONLY|O_LARGEFILE)
+4132173 <... epoll_pwait resumed>[{events=EPOLLIN, data={u32=16, u64=16}}], 1024, -1, NULL, 8) = 1
+4132173 close(14<pipe:[30396850]>)      = 0
+4132177 +++ exited with 0 +++
+4132173 close(15<pipe:[30396850]>)      = 0
+4132176 +++ exited with 0 +++
+4132175 +++ exited with 0 +++
+4132178 +++ exited with 0 +++
+4132173 close(13<anon_inode:[io_uring]>) = 0
+4132173 close(12<anon_inode:[io_uring]>) = 0
+4132173 close(16<anon_inode:[eventfd]>) = 0
+4132173 close(11<anon_inode:[eventpoll]>) = 0
+4132173 +++ exited with 0 +++
+4132153 epoll_pwait(3<anon_inode:[eventpoll]>, [], 1024, 0, NULL, 8) = 0
+4132153 close(8<pipe:[30380634]>)       = 0
+4132153 close(9<pipe:[30380634]>)       = 0
+4132153 close(5<anon_inode:[io_uring]>) = 0
+4132153 close(4<anon_inode:[io_uring]>) = 0
+4132153 close(10<anon_inode:[eventfd]>) = 0
+4132153 close(3<anon_inode:[eventpoll]>) = 0
+4132153 fcntl(0</dev/null<char 1:3>>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4132153 fcntl(1</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/16.stdout>, F_GETFL) = 0x8001 (flags O_WRONLY|O_LARGEFILE)
+4132153 fcntl(2</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/16.stdout>, F_GETFL) = 0x8001 (flags O_WRONLY|O_LARGEFILE)
+4132153 close(6<pipe:[30380633]>)       = 0
+4132153 close(7<pipe:[30380633]>)       = 0
+4132187 +++ exited with 0 +++
+4132153 +++ exited with 0 +++

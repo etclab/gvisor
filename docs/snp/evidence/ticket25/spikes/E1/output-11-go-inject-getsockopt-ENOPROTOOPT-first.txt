@@ -1,0 +1,65 @@
+### E1a run 11: go-inject-getsockopt-ENOPROTOOPT-first
+### date: 2026-09-18T07:51:56-04:00
+### runtime: go
+### command: env E1_DIAL_IP=104.18.20.81 strace -f -yy -s 128 -e trace=%network,poll,ppoll,epoll_ctl,epoll_wait,epoll_pwait,epoll_pwait2,fcntl,ioctl,shutdown,close -e inject=getsockopt:error=ENOPROTOOPT:when=1 -o <strace> /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/goclient 127.0.0.1:42057 https://www.rfc-editor.org/
+### echo server: 127.0.0.1:42057   phase-2 url: https://www.rfc-editor.org/   pinned: 1 104.18.20.81
+### exit status: 1   wall: 0.43s
+### outcome: completed
+
+########## CLIENT STDOUT+STDERR ##########
+=== PHASE 1: plain TCP ===
+PHASE1 dial error: dial tcp 127.0.0.1:42057: getsockopt: protocol not available
+=== PHASE 2: net/http + crypto/tls ===
+PHASE2 dial pinned to 104.18.20.81
+PHASE2 get error: Get "https://www.rfc-editor.org/": dial tcp 104.18.20.81:443: getsockopt: protocol not available
+
+########## STRACE (untrimmed) ##########
+4131929 close(3</etc/ld.so.cache>)      = 0
+4131929 close(3</usr/lib/x86_64-linux-gnu/libc.so.6>) = 0
+4131929 close(3</proc/4131929/maps>)    = 0
+4131929 close(3</sys/kernel/mm/transparent_hugepage/hpage_pmd_size>) = 0
+4131929 fcntl(0</dev/null<char 1:3>>, F_GETFD) = 0
+4131929 fcntl(1</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/11.stdout>, F_GETFD) = 0
+4131929 fcntl(2</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/11.stdout>, F_GETFD) = 0
+4131929 close(3</proc/4131929/cgroup>)  = 0
+4131929 close(3</proc/4131929/mountinfo>) = 0
+4131929 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131929, si_uid=253477} ---
+4131929 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131929, si_uid=253477} ---
+4131929 fcntl(0</dev/null<char 1:3>>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131929 fcntl(1</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/11.stdout>, F_GETFL) = 0x8001 (flags O_WRONLY|O_LARGEFILE)
+4131929 fcntl(2</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/11.stdout>, F_GETFL) = 0x8001 (flags O_WRONLY|O_LARGEFILE)
+4131929 socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 4<TCP:[30403728]>
+4131929 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131929, si_uid=253477} ---
+4131931 connect(4<TCP:[30403728]>, {sa_family=AF_INET, sin_port=htons(42057), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+4131931 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 6<anon_inode:[eventfd]>, {events=EPOLLIN, data={u32=10303392, u64=10303392}}) = 0
+4131930 epoll_pwait(5<anon_inode:[eventpoll]>,  <unfinished ...>
+4131931 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 4<TCP:[127.0.0.1:44120->127.0.0.1:42057]>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=603979777, u64=4078472606691360769}} <unfinished ...>
+4131930 <... epoll_pwait resumed>[], 128, 0, NULL, 0) = 0
+4131931 <... epoll_ctl resumed>)        = 0
+4131931 epoll_pwait(5<anon_inode:[eventpoll]>,  <unfinished ...>
+4131930 epoll_pwait(5<anon_inode:[eventpoll]>,  <unfinished ...>
+4131931 <... epoll_pwait resumed>[{events=EPOLLOUT, data={u32=603979777, u64=4078472606691360769}}], 128, 0, NULL, 0) = 1
+4131930 <... epoll_pwait resumed>[], 128, 0, NULL, 0) = 0
+4131931 getsockopt(4<TCP:[127.0.0.1:44120->127.0.0.1:42057]>, SOL_SOCKET, SO_ERROR, 0x374a55b7720c, [4]) = -1 ENOPROTOOPT (Protocol not available) (INJECTED)
+4131931 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_DEL, 4<TCP:[127.0.0.1:44120->127.0.0.1:42057]>, 0x374a55b7737c) = 0
+4131931 close(4<TCP:[127.0.0.1:44120->127.0.0.1:42057]>) = 0
+4131932 epoll_pwait(5<anon_inode:[eventpoll]>,  <unfinished ...>
+4131931 socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 4<TCP:[30416964]>
+4131931 connect(4<TCP:[30416964]>, {sa_family=AF_INET, sin_port=htons(443), sin_addr=inet_addr("104.18.20.81")}, 16) = -1 EINPROGRESS (Operation now in progress)
+4131931 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 4<TCP:[172.16.24.11:49474->104.18.20.81:443]>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=603979778, u64=4078472606691360770}} <unfinished ...>
+4131932 <... epoll_pwait resumed>[{events=EPOLLOUT, data={u32=603979778, u64=4078472606691360770}}], 128, 14999, NULL, 0) = 1
+4131931 <... epoll_ctl resumed>)        = 0
+4131932 epoll_pwait(5<anon_inode:[eventpoll]>,  <unfinished ...>
+4131931 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131929, si_uid=253477} ---
+4131932 <... epoll_pwait resumed>[{events=EPOLLIN, data={u32=10303392, u64=10303392}}], 128, 14833, NULL, 0) = 1
+4131929 getsockopt(4<TCP:[172.16.24.11:49474->104.18.20.81:443]>, SOL_SOCKET, SO_ERROR, 0x374a55b72eac, [4]) = -1 ENOPROTOOPT (Protocol not available) (INJECTED)
+4131929 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_DEL, 4<TCP:[172.16.24.11:49474->104.18.20.81:443]>, 0x374a55b7301c) = 0
+4131932 epoll_pwait(5<anon_inode:[eventpoll]>,  <unfinished ...>
+4131929 close(4<TCP:[172.16.24.11:49474->104.18.20.81:443]>) = 0
+4131932 <... epoll_pwait resumed> <unfinished ...>) = ?
+4131933 +++ exited with 1 +++
+4131932 +++ exited with 1 +++
+4131931 +++ exited with 1 +++
+4131930 +++ exited with 1 +++
+4131934 +++ exited with 1 +++
+4131929 +++ exited with 1 +++

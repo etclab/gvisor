@@ -1,0 +1,326 @@
+### E1a run 04: node-baseline-with-rw
+### date: 2026-09-18T07:51:24-04:00
+### runtime: node
+### command:  strace -f -yy -s 128 -e trace=%network,poll,ppoll,epoll_ctl,epoll_wait,epoll_pwait,epoll_pwait2,fcntl,ioctl,shutdown,close,read,write,readv,writev,sendfile  -o <strace> /usr/bin/node /home/pniroula/Projects/gvisor-t25/docs/snp/evidence/ticket25/spikes/E1/nodeclient.js 127.0.0.1 42057 https://www.rfc-editor.org/
+### echo server: 127.0.0.1:42057   phase-2 url: https://www.rfc-editor.org/   pinned: 0 104.18.20.81
+### exit status: 0   wall: 1.07s
+### outcome: completed
+
+########## CLIENT STDOUT+STDERR ##########
+=== PHASE 1: plain TCP ===
+PHASE1 connect: local=127.0.0.1:37284 remote=127.0.0.1:42057 family=IPv4
+PHASE1 read="echo: hello-from-node\n"
+PHASE1 close hadError=false
+=== PHASE 2: https.get + TLS ===
+PHASE2 status=200
+PHASE2 bodyprefix="<!DOCTYPE html><html  lang=\"en\"><head><meta charset=\"utf-8\"><met"
+PHASE2 OK bytes=179553
+
+########## STRACE (untrimmed) ##########
+4131010 close(3</etc/ld.so.cache>)      = 0
+4131010 read(3</usr/lib/x86_64-linux-gnu/libnode.so.109>, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0@\0\0\0\0\0\0\0x\353\330\2\0\0\0\0\0\0\0\0@\08\0\n\0@\0\34\0\33\0\1\0\0\0\4\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0H\310\207\0\0\0\0\0H\310\207\0\0\0\0\0\0\20\0\0\0\0\0\0\1\0\0\0\5\0\0\0"..., 832) = 832
+4131010 close(3</usr/lib/x86_64-linux-gnu/libnode.so.109>) = 0
+4131010 read(3</usr/lib/x86_64-linux-gnu/libc.so.6>, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\220\243\2\0\0\0\0\0@\0\0\0\0\0\0\0\20n \0\0\0\0\0\0\0\0\0@\08\0\16\0@\0@\0?\0\6\0\0\0\4\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0\20\3\0\0\0\0\0\0\20\3\0\0\0\0\0\0\10\0\0\0\0\0\0\0\3\0\0\0\4\0\0\0"..., 832) = 832
+4131010 close(3</usr/lib/x86_64-linux-gnu/libc.so.6>) = 0
+4131010 read(3</usr/lib/x86_64-linux-gnu/libz.so.1.3>, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0@\0\0\0\0\0\0\0\350\261\1\0\0\0\0\0\0\0\0\0@\08\0\v\0@\0\36\0\35\0\1\0\0\0\4\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0 \0\0\0\0\0\0\0 \0\0\0\0\0\0\0\20\0\0\0\0\0\0\1\0\0\0\5\0\0\0"..., 832) = 832
+4131010 close(3</usr/lib/x86_64-linux-gnu/libz.so.1.3>) = 0
+4131010 read(3</usr/lib/x86_64-linux-gnu/libuv.so.1.0.0>, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0@\0\0\0\0\0\0\0\2301\3\0\0\0\0\0\0\0\0\0@\08\0\v\0@\0\33\0\32\0\1\0\0\0\4\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0Pv\0\0\0\0\0\0Pv\0\0\0\0\0\0\0\20\0\0\0\0\0\0\1\0\0\0\5\0\0\0"..., 832) = 832
+4131010 close(3</usr/lib/x86_64-linux-gnu/libuv.so.1.0.0>) = 0
+4131010 read(3</usr/lib/x86_64-linux-gnu/libbrotlidec.so.1.1.0>, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0@\0\0\0\0\0\0\0\370\301\0\0\0\0\0\0\0\0\0\0@\08\0\v\0@\0\35\0\34\0\1\0\0\0\4\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\260\f\0\0\0\0\0\0\260\f\0\0\0\0\0\0\0\20\0\0\0\0\0\0\1\0\0\0\5\0\0\0"..., 832) = 832
+4131010 close(3</usr/lib/x86_64-linux-gnu/libbrotlidec.so.1.1.0>) = 0
+4131010 read(3</usr/lib/x86_64-linux-gnu/libbrotlienc.so.1.1.0>, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0@\0\0\0\0\0\0\0\270\323\t\0\0\0\0\0\0\0\0\0@\08\0\v\0@\0\34\0\33\0\1\0\0\0\4\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\08\f\0\0\0\0\0\08\f\0\0\0\0\0\0\0\20\0\0\0\0\0\0\1\0\0\0\5\0\0\0"..., 832) = 832
+4131010 close(3</usr/lib/x86_64-linux-gnu/libbrotlienc.so.1.1.0>) = 0
+4131010 read(3</usr/lib/x86_64-linux-gnu/libcares.so.2.12.0>, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0@\0\0\0\0\0\0\0`a\2\0\0\0\0\0\0\0\0\0@\08\0\v\0@\0\34\0\33\0\1\0\0\0\4\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\3605\0\0\0\0\0\0\3605\0\0\0\0\0\0\0\20\0\0\0\0\0\0\1\0\0\0\5\0\0\0"..., 832) = 832
+4131010 close(3</usr/lib/x86_64-linux-gnu/libcares.so.2.12.0>) = 0
+4131010 read(3</usr/lib/x86_64-linux-gnu/libnghttp2.so.14.26.0>, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0@\0\0\0\0\0\0\0000\222\2\0\0\0\0\0\0\0\0\0@\08\0\v\0@\0\35\0\34\0\1\0\0\0\4\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0XL\0\0\0\0\0\0XL\0\0\0\0\0\0\0\20\0\0\0\0\0\0\1\0\0\0\5\0\0\0"..., 832) = 832
+4131010 close(3</usr/lib/x86_64-linux-gnu/libnghttp2.so.14.26.0>) = 0
+4131010 read(3</usr/lib/x86_64-linux-gnu/libcrypto.so.3>, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0@\0\0\0\0\0\0\0\230\374P\0\0\0\0\0\0\0\0\0@\08\0\v\0@\0\35\0\34\0\1\0\0\0\4\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\210/\v\0\0\0\0\0\210/\v\0\0\0\0\0\0\20\0\0\0\0\0\0\1\0\0\0\5\0\0\0"..., 832) = 832
+4131010 close(3</usr/lib/x86_64-linux-gnu/libcrypto.so.3>) = 0
+4131010 read(3</usr/lib/x86_64-linux-gnu/libssl.so.3>, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0@\0\0\0\0\0\0\0\200\231\n\0\0\0\0\0\0\0\0\0@\08\0\v\0@\0\35\0\34\0\1\0\0\0\4\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\300\334\1\0\0\0\0\0\300\334\1\0\0\0\0\0\0\20\0\0\0\0\0\0\1\0\0\0\5\0\0\0"..., 832) = 832
+4131010 close(3</usr/lib/x86_64-linux-gnu/libssl.so.3>) = 0
+4131010 read(3</usr/lib/x86_64-linux-gnu/libicui18n.so.74.2>, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0@\0\0\0\0\0\0\0\10\2624\0\0\0\0\0\0\0\0\0@\08\0\v\0@\0\35\0\34\0\1\0\0\0\4\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\08\326\16\0\0\0\0\08\326\16\0\0\0\0\0\0\20\0\0\0\0\0\0\1\0\0\0\5\0\0\0"..., 832) = 832
+4131010 close(3</usr/lib/x86_64-linux-gnu/libicui18n.so.74.2>) = 0
+4131010 read(3</usr/lib/x86_64-linux-gnu/libicuuc.so.74.2>, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0@\0\0\0\0\0\0\0p\241 \0\0\0\0\0\0\0\0\0@\08\0\v\0@\0\35\0\34\0\1\0\0\0\4\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0Ps\6\0\0\0\0\0Ps\6\0\0\0\0\0\0\20\0\0\0\0\0\0\1\0\0\0\5\0\0\0"..., 832) = 832
+4131010 close(3</usr/lib/x86_64-linux-gnu/libicuuc.so.74.2>) = 0
+4131010 read(3</usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33>, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0@\0\0\0\0\0\0\0 \205'\0\0\0\0\0\0\0\0\0@\08\0\f\0@\0#\0\"\0\1\0\0\0\4\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0`\304\t\0\0\0\0\0`\304\t\0\0\0\0\0\0\20\0\0\0\0\0\0\1\0\0\0\5\0\0\0"..., 832) = 832
+4131010 close(3</usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33>) = 0
+4131010 read(3</usr/lib/x86_64-linux-gnu/libm.so.6>, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0@\0\0\0\0\0\0\0h\201\16\0\0\0\0\0\0\0\0\0@\08\0\v\0@\0\37\0\36\0\1\0\0\0\4\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\350\366\0\0\0\0\0\0\350\366\0\0\0\0\0\0\0\20\0\0\0\0\0\0\1\0\0\0\5\0\0\0"..., 832) = 832
+4131010 close(3</usr/lib/x86_64-linux-gnu/libm.so.6>) = 0
+4131010 read(3</usr/lib/x86_64-linux-gnu/libgcc_s.so.1>, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0@\0\0\0\0\0\0\0000\303\2\0\0\0\0\0\0\0\0\0@\08\0\f\0@\0\37\0\36\0\1\0\0\0\4\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\3406\0\0\0\0\0\0\3406\0\0\0\0\0\0\0\20\0\0\0\0\0\0\1\0\0\0\5\0\0\0"..., 832) = 832
+4131010 close(3</usr/lib/x86_64-linux-gnu/libgcc_s.so.1>) = 0
+4131010 read(3</usr/lib/x86_64-linux-gnu/libbrotlicommon.so.1.1.0>, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0@\0\0\0\0\0\0\0\310!\2\0\0\0\0\0\0\0\0\0@\08\0\v\0@\0\36\0\35\0\1\0\0\0\4\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0X\10\0\0\0\0\0\0X\10\0\0\0\0\0\0\0\20\0\0\0\0\0\0\1\0\0\0\5\0\0\0"..., 832) = 832
+4131010 close(3</usr/lib/x86_64-linux-gnu/libbrotlicommon.so.1.1.0>) = 0
+4131010 read(3</usr/lib/x86_64-linux-gnu/libicudata.so.74.2>, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0@\0\0\0\0\0\0\0\0\341\325\1\0\0\0\0\0\0\0\0@\08\0\n\0@\0\26\0\25\0\1\0\0\0\4\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\220\4\0\0\0\0\0\0\220\4\0\0\0\0\0\0\0\20\0\0\0\0\0\0\1\0\0\0\5\0\0\0"..., 832) = 832
+4131010 close(3</usr/lib/x86_64-linux-gnu/libicudata.so.74.2>) = 0
+4131010 fcntl(0</dev/null<char 1:3>>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131010 ioctl(0</dev/null<char 1:3>>, TCGETS, 0x7ffebede3d20) = -1 ENOTTY (Inappropriate ioctl for device)
+4131010 fcntl(1</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/04.stdout>, F_GETFL) = 0x8001 (flags O_WRONLY|O_LARGEFILE)
+4131010 ioctl(1</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/04.stdout>, TCGETS, 0x7ffebede3d20) = -1 ENOTTY (Inappropriate ioctl for device)
+4131010 fcntl(2</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/04.stdout>, F_GETFL) = 0x8001 (flags O_WRONLY|O_LARGEFILE)
+4131010 ioctl(2</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/04.stdout>, TCGETS, 0x7ffebede3d20) = -1 ENOTTY (Inappropriate ioctl for device)
+4131010 fcntl(0</dev/null<char 1:3>>, F_SETFD, FD_CLOEXEC) = 0
+4131010 fcntl(1</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/04.stdout>, F_SETFD, FD_CLOEXEC) = 0
+4131010 fcntl(2</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/04.stdout>, F_SETFD, FD_CLOEXEC) = 0
+4131010 fcntl(3, F_SETFD, FD_CLOEXEC)   = -1 EBADF (Bad file descriptor)
+4131010 fcntl(4, F_SETFD, FD_CLOEXEC)   = -1 EBADF (Bad file descriptor)
+4131010 fcntl(5, F_SETFD, FD_CLOEXEC)   = -1 EBADF (Bad file descriptor)
+4131010 fcntl(6, F_SETFD, FD_CLOEXEC)   = -1 EBADF (Bad file descriptor)
+4131010 fcntl(7, F_SETFD, FD_CLOEXEC)   = -1 EBADF (Bad file descriptor)
+4131010 fcntl(8, F_SETFD, FD_CLOEXEC)   = -1 EBADF (Bad file descriptor)
+4131010 fcntl(9, F_SETFD, FD_CLOEXEC)   = -1 EBADF (Bad file descriptor)
+4131010 fcntl(10, F_SETFD, FD_CLOEXEC)  = -1 EBADF (Bad file descriptor)
+4131010 fcntl(11, F_SETFD, FD_CLOEXEC)  = -1 EBADF (Bad file descriptor)
+4131010 fcntl(12, F_SETFD, FD_CLOEXEC)  = -1 EBADF (Bad file descriptor)
+4131010 fcntl(13, F_SETFD, FD_CLOEXEC)  = -1 EBADF (Bad file descriptor)
+4131010 fcntl(14, F_SETFD, FD_CLOEXEC)  = -1 EBADF (Bad file descriptor)
+4131010 fcntl(15, F_SETFD, FD_CLOEXEC)  = -1 EBADF (Bad file descriptor)
+4131010 fcntl(16, F_SETFD, FD_CLOEXEC)  = -1 EBADF (Bad file descriptor)
+4131010 read(3</etc/ssl/openssl.cnf>, "#\n# OpenSSL example configuration file.\n# See doc/man5/config.pod for more info.\n#\n# This is mostly being used for generation of"..., 4096) = 4096
+4131010 read(3</etc/ssl/openssl.cnf>, "d attributes must be the same, and the optional\n# and supplied fields are just that :-)\npolicy\t\t= policy_match\n\n# For the CA pol"..., 4096) = 4096
+4131010 read(3</etc/ssl/openssl.cnf>, "coding of an extension: beware experts only!\n# obj=DER:02:03\n# Where 'obj' is a standard or added object\n# You can even override"..., 4096) = 4096
+4131010 read(3</etc/ssl/openssl.cnf>, " = $insta::certout # insta.cert.pem\n", 4096) = 36
+4131010 read(3</etc/ssl/openssl.cnf>, "", 4096) = 0
+4131010 close(3</etc/ssl/openssl.cnf>)  = 0
+4131010 epoll_ctl(3<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 4<anon_inode:[io_uring]>, {events=EPOLLIN, data={u32=4, u64=4}}) = 0
+4131010 write(7<pipe:[30416951]>, "*", 1) = 1
+4131020 epoll_ctl(11<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 12<anon_inode:[io_uring]>, {events=EPOLLIN, data={u32=12, u64=12}}) = 0
+4131020 epoll_pwait(11<anon_inode:[eventpoll]>,  <unfinished ...>
+4131010 epoll_ctl(17<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 18<anon_inode:[io_uring]>, {events=EPOLLIN, data={u32=18, u64=18}}) = 0
+4131010 read(23</proc/4131010/cgroup>, "0::/user.slice/user-253477.slice/session-5.scope\n", 1023) = 49
+4131010 close(23</proc/4131010/cgroup>) = 0
+4131010 read(23</sys/fs/cgroup/user.slice/user-253477.slice/session-5.scope/memory.max>, "max\n", 31) = 4
+4131010 close(23</sys/fs/cgroup/user.slice/user-253477.slice/session-5.scope/memory.max>) = 0
+4131010 read(23</sys/fs/cgroup/user.slice/user-253477.slice/session-5.scope/memory.high>, "max\n", 31) = 4
+4131010 close(23</sys/fs/cgroup/user.slice/user-253477.slice/session-5.scope/memory.high>) = 0
+4131010 read(23</proc/meminfo>, "MemTotal:       788801276 kB\nMemFree:        650870148 kB\nMemAvailable:   765358544 kB\nBuffers:         9486060 kB\nCached:      "..., 4095) = 1542
+4131010 close(23</proc/meminfo>)        = 0
+4131010 read(23</proc/4131010/maps>, "589aa8f44000-589aa8f45000 r--p 00000000 103:08 43396089                  /usr/bin/node\n589aa8f45000-589aa8f49000 r-xp 00001000 1"..., 1024) = 1024
+4131010 read(23</proc/4131010/maps>, "601000 ---p 00000000 00:00 0 \n7c9817601000-7c9817e01000 rw-p 00000000 00:00 0 \n7c9818000000-7c9818001000 r--p 00000000 103:08 43"..., 1024) = 1024
+4131010 read(23</proc/4131010/maps>, "3\n7c981a06c000-7c981a077000 r--p 0026b000 103:08 43396162                  /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33\n7c981a0"..., 1024) = 1024
+4131010 read(23</proc/4131010/maps>, "18n.so.74.2\n7c981a6ee000-7c981a8b1000 r-xp 000ee000 103:08 43401010                  /usr/lib/x86_64-linux-gnu/libicui18n.so.74."..., 1024) = 1024
+4131010 read(23</proc/4131010/maps>, "d000 103:08 43386315                  /usr/lib/x86_64-linux-gnu/libcrypto.so.3\n7c981af11000-7c981af14000 rw-p 00000000 00:00 0 \n"..., 1024) = 1024
+4131010 read(23</proc/4131010/maps>, "       /usr/lib/x86_64-linux-gnu/libbrotlicommon.so.1.1.0\n7c981b000000-7c981b028000 r--p 00000000 103:08 43413466               "..., 1024) = 1024
+4131010 read(23</proc/4131010/maps>, "02b000 103:08 43417141                  /usr/lib/x86_64-linux-gnu/libgcc_s.so.1\n7c981b241000-7c981b242000 rw-p 0002c000 103:08 4"..., 1024) = 1024
+4131010 read(23</proc/4131010/maps>, "         /usr/lib/x86_64-linux-gnu/libssl.so.3\n7c981b3c7000-7c981b3d1000 r--p 0009c000 103:08 43386316                  /usr/lib"..., 1024) = 1024
+4131010 read(23</proc/4131010/maps>, "000 103:08 43391400                  /usr/lib/x86_64-linux-gnu/libnode.so.109\n7c981d8b6000-7c981e0be000 r--p 024b6000 103:08 433"..., 1024) = 1024
+4131010 read(23</proc/4131010/maps>, "26000 103:08 43386116                  /usr/lib/x86_64-linux-gnu/libcares.so.2.12.0\n7c981e1ee000-7c981e1ef000 r--p 00000000 103:"..., 1024) = 1024
+4131010 read(23</proc/4131010/maps>, "08 43385512                  /usr/lib/x86_64-linux-gnu/libbrotlidec.so.1.1.0\n7c981e29b000-7c981e29c000 r--p 0000b000 103:08 4338"..., 1024) = 1024
+4131010 read(23</proc/4131010/maps>, "0 r-xp 00002000 103:08 43386124                  /usr/lib/x86_64-linux-gnu/libz.so.1.3\n7c981e2e6000-7c981e2ec000 r--p 00014000 1"..., 1024) = 1024
+4131010 read(23</proc/4131010/maps>, "00000 00:10 30416950                   anon_inode:[io_uring]\n7c981e2fc000-7c981e2fd000 rw-s 10000000 00:10 30416949             "..., 1024) = 1024
+4131010 read(23</proc/4131010/maps>, "6_64-linux-gnu/ld-linux-x86-64.so.2\n7ffebedc4000-7ffebede6000 rw-p 00000000 00:00 0                          [stack]\nffffffffff6"..., 1024) = 201
+4131010 close(23</proc/4131010/maps>)   = 0
+4131010 close(23</usr/share/nodejs/cjs-module-lexer/lexer.js>) = 0
+4131010 close(23</usr/share/nodejs/cjs-module-lexer/dist/lexer.js>) = 0
+4131010 close(23</usr/share/nodejs/undici/undici-fetch.js>) = 0
+4131010 close(23</usr/share/nodejs/acorn/dist/acorn.js>) = 0
+4131010 close(23</usr/share/nodejs/acorn-walk/dist/walk.js>) = 0
+4131010 write(22<anon_inode:[eventfd]>, "\1\0\0\0\0\0\0\0", 8) = 8
+4131010 read(23</home/pniroula/Projects/gvisor-t25/docs/snp/evidence/ticket25/spikes/E1/nodeclient.js>, "// E1a Node client (libuv): an UNMODIFIED-style Node program exercising the two\n// code paths the sentry's FD-backed endpoint ha"..., 2624) = 2624
+4131010 close(23</home/pniroula/Projects/gvisor-t25/docs/snp/evidence/ticket25/spikes/E1/nodeclient.js>) = 0
+4131010 ioctl(1</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/04.stdout>, TCGETS, 0x7ffebede0260) = -1 ENOTTY (Inappropriate ioctl for device)
+4131010 ioctl(2</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/04.stdout>, TCGETS, 0x7ffebede00a0) = -1 ENOTTY (Inappropriate ioctl for device)
+4131010 write(1</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/04.stdout>, "=== PHASE 1: plain TCP ===\n", 27) = 27
+4131010 socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 24<TCP:[30416958]>
+4131010 connect(24<TCP:[30416958]>, {sa_family=AF_INET, sin_port=htons(42057), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+4131010 epoll_pwait(17<anon_inode:[eventpoll]>, [{events=EPOLLIN, data={u32=22, u64=22}}, {events=EPOLLOUT, data={u32=24, u64=24}}], 1024, 0, NULL, 8) = 2
+4131010 read(22<anon_inode:[eventfd]>, "\1\0\0\0\0\0\0\0", 1024) = 8
+4131010 getsockopt(24<TCP:[127.0.0.1:37284->127.0.0.1:42057]>, SOL_SOCKET, SO_ERROR, [0], [4]) = 0
+4131010 getsockname(24<TCP:[127.0.0.1:37284->127.0.0.1:42057]>, {sa_family=AF_INET, sin_port=htons(37284), sin_addr=inet_addr("127.0.0.1")}, [128 => 16]) = 0
+4131010 getpeername(24<TCP:[127.0.0.1:37284->127.0.0.1:42057]>, {sa_family=AF_INET, sin_port=htons(42057), sin_addr=inet_addr("127.0.0.1")}, [128 => 16]) = 0
+4131010 write(1</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/04.stdout>, "PHASE1 connect: local=127.0.0.1:37284 remote=127.0.0.1:42057 family=IPv4\n", 73) = 73
+4131010 write(24<TCP:[127.0.0.1:37284->127.0.0.1:42057]>, "hello-from-node\n", 16) = 16
+4131010 epoll_pwait(17<anon_inode:[eventpoll]>, [{events=EPOLLIN, data={u32=24, u64=24}}], 1024, 0, NULL, 8) = 1
+4131010 read(24<TCP:[127.0.0.1:37284->127.0.0.1:42057]>, "echo: hello-from-node\n", 65536) = 22
+4131010 write(1</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/04.stdout>, "PHASE1 read=\"echo: hello-from-node\\n\"\n", 38) = 38
+4131010 shutdown(24<TCP:[127.0.0.1:37284->127.0.0.1:42057]>, SHUT_WR) = 0
+4131010 epoll_pwait(17<anon_inode:[eventpoll]>, [{events=EPOLLIN|EPOLLHUP, data={u32=24, u64=24}}], 1024, 0, NULL, 8) = 1
+4131010 read(24<TCP:[127.0.0.1:37284->127.0.0.1:42057]>, "", 65536) = 0
+4131010 close(24<TCP:[127.0.0.1:37284->127.0.0.1:42057]>) = 0
+4131010 write(1</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/04.stdout>, "PHASE1 close hadError=false\n", 28) = 28
+4131010 write(1</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/04.stdout>, "=== PHASE 2: https.get + TLS ===\n", 33) = 33
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "-----BEGIN CERTIFICATE-----\nMIIH0zCCBbugAwIBAgIIXsO3pkN/pOAwDQYJKoZIhvcNAQEFBQAwQjESMBAGA1UE\nAwwJQUNDVlJBSVoxMRAwDgYDVQQLDAdQS0l"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "8B1\nRXxlDPiyN8+sD8+Nb/kZ94/sHvJwnvDKuO+3/3Y3dlv2bojzr2IyIpMNOmqOFGYM\nLVN0V2Ue1bLdI4E7pWYjJ2cJj+F3qkPNZVEI7VFY/uY5+ctHhKQV8Xa7pO6"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "BgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAp8bEpSmkLO/lGMWwUKNv\nUTufClrJwkg4CsIcoBh/kbWHuUA/3R1oHwiD1S0eiKD4j1aPbZkCkpAW1V8IbInX\n4ay8IM"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "m3MSNjrXiDCYZohMr/+c8mmpJ5581LxedhpxfL86kS\nk5Nrp+gvU5LEYFiwzAJRGFuFjWJZY7attN6a+yb3ACfAXVU3dJnJUH/jWS5E4ywl\n7uxMMne0nxrpS10gxdr9"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "2N/9q06mIqqdXuYnin1oKaPnirja\nEbsXLZmdEyRG98Xi2J+Of8ePdG1asuhy9azuJBCtLxTa/y2aRnFHvkLfuwHb9H/T\nKI8xWVvTyQKmtFLKbpf7Q8UIJm+K9Lv9ny"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "jp2CoHxhLbWNvS\nO1UQRwUVZ2J+GGOmRj8JDlQyXr8NYnon74Do29lLBlo3WiXQCBJ31G8JUJc9yB3D\n34xFMFbG02SrZvPAXpacw8Tvw3xrizp5f7NJzz3iiZ+gMEuF"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "YTAfBgNVHSMEGDAWgBTj/i39KNAL\ntbq2osS/BqoFjJP7LzAPBgNVHRMBAf8EBTADAQH/MA4GA1UdDwEB/wQEAwIBBjAd\nBgNVHQ4EFgQU4/4t/SjQC7W6tqLEvwaqBY"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "AwwQQ2VydGlnbmEgUm9vdCBDQTAeFw0x\nMzEwMDEwODMyMjdaFw0zMzEwMDEwODMyMjdaMFoxCzAJBgNVBAYTAkZSMRIwEAYD\nVQQKDAlEaGlteW90aXMxHDAaBgNVBA"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "8\nJ9RHjboNRhx3zxSkHLmkMcScKHQDNP8zGSal6Q10tz6XxnboJ5ajZt3hrvJBW8qY\nVoNzcOSGGtIxQbovvi0TWnZvTuhOgQ4/WwMioBK+ZlgRSssDxLQqKi2WF+A5V"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "zWePS/Tj6tQ/50+6uaWTRRxmHyH6ZF5v4HaUMst19W7l9o/HuKTM\nqJZ9ZPskWkoDbGs4xugDQ5r3V7mzKWmTOPQD8rv7gmsHINFSH5pkAnuYZttcTVoP\n0ISVoDwUQw"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "Pr4/m3wOnyqi+RnlTGNAgMB\nAAGjQjBAMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgGGMB0GA1UdDgQW\nBBTOw0q5mVXyuNtgv6l+vVa1lzan1jANBgkqhki"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "+C8weE5nQ7bXHiLQwb7iDV\nySAdYyktzuxeTsiT+CFhmzTrBcZe7FsavOvJz82sNEBfsXpm7nfISKhmV1efVFiO\nDCu3T6cw2Vbuyntd463JT17lNecxy9qTXtyOj4Da"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "9VKejveSswoA\nHQBUlwbgsQfZxw9cZX08bVlX5O2ljelAU58VS6Bx9hoh49pwBiFYFIeFd3mqgnkC\nAwEAAaNCMEAwHQYDVR0OBBYEFOLJQJ9NzuiaoXzPDj9lxSmIah"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "A1UdDwEB/wQEAwIBhjAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQW\nBBSATNbrdP9JNqPV2Py1PsVq8JQdjDAKBggqhkjOPQQDAwNpADBmAjEA6ED/g94D\n9J+uHXqnLr"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "dDwEB/wQEAwIBBjAPBgNVHRMBAf8EBTAD\nAQH/MB0GA1UdDgQWBBSubAWjkxPioufi1xzWx/B/yGdToDAfBgNVHSMEGDAWgBSu\nbAWjkxPioufi1xzWx/B/yGdToDANB"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "gElY6SKD\nE6bFIEMBO4Tx5oVJnyfq9oQbTqC023CYxzIBsQU+B07u9PpPL1kwIuerGVZr4oAH\n/PMWdYA5UXvl+TW2dE6pjYIT5LY/qQOD+qK+ihVqf94Lw7YZFAXK6s"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "wbzELMAkGA1UEBhMCSEsxEjAQBgNVBAgTCUhvbmcgS29uZzESMBAGA1UEBxMJ\nSG9uZyBLb25nMRYwFAYDVQQKEw1Ib25na29uZyBQb3N0MSAwHgYDVQQDExdIb25n\na"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "CBSb290IENBIDEwHhcNMTQwMTE2MTgxMjIzWhcNMzQw\nMTE2MTgxMjIzWjBKMQswCQYDVQQGEwJVUzESMBAGA1UEChMJSWRlblRydXN0MScw\nJQYDVQQDEx5JZGVuVHJ"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "mlOHZSOEtPtoKct2jmRXagaKH9HtuJneJWK3W6wyyQXpzbm3benhB6QiIEn6H\nLmYRY2xU+zydcsC8Lv/Ct90NduM61/e0aL6i9eOBbsFGb12N4E3GVFWJGjMxCrFX\nu"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "cB6qvn9FszANBgkqhkiG9w0BAQwFADBl\nMQswCQYDVQQGEwJVUzEeMBwGA1UEChMVTWljcm9zb2Z0IENvcnBvcmF0aW9uMTYw\nNAYDVQQDEy1NaWNyb3NvZnQgUlNBIF"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "3QxFTATBgNVBAoMDE5ldExvY2sgS2Z0LjE3\nMDUGA1UECwwuVGFuw7pzw610dsOhbnlraWFkw7NrIChDZXJ0aWZpY2F0aW9uIFNl\ncnZpY2VzKTE1MDMGA1UEAwwsTmV"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "M7qAJGr6Qc4/hzWHa39g6QDbXwz8z6+cZM5cOGMAqNF341\n68Xfuw6cwI2H44g4hWf6Pser4BOcBRiYz5P1sZK0/CPTz9XEJ0ngnjybCKOLXSoh\n4Pw5qlPafX7PGglT"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "a5DFApCTZgIhsUfei5pKgLlVj7WiL8DWM2fafsSntARE60f75li59wzw\neyuxwHApw0BiLTtIadwjPEjrewl5qW3aqDCYz4ByA4imW0aucnl8CAMhZa634Ryl\nsSqiMd"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "2n5H9gooi\nS9EOUCXdywMMF8mDAAhONU2Ki+3wApRmLER/y5UnlhetCTCstnEXbosX9hwJ1C07\nmKVx01QT2WDz9UtmT/rx7iASjbSsV7FFY6GsdqnC+w==\n-----END"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "UuOQn/6mWmc5G4G18TKI4pAZw\n8PRBEew/R40/cof5O/2kbytTAOD/OblqBw7rHRz2onKQy4I9EYKL0rufKq8h5mOG\nnXkZ7/e7DDWQw4rtTw/1zBLZpD67oPwglV9PJ"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "g3ccaaNnRbobhiCPPE95Dz+I0swSdHynVv/heyNXB\nve6SbzJ08pGCL72CQnqtKrcgfU28elUSwhXqvfdqlS5sdJ/PHLTyxQGjhdByPq1z\nqwubdQxtRbeOlKyWN7Wg0"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "O9WSMs5uWk99gL7eqQQESolbuT1dCANLZGeA4f\nAJNG4e7p+exPFwIDAQABo0IwQDAdBgNVHQ4EFgQUZT/HiobGPN08VFw1+DrtUgxH\nV8gwDgYDVR0PAQH/BAQDAgEG"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "5DFnpzsZGgdT6o+uM4AHrsiWog\nD4vFsJszA1qGxliG1cGFu0/GnEBNyr7uaZa4rYEwmnySBesFK5pI0Lh2PpbIILvS\nsPGP2KxFRv+qZ2C0d35qHzwaUnoEPQc8hQ2E"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "dDgQWBBQ64QmG1M8ZwpZ2dEl23OA1xmNjmjAOBgNVHQ8BAf8EBAMCAQYwDwYD\nVR0TAQH/BAUwAwEB/zAKBggqhkjOPQQDAwNoADBlAjA2Z6EWCNzklwBBHU6+4WMB\nz"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "FGnpyuqSfqNZSlO42sTp5SjLVFteAxEy9/eCG/Oo2Sr05WE\n1LlSVHJ7liXMvGnjSG4N0MedJ5qq+BOS3R7fY581qRY27Iy4g/Q9iY/NtBde17MX\nQRBdJ3NghVdJIgc"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "NNDMwMjE4MTgzMDAwWjBrMQswCQYDVQQGEwJJ\nTjETMBEGA1UECxMKZW1TaWduIFBLSTElMCMGA1UEChMcZU11ZGhyYSBUZWNobm9s\nb2dpZXMgTGltaXRlZDEgMB4GA"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "DAxMDAwMDAwWhcNNDYwNDAxMDAwMDAwWjA9\nMQswCQYDVQQGEwJVUzESMBAGA1UEChMJQ2VydGFpbmx5MRowGAYDVQQDExFDZXJ0\nYWlubHkgUm9vdCBSMTCCAiIwDQY"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "MSYwJAYDVQQDEx1EaWdpQ2VydCBUTFMgRUNDIFAzODQgUm9vdCBHNTB2MBAG\nByqGSM49AgEGBSuBBAAiA2IABMFEoc8Rl1Ca3iOCNQfN0MsYndLxf3c1TzvdlHJS\n7c"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "mn8kN3b\nLW7R8pv1GmuebxWMevBLKKAiOIAkbDakO/IwkfN4E8/BPzWr8R0RI7VDIp4BkrcY\nAuUR0YLbFQDMYTfBKnya4dC6s1BG7oKsnTH4+yPiAwBIcKMJJnkVU2D"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "SswKQYD\nVQQDEyJTZWN1cml0eSBDb21tdW5pY2F0aW9uIEVDQyBSb290Q0ExMB4XDTE2MDYx\nNjA1MTUyOFoXDTM4MDExODA1MTUyOFowYTELMAkGA1UEBhMCSlAxJTA"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "TGfbvE7Pi1HE4+Z7/FXxttbUcoqgRYYdZ2vyJ/0Adqp2RT8JeNnYA/u8EH\n22Wv5psymsNUk8QcCMNE+3tjEUPRahphanltkE8pjkcFwRJpadbGNjHh/PqAulxP\nxOu3"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "C/srBRLYwiqipDANBgkqhkiG9w0BAQwFADBM\nMS4wLAYDVQQDDCVBdG9zIFRydXN0ZWRSb290IFJvb3QgQ0EgUlNBIFRMUyAyMDIx\nMQ0wCwYDVQQKDARBdG9zMQswCQ"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "AkBgNVBAoMHUJFSUpJ\nTkcgQ0VSVElGSUNBVEUgQVVUSE9SSVRZMR0wGwYDVQQDDBRCSkNBIEdsb2JhbCBS\nb290IENBMjB2MBAGByqGSM49AgEGBSuBBAAiA2IABJ3L"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "Igj762TVntd00pxCAgRWSGOlDGxK0tk/UYfXLtqc/ErFc2KAhl3zx5Zn6g6g==\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nMIIFiTCCA3G"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, " CERTIFICATE-----\nMIICVTCCAdygAwIBAgIUTyNkuI6XY57GU4HBdk7LKnQV1tcwCgYIKoZIzj0EAwMw\nWjELMAkGA1UEBhMCQ04xJTAjBgNVBAoMHFRydXN0QXNpY"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "cmwuZC10cnVzdC5uZXQvY3JsL2QtdHJ1c3RfZXZfcm9vdF9jYV8y\nXzIwMjMuY3JsMA0GCSqGSIb3DQEBDQUAA4ICAQCTy6UfmRHsmg1fLBWTxj++EI14\nQvBukEdHjq"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "PKQZvDatkuK59EvV6wit53j+F8Bdh3foZ3dP\nAGav9LEDOr4SfEE15fSmG0eLy3n31r8Xbk5l8PjaV8GUgeV6Vg27Rn9vkf195hfk\ngSe7BYhW3SCl95gtkRlpMV+bMP"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "U2lnbiBSb290\nIENBMTUwdjAQBgcqhkjOPQIBBgUrgQQAIgNiAAQLUHSNZDKZmbPSYAi4Io5GdCx4\nwCtELW1fHcmuS1Iggz24FG1Th2CeX2yF2wYUleDHKP+dX+Sq8b"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "FIS3R/qy\n8XDe24tsNlikfLMR0cN3f1+2JeANxdKz+bi4d9s3cXFH42AYTyS2dTd4uaNir73J\nco4vzLuu2+QVUhkHM/tqty1LkCiCc/4YizWN26cEar7qwU02OxY2kT"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "xjANBgkqhkiG9w0BAQwFADBQ\nMQswCQYDVQQGEwJUVzESMBAGA1UEChMJVEFJV0FOLUNBMRAwDgYDVQQLEwdSb290\nIENBMRswGQYDVQQDExJUV0NBIENZQkVSIFJvb3"..., 4096) = 4096
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "ARBgNVBAMMCkNhbHlwc28tQ0EwggEiMA0GCSqGSIb3DQEB\nAQUAA4IBDwAwggEKAoIBAQC4Fa/4N6pT0rtVP8I/wow0ok6iLPsnM537pAv3t0Jk\nWxsAYrZYhJHNjOv+"..., 4096) = 939
+4131010 read(24</etc/ssl/certs/ca-certificates.crt>, "", 4096) = 0
+4131010 close(24</etc/ssl/certs/ca-certificates.crt>) = 0
+4131010 read(24</run/systemd/resolve/stub-resolv.conf>, "# This is /run/systemd/resolve/stub-resolv.conf managed by man:systemd-resolved(8).\n# Do not edit.\n#\n# This file might be symlin"..., 4096) = 928
+4131010 read(24</run/systemd/resolve/stub-resolv.conf>, "", 4096) = 0
+4131010 close(24</run/systemd/resolve/stub-resolv.conf>) = 0
+4131010 read(24</etc/nsswitch.conf>, "# /etc/nsswitch.conf\n#\n# Example configuration of GNU Name Service Switch functionality.\n# If you have the `glibc-doc-reference'"..., 4096) = 521
+4131010 read(24</etc/nsswitch.conf>, "", 4096) = 0
+4131010 close(24</etc/nsswitch.conf>)   = 0
+4131010 read(24</etc/host.conf>, "# The \"order\" line is only used by old versions of the C library.\norder hosts,bind\nmulti on\n", 4096) = 92
+4131010 read(24</etc/host.conf>, "", 4096) = 0
+4131010 close(24</etc/host.conf>)       = 0
+4131032 socket(AF_UNIX, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, 0) = 24<UNIX-STREAM:[30368569]>
+4131032 connect(24<UNIX-STREAM:[30368569]>, {sa_family=AF_UNIX, sun_path="/var/run/nscd/socket"}, 110) = -1 ENOENT (No such file or directory)
+4131032 close(24<UNIX-STREAM:[30368569]>) = 0
+4131032 socket(AF_UNIX, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, 0) = 24<UNIX-STREAM:[30368570]>
+4131032 connect(24<UNIX-STREAM:[30368570]>, {sa_family=AF_UNIX, sun_path="/var/run/nscd/socket"}, 110) = -1 ENOENT (No such file or directory)
+4131032 close(24<UNIX-STREAM:[30368570]>) = 0
+4131032 read(24</etc/nsswitch.conf>, "# /etc/nsswitch.conf\n#\n# Example configuration of GNU Name Service Switch functionality.\n# If you have the `glibc-doc-reference'"..., 4096) = 521
+4131032 read(24</etc/nsswitch.conf>, "", 4096) = 0
+4131032 close(24</etc/nsswitch.conf>)   = 0
+4131032 read(24</etc/host.conf>, "# The \"order\" line is only used by old versions of the C library.\norder hosts,bind\nmulti on\n", 4096) = 92
+4131032 read(24</etc/host.conf>, "", 4096) = 0
+4131032 close(24</etc/host.conf>)       = 0
+4131032 read(24</run/systemd/resolve/stub-resolv.conf>, "# This is /run/systemd/resolve/stub-resolv.conf managed by man:systemd-resolved(8).\n# Do not edit.\n#\n# This file might be symlin"..., 4096) = 928
+4131010 epoll_pwait(17<anon_inode:[eventpoll]>,  <unfinished ...>
+4131032 read(24</run/systemd/resolve/stub-resolv.conf>,  <unfinished ...>
+4131010 <... epoll_pwait resumed>[], 1024, 0, NULL, 8) = 0
+4131032 <... read resumed>"", 4096)     = 0
+4131010 epoll_pwait(17<anon_inode:[eventpoll]>,  <unfinished ...>
+4131032 close(24</run/systemd/resolve/stub-resolv.conf>) = 0
+4131032 read(24</etc/hosts>, "127.0.0.1 localhost\n127.0.1.1 shs1\n172.16.0.2 data2\n172.16.0.3 data1\n\n# The following lines are desirable for IPv6 capable hosts"..., 4096) = 253
+4131032 read(24</etc/hosts>, "", 4096)  = 0
+4131032 close(24</etc/hosts>)           = 0
+4131032 socket(AF_INET, SOCK_DGRAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 24<UDP:[30368571]>
+4131032 setsockopt(24<UDP:[30368571]>, SOL_IP, IP_RECVERR, [1], 4) = 0
+4131032 connect(24<UDP:[30368571]>, {sa_family=AF_INET, sin_port=htons(53), sin_addr=inet_addr("127.0.0.53")}, 16) = 0
+4131032 poll([{fd=24<UDP:[127.0.0.1:59788->127.0.0.53:53]>, events=POLLOUT}], 1, 0) = 1 ([{fd=24, revents=POLLOUT}])
+4131032 sendmmsg(24<UDP:[127.0.0.1:59788->127.0.0.53:53]>, [{msg_hdr={msg_name=NULL, msg_namelen=0, msg_iov=[{iov_base="\202\336\1 \0\1\0\0\0\0\0\1\3www\nrfc-editor\3org\0\0\1\0\1\0\0)\4\260\0\0\0\0\0\0", iov_len=47}], msg_iovlen=1, msg_controllen=0, msg_flags=0}, msg_len=47}, {msg_hdr={msg_name=NULL, msg_namelen=0, msg_iov=[{iov_base="`\326\1 \0\1\0\0\0\0\0\1\3www\nrfc-editor\3org\0\0\34\0\1\0\0)\4\260\0\0\0\0\0\0", iov_len=47}], msg_iovlen=1, msg_controllen=0, msg_flags=0}, msg_len=47}], 2, MSG_NOSIGNAL) = 2
+4131032 poll([{fd=24<UDP:[127.0.0.1:59788->127.0.0.53:53]>, events=POLLIN}], 1, 5000) = 1 ([{fd=24, revents=POLLIN}])
+4131032 ioctl(24<UDP:[127.0.0.1:59788->127.0.0.53:53]>, FIONREAD, [79]) = 0
+4131032 recvfrom(24<UDP:[127.0.0.1:59788->127.0.0.53:53]>, "\202\336\201\200\0\1\0\2\0\0\0\1\3www\nrfc-editor\3org\0\0\1\0\1\300\f\0\1\0\1\0\0\1(\0\4h\22\24Q\300\f\0\1\0\1\0\0\1(\0\4h\22\25Q\0\0)\377\326\0\0\0\0\0\0", 2048, 0, {sa_family=AF_INET, sin_port=htons(53), sin_addr=inet_addr("127.0.0.53")}, [28 => 16]) = 79
+4131032 poll([{fd=24<UDP:[127.0.0.1:59788->127.0.0.53:53]>, events=POLLIN}], 1, 4997) = 1 ([{fd=24, revents=POLLIN}])
+4131032 ioctl(24<UDP:[127.0.0.1:59788->127.0.0.53:53]>, FIONREAD, [103]) = 0
+4131032 recvfrom(24<UDP:[127.0.0.1:59788->127.0.0.53:53]>, "`\326\201\200\0\1\0\2\0\0\0\1\3www\nrfc-editor\3org\0\0\34\0\1\300\f\0\34\0\1\0\0\1(\0\20&\6G\0\0\0\0\0\0\0\0\0h\22\25Q\300\f\0\34\0\1\0\0\1(\0\20&\6G\0\0\0\0\0\0\0\0\0h\22\24Q\0\0)\377\326\0\0\0\0\0\0", 65536, 0, {sa_family=AF_INET, sin_port=htons(53), sin_addr=inet_addr("127.0.0.53")}, [28 => 16]) = 103
+4131032 close(24<UDP:[127.0.0.1:59788->127.0.0.53:53]>) = 0
+4131032 read(24</etc/gai.conf>, "# Configuration for getaddrinfo(3).\n#\n# So far only configuration for the destination address sorting is needed.\n# RFC 3484 gove"..., 4096) = 2584
+4131032 read(24</etc/gai.conf>, "", 4096) = 0
+4131032 close(24</etc/gai.conf>)        = 0
+4131032 socket(AF_NETLINK, SOCK_RAW|SOCK_CLOEXEC, NETLINK_ROUTE) = 24<NETLINK:[30386639]>
+4131032 bind(24<NETLINK:[30386639]>, {sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, 12) = 0
+4131032 getsockname(24<NETLINK:[ROUTE:4131010]>, {sa_family=AF_NETLINK, nl_pid=4131010, nl_groups=00000000}, [12]) = 0
+4131032 sendto(24<NETLINK:[ROUTE:4131010]>, [{nlmsg_len=20, nlmsg_type=RTM_GETADDR, nlmsg_flags=NLM_F_REQUEST|NLM_F_DUMP, nlmsg_seq=1789732284, nlmsg_pid=0}, {ifa_family=AF_UNSPEC, ...}], 20, 0, {sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, 12) = 20
+4131032 recvmsg(24<NETLINK:[ROUTE:4131010]>, {msg_name={sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, msg_namelen=12, msg_iov=[{iov_base=[[{nlmsg_len=76, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732284, nlmsg_pid=4131010}, {ifa_family=AF_INET, ifa_prefixlen=8, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_HOST, ifa_index=if_nametoindex("lo")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("127.0.0.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("127.0.0.1")], [{nla_len=7, nla_type=IFA_LABEL}, "lo"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=1012, tstamp=1012}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732284, nlmsg_pid=4131010}, {ifa_family=AF_INET, ifa_prefixlen=12, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("enp129s0f0np0")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("172.16.24.11")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("172.16.24.11")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("172.31.255.255")], [{nla_len=18, nla_type=IFA_LABEL}, "enp129s0f0np0"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=1762, tstamp=23980116}]]], [{nlmsg_len=88, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732284, nlmsg_pid=4131010}, {ifa_family=AF_INET, ifa_prefixlen=24, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("virbr1")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.50.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.50.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.50.255")], [{nla_len=11, nla_type=IFA_LABEL}, "virbr1"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2224, tstamp=2224}]]], [{nlmsg_len=88, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732284, nlmsg_pid=4131010}, {ifa_family=AF_INET, ifa_prefixlen=24, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("virbr2")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.61.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.61.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.61.255")], [{nla_len=11, nla_type=IFA_LABEL}, "virbr2"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2245, tstamp=2245}]]], [{nlmsg_len=88, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732284, nlmsg_pid=4131010}, {ifa_family=AF_INET, ifa_prefixlen=24, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("virbr0")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.122.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.122.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.122.255")], [{nla_len=11, nla_type=IFA_LABEL}, "virbr0"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2273, tstamp=2273}]]], [{nlmsg_len=88, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732284, nlmsg_pid=4131010}, {ifa_family=AF_INET, ifa_prefixlen=24, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("virbr4")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.83.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.83.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.83.255")], [{nla_len=11, nla_type=IFA_LABEL}, "virbr4"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2291, tstamp=2291}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732284, nlmsg_pid=4131010}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("br-d564a52702f6")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.64.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.64.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.79.255")], [{nla_len=20, nla_type=IFA_LABEL}, "br-d564a52702f6"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2517, tstamp=2517}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732284, nlmsg_pid=4131010}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("docker_gwbridge")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.16.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.16.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.31.255")], [{nla_len=20, nla_type=IFA_LABEL}, "docker_gwbridge"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2533, tstamp=2533}]]], [{nlmsg_len=88, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732284, nlmsg_pid=4131010}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("docker0")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.0.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.0.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.15.255")], [{nla_len=12, nla_type=IFA_LABEL}, "docker0"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2550, tstamp=2550}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732284, nlmsg_pid=4131010}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("br-5140c59d6152")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.144.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.144.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.159.255")], [{nla_len=20, nla_type=IFA_LABEL}, "br-5140c59d6152"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2563, tstamp=2563}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732284, nlmsg_pid=4131010}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("br-5d6342ce11bf")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.32.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.32.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.47.255")], [{nla_len=20, nla_type=IFA_LABEL}, "br-5d6342ce11bf"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2579, tstamp=2579}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732284, nlmsg_pid=4131010}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("br-7ba450de6007")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.96.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.96.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.111.255")], [{nla_len=20, nla_type=IFA_LABEL}, "br-7ba450de6007"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2616, tstamp=2616}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732284, nlmsg_pid=4131010}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("br-92a829545622")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.128.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.128.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.143.255")], [{nla_len=20, nla_type=IFA_LABEL}, "br-92a829545622"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2629, tstamp=2629}]]], [{nlmsg_len=72, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732284, nlmsg_pid=4131010}, {ifa_family=AF_INET6, ifa_prefixlen=128, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_HOST, ifa_index=if_nametoindex("lo")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "::1")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=1013, tstamp=1013}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT|IFA_F_NOPREFIXROUTE]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732284, nlmsg_pid=4131010}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("enp129s0f0np0")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::7ec2:55ff:fe46:292c")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=1755, tstamp=1755}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732284, nlmsg_pid=4131010}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("docker_gwbridge")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::c86d:3bff:fe57:cd8f")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=3089, tstamp=3089}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732284, nlmsg_pid=4131010}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("docker0")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::e03e:ff:fe35:4604")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2829, tstamp=2829}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=72, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732284, nlmsg_pid=4131010}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_NODAD|IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("br-5d6342ce11bf")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fc00:f853:ccd:e793::1")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2579, tstamp=2579}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_NODAD|IFA_F_PERMANENT]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732284, nlmsg_pid=4131010}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("br-5d6342ce11bf")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::8847:eaff:fe57:996f")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2861, tstamp=2861}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732284, nlmsg_pid=4131010}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("veth49d7c3e")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::e439:25ff:feca:3a1a")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2829, tstamp=2829}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732284, nlmsg_pid=4131010}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("vethf821cfb")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::1c3d:17ff:fe2a:b0df")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2861, tstamp=2861}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732284, nlmsg_pid=4131010}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("veth99b1031")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::9461:b1ff:fe27:cfeb")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2861, tstamp=2861}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732284, nlmsg_pid=4131010}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("veth0c2737a")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::e881:8cff:fe4d:9773")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2869, tstamp=2869}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732284, nlmsg_pid=4131010}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("veth22c136c")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::e861:dcff:feba:584e")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2864, tstamp=2864}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732284, nlmsg_pid=4131010}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("veth83d5692")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::442f:62ff:fe2f:6038")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=3089, tstamp=3089}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732284, nlmsg_pid=4131010}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("veth6889e45")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::e046:73ff:fe42:963d")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=83713535, tstamp=83713535}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732284, nlmsg_pid=4131010}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("veth19c5420")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::2455:4dff:fe4b:d3ae")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=84814357, tstamp=84814357}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]]], iov_len=4096}], msg_iovlen=1, msg_controllen=0, msg_flags=0}, 0) = 2292
+4131032 recvmsg(24<NETLINK:[ROUTE:4131010]>, {msg_name={sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, msg_namelen=12, msg_iov=[{iov_base=[{nlmsg_len=20, nlmsg_type=NLMSG_DONE, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732284, nlmsg_pid=4131010}, 0], iov_len=4096}], msg_iovlen=1, msg_controllen=0, msg_flags=0}, 0) = 20
+4131032 close(24<NETLINK:[ROUTE:4131010]>) = 0
+4131032 socket(AF_INET, SOCK_DGRAM|SOCK_CLOEXEC, IPPROTO_IP) = 24<UDP:[30368572]>
+4131032 connect(24<UDP:[30368572]>, {sa_family=AF_INET, sin_port=htons(0), sin_addr=inet_addr("104.18.20.81")}, 16) = 0
+4131032 getsockname(24<UDP:[172.16.24.11:41352->104.18.20.81:0]>, {sa_family=AF_INET, sin_port=htons(41352), sin_addr=inet_addr("172.16.24.11")}, [28 => 16]) = 0
+4131032 connect(24<UDP:[172.16.24.11:41352->104.18.20.81:0]>, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16) = 0
+4131032 connect(24<UDP:[172.16.24.11:41352->104.18.20.81:0]>, {sa_family=AF_INET, sin_port=htons(0), sin_addr=inet_addr("104.18.21.81")}, 16) = 0
+4131032 getsockname(24<UDP:[172.16.24.11:41352->104.18.20.81:0]>, {sa_family=AF_INET, sin_port=htons(58118), sin_addr=inet_addr("172.16.24.11")}, [28 => 16]) = 0
+4131032 close(24<UDP:[172.16.24.11:41352->104.18.20.81:0]>) = 0
+4131032 socket(AF_INET6, SOCK_DGRAM|SOCK_CLOEXEC, IPPROTO_IP) = 24<UDPv6:[30368573]>
+4131032 connect(24<UDPv6:[30368573]>, {sa_family=AF_INET6, sin6_port=htons(0), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:4700::6812:1551", &sin6_addr), sin6_scope_id=0}, 28) = -1 ENETUNREACH (Network is unreachable)
+4131032 connect(24<UDPv6:[[::]:58221]>, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16) = 0
+4131032 connect(24<UDPv6:[[::]:58221]>, {sa_family=AF_INET6, sin6_port=htons(0), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:4700::6812:1451", &sin6_addr), sin6_scope_id=0}, 28) = -1 ENETUNREACH (Network is unreachable)
+4131032 close(24<UDPv6:[[::]:58221]>)   = 0
+4131032 write(22<anon_inode:[eventfd]>, "\1\0\0\0\0\0\0\0", 8) = 8
+4131010 <... epoll_pwait resumed>[{events=EPOLLIN, data={u32=22, u64=22}}], 1024, 4728, NULL, 8) = 1
+4131010 read(22<anon_inode:[eventfd]>, "\1\0\0\0\0\0\0\0", 1024) = 8
+4131010 socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 24<TCP:[30416959]>
+4131010 connect(24<TCP:[30416959]>, {sa_family=AF_INET, sin_port=htons(443), sin_addr=inet_addr("104.18.20.81")}, 16) = -1 EINPROGRESS (Operation now in progress)
+4131010 epoll_pwait(17<anon_inode:[eventpoll]>, [], 1024, 0, NULL, 8) = 0
+4131010 epoll_pwait(17<anon_inode:[eventpoll]>, [{events=EPOLLOUT, data={u32=24, u64=24}}], 1024, 4590, NULL, 8) = 1
+4131010 getsockopt(24<TCP:[172.16.24.11:50570->104.18.20.81:443]>, SOL_SOCKET, SO_ERROR, [0], [4]) = 0
+4131010 write(24<TCP:[172.16.24.11:50570->104.18.20.81:443]>, "\26\3\1\1s\1\0\1o\3\3\232\264\224\23\204gY\321\305\23\320\337:\16.\206G`\21\372\27\365\340Wj{Q/a\352\304\346 q_\357|\21\263\252\36\v\312\264\302\357\272\30N\"\336\25118\375%\25U\317v\257b\n<;\0v\23\2\23\3\23\1\300/\300+\3000\300,\0\236\300'\0g\300(\0k\0\243\0\237\314\251\314\250\314\252\300\257\300\255\300\243\300\237\300]\300a\300W\300S"..., 376) = 376
+4131010 epoll_pwait(17<anon_inode:[eventpoll]>, [], 1024, 0, NULL, 8) = 0
+4131010 epoll_pwait(17<anon_inode:[eventpoll]>, [{events=EPOLLIN, data={u32=24, u64=24}}], 1024, 4540, NULL, 8) = 1
+4131010 read(24<TCP:[172.16.24.11:50570->104.18.20.81:443]>, "\26\3\3\0z\2\0\0v\3\3\1Hd\376\352\246}0\245pb-\243\300\260f\356*\304\f1\27&\1\346\311\356\342\276F5\264 q_\357|\21\263\252\36\v\312\264\302\357\272\30N\"\336\25118\375%\25U\317v\257b\n<;\23\2\0\0.\0003\0$\0\35\0 \266\2037j\215\301\341\205Rr]Z+\353f\334\377H\361\235\330\264i\21\5#B\331KW\271\6\0+\0\2\3\4\24"..., 65536) = 2793
+4131010 close(25</etc/ssl/certs>)       = 0
+4131010 read(25</usr/share/zoneinfo/America/New_York>, "TZif2\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\6\0\0\0\6\0\0\0\0\0\0\0\354\0\0\0\6\0\0\0\24\200\0\0\0\236\246\36p\237\272\353`\240\206\0p\241\232\315`\242e\342p\243\203\351\340\244j\256p\2455\247`\246S\312\360\247\25\211`\2503\254\360\250\376\245\340\252\23\216\360\252\336\207\340\253\363p\360\254\276i\340\255\323R\360\256\236K\340\257\2634\360\260~-\340"..., 4096) = 3552
+4131010 read(25</usr/share/zoneinfo/America/New_York>, "TZif2\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\6\0\0\0\6\0\0\0\0\0\0\0\354\0\0\0\6\0\0\0\24\377\377\377\377^\3\360\220\377\377\377\377\236\246\36p\377\377\377\377\237\272\353`\377\377\377\377\240\206\0p\377\377\377\377\241\232\315`\377\377\377\377\242e\342p\377\377\377\377\243\203\351\340\377\377\377\377\244j\256p\377\377\377\377\2455\247`\377\377\377\377\246S\312\360\377\377\377\377"..., 4096) = 2260
+4131010 close(25</usr/share/zoneinfo/America/New_York>) = 0
+4131010 close(25</etc/ssl/certs>)       = 0
+4131010 write(24<TCP:[172.16.24.11:50570->104.18.20.81:443]>, "\24\3\3\0\1\1\27\3\3\0E\302\365\22\331i]\331\304\364\321\251a\20\305\242P1sQS?K\373\330\333{\305\271_\316\224\355\311\256\33\10A\7\212\36\206\7\271\254\200\334\313\34s\271:\326\32$\376\261\233\272F\314\210\227\326\302\304\350\21\372#\27\3\3\0P\266\235\26j\214\250k\247b'\240\222\277\352\236\262t\234\3!\24\0P\r\274\275\252i9\355\210p\t\344_\32\313-\364\206K\215\v"..., 165) = 165
+4131010 epoll_pwait(17<anon_inode:[eventpoll]>, [], 1024, 0, NULL, 8) = 0
+4131010 epoll_pwait(17<anon_inode:[eventpoll]>, [{events=EPOLLIN, data={u32=24, u64=24}}], 1024, 4509, NULL, 8) = 1
+4131010 read(24<TCP:[172.16.24.11:50570->104.18.20.81:443]>, "\27\3\3\1\275\1\232}\207V\225\22\333uK\1\271f0G\255\350\1/\357\201\220\22>W#\337\220\211\344\366\217\210)y\27\26\\\340\343\245\372\21O\\\245\7\340\2255c\261\177\334\224\"y\242\204B\227T\215\353\210\342}=2}\250\374\250\1>\241\336\6\336\370\335g]\274*:[\304`'/t\267)I\327T\27][\212ZO\321hS\247c\220]\217R\307\3114\271\352i\27\335\237\313\310"..., 65536) = 33834
+4131010 write(1</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/04.stdout>, "PHASE2 status=200\n", 18) = 18
+4131010 write(1</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/04.stdout>, "PHASE2 bodyprefix=\"<!DOCTYPE html><html  lang=\\\"en\\\"><head><meta charset=\\\"utf-8\\\"><met\"\n", 89) = 89
+4131010 epoll_pwait(17<anon_inode:[eventpoll]>, [{events=EPOLLIN, data={u32=24, u64=24}}], 1024, 0, NULL, 8) = 1
+4131010 read(24<TCP:[172.16.24.11:50570->104.18.20.81:443]>, "\27\3\3\5j\310{a6Y\215;qf\271Y\362\330\0}\364\331\333\211\24f\203zm\262\226!)\350^m\225y\10(6ux\n\212m!\316\365:\243\300V\320<\206u\205\233\"Sj\363\357\373C\30\330\207j*\211P\327\36\234\7qw\5\32\332\302\330\300k\17\211\324\330\271N\243u\251tr\337\355\334\245\204h\251\352\276b\273\331\372\307<\355\336\21zx?\202U\5u\303\272\217\260\273\354"..., 65536) = 65536
+4131010 read(24<TCP:[172.16.24.11:50570->104.18.20.81:443]>, "\1\361\302qr\306\264\243\267\230g\207\263\263\257\354\223\263\237\335IX\323R\4axB6<\246\24\352\253\217{\3173l\254\20\214\373\331\315\352\354x\353!%\310\370\231\3758?<\5\303\314=\35@wj\356\373\373\203\16'\357{\364\342\253\7\213 6\325@PM{\377A9\32.\364\237\0043e\332\25*l54A\324\24\17b\222\31\332q5\33\24\232\212\300\305\0105\327I\3652xT\361v"..., 16384) = 16384
+4131010 read(24<TCP:[172.16.24.11:50570->104.18.20.81:443]>, "\222|\211\352\3166\223\322xg^\366\236\5\370\215\"\362\7\375,F\215\271x\326\333\215\24\2\235\345_\310p\314k\36\317xY\310\340\207\350J7\207\275\375T\370\22\2\314{\216L\251g\204\266t\374R/)\221'\332O\227\2721H\3476\265'\230\177\316\362\342\1\277\20O\343\21\6\333\247+hr$b\310\270\364\7XJ dXa}0\366\0225\3767^G\377\231\177$\304\2068\334\226\7B"..., 65536) = 65536
+4131010 read(24<TCP:[172.16.24.11:50570->104.18.20.81:443]>, "\261\215y-{A]\217\30G55\277\375\375\350M\300ik(/&\354\205\366\6\200CUB9\233c8\360\276\326\314\253;:\\\r\3-\237\353\216\373\2341w\30\3775Z9U\24hE\271\226P&\224\3631z.v7:H\360\267\207_$~&\274\1sWK \266{\3713\212\10hT\314\312\351=\0 \220\264EI\215\363\304)\237#\355\377N\202\34\2612\353E\323\373\27\3\3\3\204"..., 16384) = 1079
+4131010 write(24<TCP:[172.16.24.11:50570->104.18.20.81:443]>, "\27\3\3\0\23\3048\266\300\312<\240\241\312\2\243\350\213\267\315\324\221\242\37", 24) = 24
+4131010 write(1</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/04.stdout>, "PHASE2 OK bytes=179553\n", 23) = 23
+4131010 shutdown(24<TCP:[172.16.24.11:50570->104.18.20.81:443]>, SHUT_WR) = 0
+4131010 epoll_ctl(17<anon_inode:[eventpoll]>, EPOLL_CTL_DEL, 24<TCP:[172.16.24.11:50570->104.18.20.81:443]>, 0x7ffebede2dec) = 0
+4131010 close(24<TCP:[172.16.24.11:50570->104.18.20.81:443]>) = 0
+4131010 epoll_pwait(17<anon_inode:[eventpoll]>, [], 1024, 0, NULL, 8) = 0
+4131010 epoll_pwait(17<anon_inode:[eventpoll]>, [], 1024, 0, NULL, 8) = 0
+4131010 epoll_pwait(17<anon_inode:[eventpoll]>, [], 1024, 0, NULL, 8) = 0
+4131010 fcntl(0</dev/null<char 1:3>>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131010 fcntl(1</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/04.stdout>, F_GETFL) = 0x8001 (flags O_WRONLY|O_LARGEFILE)
+4131010 fcntl(2</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/04.stdout>, F_GETFL) = 0x8001 (flags O_WRONLY|O_LARGEFILE)
+4131010 write(16<anon_inode:[eventfd]>, "\1\0\0\0\0\0\0\0", 8) = 8
+4131020 <... epoll_pwait resumed>[{events=EPOLLIN, data={u32=16, u64=16}}], 1024, -1, NULL, 8) = 1
+4131020 read(16<anon_inode:[eventfd]>, "\1\0\0\0\0\0\0\0", 1024) = 8
+4131020 close(14<pipe:[30368568]> <unfinished ...>
+4131025 +++ exited with 0 +++
+4131020 <... close resumed>)            = 0
+4131023 +++ exited with 0 +++
+4131020 close(15<pipe:[30368568]> <unfinished ...>
+4131022 +++ exited with 0 +++
+4131020 <... close resumed>)            = 0
+4131024 +++ exited with 0 +++
+4131020 close(13<anon_inode:[io_uring]>) = 0
+4131020 close(12<anon_inode:[io_uring]>) = 0
+4131020 close(16<anon_inode:[eventfd]>) = 0
+4131020 close(11<anon_inode:[eventpoll]>) = 0
+4131020 +++ exited with 0 +++
+4131010 epoll_pwait(3<anon_inode:[eventpoll]>, [], 1024, 0, NULL, 8) = 0
+4131010 close(8<pipe:[30416952]>)       = 0
+4131010 close(9<pipe:[30416952]>)       = 0
+4131010 close(5<anon_inode:[io_uring]>) = 0
+4131010 close(4<anon_inode:[io_uring]>) = 0
+4131010 close(10<anon_inode:[eventfd]>) = 0
+4131010 close(3<anon_inode:[eventpoll]>) = 0
+4131010 fcntl(0</dev/null<char 1:3>>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131010 fcntl(1</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/04.stdout>, F_GETFL) = 0x8001 (flags O_WRONLY|O_LARGEFILE)
+4131010 fcntl(2</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/04.stdout>, F_GETFL) = 0x8001 (flags O_WRONLY|O_LARGEFILE)
+4131010 close(6<pipe:[30416951]>)       = 0
+4131010 close(7<pipe:[30416951]>)       = 0
+4131030 +++ exited with 0 +++
+4131032 +++ exited with 0 +++
+4131031 +++ exited with 0 +++
+4131029 +++ exited with 0 +++
+4131027 +++ exited with 0 +++
+4131010 +++ exited with 0 +++

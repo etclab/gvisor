@@ -1,0 +1,909 @@
+### E1a run 12: go-inject-shutdown-ENOTCONN
+### date: 2026-09-18T07:51:57-04:00
+### runtime: go
+### command: env E1_DIAL_IP=104.18.20.81 strace -f -yy -s 128 -e trace=%network,poll,ppoll,epoll_ctl,epoll_wait,epoll_pwait,epoll_pwait2,fcntl,ioctl,shutdown,close -e inject=shutdown:error=ENOTCONN -o <strace> /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/goclient 127.0.0.1:42057 https://www.rfc-editor.org/
+### echo server: 127.0.0.1:42057   phase-2 url: https://www.rfc-editor.org/   pinned: 1 104.18.20.81
+### exit status: 0   wall: 0.78s
+### outcome: completed
+
+########## CLIENT STDOUT+STDERR ##########
+=== PHASE 1: plain TCP ===
+PHASE1 LocalAddr=127.0.0.1:44122 RemoteAddr=127.0.0.1:42057
+PHASE1 read="echo: hello-from-go\n" err=<nil>
+PHASE1 OK
+=== PHASE 2: net/http + crypto/tls ===
+PHASE2 dial pinned to 104.18.20.81
+PHASE2 status=200 OK bodyprefix="<!DOCTYPE html><html  lang=\"en\"><head><meta charset=\"utf-8\"><met"
+PHASE2 OK
+
+########## STRACE (untrimmed) ##########
+4131975 close(3</etc/ld.so.cache>)      = 0
+4131975 close(3</usr/lib/x86_64-linux-gnu/libc.so.6>) = 0
+4131975 close(3</proc/4131975/maps>)    = 0
+4131975 close(3</sys/kernel/mm/transparent_hugepage/hpage_pmd_size>) = 0
+4131975 fcntl(0</dev/null<char 1:3>>, F_GETFD) = 0
+4131975 fcntl(1</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/12.stdout>, F_GETFD) = 0
+4131975 fcntl(2</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/12.stdout>, F_GETFD) = 0
+4131975 close(3</proc/4131975/cgroup>)  = 0
+4131975 close(3</proc/4131975/mountinfo>) = 0
+4131975 fcntl(0</dev/null<char 1:3>>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131975 fcntl(1</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/12.stdout>, F_GETFL) = 0x8001 (flags O_WRONLY|O_LARGEFILE)
+4131975 fcntl(2</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/12.stdout>, F_GETFL) = 0x8001 (flags O_WRONLY|O_LARGEFILE)
+4131975 socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 4<TCP:[30389787]>
+4131975 connect(4<TCP:[30389787]>, {sa_family=AF_INET, sin_port=htons(42057), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+4131975 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131975 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 6<anon_inode:[eventfd]>, {events=EPOLLIN, data={u32=10303392, u64=10303392}}) = 0
+4131975 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 4<TCP:[127.0.0.1:44122->127.0.0.1:42057]>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2264924161, u64=4597130724418519041}}) = 0
+4131976 epoll_pwait(5<anon_inode:[eventpoll]>, [{events=EPOLLOUT, data={u32=2264924161, u64=4597130724418519041}}], 128, 0, NULL, 0) = 1
+4131975 epoll_pwait(5<anon_inode:[eventpoll]>, [], 128, 0, NULL, 0) = 0
+4131977 getsockopt(4<TCP:[127.0.0.1:44122->127.0.0.1:42057]>, SOL_SOCKET, SO_ERROR, [0], [4]) = 0
+4131977 getpeername(4<TCP:[127.0.0.1:44122->127.0.0.1:42057]>, {sa_family=AF_INET, sin_port=htons(42057), sin_addr=inet_addr("127.0.0.1")}, [112 => 16]) = 0
+4131977 getsockname(4<TCP:[127.0.0.1:44122->127.0.0.1:42057]>, {sa_family=AF_INET, sin_port=htons(44122), sin_addr=inet_addr("127.0.0.1")}, [112 => 16]) = 0
+4131977 setsockopt(4<TCP:[127.0.0.1:44122->127.0.0.1:42057]>, SOL_TCP, TCP_NODELAY, [1], 4) = 0
+4131977 setsockopt(4<TCP:[127.0.0.1:44122->127.0.0.1:42057]>, SOL_SOCKET, SO_KEEPALIVE, [1], 4) = 0
+4131977 setsockopt(4<TCP:[127.0.0.1:44122->127.0.0.1:42057]>, SOL_TCP, TCP_KEEPIDLE, [15], 4) = 0
+4131977 setsockopt(4<TCP:[127.0.0.1:44122->127.0.0.1:42057]>, SOL_TCP, TCP_KEEPINTVL, [15], 4) = 0
+4131977 setsockopt(4<TCP:[127.0.0.1:44122->127.0.0.1:42057]>, SOL_TCP, TCP_KEEPCNT, [9], 4) = 0
+4131975 epoll_pwait(5<anon_inode:[eventpoll]>, [{events=EPOLLOUT, data={u32=2264924161, u64=4597130724418519041}}], 128, 4999, NULL, 0) = 1
+4131975 epoll_pwait(5<anon_inode:[eventpoll]>,  <unfinished ...>
+4131977 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_DEL, 4<TCP:[127.0.0.1:44122->127.0.0.1:42057]>, 0xb17a3275b54) = 0
+4131977 close(4<TCP:[127.0.0.1:44122->127.0.0.1:42057]>) = 0
+4131977 socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 4<TCP:[30375756]>
+4131977 connect(4<TCP:[30375756]>, {sa_family=AF_INET, sin_port=htons(443), sin_addr=inet_addr("104.18.20.81")}, 16) = -1 EINPROGRESS (Operation now in progress)
+4131977 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 4<TCP:[172.16.24.11:48594->104.18.20.81:443]>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2264924162, u64=4597130724418519042}}) = 0
+4131975 <... epoll_pwait resumed>[{events=EPOLLOUT, data={u32=2264924162, u64=4597130724418519042}}], 128, 4999, NULL, 0) = 1
+4131975 getsockopt(4<TCP:[172.16.24.11:48594->104.18.20.81:443]>, SOL_SOCKET, SO_ERROR,  <unfinished ...>
+4131980 epoll_pwait(5<anon_inode:[eventpoll]>,  <unfinished ...>
+4131975 <... getsockopt resumed>[0], [4]) = 0
+4131975 getpeername(4<TCP:[172.16.24.11:48594->104.18.20.81:443]>, {sa_family=AF_INET, sin_port=htons(443), sin_addr=inet_addr("104.18.20.81")}, [112 => 16]) = 0
+4131977 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131975 getsockname(4<TCP:[172.16.24.11:48594->104.18.20.81:443]>, {sa_family=AF_INET, sin_port=htons(48594), sin_addr=inet_addr("172.16.24.11")}, [112 => 16]) = 0
+4131975 setsockopt(4<TCP:[172.16.24.11:48594->104.18.20.81:443]>, SOL_TCP, TCP_NODELAY, [1], 4) = 0
+4131975 setsockopt(4<TCP:[172.16.24.11:48594->104.18.20.81:443]>, SOL_SOCKET, SO_KEEPALIVE, [1], 4) = 0
+4131975 setsockopt(4<TCP:[172.16.24.11:48594->104.18.20.81:443]>, SOL_TCP, TCP_KEEPIDLE, [15], 4) = 0
+4131975 setsockopt(4<TCP:[172.16.24.11:48594->104.18.20.81:443]>, SOL_TCP, TCP_KEEPINTVL, [15], 4) = 0
+4131975 setsockopt(4<TCP:[172.16.24.11:48594->104.18.20.81:443]>, SOL_TCP, TCP_KEEPCNT, [9], 4) = 0
+4131980 <... epoll_pwait resumed>[{events=EPOLLIN, data={u32=10303392, u64=10303392}}], 128, 14819, NULL, 0) = 1
+4131980 epoll_pwait(5<anon_inode:[eventpoll]>, [{events=EPOLLIN|EPOLLOUT, data={u32=2264924162, u64=4597130724418519042}}], 128, 9999, NULL, 0) = 1
+4131980 fcntl(7</etc/ssl/certs/ca-certificates.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</etc/ssl/certs/ca-certificates.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</etc/ssl/certs/ca-certificates.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146945, u64=4597130724401741825}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</etc/ssl/certs/ca-certificates.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</etc/ssl/certs/ca-certificates.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</etc/ssl/certs/ca-certificates.crt>) = 0
+4131976 epoll_pwait(5<anon_inode:[eventpoll]>, [{events=EPOLLOUT, data={u32=2264924162, u64=4597130724418519042}}], 128, 0, NULL, 0) = 1
+4131980 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131975 epoll_pwait(5<anon_inode:[eventpoll]>,  <unfinished ...>
+4131980 close(7</etc/ssl/certs>)        = 0
+4131980 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131980 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/ACCVRAIZ1.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/ACCVRAIZ1.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/ACCVRAIZ1.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146946, u64=4597130724401741826}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/ACCVRAIZ1.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/ACCVRAIZ1.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/ACCVRAIZ1.crt>) = 0
+4131980 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/AC_RAIZ_FNMT-RCM.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/AC_RAIZ_FNMT-RCM.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/AC_RAIZ_FNMT-RCM.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146947, u64=4597130724401741827}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/AC_RAIZ_FNMT-RCM.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/AC_RAIZ_FNMT-RCM.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/AC_RAIZ_FNMT-RCM.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/AC_RAIZ_FNMT-RCM_SERVIDORES_SEGUROS.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/AC_RAIZ_FNMT-RCM_SERVIDORES_SEGUROS.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/AC_RAIZ_FNMT-RCM_SERVIDORES_SEGUROS.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146948, u64=4597130724401741828}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/AC_RAIZ_FNMT-RCM_SERVIDORES_SEGUROS.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/AC_RAIZ_FNMT-RCM_SERVIDORES_SEGUROS.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/AC_RAIZ_FNMT-RCM_SERVIDORES_SEGUROS.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/ANF_Secure_Server_Root_CA.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/ANF_Secure_Server_Root_CA.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/ANF_Secure_Server_Root_CA.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146949, u64=4597130724401741829}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/ANF_Secure_Server_Root_CA.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/ANF_Secure_Server_Root_CA.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/ANF_Secure_Server_Root_CA.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Actalis_Authentication_Root_CA.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Actalis_Authentication_Root_CA.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/Actalis_Authentication_Root_CA.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146950, u64=4597130724401741830}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Actalis_Authentication_Root_CA.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Actalis_Authentication_Root_CA.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/Actalis_Authentication_Root_CA.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Amazon_Root_CA_1.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Amazon_Root_CA_1.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/Amazon_Root_CA_1.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146951, u64=4597130724401741831}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Amazon_Root_CA_1.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Amazon_Root_CA_1.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/Amazon_Root_CA_1.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Amazon_Root_CA_2.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Amazon_Root_CA_2.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/Amazon_Root_CA_2.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146952, u64=4597130724401741832}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Amazon_Root_CA_2.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Amazon_Root_CA_2.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/Amazon_Root_CA_2.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Amazon_Root_CA_3.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Amazon_Root_CA_3.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/Amazon_Root_CA_3.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146953, u64=4597130724401741833}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Amazon_Root_CA_3.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Amazon_Root_CA_3.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/Amazon_Root_CA_3.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Amazon_Root_CA_4.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Amazon_Root_CA_4.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/Amazon_Root_CA_4.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146954, u64=4597130724401741834}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Amazon_Root_CA_4.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Amazon_Root_CA_4.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/Amazon_Root_CA_4.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Atos_TrustedRoot_2011.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Atos_TrustedRoot_2011.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/Atos_TrustedRoot_2011.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146955, u64=4597130724401741835}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Atos_TrustedRoot_2011.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Atos_TrustedRoot_2011.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/Atos_TrustedRoot_2011.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Atos_TrustedRoot_Root_CA_ECC_TLS_2021.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Atos_TrustedRoot_Root_CA_ECC_TLS_2021.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/Atos_TrustedRoot_Root_CA_ECC_TLS_2021.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146956, u64=4597130724401741836}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Atos_TrustedRoot_Root_CA_ECC_TLS_2021.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Atos_TrustedRoot_Root_CA_ECC_TLS_2021.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/Atos_TrustedRoot_Root_CA_ECC_TLS_2021.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Atos_TrustedRoot_Root_CA_RSA_TLS_2021.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Atos_TrustedRoot_Root_CA_RSA_TLS_2021.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/Atos_TrustedRoot_Root_CA_RSA_TLS_2021.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146957, u64=4597130724401741837}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Atos_TrustedRoot_Root_CA_RSA_TLS_2021.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Atos_TrustedRoot_Root_CA_RSA_TLS_2021.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/Atos_TrustedRoot_Root_CA_RSA_TLS_2021.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Autoridad_de_Certificacion_Firmaprofesional_CIF_A62634068.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Autoridad_de_Certificacion_Firmaprofesional_CIF_A62634068.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/Autoridad_de_Certificacion_Firmaprofesional_CIF_A62634068.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146958, u64=4597130724401741838}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Autoridad_de_Certificacion_Firmaprofesional_CIF_A62634068.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Autoridad_de_Certificacion_Firmaprofesional_CIF_A62634068.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/Autoridad_de_Certificacion_Firmaprofesional_CIF_A62634068.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/BJCA_Global_Root_CA1.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/BJCA_Global_Root_CA1.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/BJCA_Global_Root_CA1.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146959, u64=4597130724401741839}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/BJCA_Global_Root_CA1.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/BJCA_Global_Root_CA1.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/BJCA_Global_Root_CA1.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/BJCA_Global_Root_CA2.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/BJCA_Global_Root_CA2.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/BJCA_Global_Root_CA2.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146960, u64=4597130724401741840}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/BJCA_Global_Root_CA2.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/BJCA_Global_Root_CA2.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/BJCA_Global_Root_CA2.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Buypass_Class_2_Root_CA.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Buypass_Class_2_Root_CA.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/Buypass_Class_2_Root_CA.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146961, u64=4597130724401741841}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Buypass_Class_2_Root_CA.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Buypass_Class_2_Root_CA.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/Buypass_Class_2_Root_CA.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Buypass_Class_3_Root_CA.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Buypass_Class_3_Root_CA.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/Buypass_Class_3_Root_CA.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146962, u64=4597130724401741842}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Buypass_Class_3_Root_CA.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Buypass_Class_3_Root_CA.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/Buypass_Class_3_Root_CA.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/CA_Disig_Root_R2.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/CA_Disig_Root_R2.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/CA_Disig_Root_R2.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146963, u64=4597130724401741843}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/CA_Disig_Root_R2.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/CA_Disig_Root_R2.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131980 close(7</usr/share/ca-certificates/mozilla/CA_Disig_Root_R2.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/CFCA_EV_ROOT.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/CFCA_EV_ROOT.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/CFCA_EV_ROOT.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146964, u64=4597130724401741844}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/CFCA_EV_ROOT.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/CFCA_EV_ROOT.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/CFCA_EV_ROOT.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/COMODO_ECC_Certification_Authority.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/COMODO_ECC_Certification_Authority.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/COMODO_ECC_Certification_Authority.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146965, u64=4597130724401741845}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/COMODO_ECC_Certification_Authority.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/COMODO_ECC_Certification_Authority.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/COMODO_ECC_Certification_Authority.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/COMODO_RSA_Certification_Authority.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/COMODO_RSA_Certification_Authority.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/COMODO_RSA_Certification_Authority.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146966, u64=4597130724401741846}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/COMODO_RSA_Certification_Authority.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/COMODO_RSA_Certification_Authority.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/COMODO_RSA_Certification_Authority.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Certainly_Root_E1.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Certainly_Root_E1.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/Certainly_Root_E1.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146967, u64=4597130724401741847}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Certainly_Root_E1.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Certainly_Root_E1.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/Certainly_Root_E1.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Certainly_Root_R1.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Certainly_Root_R1.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/Certainly_Root_R1.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146968, u64=4597130724401741848}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Certainly_Root_R1.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Certainly_Root_R1.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/Certainly_Root_R1.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Certigna_Root_CA.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Certigna_Root_CA.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/Certigna_Root_CA.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146969, u64=4597130724401741849}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Certigna_Root_CA.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Certigna_Root_CA.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/Certigna_Root_CA.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Certum_EC-384_CA.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Certum_EC-384_CA.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/Certum_EC-384_CA.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146970, u64=4597130724401741850}}) = -1 EPERM (Operation not permitted)
+4131980 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/Certum_EC-384_CA.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/Certum_EC-384_CA.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131977 close(7</usr/share/ca-certificates/mozilla/Certum_EC-384_CA.crt>) = 0
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/Certum_Trusted_Network_CA.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/Certum_Trusted_Network_CA.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131977 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/Certum_Trusted_Network_CA.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146971, u64=4597130724401741851}}) = -1 EPERM (Operation not permitted)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/Certum_Trusted_Network_CA.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/Certum_Trusted_Network_CA.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131977 close(7</usr/share/ca-certificates/mozilla/Certum_Trusted_Network_CA.crt>) = 0
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/Certum_Trusted_Network_CA_2.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/Certum_Trusted_Network_CA_2.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131977 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/Certum_Trusted_Network_CA_2.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146972, u64=4597130724401741852}}) = -1 EPERM (Operation not permitted)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/Certum_Trusted_Network_CA_2.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/Certum_Trusted_Network_CA_2.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131977 close(7</usr/share/ca-certificates/mozilla/Certum_Trusted_Network_CA_2.crt>) = 0
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/Certum_Trusted_Root_CA.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/Certum_Trusted_Root_CA.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131977 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/Certum_Trusted_Root_CA.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146973, u64=4597130724401741853}}) = -1 EPERM (Operation not permitted)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/Certum_Trusted_Root_CA.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/Certum_Trusted_Root_CA.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131977 close(7</usr/share/ca-certificates/mozilla/Certum_Trusted_Root_CA.crt>) = 0
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/D-TRUST_BR_Root_CA_1_2020.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/D-TRUST_BR_Root_CA_1_2020.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131977 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/D-TRUST_BR_Root_CA_1_2020.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146974, u64=4597130724401741854}}) = -1 EPERM (Operation not permitted)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/D-TRUST_BR_Root_CA_1_2020.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/D-TRUST_BR_Root_CA_1_2020.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131977 close(7</usr/share/ca-certificates/mozilla/D-TRUST_BR_Root_CA_1_2020.crt>) = 0
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/D-TRUST_BR_Root_CA_2_2023.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/D-TRUST_BR_Root_CA_2_2023.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131977 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/D-TRUST_BR_Root_CA_2_2023.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146975, u64=4597130724401741855}}) = -1 EPERM (Operation not permitted)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/D-TRUST_BR_Root_CA_2_2023.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/D-TRUST_BR_Root_CA_2_2023.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131977 close(7</usr/share/ca-certificates/mozilla/D-TRUST_BR_Root_CA_2_2023.crt>) = 0
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/D-TRUST_EV_Root_CA_1_2020.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/D-TRUST_EV_Root_CA_1_2020.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131977 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/D-TRUST_EV_Root_CA_1_2020.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146976, u64=4597130724401741856}}) = -1 EPERM (Operation not permitted)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/D-TRUST_EV_Root_CA_1_2020.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/D-TRUST_EV_Root_CA_1_2020.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131977 close(7</usr/share/ca-certificates/mozilla/D-TRUST_EV_Root_CA_1_2020.crt>) = 0
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/D-TRUST_EV_Root_CA_2_2023.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/D-TRUST_EV_Root_CA_2_2023.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131977 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/D-TRUST_EV_Root_CA_2_2023.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146977, u64=4597130724401741857}}) = -1 EPERM (Operation not permitted)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/D-TRUST_EV_Root_CA_2_2023.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/D-TRUST_EV_Root_CA_2_2023.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131977 close(7</usr/share/ca-certificates/mozilla/D-TRUST_EV_Root_CA_2_2023.crt>) = 0
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/D-TRUST_Root_Class_3_CA_2_2009.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/D-TRUST_Root_Class_3_CA_2_2009.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131977 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/D-TRUST_Root_Class_3_CA_2_2009.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146978, u64=4597130724401741858}}) = -1 EPERM (Operation not permitted)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/D-TRUST_Root_Class_3_CA_2_2009.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/D-TRUST_Root_Class_3_CA_2_2009.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131977 close(7</usr/share/ca-certificates/mozilla/D-TRUST_Root_Class_3_CA_2_2009.crt>) = 0
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/D-TRUST_Root_Class_3_CA_2_EV_2009.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/D-TRUST_Root_Class_3_CA_2_EV_2009.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131977 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/D-TRUST_Root_Class_3_CA_2_EV_2009.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146979, u64=4597130724401741859}}) = -1 EPERM (Operation not permitted)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/D-TRUST_Root_Class_3_CA_2_EV_2009.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/D-TRUST_Root_Class_3_CA_2_EV_2009.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131977 close(7</usr/share/ca-certificates/mozilla/D-TRUST_Root_Class_3_CA_2_EV_2009.crt>) = 0
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/DigiCert_Assured_ID_Root_G2.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/DigiCert_Assured_ID_Root_G2.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131977 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/DigiCert_Assured_ID_Root_G2.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146980, u64=4597130724401741860}}) = -1 EPERM (Operation not permitted)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/DigiCert_Assured_ID_Root_G2.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/DigiCert_Assured_ID_Root_G2.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131977 close(7</usr/share/ca-certificates/mozilla/DigiCert_Assured_ID_Root_G2.crt>) = 0
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/DigiCert_Assured_ID_Root_G3.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/DigiCert_Assured_ID_Root_G3.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131977 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/DigiCert_Assured_ID_Root_G3.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146981, u64=4597130724401741861}}) = -1 EPERM (Operation not permitted)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/DigiCert_Assured_ID_Root_G3.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/DigiCert_Assured_ID_Root_G3.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131977 close(7</usr/share/ca-certificates/mozilla/DigiCert_Assured_ID_Root_G3.crt>) = 0
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/DigiCert_Global_Root_G2.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/DigiCert_Global_Root_G2.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131977 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/DigiCert_Global_Root_G2.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146982, u64=4597130724401741862}}) = -1 EPERM (Operation not permitted)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/DigiCert_Global_Root_G2.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/DigiCert_Global_Root_G2.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131977 close(7</usr/share/ca-certificates/mozilla/DigiCert_Global_Root_G2.crt>) = 0
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/DigiCert_Global_Root_G3.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/DigiCert_Global_Root_G3.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131977 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/DigiCert_Global_Root_G3.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146983, u64=4597130724401741863}}) = -1 EPERM (Operation not permitted)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/DigiCert_Global_Root_G3.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131977 fcntl(7</usr/share/ca-certificates/mozilla/DigiCert_Global_Root_G3.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131977 epoll_pwait(5<anon_inode:[eventpoll]>, [], 128, 0, NULL, 0) = 0
+4131985 close(8</sys/devices/system/cpu/online>) = 0
+4131986 close(9</sys/devices/system/cpu/online>) = 0
+4131977 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131977 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131977 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131977 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131977 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131977 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131977 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131977 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131983 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131977 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131977 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131977 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131977 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131977 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131977 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131977 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131977 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131977 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131977 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131977 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131983 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131977 close(7</usr/share/ca-certificates/mozilla/DigiCert_Global_Root_G3.crt>) = 0
+4131977 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131979 epoll_pwait(5<anon_inode:[eventpoll]>, [], 128, 0, NULL, 0) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/DigiCert_TLS_ECC_P384_Root_G5.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/DigiCert_TLS_ECC_P384_Root_G5.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/DigiCert_TLS_ECC_P384_Root_G5.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146984, u64=4597130724401741864}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/DigiCert_TLS_ECC_P384_Root_G5.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131983 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/DigiCert_TLS_ECC_P384_Root_G5.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/DigiCert_TLS_ECC_P384_Root_G5.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/DigiCert_TLS_RSA4096_Root_G5.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/DigiCert_TLS_RSA4096_Root_G5.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/DigiCert_TLS_RSA4096_Root_G5.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146985, u64=4597130724401741865}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/DigiCert_TLS_RSA4096_Root_G5.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/DigiCert_TLS_RSA4096_Root_G5.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/DigiCert_TLS_RSA4096_Root_G5.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/DigiCert_Trusted_Root_G4.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/DigiCert_Trusted_Root_G4.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/DigiCert_Trusted_Root_G4.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146986, u64=4597130724401741866}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/DigiCert_Trusted_Root_G4.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/DigiCert_Trusted_Root_G4.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/DigiCert_Trusted_Root_G4.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Entrust_Root_Certification_Authority.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Entrust_Root_Certification_Authority.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/Entrust_Root_Certification_Authority.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146987, u64=4597130724401741867}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Entrust_Root_Certification_Authority.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Entrust_Root_Certification_Authority.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/Entrust_Root_Certification_Authority.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GDCA_TrustAUTH_R5_ROOT.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GDCA_TrustAUTH_R5_ROOT.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/GDCA_TrustAUTH_R5_ROOT.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146988, u64=4597130724401741868}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GDCA_TrustAUTH_R5_ROOT.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GDCA_TrustAUTH_R5_ROOT.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/GDCA_TrustAUTH_R5_ROOT.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GTS_Root_R1.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GTS_Root_R1.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/GTS_Root_R1.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146989, u64=4597130724401741869}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GTS_Root_R1.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GTS_Root_R1.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/GTS_Root_R1.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GTS_Root_R3.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GTS_Root_R3.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/GTS_Root_R3.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146990, u64=4597130724401741870}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GTS_Root_R3.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GTS_Root_R3.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/GTS_Root_R3.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GTS_Root_R4.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GTS_Root_R4.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/GTS_Root_R4.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146991, u64=4597130724401741871}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GTS_Root_R4.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GTS_Root_R4.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/GTS_Root_R4.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GlobalSign_ECC_Root_CA_-_R4.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GlobalSign_ECC_Root_CA_-_R4.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/GlobalSign_ECC_Root_CA_-_R4.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146992, u64=4597130724401741872}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GlobalSign_ECC_Root_CA_-_R4.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GlobalSign_ECC_Root_CA_-_R4.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/GlobalSign_ECC_Root_CA_-_R4.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GlobalSign_ECC_Root_CA_-_R5.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GlobalSign_ECC_Root_CA_-_R5.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/GlobalSign_ECC_Root_CA_-_R5.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146993, u64=4597130724401741873}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GlobalSign_ECC_Root_CA_-_R5.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GlobalSign_ECC_Root_CA_-_R5.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/GlobalSign_ECC_Root_CA_-_R5.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GlobalSign_Root_CA_-_R3.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GlobalSign_Root_CA_-_R3.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/GlobalSign_Root_CA_-_R3.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146994, u64=4597130724401741874}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GlobalSign_Root_CA_-_R3.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GlobalSign_Root_CA_-_R3.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/GlobalSign_Root_CA_-_R3.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GlobalSign_Root_CA_-_R6.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GlobalSign_Root_CA_-_R6.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/GlobalSign_Root_CA_-_R6.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146995, u64=4597130724401741875}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GlobalSign_Root_CA_-_R6.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GlobalSign_Root_CA_-_R6.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/GlobalSign_Root_CA_-_R6.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GlobalSign_Root_E46.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GlobalSign_Root_E46.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/GlobalSign_Root_E46.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146996, u64=4597130724401741876}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GlobalSign_Root_E46.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GlobalSign_Root_E46.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/GlobalSign_Root_E46.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GlobalSign_Root_R46.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GlobalSign_Root_R46.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/GlobalSign_Root_R46.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146997, u64=4597130724401741877}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GlobalSign_Root_R46.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/GlobalSign_Root_R46.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/GlobalSign_Root_R46.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Go_Daddy_Root_Certificate_Authority_-_G2.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Go_Daddy_Root_Certificate_Authority_-_G2.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/Go_Daddy_Root_Certificate_Authority_-_G2.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146998, u64=4597130724401741878}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Go_Daddy_Root_Certificate_Authority_-_G2.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Go_Daddy_Root_Certificate_Authority_-_G2.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/Go_Daddy_Root_Certificate_Authority_-_G2.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/HARICA_TLS_ECC_Root_CA_2021.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/HARICA_TLS_ECC_Root_CA_2021.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/HARICA_TLS_ECC_Root_CA_2021.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248146999, u64=4597130724401741879}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/HARICA_TLS_ECC_Root_CA_2021.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/HARICA_TLS_ECC_Root_CA_2021.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/HARICA_TLS_ECC_Root_CA_2021.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/HARICA_TLS_RSA_Root_CA_2021.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/HARICA_TLS_RSA_Root_CA_2021.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/HARICA_TLS_RSA_Root_CA_2021.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147000, u64=4597130724401741880}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/HARICA_TLS_RSA_Root_CA_2021.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/HARICA_TLS_RSA_Root_CA_2021.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/HARICA_TLS_RSA_Root_CA_2021.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Hellenic_Academic_and_Research_Institutions_ECC_RootCA_2015.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Hellenic_Academic_and_Research_Institutions_ECC_RootCA_2015.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/Hellenic_Academic_and_Research_Institutions_ECC_RootCA_2015.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147001, u64=4597130724401741881}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Hellenic_Academic_and_Research_Institutions_ECC_RootCA_2015.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Hellenic_Academic_and_Research_Institutions_ECC_RootCA_2015.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/Hellenic_Academic_and_Research_Institutions_ECC_RootCA_2015.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Hellenic_Academic_and_Research_Institutions_RootCA_2015.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Hellenic_Academic_and_Research_Institutions_RootCA_2015.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/Hellenic_Academic_and_Research_Institutions_RootCA_2015.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147002, u64=4597130724401741882}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Hellenic_Academic_and_Research_Institutions_RootCA_2015.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Hellenic_Academic_and_Research_Institutions_RootCA_2015.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/Hellenic_Academic_and_Research_Institutions_RootCA_2015.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/HiPKI_Root_CA_-_G1.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/HiPKI_Root_CA_-_G1.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/HiPKI_Root_CA_-_G1.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147003, u64=4597130724401741883}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/HiPKI_Root_CA_-_G1.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/HiPKI_Root_CA_-_G1.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/HiPKI_Root_CA_-_G1.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Hongkong_Post_Root_CA_3.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Hongkong_Post_Root_CA_3.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/Hongkong_Post_Root_CA_3.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147004, u64=4597130724401741884}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Hongkong_Post_Root_CA_3.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Hongkong_Post_Root_CA_3.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/Hongkong_Post_Root_CA_3.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/ISRG_Root_X1.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/ISRG_Root_X1.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/ISRG_Root_X1.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147005, u64=4597130724401741885}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/ISRG_Root_X1.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/ISRG_Root_X1.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/ISRG_Root_X1.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/ISRG_Root_X2.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/ISRG_Root_X2.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/ISRG_Root_X2.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147006, u64=4597130724401741886}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/ISRG_Root_X2.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/ISRG_Root_X2.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/ISRG_Root_X2.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/IdenTrust_Commercial_Root_CA_1.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/IdenTrust_Commercial_Root_CA_1.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/IdenTrust_Commercial_Root_CA_1.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147007, u64=4597130724401741887}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/IdenTrust_Commercial_Root_CA_1.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/IdenTrust_Commercial_Root_CA_1.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/IdenTrust_Commercial_Root_CA_1.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/IdenTrust_Public_Sector_Root_CA_1.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/IdenTrust_Public_Sector_Root_CA_1.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/IdenTrust_Public_Sector_Root_CA_1.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147008, u64=4597130724401741888}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/IdenTrust_Public_Sector_Root_CA_1.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/IdenTrust_Public_Sector_Root_CA_1.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/IdenTrust_Public_Sector_Root_CA_1.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Izenpe.com.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Izenpe.com.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/Izenpe.com.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147009, u64=4597130724401741889}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Izenpe.com.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Izenpe.com.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/Izenpe.com.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Microsec_e-Szigno_Root_CA_2009.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Microsec_e-Szigno_Root_CA_2009.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/Microsec_e-Szigno_Root_CA_2009.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147010, u64=4597130724401741890}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Microsec_e-Szigno_Root_CA_2009.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Microsec_e-Szigno_Root_CA_2009.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/Microsec_e-Szigno_Root_CA_2009.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Microsoft_ECC_Root_Certificate_Authority_2017.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Microsoft_ECC_Root_Certificate_Authority_2017.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/Microsoft_ECC_Root_Certificate_Authority_2017.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147011, u64=4597130724401741891}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Microsoft_ECC_Root_Certificate_Authority_2017.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Microsoft_ECC_Root_Certificate_Authority_2017.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/Microsoft_ECC_Root_Certificate_Authority_2017.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Microsoft_RSA_Root_Certificate_Authority_2017.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Microsoft_RSA_Root_Certificate_Authority_2017.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/Microsoft_RSA_Root_Certificate_Authority_2017.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147012, u64=4597130724401741892}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Microsoft_RSA_Root_Certificate_Authority_2017.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Microsoft_RSA_Root_Certificate_Authority_2017.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/Microsoft_RSA_Root_Certificate_Authority_2017.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/NAVER_Global_Root_Certification_Authority.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/NAVER_Global_Root_Certification_Authority.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/NAVER_Global_Root_Certification_Authority.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147013, u64=4597130724401741893}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/NAVER_Global_Root_Certification_Authority.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/NAVER_Global_Root_Certification_Authority.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/NAVER_Global_Root_Certification_Authority.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/NetLock_Arany_=Class_Gold=_F\305\221tan\303\272s\303\255tv\303\241ny.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/NetLock_Arany_=Class_Gold=_F\305\221tan\303\272s\303\255tv\303\241ny.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/NetLock_Arany_=Class_Gold=_F\305\221tan\303\272s\303\255tv\303\241ny.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147014, u64=4597130724401741894}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/NetLock_Arany_=Class_Gold=_F\305\221tan\303\272s\303\255tv\303\241ny.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/NetLock_Arany_=Class_Gold=_F\305\221tan\303\272s\303\255tv\303\241ny.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/NetLock_Arany_=Class_Gold=_F\305\221tan\303\272s\303\255tv\303\241ny.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/OISTE_Server_Root_ECC_G1.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/OISTE_Server_Root_ECC_G1.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/OISTE_Server_Root_ECC_G1.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147015, u64=4597130724401741895}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/OISTE_Server_Root_ECC_G1.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/OISTE_Server_Root_ECC_G1.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/OISTE_Server_Root_ECC_G1.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/OISTE_Server_Root_RSA_G1.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/OISTE_Server_Root_RSA_G1.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/OISTE_Server_Root_RSA_G1.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147016, u64=4597130724401741896}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/OISTE_Server_Root_RSA_G1.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/OISTE_Server_Root_RSA_G1.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/OISTE_Server_Root_RSA_G1.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/OISTE_WISeKey_Global_Root_GB_CA.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/OISTE_WISeKey_Global_Root_GB_CA.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/OISTE_WISeKey_Global_Root_GB_CA.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147017, u64=4597130724401741897}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/OISTE_WISeKey_Global_Root_GB_CA.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/OISTE_WISeKey_Global_Root_GB_CA.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/OISTE_WISeKey_Global_Root_GB_CA.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/OISTE_WISeKey_Global_Root_GC_CA.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/OISTE_WISeKey_Global_Root_GC_CA.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/OISTE_WISeKey_Global_Root_GC_CA.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147018, u64=4597130724401741898}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/OISTE_WISeKey_Global_Root_GC_CA.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/OISTE_WISeKey_Global_Root_GC_CA.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/OISTE_WISeKey_Global_Root_GC_CA.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/QuoVadis_Root_CA_1_G3.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/QuoVadis_Root_CA_1_G3.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/QuoVadis_Root_CA_1_G3.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147019, u64=4597130724401741899}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/QuoVadis_Root_CA_1_G3.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/QuoVadis_Root_CA_1_G3.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/QuoVadis_Root_CA_1_G3.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/QuoVadis_Root_CA_2_G3.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/QuoVadis_Root_CA_2_G3.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/QuoVadis_Root_CA_2_G3.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147020, u64=4597130724401741900}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/QuoVadis_Root_CA_2_G3.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/QuoVadis_Root_CA_2_G3.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/QuoVadis_Root_CA_2_G3.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/QuoVadis_Root_CA_3_G3.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/QuoVadis_Root_CA_3_G3.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/QuoVadis_Root_CA_3_G3.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147021, u64=4597130724401741901}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/QuoVadis_Root_CA_3_G3.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/QuoVadis_Root_CA_3_G3.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/QuoVadis_Root_CA_3_G3.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SSL.com_EV_Root_Certification_Authority_ECC.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SSL.com_EV_Root_Certification_Authority_ECC.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/SSL.com_EV_Root_Certification_Authority_ECC.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147022, u64=4597130724401741902}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SSL.com_EV_Root_Certification_Authority_ECC.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SSL.com_EV_Root_Certification_Authority_ECC.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/SSL.com_EV_Root_Certification_Authority_ECC.crt>) = 0
+4131980 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SSL.com_EV_Root_Certification_Authority_RSA_R2.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SSL.com_EV_Root_Certification_Authority_RSA_R2.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/SSL.com_EV_Root_Certification_Authority_RSA_R2.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147023, u64=4597130724401741903}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SSL.com_EV_Root_Certification_Authority_RSA_R2.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SSL.com_EV_Root_Certification_Authority_RSA_R2.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/SSL.com_EV_Root_Certification_Authority_RSA_R2.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SSL.com_Root_Certification_Authority_ECC.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SSL.com_Root_Certification_Authority_ECC.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/SSL.com_Root_Certification_Authority_ECC.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147024, u64=4597130724401741904}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SSL.com_Root_Certification_Authority_ECC.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SSL.com_Root_Certification_Authority_ECC.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/SSL.com_Root_Certification_Authority_ECC.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SSL.com_Root_Certification_Authority_RSA.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SSL.com_Root_Certification_Authority_RSA.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/SSL.com_Root_Certification_Authority_RSA.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147025, u64=4597130724401741905}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SSL.com_Root_Certification_Authority_RSA.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SSL.com_Root_Certification_Authority_RSA.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/SSL.com_Root_Certification_Authority_RSA.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SSL.com_TLS_ECC_Root_CA_2022.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SSL.com_TLS_ECC_Root_CA_2022.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/SSL.com_TLS_ECC_Root_CA_2022.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147026, u64=4597130724401741906}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SSL.com_TLS_ECC_Root_CA_2022.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SSL.com_TLS_ECC_Root_CA_2022.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/SSL.com_TLS_ECC_Root_CA_2022.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SSL.com_TLS_RSA_Root_CA_2022.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SSL.com_TLS_RSA_Root_CA_2022.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/SSL.com_TLS_RSA_Root_CA_2022.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147027, u64=4597130724401741907}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SSL.com_TLS_RSA_Root_CA_2022.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SSL.com_TLS_RSA_Root_CA_2022.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/SSL.com_TLS_RSA_Root_CA_2022.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SZAFIR_ROOT_CA2.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SZAFIR_ROOT_CA2.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/SZAFIR_ROOT_CA2.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147028, u64=4597130724401741908}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SZAFIR_ROOT_CA2.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SZAFIR_ROOT_CA2.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/SZAFIR_ROOT_CA2.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Sectigo_Public_Server_Authentication_Root_E46.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Sectigo_Public_Server_Authentication_Root_E46.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/Sectigo_Public_Server_Authentication_Root_E46.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147029, u64=4597130724401741909}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Sectigo_Public_Server_Authentication_Root_E46.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Sectigo_Public_Server_Authentication_Root_E46.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/Sectigo_Public_Server_Authentication_Root_E46.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Sectigo_Public_Server_Authentication_Root_R46.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Sectigo_Public_Server_Authentication_Root_R46.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/Sectigo_Public_Server_Authentication_Root_R46.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147030, u64=4597130724401741910}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Sectigo_Public_Server_Authentication_Root_R46.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Sectigo_Public_Server_Authentication_Root_R46.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/Sectigo_Public_Server_Authentication_Root_R46.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SecureSign_Root_CA12.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SecureSign_Root_CA12.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/SecureSign_Root_CA12.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147031, u64=4597130724401741911}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SecureSign_Root_CA12.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SecureSign_Root_CA12.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/SecureSign_Root_CA12.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SecureSign_Root_CA14.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SecureSign_Root_CA14.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/SecureSign_Root_CA14.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147032, u64=4597130724401741912}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SecureSign_Root_CA14.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SecureSign_Root_CA14.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/SecureSign_Root_CA14.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SecureSign_Root_CA15.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SecureSign_Root_CA15.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/SecureSign_Root_CA15.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147033, u64=4597130724401741913}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SecureSign_Root_CA15.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SecureSign_Root_CA15.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/SecureSign_Root_CA15.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Security_Communication_ECC_RootCA1.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Security_Communication_ECC_RootCA1.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/Security_Communication_ECC_RootCA1.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147034, u64=4597130724401741914}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Security_Communication_ECC_RootCA1.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Security_Communication_ECC_RootCA1.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/Security_Communication_ECC_RootCA1.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Security_Communication_RootCA2.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Security_Communication_RootCA2.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/Security_Communication_RootCA2.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147035, u64=4597130724401741915}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Security_Communication_RootCA2.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Security_Communication_RootCA2.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/Security_Communication_RootCA2.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Starfield_Root_Certificate_Authority_-_G2.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Starfield_Root_Certificate_Authority_-_G2.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/Starfield_Root_Certificate_Authority_-_G2.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147036, u64=4597130724401741916}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Starfield_Root_Certificate_Authority_-_G2.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Starfield_Root_Certificate_Authority_-_G2.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/Starfield_Root_Certificate_Authority_-_G2.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Starfield_Services_Root_Certificate_Authority_-_G2.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Starfield_Services_Root_Certificate_Authority_-_G2.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/Starfield_Services_Root_Certificate_Authority_-_G2.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147037, u64=4597130724401741917}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Starfield_Services_Root_Certificate_Authority_-_G2.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Starfield_Services_Root_Certificate_Authority_-_G2.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/Starfield_Services_Root_Certificate_Authority_-_G2.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SwissSign_RSA_TLS_Root_CA_2022_-_1.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SwissSign_RSA_TLS_Root_CA_2022_-_1.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/SwissSign_RSA_TLS_Root_CA_2022_-_1.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147038, u64=4597130724401741918}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SwissSign_RSA_TLS_Root_CA_2022_-_1.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/SwissSign_RSA_TLS_Root_CA_2022_-_1.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/SwissSign_RSA_TLS_Root_CA_2022_-_1.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/T-TeleSec_GlobalRoot_Class_2.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/T-TeleSec_GlobalRoot_Class_2.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/T-TeleSec_GlobalRoot_Class_2.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147039, u64=4597130724401741919}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/T-TeleSec_GlobalRoot_Class_2.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/T-TeleSec_GlobalRoot_Class_2.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/T-TeleSec_GlobalRoot_Class_2.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/T-TeleSec_GlobalRoot_Class_3.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/T-TeleSec_GlobalRoot_Class_3.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/T-TeleSec_GlobalRoot_Class_3.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147040, u64=4597130724401741920}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/T-TeleSec_GlobalRoot_Class_3.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/T-TeleSec_GlobalRoot_Class_3.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/T-TeleSec_GlobalRoot_Class_3.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/TUBITAK_Kamu_SM_SSL_Kok_Sertifikasi_-_Surum_1.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/TUBITAK_Kamu_SM_SSL_Kok_Sertifikasi_-_Surum_1.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/TUBITAK_Kamu_SM_SSL_Kok_Sertifikasi_-_Surum_1.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147041, u64=4597130724401741921}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/TUBITAK_Kamu_SM_SSL_Kok_Sertifikasi_-_Surum_1.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/TUBITAK_Kamu_SM_SSL_Kok_Sertifikasi_-_Surum_1.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/TUBITAK_Kamu_SM_SSL_Kok_Sertifikasi_-_Surum_1.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/TWCA_CYBER_Root_CA.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/TWCA_CYBER_Root_CA.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/TWCA_CYBER_Root_CA.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147042, u64=4597130724401741922}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/TWCA_CYBER_Root_CA.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/TWCA_CYBER_Root_CA.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/TWCA_CYBER_Root_CA.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/TWCA_Global_Root_CA.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/TWCA_Global_Root_CA.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/TWCA_Global_Root_CA.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147043, u64=4597130724401741923}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/TWCA_Global_Root_CA.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/TWCA_Global_Root_CA.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/TWCA_Global_Root_CA.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/TWCA_Root_Certification_Authority.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/TWCA_Root_Certification_Authority.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/TWCA_Root_Certification_Authority.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147044, u64=4597130724401741924}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/TWCA_Root_Certification_Authority.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/TWCA_Root_Certification_Authority.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/TWCA_Root_Certification_Authority.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Telekom_Security_TLS_ECC_Root_2020.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Telekom_Security_TLS_ECC_Root_2020.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/Telekom_Security_TLS_ECC_Root_2020.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147045, u64=4597130724401741925}}) = -1 EPERM (Operation not permitted)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Telekom_Security_TLS_ECC_Root_2020.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Telekom_Security_TLS_ECC_Root_2020.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131980 close(7</usr/share/ca-certificates/mozilla/Telekom_Security_TLS_ECC_Root_2020.crt>) = 0
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Telekom_Security_TLS_RSA_Root_2023.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131980 fcntl(7</usr/share/ca-certificates/mozilla/Telekom_Security_TLS_RSA_Root_2023.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131980 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/Telekom_Security_TLS_RSA_Root_2023.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147046, u64=4597130724401741926}}) = -1 EPERM (Operation not permitted)
+4131980 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/Telekom_Security_TLS_RSA_Root_2023.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/Telekom_Security_TLS_RSA_Root_2023.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131983 close(7</usr/share/ca-certificates/mozilla/Telekom_Security_TLS_RSA_Root_2023.crt>) = 0
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/Telia_Root_CA_v2.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/Telia_Root_CA_v2.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131983 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/Telia_Root_CA_v2.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147047, u64=4597130724401741927}}) = -1 EPERM (Operation not permitted)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/Telia_Root_CA_v2.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/Telia_Root_CA_v2.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131983 close(7</usr/share/ca-certificates/mozilla/Telia_Root_CA_v2.crt>) = 0
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/TrustAsia_Global_Root_CA_G3.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/TrustAsia_Global_Root_CA_G3.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131983 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/TrustAsia_Global_Root_CA_G3.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147048, u64=4597130724401741928}}) = -1 EPERM (Operation not permitted)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/TrustAsia_Global_Root_CA_G3.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/TrustAsia_Global_Root_CA_G3.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131983 close(7</usr/share/ca-certificates/mozilla/TrustAsia_Global_Root_CA_G3.crt>) = 0
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/TrustAsia_Global_Root_CA_G4.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/TrustAsia_Global_Root_CA_G4.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131983 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/TrustAsia_Global_Root_CA_G4.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147049, u64=4597130724401741929}}) = -1 EPERM (Operation not permitted)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/TrustAsia_Global_Root_CA_G4.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/TrustAsia_Global_Root_CA_G4.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131983 close(7</usr/share/ca-certificates/mozilla/TrustAsia_Global_Root_CA_G4.crt>) = 0
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/TrustAsia_TLS_ECC_Root_CA.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/TrustAsia_TLS_ECC_Root_CA.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131983 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/TrustAsia_TLS_ECC_Root_CA.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147050, u64=4597130724401741930}}) = -1 EPERM (Operation not permitted)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/TrustAsia_TLS_ECC_Root_CA.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/TrustAsia_TLS_ECC_Root_CA.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131983 close(7</usr/share/ca-certificates/mozilla/TrustAsia_TLS_ECC_Root_CA.crt>) = 0
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/TrustAsia_TLS_RSA_Root_CA.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/TrustAsia_TLS_RSA_Root_CA.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131983 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/TrustAsia_TLS_RSA_Root_CA.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147051, u64=4597130724401741931}}) = -1 EPERM (Operation not permitted)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/TrustAsia_TLS_RSA_Root_CA.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/TrustAsia_TLS_RSA_Root_CA.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131983 close(7</usr/share/ca-certificates/mozilla/TrustAsia_TLS_RSA_Root_CA.crt>) = 0
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/TunTrust_Root_CA.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/TunTrust_Root_CA.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131983 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/TunTrust_Root_CA.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147052, u64=4597130724401741932}}) = -1 EPERM (Operation not permitted)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/TunTrust_Root_CA.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/TunTrust_Root_CA.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131983 close(7</usr/share/ca-certificates/mozilla/TunTrust_Root_CA.crt>) = 0
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/UCA_Extended_Validation_Root.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/UCA_Extended_Validation_Root.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131983 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/UCA_Extended_Validation_Root.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147053, u64=4597130724401741933}}) = -1 EPERM (Operation not permitted)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/UCA_Extended_Validation_Root.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/UCA_Extended_Validation_Root.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131983 close(7</usr/share/ca-certificates/mozilla/UCA_Extended_Validation_Root.crt>) = 0
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/UCA_Global_G2_Root.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/UCA_Global_G2_Root.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131983 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/UCA_Global_G2_Root.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147054, u64=4597130724401741934}}) = -1 EPERM (Operation not permitted)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/UCA_Global_G2_Root.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/UCA_Global_G2_Root.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131983 close(7</usr/share/ca-certificates/mozilla/UCA_Global_G2_Root.crt>) = 0
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/USERTrust_ECC_Certification_Authority.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/USERTrust_ECC_Certification_Authority.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131983 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/USERTrust_ECC_Certification_Authority.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147055, u64=4597130724401741935}}) = -1 EPERM (Operation not permitted)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/USERTrust_ECC_Certification_Authority.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/USERTrust_ECC_Certification_Authority.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131983 close(7</usr/share/ca-certificates/mozilla/USERTrust_ECC_Certification_Authority.crt>) = 0
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/USERTrust_RSA_Certification_Authority.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/USERTrust_RSA_Certification_Authority.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131983 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/USERTrust_RSA_Certification_Authority.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147056, u64=4597130724401741936}}) = -1 EPERM (Operation not permitted)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/USERTrust_RSA_Certification_Authority.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/USERTrust_RSA_Certification_Authority.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131983 close(7</usr/share/ca-certificates/mozilla/USERTrust_RSA_Certification_Authority.crt>) = 0
+4131983 fcntl(7</etc/ssl/certs/ca-certificates.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131983 fcntl(7</etc/ssl/certs/ca-certificates.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131983 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</etc/ssl/certs/ca-certificates.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147057, u64=4597130724401741937}}) = -1 EPERM (Operation not permitted)
+4131983 fcntl(7</etc/ssl/certs/ca-certificates.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131983 fcntl(7</etc/ssl/certs/ca-certificates.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131983 close(7</etc/ssl/certs/ca-certificates.crt>) = 0
+4131983 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131983 fcntl(7</usr/local/share/ca-certificates/ca.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131983 fcntl(7</usr/local/share/ca-certificates/ca.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131983 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/local/share/ca-certificates/ca.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147058, u64=4597130724401741938}}) = -1 EPERM (Operation not permitted)
+4131983 fcntl(7</usr/local/share/ca-certificates/ca.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131983 fcntl(7</usr/local/share/ca-certificates/ca.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131983 close(7</usr/local/share/ca-certificates/ca.crt>) = 0
+4131983 fcntl(7</usr/local/share/ca-certificates/calypso-ca.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131983 fcntl(7</usr/local/share/ca-certificates/calypso-ca.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131983 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/local/share/ca-certificates/calypso-ca.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147059, u64=4597130724401741939}}) = -1 EPERM (Operation not permitted)
+4131983 fcntl(7</usr/local/share/ca-certificates/calypso-ca.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131983 fcntl(7</usr/local/share/ca-certificates/calypso-ca.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131983 close(7</usr/local/share/ca-certificates/calypso-ca.crt>) = 0
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/certSIGN_Root_CA_G2.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/certSIGN_Root_CA_G2.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131983 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/certSIGN_Root_CA_G2.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147060, u64=4597130724401741940}}) = -1 EPERM (Operation not permitted)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/certSIGN_Root_CA_G2.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/certSIGN_Root_CA_G2.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131983 close(7</usr/share/ca-certificates/mozilla/certSIGN_Root_CA_G2.crt>) = 0
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/e-Szigno_Root_CA_2017.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/e-Szigno_Root_CA_2017.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131983 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/e-Szigno_Root_CA_2017.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147061, u64=4597130724401741941}}) = -1 EPERM (Operation not permitted)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/e-Szigno_Root_CA_2017.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/e-Szigno_Root_CA_2017.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131983 close(7</usr/share/ca-certificates/mozilla/e-Szigno_Root_CA_2017.crt>) = 0
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/e-Szigno_TLS_Root_CA_2023.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/e-Szigno_TLS_Root_CA_2023.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131983 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/e-Szigno_TLS_Root_CA_2023.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147062, u64=4597130724401741942}}) = -1 EPERM (Operation not permitted)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/e-Szigno_TLS_Root_CA_2023.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/e-Szigno_TLS_Root_CA_2023.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131983 close(7</usr/share/ca-certificates/mozilla/e-Szigno_TLS_Root_CA_2023.crt>) = 0
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/ePKI_Root_Certification_Authority.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/ePKI_Root_Certification_Authority.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131983 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/ePKI_Root_Certification_Authority.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147063, u64=4597130724401741943}}) = -1 EPERM (Operation not permitted)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/ePKI_Root_Certification_Authority.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/ePKI_Root_Certification_Authority.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131983 close(7</usr/share/ca-certificates/mozilla/ePKI_Root_Certification_Authority.crt>) = 0
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/emSign_ECC_Root_CA_-_C3.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/emSign_ECC_Root_CA_-_C3.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131983 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/emSign_ECC_Root_CA_-_C3.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147064, u64=4597130724401741944}}) = -1 EPERM (Operation not permitted)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/emSign_ECC_Root_CA_-_C3.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/emSign_ECC_Root_CA_-_C3.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131983 close(7</usr/share/ca-certificates/mozilla/emSign_ECC_Root_CA_-_C3.crt>) = 0
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/emSign_ECC_Root_CA_-_G3.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/emSign_ECC_Root_CA_-_G3.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131983 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/emSign_ECC_Root_CA_-_G3.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147065, u64=4597130724401741945}}) = -1 EPERM (Operation not permitted)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/emSign_ECC_Root_CA_-_G3.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/emSign_ECC_Root_CA_-_G3.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131983 close(7</usr/share/ca-certificates/mozilla/emSign_ECC_Root_CA_-_G3.crt>) = 0
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/emSign_Root_CA_-_C1.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/emSign_Root_CA_-_C1.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131983 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/emSign_Root_CA_-_C1.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147066, u64=4597130724401741946}}) = -1 EPERM (Operation not permitted)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/emSign_Root_CA_-_C1.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131983 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/emSign_Root_CA_-_C1.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131983 close(7</usr/share/ca-certificates/mozilla/emSign_Root_CA_-_C1.crt>) = 0
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/emSign_Root_CA_-_G1.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/emSign_Root_CA_-_G1.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131983 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/emSign_Root_CA_-_G1.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147067, u64=4597130724401741947}}) = -1 EPERM (Operation not permitted)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/emSign_Root_CA_-_G1.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/emSign_Root_CA_-_G1.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131983 close(7</usr/share/ca-certificates/mozilla/emSign_Root_CA_-_G1.crt>) = 0
+4131983 fcntl(7</etc/ssl/certs/java>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131983 fcntl(7</etc/ssl/certs/java>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131983 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</etc/ssl/certs/java>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147068, u64=4597130724401741948}}) = -1 EPERM (Operation not permitted)
+4131983 fcntl(7</etc/ssl/certs/java>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131983 fcntl(7</etc/ssl/certs/java>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131983 close(7</etc/ssl/certs/java>)   = 0
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/vTrus_ECC_Root_CA.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/vTrus_ECC_Root_CA.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131983 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/vTrus_ECC_Root_CA.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147069, u64=4597130724401741949}}) = -1 EPERM (Operation not permitted)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/vTrus_ECC_Root_CA.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/vTrus_ECC_Root_CA.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131983 close(7</usr/share/ca-certificates/mozilla/vTrus_ECC_Root_CA.crt>) = 0
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/vTrus_Root_CA.crt>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/vTrus_Root_CA.crt>, F_SETFL, O_RDONLY|O_NONBLOCK|O_LARGEFILE) = 0
+4131983 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 7</usr/share/ca-certificates/mozilla/vTrus_Root_CA.crt>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2248147070, u64=4597130724401741950}}) = -1 EPERM (Operation not permitted)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/vTrus_Root_CA.crt>, F_GETFL) = 0x8800 (flags O_RDONLY|O_NONBLOCK|O_LARGEFILE)
+4131983 fcntl(7</usr/share/ca-certificates/mozilla/vTrus_Root_CA.crt>, F_SETFL, O_RDONLY|O_LARGEFILE) = 0
+4131983 close(7</usr/share/ca-certificates/mozilla/vTrus_Root_CA.crt>) = 0
+4131983 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131983 epoll_pwait(5<anon_inode:[eventpoll]>, [], 128, 0, NULL, 0) = 0
+4131983 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131983 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131983 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131987 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131983 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131983 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131977 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131987 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131989 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131983 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131986 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131986 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131997 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131989 epoll_pwait(5<anon_inode:[eventpoll]>, [], 128, 0, NULL, 0) = 0
+4131986 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131975, si_uid=253477} ---
+4131975 <... epoll_pwait resumed>[{events=EPOLLIN|EPOLLOUT, data={u32=2264924162, u64=4597130724418519042}}], 128, 9975, NULL, 0) = 1
+4131975 epoll_pwait(5<anon_inode:[eventpoll]>, [{events=EPOLLOUT, data={u32=2264924162, u64=4597130724418519042}}], 128, 0, NULL, 0) = 1
+4131975 epoll_pwait(5<anon_inode:[eventpoll]>, [{events=EPOLLIN|EPOLLOUT, data={u32=2264924162, u64=4597130724418519042}}], 128, 9678, NULL, 0) = 1
+4131983 epoll_pwait(5<anon_inode:[eventpoll]>, [{events=EPOLLIN|EPOLLOUT, data={u32=2264924162, u64=4597130724418519042}}], 128, 9661, NULL, 0) = 1
+4131983 epoll_pwait(5<anon_inode:[eventpoll]>,  <unfinished ...>) = ?
+4131997 +++ exited with 0 +++
+4131996 +++ exited with 0 +++
+4131995 +++ exited with 0 +++
+4131994 +++ exited with 0 +++
+4131993 +++ exited with 0 +++
+4131992 +++ exited with 0 +++
+4131991 +++ exited with 0 +++
+4131990 +++ exited with 0 +++
+4131989 +++ exited with 0 +++
+4131988 +++ exited with 0 +++
+4131987 +++ exited with 0 +++
+4131986 +++ exited with 0 +++
+4131985 +++ exited with 0 +++
+4131984 +++ exited with 0 +++
+4131983 +++ exited with 0 +++
+4131981 +++ exited with 0 +++
+4131980 +++ exited with 0 +++
+4131979 +++ exited with 0 +++
+4131978 +++ exited with 0 +++
+4131977 +++ exited with 0 +++
+4131976 +++ exited with 0 +++
+4131975 +++ exited with 0 +++

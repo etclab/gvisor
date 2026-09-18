@@ -527,10 +527,12 @@ run_workload() {
 # number this boot used because it is printed next to what it did.
 knob() { # FILE
 	[ -f "$1" ] || return 1
-	v=$(cat "$1" 2>/dev/null | tr -d ' \r\n\t')
+	# busybox tr and the shell's own echo, so that this reads the same way in
+	# docs/snp/image/init.rootfs, where neither applet is a symlink.
+	v=$(busybox tr -d ' \r\n\t' < "$1" 2>/dev/null)
 	case "$v" in '' | *[!0-9]*) say "WARNING: $1 is not a number ('$v'); ignoring it"; return 1 ;; esac
 	[ "$v" != 0 ] || return 1
-	printf '%s' "$v"
+	echo "$v"
 }
 
 # A policy to push, if the config device carries one (ticket 22,

@@ -152,14 +152,26 @@ fi
 # per-network-namespace), so the helper runsc spawns inside those namespaces
 # reaches the tunneld outside them by the same path. /run is rw,noexec and a
 # socket is not an exec, so the rule above has nothing to say about it.
+#
+# And the sentry's own account of what it did, which is the only diagnostic this
+# guest has. The adapter's two interesting lines — `tunnel dns:` for a name it
+# resolved or refused, `tunnel attach:` for a stream it asked tunneld for and
+# what came back — are debug-level, so they exist only with --debug. They are
+# written to files under /run rather than to the console, because --debug on the
+# console is tens of thousands of lines on a serial port and would bury the
+# workload's own output; the adapter branch below picks those lines back out
+# afterwards and puts just them on the console. /run is rw,noexec and a log file
+# is not an exec, so the rule above has nothing to say about this either.
 SANDBOX_SOCKET=/run/tunneld/sandbox.sock
 TUNNEL_TABLE=/config/tunnel-table.json
 EXIT_ALLOW=/config/exit-allow
+RUNSC_DEBUG_DIR=/run/runsc-debug
 RUNSC_FLAGS="--root=/run/runsc-state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new"
 ADAPTER=0
 if [ -f "$TUNNEL_TABLE" ]; then
   ADAPTER=1
   RUNSC_FLAGS="$RUNSC_FLAGS --tunnel-socket=$SANDBOX_SOCKET --tunnel-table=$TUNNEL_TABLE"
+  RUNSC_FLAGS="$RUNSC_FLAGS --debug --debug-log=$RUNSC_DEBUG_DIR/"
 fi
 RUNSC_CMD="/usr/bin/runsc $RUNSC_FLAGS run --bundle /workload workload"
 
@@ -284,7 +296,30 @@ if [ "$ADAPTER" = 1 ]; then
   # two ways the run below can fail and which look alike from the other guest.
   wget -q -O - http://127.0.0.1:80/ 2>&1 | sed 's/^/init: httpd says: /'
 
+  mkdir -p "$RUNSC_DEBUG_DIR"
   run_workload
+
+  # The sentry's account, pulled out of the debug log and put on the console in
+  # the order it happened. One line per name the responder answered and one per
+  # stream the adapter asked for, with the verdict and the time it took; that is
+  # the whole of what this guest can say about where the workload's bytes went,
+  # and without it a fetch that failed would be indistinguishable from a fetch
+  # that was refused (docs/snp/evidence/ticket25/adapter-check/notes.md).
+  say "the sentry's own account of the adapter, out of $RUNSC_DEBUG_DIR:"
+  grep -h 'tunnel dns:\|tunnel attach:' "$RUNSC_DEBUG_DIR"/* 2>/dev/null \
+    | sed 's/^/init: sentry: /' \
+    || say "no tunnel lines in the debug log"
+  for f in "$RUNSC_DEBUG_DIR"/*; do
+    [ -f "$f" ] && say "debug log $f: $(wc -c < "$f") bytes, $(wc -l < "$f") lines"
+  done
+  # Only when runsc itself failed, because then the lines above will be missing
+  # and the reason is in what the sentry said as it died.
+  if [ "${wrc:-0}" != 0 ]; then
+    say "runsc exited $wrc; the tail of each debug log follows"
+    for f in "$RUNSC_DEBUG_DIR"/*; do
+      [ -f "$f" ] && { say "--- tail of $f"; tail -n 60 "$f" | sed 's/^/init: debug: /'; }
+    done
+  fi
 
   say "waiting for tunneld (pid $TPID)"
   wait "$TPID"

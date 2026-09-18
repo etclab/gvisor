@@ -214,14 +214,16 @@ install -m 755 "$BUSYBOX" "$R/bin/busybox"
 # (docs/snp/evidence/spike-s1-runsc-in-guest/README.md). The driver's other two
 # applets, sh and mount, are already here.
 #
-# Ticket 25 adds four, and each is one line of /sbin/init's adapter branch:
+# Ticket 25 adds six, and each is one line of /sbin/init's adapter branch:
 # mkdir for the directory the page is written into, httpd to serve it on
 # loopback, wget for the one fetch init makes of its own page so that "not
 # served" and "not carried" are told apart, and kill, which ash has as a builtin
 # and which is here so that the poll for the sandbox socket does not depend on
-# that. Four applets of a busybox that is already measured in whole; the file
-# count changes and no byte of the binary does.
-ROOT_APPLETS="sh mount umount insmod cat echo sleep ls dmesg grep sed poweroff sync ip unshare mkdir httpd wget kill"
+# that; and tail and wc, which put the sentry's own account of the adapter on the
+# console afterwards and say how big the log it came out of was. Six applets of a
+# busybox that is already measured in whole; the file count changes and no byte
+# of the binary does.
+ROOT_APPLETS="sh mount umount insmod cat echo sleep ls dmesg grep sed poweroff sync ip unshare mkdir httpd wget kill tail wc"
 for a in $ROOT_APPLETS; do ln -s busybox "$R/bin/$a"; done
 install -m 755 "$HERE/init.rootfs" "$R/sbin/init"
 install -m 755 "$TUNNELD" "$R/usr/bin/tunneld"

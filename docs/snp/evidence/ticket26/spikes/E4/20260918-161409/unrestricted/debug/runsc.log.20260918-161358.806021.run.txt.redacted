@@ -1,0 +1,291 @@
+I0918 16:13:58.810587  1811867 cli.go:275] **************** gVisor ****************
+I0918 16:13:58.810724  1811867 cli.go:276] Version 0.0.0, go1.26.3, amd64, 64 CPUs, linux, PID 1811867, PPID 1811846, UID 0, GID 0
+D0918 16:13:58.810842  1811867 cli.go:277] Page size: 0x1000 (4096 bytes)
+I0918 16:13:58.810875  1811867 cli.go:278] Args: [/proc/self/exe --root=/dev/shm/t25-3363345203/unrestricted-state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new --tunnel-socket=/dev/shm/t25-3363345203/a.sock --tunnel-table=/tmp/pniroula/TestClaudeGoverned2160688201/001/unrestricted/table.json --pod-init-config=/tmp/pniroula/TestClaudeGoverned2160688201/001/unrestricted/pod-init.json --debug --debug-log=/tmp/pniroula/TestClaudeGoverned2160688201/001/unrestricted/debug/ --strace run --bundle /dev/shm/t25-3363345203/unrestricted t25-unrestricted-1810639]
+I0918 16:13:58.810941  1811867 config.go:569] Platform: systrap
+I0918 16:13:58.810979  1811867 config.go:570] RootDir: /dev/shm/t25-3363345203/unrestricted-state
+I0918 16:13:58.811042  1811867 config.go:571] FileAccess: exclusive / Directfs: true / Overlay: root:self
+I0918 16:13:58.811066  1811867 config.go:572] Network: none
+I0918 16:13:58.811083  1811867 config.go:573] UseCPUNums: false
+I0918 16:13:58.811097  1811867 config.go:575] Debug: true. Strace: true, max size: 1024, syscalls: 
+W0918 16:13:58.811113  1811867 config.go:578] --allow-suid is disabled, SUID/SGID bits on executables will be ignored.
+D0918 16:13:58.811132  1811867 config.go:596] Config.RootDir (--root): /dev/shm/t25-3363345203/unrestricted-state
+D0918 16:13:58.811153  1811867 config.go:596] Config.Traceback (--traceback): system
+D0918 16:13:58.811171  1811867 config.go:596] Config.Debug (--debug): true
+D0918 16:13:58.811187  1811867 config.go:596] Config.LogFilename (--log): (empty)
+D0918 16:13:58.811202  1811867 config.go:596] Config.LogFormat (--log-format): text
+D0918 16:13:58.811218  1811867 config.go:596] Config.DebugLog (--debug-log): /tmp/pniroula/TestClaudeGoverned2160688201/001/unrestricted/debug/
+D0918 16:13:58.811233  1811867 config.go:596] Config.DebugToUserLog (--debug-to-user-log): false
+D0918 16:13:58.811247  1811867 config.go:596] Config.DebugCommand (--debug-command): (empty)
+D0918 16:13:58.811275  1811867 config.go:596] Config.PanicLog (--panic-log): (empty)
+D0918 16:13:58.811288  1811867 config.go:596] Config.CoverageReport (--coverage-report): (empty)
+D0918 16:13:58.811305  1811867 config.go:596] Config.DebugLogFormat (--debug-log-format): text
+D0918 16:13:58.811316  1811867 config.go:596] Config.FileAccess (--file-access): exclusive
+D0918 16:13:58.811331  1811867 config.go:596] Config.FileAccessMounts (--file-access-mounts): shared
+D0918 16:13:58.811344  1811867 config.go:596] Config.Overlay (--overlay): false
+D0918 16:13:58.811359  1811867 config.go:596] Config.Overlay2 (--overlay2): root:self
+D0918 16:13:58.811375  1811867 config.go:596] Config.FSGoferHostUDS (--fsgofer-host-uds): false
+D0918 16:13:58.811389  1811867 config.go:596] Config.HostUDS (--host-uds): none
+D0918 16:13:58.811410  1811867 config.go:596] Config.HostFifo (--host-fifo): none
+D0918 16:13:58.811429  1811867 config.go:596] Config.CharacterDevicePolicy (--character-device-policy): emulated-only
+D0918 16:13:58.811444  1811867 config.go:596] Config.HostSettings (--host-settings): check
+D0918 16:13:58.811462  1811867 config.go:596] Config.Network (--network): none
+D0918 16:13:58.811511  1811867 config.go:596] Config.GoferNetworkNamespace (--gofer-network-namespace): new
+D0918 16:13:58.811538  1811867 config.go:596] Config.EnableRaw (--net-raw): false
+D0918 16:13:58.811552  1811867 config.go:596] Config.AllowPacketEndpointWrite (--allow-packet-socket-write): false
+D0918 16:13:58.811569  1811867 config.go:596] Config.AllowLiveTCPMigration (--allow-live-tcp-migration): true
+D0918 16:13:58.811585  1811867 config.go:596] Config.HostGSO (--gso): true
+D0918 16:13:58.811599  1811867 config.go:596] Config.GVisorGSO (--software-gso): true
+D0918 16:13:58.811625  1811867 config.go:596] Config.GVisorGRO (--gvisor-gro): false
+D0918 16:13:58.811658  1811867 config.go:596] Config.TXChecksumOffload (--tx-checksum-offload): false
+D0918 16:13:58.811673  1811867 config.go:596] Config.RXChecksumOffload (--rx-checksum-offload): true
+D0918 16:13:58.811689  1811867 config.go:596] Config.QDisc (--qdisc): fifo
+D0918 16:13:58.811704  1811867 config.go:596] Config.TBFRate (--qdisc-tbf-rate): 0
+D0918 16:13:58.816267  1811867 config.go:596] Config.TBFBurst (--qdisc-tbf-burst): 0
+D0918 16:13:58.816452  1811867 config.go:596] Config.LogPackets (--log-packets): false
+D0918 16:13:58.816658  1811867 config.go:596] Config.PCAP (--pcap-log): (empty)
+D0918 16:13:58.816830  1811867 config.go:596] Config.Platform (--platform): systrap
+D0918 16:13:58.816874  1811867 config.go:596] Config.PlatformDevicePath (--platform_device_path): (empty)
+D0918 16:13:58.816940  1811867 config.go:596] Config.MetricServer (--metric-server): (empty)
+D0918 16:13:58.817005  1811867 config.go:596] Config.SidecarReleaseEnforcementPolicy (--sidecar-release-enforcement-policy): NEVER
+D0918 16:13:58.817083  1811867 config.go:596] Config.FinalMetricsLog (--final-metrics-log): (empty)
+D0918 16:13:58.817115  1811867 config.go:596] Config.ProfilingMetrics (--profiling-metrics): (empty)
+D0918 16:13:58.817145  1811867 config.go:596] Config.ProfilingMetricsLog (--profiling-metrics-log): (empty)
+D0918 16:13:58.817212  1811867 config.go:596] Config.ProfilingMetricsRate (--profiling-metrics-rate-us): 1000
+D0918 16:13:58.817245  1811867 config.go:596] Config.Strace (--strace): true
+D0918 16:13:58.819957  1811867 config.go:596] Config.StraceSyscalls (--strace-syscalls): (empty)
+D0918 16:13:58.820121  1811867 config.go:596] Config.StraceLogSize (--strace-log-size): 1024
+D0918 16:13:58.820179  1811867 config.go:596] Config.StraceEvent (--strace-event): false
+D0918 16:13:58.820224  1811867 config.go:598] Config.DisableSeccomp: false
+D0918 16:13:58.820273  1811867 config.go:596] Config.EnableCoreTags (--enable-core-tags): false
+D0918 16:13:58.820310  1811867 config.go:596] Config.WatchdogAction (--watchdog-action): log
+D0918 16:13:58.820339  1811867 config.go:596] Config.PanicSignal (--panic-signal): -1
+D0918 16:13:58.820371  1811867 config.go:596] Config.ProfileEnable (--profile): false
+D0918 16:13:58.820408  1811867 config.go:596] Config.ProfileBlock (--profile-block): (empty)
+D0918 16:13:58.820444  1811867 config.go:596] Config.ProfileCPU (--profile-cpu): (empty)
+D0918 16:13:58.820480  1811867 config.go:596] Config.ProfileGCInterval (--profile-gc-interval): 0s
+D0918 16:13:58.820594  1811867 config.go:596] Config.ProfileHeap (--profile-heap): (empty)
+D0918 16:13:58.820635  1811867 config.go:596] Config.ProfileMutex (--profile-mutex): (empty)
+D0918 16:13:58.820670  1811867 config.go:596] Config.TraceFile (--trace): (empty)
+D0918 16:13:58.820707  1811867 config.go:596] Config.NumNetworkChannels (--num-network-channels): 1
+D0918 16:13:58.820763  1811867 config.go:596] Config.NetworkProcessorsPerChannel (--network-processors-per-channel): 0
+D0918 16:13:58.820813  1811867 config.go:596] Config.Rootless (--rootless): true
+D0918 16:13:58.820846  1811867 config.go:596] Config.AlsoLogToStderr (--alsologtostderr): false
+D0918 16:13:58.820884  1811867 config.go:596] Config.ReferenceLeak (--ref-leak-mode): disabled
+D0918 16:13:58.820920  1811867 config.go:596] Config.CPUNumFromQuota (--cpu-num-from-quota): true
+D0918 16:13:58.820955  1811867 config.go:596] Config.AllowFlagOverride (--allow-flag-override): false
+D0918 16:13:58.820997  1811867 config.go:596] Config.OCISeccomp (--oci-seccomp): false
+D0918 16:13:58.821028  1811867 config.go:596] Config.IgnoreCgroups (--ignore-cgroups): true
+D0918 16:13:58.821107  1811867 config.go:596] Config.MountCgroupV2 (--mount-cgroup-v2): false
+D0918 16:13:58.821134  1811867 config.go:596] Config.SystemdCgroup (--systemd-cgroup): false
+D0918 16:13:58.821163  1811867 config.go:596] Config.PodInitConfig (--pod-init-config): /tmp/pniroula/TestClaudeGoverned2160688201/001/unrestricted/pod-init.json
+D0918 16:13:58.821201  1811867 config.go:596] Config.XDP (--EXPERIMENTAL-xdp): {0 }
+D0918 16:13:58.821334  1811867 config.go:596] Config.AFXDPUseNeedWakeup (--EXPERIMENTAL-xdp-need-wakeup): true
+D0918 16:13:58.821370  1811867 config.go:596] Config.FDLimit (--fdlimit): -1
+D0918 16:13:58.821404  1811867 config.go:596] Config.DCache (--dcache): -1
+D0918 16:13:58.821432  1811867 config.go:596] Config.IOUring (--iouring): false
+D0918 16:13:58.821464  1811867 config.go:596] Config.DirectFS (--directfs): true
+D0918 16:13:58.821496  1811867 config.go:596] Config.AppHugePages (--app-huge-pages): true
+D0918 16:13:58.821529  1811867 config.go:596] Config.NVProxy (--nvproxy): false
+D0918 16:13:58.821564  1811867 config.go:596] Config.NVProxyDocker (--nvproxy-docker): false
+D0918 16:13:58.821599  1811867 config.go:596] Config.NVProxyDriverVersion (--nvproxy-driver-version): (empty)
+D0918 16:13:58.821630  1811867 config.go:596] Config.NVProxyAllowedDriverCapabilities (--nvproxy-allowed-driver-capabilities): utility,compute
+D0918 16:13:58.821667  1811867 config.go:596] Config.NVProxyAllowUnsupportedDriver (--nvproxy-allow-unsupported-driver): false
+D0918 16:13:58.821694  1811867 config.go:596] Config.TPUProxy (--tpuproxy): false
+D0918 16:13:58.821726  1811867 config.go:596] Config.RDMAProxy (--rdmaproxy): false
+D0918 16:13:58.821930  1811867 config.go:596] Config.TestOnlyAllowRunAsCurrentUserWithoutChroot (--TESTONLY-unsafe-nonroot): false
+D0918 16:13:58.821966  1811867 config.go:596] Config.TestOnlyTestNameEnv (--TESTONLY-test-name-env): (empty)
+D0918 16:13:58.821999  1811867 config.go:596] Config.TestOnlyAFSSyscallPanic (--TESTONLY-afs-syscall-panic): false
+D0918 16:13:58.822036  1811867 config.go:598] Config.explicitlySet: <map[string]struct {} Value> (unexported)
+D0918 16:13:58.822064  1811867 config.go:596] Config.ReproduceNAT (--reproduce-nat): false
+D0918 16:13:58.822099  1811867 config.go:596] Config.ReproduceNftables (--reproduce-nftables): false
+D0918 16:13:58.822134  1811867 config.go:596] Config.NetDisconnectOk (--net-disconnect-ok): true
+D0918 16:13:58.822167  1811867 config.go:596] Config.TestOnlyAutosaveImagePath (--TESTONLY-autosave-image-path): (empty)
+D0918 16:13:58.822201  1811867 config.go:596] Config.TestOnlyAutosaveResume (--TESTONLY-autosave-resume): false
+D0918 16:13:58.822233  1811867 config.go:596] Config.RestoreSpecValidation (--restore-spec-validation): enforce
+D0918 16:13:58.822277  1811867 config.go:596] Config.GVisorMarkerFile (--gvisor-marker-file): false
+D0918 16:13:58.822308  1811867 config.go:596] Config.OverrideProcs (--override-procs): (empty)
+D0918 16:13:58.822338  1811867 config.go:596] Config.SystrapDisableSyscallPatching (--systrap-disable-syscall-patching): false
+D0918 16:13:58.822374  1811867 config.go:596] Config.SystrapDisableFastPath (--systrap-disable-fast-path): false
+D0918 16:13:58.822402  1811867 config.go:596] Config.Nftables (--TESTONLY-nftables): false
+D0918 16:13:58.822435  1811867 config.go:596] Config.AllowSUID (--allow-suid): false
+D0918 16:13:58.822471  1811867 config.go:596] Config.UseCPUNums (--kvm-use-cpu-nums): false
+D0918 16:13:58.822502  1811867 config.go:596] Config.PauseExternalNetworking (--pause-external-networking): false
+D0918 16:13:58.822530  1811867 config.go:596] Config.AllowConnectedOnSave (--allow-connected-on-save): false
+D0918 16:13:58.822563  1811867 config.go:596] Config.AllowRootfsTarAnnotation (--allow-rootfs-tar-annotation): false
+D0918 16:13:58.822594  1811867 config.go:596] Config.ControlRPCStopTimeout (--control-rpc-stop-timeout): 15s
+D0918 16:13:58.822628  1811867 config.go:596] Config.TunnelSocket (--tunnel-socket): /dev/shm/t25-3363345203/a.sock
+D0918 16:13:58.822658  1811867 config.go:596] Config.TunnelTable (--tunnel-table): /tmp/pniroula/TestClaudeGoverned2160688201/001/unrestricted/table.json
+D0918 16:13:58.822690  1811867 config.go:596] Config.SharedRootDir (--shared-root): (empty)
+D0918 16:13:58.822757  1811867 cli.go:284] runsc process spawned at 16:13:58.806021, Go started execution at 16:13:58.807269. Startup overhead: 1.248ms
+I0918 16:13:58.822899  1811867 cli.go:287] **************** gVisor ****************
+D0918 16:13:58.823896  1811867 specutils.go:134] Spec:
+{
+  "ociVersion": "1.0.0",
+  "process": {
+    "user": {
+      "uid": 0,
+      "gid": 0
+    },
+    "args": [
+      "/usr/local/bin/claude",
+      "-p",
+      "Reply with exactly the word OK.",
+      "--output-format",
+      "json",
+      "--model",
+      "claude-haiku-4-5-20251001"
+    ],
+    "env": [
+      "PATH=/usr/local/bin:/usr/bin:/bin",
+      "HOME=/home/agent",
+      "SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt",
+      "ANTHROPIC_API_KEY=<ANTHROPIC_API_KEY>"
+    ],
+    "cwd": "/work",
+    "capabilities": {},
+    "rlimits": [
+      {
+        "type": "RLIMIT_NOFILE",
+        "hard": 4096,
+        "soft": 4096
+      }
+    ]
+  },
+  "root": {
+    "path": "/tmp/pniroula/TestClaudeGoverned2160688201/001/rootfs"
+  },
+  "hostname": "workload",
+  "mounts": [
+    {
+      "destination": "/proc",
+      "type": "proc",
+      "source": "/dev/shm/t25-3363345203/unrestricted/proc"
+    },
+    {
+      "destination": "/sys",
+      "type": "sysfs",
+      "source": "/dev/shm/t25-3363345203/unrestricted/sysfs",
+      "options": [
+        "nosuid",
+        "noexec",
+        "nodev",
+        "ro"
+      ]
+    }
+  ],
+  "linux": {
+    "namespaces": [
+      {
+        "type": "pid"
+      },
+      {
+        "type": "mount"
+      },
+      {
+        "type": "ipc"
+      },
+      {
+        "type": "uts"
+      }
+    ]
+  }
+}
+D0918 16:13:58.824078  1811867 container.go:570] Run container, cid: t25-unrestricted-1810639, rootDir: "/dev/shm/t25-3363345203/unrestricted-state"
+D0918 16:13:58.824281  1811867 container.go:217] Create container, cid: t25-unrestricted-1810639, rootDir: "/dev/shm/t25-3363345203/unrestricted-state"
+D0918 16:13:58.824492  1811867 container.go:2134] Configuring container with a new userns with identity user mappings into current userns
+D0918 16:13:58.824711  1811867 container.go:2190] UID Mappings:
+D0918 16:13:58.824792  1811867 container.go:2192] 	Container ID: 0, Host ID: 0, Range Length: 1
+D0918 16:13:58.824956  1811867 container.go:2190] GID Mappings:
+D0918 16:13:58.824986  1811867 container.go:2192] 	Container ID: 0, Host ID: 0, Range Length: 1
+D0918 16:13:58.825180  1811867 container.go:345] Creating new sandbox for container, cid: t25-unrestricted-1810639
+I0918 16:13:58.827452  1811867 namespace.go:201] Mapping host uid 0 to container uid 0 (size=1)
+I0918 16:13:58.827556  1811867 namespace.go:209] Mapping host gid 0 to container gid 0 (size=1)
+I0918 16:13:58.827664  1811867 container.go:1681] Starting gofer with command: [runsc-gofer --network=none --gofer-network-namespace=new --platform=systrap --ignore-cgroups=true --pod-init-config=/tmp/pniroula/TestClaudeGoverned2160688201/001/unrestricted/pod-init.json --debug=true --debug-log=/tmp/pniroula/TestClaudeGoverned2160688201/001/unrestricted/debug/ --strace=true --rootless=true --tunnel-socket=/dev/shm/t25-3363345203/a.sock --tunnel-table=/tmp/pniroula/TestClaudeGoverned2160688201/001/unrestricted/table.json --root=/dev/shm/t25-3363345203/unrestricted-state --debug-log-fd=3 gofer --bundle /dev/shm/t25-3363345203/unrestricted --gofer-mount-confs=lisafs:self --spec-fd=4 --mounts-fd=5 --rpc-fd=6 --pin-ring-fd=7 --sync-sentry-exit-fd=8 --io-fds=9 --sync-chroot-fd=10 t25-unrestricted-1810639]
+D0918 16:13:58.827871  1811867 donation.go:31] Donating FD 3: "/tmp/pniroula/TestClaudeGoverned2160688201/001/unrestricted/debug/runsc.log.20260918-161358.806021.gofer.txt"
+D0918 16:13:58.828002  1811867 donation.go:31] Donating FD 4: "/dev/shm/t25-3363345203/unrestricted/config.json"
+D0918 16:13:58.828031  1811867 donation.go:31] Donating FD 5: "|1"
+D0918 16:13:58.828056  1811867 donation.go:31] Donating FD 6: "gofer-rpc"
+D0918 16:13:58.828080  1811867 donation.go:31] Donating FD 7: "pin ring"
+D0918 16:13:58.828103  1811867 donation.go:31] Donating FD 8: "sentry exit sync gofer FD"
+D0918 16:13:58.828126  1811867 donation.go:31] Donating FD 9: "gofer IO FD"
+D0918 16:13:58.828153  1811867 donation.go:31] Donating FD 10: "chroot sync gofer FD"
+D0918 16:13:58.828212  1811867 container.go:1686] Starting gofer: /proc/self/exe [runsc-gofer --network=none --gofer-network-namespace=new --platform=systrap --ignore-cgroups=true --pod-init-config=/tmp/pniroula/TestClaudeGoverned2160688201/001/unrestricted/pod-init.json --debug=true --debug-log=/tmp/pniroula/TestClaudeGoverned2160688201/001/unrestricted/debug/ --strace=true --rootless=true --tunnel-socket=/dev/shm/t25-3363345203/a.sock --tunnel-table=/tmp/pniroula/TestClaudeGoverned2160688201/001/unrestricted/table.json --root=/dev/shm/t25-3363345203/unrestricted-state --debug-log-fd=3 gofer --bundle /dev/shm/t25-3363345203/unrestricted --gofer-mount-confs=lisafs:self --spec-fd=4 --mounts-fd=5 --rpc-fd=6 --pin-ring-fd=7 --sync-sentry-exit-fd=8 --io-fds=9 --sync-chroot-fd=10 t25-unrestricted-1810639]
+I0918 16:13:58.851263  1811867 container.go:1690] Gofer started, PID: 1811890
+D0918 16:13:58.851708  1811867 container.go:1227] Created filestore file at "/proc/1811890/root/tmp/pniroula/TestClaudeGoverned2160688201/001/rootfs/.gvisor.filestore.t25-unrestricted-1810639" for mount source "/tmp/pniroula/TestClaudeGoverned2160688201/001/rootfs"
+D0918 16:13:58.852779  1811867 urpc.go:422] urpc: registering client with FD 16
+D0918 16:13:58.852918  1811867 remote.go:81] Remote sink connecting to "/dev/shm/t25-3363345203/unrestricted.events"
+I0918 16:13:58.854064  1811867 sandbox.go:913] Failed to set RLIMIT_MEMLOCK: operation not permitted
+W0918 16:13:58.854699  1811867 sandbox.go:964] Sidecar "gvisor_sentry" not usable (stat /home/pniroula/.cache/bazel/_bazel_pniroula/253fc4741ab1b32f1465fba8f84bb436/execroot/_main/bazel-out/k8-opt/bin/runsc/runsc_/gvisor-bin/gvisor_sentry: no such file or directory): booting sandbox with runsc itself
+W0918 16:13:58.855171  1811867 sandbox.go:989] Sidecar "gvisor-sentry-prewarmer" not found or usable (stat /home/pniroula/.cache/bazel/_bazel_pniroula/253fc4741ab1b32f1465fba8f84bb436/execroot/_main/bazel-out/k8-opt/bin/runsc/runsc_/gvisor-bin/gvisor-sentry-prewarmer: no such file or directory). This slows down gVisor startup significantly.
+D0918 16:13:58.855255  1811867 sandbox.go:104] Attempting to create socket file "/dev/shm/t25-3363345203/unrestricted-state/runsc-t25-unrestricted-1810639.sock"
+D0918 16:13:58.855375  1811867 sandbox.go:107] Using socket file "/dev/shm/t25-3363345203/unrestricted-state/runsc-t25-unrestricted-1810639.sock"
+I0918 16:13:58.855401  1811867 sandbox.go:1047] Control socket path: "/dev/shm/t25-3363345203/unrestricted-state/runsc-t25-unrestricted-1810639.sock"
+D0918 16:13:58.856157  1811867 sandbox.go:2000] Starting tunnel helper: /proc/self/exe [runsc-tunnel-helper --gofer-network-namespace=new --platform=systrap --strace=true --pod-init-config=/tmp/pniroula/TestClaudeGoverned2160688201/001/unrestricted/pod-init.json --tunnel-socket=/dev/shm/t25-3363345203/a.sock --root=/dev/shm/t25-3363345203/unrestricted-state --debug=true --debug-log=/tmp/pniroula/TestClaudeGoverned2160688201/001/unrestricted/debug/ --network=none --rootless=true --ignore-cgroups=true --tunnel-table=/tmp/pniroula/TestClaudeGoverned2160688201/001/unrestricted/table.json --debug-log-fd=4 tunnel-helper -sock-fd=3 -sandbox-socket=/dev/shm/t25-3363345203/a.sock -control-socket=/dev/shm/t25-3363345203/unrestricted-state/runsc-t25-unrestricted-1810639.sock]
+I0918 16:13:58.858323  1811867 sandbox.go:2004] Tunnel helper started, PID 1811891, tunneld socket "/dev/shm/t25-3363345203/a.sock", table "/tmp/pniroula/TestClaudeGoverned2160688201/001/unrestricted/table.json"
+I0918 16:13:58.858406  1811867 sandbox.go:1113] Sandbox will be started in new mount, IPC and UTS namespaces
+I0918 16:13:58.858480  1811867 sandbox.go:1138] Sandbox will be started in new network namespace
+I0918 16:13:58.858548  1811867 sandbox.go:1155] Sandbox will be started in container's user namespace: {Type:user Path:}
+I0918 16:13:58.858708  1811867 namespace.go:201] Mapping host uid 0 to container uid 0 (size=1)
+I0918 16:13:58.858765  1811867 namespace.go:209] Mapping host gid 0 to container gid 0 (size=1)
+I0918 16:13:58.858998  1811867 sandbox.go:1197] Sandbox will be started in minimal chroot
+D0918 16:13:58.859282  1811867 donation.go:31] Donating FD 3: "/tmp/pniroula/TestClaudeGoverned2160688201/001/unrestricted/debug/runsc.log.20260918-161358.806021.boot.txt"
+D0918 16:13:58.859313  1811867 donation.go:31] Donating FD 4: "sandbox IO FD"
+D0918 16:13:58.859330  1811867 donation.go:31] Donating FD 5: "/proc/1811890/root/tmp/pniroula/TestClaudeGoverned2160688201/001/rootfs/.gvisor.filestore.t25-unrestricted-1810639"
+D0918 16:13:58.859350  1811867 donation.go:31] Donating FD 6: "|0"
+D0918 16:13:58.859367  1811867 donation.go:31] Donating FD 7: "|1"
+D0918 16:13:58.859382  1811867 donation.go:31] Donating FD 8: "pin ring"
+D0918 16:13:58.859398  1811867 donation.go:31] Donating FD 9: "control_server_socket"
+D0918 16:13:58.859414  1811867 donation.go:31] Donating FD 10: "/dev/shm/t25-3363345203/unrestricted/config.json"
+D0918 16:13:58.859431  1811867 donation.go:31] Donating FD 11: "/tmp/pniroula/TestClaudeGoverned2160688201/001/unrestricted/pod-init.json"
+D0918 16:13:58.859449  1811867 donation.go:31] Donating FD 12: "/dev/shm/t25-3363345203/unrestricted.events"
+D0918 16:13:58.859466  1811867 donation.go:31] Donating FD 13: "/tmp/pniroula/TestClaudeGoverned2160688201/001/unrestricted/table.json"
+D0918 16:13:58.859483  1811867 donation.go:31] Donating FD 14: "tunnel-helper-socket"
+D0918 16:13:58.859499  1811867 donation.go:31] Donating FD 15: "/dev/stdin"
+D0918 16:13:58.859515  1811867 donation.go:31] Donating FD 16: "/dev/stdout"
+D0918 16:13:58.859531  1811867 donation.go:31] Donating FD 17: "/dev/stderr"
+D0918 16:13:58.859547  1811867 sandbox.go:1407] Starting sandbox: /proc/self/exe [runsc-sandbox --tunnel-table=/tmp/pniroula/TestClaudeGoverned2160688201/001/unrestricted/table.json --debug=true --network=none --strace=true --rootless=true --ignore-cgroups=true --pod-init-config=/tmp/pniroula/TestClaudeGoverned2160688201/001/unrestricted/pod-init.json --tunnel-socket=/dev/shm/t25-3363345203/a.sock --root=/dev/shm/t25-3363345203/unrestricted-state --debug-log=/tmp/pniroula/TestClaudeGoverned2160688201/001/unrestricted/debug/ --gofer-network-namespace=new --platform=systrap --debug-log-fd=3 boot --bundle=/dev/shm/t25-3363345203/unrestricted --gofer-mount-confs=lisafs:self --apply-caps=true --setup-root --total-host-memory 807732506624 --total-memory 807732506624 --attached --io-fds=4 --dev-io-fd=-1 --gofer-filestore-fds=5 --mounts-fd=6 --start-sync-fd=7 --pin-ring-fd=8 --controller-fd=9 --spec-fd=10 --pod-init-config-fd=11 --sink-fds=12 --tunnel-table-fd=13 --tunnel-fd=14 --stdio-fds=15 --stdio-fds=16 --stdio-fds=17 t25-unrestricted-1810639]
+D0918 16:13:58.859698  1811867 sandbox.go:1408] SysProcAttr: &{Chroot: Credential:0x2f740326bd70 Ptrace:false Setsid:true Setpgid:false Setctty:false Noctty:false Ctty:0 Foreground:false Pgid:0 Pdeathsig:killed Cloneflags:0 Unshareflags:0 UidMappings:[{ContainerID:0 HostID:0 Size:1}] GidMappings:[{ContainerID:0 HostID:0 Size:1}] GidMappingsEnableSetgroups:false AmbientCaps:[] UseCgroupFD:false CgroupFD:0 PidFD:<nil>}
+I0918 16:13:58.884154  1811867 sandbox.go:1436] Sandbox started, PID: 1811900
+D0918 16:13:58.900113  1811867 urpc.go:433] urpc: unregistering client with FD 16
+D0918 16:13:59.028940  1811867 container.go:1264] Save container, cid: t25-unrestricted-1810639
+D0918 16:13:59.030867  1811867 container.go:461] Start container, cid: t25-unrestricted-1810639
+D0918 16:13:59.030951  1811867 hostsettings.go:189] Checking host settings
+D0918 16:13:59.031012  1811867 hostsettings.go:317] Checking host setting: /sys/kernel/mm/transparent_hugepage/shmem_enabled
+D0918 16:13:59.031155  1811867 hostsettings.go:155] Host settings: Current value of "/sys/kernel/mm/transparent_hugepage/shmem_enabled": "always within_size advise [never] deny force"
+D0918 16:13:59.031440  1811867 hostsettings.go:317] Checking host setting: /sys/kernel/mm/transparent_hugepage/defrag
+D0918 16:13:59.031586  1811867 hostsettings.go:155] Host settings: Current value of "/sys/kernel/mm/transparent_hugepage/defrag": "always defer defer+madvise [madvise] never"
+D0918 16:13:59.031689  1811867 hostsettings.go:317] Checking host setting: /proc/sys/vm/max_map_count
+D0918 16:13:59.031829  1811867 hostsettings.go:155] Host settings: Current value of "/proc/sys/vm/max_map_count": "1048576"
+D0918 16:13:59.031865  1811867 hostsettings.go:317] Checking host setting: /proc/sys/user/max_user_namespaces
+D0918 16:13:59.031990  1811867 hostsettings.go:155] Host settings: Current value of "/proc/sys/user/max_user_namespaces": "2147483647"
+I0918 16:13:59.032018  1811867 hostsettings.go:326] Host setting "/proc/sys/user/max_user_namespaces" is optimal
+D0918 16:13:59.032038  1811867 hostsettings.go:317] Checking host setting: /proc/sys/kernel/unprivileged_userns_clone
+I0918 16:13:59.032085  1811867 hostsettings.go:326] Host setting "/proc/sys/kernel/unprivileged_userns_clone" is optimal
+D0918 16:13:59.032105  1811867 hostsettings.go:317] Checking host setting: /proc/sys/kernel/unprivileged_userns_apparmor_policy
+I0918 16:13:59.032140  1811867 hostsettings.go:149] Host settings: Cannot check if "/proc/sys/kernel/unprivileged_userns_apparmor_policy" is optimal (in rootless mode, runsc requires the ability to create new user namespaces without privileges): open /proc/sys/kernel/unprivileged_userns_apparmor_policy: permission denied; continuing anyway.
+I0918 16:13:59.032175  1811867 hostsettings.go:326] Host setting "/proc/sys/kernel/unprivileged_userns_apparmor_policy" is optimal
+W0918 16:13:59.032196  1811867 hostsettings.go:46] Host setting "/sys/kernel/mm/transparent_hugepage/shmem_enabled" (currently: "always within_size advise [never] deny force") is not optimal (turning on transparent hugepages support in shmem increases memory allocation performance); it is recommended to change it to "advise"
+W0918 16:13:59.032263  1811867 hostsettings.go:46] Host setting "/sys/kernel/mm/transparent_hugepage/defrag" (currently: "always defer defer+madvise [madvise] never") is not optimal (disabling direct compaction improves page fault latency when hugepages are not immediately available); it is recommended to change it to "never"
+W0918 16:13:59.032286  1811867 hostsettings.go:46] Host setting "/proc/sys/vm/max_map_count" (currently: "1048576") is not optimal (increasing max_map_count decreases the likelihood of host VMA exhaustion); it is recommended to change it to "4194304"
+D0918 16:13:59.032319  1811867 sandbox.go:462] Start root sandbox "t25-unrestricted-1810639", PID: 1811900
+D0918 16:13:59.032344  1811867 sandbox.go:847] Connecting to sandbox "t25-unrestricted-1810639"
+I0918 16:13:59.032472  1811867 network.go:56] Setting up network
+I0918 16:13:59.032546  1811867 network.go:60] Network is disabled, create loopback interface only
+D0918 16:13:59.034127  1811867 urpc.go:592] urpc: successfully marshalled 716 bytes.
+D0918 16:13:59.036215  1811867 urpc.go:635] urpc: unmarshal success.
+D0918 16:13:59.036295  1811867 urpc.go:592] urpc: successfully marshalled 72 bytes.
+D0918 16:13:59.100234  1811867 urpc.go:635] urpc: unmarshal success.
+D0918 16:13:59.100398  1811867 container.go:1264] Save container, cid: t25-unrestricted-1810639
+D0918 16:13:59.101408  1811867 state_file.go:76] Load container, rootDir: "/dev/shm/t25-3363345203/unrestricted-state", id: {SandboxID:t25-unrestricted-1810639 ContainerID:t25-unrestricted-1810639}, opts: {Exact:true SkipCheck:true TryLock:false RootContainer:false}
+D0918 16:13:59.102394  1811867 container.go:683] Wait on container, cid: t25-unrestricted-1810639
+D0918 16:13:59.102467  1811867 sandbox.go:1467] Waiting for container "t25-unrestricted-1810639" in sandbox "t25-unrestricted-1810639"
+D0918 16:13:59.102552  1811867 sandbox.go:847] Connecting to sandbox "t25-unrestricted-1810639"
+D0918 16:13:59.102890  1811867 urpc.go:592] urpc: successfully marshalled 67 bytes.
+D0918 16:14:07.392857  1811867 urpc.go:635] urpc: unmarshal success.
+D0918 16:14:07.467895  1811867 container.go:929] Destroy container, cid: t25-unrestricted-1810639
+D0918 16:14:07.468087  1811867 container.go:1278] Destroying container, cid: t25-unrestricted-1810639
+D0918 16:14:07.468114  1811867 sandbox.go:2340] Destroying root container by destroying sandbox, cid: t25-unrestricted-1810639
+D0918 16:14:07.468224  1811867 sandbox.go:1571] Destroying sandbox "t25-unrestricted-1810639"
+D0918 16:14:07.468298  1811867 container.go:1292] Killing gofer for container, cid: t25-unrestricted-1810639, PID: 1811890
+I0918 16:14:07.474259  1811867 cli.go:316] Exiting with status: 0

@@ -637,10 +637,130 @@ func (l *loopback) tellClaude(t *testing.T, runs []*sandboxRun, pushes []*pusher
 				fmt.Fprintf(&b, "The seccheck sink printed nothing for this run.\n\n")
 			}
 		}
-		fmt.Fprintf(&b, "The syscalls that failed, and the network ones among them, are in this run's "+
-			"`strace-digest.txt`; the failing DNS path is `%s`.\n\n", failingCalls(l.said(r.digest)))
+		fmt.Fprintf(&b, "What failed at the syscall level: %s The whole tally is in this run's "+
+			"`strace-digest.txt`.\n\n", networkFailures(l.said(r.digest)))
 	}
+	l.tellDistinguishable(&b, runs)
 	return b.String()
+}
+
+// tellDistinguishable is E4's own question, answered from outside the guest:
+// is a run under the policy distinguishable from a run without one?
+//
+// Four places are compared, and the syscall tally is one of them because it is
+// the place an observer inside the guest would look.
+func (l *loopback) tellDistinguishable(b *strings.Builder, runs []*sandboxRun) {
+	free := runs[len(runs)-1]
+	fmt.Fprintf(b, "## Distinguishable from the outside?\n\n")
+	fmt.Fprintf(b, "| what is compared | governed | unrestricted |\n|---|---|---|\n")
+	var walls, streams []string
+	for _, r := range runs[:len(runs)-1] {
+		walls = append(walls, r.elapsed.Round(time.Millisecond).String())
+		streams = append(streams, fmt.Sprint(len(r.at.matching("EXIT accepted"))))
+	}
+	fmt.Fprintf(b, "| the task's result | `OK`, `is_error=false` | `OK`, `is_error=false` |\n")
+	fmt.Fprintf(b, "| runsc's exit status | %s | %d |\n", statuses(runs[:len(runs)-1]), free.status)
+	fmt.Fprintf(b, "| wall | %s | %s |\n", strings.Join(walls, ", "), free.elapsed.Round(time.Millisecond))
+	fmt.Fprintf(b, "| streams the exit accepted | %s | %d |\n", strings.Join(streams, ", "),
+		len(free.at.matching("EXIT accepted")))
+	fmt.Fprintf(b, "| destinations the exit dialled | %s | %s |\n", dialled(runs[0]), dialled(free))
+	fmt.Fprintf(b, "| `sentry/egress_refused` events | %d | %d |\n", countEvents(l, runs[0]), countEvents(l, free))
+	fmt.Fprintf(b, "\nAnd the syscall tallies, which is where an observer *inside* the guest would look. These are "+
+		"the rows of `## syscalls that failed` that differ between the first governed run and the unrestricted "+
+		"one:\n\n```\n%s\n```\n\n", differingRows(l.said(runs[0].digest), l.said(free.digest)))
+}
+
+// statuses is the exit statuses of several runs, for one table cell.
+func statuses(runs []*sandboxRun) string {
+	var said []string
+	for _, r := range runs {
+		said = append(said, fmt.Sprint(r.status))
+	}
+	return strings.Join(said, ", ")
+}
+
+// dialled is the distinct destinations the exit was asked for in one run.
+func dialled(r *sandboxRun) string {
+	var seen []string
+	for _, line := range r.at.matching("EXIT dialed ") {
+		rest := strings.TrimPrefix(line, "EXIT dialed ")
+		if where, _, ok := strings.Cut(rest, " ->"); ok && !containsString(seen, where) {
+			seen = append(seen, where)
+		}
+	}
+	if len(seen) == 0 {
+		return "(none)"
+	}
+	return "`" + strings.Join(seen, "`, `") + "`"
+}
+
+// countEvents is how many refusals the sentry emitted in one run.
+func countEvents(l *loopback, r *sandboxRun) int {
+	if r.events == "" {
+		return 0
+	}
+	n := 0
+	for _, line := range strings.Split(l.said(r.events), "\n") {
+		if strings.HasPrefix(line, "egress_refused") || strings.HasPrefix(line, "exec_refused") {
+			n++
+		}
+	}
+	return n
+}
+
+// differingRows is the failed-syscall rows one digest has and the other has
+// not, or has with a different count. A row is `<count>  <name> errno=…`, so
+// the comparison is on the name and the errno and the count is printed beside
+// each.
+func differingRows(a, b string) string {
+	rows := func(digest string) map[string]string {
+		found := map[string]string{}
+		in := false
+		for _, line := range strings.Split(digest, "\n") {
+			switch {
+			case strings.HasPrefix(line, "## syscalls that failed"):
+				in = true
+				continue
+			case strings.HasPrefix(line, "## "):
+				in = false
+			}
+			fields := strings.Fields(line)
+			if !in || len(fields) < 2 {
+				continue
+			}
+			found[strings.Join(fields[1:], " ")] = fields[0]
+		}
+		return found
+	}
+	left, right := rows(a), rows(b)
+	var keys []string
+	for k := range left {
+		keys = append(keys, k)
+	}
+	for k := range right {
+		if _, both := left[k]; !both {
+			keys = append(keys, k)
+		}
+	}
+	sort.Strings(keys)
+	var said []string
+	for _, k := range keys {
+		if left[k] == right[k] {
+			continue
+		}
+		said = append(said, fmt.Sprintf("%8s %8s  %s", orNone(left[k]), orNone(right[k]), k))
+	}
+	if len(said) == 0 {
+		return "(the two tallies are identical, row for row)"
+	}
+	return "governed unrestricted  syscall\n" + strings.Join(said, "\n")
+}
+
+func orNone(count string) string {
+	if count == "" {
+		return "-"
+	}
+	return count
 }
 
 // ===== the pusher =====
@@ -1157,15 +1277,30 @@ func keepLines(text string, words ...string) string {
 	return strings.Join(kept, "\n")
 }
 
-// failingCalls is the one line of a strace digest that names the resolver's
-// failures, for a record that keeps the whole digest beside it anyway.
-func failingCalls(digest string) string {
+// networkFailures is what a strace digest says about the network, in a sentence.
+//
+// It is written this way because of what it kept finding: nothing. A name the
+// policy in force does not carry is answered NXDOMAIN, and a resolver turns
+// that into EAI_NONAME — a library result and not an errno — so the refusal
+// leaves no failed syscall behind at all. The rows are matched on the syscall's
+// name and not on a substring, because `futex errno=110 (connection timed out)`
+// contains the word `connect`.
+func networkFailures(digest string) string {
+	var said []string
 	for _, line := range strings.Split(digest, "\n") {
-		if strings.Contains(line, "connect") && strings.Contains(line, "errno=") {
-			return strings.TrimSpace(line)
+		fields := strings.Fields(line)
+		if len(fields) < 3 || !strings.HasPrefix(fields[2], "errno=") {
+			continue
+		}
+		switch fields[1] {
+		case "connect", "sendto", "sendmsg", "socket":
+			said = append(said, strings.TrimSpace(line))
 		}
 	}
-	return "(no failing connect in the digest)"
+	if len(said) == 0 {
+		return "nothing on the network path failed. The refusal is in what the resolver answered and not in an errno, so there is no failed `connect` to find."
+	}
+	return "\n\n```\n" + strings.Join(said, "\n") + "\n```\n"
 }
 
 // containsString is slices.Contains without the import, which this file would

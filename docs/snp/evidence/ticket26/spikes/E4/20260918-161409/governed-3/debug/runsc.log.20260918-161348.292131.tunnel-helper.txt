@@ -1,0 +1,174 @@
+I0918 16:13:48.393781  1811507 cli.go:275] **************** gVisor ****************
+I0918 16:13:48.393959  1811507 cli.go:276] Version 0.0.0, go1.26.3, amd64, 64 CPUs, linux, PID 1811507, PPID 1811479, UID 0, GID 0
+D0918 16:13:48.393990  1811507 cli.go:277] Page size: 0x1000 (4096 bytes)
+I0918 16:13:48.394018  1811507 cli.go:278] Args: [runsc-tunnel-helper --root=/dev/shm/t25-3363345203/governed-3-state --debug=true --network=none --strace=true --rootless=true --ignore-cgroups=true --pod-init-config=/tmp/pniroula/TestClaudeGoverned2160688201/001/governed-3/pod-init.json --tunnel-socket=/dev/shm/t25-3363345203/a.sock --debug-log=/tmp/pniroula/TestClaudeGoverned2160688201/001/governed-3/debug/ --gofer-network-namespace=new --platform=systrap --tunnel-table=/tmp/pniroula/TestClaudeGoverned2160688201/001/governed-3/table.json --debug-log-fd=4 tunnel-helper -sock-fd=3 -sandbox-socket=/dev/shm/t25-3363345203/a.sock -control-socket=/dev/shm/t25-3363345203/governed-3-state/runsc-t25-governed-3-1810639.sock]
+I0918 16:13:48.394062  1811507 config.go:569] Platform: systrap
+I0918 16:13:48.394097  1811507 config.go:570] RootDir: /dev/shm/t25-3363345203/governed-3-state
+I0918 16:13:48.394109  1811507 config.go:571] FileAccess: exclusive / Directfs: true / Overlay: root:self
+I0918 16:13:48.394127  1811507 config.go:572] Network: none
+I0918 16:13:48.394141  1811507 config.go:573] UseCPUNums: false
+I0918 16:13:48.394153  1811507 config.go:575] Debug: true. Strace: true, max size: 1024, syscalls: 
+W0918 16:13:48.394167  1811507 config.go:578] --allow-suid is disabled, SUID/SGID bits on executables will be ignored.
+D0918 16:13:48.394183  1811507 config.go:596] Config.RootDir (--root): /dev/shm/t25-3363345203/governed-3-state
+D0918 16:13:48.394200  1811507 config.go:596] Config.Traceback (--traceback): system
+D0918 16:13:48.394214  1811507 config.go:596] Config.Debug (--debug): true
+D0918 16:13:48.394225  1811507 config.go:596] Config.LogFilename (--log): (empty)
+D0918 16:13:48.394239  1811507 config.go:596] Config.LogFormat (--log-format): text
+D0918 16:13:48.394253  1811507 config.go:596] Config.DebugLog (--debug-log): /tmp/pniroula/TestClaudeGoverned2160688201/001/governed-3/debug/
+D0918 16:13:48.394266  1811507 config.go:596] Config.DebugToUserLog (--debug-to-user-log): false
+D0918 16:13:48.394282  1811507 config.go:596] Config.DebugCommand (--debug-command): (empty)
+D0918 16:13:48.394294  1811507 config.go:596] Config.PanicLog (--panic-log): (empty)
+D0918 16:13:48.394306  1811507 config.go:596] Config.CoverageReport (--coverage-report): (empty)
+D0918 16:13:48.394320  1811507 config.go:596] Config.DebugLogFormat (--debug-log-format): text
+D0918 16:13:48.394333  1811507 config.go:596] Config.FileAccess (--file-access): exclusive
+D0918 16:13:48.394348  1811507 config.go:596] Config.FileAccessMounts (--file-access-mounts): shared
+D0918 16:13:48.394360  1811507 config.go:596] Config.Overlay (--overlay): false
+D0918 16:13:48.394372  1811507 config.go:596] Config.Overlay2 (--overlay2): root:self
+D0918 16:13:48.394387  1811507 config.go:596] Config.FSGoferHostUDS (--fsgofer-host-uds): false
+D0918 16:13:48.394399  1811507 config.go:596] Config.HostUDS (--host-uds): none
+D0918 16:13:48.394415  1811507 config.go:596] Config.HostFifo (--host-fifo): none
+D0918 16:13:48.394431  1811507 config.go:596] Config.CharacterDevicePolicy (--character-device-policy): emulated-only
+D0918 16:13:48.394448  1811507 config.go:596] Config.HostSettings (--host-settings): check
+D0918 16:13:48.394460  1811507 config.go:596] Config.Network (--network): none
+D0918 16:13:48.394475  1811507 config.go:596] Config.GoferNetworkNamespace (--gofer-network-namespace): new
+D0918 16:13:48.394488  1811507 config.go:596] Config.EnableRaw (--net-raw): false
+D0918 16:13:48.394518  1811507 config.go:596] Config.AllowPacketEndpointWrite (--allow-packet-socket-write): false
+D0918 16:13:48.394531  1811507 config.go:596] Config.AllowLiveTCPMigration (--allow-live-tcp-migration): true
+D0918 16:13:48.394545  1811507 config.go:596] Config.HostGSO (--gso): true
+D0918 16:13:48.394558  1811507 config.go:596] Config.GVisorGSO (--software-gso): true
+D0918 16:13:48.394582  1811507 config.go:596] Config.GVisorGRO (--gvisor-gro): false
+D0918 16:13:48.394597  1811507 config.go:596] Config.TXChecksumOffload (--tx-checksum-offload): false
+D0918 16:13:48.394611  1811507 config.go:596] Config.RXChecksumOffload (--rx-checksum-offload): true
+D0918 16:13:48.394622  1811507 config.go:596] Config.QDisc (--qdisc): fifo
+D0918 16:13:48.394645  1811507 config.go:596] Config.TBFRate (--qdisc-tbf-rate): 0
+D0918 16:13:48.394660  1811507 config.go:596] Config.TBFBurst (--qdisc-tbf-burst): 0
+D0918 16:13:48.394686  1811507 config.go:596] Config.LogPackets (--log-packets): false
+D0918 16:13:48.394699  1811507 config.go:596] Config.PCAP (--pcap-log): (empty)
+D0918 16:13:48.394712  1811507 config.go:596] Config.Platform (--platform): systrap
+D0918 16:13:48.394725  1811507 config.go:596] Config.PlatformDevicePath (--platform_device_path): (empty)
+D0918 16:13:48.394786  1811507 config.go:596] Config.MetricServer (--metric-server): (empty)
+D0918 16:13:48.394806  1811507 config.go:596] Config.SidecarReleaseEnforcementPolicy (--sidecar-release-enforcement-policy): NEVER
+D0918 16:13:48.394821  1811507 config.go:596] Config.FinalMetricsLog (--final-metrics-log): (empty)
+D0918 16:13:48.394834  1811507 config.go:596] Config.ProfilingMetrics (--profiling-metrics): (empty)
+D0918 16:13:48.394845  1811507 config.go:596] Config.ProfilingMetricsLog (--profiling-metrics-log): (empty)
+D0918 16:13:48.394859  1811507 config.go:596] Config.ProfilingMetricsRate (--profiling-metrics-rate-us): 1000
+D0918 16:13:48.394871  1811507 config.go:596] Config.Strace (--strace): true
+D0918 16:13:48.394883  1811507 config.go:596] Config.StraceSyscalls (--strace-syscalls): (empty)
+D0918 16:13:48.394895  1811507 config.go:596] Config.StraceLogSize (--strace-log-size): 1024
+D0918 16:13:48.394907  1811507 config.go:596] Config.StraceEvent (--strace-event): false
+D0918 16:13:48.394921  1811507 config.go:598] Config.DisableSeccomp: false
+D0918 16:13:48.394937  1811507 config.go:596] Config.EnableCoreTags (--enable-core-tags): false
+D0918 16:13:48.394947  1811507 config.go:596] Config.WatchdogAction (--watchdog-action): log
+D0918 16:13:48.394960  1811507 config.go:596] Config.PanicSignal (--panic-signal): -1
+D0918 16:13:48.394973  1811507 config.go:596] Config.ProfileEnable (--profile): false
+D0918 16:13:48.394985  1811507 config.go:596] Config.ProfileBlock (--profile-block): (empty)
+D0918 16:13:48.395000  1811507 config.go:596] Config.ProfileCPU (--profile-cpu): (empty)
+D0918 16:13:48.395015  1811507 config.go:596] Config.ProfileGCInterval (--profile-gc-interval): 0s
+D0918 16:13:48.395032  1811507 config.go:596] Config.ProfileHeap (--profile-heap): (empty)
+D0918 16:13:48.395058  1811507 config.go:596] Config.ProfileMutex (--profile-mutex): (empty)
+D0918 16:13:48.395069  1811507 config.go:596] Config.TraceFile (--trace): (empty)
+D0918 16:13:48.395094  1811507 config.go:596] Config.NumNetworkChannels (--num-network-channels): 1
+D0918 16:13:48.395108  1811507 config.go:596] Config.NetworkProcessorsPerChannel (--network-processors-per-channel): 0
+D0918 16:13:48.395119  1811507 config.go:596] Config.Rootless (--rootless): true
+D0918 16:13:48.395132  1811507 config.go:596] Config.AlsoLogToStderr (--alsologtostderr): false
+D0918 16:13:48.395144  1811507 config.go:596] Config.ReferenceLeak (--ref-leak-mode): disabled
+D0918 16:13:48.395157  1811507 config.go:596] Config.CPUNumFromQuota (--cpu-num-from-quota): true
+D0918 16:13:48.395169  1811507 config.go:596] Config.AllowFlagOverride (--allow-flag-override): false
+D0918 16:13:48.395181  1811507 config.go:596] Config.OCISeccomp (--oci-seccomp): false
+D0918 16:13:48.395194  1811507 config.go:596] Config.IgnoreCgroups (--ignore-cgroups): true
+D0918 16:13:48.395206  1811507 config.go:596] Config.MountCgroupV2 (--mount-cgroup-v2): false
+D0918 16:13:48.395218  1811507 config.go:596] Config.SystemdCgroup (--systemd-cgroup): false
+D0918 16:13:48.395231  1811507 config.go:596] Config.PodInitConfig (--pod-init-config): /tmp/pniroula/TestClaudeGoverned2160688201/001/governed-3/pod-init.json
+D0918 16:13:48.395253  1811507 config.go:596] Config.XDP (--EXPERIMENTAL-xdp): {0 }
+D0918 16:13:48.395272  1811507 config.go:596] Config.AFXDPUseNeedWakeup (--EXPERIMENTAL-xdp-need-wakeup): true
+D0918 16:13:48.395284  1811507 config.go:596] Config.FDLimit (--fdlimit): -1
+D0918 16:13:48.395296  1811507 config.go:596] Config.DCache (--dcache): -1
+D0918 16:13:48.395309  1811507 config.go:596] Config.IOUring (--iouring): false
+D0918 16:13:48.395320  1811507 config.go:596] Config.DirectFS (--directfs): true
+D0918 16:13:48.395333  1811507 config.go:596] Config.AppHugePages (--app-huge-pages): true
+D0918 16:13:48.395344  1811507 config.go:596] Config.NVProxy (--nvproxy): false
+D0918 16:13:48.395356  1811507 config.go:596] Config.NVProxyDocker (--nvproxy-docker): false
+D0918 16:13:48.395367  1811507 config.go:596] Config.NVProxyDriverVersion (--nvproxy-driver-version): (empty)
+D0918 16:13:48.395380  1811507 config.go:596] Config.NVProxyAllowedDriverCapabilities (--nvproxy-allowed-driver-capabilities): utility,compute
+D0918 16:13:48.395395  1811507 config.go:596] Config.NVProxyAllowUnsupportedDriver (--nvproxy-allow-unsupported-driver): false
+D0918 16:13:48.395406  1811507 config.go:596] Config.TPUProxy (--tpuproxy): false
+D0918 16:13:48.395419  1811507 config.go:596] Config.RDMAProxy (--rdmaproxy): false
+D0918 16:13:48.395431  1811507 config.go:596] Config.TestOnlyAllowRunAsCurrentUserWithoutChroot (--TESTONLY-unsafe-nonroot): false
+D0918 16:13:48.395455  1811507 config.go:596] Config.TestOnlyTestNameEnv (--TESTONLY-test-name-env): (empty)
+D0918 16:13:48.395469  1811507 config.go:596] Config.TestOnlyAFSSyscallPanic (--TESTONLY-afs-syscall-panic): false
+D0918 16:13:48.395483  1811507 config.go:598] Config.explicitlySet: <map[string]struct {} Value> (unexported)
+D0918 16:13:48.395494  1811507 config.go:596] Config.ReproduceNAT (--reproduce-nat): false
+D0918 16:13:48.395518  1811507 config.go:596] Config.ReproduceNftables (--reproduce-nftables): false
+D0918 16:13:48.395529  1811507 config.go:596] Config.NetDisconnectOk (--net-disconnect-ok): true
+D0918 16:13:48.395543  1811507 config.go:596] Config.TestOnlyAutosaveImagePath (--TESTONLY-autosave-image-path): (empty)
+D0918 16:13:48.395558  1811507 config.go:596] Config.TestOnlyAutosaveResume (--TESTONLY-autosave-resume): false
+D0918 16:13:48.395572  1811507 config.go:596] Config.RestoreSpecValidation (--restore-spec-validation): enforce
+D0918 16:13:48.395587  1811507 config.go:596] Config.GVisorMarkerFile (--gvisor-marker-file): false
+D0918 16:13:48.395598  1811507 config.go:596] Config.OverrideProcs (--override-procs): (empty)
+D0918 16:13:48.395609  1811507 config.go:596] Config.SystrapDisableSyscallPatching (--systrap-disable-syscall-patching): false
+D0918 16:13:48.395620  1811507 config.go:596] Config.SystrapDisableFastPath (--systrap-disable-fast-path): false
+D0918 16:13:48.395633  1811507 config.go:596] Config.Nftables (--TESTONLY-nftables): false
+D0918 16:13:48.395646  1811507 config.go:596] Config.AllowSUID (--allow-suid): false
+D0918 16:13:48.395659  1811507 config.go:596] Config.UseCPUNums (--kvm-use-cpu-nums): false
+D0918 16:13:48.395670  1811507 config.go:596] Config.PauseExternalNetworking (--pause-external-networking): false
+D0918 16:13:48.395684  1811507 config.go:596] Config.AllowConnectedOnSave (--allow-connected-on-save): false
+D0918 16:13:48.395697  1811507 config.go:596] Config.AllowRootfsTarAnnotation (--allow-rootfs-tar-annotation): false
+D0918 16:13:48.395708  1811507 config.go:596] Config.ControlRPCStopTimeout (--control-rpc-stop-timeout): 15s
+D0918 16:13:48.395722  1811507 config.go:596] Config.TunnelSocket (--tunnel-socket): /dev/shm/t25-3363345203/a.sock
+D0918 16:13:48.395761  1811507 config.go:596] Config.TunnelTable (--tunnel-table): /tmp/pniroula/TestClaudeGoverned2160688201/001/governed-3/table.json
+D0918 16:13:48.395775  1811507 config.go:596] Config.SharedRootDir (--shared-root): (empty)
+D0918 16:13:48.395792  1811507 cli.go:284] runsc process spawned at 16:13:48.391130, Go started execution at 16:13:48.392387. Startup overhead: 1.257179ms
+I0918 16:13:48.395829  1811507 cli.go:287] **************** gVisor ****************
+I0918 16:13:48.395972  1811507 tunnel_helper.go:104] Tunnel helper connected to tunneld at "/dev/shm/t25-3363345203/a.sock", control socket "/dev/shm/t25-3363345203/governed-3-state/runsc-t25-governed-3-1810639.sock"
+D0918 16:13:48.396095  1811507 urpc.go:422] urpc: registering client with FD 3
+W0918 16:13:48.443028  1811507 tunnel_helper.go:176] Tunnel helper: the sentry refused a policy push of 94 bytes after 389.58µs: policy refused: reaching the sentry at /dev/shm/t25-3363345203/governed-3-state/runsc-t25-governed-3-1810639.sock: connection refused
+W0918 16:13:48.482333  1811507 tunnel_helper.go:176] Tunnel helper: the sentry refused a policy push of 94 bytes after 193.899µs: policy refused: reaching the sentry at /dev/shm/t25-3363345203/governed-3-state/runsc-t25-governed-3-1810639.sock: connection refused
+W0918 16:13:48.519825  1811507 tunnel_helper.go:176] Tunnel helper: the sentry refused a policy push of 94 bytes after 306.967µs: policy refused: reaching the sentry at /dev/shm/t25-3363345203/governed-3-state/runsc-t25-governed-3-1810639.sock: connection refused
+D0918 16:13:48.564046  1811507 urpc.go:592] urpc: successfully marshalled 174 bytes.
+D0918 16:13:48.597682  1811507 urpc.go:635] urpc: unmarshal success.
+I0918 16:13:48.597957  1811507 tunnel_helper.go:179] Tunnel helper: the sentry is enforcing a policy of 94 bytes, sha256=b12101796a563ae0fb48eb1657bf1441f017e84191ef3803eb5a754db8cba86d, in 34.368014ms
+D0918 16:13:50.590884  1811507 urpc.go:635] urpc: unmarshal success.
+D0918 16:13:50.590973  1811507 urpc.go:302] urpc: handling RPC call for method TunnelHelper.Open
+I0918 16:13:50.605020  1811507 tunnel_helper.go:380] Tunnel helper opened api.anthropic.com:443
+D0918 16:13:50.605231  1811507 urpc.go:592] urpc: successfully marshalled 37 bytes.
+D0918 16:13:50.605333  1811507 urpc.go:372] urpc: RPC call for method TunnelHelper.Open succeeded.
+D0918 16:13:51.147579  1811507 urpc.go:635] urpc: unmarshal success.
+D0918 16:13:51.147717  1811507 urpc.go:302] urpc: handling RPC call for method TunnelHelper.Open
+I0918 16:13:51.163335  1811507 tunnel_helper.go:380] Tunnel helper opened api.anthropic.com:443
+D0918 16:13:51.163477  1811507 urpc.go:592] urpc: successfully marshalled 37 bytes.
+D0918 16:13:51.163530  1811507 urpc.go:372] urpc: RPC call for method TunnelHelper.Open succeeded.
+D0918 16:13:51.166170  1811507 urpc.go:635] urpc: unmarshal success.
+D0918 16:13:51.166224  1811507 urpc.go:302] urpc: handling RPC call for method TunnelHelper.Open
+I0918 16:13:51.180976  1811507 tunnel_helper.go:380] Tunnel helper opened api.anthropic.com:443
+D0918 16:13:51.181150  1811507 urpc.go:592] urpc: successfully marshalled 37 bytes.
+D0918 16:13:51.181200  1811507 urpc.go:372] urpc: RPC call for method TunnelHelper.Open succeeded.
+D0918 16:13:52.166649  1811507 urpc.go:635] urpc: unmarshal success.
+D0918 16:13:52.166855  1811507 urpc.go:302] urpc: handling RPC call for method TunnelHelper.Open
+I0918 16:13:52.181122  1811507 tunnel_helper.go:380] Tunnel helper opened api.anthropic.com:443
+D0918 16:13:52.181269  1811507 urpc.go:592] urpc: successfully marshalled 37 bytes.
+D0918 16:13:52.181326  1811507 urpc.go:372] urpc: RPC call for method TunnelHelper.Open succeeded.
+D0918 16:13:53.490603  1811507 urpc.go:635] urpc: unmarshal success.
+D0918 16:13:53.490723  1811507 urpc.go:302] urpc: handling RPC call for method TunnelHelper.Open
+I0918 16:13:53.505275  1811507 tunnel_helper.go:380] Tunnel helper opened api.anthropic.com:443
+D0918 16:13:53.505432  1811507 urpc.go:592] urpc: successfully marshalled 37 bytes.
+D0918 16:13:53.505487  1811507 urpc.go:372] urpc: RPC call for method TunnelHelper.Open succeeded.
+D0918 16:13:53.508608  1811507 urpc.go:635] urpc: unmarshal success.
+D0918 16:13:53.508662  1811507 urpc.go:302] urpc: handling RPC call for method TunnelHelper.Open
+I0918 16:13:53.523027  1811507 tunnel_helper.go:380] Tunnel helper opened api.anthropic.com:443
+D0918 16:13:53.523194  1811507 urpc.go:592] urpc: successfully marshalled 37 bytes.
+D0918 16:13:53.523282  1811507 urpc.go:372] urpc: RPC call for method TunnelHelper.Open succeeded.
+D0918 16:13:53.526909  1811507 urpc.go:635] urpc: unmarshal success.
+D0918 16:13:53.527037  1811507 urpc.go:302] urpc: handling RPC call for method TunnelHelper.Open
+I0918 16:13:53.540470  1811507 tunnel_helper.go:380] Tunnel helper opened api.anthropic.com:443
+D0918 16:13:53.540707  1811507 urpc.go:592] urpc: successfully marshalled 37 bytes.
+D0918 16:13:53.540852  1811507 urpc.go:372] urpc: RPC call for method TunnelHelper.Open succeeded.
+D0918 16:13:53.702992  1811507 urpc.go:635] urpc: unmarshal success.
+D0918 16:13:53.703103  1811507 urpc.go:302] urpc: handling RPC call for method TunnelHelper.Open
+I0918 16:13:53.717500  1811507 tunnel_helper.go:380] Tunnel helper opened api.anthropic.com:443
+D0918 16:13:53.717677  1811507 urpc.go:592] urpc: successfully marshalled 37 bytes.
+D0918 16:13:53.717785  1811507 urpc.go:372] urpc: RPC call for method TunnelHelper.Open succeeded.
+D0918 16:13:56.511987  1811507 urpc.go:433] urpc: unregistering client with FD 3
+D0918 16:13:56.512221  1811507 tunnel_helper.go:120] Tunnel helper: the sentry channel ended: EOF
+I0918 16:13:56.512325  1811507 tunnel_helper.go:122] Tunnel helper exiting: the sentry closed the channel
+I0918 16:13:56.512597  1811507 tunnel_helper.go:254] Tunnel helper: the tunneld socket is gone, so the sandbox stops saying it is alive
+I0918 16:13:56.512853  1811507 cli.go:316] Exiting with status: 0

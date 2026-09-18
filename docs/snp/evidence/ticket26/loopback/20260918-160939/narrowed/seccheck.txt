@@ -1,0 +1,11 @@
+listening on /dev/shm/t25-3206325160/narrowed.events
+connected: the sentry speaks wire version 1
+egress_refused protocol=dns name=www.rfc-editor.org reason=unknown-name time=2026-09-18T20:09:20.372535121Z
+egress_refused protocol=dns name=www.rfc-editor.org reason=unknown-name time=2026-09-18T20:09:20.374444087Z
+egress_refused protocol=dns name=www.rfc-editor.org reason=unknown-name time=2026-09-18T20:09:22.285847186Z
+egress_refused protocol=dns name=www.rfc-editor.org reason=unknown-name time=2026-09-18T20:09:22.286470736Z
+egress_refused protocol=dns name=www.ietf.org reason=unknown-name time=2026-09-18T20:09:24.98222364Z
+egress_refused protocol=dns name=www.ietf.org reason=unknown-name time=2026-09-18T20:09:24.983089009Z
+egress_refused protocol=dns name=www.rfc-editor.org reason=unknown-name time=2026-09-18T20:09:24.991575929Z
+egress_refused protocol=dns name=www.rfc-editor.org reason=unknown-name time=2026-09-18T20:09:24.993356192Z
+disconnected

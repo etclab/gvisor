@@ -663,15 +663,106 @@ what it is everywhere else: tracked, and enforced by the mounts the bundle alrea
 
 ## What Claude Code did under a policy (E4)
 
-<!-- PLACEHOLDER: E4, Claude Code headless under a pushed policy; task outcome, every refusal with its errno, whether the run is distinguishable from an unrestricted one from the outside, model id, tokens and cost -->
+**This is the definition of done's governed run, and it is three runs.**
+`attest/cmd/agent-probe/governed_test.go:502` `TestClaudeGoverned`, recorded in
+`docs/snp/evidence/ticket26/spikes/E4/` (`notes.md`, `20260918-161409/`): three governed runs and
+one unrestricted, in that order, on the same afternoon, against the same binary in the same rootfs
+behind the same exit — there is no separate `claude-governed/` directory and these three are it. The
+workload is Claude Code **2.1.276**, the ELF ticket 25's smoke ran, invoked
+`claude -p "Reply with exactly the word OK." --output-format json --model claude-haiku-4-5-20251001`.
+The table is ticket 25's E4 host list unchanged — `api.anthropic.com:443` **and**
+`http-intake.logs.us5.datadoghq.com:443` — in all four runs, so **the push is the only difference**:
 
-What is known now, from E2's `d-claude` run, which spent nothing and reached nothing: the Claude
-Code build in use is a **single self-contained ELF**, and one run exec'd exactly two distinct
-identities — `/usr/local/bin/claude` five times (the CLI re-execs itself) and `/usr/bin/git` three
-times — both stable across the re-execs. **There is no Node**, so an `x` for it is two entries and
-not a list of interpreters. The run also produced four `egress_refused protocol=dns
-name=api.anthropic.com reason=unknown-name` pairs, which is the adapter refusing the one name a
-policy would have to grant.
+```
+{"format":"policy","version":1,"n":[{"host":"api.anthropic.com","ports":[443]}],"f":[],"x":[]}
+```
+
+94 bytes, sha256 `b12101796a563ae0fb48eb1657bf1441f017e84191ef3803eb5a754db8cba86d`. What it takes
+away is the log intake the CLI contacts on a fresh `HOME` with nobody opting in — a destination a
+table built from `agent-probe` alone would never have known to name. `f` and `x` are empty, so exec
+stays unconstrained; whether `{path | sha256}` can name what this runtime execs is E2's question and
+not this one.
+
+| run | policy | result | `is_error` | turns | cost | wall | of it API | runsc | streams at the exit | intake dialled |
+|---|---|---|---|---:|---:|---:|---:|---:|---:|---|
+| governed-1 | pushed | `OK` | false | 1 | $0.003206 | 8.973 s | 2210 ms | 0 | 8 | no |
+| governed-2 | pushed | `OK` | false | 1 | $0.003286 | 9.014 s | 2653 ms | 0 | 8 | no |
+| governed-3 | pushed | `OK` | false | 1 | $0.003201 | 8.359 s | 2302 ms | 0 | 8 | no |
+| unrestricted | none | `OK` | false | 1 | $0.003236 | 8.767 s | 2462 ms | 0 | **9** | yes |
+
+$0.012931 for the four as the CLI reported it. The model is the same one in all four — the result
+JSON's `modelUsage` names `claude-haiku-4-5-20251001`, `canonicalModel` `claude-haiku-4-5` — and the
+governed runs are *inside* the unrestricted run's wall time rather than beside it: 8.359–9.014 s
+against 8.767 s. **The task completed four times out of four**, because the destination that was
+taken away was not one the task needed. That is not enforcement being weak: it is *task outcome not
+being a channel for policy*, and an operator who wants to know whether a policy bit has ever
+mattered must read the sentry and not the agent.
+
+**Every refusal, and there are exactly two per governed run.** Verbatim, from governed-1 — the
+sentry's own line and the event it wrote:
+
+```
+16:13:34.427993  tunnel: refused dns :0 name="http-intake.logs.us5.datadoghq.com" reason=unknown-name
+16:13:34.429911  tunnel: refused dns :0 name="http-intake.logs.us5.datadoghq.com" reason=unknown-name
+```
+
+```
+egress_refused protocol=dns name=http-intake.logs.us5.datadoghq.com reason=unknown-name
+  time=2026-09-18T20:13:34.428068546Z
+egress_refused protocol=dns name=http-intake.logs.us5.datadoghq.com reason=unknown-name
+  time=2026-09-18T20:13:34.429986404Z
+```
+
+governed-2 said the same two at `16:13:45.635470` and `16:13:45.636657`, governed-3 at
+`16:13:56.215048` and `16:13:56.216281`, each with its own pair of events; the unrestricted run's
+sink printed its connect and its disconnect and nothing between. Twice for one name because glibc's
+resolver asks `A` and `AAAA`. The name tallies are the rest of it: `api.anthropic.com` asked **8**
+times and answered `100.64.1.0` in all four runs, `http-intake.logs.us5.datadoghq.com` asked **2**
+times and answered **`nxdomain`** in the three governed runs and `100.64.1.1` in the fourth. The CLI
+made **one** attempt at the intake and did not retry it, logged nothing about it on stdout, and the
+result JSON does not mention it.
+
+**There is no errno.** The ticket asked for every refusal *with its errno*, and the honest answer is
+that this refusal has none: a name the policy in force does not carry is answered `NXDOMAIN` by the
+responder inside the sentry, and glibc turns that into `EAI_NONAME` out of `getaddrinfo` — **a
+library result and not a failed system call**. No `connect` is attempted, so the `ENETUNREACH` this
+design gives an off-policy *address* never happens; that errno appears only when a workload dials a
+synthetic address it resolved before a narrowing (E1 §2, `reason=not-in-table`), and a program that
+resolves at the moment it dials never sees one.
+
+**Distinguishable from the outside?** In the notes' own terms: **not** from the task's result, its
+`is_error`, its turn count, its cost, `runsc`'s exit status or its wall time. **Not at all from
+inside the guest** by anything a syscall trace can see — the `## syscalls that failed` tallies of
+governed-1 and the unrestricted run differ in six rows and all six are scheduler noise (futex
+wakeups, two `openat`s, two non-blocking `recvfrom`s); not one network syscall differs; neither run
+has a failed `sendto` or a failed `socket`; and the only failed `connect` in either is the same pair
+of `connect errno=2 (no such file or directory)` on an `AF_UNIX` path that is not there, present
+identically in both. **Weakly at the exit**: one stream fewer, 8 against 9, which an observer would
+have to know to expect. **Exactly at the sentry**: two events that say which protocol, which name
+and which reason. That cuts both ways and both halves belong here. It is a good property — a policy
+that silently removes a destination hands the workload no fingerprint of what is being enforced on
+it, which is the shape a workload that wanted to detect and adapt would need. And it is a warning —
+nothing in the task's own output will ever tell an operator that a policy bit fired, so **the
+seccheck sink is not a debugging convenience, it is the only channel**.
+
+The three pushes cost what the loopback pushes cost in their cold mode: 3, 3 and 4 handshakes, cold
+`Open` 99 / 123 / 78 ms, `Apply` at `a` 52.443 / 65.721 / 35.231 ms, `Policy.Narrow` 2.052 / 0.824 /
+1.323 ms, the table swap 884.8 / 201.9 / 530.8 µs, landing 349, 384 and 403 ms into their runs —
+about two seconds before each run's first stream reached the exit at 2.397–2.64 s, and longer before
+the intake was ever asked for. The cold `Open` is a QUIC handshake against the fake platform with a
+fixture verifier and **is not an attestation cost**.
+
+**What runs inside it.** E2's `d-claude` run, which spent nothing and reached nothing, found that
+the Claude Code build in use is a **single self-contained ELF**, and that one run exec'd exactly two
+distinct identities — `/usr/local/bin/claude` five times (the CLI re-execs itself) and
+`/usr/bin/git` three times — both stable across the re-execs. **There is no Node**, so an `x` for it
+is two entries and not a list of interpreters. That run also produced four `egress_refused
+protocol=dns name=api.anthropic.com reason=unknown-name` pairs, which is the adapter refusing the
+one name a policy would have to grant. E4's governed-1, doing real work, shows the same two paths
+and what the re-execs are for: four `execve`s of `/usr/bin/git` and three of `/usr/local/bin/claude`
+with `argv[0]` set to `rg` — the ripgrep the CLI ships inside itself. Which is the identity rule and
+the argument limit in one line: `rg --no-config --files --hidden /work` is `/usr/local/bin/claude`
+to the sink, and an `x` that names that path grants every one of them.
 
 ## The SNP transcript
 

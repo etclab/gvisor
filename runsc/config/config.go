@@ -476,6 +476,16 @@ type Config struct {
 	// immediately.
 	ControlRPCStopTimeout time.Duration `flag:"control-rpc-stop-timeout"`
 
+	// TunnelSocket is the path of tunneld's sandbox socket. When set, runsc
+	// starts a tunnel helper beside the sandbox and the sentry's egress
+	// adapter is installed. Requires TunnelTable and --network=none.
+	TunnelSocket string `flag:"tunnel-socket"`
+
+	// TunnelTable is the path of the JSON document naming the host names the
+	// sandbox may reach and the one TCP port each may be reached on. Requires
+	// TunnelSocket.
+	TunnelTable string `flag:"tunnel-table"`
+
 	// SharedRootDir is the directory used for state shared across sandboxes
 	// regardless of their runtime root directory (e.g. the null gofer network
 	// namespace bind mount). If empty, RootDir is used.
@@ -501,6 +511,15 @@ func (c *Config) Validate() error {
 	}
 	if c.PauseExternalNetworking && c.Network != NetworkSandbox {
 		return fmt.Errorf("pause-external-networking flag is only supported with sandbox networking")
+	}
+	// The tunnel adapter is the sandbox's only way out, which is a claim about
+	// the whole stack: it is not true of a sandbox that has a network of its
+	// own, so the two are refused together rather than layered.
+	if (c.TunnelSocket == "") != (c.TunnelTable == "") {
+		return fmt.Errorf("tunnel-socket and tunnel-table must be given together, got tunnel-socket=%q and tunnel-table=%q", c.TunnelSocket, c.TunnelTable)
+	}
+	if c.TunnelSocket != "" && c.Network != NetworkNone {
+		return fmt.Errorf("tunnel-socket and tunnel-table require --network=none, got --network=%v", c.Network)
 	}
 	if c.TBFBurst > maxQDiscTBFBurst {
 		return fmt.Errorf("qdisc-tbf-burst must be <= %d, got: %d", maxQDiscTBFBurst, c.TBFBurst)

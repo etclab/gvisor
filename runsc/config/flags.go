@@ -157,6 +157,8 @@ func RegisterFlags(flagSet *flag.FlagSet) {
 
 	// Flags that control sandbox runtime behavior: network related.
 	flagSet.Var(networkTypePtr(NetworkSandbox), "network", "specifies which network to use: sandbox (default), host, none. Using network inside the sandbox is more secure because it's isolated from the host network.")
+	flagSet.String("tunnel-socket", "", "path of tunneld's sandbox socket. With --tunnel-table, installs the sentry's egress adapter: the sandbox reaches the names the table carries through tunneld and nothing else. Requires --network=none.")
+	flagSet.String("tunnel-table", "", "path of the JSON document naming the host names the sandbox may reach and the one TCP port each may be reached on. Requires --tunnel-socket.")
 	flagSet.Var(goferNetworkNamespacePtr(GoferNetworkNamespaceNull), "gofer-network-namespace", "network namespace for gofers: null (default; an empty namespace shared by all gofers using the same --shared-root, which defaults to --root), new (a new empty namespace per gofer), host (the current namespace), or an absolute path to an existing namespace.")
 	flagSet.Bool("net-raw", false, "enable raw sockets. When false, raw sockets are disabled by removing CAP_NET_RAW from containers (`runsc exec` will still be able to utilize raw sockets). Raw sockets allow malicious containers to craft packets and potentially attack the network.")
 	flagSet.Bool("allow-packet-socket-write", false, "allow writes on AF_PACKET sockets. When false, writes on AF_PACKET sockets will fail. When turned on, untrusted workloads may potentially attack the network because of the ability to craft arbitrary packets.")

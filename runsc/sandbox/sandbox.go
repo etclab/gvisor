@@ -1058,6 +1058,10 @@ func (s *Sandbox) createSandboxProcess(conf *config.Config, args *Args, startSyn
 	}
 	donations.DonateAndClose("sink-fds", args.SinkFiles...)
 
+	if err := s.startTunnelHelper(conf, &donations); err != nil {
+		return fmt.Errorf("starting the tunnel helper: %w", err)
+	}
+
 	if len(conf.TestOnlyAutosaveImagePath) != 0 {
 		files, err := createSaveFiles(conf.TestOnlyAutosaveImagePath, false, statefile.CompressionLevelFlateBestSpeed)
 		if err != nil {
@@ -1905,6 +1909,96 @@ func openFSCheckpointLocalFiles(imagePath string, openFlags int, direct bool) ([
 
 	closeCleanup.Release()
 	return files[:], nil
+}
+
+// startTunnelHelper starts the process the sandbox's egress passes through and
+// donates the sentry its end of the channel, or does nothing when runsc was
+// given no --tunnel-socket.
+//
+// It is the checkpoint gofer's shape (maybeStartCheckpointGoferAndGetSocket):
+// one socketpair, the child holding it as fd 3, /dev/null for the standard
+// streams so the sandbox's own are untouched, and the log files donated the
+// way every other runsc child gets them. It differs in one respect, and for
+// the gofer's reason rather than the checkpoint gofer's: the helper is a runsc
+// subcommand and not a sidecar binary, so the binary exec'd is runsc itself.
+func (s *Sandbox) startTunnelHelper(conf *config.Config, donations *donation.Agency) error {
+	if conf.TunnelSocket == "" {
+		return nil
+	}
+	// The table is opened here and donated, so that the sentry reads the file
+	// runsc was pointed at and not whatever the path names by the time the
+	// sandbox is up.
+	tableFile, err := os.Open(conf.TunnelTable)
+	if err != nil {
+		return fmt.Errorf("opening the tunnel table %q: %w", conf.TunnelTable, err)
+	}
+	donations.DonateAndClose("tunnel-table-fd", tableFile)
+
+	fds, err := unix.Socketpair(unix.AF_UNIX, unix.SOCK_STREAM|unix.SOCK_CLOEXEC, 0)
+	if err != nil {
+		return fmt.Errorf("creating the tunnel helper socketpair: %w", err)
+	}
+	// The sentry's end is donated; the helper's end is this process's only
+	// until the child has it.
+	donations.DonateAndClose("tunnel-fd", os.NewFile(uintptr(fds[0]), "tunnel-helper-socket"))
+	helperEnd := os.NewFile(uintptr(fds[1]), "tunnel-helper-socket-child")
+	defer helperEnd.Close()
+
+	devNull, err := os.OpenFile(os.DevNull, os.O_RDWR, 0)
+	if err != nil {
+		return fmt.Errorf("opening %s: %w", os.DevNull, err)
+	}
+	defer devNull.Close()
+
+	cmd := exec.Command(specutils.ExePath, conf.ToFlags()...)
+	cmd.Env = slices.DeleteFunc(os.Environ(), func(env string) bool { return strings.HasPrefix(env, "GOMAXPROCS=") })
+	cmd.Env = gvisorbinaries.WithEnforceRelease(cmd.Env)
+	cmd.Stdin, cmd.Stdout, cmd.Stderr = devNull, devNull, devNull
+	cmd.SysProcAttr = &unix.SysProcAttr{
+		// Detach from this session, or the helper takes the signals meant for
+		// the foreground process.
+		Setsid: true,
+	}
+	// Set Args[0] so the helper is recognisable in a process listing.
+	cmd.Args[0] = "runsc-tunnel-helper"
+
+	// fd 3 is the channel; the log files follow it.
+	cmd.ExtraFiles = append(cmd.ExtraFiles, helperEnd)
+	nextFD := 4
+	lfOpts := &specutils.LogFileOpts{
+		SandboxID: s.ID,
+		CID:       s.ID,
+		Command:   "tunnel-helper",
+		Timestamp: s.StartTime,
+	}
+	if conf.LogFilename != "" {
+		f, err := log.OpenFile(conf.LogFilename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, &log.DefaultFileOpts{})
+		if err != nil {
+			return fmt.Errorf("opening the tunnel helper's log file: %w", err)
+		}
+		defer f.Close()
+		cmd.ExtraFiles = append(cmd.ExtraFiles, f)
+		cmd.Args = append(cmd.Args, fmt.Sprintf("--log-fd=%d", nextFD))
+		nextFD++
+	}
+	if conf.DebugLog != "" && specutils.IsDebugCommand(conf, "tunnel-helper") {
+		f, err := specutils.OpenDebugLogFile(conf.DebugLog, lfOpts)
+		if err != nil {
+			return fmt.Errorf("opening the tunnel helper's debug log file: %w", err)
+		}
+		defer f.Close()
+		cmd.ExtraFiles = append(cmd.ExtraFiles, f)
+		cmd.Args = append(cmd.Args, fmt.Sprintf("--debug-log-fd=%d", nextFD))
+		nextFD++
+	}
+
+	cmd.Args = append(cmd.Args, "tunnel-helper", "-sock-fd=3", "-sandbox-socket="+conf.TunnelSocket)
+	log.Debugf("Starting tunnel helper: %s %v", cmd.Path, cmd.Args)
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("execing the tunnel helper: %w", err)
+	}
+	log.Infof("Tunnel helper started, PID %d, tunneld socket %q, table %q", cmd.Process.Pid, conf.TunnelSocket, conf.TunnelTable)
+	return nil
 }
 
 // maybeStartCheckpointGoferAndGetSocket checks if use of a checkpoint gofer is

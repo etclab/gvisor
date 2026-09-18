@@ -341,6 +341,12 @@ func tunnelConnect(t *kernel.Task, s *sock, addr tcpip.FullAddress) (bool, *syse
 	if a == nil {
 		return false, nil
 	}
+	if _, attached := s.Endpoint.(*tunnelEndpoint); attached {
+		// A socket that already holds a stream is connected, and connect(2) on
+		// a connected TCP socket is EISCONN. Answering anything else would let
+		// a second call ask for a second stream and drop the first.
+		return true, syserr.ErrAlreadyConnected
+	}
 	if tunnelIsLoopback(addr.Addr) {
 		return false, nil
 	}

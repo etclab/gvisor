@@ -161,9 +161,11 @@ fi
 # socket is not an exec, so the rule above has nothing to say about it.
 #
 # And the sentry's own account of what it did, which is the only diagnostic this
-# guest has. The adapter's two interesting lines — `tunnel dns:` for a name it
+# guest has. The adapter's interesting lines — `tunnel dns:` for a name it
 # resolved or refused, `tunnel attach:` for a stream it asked tunneld for and
-# what came back — are debug-level, so they exist only with --debug. They are
+# what came back, and, since ticket 26, `tunnel narrow:` for a policy it took and
+# what the swap under the running workload cost — are debug-level, so they exist
+# only with --debug. They are
 # written to files under /run rather than to the console, because --debug on the
 # console is tens of thousands of lines on a serial port and would bury the
 # workload's own output; the adapter branch below picks those lines back out
@@ -459,7 +461,7 @@ if [ "$ADAPTER" = 1 ]; then
   # and without it a fetch that failed would be indistinguishable from a fetch
   # that was refused (docs/snp/evidence/ticket25/adapter-check/notes.md).
   say "the sentry's own account of the adapter, out of $RUNSC_DEBUG_DIR:"
-  grep -h 'tunnel dns:\|tunnel attach:\|tunnel policy:\|exec refused' "$RUNSC_DEBUG_DIR"/* 2>/dev/null \
+  grep -h 'tunnel dns:\|tunnel attach:\|tunnel narrow:\|tunnel policy:\|exec refused' "$RUNSC_DEBUG_DIR"/* 2>/dev/null \
     | sed 's/^/init: sentry: /' \
     || say "no tunnel lines in the debug log"
   for f in "$RUNSC_DEBUG_DIR"/*; do

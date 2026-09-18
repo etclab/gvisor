@@ -485,8 +485,10 @@ if [ -f "$TUNNEL_TABLE" ]; then
 	RUNSC_FLAGS="$RUNSC_FLAGS --tunnel-socket=$SANDBOX_SOCKET --tunnel-table=$TUNNEL_TABLE"
 	# The sentry's own account of what it did, which is the only diagnostic
 	# this guest has for the adapter. `tunnel dns:` for a name it resolved or
-	# refused and `tunnel attach:` for a stream it asked tunneld for are
-	# debug-level, so they exist only with --debug. They go to files under
+	# refused, `tunnel attach:` for a stream it asked tunneld for, and, since
+	# ticket 26, `tunnel narrow:` for a policy it took and what the swap under
+	# the running workload cost, are debug-level, so they exist only with
+	# --debug. They go to files under
 	# /run rather than to the console, because --debug on a serial port is
 	# tens of thousands of lines and would bury the workload's own output;
 	# the adapter branch below picks those lines back out afterwards. /run is
@@ -766,7 +768,7 @@ if [ "$ADAPTER" = 1 ]; then
 	# about where the workload's bytes went, and without it a fetch that failed
 	# would be indistinguishable from a fetch that was refused.
 	say "the sentry's own account of the adapter, out of $RUNSC_DEBUG_DIR:"
-	grep -h 'tunnel dns:\|tunnel attach:\|tunnel policy:\|exec refused' "$RUNSC_DEBUG_DIR"/* 2>/dev/null \
+	grep -h 'tunnel dns:\|tunnel attach:\|tunnel narrow:\|tunnel policy:\|exec refused' "$RUNSC_DEBUG_DIR"/* 2>/dev/null \
 		| sed 's/^/initrd: sentry: /' \
 		|| say "no tunnel lines in the debug log"
 	for f in "$RUNSC_DEBUG_DIR"/*; do

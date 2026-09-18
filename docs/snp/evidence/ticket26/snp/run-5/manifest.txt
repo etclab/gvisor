@@ -1,0 +1,121 @@
+# Measured image manifest. Built 2026-09-18T20:28:14Z on shs1.
+
+## Measured inputs. The firmware is measured directly; kernel, initrd and command line
+## enter through the SEV hashes table QEMU writes into the firmware (kernel-hashes=on);
+## rootfs.img is covered through verity.roothash on the command line.
+ffd6bfa8c76c460a4dba62c39b2c9cf5a7ac425148eede7fb610f4c3cd96a895  OVMF.fd
+c3b443dbdafbaf3cb92d119482143a76876a752c7335a61faa917361d9724b75  vmlinuz
+494d6c1f5e95da4aebb4e5f60cac6f203ba45e75c6bd95ef7646f4bcbd7a34cd  initrd.img
+e8df319e462bcab5f03fc7240d581da6d5e143b5f83064f97da849dd4cf13214  cmdline.txt
+5a6c09a2fbd13e556204b2766bfdd9387858175043d7e1dc69359d8fb9560d2f  rootfs.img
+verity root hash: 62d1692fdc668ccd7b1402c25c2c27dedabc43b34c49e44d1df014b7a1b7e4df  (sha256, no salt, 4096-byte blocks, 21917 data blocks, hash tree at block 21917)
+
+## Predicted launch measurement (offline, from the files above + vcpus=4 vcpu_type=EPYC-v4; not read from a machine)
+launch_measurement: 1bc0c9308430f0e1246ba0a67b984ab3bbdaf0a075bd7c14c3df865ab945e7fb605a966974c107eae9d05f330a50a1f2
+emitted as reference-values.json and policy.json (+ .sig each, signed by the author key);
+inputs in reference-values.inputs.txt
+
+## The digest a guest booted from this image presents (ticket 22): sha256 over the egress
+## ceiling compiled into its tunneld, which attest-tool ceiling -digest prints without a guest,
+## a key or a boot. A peer admits a guest running this image under this ceiling by naming this
+## number in its own policy_digest.
+policy_digest: 197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+
+## The digest of policy.json beside this file: sha256 over the bytes the author signed, which is
+## not sha256sum of the file. It is on no config device and no guest loads it — it is what an
+## authoring station pushes over an established tunnel (docs/policy-push.md).
+emitted_policy_digest: 44305e84987f31dd22b88910a473ed8b7c15f0e9cab6a9744d6b7d41f5770218
+
+## Provenance
+firmware: tianocore/edk2 edk2-stable202502 fbe0805b2091393406952e84724188f8c1941837 OvmfPkg/AmdSev/AmdSevX64.dsc, built by docs/snp/image/build-ovmf-amdsev.sh
+          embedded grub built from grub-efi-amd64-bin 2.12-1ubuntu7.3 (pinned: 2.12-1ubuntu7.3)
+kernel:   AMDESE/linux snp-guest-latest 038d61fd642278bab63ee8ef722c50d10ab01e8f, release 6.16.0-snp-guest-038d61fd6422
+busybox:  /bin/busybox  busybox-static 1:1.36.1-6ubuntu3.1
+tunneld:  /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket26-packaging/tunneld
+runsc:    /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/runsc-ticket26
+          sha256 6019cbf49bc87c5c1ca21382ec069376661bfb56ab74eb3840d61378fbab7819, 109044910 bytes (make runsc, bazel; installed as /usr/bin/runsc)
+agent-probe: /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket26-packaging/agent-probe
+          sha256 fc100aad383a0023079f64d2272585fe871e6539a7f87cd075233577dd22af6a, 9214897 bytes (CGO_ENABLED=0; installed as /usr/bin/agent-probe)
+author key: 3f27c388b8c18afb53cce0214c3a9c7650290073d23ceffe09042c8d017dec72
+
+## Toolchain
+gcc:         gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+veritysetup: veritysetup 2.7.0 flags: UDEV BLKID KEYRING FIPS KERNEL_CAPI HW_OPAL 
+mksquashfs:  mksquashfs version 4.6.1 (2023/03/25)
+mke2fs:      mke2fs 1.47.0 (5-Feb-2023)
+gzip:        gzip 1.12
+gen_init_cpio: from the kernel tree at 038d61fd642278bab63ee8ef722c50d10ab01e8f
+
+## Root filesystem contents (path sha256 mode size)
+./bin/busybox dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 755 2124608
+./bin/cat -> busybox
+./bin/dmesg -> busybox
+./bin/echo -> busybox
+./bin/grep -> busybox
+./bin/httpd -> busybox
+./bin/insmod -> busybox
+./bin/ip -> busybox
+./bin/kill -> busybox
+./bin/ls -> busybox
+./bin/mkdir -> busybox
+./bin/mount -> busybox
+./bin/poweroff -> busybox
+./bin/sed -> busybox
+./bin/sh -> busybox
+./bin/sleep -> busybox
+./bin/sync -> busybox
+./bin/tail -> busybox
+./bin/umount -> busybox
+./bin/unshare -> busybox
+./bin/wc -> busybox
+./bin/wget -> busybox
+./etc/attested-tunnel/author.pub 6f446e6b8a9e752b7af804f245808457fb426bd82bbfa3299161f268d5aba5be 444 65
+./etc/hosts f5cb22383771e9e23c7dc2f50d12dd3f3c00d75517cd168de81e281ed3f1e204 444 103
+./lib/modules/nfnetlink.ko f110e9ca07ed9b2554d9aefcaa95536fa675950f8c911b9821f62def14fabfa8 444 32793
+./lib/modules/nf_reject_ipv4.ko cdedaa8427b07a22074d098183e9ee991feee188bbf006cd71311e59b20810f8 444 19217
+./lib/modules/nf_reject_ipv6.ko dd2617e93c8f7e9eb3b618be987775f62a4f66c4d5d2b97e2f20f23093e4a494 444 23761
+./lib/modules/nf_tables.ko c08797c5969a69a77c15f3f8c2fdf795fc244edafeec5d5f9c1de060f695f244 444 578585
+./lib/modules/nft_reject_inet.ko c81108d32f17e59a7ab9b45db800c890d6ecf0112a380a7aace09f56e3fd4be6 444 10777
+./lib/modules/nft_reject.ko 52559f1cd75fec522d3fb7e9bf25dbdab952ce6d36366993e751cc041e3db388 444 10873
+./lib/modules/sev-guest.ko 6a2a639e905ad8b8350ef517110ce1f0dca155d9005f28cc01f21e0233a7dc7e 444 32273
+./lib/modules/tsm_report.ko 11723a0e7eb38d07baf0714aa6deb42f2b18c4ded62ad3a5e6efc5358855151b 444 30193
+./sbin/init 58e3feb69a32474df03e42d18d4d8fd194c0b6e574d246dff09fbc8631e688a9 755 29894
+./srv/index.html ad58f4abb55ff8f48a303294c55bf26df31e0913f9fbadce3c147d096c0b1fa9 444 657
+./usr/bin/agent-probe fc100aad383a0023079f64d2272585fe871e6539a7f87cd075233577dd22af6a 755 9214897
+./usr/bin/runsc 6019cbf49bc87c5c1ca21382ec069376661bfb56ab74eb3840d61378fbab7819 755 109044910
+./usr/bin/tunneld 241fb424f1f3db04dfbd8688c993b7f2d0cf63baa2c3bc31bc11802388a027c6 755 17597809
+
+## Initrd contents (gen_init_cpio list)
+dir /dev 0755 0 0
+nod /dev/console 0600 0 0 c 5 1
+dir /proc 0755 0 0
+dir /sys 0755 0 0
+dir /newroot 0755 0 0
+dir /bin 0755 0 0
+dir /sbin 0755 0 0
+dir /lib 0755 0 0
+file /init init 0755 0 0
+file /bin/busybox busybox 0755 0 0
+slink /bin/sh busybox 0755 0 0
+slink /bin/mount busybox 0755 0 0
+slink /bin/umount busybox 0755 0 0
+slink /bin/insmod busybox 0755 0 0
+slink /bin/cat busybox 0755 0 0
+slink /bin/echo busybox 0755 0 0
+slink /bin/sleep busybox 0755 0 0
+slink /bin/switch_root busybox 0755 0 0
+file /sbin/veritymap veritymap 0755 0 0
+file /lib/dm-bufio.ko dm-bufio.ko 0444 0 0
+file /lib/dm-verity.ko dm-verity.ko 0444 0 0
+
+## Guest kernel modules
+dm-bufio.ko cc8778aa411c5a1c0c935b30e5f75aa183e1d1d2ac677110a4b411df679470d5 vermagic=6.16.0-snp-guest-038d61fd6422 SMP mod_unload modversions 
+dm-verity.ko a348f29d5185065d48f97b394566b1f676ac14988db4c790c738163b03bf550e vermagic=6.16.0-snp-guest-038d61fd6422 SMP mod_unload modversions 
+tsm_report.ko 11723a0e7eb38d07baf0714aa6deb42f2b18c4ded62ad3a5e6efc5358855151b vermagic=6.16.0-snp-guest-038d61fd6422 SMP mod_unload modversions 
+sev-guest.ko 6a2a639e905ad8b8350ef517110ce1f0dca155d9005f28cc01f21e0233a7dc7e vermagic=6.16.0-snp-guest-038d61fd6422 SMP mod_unload modversions 
+nfnetlink.ko f110e9ca07ed9b2554d9aefcaa95536fa675950f8c911b9821f62def14fabfa8 vermagic=6.16.0-snp-guest-038d61fd6422 SMP mod_unload modversions 
+nf_tables.ko c08797c5969a69a77c15f3f8c2fdf795fc244edafeec5d5f9c1de060f695f244 vermagic=6.16.0-snp-guest-038d61fd6422 SMP mod_unload modversions 
+nf_reject_ipv4.ko cdedaa8427b07a22074d098183e9ee991feee188bbf006cd71311e59b20810f8 vermagic=6.16.0-snp-guest-038d61fd6422 SMP mod_unload modversions 
+nf_reject_ipv6.ko dd2617e93c8f7e9eb3b618be987775f62a4f66c4d5d2b97e2f20f23093e4a494 vermagic=6.16.0-snp-guest-038d61fd6422 SMP mod_unload modversions 
+nft_reject.ko 52559f1cd75fec522d3fb7e9bf25dbdab952ce6d36366993e751cc041e3db388 vermagic=6.16.0-snp-guest-038d61fd6422 SMP mod_unload modversions 
+nft_reject_inet.ko c81108d32f17e59a7ab9b45db800c890d6ecf0112a380a7aace09f56e3fd4be6 vermagic=6.16.0-snp-guest-038d61fd6422 SMP mod_unload modversions 

@@ -48,6 +48,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -157,9 +158,12 @@ func TestClaudeCodeSmoke(t *testing.T) {
 		},
 	})
 
-	// The one assertion. It started: the sentry traced syscalls made by a
-	// process called claude.
-	if !ranAs(r, "claude") {
+	// The one assertion, and the whole of "it started": the sentry traced
+	// syscalls made by a process called claude. The first process is exec'd by
+	// the sentry itself, so there is no execve line for it the way there is
+	// for its children — the name on its syscall lines is the evidence
+	// instead.
+	if !slices.Contains(r.comms, "claude") {
 		t.Errorf("the sentry traced no syscalls from a process called claude, so the ELF did not run; what ran was %v", r.comms)
 	}
 
@@ -180,19 +184,6 @@ func TestClaudeCodeSmoke(t *testing.T) {
 	}
 
 	l.record(t, l.smokeNotes(r, res, ok), r)
-}
-
-// ranAs reports whether the sentry traced a process of that name, which is the
-// whole of "it started": the first process is exec'd by the sentry itself, so
-// there is no execve line for it, and its name on its syscall lines is the
-// evidence that instead.
-func ranAs(r *sandboxRun, name string) bool {
-	for _, comm := range r.comms {
-		if comm == name {
-			return true
-		}
-	}
-	return false
 }
 
 // ===== the rootfs =====

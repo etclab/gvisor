@@ -788,24 +788,34 @@ project admits.
 
 ## What a hop costs, and the six RQ5 components
 
-<!-- PLACEHOLDER: the loopback and hardware columns are filled from the loopback, SNP and TDX runs; the method column is what this ticket already knows -->
+<!-- PLACEHOLDER: the hardware column is filled from the SNP and TDX runs; the loopback column is `docs/snp/evidence/ticket26/loopback/rq5-loopback.md`, and the method column is what this ticket already knows -->
 
 The six components as `evaluation.tex:764-771` names them
 (`.scratch/attested-secure-tunnel/paper-vs-design-27sec.md:212`), with the method for each:
 
 | component | method | loopback | on hardware |
 |---|---|---|---|
-| guest execution overhead | the measured init's own clock, sandbox start to workload exit, beside E2's `fork`+`execve`+`wait4` benchmark for the per-exec share the X sink adds | — | — |
-| attestation acquisition | the guest's own console line for evidence acquired from the platform, one per guest per boot | — | — |
-| attestation verification | the verifier's judgement of the peer's quote, counted per verifier call so that cold and warm are separated by the count rather than by a clock | — | — |
-| establishment of the attested channel | first `Attach`, cold, against a later `Attach` on a tunnel that already exists | — | — |
-| installation and binding of `P` | the three clocks E1 already reads: the table swap, the whole of `Policy.Narrow` in the sentry, and `Host.Apply` end to end — 0.184 / 0.676 / 3.506 ms median over 24 narrowings on loopback | 0.184 / 0.676 / 3.506 ms | — |
-| capability release | E3's ten teardown trials per case, which is what release costs when it is not asked for; a narrowing that removes a name is the asked-for form and E1 times it | ≤250 ms (close or mismatch), 2.10–3.25 s (three misses) | — |
+| guest execution overhead | the measured init's own clock, sandbox start to workload exit, beside E2's `fork`+`execve`+`wait4` benchmark for the per-exec share the X sink adds | **nothing, and it must stay nothing**: `runsc --platform=systrap` on the workstation with the tunnelds in the test's own process, so a number here would be this host's scheduler | — |
+| attestation acquisition | the guest's own console line for evidence acquired from the platform, one per guest per boot | **nothing**: `fixture.SNPPlatform` over `internal/snpfake`, no report requested of any hardware | — |
+| attestation verification | the verifier's judgement of the peer's quote, counted per verifier call so that cold and warm are separated by the count rather than by a clock | **nothing**: `fixture.VerifierTrusting`, no VCEK fetched, no chain walked, no collateral consulted | — |
+| establishment of the attested channel | first `Attach`, cold, against a later `Attach` on a tunnel that already exists | a pusher's cold `Open` — dial, both verdicts, the push and its ack in one call — **38–123 ms, median 75 ms** over 9; the *shape* of establishment and **not its price**, to be replaced by the hardware number and not adjusted by it | — |
+| installation and binding of `P` | the three clocks E1 already reads: the table swap, the whole of `Policy.Narrow` in the sentry, and `Host.Apply` end to end | the nine governed pushes: `Host.Apply` **2.014–65.721 ms**, median 38.7 ms (bimodal, see above); `Policy.Narrow` **589.7 µs–2.696 ms**, median 1.109 ms over 8; the swap alone **87.9–884.8 µs**, median 172.2 µs over 8 | — |
+| capability release | E3's ten teardown trials per case, which is what release costs when it is not asked for; a narrowing that removes a name is the asked-for form and E1 times it | E3's bounds ≤250 ms (close or mismatch) and 2.10–3.25 s (three misses), met by the governed runs' own two closes at **33 and 50 ms** and one mismatch at **185 ms**; `rq5-loopback.md` also reads the row the other way round, as release when it *is* asked for — the helper's first attach 130 ms–2.138 s (median 165 ms over 7), the exit's accept→`OK` 11–14 ms, `OK`→first byte 17–44 ms | — |
 
 **What is already separated and what is not.** Ticket 25 recorded two of the six and only as a lump
 — nothing separated the QUIC handshake from the quote verification — and the distinction this
 ticket adds is the fifth row, which was not measurable at all before a policy could be installed in
 a running sandbox.
+
+**What the hardware runs must add, and must not take from here.** Rows 1, 2 and 3 in full: loopback
+leaves them empty on purpose, because there is no measured guest and no attestation in it and a
+number taken here would be a number about the absence of the thing being measured. Row 4 is
+**replaced** and not adjusted — a real `Open` acquires a real report and verifies it against real
+collateral, and shares nothing with the loopback figure but the order of its steps. Rows 5 and 6 are
+worth comparing against: the sentry-side halves should be within noise of these, because the same
+code does the same work whether or not the guest is measured, and if they are not, that difference
+*is* guest execution overhead and is row 1 arriving by the back door
+(`docs/snp/evidence/ticket26/loopback/rq5-loopback.md`).
 
 ## The ceiling and the model
 
@@ -839,7 +849,8 @@ and restored is not something this ticket has anything to say about.
 
 ## Leftovers
 
-The first two are E1's own, the next four E2's, the next three E3's, and the rest this record's.
+The first two are E1's own, the next four E2's, the next three E3's, the next nine this record's,
+and the last two the loopback proof's.
 
 1. **`--root` has 108 bytes to spend, and a policy push is where you find out.** `Policy.Narrow` is
    delivered over the sentry's control socket, whose path is `--root` plus
@@ -902,6 +913,20 @@ The first two are E1's own, the next four E2's, the next three E3's, and the res
 18. **Nothing here is evidence about tunneld.** E1, E2 and the adapter check all run against a
     stand-in that speaks `attest/sandbox`'s socket and has no tunnel, no QUIC and no attestation in
     it. What is evidence about tunneld is the hardware transcripts.
+19. **The helper's first attach varies by a factor of sixteen, and nothing explains it.** From
+    `runsc` starting to the helper being on the contract socket was 130–201 ms in six of the seven
+    loopback runs that measured it and **2.138 s** in the seventh, on the same machine with the same
+    code. Nothing in the design depends on it being fast — a one-second pulse tolerates it and did —
+    but it is what sets the width of the window below it, and the run that took a second is the run
+    whose workload made its first query under the boot table alone.
+20. **A policy cannot govern a workload's first instructions.** `Policy.Narrow` is refused until the
+    loader has started the workload, a sandbox becomes ready for a policy in four steps, and a push
+    that arrives between any two of them is refused *and takes its tunnel with it*, so a peer that
+    wants to govern from the first instruction retries and burns a handshake each time — two to four
+    of them in six of the nine governed pushes. The windows measured were 3 ms, 1 ms, 1.053 s
+    and 2 ms. The honest statement of what the arrangement gives is **"no wider than the boot table
+    from the first instruction, and no wider than `P` from the moment `P` lands"**, and closing it
+    would need a verb this design does not have: *start the workload under this policy*.
 
 ## What the policy side must deliver
 
@@ -948,6 +973,8 @@ acknowledgement of it is a statement with a lifetime.
 | E2, the exec sink's cost and reach: four runs, the identity findings, the firehose | `.../spikes/E2/` (`notes.md`, `run-e2.sh`, `e2-workload.sh`, `e2-script.sh`, `execbench/`, `output-01-cost-and-reach.txt`) |
 | E3, what one `alive` per second costs and how long a teardown takes: 30 trials, the drift, the two alternatives | `.../spikes/E3/` (`notes.md`, `run.sh`, `e3_spike_test.go`, `output-00`–`output-03`) |
 | the adapter check: one sandbox, three pushes, the seven obligations, and the ordering defect it found | `.../adapter-check/` (`notes.md`, `run-adapter-check.sh`, `check-workload.sh`, `faketunneld/`, `output-01-adapter-check.txt`) |
+| the loopback proof: four sandboxes, an unmodified agent completing its task under a policy that crossed a tunnel, a narrowing mid-run, the widening refused, two teardowns, the window and the six RQ5 rows loopback can and cannot speak to | `.../loopback/` (`notes.md`, `rq5-loopback.md`, `run.sh`, `20260918-160939/` — the harness's own `README.md`, the untrimmed transcript, and one directory per sandbox) |
+| E4, Claude Code under a pushed policy, which is the definition of done's governed run: three governed runs and one unrestricted, the two refusals each, and the strace tallies that cannot tell them apart | `.../spikes/E4/` (`notes.md`, `run.sh`, `20260918-161409/`) |
 | the receiver the `egress_refused` and `exec_refused` lines come from | `.../tools/seccheck-receiver/` |
 | the SNP bundle, the scenario's two config devices and the twelve files that are the whole difference between the two guests | `.../snp/RUNBOOK.md`, `.../snp/make-bundle.sh`, `.../snp/policy-probe.sh`, `.../snp/config/README.md`, `.../snp/config/{a,b}/` |
 | the TDX runbook, and why the three-disk RTMR0 is authored rather than harvested | `.../tdx/RUNBOOK.md`, `.../tdx/RTMR0-DECISION.md` |

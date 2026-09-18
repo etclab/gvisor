@@ -128,8 +128,18 @@ func (tn *Tunnel) open(peer, hostPort string) (int, error) {
 		}
 		return -1, fmt.Errorf("TunnelHelper.Open(%s): wanted one descriptor, got %d", hostPort, len(result.Files))
 	}
-	// urpc closes the files it received once this returns, so the descriptor
-	// the endpoint keeps has to be one of ours.
+	// The descriptor the endpoint keeps has to be one this side owns outright.
+	// Client.Call hands the received files to the result, so the explicit
+	// Close below is what keeps this from leaking one per stream; the
+	// duplicate is what survives it.
+	//
+	// The duplicate is a plain dup(2), which is also what this tree's own
+	// fd.NewFromFile does. It drops no flag: urpc's transport does not ask for
+	// MSG_CMSG_CLOEXEC and unet's ExtractFDs does not set FD_CLOEXEC, so the
+	// descriptor arrives without it. A CLOEXEC-preserving duplicate is not
+	// available here in any case — the sentry's own seccomp filter allows
+	// fcntl only for F_GETFL, F_SETFL and F_GETFD — and the sentry execs
+	// nothing after boot, so the flag would be inert. Recorded as a leftover.
 	fd, dupErr := unix.Dup(int(result.Files[0].Fd()))
 	result.Files[0].Close()
 	if dupErr != nil {

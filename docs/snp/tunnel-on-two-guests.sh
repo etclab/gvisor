@@ -1379,6 +1379,26 @@ scenario_mutual() {
 ADAPTER_INPUTS="${ADAPTER_INPUTS:-$REPO/docs/snp/evidence/ticket25/snp/config}"
 ADAPTER_MARKER="served-by: guest-"
 
+# exit_served CONSOLE DEST — this guest's exit took a stream a peer opened and
+# dialed DEST for it.
+#
+# Two different lines say so and either will do. `EXIT dialed DEST -> ADDR` is
+# written when the dial returns and `EXIT DEST ended` when the pump finishes, and
+# both come out of serveConnect *after* net.Dial succeeded — the refusal path
+# answers REFUSED and returns before either of them
+# (attest/cmd/agent-probe/exit.go:153-170). So neither line can appear for a
+# destination that was refused or unreachable, and one of them is enough.
+#
+# It takes both because run 1 lost the first of the pair on one guest and kept it
+# on the other, while the fetch each describes plainly succeeded: four processes
+# were writing to one serial console and the exit's longest lines are the ones
+# that did not survive it (docs/snp/evidence/ticket25/snp/run/notes.md, "what did
+# not hold" 1 and 2). An assertion that names one of two equivalent lines is
+# asserting something about a serial port.
+exit_served() { # CONSOLE DEST
+  grep -qF -- "EXIT dialed $2" "$1" || grep -qF -- "EXIT $2 ended" "$1"
+}
+
 # line_of CONSOLE TEXT — the line number of the first occurrence, or nothing.
 line_of() { grep -nF -m1 -- "$2" "$1" 2>/dev/null | cut -d: -f1; }
 # before CONSOLE EARLIER LATER — both present, in that order.
@@ -1476,14 +1496,17 @@ scenario_adapter() {
         in_file "$a" "served-by: guest-b"
   check "guest-b's sandbox was served guest-a's page, through guest-a's exit" \
         in_file "$b" "served-by: guest-a"
-  check "guest-b's exit accepted a stream from the peer that opened it" \
-        in_file "$b" "EXIT accepted a stream from peer="
-  check "guest-a's exit accepted a stream from the peer that opened it" \
-        in_file "$a" "EXIT accepted a stream from peer="
-  check "guest-b's exit dialed the one destination its list permits" \
-        in_file "$b" "EXIT dialed web.peer-b:80"
-  check "guest-a's exit dialed the one destination its list permits" \
-        in_file "$a" "EXIT dialed web.peer-a:80"
+  check "guest-b's exit served a stream a peer opened and dialed the one destination its list permits" \
+        exit_served "$b" web.peer-b:80
+  check "guest-a's exit served a stream a peer opened and dialed the one destination its list permits" \
+        exit_served "$a" web.peer-a:80
+  # And, once for the pair rather than once per guest, the line that carries the
+  # identity the far end was serving: a peer name, a vendor, a measurement and a
+  # policy digest at full width. It is the strong claim and it is asked of the
+  # run and not of a particular console, because which of the two consoles keeps
+  # it is a property of serial contention and not of the tunnel.
+  check "an exit recorded the attested identity of the peer whose stream it served" \
+        grep -qF -- "EXIT accepted a stream from peer=" "$a" "$b"
 
   # The controls. Two per guest, and both are the sandbox being told a name does
   # not exist rather than a connection being refused: a name the table does not

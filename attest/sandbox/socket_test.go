@@ -16,6 +16,8 @@ package sandbox_test
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -407,4 +409,234 @@ func TestThePumpCarriesTheEndOfTheStreamEachWay(t *testing.T) {
 		t.Errorf("the sandbox read %q (%v); want %q", got, err, "response")
 	}
 	wg.Wait()
+}
+
+// Liveness, contract version 3, across the same process boundary.
+//
+// What the three verbs could not say is that the sandbox is still enforcing
+// what it acknowledged: ticket 23 measured an acknowledgement arriving 1.856 ms
+// after the workload started and the workload dead at 43 ms, with the tunnel
+// still up. The heartbeat is the answer, and the four cases below are the whole
+// of it — it says the right thing, it stops saying it, it says the wrong thing,
+// and it goes away.
+//
+// The sandbox is a second process for the same reason the tests above use one:
+// the case the contract exists for is the one with a boundary in it, and
+// "stopped pulsing without closing" and "the socket closed" are different only
+// when there is a process that can be stopped without being killed.
+
+const (
+	// livenessSocketEnv names the socket for the re-executed test binary, and
+	// livenessModeEnv says which sandbox it should be. Their presence is what
+	// turns one of these tests into the sandbox process.
+	livenessSocketEnv = "GVISOR_SANDBOX_LIVENESS_SOCKET"
+	livenessModeEnv   = "GVISOR_SANDBOX_LIVENESS_MODE"
+)
+
+// anotherPolicysDigest is a well-formed digest that is not policyV1's. It
+// stands for the policy some other peer pushed, or the one a sandbox went on
+// enforcing after it was pushed a second.
+var anotherPolicysDigest = strings.Repeat("00", 32)
+
+func TestASandboxPulsesTheDigestOfThePolicyItAcknowledged(t *testing.T) {
+	host, _ := livenessWorld(t, "hold")
+
+	// Two watches at once: one for the policy that was pushed, which must not
+	// fire, and one for a different policy, which must — and whose sentence
+	// carries the digest the sandbox actually pulsed. That sentence is how the
+	// pulse is observed at all, without the host growing an accessor nothing in
+	// production would use.
+	right := host.Watch(livenessContext(t), livenessDigest(policyV1))
+	wrong := host.Watch(livenessContext(t), anotherPolicysDigest)
+
+	err := livenessLost(t, wrong, 2*time.Second)
+	if !strings.Contains(err.Error(), livenessDigest(policyV1)) || !strings.Contains(err.Error(), "expected") {
+		t.Errorf("the watch reported %q; want the digest it pulsed and the one expected", err)
+	}
+	livenessStillLive(t, right, 2*time.Second)
+}
+
+func TestAKilledSandboxIsAPolicyNoLongerInForce(t *testing.T) {
+	host, child := livenessWorld(t, "hold")
+	lost := host.Watch(livenessContext(t), livenessDigest(policyV1))
+
+	began := time.Now()
+	if err := child.Process.Kill(); err != nil {
+		t.Fatalf("killing the sandbox: %v", err)
+	}
+	err := livenessLost(t, lost, 2*time.Second)
+	if !strings.Contains(err.Error(), "closed its socket") {
+		t.Errorf("a killed sandbox was reported as %q; want its socket closing", err)
+	}
+	t.Logf("a killed sandbox was a lost policy after %v", time.Since(began))
+}
+
+func TestASandboxThatStopsPulsingIsAPolicyNoLongerInForce(t *testing.T) {
+	host, child := livenessWorld(t, "hold")
+	lost := host.Watch(livenessContext(t), livenessDigest(policyV1))
+
+	// SIGSTOP is "stopped pulsing without closing" exactly: the process is
+	// there, its socket is open, and nothing comes out of it.
+	began := time.Now()
+	if err := unix.Kill(child.Process.Pid, unix.SIGSTOP); err != nil {
+		t.Fatalf("stopping the sandbox: %v", err)
+	}
+	err := livenessLost(t, lost, 10*time.Second)
+	took := time.Since(began)
+	if !strings.Contains(err.Error(), "missed 3 pulses") {
+		t.Errorf("a silent sandbox was reported as %q; want the missed pulses", err)
+	}
+	// Three misses of a one-second pulse, less however old the last pulse
+	// already was: spike E3 measured the whole interval, 2.10 s to 3.25 s.
+	if took < 1500*time.Millisecond || took > 6*time.Second {
+		t.Errorf("a silent sandbox was a lost policy after %v; want about three pulses", took)
+	}
+	t.Logf("a silent sandbox was a lost policy after %v", took)
+}
+
+func TestASandboxPulsingAnotherPolicysDigestIsAPolicyNoLongerInForce(t *testing.T) {
+	host, _ := livenessWorld(t, "wrong")
+	lost := host.Watch(livenessContext(t), livenessDigest(policyV1))
+
+	err := livenessLost(t, lost, 2*time.Second)
+	if !strings.Contains(err.Error(), anotherPolicysDigest) || !strings.Contains(err.Error(), "expected") {
+		t.Errorf("a sandbox enforcing something else was reported as %q; want what it pulsed and what was expected", err)
+	}
+}
+
+// TestASandboxThatRefusedAPolicyIsNotWatched: a watch is over the sandboxes
+// that acknowledged, and one that refused claimed nothing it could stop
+// claiming. The host says so by reporting the loss at once rather than counting
+// pulses nobody promised.
+func TestASandboxThatRefusedAPolicyIsNotWatched(t *testing.T) {
+	fake := newFakeNetwork()
+	socket := filepath.Join(t.TempDir(), "sandbox.sock")
+	host, err := sandbox.Listen(socket, fake, func(format string, a ...any) { t.Logf(format, a...) })
+	if err != nil {
+		t.Fatalf("listening on %s: %v", socket, err)
+	}
+	defer host.Close()
+	client, err := sandbox.Dial(socket, func(context.Context, []byte) error {
+		return errors.New("this sandbox will not have it")
+	})
+	if err != nil {
+		t.Fatalf("dialing %s: %v", socket, err)
+	}
+	defer client.Close()
+	waitFor(t, "the sandbox to attach", func() bool { return host.Attached() > 0 })
+	if err := host.Apply(context.Background(), []byte(policyV1)); err == nil {
+		t.Fatal("the sandbox acknowledged a policy it was written to refuse")
+	}
+	if err := livenessLost(t, host.Watch(livenessContext(t), livenessDigest(policyV1)), 2*time.Second); err == nil {
+		t.Error("a watch over a sandbox that acknowledged nothing reported it live")
+	}
+}
+
+// livenessWorld is a host with a sandbox process attached to it and a policy
+// acknowledged, which is the state a watch is started from.
+func livenessWorld(t *testing.T, mode string) (*sandbox.Host, *exec.Cmd) {
+	t.Helper()
+	if os.Getenv(livenessSocketEnv) != "" {
+		t.Skip("this process is the sandbox")
+	}
+	socket := filepath.Join(t.TempDir(), "sandbox.sock")
+	host, err := sandbox.Listen(socket, newFakeNetwork(), func(format string, a ...any) { t.Logf(format, a...) })
+	if err != nil {
+		t.Fatalf("listening on %s: %v", socket, err)
+	}
+	t.Cleanup(func() { host.Close() })
+
+	child := exec.Command(os.Args[0], "-test.run=^TestSandboxLivenessChildProcess$", "-test.v")
+	child.Env = append(os.Environ(), livenessSocketEnv+"="+socket, livenessModeEnv+"="+mode)
+	var out strings.Builder
+	child.Stdout, child.Stderr = &out, &out
+	if err := child.Start(); err != nil {
+		t.Fatalf("starting the sandbox process: %v", err)
+	}
+	t.Cleanup(func() {
+		// SIGCONT first, so that a stopped sandbox is reaped rather than left.
+		child.Process.Signal(unix.SIGCONT)
+		child.Process.Kill()
+		child.Wait()
+	})
+	waitFor(t, "the sandbox to attach", func() bool { return host.Attached() > 0 })
+	if err := host.Apply(context.Background(), []byte(policyV1)); err != nil {
+		t.Fatalf("pushing the policy: %v", err)
+	}
+	return host, child
+}
+
+func livenessContext(t *testing.T) context.Context {
+	t.Helper()
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+	return ctx
+}
+
+// livenessLost waits for a watch to report a loss, and fails if it does not.
+func livenessLost(t *testing.T, lost <-chan error, within time.Duration) error {
+	t.Helper()
+	select {
+	case err, ok := <-lost:
+		if !ok {
+			t.Fatal("the watch ended without reporting a loss")
+		}
+		return err
+	case <-time.After(within):
+		t.Fatalf("no loss of liveness was reported within %v", within)
+		return nil
+	}
+}
+
+// livenessStillLive is the other half: a watch over a sandbox that is pulsing
+// what it acknowledged must report nothing at all.
+func livenessStillLive(t *testing.T, lost <-chan error, over time.Duration) {
+	t.Helper()
+	select {
+	case err, ok := <-lost:
+		t.Errorf("a pulsing sandbox was reported lost: %v (open=%v)", err, ok)
+	case <-time.After(over):
+	}
+}
+
+func livenessDigest(policy string) string {
+	sum := sha256.Sum256([]byte(policy))
+	return hex.EncodeToString(sum[:])
+}
+
+// TestSandboxLivenessChildProcess is the sandbox for the tests above, in the
+// process they re-executed. It is skipped in every ordinary run.
+func TestSandboxLivenessChildProcess(t *testing.T) {
+	socket := os.Getenv(livenessSocketEnv)
+	if socket == "" {
+		t.Skip("not the sandbox process; " + livenessSocketEnv + " is unset")
+	}
+	acknowledged := make(chan struct{}, 1)
+	client, err := sandbox.Dial(socket, func(context.Context, []byte) error {
+		acknowledged <- struct{}{}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("dialing %s: %v", socket, err)
+	}
+	defer client.Close()
+
+	switch mode := os.Getenv(livenessModeEnv); mode {
+	case "hold":
+		// Acknowledge and pulse, and let the parent decide how it ends.
+		time.Sleep(time.Minute)
+	case "wrong":
+		// A sandbox enforcing something other than the bytes it was handed says
+		// so with Alive, which is what the supervisor in front of a sentry will
+		// do with the digest the sentry answers with.
+		<-acknowledged
+		for {
+			if err := client.Alive(anotherPolicysDigest); err != nil {
+				return
+			}
+			time.Sleep(100 * time.Millisecond)
+		}
+	default:
+		t.Fatalf("unknown mode %q", mode)
+	}
 }

@@ -34,8 +34,8 @@ import (
 // connects. Every message is a four-byte big-endian length and that many bytes
 // of JSON, which is the same framing package tunnel uses on a stream and is
 // deliberately the dullest thing that works — this socket carries three verbs
-// between two processes on one machine, and a protocol worth studying here
-// would be a protocol worth attacking here.
+// and one heartbeat between two processes on one machine, and a protocol worth
+// studying here would be a protocol worth attacking here.
 //
 // Messages, and who sends them:
 //
@@ -47,6 +47,15 @@ import (
 //	{"id":7,"type":"apply","policy":"<base64>"}             tunneld → sandbox
 //	{"id":7,"type":"ack"}                                   sandbox → tunneld
 //	{"id":7,"type":"refusal","error":"…"}                   sandbox → tunneld
+//	{"id":0,"type":"alive","digest":"<64 hex>"}             sandbox → tunneld
+//
+// The last of them is the only message on this socket that is neither a
+// request nor a reply (contract v3). A sandbox that has acknowledged a policy
+// sends one every [DefaultPulse] carrying the digest of the policy it is
+// enforcing, and tunneld answers nothing: it is a statement about now, and an
+// answer would only say that it arrived. Its id is 0 because it numbers
+// nothing — it goes nowhere near either side's reply table, and a reply table
+// that grew a slot per second would be the one part of this socket that leaked.
 //
 // Requests travel in both directions — the sandbox asks for streams, tunneld
 // pushes policy — so each side numbers its own requests and a reply carries the
@@ -73,21 +82,22 @@ import (
 // the receiver that reads a four-byte header gets that message's descriptor
 // with it and never the next message's.
 
-// The message types. Three from the sandbox, three from tunneld, and one —
+// The message types. Four from the sandbox, three from tunneld, and one —
 // `stream` — that is a reply to either of the sandbox's two requests.
 const (
 	msgOpen    = "open"
 	msgAccept  = "accept"
 	msgAck     = "ack"
 	msgRefusal = "refusal"
+	msgAlive   = "alive"
 
 	msgStream = "stream"
 	msgError  = "error"
 	msgApply  = "apply"
 )
 
-// A message is every field any of the seven messages carries. One struct
-// rather than seven keeps the decoder trivial; the type field says which fields
+// A message is every field any of the eight messages carries. One struct
+// rather than eight keeps the decoder trivial; the type field says which fields
 // mean anything.
 type message struct {
 	ID       uint64    `json:"id"`
@@ -96,6 +106,10 @@ type message struct {
 	Attested *Attested `json:"attested,omitempty"`
 	Policy   []byte    `json:"policy,omitempty"`
 	Error    string    `json:"error,omitempty"`
+
+	// Digest is the lowercase hexadecimal SHA-256 of the policy an `alive`
+	// message says is in force, and is carried by no other message.
+	Digest string `json:"digest,omitempty"`
 }
 
 const (

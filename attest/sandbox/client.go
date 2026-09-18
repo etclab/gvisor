@@ -16,10 +16,13 @@ package sandbox
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"net"
 	"sync"
+	"time"
 )
 
 // A Client is a sandbox's side of the contract when the sandbox is in another
@@ -48,6 +51,14 @@ type Client struct {
 	ctx  context.Context
 	stop context.CancelFunc
 	once sync.Once
+
+	// The heartbeat (contract v3, live.go): the digest this client is saying
+	// it enforces, and the once that starts the ticker saying it. Both are
+	// set by the first acknowledgement and by [Client.Alive], whichever comes
+	// first, and the ticker then runs until Close.
+	mu      sync.Mutex
+	digest  string
+	pulsing sync.Once
 }
 
 // ErrTunneldClosed is returned once the socket to tunneld has gone.
@@ -182,6 +193,12 @@ func (c *Client) serve() {
 // applied answers one push. It runs on its own goroutine so that a sandbox
 // taking its time over a policy does not stop it receiving the streams it
 // already asked for.
+//
+// An acknowledgement starts the heartbeat, and starts it after the
+// acknowledgement has gone: the far side learns that the policy landed and
+// then, a pulse later, that it is still in force. The digest is over exactly
+// the bytes that arrived, which is the same number tunneld computed over the
+// bytes it pushed and the same number [Null] records.
 func (c *Client) applied(m message) {
 	if c.apply == nil {
 		c.w.send(message{ID: m.ID, Type: msgRefusal, Error: "this sandbox takes no policy"}, -1)
@@ -191,5 +208,48 @@ func (c *Client) applied(m message) {
 		c.w.send(message{ID: m.ID, Type: msgRefusal, Error: err.Error()}, -1)
 		return
 	}
-	c.w.send(message{ID: m.ID, Type: msgAck}, -1)
+	if err := c.w.send(message{ID: m.ID, Type: msgAck}, -1); err != nil {
+		return
+	}
+	sum := sha256.Sum256(m.Policy)
+	c.Alive(hex.EncodeToString(sum[:]))
+}
+
+// Alive says, now, which policy this sandbox is enforcing, and makes that the
+// digest every pulse from here on carries. It is how a sandbox that enforces
+// something other than the bytes it was handed — a supervisor forwarding a
+// policy to a sentry that answers with the digest it accepted — says what it
+// actually enforces rather than what it was sent.
+//
+// A sandbox that enforces the bytes need never call it: an acknowledgement
+// already starts the heartbeat on the digest of those bytes. The last call
+// wins, because the last thing a sandbox said about what it enforces is the
+// only one that can still be true.
+func (c *Client) Alive(digest string) error {
+	c.mu.Lock()
+	c.digest = digest
+	c.mu.Unlock()
+	c.pulsing.Do(func() { go c.pulse() })
+	return c.w.send(message{Type: msgAlive, Digest: digest}, -1)
+}
+
+// pulse says it again every [DefaultPulse] until the socket goes. It ends on
+// the first send that fails, because a socket that will not carry a pulse is a
+// socket whose far side has already stopped counting them.
+func (c *Client) pulse() {
+	tick := time.NewTicker(DefaultPulse)
+	defer tick.Stop()
+	for {
+		select {
+		case <-c.ctx.Done():
+			return
+		case <-tick.C:
+			c.mu.Lock()
+			digest := c.digest
+			c.mu.Unlock()
+			if err := c.w.send(message{Type: msgAlive, Digest: digest}, -1); err != nil {
+				return
+			}
+		}
+	}
 }

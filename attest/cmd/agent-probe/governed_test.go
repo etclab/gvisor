@@ -171,10 +171,11 @@ func TestGovernedLoopback(t *testing.T) {
 	// workload's first query, which every other run depends on.
 	var offRoot *pusher
 	off := l.govern(t, "off-policy", table, probe, func(stop <-chan struct{}) {
-		if !l.waitAttached(stop) || !l.waitStarted(stop) {
+		root := l.pusherFor(t, "root-off", governedOffPolicy)
+		if !l.waitAttached(stop) {
 			return
 		}
-		offRoot = l.pushAt(t, "root-off", governedOffPolicy)
+		offRoot = root.push(l, stop)
 	})
 	l.tellOff(t, &notes, off, offRoot)
 
@@ -182,28 +183,32 @@ func TestGovernedLoopback(t *testing.T) {
 	// is its tail — the workload exits, the socket goes, the tunnel goes.
 	var onRoot *pusher
 	on := l.govern(t, "on-policy", table, probe, func(stop <-chan struct{}) {
-		if !l.waitAttached(stop) || !l.waitStarted(stop) {
+		root := l.pusherFor(t, "root-on", governedP0)
+		if !l.waitAttached(stop) {
 			return
 		}
-		onRoot = l.pushAt(t, "root-on", governedP0)
+		onRoot = root.push(l, stop)
 	})
 	l.tellOn(t, &notes, on, onRoot)
 
 	// ===== (c) a narrowing while the task runs, and a widening refused.
 	var cRoot, cRoot2, cRoot3 *pusher
 	narrowed := l.govern(t, "narrowed", table, probe, func(stop <-chan struct{}) {
-		if !l.waitAttached(stop) || !l.waitStarted(stop) {
+		first := l.pusherFor(t, "root-narrowed", governedP0)
+		second := l.pusherFor(t, "root2-narrowed", governedNarrowed)
+		third := l.pusherFor(t, "root3-narrowed", governedP0)
+		if !l.waitAttached(stop) {
 			return
 		}
-		cRoot = l.pushAt(t, "root-narrowed", governedP0)
+		cRoot = first.push(l, stop)
 		// The task is under way: the exit has accepted the stream the first
 		// model request is on, which is after the resolver answered and after
 		// the connect hook let it through.
 		if !l.waitExit(stop, "EXIT accepted") {
 			return
 		}
-		cRoot2 = l.pushAt(t, "root2-narrowed", governedNarrowed)
-		cRoot3 = l.pushAt(t, "root3-narrowed", governedP0)
+		cRoot2 = second.push(l, stop)
+		cRoot3 = third.push(l, stop)
 	})
 	l.tellNarrowed(t, &notes, narrowed, cRoot, cRoot2, cRoot3)
 
@@ -212,10 +217,11 @@ func TestGovernedLoopback(t *testing.T) {
 	var kRoot *pusher
 	var killedAt time.Time
 	killed := l.govern(t, "killed", table, probe, func(stop <-chan struct{}) {
-		if !l.waitAttached(stop) || !l.waitStarted(stop) {
+		root := l.pusherFor(t, "root-killed", governedP0)
+		if !l.waitAttached(stop) {
 			return
 		}
-		kRoot = l.pushAt(t, "root-killed", governedP0)
+		kRoot = root.push(l, stop)
 		if !l.waitExit(stop, "EXIT accepted") {
 			return
 		}
@@ -259,6 +265,7 @@ func (l *loopback) tellOff(t *testing.T, notes *strings.Builder, r *sandboxRun, 
 		where(refused), r.status, r.elapsed.Round(time.Millisecond), modelHost)
 	fmt.Fprintf(notes, "What the agent said, in its own words:\n\n```\n%s\n```\n\n", strings.TrimSpace(said))
 	l.tellPush(notes, r, root)
+	l.tellWindow(notes, r)
 	l.tellEvents(notes, r)
 }
 
@@ -285,6 +292,7 @@ func (l *loopback) tellOn(t *testing.T, notes *strings.Builder, r *sandboxRun, r
 		"exit carried is in the run's section above.\n\n", r.at.timings(), r.status, r.elapsed.Round(time.Millisecond),
 		firstLineWith(l.said(r.stdout), "DONE"))
 	l.tellPush(notes, r, root)
+	l.tellWindow(notes, r)
 	l.tellTeardown(t, notes, r, "the workload exiting")
 	l.tellEvents(notes, r)
 }
@@ -303,8 +311,6 @@ func (l *loopback) tellNarrowed(t *testing.T, notes *strings.Builder, r *sandbox
 	}
 	if third == nil || third.err == nil {
 		t.Errorf("narrowed: the widening was not refused; a third peer put a name back and the sandbox took it")
-	} else if !strings.Contains(third.err.Error(), widensComponent) {
-		t.Errorf("narrowed: the widening was refused but the sentence does not name the component: %v", third.err)
 	}
 
 	narrow := sentrySaid(r, "tunnel narrow: sha256=")
@@ -342,9 +348,29 @@ func (l *loopback) tellNarrowed(t *testing.T, notes *strings.Builder, r *sandbox
 		fmt.Fprintf(notes, "**No mismatch was reported**, and the first peer's policy is not the one in force.\n\n")
 	}
 
-	fmt.Fprintf(notes, "And the third peer, pushing P0 again at a sandbox now holding P1, is refused with the "+
-		"sentence naming the component:\n\n```\n%v\n```\n\n", third.errOr())
+	// The sentence naming the component stays on this side of the tunnel. What
+	// the peer is told is that its policy did not land, in a fixed sentence
+	// (attest/tunneld/push.go, `ackRefused`), because which component widened
+	// is a fact about this guest and the peer supplied the document rather than
+	// the machine. Both halves are recorded, because a reader looking for the
+	// sentence in the wrong place would conclude it was not written.
+	widened := l.console.after(second.at, widensComponent)
+	if len(widened) == 0 {
+		t.Error("narrowed: a's refusal log does not carry the sentence naming the component that widened")
+		fmt.Fprintf(notes, "**a's log does not name the component that widened.**\n\n")
+	} else {
+		fmt.Fprintf(notes, "And the third peer, pushing P0 again at a sandbox now holding P1, is refused. The "+
+			"sentence naming the component is `a`'s and stays there:\n\n```\n%s\n```\n\nWhat the peer is told "+
+			"is the fixed sentence the boundary carries back, and not which component widened — that is a fact "+
+			"about this guest, and the peer supplied the document rather than the machine "+
+			"(`attest/tunneld/push.go`, `ackRefused`):\n\n```\n%v\n```\n\n",
+			strings.Join(lines(widened), "\n"), third.errOr())
+		for _, r := range third.refusals.matching("did not apply the policy") {
+			fmt.Fprintf(notes, "The third peer's own refusal log: `%s`\n\n", r)
+		}
+	}
 	l.tellPush(notes, r, first, second, third)
+	l.tellWindow(notes, r)
 	l.tellEvents(notes, r)
 }
 
@@ -365,6 +391,7 @@ func (l *loopback) tellKilled(t *testing.T, notes *strings.Builder, r *sandboxRu
 		"flight. runsc ended with status %d after %s.\n\n", r.id, killedAt.Sub(r.began).Round(time.Millisecond),
 		r.status, r.elapsed.Round(time.Millisecond))
 	l.tellPush(notes, r, root)
+	l.tellWindow(notes, r)
 	l.tellTeardown(t, notes, r, "`runsc kill`")
 	l.tellEvents(notes, r)
 }
@@ -417,6 +444,32 @@ func (l *loopback) tellPush(notes *strings.Builder, r *sandboxRun, pushers ...*p
 			strings.Join(lines(inside), "\n"))
 	}
 	fmt.Fprintf(notes, "\n")
+}
+
+// tellWindow is the honest number: how much of the workload's life ran under
+// the boot table alone, before the pushed policy landed. It is read off the
+// sentry's own log, because both ends of it are lines the sentry wrote.
+func (l *loopback) tellWindow(notes *strings.Builder, r *sandboxRun) {
+	started := sentrySaid(r, "Process should have started")
+	landed := sentrySaid(r, "tunnel narrow: sha256=")
+	asked := sentrySaid(r, "tunnel dns: ")
+	if len(started) == 0 || len(landed) == 0 {
+		fmt.Fprintf(notes, "The sentry's log does not carry both ends of the window between the workload "+
+			"starting and the policy landing, so this run has no number for it.\n\n")
+		return
+	}
+	first := ""
+	if len(asked) != 0 {
+		first = fmt.Sprintf(" The workload's first query was %s after it started, and the policy was %s %s it.",
+			asked[0].when.Sub(started[0].when).Round(time.Millisecond),
+			absDur(landed[0].when.Sub(asked[0].when)), earlierLater(landed[0].when, asked[0].when))
+	}
+	fmt.Fprintf(notes, "**The window.** The sentry started the workload at %s and the first policy landed at "+
+		"%s, so **%s** of this run was governed by `--tunnel-table` and nothing else.%s A policy cannot be "+
+		"applied to a loader that has not started one (`runsc/boot/policy.go:106`), so this window is the "+
+		"arrangement's and not the harness's: what closes it is the boot table, which is the ceiling every "+
+		"push narrows.\n\n", started[0].when.Format("15:04:05.000000"), landed[0].when.Format("15:04:05.000000"),
+		landed[0].when.Sub(started[0].when).Round(time.Millisecond), first)
 }
 
 // tellEvents is what the seccheck receiver printed for this run, which is the
@@ -498,10 +551,11 @@ func TestClaudeGoverned(t *testing.T) {
 		name := fmt.Sprintf("governed-%d", i)
 		var p *pusher
 		r := l.govern(t, name, table, claude, func(stop <-chan struct{}) {
+			root := l.pusherFor(t, "root-"+name, governedClaude)
 			if !l.waitAttached(stop) {
 				return
 			}
-			p = l.pushAt(t, "root-"+name, governedClaude)
+			p = root.push(l, stop)
 		})
 		if p == nil || p.err != nil {
 			t.Errorf("%s: the policy was not pushed: %v", name, p.errOr())
@@ -631,41 +685,66 @@ func (p *pusher) errOr() error {
 	return p.err
 }
 
-// pushAt brings up one pusher and makes its push. The policy is fixed at New
-// because a push is once per tunnel, so a second policy is a second peer.
-//
-// It retries, and only for one sentence. The helper is on a's socket before the
-// sentry process exists (runsc/sandbox/sandbox.go, createSandboxProcess), but
-// the boot controller honours a policy only from a loader whose state is
-// `started` (runsc/boot/policy.go:106) — so there is a window in which a push
-// can be made and cannot land, and a push refused in it takes its tunnel with
-// it. A retry is therefore a fresh handshake and a fresh push, which is what
-// Peer does once the connection it had has gone. Every attempt is one refusal
-// in a's log, and the count is recorded rather than hidden.
-func (l *loopback) pushAt(t *testing.T, name, policy string) *pusher {
+// pusherFor builds one pusher and pushes nothing. Building it is a tunneld with
+// a platform, a verifier and a listener, which is a hundred milliseconds of key
+// material on this machine — and the window a first push has to land in is
+// about that wide, so it is built before the wait and not after it.
+func (l *loopback) pusherFor(t *testing.T, name, policy string) *pusher {
 	p := &pusher{name: name, policy: policy, digest: digestOf(policy)}
 	p.td = l.w.start(t, name, rootImage, tunneld.PeerTable{"a": l.aTd.Addr().String()}, policy,
 		func(r *attest.Refusal) { p.refusals.add(r.LogString()) })
+	return p
+}
+
+// push is the push itself: one handshake, one document, one acknowledgement.
+// The policy is fixed at New because a push is once per tunnel, so a second
+// policy is a second peer.
+//
+// It retries back to back, and for two sentences. The boot controller honours a
+// policy only from a loader whose state is `started` (runsc/boot/policy.go:106)
+// and [sandbox.Host.Apply] refuses a push with nothing to push to — so there is
+// a window, most of a sandbox's startup long, in which a push can be made and
+// cannot land. A push refused in it takes its tunnel with it, so a retry is a
+// fresh handshake and a fresh push, which is what Peer does once the connection
+// it had has gone.
+//
+// There is no way to be in front of it. The workload starts when the sentry
+// starts it, and a policy cannot be applied before that moment, so the first
+// milliseconds of every workload run under the boot table and nothing else.
+// That is not this harness's race: it is the arrangement's, and the number of
+// milliseconds is recorded per run rather than hidden. Retrying with no pause
+// between attempts is what makes it small — the handshake of the attempt that
+// wins is already under way when the sandbox starts.
+//
+// Every attempt is one refusal in a's log, and the count is recorded.
+func (p *pusher) push(l *loopback, stop <-chan struct{}) *pusher {
 	l.pushing.Store(p)
 	for p.tries = 1; ; p.tries++ {
 		began := time.Now()
 		_, p.err = p.td.Peer(l.ctx, "a")
 		p.took = time.Since(began)
-		if p.err == nil || !tooEarly(p.err) || p.tries >= 40 {
+		if p.err == nil || p.tries >= 60 || !l.tooEarly(began) {
 			break
 		}
-		l.out.logf("%s  push %d was too early: %v", name, p.tries, p.err)
+		l.out.logf("%s  push %d was too early: %v", p.name, p.tries, p.err)
 		select {
-		case <-time.After(25 * time.Millisecond):
+		case <-stop:
 		case <-l.ctx.Done():
+		default:
+			continue
 		}
+		break
 	}
 	p.at = time.Now()
 	l.pushing.Store(nil)
-	l.out.logf("\n%s  PUSH sha256=%s bytes=%d returned after %s on attempt %d: err=%v", name, p.digest, len(policy),
-		p.took.Round(time.Millisecond), p.tries, p.err)
+	into := ""
+	if r := l.now.Load(); r != nil {
+		into = fmt.Sprintf(" %s into the run", p.at.Sub(r.began).Round(time.Millisecond))
+	}
+	l.out.logf("\n%s  PUSH sha256=%s bytes=%d returned after %s on attempt %d%s: err=%v", p.name, p.digest,
+		len(p.policy), p.took.Round(time.Millisecond), p.tries, into, p.err)
 	l.console.add(fmt.Sprintf("PUSH %s sha256=%s cold_open=%s apply=%s tries=%d err=%v",
-		name, short(p.digest), p.took.Round(time.Millisecond), p.applyTook().Round(time.Microsecond), p.tries, p.err))
+		p.name, short(p.digest), p.took.Round(time.Millisecond), p.applyTook().Round(time.Microsecond), p.tries, p.err))
 	return p
 }
 
@@ -673,9 +752,42 @@ func (l *loopback) pushAt(t *testing.T, name, policy string) *pusher {
 // workload did, carried back through the helper and the contract word for word.
 const notStarted = "a policy is honoured only by a started one"
 
-// tooEarly reports whether a push failed because the sandbox had not started
-// yet, which is the one failure worth making again.
-func tooEarly(err error) bool { return err != nil && strings.Contains(err.Error(), notStarted) }
+// notYet are the sentences in a's own log that mean a push was early rather
+// than wrong. There are four because a sandbox becomes ready for a policy in
+// four steps and a push can arrive between any two of them: the helper is not
+// on the contract socket yet; the sentry's control socket does not exist yet;
+// it exists and nobody is serving it yet; the loader has it but has not started
+// the workload. Every one of them is a push that would land a moment later,
+// and none of them is a verdict on the document.
+var notYet = []string{
+	"no sandbox is attached",
+	"no such file or directory",
+	"connection refused",
+	notStarted,
+}
+
+// tooEarly reads a's own refusal log for the two sentences that mean "not yet"
+// rather than "no".
+//
+// The pusher cannot tell them apart and is not meant to: what crosses the
+// tunnel is the fixed sentence `the sandbox beside this tunneld did not apply
+// it`, because which of its own reasons a guest refused for is a fact about
+// that guest (attest/tunneld/push.go, the ack sentences). An
+// [attest.Refusal] answers Error() with "attest: verification failed" and keeps
+// the rest for the log. This harness is on both sides of one loopback and reads
+// the operator's log, which is the only place the reason is written down — and
+// it is why a widening, refused for a reason that is not one of these two, is
+// not retried at all.
+func (l *loopback) tooEarly(since time.Time) bool {
+	for _, said := range l.console.after(since, "REFUSED ") {
+		for _, sentence := range notYet {
+			if strings.Contains(said.text, sentence) {
+				return true
+			}
+		}
+	}
+	return false
+}
 
 // appliedAt is a's contract socket with a's own clock on it. It embeds the host
 // rather than the interface, so what tunneld watches after a push is still a
@@ -729,75 +841,11 @@ func (l *loopback) govern(t *testing.T, name string, names map[string]int, w wor
 // is reached well before the workload's first query — which the sentry's own
 // log timestamps in every run are the evidence for.
 func (l *loopback) waitAttached(stop <-chan struct{}) bool {
-	return l.until(stop, 2*time.Minute, func() bool { return l.aHost.Attached() > 0 })
-}
-
-// waitStarted waits for the sentry to have started the workload, which is when
-// Policy.Narrow stops refusing. The signal is the sentry's own log line, which
-// is written one statement before `l.state = started`
-// (runsc/boot/loader.go:1370). A push made as soon as the helper attached would
-// be a hundred and seventy milliseconds too early on this machine, and the
-// workload's first query is a hundred and fifteen milliseconds after this line
-// — so this is where a push has to be made from if it is to land before the
-// thing it governs.
-func (l *loopback) waitStarted(stop <-chan struct{}) bool {
-	w := &bootWatch{}
-	return l.until(stop, 5*time.Minute, func() bool {
-		r := l.now.Load()
-		return r != nil && w.has(r.debug, "Process should have started")
-	})
-}
-
-// A bootWatch is a tail of the sentry's boot log. It keeps its place, because
-// the log is tens of megabytes by the end of a --strace run and the line it is
-// waiting for is in the first few hundred kilobytes.
-type bootWatch struct {
-	path string
-	off  int64
-}
-
-func (w *bootWatch) has(dir, mark string) bool {
-	if w.path == "" {
-		entries, err := os.ReadDir(dir)
-		if err != nil {
-			return false
-		}
-		for _, e := range entries {
-			if strings.Contains(e.Name(), ".boot.") {
-				w.path = filepath.Join(dir, e.Name())
-			}
-		}
-		if w.path == "" {
-			return false
-		}
+	ok := l.until(stop, 2*time.Minute, func() bool { return l.aHost.Attached() > 0 })
+	if r := l.now.Load(); ok && r != nil {
+		l.out.logf("%s  a sandbox is on a's socket, %s into the run", r.name, time.Since(r.began).Round(time.Millisecond))
 	}
-	f, err := os.Open(w.path)
-	if err != nil {
-		return false
-	}
-	defer f.Close()
-	// Back up by the length of the mark, so that a mark split across two reads
-	// is not missed.
-	if w.off > int64(len(mark)) {
-		w.off -= int64(len(mark))
-	}
-	if _, err := f.Seek(w.off, 0); err != nil {
-		return false
-	}
-	buf := make([]byte, 1<<20)
-	found := false
-	for {
-		n, err := f.Read(buf)
-		if n > 0 {
-			w.off += int64(n)
-			if strings.Contains(string(buf[:n]), mark) {
-				found = true
-			}
-		}
-		if err != nil || n == 0 {
-			return found
-		}
-	}
+	return ok
 }
 
 // waitExit waits for the exit to have said something, which is how a pusher
@@ -824,7 +872,7 @@ func (l *loopback) until(stop <-chan struct{}, within time.Duration, ready func(
 			return false
 		case <-l.ctx.Done():
 			return false
-		case <-time.After(5 * time.Millisecond):
+		case <-time.After(2 * time.Millisecond):
 		}
 	}
 }
@@ -1050,6 +1098,22 @@ func acknowledged(err error) string {
 		return "acknowledged"
 	}
 	return fmt.Sprintf("refused: %v", err)
+}
+
+// absDur is a duration without its sign, for a sentence that says which way
+// round two moments were in words.
+func absDur(d time.Duration) time.Duration {
+	if d < 0 {
+		return -d
+	}
+	return d
+}
+
+func earlierLater(a, b time.Time) string {
+	if a.Before(b) {
+		return "before"
+	}
+	return "after"
 }
 
 func yesNo(b bool) string {

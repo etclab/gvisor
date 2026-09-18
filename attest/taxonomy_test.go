@@ -140,21 +140,24 @@ func TestEveryReasonInTheTaxonomyHasASentenceOfItsOwn(t *testing.T) {
 	// And it reaches the last of them. A reason declared after the first one
 	// with no sentence would be invisible to the loop above, and invisible in
 	// an operator's log for the same reason.
-	for _, want := range []attest.Reason{attest.ReasonNone, attest.ReasonUnknownBindingContext, attest.ReasonPolicyNotApplied} {
+	for _, want := range []attest.Reason{attest.ReasonNone, attest.ReasonUnknownBindingContext, attest.ReasonPolicyNotApplied, attest.ReasonPolicyNotLive} {
 		if _, ok := named[want.String()]; !ok {
 			t.Errorf("the taxonomy stops before %v, which prints %q", want, want.String())
 		}
 	}
 }
 
-// TestNoVerdictOnEvidenceIsAPolicyNotApplied is the tenth reason's boundary.
+// TestNoVerdictOnEvidenceIsAReasonReachedAfterAdmission is the boundary the
+// last two reasons share.
 //
-// It is reached after a peer has been admitted, when the policy pushed to it
-// over the established tunnel was not applied, and no [attest.Verifier] can
-// return it: there is no policy at this seam and no peer to push one to. A
-// verifier that started returning it would be claiming a peer had done
-// something with a document it was never sent.
-func TestNoVerdictOnEvidenceIsAPolicyNotApplied(t *testing.T) {
+// Both are reached after a peer has been admitted — one when the policy pushed
+// over the established tunnel was not applied, the other when the sandbox that
+// applied it stopped enforcing it — and no [attest.Verifier] can return either:
+// there is no policy at this seam, no peer to push one to, and nothing at all
+// that goes on being true after the verdict. A verifier that started returning
+// one of them would be claiming a peer had done something with a document it
+// was never sent.
+func TestNoVerdictOnEvidenceIsAReasonReachedAfterAdmission(t *testing.T) {
 	f := newGuest(t, defaultConfig())
 	v := verification(t, f, defaultSet())
 
@@ -171,8 +174,11 @@ func TestNoVerdictOnEvidenceIsAPolicyNotApplied(t *testing.T) {
 		"no provisioned chain":         unprovisioned,
 	} {
 		_, err := v.Verify(context.Background(), ev, f.binding)
-		if got := attest.ReasonOf(err); got == attest.ReasonPolicyNotApplied {
-			t.Errorf("%s was refused as %v; that reason is reached after admission and never here", name, got)
+		got := attest.ReasonOf(err)
+		for _, after := range []attest.Reason{attest.ReasonPolicyNotApplied, attest.ReasonPolicyNotLive} {
+			if got == after {
+				t.Errorf("%s was refused as %v; that reason is reached after admission and never here", name, got)
+			}
 		}
 	}
 }

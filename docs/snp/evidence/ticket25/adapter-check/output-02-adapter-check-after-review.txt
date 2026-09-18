@@ -1,0 +1,266 @@
+runsc sha256:          ea305e126ab20e4abc525317f8ab7c04179b0cf0e08a517de6c3799a4b3c4ba0
+faketunneld sha256:    b353c39d71423c9299e18871db3128d5b52cf325fec220c530888fc15efaff77
+receiver sha256:       1935dc5c7f12a8bd4f1da9f47ae438b7ee94fde3a7e749a8be14bfcc57c41e7c
+adapterclient sha256:  f21fc8fee4199fc0da588e2be3cbd4a9bd48b57025512310750d039b06ccd87c
+node:                  v18.19.1
+date:                  2026-09-18T14:58:37Z
+
+the stand-in for tunneld is serving /dev/shm/t25-adapter-687810/tunneld.sock, allow=www.rfc-editor.org:443
+
+===== go =====
+table: { 	"default_exit": "b", 	"names": { 		"www.rfc-editor.org": {"port": 443}, 		"refused.example": {"port": 443} 	} } 
+$ /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/runsc-opt --root=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/go/state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new --tunnel-socket=/dev/shm/t25-adapter-687810/tunneld.sock --tunnel-table=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/go/table.json --pod-init-config=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/go/pod-init.json --debug --debug-log=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/go/logs/ run --bundle /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/go/bundle t25-go-687810
+RUNSC_EXIT=0
+---- workload ----
+ALLOWED-NAME status="200 OK" tls=true bodyprefix="<!DOCTYPE html><html  lang=\"en\"><head><meta char"
+WRONG-PORT error=dial tcp 100.64.1.1:80: connect: network is unreachable errno=ENETUNREACH
+REFUSED-BY-EXIT error=dial tcp 100.64.1.0:443: connect: connection refused errno=ECONNREFUSED
+UNKNOWN-NAME addrs=[] error=lookup example.com on 127.0.0.53:53: no such host
+RAW-ADDRESS error=dial tcp 8.8.8.8:443: connect: network is unreachable errno=ENETUNREACH
+UDP-CONNECT error=dial udp 8.8.8.8:53: connect: network is unreachable errno=ENETUNREACH
+UDP-SENDTO error=network is unreachable errno=ENETUNREACH
+LOOPBACK echoed="ping\n" n=5 err=<nil>
+---- sentry/egress_refused ----
+listening on /dev/shm/t25-adapter-687810/go.events
+connected: the sentry speaks wire version 1
+egress_refused protocol=tcp address=100.64.1.1 port=80 name=www.rfc-editor.org reason=wrong-port time=2026-09-18T14:58:38.545474042Z container_id=t25-go-687810 thread_id=6
+egress_refused protocol=dns name=example.com reason=unknown-name time=2026-09-18T14:58:38.566120209Z
+egress_refused protocol=dns name=example.com reason=unknown-name time=2026-09-18T14:58:38.566607335Z
+egress_refused protocol=tcp address=8.8.8.8 port=443 reason=not-in-table time=2026-09-18T14:58:38.570597883Z container_id=t25-go-687810 thread_id=5
+egress_refused protocol=udp address=8.8.8.8 port=53 reason=not-in-table time=2026-09-18T14:58:38.572041685Z container_id=t25-go-687810 thread_id=5
+egress_refused protocol=udp address=8.8.8.8 port=53 reason=not-in-table time=2026-09-18T14:58:38.573008026Z container_id=t25-go-687810 thread_id=5
+disconnected
+---- what the sentry said about the tunnel ----
+Args: [runsc-sandbox --platform=systrap --ignore-cgroups=true --debug=true --gofer-network-namespace=new --rootless=true --pod-init-config=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/go/pod-init.json --tunnel-socket=/dev/shm/t25-adapter-687810/tunneld.sock --tunnel-table=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/go/table.json --root=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/go/state --debug-log=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/go/logs/ --network=none --debug-log-fd=3 boot --bundle=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/go/bundle --gofer-mount-confs=lisafs:none,lisafs:none --apply-caps=true --setup-root --total-host-memory 807732506624 --total-memory 807732506624 --attached --io-fds=4 --io-fds=5 --dev-io-fd=-1 --mounts-fd=6 --start-sync-fd=7 --pin-ring-fd=8 --controller-fd=9 --spec-fd=10 --pod-init-config-fd=11 --sink-fds=12 --tunnel-table-fd=13 --tunnel-fd=14 --stdio-fds=15 --stdio-fds=16 --stdio-fds=17 t25-go-687810]
+Config.TunnelSocket (--tunnel-socket): /dev/shm/t25-adapter-687810/tunneld.sock
+Config.TunnelTable (--tunnel-table): /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/go/table.json
+Tunnel table read: 2 names, helper channel on fd 14
+Timer for runsc boot: Timeline runsc boot reached midpoint tunnel table read at 10:58:38.139630408 (unix nanos: 1789743518139630408)
+tunnel: refused.example:443 is 100.64.1.0, dialled by peer "b"
+tunnel: www.rfc-editor.org:443 is 100.64.1.1, dialled by peer "b"
+tunnel: installed with 2 names, resolver on 127.0.0.53:53
+Tunnel adapter installed with 2 names
+[10:58:38.139630]	   +678µs ▏           	├─ tunnel table read: 678µs          
+Timer for runsc boot: time 1789743518139630408 10:58:38.139630408 mid runsc boot = tunnel table read
+tunnel dns: q="www.rfc-editor.org" type=AAAA answer=noerror-empty
+tunnel dns: q="www.rfc-editor.org" type=A answer=100.64.1.1
+tunnel attach: www.rfc-editor.org:443 -> peer "b": ok in 61.908393ms, host fd 48, local 100.64.0.1:40001
+tunnel dns: q="www.rfc-editor.org" type=AAAA answer=noerror-empty
+tunnel dns: q="www.rfc-editor.org" type=A answer=100.64.1.1
+tunnel: refused tcp 100.64.1.1:80 name="www.rfc-editor.org" reason=wrong-port
+tunnel dns: q="refused.example" type=A answer=100.64.1.0
+tunnel dns: q="refused.example" type=AAAA answer=noerror-empty
+tunnel attach: refused.example:443 -> peer "b": refused by the far exit in 5.613809ms (the far exit refused the destination: refused.example:443)
+tunnel dns: q="example.com" type=AAAA answer=nxdomain
+tunnel: refused dns :0 name="example.com" reason=unknown-name
+tunnel dns: q="example.com" type=A answer=nxdomain
+tunnel: refused dns :0 name="example.com" reason=unknown-name
+tunnel: refused tcp 8.8.8.8:443 name="" reason=not-in-table
+tunnel: refused udp 8.8.8.8:53 name="" reason=not-in-table
+tunnel: refused udp 8.8.8.8:53 name="" reason=not-in-table
+tunnel: host fd 48 closed
+tunnel resolver: read failed, the responder is going away: endpoint is closed for receive
+---- the names the workload asked the responder for ----
+      1 tunnel dns: q="example.com" type=AAAA answer=nxdomain
+      1 tunnel dns: q="example.com" type=A answer=nxdomain
+      1 tunnel dns: q="refused.example" type=AAAA answer=noerror-empty
+      1 tunnel dns: q="refused.example" type=A answer=100.64.1.0
+      2 tunnel dns: q="www.rfc-editor.org" type=AAAA answer=noerror-empty
+      2 tunnel dns: q="www.rfc-editor.org" type=A answer=100.64.1.1
+
+===== node =====
+table: { 	"default_exit": "b", 	"names": { 		"www.rfc-editor.org": {"port": 443}, 		"refused.example": {"port": 443} 	} } 
+$ /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/runsc-opt --root=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/node/state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new --tunnel-socket=/dev/shm/t25-adapter-687810/tunneld.sock --tunnel-table=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/node/table.json --pod-init-config=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/node/pod-init.json --debug --debug-log=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/node/logs/ run --bundle /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/node/bundle t25-node-687810
+RUNSC_EXIT=0
+---- workload ----
+ALLOWED-NAME status=200 tls=TLSv1.3 bytes=179553 ms=456
+UNKNOWN-NAME address=undefined error=ENOTFOUND
+RAW-ADDRESS error=connect ENETUNREACH 8.8.8.8:443 - Local (0.0.0.0:0) code=ENETUNREACH errno=-101
+---- sentry/egress_refused ----
+listening on /dev/shm/t25-adapter-687810/node.events
+connected: the sentry speaks wire version 1
+egress_refused protocol=dns name=example.com reason=unknown-name time=2026-09-18T14:58:41.871635975Z
+egress_refused protocol=dns name=example.com reason=unknown-name time=2026-09-18T14:58:41.873930846Z
+egress_refused protocol=tcp address=8.8.8.8 port=443 reason=not-in-table time=2026-09-18T14:58:41.889717Z container_id=t25-node-687810 thread_id=1
+disconnected
+---- what the sentry said about the tunnel ----
+Args: [runsc-sandbox --debug=true --debug-log=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/node/logs/ --gofer-network-namespace=new --platform=systrap --rootless=true --ignore-cgroups=true --root=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/node/state --network=none --pod-init-config=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/node/pod-init.json --tunnel-socket=/dev/shm/t25-adapter-687810/tunneld.sock --tunnel-table=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/node/table.json --debug-log-fd=3 boot --bundle=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/node/bundle --gofer-mount-confs=lisafs:none,lisafs:none --apply-caps=true --setup-root --total-host-memory 807732506624 --total-memory 807732506624 --attached --io-fds=4 --io-fds=5 --dev-io-fd=-1 --mounts-fd=6 --start-sync-fd=7 --pin-ring-fd=8 --controller-fd=9 --spec-fd=10 --pod-init-config-fd=11 --sink-fds=12 --tunnel-table-fd=13 --tunnel-fd=14 --stdio-fds=15 --stdio-fds=16 --stdio-fds=17 t25-node-687810]
+Config.TunnelSocket (--tunnel-socket): /dev/shm/t25-adapter-687810/tunneld.sock
+Config.TunnelTable (--tunnel-table): /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/node/table.json
+Tunnel table read: 2 names, helper channel on fd 14
+Timer for runsc boot: Timeline runsc boot reached midpoint tunnel table read at 10:58:40.194620497 (unix nanos: 1789743520194620497)
+tunnel: refused.example:443 is 100.64.1.0, dialled by peer "b"
+tunnel: www.rfc-editor.org:443 is 100.64.1.1, dialled by peer "b"
+tunnel: installed with 2 names, resolver on 127.0.0.53:53
+Tunnel adapter installed with 2 names
+[10:58:40.194620]	   +637µs ▎           	├─ tunnel table read: 637µs          
+Timer for runsc boot: time 1789743520194620497 10:58:40.194620497 mid runsc boot = tunnel table read
+tunnel dns: q="www.rfc-editor.org" type=A answer=100.64.1.1
+tunnel dns: q="www.rfc-editor.org" type=AAAA answer=noerror-empty
+tunnel attach: www.rfc-editor.org:443 -> peer "b": ok in 17.281009ms, host fd 111, local 100.64.0.1:40001
+tunnel dns: q="example.com" type=A answer=nxdomain
+tunnel: refused dns :0 name="example.com" reason=unknown-name
+tunnel dns: q="example.com" type=AAAA answer=nxdomain
+tunnel: refused dns :0 name="example.com" reason=unknown-name
+tunnel: host fd 111 closed
+tunnel: refused tcp 8.8.8.8:443 name="" reason=not-in-table
+tunnel resolver: read failed, the responder is going away: endpoint is closed for receive
+---- the names the workload asked the responder for ----
+      1 tunnel dns: q="example.com" type=AAAA answer=nxdomain
+      1 tunnel dns: q="example.com" type=A answer=nxdomain
+      1 tunnel dns: q="www.rfc-editor.org" type=AAAA answer=noerror-empty
+      1 tunnel dns: q="www.rfc-editor.org" type=A answer=100.64.1.1
+
+===== wrong-peer =====
+table: { 	"default_exit": "zz", 	"names": { 		"www.rfc-editor.org": {"port": 443}, 		"refused.example": {"port": 443} 	} } 
+$ /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/runsc-opt --root=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/wrong-peer/state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new --tunnel-socket=/dev/shm/t25-adapter-687810/tunneld.sock --tunnel-table=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/wrong-peer/table.json --pod-init-config=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/wrong-peer/pod-init.json --debug --debug-log=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/wrong-peer/logs/ run --bundle /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/wrong-peer/bundle t25-wrong-peer-687810
+RUNSC_EXIT=0
+---- workload ----
+ALLOWED-NAME error=Get "https://www.rfc-editor.org/": dial tcp 100.64.1.1:443: connect: network is unreachable
+WRONG-PORT error=dial tcp 100.64.1.1:80: connect: network is unreachable errno=ENETUNREACH
+REFUSED-BY-EXIT error=dial tcp 100.64.1.0:443: connect: network is unreachable errno=ENETUNREACH
+UNKNOWN-NAME addrs=[] error=lookup example.com on 127.0.0.53:53: no such host
+RAW-ADDRESS error=dial tcp 8.8.8.8:443: connect: network is unreachable errno=ENETUNREACH
+UDP-CONNECT error=dial udp 8.8.8.8:53: connect: network is unreachable errno=ENETUNREACH
+UDP-SENDTO error=network is unreachable errno=ENETUNREACH
+LOOPBACK echoed="ping\n" n=5 err=<nil>
+---- sentry/egress_refused ----
+listening on /dev/shm/t25-adapter-687810/wrong-peer.events
+connected: the sentry speaks wire version 1
+egress_refused protocol=tcp address=100.64.1.1 port=443 name=www.rfc-editor.org reason=unavailable time=2026-09-18T14:58:43.706196805Z container_id=t25-wrong-peer-687810 thread_id=3
+egress_refused protocol=tcp address=100.64.1.1 port=80 name=www.rfc-editor.org reason=wrong-port time=2026-09-18T14:58:43.714032374Z container_id=t25-wrong-peer-687810 thread_id=1
+egress_refused protocol=tcp address=100.64.1.0 port=443 name=refused.example reason=unavailable time=2026-09-18T14:58:43.721384444Z container_id=t25-wrong-peer-687810 thread_id=5
+egress_refused protocol=dns name=example.com reason=unknown-name time=2026-09-18T14:58:43.726464196Z
+egress_refused protocol=dns name=example.com reason=unknown-name time=2026-09-18T14:58:43.727199672Z
+egress_refused protocol=tcp address=8.8.8.8 port=443 reason=not-in-table time=2026-09-18T14:58:43.731045425Z container_id=t25-wrong-peer-687810 thread_id=4
+egress_refused protocol=udp address=8.8.8.8 port=53 reason=not-in-table time=2026-09-18T14:58:43.732886589Z container_id=t25-wrong-peer-687810 thread_id=4
+egress_refused protocol=udp address=8.8.8.8 port=53 reason=not-in-table time=2026-09-18T14:58:43.734056113Z container_id=t25-wrong-peer-687810 thread_id=4
+disconnected
+---- what the sentry said about the tunnel ----
+Args: [runsc-sandbox --tunnel-table=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/wrong-peer/table.json --root=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/wrong-peer/state --network=none --pod-init-config=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/wrong-peer/pod-init.json --debug=true --debug-log=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/wrong-peer/logs/ --gofer-network-namespace=new --platform=systrap --rootless=true --ignore-cgroups=true --tunnel-socket=/dev/shm/t25-adapter-687810/tunneld.sock --debug-log-fd=3 boot --bundle=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/wrong-peer/bundle --gofer-mount-confs=lisafs:none,lisafs:none --apply-caps=true --setup-root --total-host-memory 807732506624 --total-memory 807732506624 --attached --io-fds=4 --io-fds=5 --dev-io-fd=-1 --mounts-fd=6 --start-sync-fd=7 --pin-ring-fd=8 --controller-fd=9 --spec-fd=10 --pod-init-config-fd=11 --sink-fds=12 --tunnel-table-fd=13 --tunnel-fd=14 --stdio-fds=15 --stdio-fds=16 --stdio-fds=17 t25-wrong-peer-687810]
+Config.TunnelSocket (--tunnel-socket): /dev/shm/t25-adapter-687810/tunneld.sock
+Config.TunnelTable (--tunnel-table): /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/wrong-peer/table.json
+Tunnel table read: 2 names, helper channel on fd 14
+Timer for runsc boot: Timeline runsc boot reached midpoint tunnel table read at 10:58:43.536438687 (unix nanos: 1789743523536438687)
+tunnel: refused.example:443 is 100.64.1.0, dialled by peer "zz"
+tunnel: www.rfc-editor.org:443 is 100.64.1.1, dialled by peer "zz"
+tunnel: installed with 2 names, resolver on 127.0.0.53:53
+Tunnel adapter installed with 2 names
+[10:58:43.536438]	   +752µs ▎           	├─ tunnel table read: 752µs          
+Timer for runsc boot: time 1789743523536438687 10:58:43.536438687 mid runsc boot = tunnel table read
+tunnel dns: q="www.rfc-editor.org" type=AAAA answer=noerror-empty
+tunnel dns: q="www.rfc-editor.org" type=A answer=100.64.1.1
+tunnel attach: www.rfc-editor.org:443 -> peer "zz": unavailable in 2.844109ms (TunnelHelper.Open(www.rfc-editor.org:443): unavailable: asking tunneld for a stream to peer "zz": no peer named "zz")
+tunnel: refused tcp 100.64.1.1:443 name="www.rfc-editor.org" reason=unavailable
+tunnel dns: q="www.rfc-editor.org" type=AAAA answer=noerror-empty
+tunnel dns: q="www.rfc-editor.org" type=A answer=100.64.1.1
+tunnel: refused tcp 100.64.1.1:80 name="www.rfc-editor.org" reason=wrong-port
+tunnel dns: q="refused.example" type=A answer=100.64.1.0
+tunnel dns: q="refused.example" type=AAAA answer=noerror-empty
+tunnel attach: refused.example:443 -> peer "zz": unavailable in 1.275031ms (TunnelHelper.Open(refused.example:443): unavailable: asking tunneld for a stream to peer "zz": no peer named "zz")
+tunnel: refused tcp 100.64.1.0:443 name="refused.example" reason=unavailable
+tunnel dns: q="example.com" type=AAAA answer=nxdomain
+tunnel: refused dns :0 name="example.com" reason=unknown-name
+tunnel dns: q="example.com" type=A answer=nxdomain
+tunnel: refused dns :0 name="example.com" reason=unknown-name
+tunnel: refused tcp 8.8.8.8:443 name="" reason=not-in-table
+tunnel: refused udp 8.8.8.8:53 name="" reason=not-in-table
+tunnel: refused udp 8.8.8.8:53 name="" reason=not-in-table
+tunnel resolver: read failed, the responder is going away: endpoint is closed for receive
+---- the names the workload asked the responder for ----
+      1 tunnel dns: q="example.com" type=AAAA answer=nxdomain
+      1 tunnel dns: q="example.com" type=A answer=nxdomain
+      1 tunnel dns: q="refused.example" type=AAAA answer=noerror-empty
+      1 tunnel dns: q="refused.example" type=A answer=100.64.1.0
+      2 tunnel dns: q="www.rfc-editor.org" type=AAAA answer=noerror-empty
+      2 tunnel dns: q="www.rfc-editor.org" type=A answer=100.64.1.1
+
+===== no-helper =====
+table: { 	"default_exit": "b", 	"names": { 		"www.rfc-editor.org": {"port": 443}, 		"refused.example": {"port": 443} 	} } 
+$ /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/runsc-opt --root=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/no-helper/state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new --tunnel-socket=/dev/shm/t25-adapter-687810/nothing-here.sock --tunnel-table=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/no-helper/table.json --pod-init-config=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/no-helper/pod-init.json --debug --debug-log=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/no-helper/logs/ run --bundle /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/no-helper/bundle t25-no-helper-687810
+RUNSC_EXIT=0
+---- workload ----
+ALLOWED-NAME error=Get "https://www.rfc-editor.org/": dial tcp 100.64.1.1:443: connect: network is unreachable
+WRONG-PORT error=dial tcp 100.64.1.1:80: connect: network is unreachable errno=ENETUNREACH
+REFUSED-BY-EXIT error=dial tcp 100.64.1.0:443: connect: network is unreachable errno=ENETUNREACH
+UNKNOWN-NAME addrs=[] error=lookup example.com on 127.0.0.53:53: no such host
+RAW-ADDRESS error=dial tcp 8.8.8.8:443: connect: network is unreachable errno=ENETUNREACH
+UDP-CONNECT error=dial udp 8.8.8.8:53: connect: network is unreachable errno=ENETUNREACH
+UDP-SENDTO error=network is unreachable errno=ENETUNREACH
+LOOPBACK echoed="ping\n" n=5 err=<nil>
+---- sentry/egress_refused ----
+listening on /dev/shm/t25-adapter-687810/no-helper.events
+connected: the sentry speaks wire version 1
+egress_refused protocol=tcp address=100.64.1.1 port=443 name=www.rfc-editor.org reason=unavailable time=2026-09-18T14:58:45.457183746Z container_id=t25-no-helper-687810 thread_id=4
+egress_refused protocol=tcp address=100.64.1.1 port=80 name=www.rfc-editor.org reason=wrong-port time=2026-09-18T14:58:45.463829433Z container_id=t25-no-helper-687810 thread_id=5
+egress_refused protocol=tcp address=100.64.1.0 port=443 name=refused.example reason=unavailable time=2026-09-18T14:58:45.470163795Z container_id=t25-no-helper-687810 thread_id=5
+egress_refused protocol=dns name=example.com reason=unknown-name time=2026-09-18T14:58:45.472612154Z
+egress_refused protocol=dns name=example.com reason=unknown-name time=2026-09-18T14:58:45.47289757Z
+egress_refused protocol=tcp address=8.8.8.8 port=443 reason=not-in-table time=2026-09-18T14:58:45.474530664Z container_id=t25-no-helper-687810 thread_id=5
+egress_refused protocol=udp address=8.8.8.8 port=53 reason=not-in-table time=2026-09-18T14:58:45.475557315Z container_id=t25-no-helper-687810 thread_id=5
+egress_refused protocol=udp address=8.8.8.8 port=53 reason=not-in-table time=2026-09-18T14:58:45.476288525Z container_id=t25-no-helper-687810 thread_id=5
+disconnected
+---- what the sentry said about the tunnel ----
+Args: [runsc-sandbox --debug=true --platform=systrap --pod-init-config=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/no-helper/pod-init.json --tunnel-table=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/no-helper/table.json --root=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/no-helper/state --debug-log=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/no-helper/logs/ --network=none --gofer-network-namespace=new --rootless=true --ignore-cgroups=true --tunnel-socket=/dev/shm/t25-adapter-687810/nothing-here.sock --debug-log-fd=3 boot --bundle=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/no-helper/bundle --gofer-mount-confs=lisafs:none,lisafs:none --apply-caps=true --setup-root --total-host-memory 807732506624 --total-memory 807732506624 --attached --io-fds=4 --io-fds=5 --dev-io-fd=-1 --mounts-fd=6 --start-sync-fd=7 --pin-ring-fd=8 --controller-fd=9 --spec-fd=10 --pod-init-config-fd=11 --sink-fds=12 --tunnel-table-fd=13 --tunnel-fd=14 --stdio-fds=15 --stdio-fds=16 --stdio-fds=17 t25-no-helper-687810]
+Config.TunnelSocket (--tunnel-socket): /dev/shm/t25-adapter-687810/nothing-here.sock
+Config.TunnelTable (--tunnel-table): /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/no-helper/table.json
+Tunnel table read: 2 names, helper channel on fd 14
+Timer for runsc boot: Timeline runsc boot reached midpoint tunnel table read at 10:58:45.316436744 (unix nanos: 1789743525316436744)
+tunnel: refused.example:443 is 100.64.1.0, dialled by peer "b"
+tunnel: www.rfc-editor.org:443 is 100.64.1.1, dialled by peer "b"
+tunnel: installed with 2 names, resolver on 127.0.0.53:53
+Tunnel adapter installed with 2 names
+[10:58:45.316436]	   +581µs ▎           	├─ tunnel table read: 581µs          
+Timer for runsc boot: time 1789743525316436744 10:58:45.316436744 mid runsc boot = tunnel table read
+tunnel dns: q="www.rfc-editor.org" type=AAAA answer=noerror-empty
+tunnel dns: q="www.rfc-editor.org" type=A answer=100.64.1.1
+tunnel attach: www.rfc-editor.org:443 -> peer "b": unavailable in 703.629µs (TunnelHelper.Open(www.rfc-editor.org:443): broken pipe)
+tunnel: refused tcp 100.64.1.1:443 name="www.rfc-editor.org" reason=unavailable
+tunnel dns: q="www.rfc-editor.org" type=AAAA answer=noerror-empty
+tunnel dns: q="www.rfc-editor.org" type=A answer=100.64.1.1
+tunnel: refused tcp 100.64.1.1:80 name="www.rfc-editor.org" reason=wrong-port
+tunnel dns: q="refused.example" type=AAAA answer=noerror-empty
+tunnel dns: q="refused.example" type=A answer=100.64.1.0
+tunnel attach: refused.example:443 -> peer "b": unavailable in 273.758µs (TunnelHelper.Open(refused.example:443): broken pipe)
+tunnel: refused tcp 100.64.1.0:443 name="refused.example" reason=unavailable
+tunnel dns: q="example.com" type=A answer=nxdomain
+tunnel: refused dns :0 name="example.com" reason=unknown-name
+tunnel dns: q="example.com" type=AAAA answer=nxdomain
+tunnel: refused dns :0 name="example.com" reason=unknown-name
+tunnel: refused tcp 8.8.8.8:443 name="" reason=not-in-table
+tunnel: refused udp 8.8.8.8:53 name="" reason=not-in-table
+tunnel: refused udp 8.8.8.8:53 name="" reason=not-in-table
+tunnel resolver: read failed, the responder is going away: endpoint is closed for receive
+---- the names the workload asked the responder for ----
+      1 tunnel dns: q="example.com" type=AAAA answer=nxdomain
+      1 tunnel dns: q="example.com" type=A answer=nxdomain
+      1 tunnel dns: q="refused.example" type=AAAA answer=noerror-empty
+      1 tunnel dns: q="refused.example" type=A answer=100.64.1.0
+      2 tunnel dns: q="www.rfc-editor.org" type=AAAA answer=noerror-empty
+      2 tunnel dns: q="www.rfc-editor.org" type=A answer=100.64.1.1
+
+===== validate-network =====
+$ /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/runsc-opt --root=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/validate-network/state --platform=systrap --network=sandbox --tunnel-socket=/dev/shm/t25-adapter-687810/tunneld.sock --tunnel-table=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/validate-network/table.json run ...
+tunnel-socket and tunnel-table require --network=none, got --network=sandbox
+RUNSC_EXIT=128
+
+===== validate-lonely =====
+$ /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/runsc-opt --root=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/validate-network/state --platform=systrap --network=none --tunnel-table=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/validate-network/table.json run ...
+tunnel-socket and tunnel-table must be given together, got tunnel-socket="" and tunnel-table="/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/impl/work2/validate-network/table.json"
+RUNSC_EXIT=128
+
+===== the stand-in's own log =====
+faketunneld: 2026/09/18 10:58:37.704602 exit listening on 127.0.0.1:43011, allow=map[www.rfc-editor.org:443:true]
+faketunneld: 2026/09/18 10:58:37.705360 serving the sandbox socket at /dev/shm/t25-adapter-687810/tunneld.sock, peer="b"
+faketunneld: 2026/09/18 10:58:38.001047 SANDBOX attached on /dev/shm/t25-adapter-687810/tunneld.sock
+faketunneld: 2026/09/18 10:58:38.314413 opened a stream for peer "b"
+faketunneld: 2026/09/18 10:58:38.360288 EXIT dialed www.rfc-editor.org:443 -> 104.18.21.81:443
+faketunneld: 2026/09/18 10:58:38.559508 opened a stream for peer "b"
+faketunneld: 2026/09/18 10:58:38.560815 EXIT refused refused.example:443: it is not in the allow list
+faketunneld: 2026/09/18 10:58:38.602518 EXIT www.rfc-editor.org:443 ended
+faketunneld: 2026/09/18 10:58:40.082026 SANDBOX attached on /dev/shm/t25-adapter-687810/tunneld.sock
+faketunneld: 2026/09/18 10:58:41.676104 opened a stream for peer "b"
+faketunneld: 2026/09/18 10:58:41.688682 EXIT dialed www.rfc-editor.org:443 -> 104.18.20.81:443
+faketunneld: 2026/09/18 10:58:41.868904 EXIT www.rfc-editor.org:443 ended
+faketunneld: 2026/09/18 10:58:43.425479 SANDBOX attached on /dev/shm/t25-adapter-687810/tunneld.sock
+faketunneld: 2026/09/18 10:58:46.740064 exiting

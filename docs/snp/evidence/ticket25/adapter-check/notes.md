@@ -165,6 +165,33 @@ same ceiling — it refuses to install over a stack with a non-loopback NIC — 
 that one is not reachable from the command line, because the first check already
 stopped it.
 
+## Run 2: the same six runs after the adversarial review
+
+An adversarial review of the adapter found no path past the table and seven
+defects beside it. They are fixed, and the same script was run again against
+the rebuilt binary:
+
+    runsc sha256 (run 2)   ea305e126ab20e4abc525317f8ab7c04179b0cf0e08a517de6c3799a4b3c4ba0
+
+`output-02-adapter-check-after-review.txt` is that run, untrimmed.
+**Every recorded answer above is unchanged** — the same nine workload lines, the
+same refusal reasons in the same order, the same two validation refusals, the
+same `ECONNREFUSED` with no event for the destination the far exit refuses. The
+fixes are for things this check cannot reach: races, a backlogged half-close, a
+descriptor held too long, an unbounded wait and a log line a name could forge.
+
+What changed, and how each was argued:
+
+| defect | fix | how it is shown |
+| --- | --- | --- |
+| the endpoint swapped under readers (torn interface read; two concurrent connects → two streams) | every read of `sock.Endpoint` goes through `sock.ep()` under a leaf `RWMutex`; the adapter claims the socket *before* asking the helper, so a second `connect(2)` is `EALREADY`/`EISCONN` and never attaches | by construction; the check's single-threaded dials are unaffected |
+| `SHUT_WR` issued with bytes still in the backlog → silent truncation | the shutdown is remembered and issued from the flush path once the backlog drains | `TestTunnelEndpointHoldsTheHalfCloseBehindABacklog` fills the socketpair, half-closes, drains, and asserts every byte arrives before the end of file |
+| a failed write dropped what it had already taken from the Payloader → a hole in the stream | the remainder goes to the backlog and the error becomes sticky, reported on the next call — which is also how a real socket behaves | by construction; a write is now also refused while a backlog stands, which bounds the backlog to one write |
+| `Readiness` polled a descriptor after `Close` (fd reuse) | a closed endpoint answers from its own state | `TestTunnelEndpointReadinessAfterClose` |
+| names reached the log and the trace raw; a label with a newline forges a line | quoted and scrubbed to printable ASCII, capped at 255 bytes | `TestTunnelPrintable`; and the query lines in run 2 read `q="www.rfc-editor.org"` |
+| the helper kept a reference to every stream (urpc closes no result files), so the far exit's connection outlived the sandbox's until a finalizer ran | an `afterRPCCallback` closes each descriptor once its reply is on the wire | by construction. **The check cannot isolate this one**: the helper exits with its sandbox, so every descriptor is closed then anyway. It would show in a long-lived sandbox that opens many streams |
+| the helper's wait for tunneld was unbounded → a wedged tunneld holds a workload thread inside `connect(2)` for ever, and every other connect behind it | the whole open is bounded by the same 30 s deadline the CONNECT line has | by construction; the `no-helper` run still answers in 274–704 µs |
+
 ## What this check does not say
 
 It says nothing about tunneld, about attestation, about two peers, or about an
@@ -172,12 +199,52 @@ agent runtime: the stand-in has none of those. It also does not exercise the
 adapter under a restore, and it uses one container per sandbox. The loopback
 proof is where the real tunneld, the real exit and a real agent meet.
 
+## Leftovers
+
+Known and deliberately not fixed here; each is a thing this ticket does not
+need and the next one may.
+
+1. **A restored sandbox gets no adapter.** It is installed from `Loader.run`'s
+   `created` path only.
+2. **`tunnelEndpoint` is not stateify-savable**, so a checkpoint of a sandbox
+   with an attached stream fails. A descriptor to a host socket is not state
+   that can be written down.
+3. **An `AF_INET6` socket, or a v4-mapped destination, is refused** with
+   `not-in-table` rather than a reason that says the adapter is v4-only. The
+   responder's AAAA answer means a runtime should never reach that path.
+4. **The notifier callback takes the endpoint's mutex** while `Read` holds it
+   across the copy into the caller's buffer, so a wakeup can wait on a slow
+   copy.
+5. **Bytes left in `rbuf` raise no new readable edge.** Under `EPOLLET` a
+   reader that stops short could sleep on data the sentry already holds; both
+   runtimes read until `EAGAIN`, so neither does.
+6. **`SIOCINQ`/`SIOCOUTQ` report only the sentry's own buffers**, not what the
+   descriptor holds.
+7. **Table names are not charset-validated**, and the exit's answer is matched
+   by prefix without checking that the destination it echoes is the one that
+   was asked for.
+8. **DNS refusals carry no task context** — no `container_id`, no `thread_id`.
+   The responder has no task.
+9. **The ceiling is checked once, at install.** A NIC added afterwards would
+   not be noticed; nothing in the sandbox can add one.
+10. **Refusal events are not rate-limited**: one per refused connect, datagram
+    or query.
+11. **The descriptor from the helper is duplicated with a plain `dup(2)`**,
+    which carries no `FD_CLOEXEC`. Nothing is dropped — urpc's transport never
+    sets it — and the sentry's own seccomp filter permits `fcntl` only for
+    `F_GETFL`, `F_SETFL` and `F_GETFD`, so a CLOEXEC-preserving duplicate is
+    not available to it. The sentry execs nothing after boot.
+12. **The sentry's call into the helper is a blocking Go call** serialised by
+    one mutex. It is bounded at 30 s but not interruptible by a signal.
+13. **No seccomp filter on the helper**, matching `runsc/checkpointgofer`.
+
 ## Files here
 
 | file | what |
 | --- | --- |
 | `run-adapter-check.sh` | the six runs, exactly as run |
-| `output-01-adapter-check.txt` | the untrimmed transcript |
+| `output-01-adapter-check.txt` | the untrimmed transcript, run 1 |
+| `output-02-adapter-check-after-review.txt` | the untrimmed transcript, run 2 (after the review's fixes) |
 | `faketunneld/` | the stand-in: `attest/sandbox`'s socket plus a CONNECT exit |
 | `adapterclient/` | the Go workload |
 | `adapternode.js` | the Node workload |

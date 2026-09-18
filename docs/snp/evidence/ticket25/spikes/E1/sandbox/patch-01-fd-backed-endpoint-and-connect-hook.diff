@@ -1,0 +1,624 @@
+diff --git a/pkg/sentry/socket/netstack/BUILD b/pkg/sentry/socket/netstack/BUILD
+index 1aba94600..e9a5002d0 100644
+--- a/pkg/sentry/socket/netstack/BUILD
++++ b/pkg/sentry/socket/netstack/BUILD
+@@ -18,6 +18,7 @@ go_library(
+     name = "netstack",
+     srcs = [
+         "netstack.go",
++        "spike_fdendpoint.go",
+         "netstack_link_mutex.go",
+         "netstack_state.go",
+         "provider.go",
+@@ -39,6 +40,7 @@ go_library(
+         "//pkg/errors/linuxerr",
+         "//pkg/eventchannel",
+         "//pkg/hostarch",
++        "//pkg/fdnotifier",
+         "//pkg/log",
+         "//pkg/marshal",
+         "//pkg/marshal/primitive",
+diff --git a/pkg/sentry/socket/netstack/netstack.go b/pkg/sentry/socket/netstack/netstack.go
+index de5092ee5..dd8f584b5 100644
+--- a/pkg/sentry/socket/netstack/netstack.go
++++ b/pkg/sentry/socket/netstack/netstack.go
+@@ -817,6 +817,11 @@ func (s *sock) Connect(t *kernel.Task, sockaddr []byte, blocking bool) *syserr.E
+ 	}
+ 	addr = s.mapFamily(addr, family)
+ 
++	// SPIKE-E1B (ticket 25), temporary: a destination in 100.64.0.0/10 on an
++	// AF_INET stream socket is handed to the helper, and s.Endpoint becomes an
++	// FD-backed one. The normal path below then runs against the new endpoint.
++	spikeInterceptConnect(t, s, addr)
++
+ 	// Always return right away in the non-blocking case.
+ 	if !blocking {
+ 		return syserr.TranslateNetstackError(s.Endpoint.Connect(addr))
+diff --git a/pkg/sentry/socket/netstack/spike_fdendpoint.go b/pkg/sentry/socket/netstack/spike_fdendpoint.go
+new file mode 100644
+index 000000000..9b31ae76e
+--- /dev/null
++++ b/pkg/sentry/socket/netstack/spike_fdendpoint.go
+@@ -0,0 +1,582 @@
++// Copyright 2018 The gVisor Authors.
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++
++// SPIKE-E1B (ticket 25) — temporary, kept out of the tree's history.
++//
++// A hand-built tcpip.Endpoint over a host FD, so an unmodified Go or Node
++// program inside the sandbox can be served by a descriptor the helper handed
++// in rather than by a netstack TCP connection.
++//
++// Readiness follows hostinet (pkg/sentry/socket/hostinet/socket.go:154): the
++// FD is registered with fdnotifier (edge-triggered epoll) and Readiness() asks
++// the host with a non-blocking poll. Everything the sandbox can ask that the
++// host FD cannot answer — getsockname, getpeername, SO_ERROR, setsockopt — is
++// answered from sentry-side state, because the sentry's seccomp filter does not
++// permit getsockname/setsockopt at all.
++
++package netstack
++
++import (
++	"fmt"
++	"io"
++
++	"golang.org/x/sys/unix"
++	"gvisor.dev/gvisor/pkg/abi/linux"
++	"gvisor.dev/gvisor/pkg/fdnotifier"
++	"gvisor.dev/gvisor/pkg/log"
++	"gvisor.dev/gvisor/pkg/sentry/kernel"
++	"gvisor.dev/gvisor/pkg/sync"
++	"gvisor.dev/gvisor/pkg/tcpip"
++	"gvisor.dev/gvisor/pkg/tcpip/stack"
++	"gvisor.dev/gvisor/pkg/waiter"
++)
++
++// SpikeHelper is what the adapter's piece (2) looks like from in here. It is an
++// interface so this package needs no new build dependency: runsc/boot supplies
++// the implementation, which is a urpc client over the socketpair E3 donated.
++type SpikeHelper interface {
++	// Open asks the helper to connect to addr on the host and return a
++	// descriptor that carries the stream.
++	Open(addr string) (int, error)
++}
++
++var (
++	spikeHelperMu sync.Mutex
++	spikeHelper   SpikeHelper
++	// spikeConnectStarted selects the two behaviours the spike compares: false
++	// means Connect reports success synchronously, true means it reports
++	// ErrConnectStarted and then notifies writable.
++	spikeConnectStarted bool
++)
++
++// SpikeSetHelper installs the helper. Called from runsc/boot on Spike.Attach.
++func SpikeSetHelper(h SpikeHelper, connectStarted bool) {
++	spikeHelperMu.Lock()
++	defer spikeHelperMu.Unlock()
++	spikeHelper = h
++	spikeConnectStarted = connectStarted
++	log.Infof("SPIKE-E1B helper installed, connectStarted=%t", connectStarted)
++}
++
++func spikeGetHelper() (SpikeHelper, bool) {
++	spikeHelperMu.Lock()
++	defer spikeHelperMu.Unlock()
++	return spikeHelper, spikeConnectStarted
++}
++
++// spikeIsSynthetic reports whether addr is in 100.64.0.0/10.
++func spikeIsSynthetic(a tcpip.Address) bool {
++	if a.Len() != 4 {
++		return false
++	}
++	b := a.As4()
++	return b[0] == 100 && b[1]&0xc0 == 0x40
++}
++
++// spikeNextLocalPort hands out a distinct synthetic local port per connection.
++// Go's selfConnect heuristic fires when the local address equals the remote
++// one, so the local address must differ (E1a run 07).
++var spikeLocalPort = uint16(40000)
++
++func spikeLocalAddr() tcpip.FullAddress {
++	spikeHelperMu.Lock()
++	defer spikeHelperMu.Unlock()
++	spikeLocalPort++
++	return tcpip.FullAddress{
++		Addr: tcpip.AddrFrom4([4]byte{100, 127, 255, 254}),
++		Port: spikeLocalPort,
++	}
++}
++
++// spikeInterceptConnect swaps s.Endpoint for an FD-backed one when addr is a
++// synthetic destination and the socket is AF_INET SOCK_STREAM. It returns true
++// if it took over; the caller then runs its normal Connect path against the new
++// endpoint.
++func spikeInterceptConnect(t *kernel.Task, s *sock, addr tcpip.FullAddress) bool {
++	if s.family != linux.AF_INET || s.skType != linux.SOCK_STREAM {
++		return false
++	}
++	if !spikeIsSynthetic(addr.Addr) {
++		return false
++	}
++	h, connectStarted := spikeGetHelper()
++	if h == nil {
++		log.Infof("SPIKE-E1B connect to %s:%d: no helper installed, leaving it to netstack", addr.Addr.String(), addr.Port)
++		return false
++	}
++	dst := fmt.Sprintf("%s:%d", addr.Addr.String(), addr.Port)
++	fd, err := h.Open(dst)
++	if err != nil {
++		log.Infof("SPIKE-E1B connect to %s: Helper.Open failed: %v", dst, err)
++		return false
++	}
++	if err := unix.SetNonblock(fd, true); err != nil {
++		log.Infof("SPIKE-E1B connect to %s: SetNonblock failed: %v", dst, err)
++		unix.Close(fd)
++		return false
++	}
++	local := spikeLocalAddr()
++	ep := newSpikeFDEndpoint(fd, local, addr, s.Queue, connectStarted)
++	if ep == nil {
++		unix.Close(fd)
++		return false
++	}
++	old := s.Endpoint
++	s.Endpoint = ep
++	old.Close()
++	log.Infof("SPIKE-E1B connect to %s: swapped in an FD-backed endpoint, host fd=%d, local=%s:%d connectStarted=%t",
++		dst, fd, local.Addr.String(), local.Port, connectStarted)
++	return true
++}
++
++// spikeFDEndpoint implements tcpip.Endpoint over a host FD.
++type spikeFDEndpoint struct {
++	tcpip.DefaultSocketOptionsHandler
++
++	fd int32
++
++	// q is the queue fdnotifier notifies; entry forwards its events to target,
++	// which is the sock's own queue.
++	q      waiter.Queue
++	target *waiter.Queue
++	entry  waiter.Entry
++
++	ops tcpip.SocketOptions
++
++	// connectStarted makes the first Connect report ErrConnectStarted.
++	connectStarted bool
++
++	mu sync.Mutex
++	// +checklocks:mu
++	local tcpip.FullAddress
++	// +checklocks:mu
++	remote tcpip.FullAddress
++	// +checklocks:mu
++	connectCalls int
++	// +checklocks:mu
++	closed bool
++	// +checklocks:mu
++	shutRd bool
++	// +checklocks:mu
++	shutWr bool
++	// rbuf holds bytes read from the host FD that the caller's buffer could not
++	// take. Without it a short user buffer would silently drop the remainder,
++	// because Endpoint.Read is handed an io.Writer with no declared capacity.
++	// +checklocks:mu
++	rbuf []byte
++	// wbuf holds bytes the caller handed over that the host FD would not take.
++	// Endpoint.Write takes ownership of what it reads from the Payloader, so
++	// the bytes cannot be given back.
++	// +checklocks:mu
++	wbuf []byte
++	// remembered options, so the sandbox's setsockopt looks honoured.
++	// +checklocks:mu
++	keepaliveIdle, keepaliveInterval tcpip.KeepaliveIdleOption
++	// +checklocks:mu
++	keepaliveCount int
++}
++
++var _ tcpip.Endpoint = (*spikeFDEndpoint)(nil)
++
++func spikeSendLimits(tcpip.StackHandler) tcpip.SendBufferSizeOption {
++	return tcpip.SendBufferSizeOption{Min: 4096, Default: 208 << 10, Max: 4 << 20}
++}
++
++func spikeRecvLimits(tcpip.StackHandler) tcpip.ReceiveBufferSizeOption {
++	return tcpip.ReceiveBufferSizeOption{Min: 4096, Default: 208 << 10, Max: 4 << 20}
++}
++
++func newSpikeFDEndpoint(fd int, local, remote tcpip.FullAddress, target *waiter.Queue, connectStarted bool) *spikeFDEndpoint {
++	e := &spikeFDEndpoint{
++		fd:             int32(fd),
++		target:         target,
++		local:          local,
++		remote:         remote,
++		connectStarted: connectStarted,
++	}
++	e.ops.InitHandler(e, nil /* stack */, spikeSendLimits, spikeRecvLimits)
++	e.ops.SetSendBufferSize(208<<10, false)
++	e.ops.SetReceiveBufferSize(208<<10, false)
++
++	// One persistent entry covering everything, so fdnotifier always has a
++	// non-zero mask and therefore always keeps the FD in its epoll set. Every
++	// event is forwarded to the sock's queue, which is what the sandbox's
++	// poll/epoll and the sentry's blocking paths wait on.
++	e.entry = waiter.NewFunctionEntry(waiter.EventIn|waiter.EventOut|waiter.EventErr|waiter.EventHUp|waiter.EventRdHUp|waiter.ReadableEvents|waiter.WritableEvents,
++		func(mask waiter.EventMask) {
++			// A backed-up write can only be drained here: the sandbox may be
++			// waiting for a reply and never write again.
++			if mask&waiter.WritableEvents != 0 {
++				e.mu.Lock()
++				e.flushLocked()
++				e.mu.Unlock()
++			}
++			e.target.Notify(mask)
++		})
++	e.q.EventRegister(&e.entry)
++	if err := fdnotifier.AddFD(int32(fd), &e.q); err != nil {
++		log.Infof("SPIKE-E1B fdnotifier.AddFD(%d) failed: %v", fd, err)
++		return nil
++	}
++	fdnotifier.UpdateFD(int32(fd))
++	return e
++}
++
++func spikeMapErr(err error) tcpip.Error {
++	switch err {
++	case unix.EAGAIN:
++		return &tcpip.ErrWouldBlock{}
++	case unix.EPIPE:
++		return &tcpip.ErrClosedForSend{}
++	case unix.ECONNRESET:
++		return &tcpip.ErrConnectionReset{}
++	case unix.ENOTCONN:
++		return &tcpip.ErrNotConnected{}
++	default:
++		return &tcpip.ErrInvalidEndpointState{}
++	}
++}
++
++// Close implements tcpip.Endpoint.Close.
++func (e *spikeFDEndpoint) Close() {
++	e.mu.Lock()
++	if e.closed {
++		e.mu.Unlock()
++		return
++	}
++	e.closed = true
++	fd := e.fd
++	e.mu.Unlock()
++	fdnotifier.RemoveFD(fd)
++	e.q.EventUnregister(&e.entry)
++	unix.Close(int(fd))
++	log.Infof("SPIKE-E1B Close: host fd %d closed", fd)
++}
++
++// Abort implements tcpip.Endpoint.Abort.
++func (e *spikeFDEndpoint) Abort() { e.Close() }
++
++// Read implements tcpip.Endpoint.Read.
++func (e *spikeFDEndpoint) Read(w io.Writer, opts tcpip.ReadOptions) (tcpip.ReadResult, tcpip.Error) {
++	e.mu.Lock()
++	defer e.mu.Unlock()
++	if e.closed {
++		return tcpip.ReadResult{}, &tcpip.ErrClosedForReceive{}
++	}
++	if len(e.rbuf) == 0 {
++		if e.shutRd {
++			return tcpip.ReadResult{}, &tcpip.ErrClosedForReceive{}
++		}
++		buf := make([]byte, 64<<10)
++		n, err := unix.Read(int(e.fd), buf)
++		if err != nil {
++			return tcpip.ReadResult{}, spikeMapErr(err)
++		}
++		if n == 0 {
++			// The peer is gone: this is the socketpair's EOF, which the sandbox
++			// must see as a clean end of stream.
++			return tcpip.ReadResult{}, &tcpip.ErrClosedForReceive{}
++		}
++		e.rbuf = buf[:n]
++	}
++	n, werr := w.Write(e.rbuf)
++	if n == 0 && werr != nil {
++		return tcpip.ReadResult{}, &tcpip.ErrBadBuffer{}
++	}
++	res := tcpip.ReadResult{Count: n, Total: n, RemoteAddr: e.remote}
++	if !opts.Peek {
++		e.rbuf = e.rbuf[n:]
++		if len(e.rbuf) == 0 {
++			e.rbuf = nil
++		}
++	}
++	return res, nil
++}
++
++// flushLocked drains anything the host FD would not take earlier.
++// +checklocks:e.mu
++func (e *spikeFDEndpoint) flushLocked() tcpip.Error {
++	for len(e.wbuf) > 0 {
++		n, err := unix.Write(int(e.fd), e.wbuf)
++		if n > 0 {
++			e.wbuf = e.wbuf[n:]
++		}
++		if err == unix.EINTR {
++			continue
++		}
++		if err != nil {
++			return spikeMapErr(err)
++		}
++		if n == 0 {
++			break
++		}
++	}
++	if len(e.wbuf) == 0 {
++		e.wbuf = nil
++	}
++	return nil
++}
++
++// Write implements tcpip.Endpoint.Write.
++func (e *spikeFDEndpoint) Write(p tcpip.Payloader, opts tcpip.WriteOptions) (int64, tcpip.Error) {
++	e.mu.Lock()
++	defer e.mu.Unlock()
++	if e.closed || e.shutWr {
++		return 0, &tcpip.ErrClosedForSend{}
++	}
++	// Drain the backlog first, and do not touch the Payloader until it is gone:
++	// Endpoint.Write takes ownership of what it reads, so a partial host write
++	// after a partial read would lose bytes.
++	if err := e.flushLocked(); err != nil {
++		return 0, err
++	}
++	want := p.Len()
++	if want == 0 {
++		return 0, nil
++	}
++	if want > 1<<20 {
++		want = 1 << 20
++	}
++	buf := make([]byte, want)
++	if _, err := io.ReadFull(p, buf); err != nil {
++		return 0, &tcpip.ErrBadBuffer{}
++	}
++	written := 0
++	for written < want {
++		n, err := unix.Write(int(e.fd), buf[written:])
++		if n > 0 {
++			written += n
++		}
++		if err == unix.EINTR {
++			continue
++		}
++		if err == unix.EAGAIN {
++			// Keep the rest; the notification path will flush it.
++			e.wbuf = append(e.wbuf, buf[written:]...)
++			written = want
++			break
++		}
++		if err != nil {
++			if written > 0 {
++				return int64(written), nil
++			}
++			return 0, spikeMapErr(err)
++		}
++		if n == 0 {
++			break
++		}
++	}
++	return int64(written), nil
++}
++
++// Connect implements tcpip.Endpoint.Connect. The stream is already up by the
++// time the endpoint exists; the only question is what the sandbox is told.
++func (e *spikeFDEndpoint) Connect(address tcpip.FullAddress) tcpip.Error {
++	e.mu.Lock()
++	e.connectCalls++
++	n := e.connectCalls
++	started := e.connectStarted
++	e.mu.Unlock()
++	if started && n == 1 {
++		log.Infof("SPIKE-E1B Connect call #%d: reporting ErrConnectStarted and notifying writable", n)
++		e.target.Notify(waiter.WritableEvents)
++		return &tcpip.ErrConnectStarted{}
++	}
++	log.Infof("SPIKE-E1B Connect call #%d: reporting success", n)
++	return nil
++}
++
++// Disconnect implements tcpip.Endpoint.Disconnect.
++func (e *spikeFDEndpoint) Disconnect() tcpip.Error { return &tcpip.ErrNotSupported{} }
++
++// Shutdown implements tcpip.Endpoint.Shutdown.
++func (e *spikeFDEndpoint) Shutdown(flags tcpip.ShutdownFlags) tcpip.Error {
++	e.mu.Lock()
++	if e.closed {
++		e.mu.Unlock()
++		return &tcpip.ErrNotConnected{}
++	}
++	var how int
++	switch {
++	case flags&tcpip.ShutdownRead != 0 && flags&tcpip.ShutdownWrite != 0:
++		how, e.shutRd, e.shutWr = unix.SHUT_RDWR, true, true
++	case flags&tcpip.ShutdownWrite != 0:
++		how, e.shutWr = unix.SHUT_WR, true
++	case flags&tcpip.ShutdownRead != 0:
++		how, e.shutRd = unix.SHUT_RD, true
++	default:
++		e.mu.Unlock()
++		return &tcpip.ErrInvalidEndpointState{}
++	}
++	e.flushLocked()
++	fd := e.fd
++	e.mu.Unlock()
++	err := unix.Shutdown(int(fd), how)
++	log.Infof("SPIKE-E1B Shutdown(flags=%d) -> shutdown(%d, %d) err=%v", flags, fd, how, err)
++	if err != nil {
++		return spikeMapErr(err)
++	}
++	return nil
++}
++
++// Listen implements tcpip.Endpoint.Listen.
++func (e *spikeFDEndpoint) Listen(int) tcpip.Error { return &tcpip.ErrNotSupported{} }
++
++// Accept implements tcpip.Endpoint.Accept.
++func (e *spikeFDEndpoint) Accept(*tcpip.FullAddress) (tcpip.Endpoint, *waiter.Queue, tcpip.Error) {
++	return nil, nil, &tcpip.ErrNotSupported{}
++}
++
++// Bind implements tcpip.Endpoint.Bind.
++func (e *spikeFDEndpoint) Bind(tcpip.FullAddress) tcpip.Error { return &tcpip.ErrNotSupported{} }
++
++// GetLocalAddress implements tcpip.Endpoint.GetLocalAddress.
++func (e *spikeFDEndpoint) GetLocalAddress() (tcpip.FullAddress, tcpip.Error) {
++	e.mu.Lock()
++	defer e.mu.Unlock()
++	return e.local, nil
++}
++
++// GetRemoteAddress implements tcpip.Endpoint.GetRemoteAddress.
++func (e *spikeFDEndpoint) GetRemoteAddress() (tcpip.FullAddress, tcpip.Error) {
++	e.mu.Lock()
++	defer e.mu.Unlock()
++	return e.remote, nil
++}
++
++// Readiness implements tcpip.Endpoint.Readiness. The host is asked with a
++// non-blocking poll, exactly as hostinet does, and anything already buffered in
++// the sentry is added, because the host FD no longer holds it.
++func (e *spikeFDEndpoint) Readiness(mask waiter.EventMask) waiter.EventMask {
++	ready := fdnotifier.NonBlockingPoll(e.fd, mask)
++	e.mu.Lock()
++	if len(e.rbuf) > 0 {
++		ready |= waiter.ReadableEvents & mask
++	}
++	e.mu.Unlock()
++	return ready
++}
++
++// SetSockOpt implements tcpip.Endpoint.SetSockOpt. The keepalive options are
++// remembered so the sandbox sees them honoured; everything else is refused.
++func (e *spikeFDEndpoint) SetSockOpt(opt tcpip.SettableSocketOption) tcpip.Error {
++	e.mu.Lock()
++	defer e.mu.Unlock()
++	switch v := opt.(type) {
++	case *tcpip.KeepaliveIdleOption:
++		e.keepaliveIdle = *v
++		return nil
++	case *tcpip.KeepaliveIntervalOption:
++		e.keepaliveInterval = tcpip.KeepaliveIdleOption(*v)
++		return nil
++	default:
++		log.Infof("SPIKE-E1B SetSockOpt(%T): refused with ErrUnknownProtocolOption", opt)
++		return &tcpip.ErrUnknownProtocolOption{}
++	}
++}
++
++// SetSockOptInt implements tcpip.Endpoint.SetSockOptInt.
++func (e *spikeFDEndpoint) SetSockOptInt(opt tcpip.SockOptInt, v int) tcpip.Error {
++	e.mu.Lock()
++	defer e.mu.Unlock()
++	switch opt {
++	case tcpip.KeepaliveCountOption:
++		e.keepaliveCount = v
++		return nil
++	case tcpip.MaxSegOption, tcpip.IPv4TOSOption:
++		return nil
++	default:
++		log.Infof("SPIKE-E1B SetSockOptInt(%d, %d): refused with ErrUnknownProtocolOption", opt, v)
++		return &tcpip.ErrUnknownProtocolOption{}
++	}
++}
++
++// GetSockOpt implements tcpip.Endpoint.GetSockOpt.
++func (e *spikeFDEndpoint) GetSockOpt(opt tcpip.GettableSocketOption) tcpip.Error {
++	e.mu.Lock()
++	defer e.mu.Unlock()
++	switch v := opt.(type) {
++	case *tcpip.KeepaliveIdleOption:
++		*v = e.keepaliveIdle
++		return nil
++	case *tcpip.KeepaliveIntervalOption:
++		*v = tcpip.KeepaliveIntervalOption(e.keepaliveInterval)
++		return nil
++	default:
++		log.Infof("SPIKE-E1B GetSockOpt(%T): refused with ErrUnknownProtocolOption", opt)
++		return &tcpip.ErrUnknownProtocolOption{}
++	}
++}
++
++// GetSockOptInt implements tcpip.Endpoint.GetSockOptInt.
++func (e *spikeFDEndpoint) GetSockOptInt(opt tcpip.SockOptInt) (int, tcpip.Error) {
++	e.mu.Lock()
++	defer e.mu.Unlock()
++	switch opt {
++	case tcpip.KeepaliveCountOption:
++		return e.keepaliveCount, nil
++	case tcpip.ReceiveQueueSizeOption:
++		return len(e.rbuf), nil
++	case tcpip.SendQueueSizeOption:
++		return len(e.wbuf), nil
++	case tcpip.MaxSegOption:
++		return 1460, nil
++	default:
++		log.Infof("SPIKE-E1B GetSockOptInt(%d): refused with ErrUnknownProtocolOption", opt)
++		return 0, &tcpip.ErrUnknownProtocolOption{}
++	}
++}
++
++// State implements tcpip.Endpoint.State: always ESTABLISHED.
++func (e *spikeFDEndpoint) State() uint32 { return uint32(linux.TCP_ESTABLISHED) }
++
++// ModerateRecvBuf implements tcpip.Endpoint.ModerateRecvBuf.
++func (e *spikeFDEndpoint) ModerateRecvBuf(int) {}
++
++// Info implements tcpip.Endpoint.Info.
++func (e *spikeFDEndpoint) Info() tcpip.EndpointInfo {
++	e.mu.Lock()
++	defer e.mu.Unlock()
++	return &stack.TransportEndpointInfo{
++		NetProto:   spikeNetProtoV4,
++		TransProto: spikeTransProtoTCP,
++		ID: stack.TransportEndpointID{
++			LocalAddress:  e.local.Addr,
++			LocalPort:     e.local.Port,
++			RemoteAddress: e.remote.Addr,
++			RemotePort:    e.remote.Port,
++		},
++	}
++}
++
++const (
++	spikeNetProtoV4    = 0x0800 // ipv4.ProtocolNumber
++	spikeTransProtoTCP = 6      // tcp.ProtocolNumber
++)
++
++// Stats implements tcpip.Endpoint.Stats.
++func (e *spikeFDEndpoint) Stats() tcpip.EndpointStats { return &tcpip.TransportEndpointStats{} }
++
++// SetOwner implements tcpip.Endpoint.SetOwner.
++func (e *spikeFDEndpoint) SetOwner(tcpip.PacketOwner) {}
++
++// LastError implements tcpip.Endpoint.LastError: always nil, so
++// getsockopt(SOL_SOCKET, SO_ERROR) answers 0 once connected.
++func (e *spikeFDEndpoint) LastError() tcpip.Error { return nil }
++
++// SocketOptions implements tcpip.Endpoint.SocketOptions.
++func (e *spikeFDEndpoint) SocketOptions() *tcpip.SocketOptions { return &e.ops }
++
++// Preflight implements tcpip.Endpoint.Preflight.
++func (e *spikeFDEndpoint) Preflight(tcpip.WriteOptions) tcpip.Error { return nil }

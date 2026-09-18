@@ -1,0 +1,44 @@
+runsc sha256:      11005df8c5191970592b1e28e3b59837c918d3d42a447e1865202b9a8f80ac30
+supervisor sha256: a0c231bf87d32009611240365172f92a397185f004988793f8690b60e9553ab9
+client:            go, connect mode: started
+$ /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/spikes/e1b/runsc --root=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/spikes/e1b/go-started/state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new --debug --debug-log=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/spikes/e1b/go-started/logs/ --strace run --bundle /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/spikes/e1b/go-started/bundle e1b-go-started &
+control socket: /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/spikes/e1b/go-started/state/runsc-e1b-go-started.sock
+[sup] 09:32:29.979308 supervisor: echo server on 127.0.0.1:38423
+[sup] 09:32:29.979653 supervisor: address map __echo__ -> 127.0.0.1:38423
+[sup] 09:32:29.979664 supervisor: address map 100.64.0.1:443 -> www.rfc-editor.org:443
+[sup] 09:32:29.979671 supervisor: address map 100.64.0.2:7777 -> 127.0.0.1:38423
+[sup] 09:32:29.979715 supervisor: control socket path too long, connecting via /proc/self/fd/4
+[sup] 09:32:29.979796 supervisor: connected to control socket /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/spikes/e1b/go-started/state/runsc-e1b-go-started.sock
+[sup] 09:32:29.982197 supervisor: Spike.Attach returned in 2.357264ms
+[sup] 09:32:34.911314 supervisor: Helper.Open 100.64.0.2:7777 -> 127.0.0.1:38423 connected in 823.448µs, stream 1, sentry fd will be 12
+[sup] 09:32:34.912032 supervisor: served Helper.Open -> success=true err="" fds_out=1
+[sup] 09:32:34.933361 supervisor: stream 1 sentry->host ended after 262158 bytes (n=0 err=<nil>)
+[sup] 09:32:34.934070 supervisor: echo connection closed after 262158 bytes
+[sup] 09:32:34.934530 supervisor: stream 1 host->sentry ended after 262158 bytes: EOF
+[sup] 09:32:34.952961 supervisor: Helper.Open 100.64.0.1:443 -> www.rfc-editor.org:443 connected in 13.540754ms, stream 2, sentry fd will be 15
+[sup] 09:32:34.953126 supervisor: served Helper.Open -> success=true err="" fds_out=1
+[sup] 09:32:35.153725 supervisor: stream 2 sentry->host ended after 498 bytes (n=0 err=<nil>)
+[sup] 09:32:35.156099 supervisor: stream 2 sentry write: broken pipe
+[sup] 09:32:50.210140 supervisor: urpc server read: EOF (stream over)
+RUNSC_EXIT=0
+---- workload stdout ----
+goclient: pid 1
+
+== net.Dial tcp echo.spike.test:7777
+   Dial:        err=<nil> (23.819415ms)
+   LocalAddr:   100.127.255.254:40001
+   RemoteAddr:  100.64.0.2:7777
+   Write:       n=14 err=<nil>
+   Read:        n=14 err=<nil> data="hello from go\n" (round trip 26.907588ms)
+   bulk:        wrote 262144 err=<nil>, echoed 262144 back in 9.107907ms
+   CloseWrite:  err=<nil>
+   Read at EOF: n=0 err=EOF
+
+== net/http GET https://www.rfc-editor.org/
+   GET:         200 OK in 216.413401ms
+   proto:       HTTP/1.1  TLS=true
+   TLS:         version=0x304 cipher=0x1301 server="www.rfc-editor.org"
+   cert CN:     "rfc-editor.org"
+   body:        4096 bytes read (err=<nil>), first 120: "<!DOCTYPE html><html  lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-s"
+
+goclient: done

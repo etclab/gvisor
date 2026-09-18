@@ -919,11 +919,11 @@ type appliedAt struct {
 }
 
 func (h *appliedAt) Apply(ctx context.Context, policy []byte) error {
-	return timeApply(ctx, h.Host, policy, h.l.out, "a", func(took time.Duration, _ error) {
-		if p := h.l.pushing.Load(); p != nil {
-			p.applied.Store(int64(took))
-		}
-	})
+	took, err := timeApply(ctx, h.Host, policy, h.l.out, "a")
+	if p := h.l.pushing.Load(); p != nil {
+		p.applied.Store(int64(took))
+	}
+	return err
 }
 
 // ===== the world, governed =====

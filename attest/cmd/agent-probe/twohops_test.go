@@ -369,25 +369,24 @@ type timedSandbox struct {
 }
 
 func (s *timedSandbox) Apply(ctx context.Context, policy []byte) error {
-	return timeApply(ctx, s.Sandbox, policy, s.out, s.who, func(took time.Duration, err error) {
-		s.mu.Lock()
-		defer s.mu.Unlock()
-		s.took, s.errs = append(s.took, took), append(s.errs, err)
-	})
+	took, err := timeApply(ctx, s.Sandbox, policy, s.out, s.who)
+	s.mu.Lock()
+	s.took, s.errs = append(s.took, took), append(s.errs, err)
+	s.mu.Unlock()
+	return err
 }
 
-// timeApply runs one Apply, says on who's behalf how long it took, and hands
-// the number to note. Both wrappers this package puts around a sandbox are a
-// clock on an Apply and differ only in where the number goes: here into a
-// slice a case reads after the run, and in governed_test.go into the push it
-// belongs to.
-func timeApply(ctx context.Context, inner sandbox.Sandbox, policy []byte, out *record, who string, note func(time.Duration, error)) error {
+// timeApply runs one Apply and says on who's behalf how long it took, which is
+// the push-and-ack number at the side the policy was pushed to. Both wrappers
+// this package puts around a sandbox are this clock and differ only in where
+// they keep the number: here in a slice a case reads after the run, and in
+// governed_test.go on the push it belongs to.
+func timeApply(ctx context.Context, inner sandbox.Sandbox, policy []byte, out *record, who string) (time.Duration, error) {
 	began := time.Now()
 	err := inner.Apply(ctx, policy)
 	took := time.Since(began)
-	note(took, err)
 	out.logf("%s  Apply returned after %s: %v", who, took.Round(time.Microsecond), err)
-	return err
+	return took, err
 }
 
 // first is how long the first Apply took, which is the one the hop waited for.

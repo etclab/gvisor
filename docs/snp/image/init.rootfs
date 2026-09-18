@@ -3,13 +3,19 @@
 #
 # Mounts the kernel filesystems (all noexec), loads the report interface
 # driver, proves to the console that no writable path is executable, brings
-# loopback up, installs the egress ceiling the binary carries, runs that binary
-# — with the policy to push, if the config device carries one — and proves the
-# ceiling held. When it exits the guest powers off: no
+# loopback up, installs the egress ceiling the binary carries, runs the workload
+# bundle under runsc if the workload device carried one, runs that binary — with
+# the policy to push, if the config device carries one — and proves the ceiling
+# held. When it exits the guest powers off: no
 # shell is ever spawned (the busybox that runs this script is present, but
 # nothing listens and nothing else is run), no getty, nothing else.
 export PATH=/bin:/sbin:/usr/bin
 say() { echo "init: $*"; }
+# The boot clock, from /proc/uptime with the shell's own read: no applet, no
+# date(1), and the kernel's printk timestamps on the console lines around it say
+# the same thing independently. Printed at the check's verdict, on either side of
+# the workload, and at tunneld — which is what a boot-time cost is measured from.
+uptime_say() { read UP _ < /proc/uptime; say "uptime ${UP}s"; }
 
 exec >/dev/console 2>&1
 mount -t proc   -o nosuid,nodev,noexec proc   /proc
@@ -46,6 +52,7 @@ if [ $bad != 0 ]; then
   poweroff -f
 fi
 say "no writable path is executable"
+uptime_say
 
 # Loopback, before the ceiling and before anything that could be refused.
 #
@@ -95,6 +102,53 @@ if ! /usr/bin/tunneld -egress install; then
   poweroff -f
 fi
 
+# ---- the workload, under runsc (ticket 24) ---------------------------------
+# Here and nowhere else. After the ceiling, because until the ceiling is in the
+# kernel a guest that could address a packet is a guest running unconstrained —
+# and before tunneld, because tunneld is what brings this guest's link up out of
+# the run configuration. This is therefore the one moment at which something can
+# run with the ceiling installed and no link for it to leave by.
+#
+# The bundle comes off the workload device the initrd mounted at /workload
+# (ro,exec,nosuid,nodev), which is outside the launch measurement. What is
+# measured is this binary, this flag set and that mount's options — never what
+# the disk carried.
+#
+# The namespace: runsc rootless wants a user namespace with a uid mapping it may
+# write, and inside one it needs no host capability at all (spike S1, README's
+# "Capabilities" section). busybox's unshare makes it — -U -r maps this init's
+# root to root inside it, -m -n -p are the namespaces runsc builds on, and -f is
+# needed because unsharing a PID namespace only takes effect for a child. The
+# fresh procfs is for that new PID namespace: runsc re-execs /proc/self/exe and
+# mounts by /proc/self/fd, and the /proc this init mounted belongs to the old
+# one. It is mounted nosuid,nodev,noexec like every other writable mount here,
+# and inside the mount namespace unshare made, so it is not in init's table.
+#
+# --root is on /run, which is rw,noexec: the state directory holds a lock and
+# metadata, runsc creates it itself, and --gofer-network-namespace=new is what
+# keeps runsc from bind-mounting an nsfs rw into it — the one mount that would
+# make the check above fatal (spike S1, E2 and E3).
+RUNSC_CMD="/usr/bin/runsc --root=/run/runsc-state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new run --bundle /workload workload"
+if [ -f /workload/config.json ]; then
+  say "the workload device carries a bundle at /workload/config.json"
+  say "running: unshare -Urmnpf sh -c 'mount -t proc -o nosuid,nodev,noexec proc /proc; exec $RUNSC_CMD'"
+  uptime_say
+  unshare -Urmnpf sh -c "mount -t proc -o nosuid,nodev,noexec proc /proc; exec $RUNSC_CMD"
+  wrc=$?
+  uptime_say
+  say "workload exited with status $wrc"
+  # The mount table again, and for a different question than the check's. The
+  # check is not re-run and is not moved: it ran before anything else and its
+  # verdict is what decided this boot. This is the second question — whether
+  # anything runsc made is visible in init's own mount namespace — and the
+  # answer should be nothing at all, because unshare gave it a mount namespace
+  # of its own and --gofer-network-namespace=new is the one mount that would
+  # otherwise have landed outside it.
+  sed 's/^/init: mount-after-workload: /' /proc/mounts
+else
+  say "no workload bundle at /workload/config.json; continuing to tunneld"
+fi
+
 # A policy to push, if the config device carries one (ticket 22,
 # docs/policy-push.md). The file is looked for rather than named
 # unconditionally, because no policy is the ordinary case — it is what every
@@ -114,6 +168,7 @@ if [ -f /config/push-policy.json ]; then
   say "the config device carries a policy to push: /config/push-policy.json"
 fi
 
+uptime_say
 say "running /usr/bin/tunneld $PUSH"
 /usr/bin/tunneld $PUSH
 rc=$?

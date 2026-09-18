@@ -4,7 +4,7 @@
 #
 #   tunnel-on-two-guests.sh [-image DIR] [-out DIR] [-scenario NAME]...
 #                           [-no-snp] [-run-for SECONDS] [-quick]
-#                           [-capture DIR] [-spool DIR]
+#                           [-capture DIR] [-spool DIR] [-workload IMG]
 #
 # Every property in the memo's verification list that a unit test cannot reach
 # is here, and each one is a scenario: a pair of guests booted from the measured
@@ -68,6 +68,15 @@
 # carries. The legitimate exchange and the relay's failure to read it are the
 # same run.
 #
+# -workload attaches one read-only OCI-bundle disk (docs/snp/image/mkworkloaddev.sh)
+# to BOTH guests, which their init runs under runsc after the egress ceiling and
+# before tunneld (ticket 24). It is outside the launch measurement, so it changes
+# no measurement, no document and no assertion below; the workload's own console
+# lines are read by hand. Without it each guest logs that there is no bundle and
+# carries on to tunneld, which is the ordinary case and what every scenario
+# recorded before ticket 24 is. When it is given, the capture keeps the bundle's
+# config.json — what ran — and not the disk, which is megabytes and not measured.
+#
 # Prerequisites, none of which this script installs, and each of which fails
 # somewhere further in than where it was missing:
 #
@@ -109,7 +118,7 @@ IMAGE="${IMAGE:-$STACK/image-ticket14}"
 OUT="${OUT:-}"
 CHAIN="${CHAIN:-$REPO/docs/snp/evidence}"
 STALE="${STALE:-$REPO/docs/snp/evidence/ticket05}"
-SNP=1; CAPTURE=""; RUN_FOR=1000; SCENARIOS=(); SPOOL=""
+SNP=1; CAPTURE=""; RUN_FOR=1000; SCENARIOS=(); SPOOL=""; WORKLOAD=""
 RELAY_A_PORT="${RELAY_A_PORT:-15801}"; RELAY_B_PORT="${RELAY_B_PORT:-15802}"
 MARKER="attested-tunnel-plaintext-marker"
 TAMPER=0
@@ -127,9 +136,11 @@ while [ -n "${1:-}" ]; do
     -quick)    RUN_FOR=150; shift ;;
     -no-snp)   SNP=0; shift ;;
     -capture)  CAPTURE="$2"; shift 2 ;;
+    -workload) WORKLOAD="$2"; shift 2 ;;
     *) echo "unknown option: $1" >&2; exit 2 ;;
   esac
 done
+[ -z "$WORKLOAD" ] || [ -f "$WORKLOAD" ] || { echo "missing workload device image $WORKLOAD" >&2; exit 2; }
 [ ${#SCENARIOS[@]} -gt 0 ] || SCENARIOS=(live modified tcbfloor nosnp tamper stalechain live-again)
 [ -n "$OUT" ] || OUT="$STACK/$(basename "$IMAGE")-run"
 
@@ -181,6 +192,7 @@ echo "repo        : $(git -C "$REPO" rev-parse HEAD) on $(git -C "$REPO" rev-par
 echo "image       : $IMAGE"
 echo "mode        : $([ "$SNP" = 1 ] && echo 'SEV-SNP (privileged, through the spool)' || echo 'control boot, no SNP (unprivileged)')"
 echo "scenarios   : ${SCENARIOS[*]}"
+[ -n "$WORKLOAD" ] && echo "workload    : $WORKLOAD (one OCI bundle on both guests, outside the launch measurement)"
 echo
 
 for f in OVMF.fd vmlinuz initrd.img cmdline.txt rootfs.img reference-values.json reference-values.json.sig \
@@ -370,6 +382,11 @@ boot_pair() {
   [ "$snp_b" = 0 ] && guest_b_flags="-no-snp"
   local common_flags=""
   [ "$SNP" = 0 ] && common_flags="-no-snp"
+  # One workload disk for both guests, read-only on each and never measured by
+  # either: two QEMUs opening one raw file read-only is the same arrangement as
+  # the two of them opening one rootfs.img.
+  local workload_flags=""
+  [ -n "$WORKLOAD" ] && workload_flags="-workload $WORKLOAD"
   cat > "$work/boot.job" <<JOB
 # Launch the two guests of $(basename "$work").
 #
@@ -387,10 +404,10 @@ export STACK="$STACK"
 A_LOG="$work/console-a.txt"
 B_LOG="$work/console-b.txt"
 timeout $seconds bash "$HERE/tunnel-guest.sh" -image "$image_a" -config "$work/config-a.img" \\
-    -relay 127.0.0.1:$RELAY_A_PORT -console "\$A_LOG" -mac 52:54:00:14:00:0a $common_flags &
+    -relay 127.0.0.1:$RELAY_A_PORT -console "\$A_LOG" -mac 52:54:00:14:00:0a $common_flags $workload_flags &
 A=\$!
 timeout $seconds bash "$HERE/tunnel-guest.sh" -image "$image_b" -config "$work/config-b.img" \\
-    -relay 127.0.0.1:$RELAY_B_PORT -console "\$B_LOG" -mac 52:54:00:14:00:0b $common_flags $guest_b_flags &
+    -relay 127.0.0.1:$RELAY_B_PORT -console "\$B_LOG" -mac 52:54:00:14:00:0b $common_flags $guest_b_flags $workload_flags &
 B=\$!
 wait \$A; echo "guest A qemu exited \$?"
 wait \$B; echo "guest B qemu exited \$?"
@@ -1337,6 +1354,18 @@ if [ -n "$CAPTURE" ]; then
   cp "$IMAGE/manifest.txt" "$IMAGE/reference-values.json" "$IMAGE/reference-values.json.sig" \
      "$IMAGE/policy.json" "$IMAGE/policy.json.sig" \
      "$IMAGE/predicted-measurement.txt" "$IMAGE/packaging.txt" "$CAPTURE/" 2>/dev/null || true
+  # What ran under runsc, read back out of the read-only ext4 image itself rather
+  # than copied from whatever directory the disk was built from — the disk is
+  # what the guests were given, so it is the disk the record should quote. The
+  # image is not copied: it is not measured, it is megabytes, and this one file
+  # is what says what ran.
+  if [ -n "$WORKLOAD" ]; then
+    if debugfs -R "dump /config.json $CAPTURE/workload-config.json" "$WORKLOAD" >/dev/null 2>&1; then
+      echo "captured the workload bundle's config.json out of $(basename "$WORKLOAD") (the disk is not measured and is not copied)"
+    else
+      echo "could not read config.json out of $WORKLOAD"
+    fi
+  fi
   echo "captured into $CAPTURE"
 fi
 [ "$FAILURES" = 0 ]

@@ -1,7 +1,8 @@
 #!/bin/bash
 # Launch the measured image built by build-image.sh.
 #
-#   launch-measured-guest.sh [-image DIR] [-config IMG] [-no-snp] [-mem MB] [-smp N] [-console FILE]
+#   launch-measured-guest.sh [-image DIR] [-config IMG] [-workload IMG]
+#                            [-no-snp] [-mem MB] [-smp N] [-console FILE]
 #
 # The four measured inputs come from DIR: OVMF.fd (via -bios: an SNP guest has
 # no variable store, so the unified image, never the split pflash pair),
@@ -9,8 +10,16 @@
 # line except those four, the vCPU count and the SEV policy affects the launch
 # measurement; the disks do not.
 #
-# The root filesystem and the config device are virtio-blk, read-only, and
-# identified inside the guest by serial, not by probe order.
+# The root filesystem, the config device and the workload device are virtio-blk,
+# read-only, and identified inside the guest by serial, not by probe order.
+#
+# -workload attaches the disk mkworkloaddev.sh builds: one OCI bundle, which the
+# initrd mounts at /workload and init runs under runsc before tunneld (ticket
+# 24). Like the config device it is NOT measured — the launch measurement covers
+# the four inputs above and nothing on any disk — so what the guest proves about
+# it is that the runsc which ran it and the options it was mounted with are in
+# the image, never what it carried. It is optional: without it the guest logs
+# that there is no bundle and carries on.
 #
 # SNP launch needs root (/dev/sev). -no-snp is a plain KVM control boot of the
 # same kernel, initrd, command line and root filesystem and needs only
@@ -24,11 +33,12 @@ HERE="$(dirname "$(readlink -f "$0")")"
 REPO="$(git -C "$HERE" rev-parse --show-toplevel 2>/dev/null || echo "$HERE/../../..")"
 STACK="${STACK:-$REPO/.scratch/attested-secure-tunnel/host-stack}"
 QEMU="${QEMU:-$STACK/usr/local/bin/qemu-system-x86_64}"
-IMAGE="$STACK/image"; CONFIG=""; SNP=1; MEM=2048; SMP=4; CONSOLE=""; REDUCED_OVERRIDE=""; FIRMWARE=""
+IMAGE="$STACK/image"; CONFIG=""; WORKLOAD=""; SNP=1; MEM=2048; SMP=4; CONSOLE=""; REDUCED_OVERRIDE=""; FIRMWARE=""
 while [ -n "${1:-}" ]; do
   case "$1" in
     -image)   IMAGE="$2"; shift 2 ;;
     -config)  CONFIG="$2"; shift 2 ;;
+    -workload) WORKLOAD="$2"; shift 2 ;;
     -no-snp)  SNP=0; shift ;;
     -mem)     MEM="$2"; shift 2 ;;
     -smp)     SMP="$2"; shift 2 ;;
@@ -73,6 +83,11 @@ if [ -n "$CONFIG" ]; then
   [ -f "$CONFIG" ] || { echo "missing config device image $CONFIG" >&2; exit 1; }
   ARGS+=( -drive "file=$CONFIG,if=none,id=config,format=raw,readonly=on"
           -device "virtio-blk-pci,drive=config,serial=attested-config,disable-legacy=on,iommu_platform=true" )
+fi
+if [ -n "$WORKLOAD" ]; then
+  [ -f "$WORKLOAD" ] || { echo "missing workload device image $WORKLOAD" >&2; exit 1; }
+  ARGS+=( -drive "file=$WORKLOAD,if=none,id=workload,format=raw,readonly=on"
+          -device "virtio-blk-pci,drive=workload,serial=attested-workload,disable-legacy=on,iommu_platform=true" )
 fi
 if [ -n "$CONSOLE" ]; then ARGS+=( -serial "file:$CONSOLE" ); else ARGS+=( -serial stdio ); fi
 

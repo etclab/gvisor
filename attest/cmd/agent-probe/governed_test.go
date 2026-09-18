@@ -56,6 +56,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -567,7 +568,7 @@ func TestClaudeGoverned(t *testing.T) {
 
 	// The one assertion each run carries over from the smoke: the ELF ran.
 	for _, r := range runs {
-		if !containsString(r.comms, "claude") {
+		if !slices.Contains(r.comms, "claude") {
 			t.Errorf("%s: the sentry traced no syscalls from a process called claude; what ran was %v", r.name, r.comms)
 		}
 	}
@@ -684,7 +685,7 @@ func dialled(r *sandboxRun) string {
 	var seen []string
 	for _, line := range r.at.matching("EXIT dialed ") {
 		rest := strings.TrimPrefix(line, "EXIT dialed ")
-		if where, _, ok := strings.Cut(rest, " ->"); ok && !containsString(seen, where) {
+		if where, _, ok := strings.Cut(rest, " ->"); ok && !slices.Contains(seen, where) {
 			seen = append(seen, where)
 		}
 	}
@@ -918,14 +919,11 @@ type appliedAt struct {
 }
 
 func (h *appliedAt) Apply(ctx context.Context, policy []byte) error {
-	began := time.Now()
-	err := h.Host.Apply(ctx, policy)
-	took := time.Since(began)
-	h.l.out.logf("a  Apply returned after %s: %v", took.Round(time.Microsecond), err)
-	if p := h.l.pushing.Load(); p != nil {
-		p.applied.Store(int64(took))
-	}
-	return err
+	return timeApply(ctx, h.Host, policy, h.l.out, "a", func(took time.Duration, _ error) {
+		if p := h.l.pushing.Load(); p != nil {
+			p.applied.Store(int64(took))
+		}
+	})
 }
 
 // ===== the world, governed =====
@@ -1301,15 +1299,4 @@ func networkFailures(digest string) string {
 		return "nothing on the network path failed. The refusal is in what the resolver answered and not in an errno, so there is no failed `connect` to find."
 	}
 	return "\n\n```\n" + strings.Join(said, "\n") + "\n```\n"
-}
-
-// containsString is slices.Contains without the import, which this file would
-// otherwise take for one call.
-func containsString(have []string, want string) bool {
-	for _, s := range have {
-		if s == want {
-			return true
-		}
-	}
-	return false
 }

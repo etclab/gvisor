@@ -557,6 +557,30 @@ type sandboxRun struct {
 	at      *stamps
 }
 
+// stateDir is --root for this run and the container id under it, which is the
+// pair the sentry's control socket path is made of: --root plus
+// runsc-<id>.sock, and that socket is where a pushed policy is delivered. A
+// sockaddr_un holds 108 bytes, so a path over it is EINVAL at the connect and
+// the peer that pushed is told its policy did not land — spike E1 §7a, found
+// the hard way. Saying so here is cheaper than reading it out of a refusal,
+// and it is why a run that pushes is given a shallower root than its own
+// directory.
+func (l *loopback) stateDir(t *testing.T, name, dir string) (root, id string) {
+	t.Helper()
+	root = filepath.Join(dir, "state")
+	if l.stateIn != "" {
+		root = filepath.Join(l.stateIn, name+"-state")
+	}
+	if err := os.MkdirAll(root, 0o700); err != nil {
+		t.Fatalf("%s: %v", root, err)
+	}
+	id = fmt.Sprintf("t25-%s-%d", name, os.Getpid())
+	if sock := filepath.Join(root, "runsc-"+id+".sock"); len(sock) >= 108 {
+		t.Fatalf("the control socket would be %d bytes at %s, and a sockaddr_un holds 108: no policy could be pushed into this sandbox (spike E1 §7a)", len(sock), sock)
+	}
+	return root, id
+}
+
 // sandbox writes one bundle, runs runsc over it and captures everything.
 func (l *loopback) sandbox(t *testing.T, name string, names map[string]int, w workload) *sandboxRun {
 	t.Helper()
@@ -585,28 +609,13 @@ func (l *loopback) sandbox(t *testing.T, name string, names map[string]int, w wo
 	podInit, stop := l.receiver(t, r)
 	defer stop()
 
-	state := filepath.Join(r.dir, "state")
-	if l.stateIn != "" {
-		state = filepath.Join(l.stateIn, name+"-state")
-	}
-	if err := os.MkdirAll(state, 0o700); err != nil {
-		t.Fatalf("%s: %v", state, err)
-	}
-	r.root, r.id = state, fmt.Sprintf("t25-%s-%d", name, os.Getpid())
-	// The sentry's control socket is --root plus runsc-<id>.sock, and it is
-	// where a pushed policy is delivered. A sockaddr_un holds 108 bytes, so a
-	// path over it is EINVAL at the connect and the peer that pushed is told
-	// its policy did not land — spike E1 §7a, found the hard way. Saying so
-	// here is cheaper than reading it out of a refusal.
-	if sock := filepath.Join(state, "runsc-"+r.id+".sock"); len(sock) >= 108 {
-		t.Fatalf("the control socket would be %d bytes at %s, and a sockaddr_un holds 108: no policy could be pushed into this sandbox (spike E1 §7a)", len(sock), sock)
-	}
+	r.root, r.id = l.stateDir(t, name, r.dir)
 	// S1's flag set, unchanged, plus the two the adapter adds. --network=none
 	// is required with them and is what the sandbox has either way: the only
 	// stack inside it is loopback, and every address the workload reaches is
 	// either 127.0.0.53 or a synthetic one the sentry allocated.
 	r.args = []string{
-		"--root=" + state,
+		"--root=" + r.root,
 		"--platform=systrap",
 		"--network=none",
 		"--ignore-cgroups",
@@ -756,26 +765,19 @@ type stamps struct {
 // A lineLog is the lines one side of a harness said, kept so that a test can
 // assert on them afterwards. There is one of it because both harnesses in this
 // package want exactly this and neither wants anything more.
+//
+// It is a [timeline] whose clock nobody reads: "was this said" is that type's
+// own filter taken from the zero time, so the lines, the lock and the search
+// are written once next door rather than twice.
 type lineLog struct {
-	mu    sync.Mutex
-	lines []string
-}
-
-func (l *lineLog) add(text string) {
-	l.mu.Lock()
-	l.lines = append(l.lines, text)
-	l.mu.Unlock()
+	timeline
 }
 
 // matching is the remembered lines that carry prefix.
 func (l *lineLog) matching(prefix string) []string {
-	l.mu.Lock()
-	defer l.mu.Unlock()
 	var found []string
-	for _, line := range l.lines {
-		if strings.Contains(line, prefix) {
-			found = append(found, line)
-		}
+	for _, said := range l.after(time.Time{}, prefix) {
+		found = append(found, said.text)
 	}
 	return found
 }

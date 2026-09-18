@@ -15,7 +15,7 @@ spool; everything else runs as the ordinary user.
 
 | | |
 |---|---|
-| the adapter's runsc | `make runsc` in this worktree → `bazel-bin/runsc/runsc_/runsc`. Statically linked, and `runsc flags` must list `-tunnel-socket` and `-tunnel-table`. |
+| the adapter's runsc | `make runsc` in this worktree → `bazel-bin/runsc/runsc_/runsc`. Statically linked, and `runsc flags` must list `-tunnel-socket` and `-tunnel-table`. The flags and the helper are in the source already; what is missing is a build. |
 | the root runner | up as root in tmux session `root-runner-m4`, watching `/home/pniroula/Projects/gvisor/docs/snp/root-spool` |
 | the author key | `$STACK/image-ticket14-packaging/author.key` — the key whose public half is inside every image this harness re-signs a set for |
 | `attest/` compiles | `package-tunneld.sh` runs `go test ./cmd/tunneld` first and builds `agent-probe` after it; both have to pass |
@@ -96,7 +96,11 @@ docs/snp/tunnel-on-two-guests.sh \
 
 `-quick` is `-run-for 150`, which gives each tunneld a 240 s hold — the workload
 finishes in seconds and the hold is what keeps a peer's answerer alive while the
-other guest is still fetching. The harness writes one `.job` into the spool and
+other guest is still fetching. **Do not run this scenario past half an hour**
+without changing `init.rootfs`: the exit is started with `-timeout 30m`, which is
+a number in the measured image, and a hold longer than that would leave the guest
+listening with nothing behind the socket. `-quick` is two orders of magnitude
+inside it. The harness writes one `.job` into the spool and
 waits; the root runner boots both guests from that one job, because two halves of
 a conversation cannot be run one after the other.
 
@@ -172,6 +176,7 @@ resolved on the segment are `10.14.0.2` and `10.14.0.3`.
 | symptom | where to look |
 |---|---|
 | `init: tunneld exited before /run/tunneld/sandbox.sock existed` | tunneld's `refusing to start` line above it. On SNP it should not appear at all. |
+| the helper cannot open the socket | `sandbox.Listen` chmods it 0600 and the owner is the guest's root. init, runsc, the helper and the exit are all uid 0 in the initial user namespace, and `unshare -Ur` maps 0 to 0, so this should not happen; if it does, it is a uid that is not mapped and not a path that is not visible. A pathname socket on `/run` crosses both the mount-namespace copy and the new network namespace — only an abstract socket is per-network-namespace — and that was checked on the workstation before this was written. |
 | `EXIT refused "web.peer-b:80": it is not in -allow=…` | `exit-allow` on the **serving** guest's config device — B serves `web.peer-b`. |
 | `bad address 'web.peer-b'` on guest **A** | A's `tunnel-table.json`, or the sentry's resolver. That name is the one A is supposed to reach. |
 | `wget: can't connect … Network unreachable` | the name resolved and the connect was refused: wrong port in the table, or the helper/tunneld path. Not a resolver problem. |

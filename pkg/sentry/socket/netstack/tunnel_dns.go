@@ -75,7 +75,7 @@ const dnsHeaderLen = 12
 const dnsTTL = 60
 
 // startTunnelResolver binds the responder and serves it until the stack goes.
-func startTunnelResolver(st *Stack, a *adapter) error {
+func startTunnelResolver(st *Stack) error {
 	var wq waiter.Queue
 	ep, terr := st.Stack.NewEndpoint(udp.ProtocolNumber, ipv4.ProtocolNumber, &wq)
 	if terr != nil {
@@ -86,7 +86,7 @@ func startTunnelResolver(st *Stack, a *adapter) error {
 		ep.Close()
 		return &tcpipError{op: "binding the resolver to 127.0.0.53:53", err: terr}
 	}
-	go serveTunnelResolver(ep, &wq, a)
+	go serveTunnelResolver(ep, &wq)
 	return nil
 }
 
@@ -100,7 +100,13 @@ type tcpipError struct {
 func (e *tcpipError) Error() string { return e.op + ": " + e.err.String() }
 
 // serveTunnelResolver is the responder's loop.
-func serveTunnelResolver(ep tcpip.Endpoint, wq *waiter.Queue, a *adapter) {
+//
+// The adapter is taken per query and not captured at bind time, because a
+// narrowing replaces it: a responder holding the adapter it started with would
+// keep answering for names the policy in force no longer carries, which is the
+// half of N the connect hook cannot enforce (a name that still resolves is a
+// name the workload gets an address for).
+func serveTunnelResolver(ep tcpip.Endpoint, wq *waiter.Queue) {
 	e, ch := waiter.NewChannelEntry(waiter.ReadableEvents)
 	wq.EventRegister(&e)
 	defer wq.EventUnregister(&e)
@@ -115,6 +121,10 @@ func serveTunnelResolver(ep tcpip.Endpoint, wq *waiter.Queue, a *adapter) {
 			}
 			log.Warningf("tunnel resolver: read failed, the responder is going away: %v", terr)
 			return
+		}
+		a := currentTunnel()
+		if a == nil {
+			continue
 		}
 		ans := a.answerDNS(buf.Bytes())
 		if len(ans) == 0 {

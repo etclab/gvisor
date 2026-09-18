@@ -216,3 +216,21 @@ message EgressRefused {
   // "not-loopback", "unavailable".
   string reason = 6;
 }
+
+// ExecRefused is emitted when the sentry refuses an execve because the binary
+// is not one the policy in force names: neither its resolved path nor the
+// SHA-256 of its contents is in `x`. The execve fails EACCES.
+message ExecRefused {
+  gvisor.common.ContextData context_data = 1;
+
+  // Path is the resolved path of the binary that was to be executed, which for
+  // an interpreter script is the first executable opened.
+  string path = 2;
+
+  // Sha256 is the lowercase hex SHA-256 of that binary's contents, empty when
+  // the sentry had no hash for it.
+  string sha256 = 3;
+
+  // Reason says which rule refused it. There is one today: "not-in-x".
+  string reason = 4;
+}

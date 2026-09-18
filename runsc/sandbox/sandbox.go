@@ -1992,7 +1992,11 @@ func (s *Sandbox) startTunnelHelper(conf *config.Config, donations *donation.Age
 		nextFD++
 	}
 
-	cmd.Args = append(cmd.Args, "tunnel-helper", "-sock-fd=3", "-sandbox-socket="+conf.TunnelSocket)
+	// The control socket is where a pushed policy is forwarded as
+	// Policy.Narrow. It is created above, before this function is called, and
+	// the sentry only starts listening on it once the sandbox is up — so the
+	// helper is given the path and dials it per apply, never at startup.
+	cmd.Args = append(cmd.Args, "tunnel-helper", "-sock-fd=3", "-sandbox-socket="+conf.TunnelSocket, "-control-socket="+s.ControlSocketPath)
 	log.Debugf("Starting tunnel helper: %s %v", cmd.Path, cmd.Args)
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("execing the tunnel helper: %w", err)

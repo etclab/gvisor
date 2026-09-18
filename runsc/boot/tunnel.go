@@ -55,12 +55,32 @@ type TunnelAttachArgs struct {
 
 // Tunnel is the control object the adapter is reached through.
 type Tunnel struct {
+	// bootTable is the table --tunnel-table named. It never changes, and it is
+	// P0 for the `n` component of a pushed policy: a push may not name a
+	// destination the operator did not write down (policy.go).
+	bootTable *netstack.TunnelTable
+
+	// tableMu guards table, which a narrowing replaces.
+	tableMu sync.RWMutex
+	// +checklocks:tableMu
 	table *netstack.TunnelTable
+
+	// policy is the policy in force and the lock a narrowing is serialised
+	// under. See policy.go.
+	policy policyState
 
 	// mu serializes calls on the channel to the helper, which is one socket.
 	mu sync.Mutex
 	// +checklocks:mu
 	client *urpc.Client
+}
+
+// currentTable is the table in force, which is the boot table until a policy
+// narrows it.
+func (tn *Tunnel) currentTable() *netstack.TunnelTable {
+	tn.tableMu.RLock()
+	defer tn.tableMu.RUnlock()
+	return tn.table
 }
 
 // newTunnel reads the table from tableFD and builds the channel to the helper
@@ -80,7 +100,7 @@ func newTunnel(tunnelFD, tableFD int) (*Tunnel, error) {
 	if err != nil {
 		return nil, fmt.Errorf("the tunnel helper channel on fd %d: %w", tunnelFD, err)
 	}
-	return &Tunnel{table: table, client: urpc.NewClient(sock)}, nil
+	return &Tunnel{bootTable: table, table: table, client: urpc.NewClient(sock)}, nil
 }
 
 // Attach implements the control method. The descriptor comes back as the one
@@ -177,14 +197,15 @@ func (tn *Tunnel) permits(peer, hostPort string) error {
 	if err != nil {
 		return fmt.Errorf("the tunnel table names no destination %q", hostPort)
 	}
-	entry, ok := tn.table.Names[strings.ToLower(strings.TrimSuffix(host, "."))]
+	table := tn.currentTable()
+	entry, ok := table.Names[strings.ToLower(strings.TrimSuffix(host, "."))]
 	if !ok {
 		return fmt.Errorf("the tunnel table does not name %q", host)
 	}
 	if entry.Port != port {
 		return fmt.Errorf("the tunnel table permits %q on port %d and not %d", host, entry.Port, port)
 	}
-	if want := tn.table.PeerFor(entry); want != peer {
+	if want := table.PeerFor(entry); want != peer {
 		return fmt.Errorf("the tunnel table has %q dialled by peer %q and not %q", host, want, peer)
 	}
 	return nil
@@ -203,7 +224,7 @@ func setupTunnel(l *Loader, tunnelFD, tableFD int) error {
 		return err
 	}
 	l.tunnel = tn
-	log.Infof("Tunnel table read: %d names, helper channel on fd %d", len(tn.table.Names), tunnelFD)
+	log.Infof("Tunnel table read: %d names, helper channel on fd %d", len(tn.bootTable.Names), tunnelFD)
 	return nil
 }
 
@@ -219,9 +240,9 @@ func (l *Loader) installTunnel() error {
 	if !ok {
 		return fmt.Errorf("the tunnel adapter requires --network=none and this sandbox's stack is a %T", l.k.RootNetworkNamespace().Stack())
 	}
-	if err := netstack.InstallTunnel(st, l.tunnel.table, tunnelAttacher{tunnel: l.tunnel}); err != nil {
+	if err := netstack.InstallTunnel(st, l.tunnel.currentTable(), tunnelAttacher{tunnel: l.tunnel}); err != nil {
 		return err
 	}
-	log.Infof("Tunnel adapter installed with %d names", len(l.tunnel.table.Names))
+	log.Infof("Tunnel adapter installed with %d names", len(l.tunnel.currentTable().Names))
 	return nil
 }

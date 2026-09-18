@@ -1,0 +1,95 @@
+=== two attested guests, from image-ticket24 ===
+date        : 2026-09-18T09:28:05Z
+repo        : 6b05bbc79db637f9616367d747e18061905945c3 on ticket-24-runsc-in-the-measured-guest
+image       : /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket24
+mode        : SEV-SNP (privileged, through the spool)
+scenarios   : live
+workload    : /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t24/46c42ff5-b5e8-48d6-a8bb-ba92dda85a78/scratchpad/workload.img (one OCI bundle on both guests, outside the launch measurement)
+
+predicted launch measurement of the image both guests boot:
+  423b7bcfbf3922af7c7faa65607dff6d86f6c0508ac6aaf0a9aff684d39313318364fd3ba2e15fe491b7f32077c84b3c
+the reference value set on both config devices names exactly that, signed by the
+author key baked into the image at /etc/attested-tunnel/author.pub (ADR-0004),
+and the policy beside it is signed by the same key under its own domain.
+
+spool       : /home/pniroula/Projects/gvisor/docs/snp/root-spool
+
+### live: two attested guests, an exchange, and the latency table
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config device written to /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket24-run-e3-with/live/config-a.img (19c11cb8d36311b7…, not measured)
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config device written to /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket24-run-e3-with/live/config-b.img (673745d9bc3013ed…, not measured)
+spooled /home/pniroula/Projects/gvisor/docs/snp/root-spool/tunnel-3545604-live.job; waiting up to 630s for the runner
+live finished, rc=0
+    | guest A qemu exited 0
+    | guest B qemu exited 0
+relay:
+    | l2relay: RELAYED a_to_b_frames=387 b_to_a_frames=389 a_to_b_bytes=52675 b_to_a_bytes=54195 tampered=0
+    | l2relay: MARKER not found hits=0 marker='attested-tunnel-plaintext-marker' in 776 frames carrying 106870 bytes
+    | l2relay: what was on the segment:
+    |   ethertypes : IPv4=759, ARP=17
+    |   ip protocols: UDP=759
+    |   arp targets : 10.14.0.2, 10.14.0.3
+    |   10.14.0.3 -> 10.14.0.2 proto=UDP frames=382
+    |   10.14.0.2 -> 10.14.0.3 proto=UDP frames=377
+PASS  guest-a: booted the measured image and ran the packaged tunneld
+PASS  guest-a: no writable path in the image is executable
+PASS  guest-a: read the author key from inside the launch measurement
+PASS  guest-a: read the reference value set and chain from the config device
+PASS  guest-b: booted the measured image and ran the packaged tunneld
+PASS  guest-b: no writable path in the image is executable
+PASS  guest-b: read the author key from inside the launch measurement
+PASS  guest-b: read the reference value set and chain from the config device
+PASS  guest-a: acquired its own evidence from the platform
+PASS  guest-a: bundled the chain provisioned on its config device, not the platform's
+PASS  guest-a: is listening
+PASS  guest-b: acquired its own evidence from the platform
+PASS  guest-b: bundled the chain provisioned on its config device, not the platform's
+PASS  guest-b: is listening
+PASS  guest-a admitted its peer's evidence
+PASS  guest-b admitted its peer's evidence
+PASS  guest-b established a tunnel
+PASS  guest-b exchanged over it, warm
+PASS  guest-b ran concurrent exchanges on one tunnel
+PASS  guest-a answered guest-b's exchanges
+PASS  guest-b's exercise completed
+PASS  neither guest refused the other
+    guest-a presented key 173fc222c8d0034b27c275c589cc98e194051defbd40148329f6179739545f99759b009131a5d3a371b57f5d38a4ad6efa2478d02a2872b901cca18e5dec89ae
+    guest-b presented key cf01e6124b97a5f4639068e1f3377db7d2a4771f2f84074cadcb583d2825b394890d6cd513afab4b3f282ecaa35b17e5157a2820026816e9d9c07f4004234cef
+    both presented chain  0957b4aa0678b511c89d6f9b49742ab114043b662408b13e9f7b43d1033d5a81 / 0957b4aa0678b511c89d6f9b49742ab114043b662408b13e9f7b43d1033d5a81
+PASS  the two guests presented distinct keys
+PASS  the two guests presented the same chain, which is what one chip means
+PASS  each guest reported the measurement predicted offline for the image both booted
+PASS  the exchange went through the relay
+PASS  the relay found no plaintext on the wire
+    addresses resolved on the segment: 10.14.0.2, 10.14.0.3
+PASS  no guest looked for a gateway or anything else off the segment
+    passes: 5, of which cost a verification: 1 (maximum age 15m, run 150s)
+PASS  asking for a warm peer again cost no handshake
+
+=== latency, as the guests measured it ===
+  LATENCY pass=1 peer=guest-a kind=establish ms=146.974 attempts=1 verifier_calls=1
+  LATENCY pass=1 peer=guest-a kind=warm_exchange n=20 min_ms=2.458 p50_ms=3.460 p90_ms=5.426 max_ms=12.331 mean_ms=3.893 answered_by="guest-a"
+  LATENCY pass=1 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=26.117 min_ms=4.395 p50_ms=6.517 p90_ms=10.203 max_ms=10.347 mean_ms=6.701
+  LATENCY pass=2 peer=guest-a kind=establish ms=0.093 attempts=1 verifier_calls=0
+  LATENCY pass=2 peer=guest-a kind=warm_exchange n=20 min_ms=2.102 p50_ms=3.326 p90_ms=4.747 max_ms=5.098 mean_ms=3.357 answered_by="guest-a"
+  LATENCY pass=2 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=43.615 min_ms=3.977 p50_ms=5.910 p90_ms=29.466 max_ms=30.277 mean_ms=13.225
+  LATENCY pass=3 peer=guest-a kind=establish ms=0.065 attempts=1 verifier_calls=0
+  LATENCY pass=3 peer=guest-a kind=warm_exchange n=20 min_ms=2.955 p50_ms=3.981 p90_ms=4.429 max_ms=11.196 mean_ms=4.180 answered_by="guest-a"
+  LATENCY pass=3 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=37.006 min_ms=5.555 p50_ms=8.382 p90_ms=19.755 max_ms=19.761 mean_ms=11.012
+  LATENCY pass=4 peer=guest-a kind=establish ms=0.065 attempts=1 verifier_calls=0
+  LATENCY pass=4 peer=guest-a kind=warm_exchange n=20 min_ms=3.095 p50_ms=3.813 p90_ms=4.988 max_ms=5.677 mean_ms=4.033 answered_by="guest-a"
+  LATENCY pass=4 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=37.892 min_ms=4.610 p50_ms=6.765 p90_ms=23.402 max_ms=23.516 mean_ms=11.606
+  LATENCY pass=5 peer=guest-a kind=establish ms=0.072 attempts=1 verifier_calls=0
+  LATENCY pass=5 peer=guest-a kind=warm_exchange n=20 min_ms=2.330 p50_ms=3.041 p90_ms=5.003 max_ms=5.005 mean_ms=3.315 answered_by="guest-a"
+  LATENCY pass=5 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=29.430 min_ms=3.016 p50_ms=5.112 p90_ms=14.087 max_ms=17.472 mean_ms=6.079
+
+=== 29 passed, 0 failed ===

@@ -1,0 +1,6 @@
+workload: config.json
+workload: rootfs/  (3 files, 2088 KiB)
+Warning: label too long; will be truncated to 'attested-workloa'
+
+workload device written to /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t24/46c42ff5-b5e8-48d6-a8bb-ba92dda85a78/scratchpad/workload.img (root-owned, ext4 without a journal)
+workload device sha256: e725de60c4a8a8ba3f961180acc951c0e2546594932fb154b5bdd0f51fade118  (not measured)

@@ -36,6 +36,7 @@ import (
 	"net"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/subcommands"
@@ -95,8 +96,14 @@ func (h *TunnelHelperCmd) Execute(_ context.Context, f *flag.FlagSet, args ...an
 	defer client.Close()
 	log.Infof("Tunnel helper connected to tunneld at %q", h.sandboxSocket)
 
-	server := urpc.NewServer()
-	server.Register(&TunnelHelper{client: client})
+	// The server closes each descriptor it handed out as soon as the reply
+	// carrying it has gone: urpc does not do it, and a helper that kept a
+	// reference to every stream would keep the far exit's TCP connection open
+	// long after the sandbox closed its own end — tunneld's pump only sees the
+	// end of a stream when the last descriptor for it is gone.
+	helper := &TunnelHelper{client: client}
+	server := urpc.NewServerWithCallback(helper.handedOver)
+	server.Register(helper)
 	// Handle blocks: the helper's life is the socketpair's, and the
 	// socketpair's end is the sentry going away. A tunneld that goes away
 	// instead is not the end of the helper — every later Open simply answers
@@ -117,9 +124,32 @@ func applyFromTunneld(policy []byte) error {
 }
 
 // TunnelHelper is the object the sentry calls. Its one method is
-// TunnelHelper.Open, and urpc takes that name from this type.
+// TunnelHelper.Open, and urpc takes that name from this type — which is also
+// why handedOver below is unexported: urpc registers every exported method of
+// the object it is given, and would reject one that is not an RPC.
 type TunnelHelper struct {
 	client *tunneldClient
+
+	mu sync.Mutex
+	// sent holds the descriptors the last call put in its reply. urpc's server
+	// marshals a result's files and then forgets them, so this is where they
+	// are remembered until the reply is on the wire.
+	sent []*os.File
+}
+
+// handedOver runs after each RPC, once urpc has sent the reply and the
+// descriptors that went with it. RPCs on one connection do not overlap, so
+// whatever is here belongs to the call that just finished.
+func (rpc *TunnelHelper) handedOver() {
+	rpc.mu.Lock()
+	sent := rpc.sent
+	rpc.sent = nil
+	rpc.mu.Unlock()
+	for _, f := range sent {
+		if err := f.Close(); err != nil {
+			log.Warningf("Tunnel helper: closing a handed-over stream: %v", err)
+		}
+	}
 }
 
 // tunnelHelperOpenArgs names one stream.
@@ -162,7 +192,11 @@ func (rpc *TunnelHelper) Open(args *tunnelHelperOpenArgs, result *urpc.FilePaylo
 		abandonStream(conn)
 		return err
 	}
-	result.Files = []*os.File{os.NewFile(uintptr(fd), args.HostPort)}
+	f = os.NewFile(uintptr(fd), args.HostPort)
+	result.Files = []*os.File{f}
+	rpc.mu.Lock()
+	rpc.sent = append(rpc.sent, f)
+	rpc.mu.Unlock()
 	return nil
 }
 

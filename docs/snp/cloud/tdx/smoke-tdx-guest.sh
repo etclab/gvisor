@@ -41,7 +41,27 @@
 #   GATEWAY      the VPC gateway (default 10.128.0.1)
 #   PORT         the tunnel port (default 4433, which is what the project's
 #                existing firewall rule attested-tunnel-udp-4433 opens)
-#   ZONE, OUT, BOOT_IMAGE, CONFIG_IMAGE, DEADLINE
+#   TICKET       which ticket this run belongs to (default 19). It names the
+#                default OUT and appears in the rows printed for RESOURCES.md;
+#                it changes nothing the guest sees.
+#   LABEL        the label every resource this run creates carries (default
+#                purpose=attested-tunnel-t19), and the filter the teardown lists
+#                by, so a run of a later ticket can be inventoried on its own.
+#   WORKLOAD_RAW optional. A workload device built by mkworkloaddev-tdx.sh
+#                (ticket 24). Set, it is published as a third image and attached
+#                as a third disk with --device-name attested-workload, which is
+#                what /init looks for; the initrd mounts it ro,exec at /workload
+#                and runs the bundle on it under runsc. Unset, the guest boots
+#                with two disks and says on the console that it found no
+#                workload — which is every boot before ticket 24.
+#
+#                A third disk is a machine shape nobody has measured RTMR0 for
+#                (docs/snp/evidence/ticket19/rtmr0/), so a guest of this shape
+#                may be refused on RTMR0 by a reference value authored for the
+#                two-disk shape. That is a fact about the provider's register,
+#                not about this image, and no value read off a booted machine
+#                belongs in a reference value.
+#   ZONE, OUT, BOOT_IMAGE, CONFIG_IMAGE, WORKLOAD_IMAGE, DEADLINE
 set -euo pipefail
 HERE="$(dirname "$(readlink -f "$0")")"
 REPO="$(git -C "$HERE" rev-parse --show-toplevel)"
@@ -53,10 +73,12 @@ PORT="${PORT:-4433}"
 MTU="${MTU:-1460}"
 DEADLINE="${DEADLINE:-600}"
 KEEP=0
-LABEL="purpose=attested-tunnel-t19"
+TICKET="${TICKET:-19}"
+LABEL="${LABEL:-purpose=attested-tunnel-t19}"
+WORKLOAD_RAW="${WORKLOAD_RAW:-}"
 : "${IMAGE_DIR:?set IMAGE_DIR to the output directory of build-tdx-image.sh}"
 IMAGE_DIR="$(readlink -f "$IMAGE_DIR")"
-OUT="${OUT:-$REPO/docs/snp/evidence/ticket19/smoke}"
+OUT="${OUT:-$REPO/docs/snp/evidence/ticket$TICKET/smoke}"
 [ "${1:-}" = "-keep" ] && KEEP=1
 export PATH="/usr/local/go/bin:$PATH"
 
@@ -72,6 +94,14 @@ POLICY_DIGEST=$(cd "$REPO/attest" && GOPROXY=off go run ./cmd/attest-tool ceilin
 [[ "$POLICY_DIGEST" =~ ^[0-9a-f]{64}$ ]] || { echo "attest-tool ceiling -digest printed no digest" >&2; exit 2; }
 BOOT_IMAGE="${BOOT_IMAGE:-attested-tdx-${RTMR2:0:12}}"
 CONFIG_IMAGE="${CONFIG_IMAGE:-attested-config-$VM-$(date -u +%Y%m%d%H%M%S)}"
+WORKLOAD_IMAGE="${WORKLOAD_IMAGE:-attested-workload-$VM-$(date -u +%Y%m%d%H%M%S)}"
+if [ -n "$WORKLOAD_RAW" ]; then
+  WORKLOAD_RAW="$(readlink -f "$WORKLOAD_RAW")"
+  [ -f "$WORKLOAD_RAW" ] || { echo "WORKLOAD_RAW $WORKLOAD_RAW is not a file" >&2; exit 2; }
+fi
+# Every image and bucket this run publishes carries the run's own label, so the
+# inventory afterwards is one filter and not a memory.
+export LABELS="$LABEL"
 
 mkdir -p "$OUT"
 OUT="$(readlink -f "$OUT")"
@@ -83,12 +113,22 @@ resources_row() {
   echo "############ for docs/snp/cloud/tdx/RESOURCES.md ############"
   echo "| created | name | type | purpose | state |"
   echo "|---|---|---|---|---|"
-  printf '| %s | %s | c3-standard-4 TDX, %s, 20GB pd-balanced boot from custom image `%s` + 10GB pd-balanced config disk from `%s`, `--private-network-ip %s` | ticket 19 smoke boot: one guest from the built image, egress rule set installed and probed, tunneld self-check | **deleted %s** |\n' \
-    "${CREATED:-(never created)}" "$VM" "$ZONE" "$BOOT_IMAGE" "$CONFIG_IMAGE" "$IP" "$DELETED"
-  printf '| %s | %s | custom image, 10GiB, label `%s` | ticket 19: the attested tunnel guest image, predicted RTMR2 `%s` | **kept for the scenario runs** |\n' \
-    "${CREATED:-}" "$BOOT_IMAGE" "$LABEL" "${RTMR2:0:8}…${RTMR2: -5}"
-  printf '| %s | %s | custom image, 1GiB, label `%s` | ticket 19: %s config device (set, policy, peers, run config, addressing, Intel collateral) | **kept for the scenario runs** |\n' \
-    "${CREATED:-}" "$CONFIG_IMAGE" "$LABEL" "$VM"
+  local disks="20GB pd-balanced boot from custom image \`$BOOT_IMAGE\` + 10GB pd-balanced config disk from \`$CONFIG_IMAGE\`"
+  local shape="one guest from the built image, egress rule set installed and probed, tunneld self-check"
+  if [ -n "$WORKLOAD_RAW" ]; then
+    disks="$disks + 10GB pd-balanced workload disk from \`$WORKLOAD_IMAGE\` (device-name attested-workload)"
+    shape="$shape; a third disk carries the OCI bundle /init runs under runsc, so this is a THREE-disk shape and RTMR0 is a function of the shape"
+  fi
+  printf '| %s | %s | c3-standard-4 TDX, %s, %s, `--private-network-ip %s` | ticket %s smoke boot: %s | **deleted %s** |\n' \
+    "${CREATED:-(never created)}" "$VM" "$ZONE" "$disks" "$IP" "$TICKET" "$shape" "$DELETED"
+  printf '| %s | %s | custom image, 10GiB, label `%s` | ticket %s: the attested tunnel guest image, predicted RTMR2 `%s` | **kept for the scenario runs** |\n' \
+    "${CREATED:-}" "$BOOT_IMAGE" "$LABEL" "$TICKET" "${RTMR2:0:8}…${RTMR2: -5}"
+  printf '| %s | %s | custom image, 1GiB, label `%s` | ticket %s: %s config device (set, peers, run config, addressing, Intel collateral) | **kept for the scenario runs** |\n' \
+    "${CREATED:-}" "$CONFIG_IMAGE" "$LABEL" "$TICKET" "$VM"
+  if [ -n "$WORKLOAD_RAW" ]; then
+    printf '| %s | %s | custom image, 1GiB, label `%s` | ticket %s: %s workload device, one OCI bundle, mounted ro,exec at /workload and OUTSIDE the measurement | **kept for the scenario runs** |\n' \
+      "${CREATED:-}" "$WORKLOAD_IMAGE" "$LABEL" "$TICKET" "$VM"
+  fi
   echo
   echo "verdict: $VERDICT"
 }
@@ -111,7 +151,7 @@ cleanup() {
   else
     echo "no instance was created; nothing to delete"
   fi
-  gcloud compute instances list --filter="labels.purpose=attested-tunnel-t19" --format='value(name,zone,status)' || true
+  gcloud compute instances list --filter="labels.$LABEL" --format='value(name,zone,status)' || true
   resources_row
   echo "=== done $(date -u +%Y-%m-%dT%H:%M:%SZ), exit $rc ==="
   exit "$rc"
@@ -119,7 +159,7 @@ cleanup() {
 trap cleanup EXIT
 trap 'echo interrupted; exit 130' INT TERM
 
-echo "=== TDX smoke boot (ticket 19): $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
+echo "=== TDX smoke boot (ticket $TICKET): $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
 echo "project $(gcloud config get-value project 2>/dev/null) zone $ZONE"
 echo "repo    $(git -C "$REPO" rev-parse HEAD)"
 echo "image   $IMAGE_DIR (predicted RTMR2 $RTMR2)"
@@ -169,17 +209,34 @@ prefix=32
 gateway=$GATEWAY
 mtu=$MTU
 EOF
-bash "$HERE/mkconfigdev-tdx.sh" "$D" "$OUT/config.raw"
+# LABEL is unset for this call and unset deliberately. This script's LABEL is the
+# Compute Engine resource label; mkconfigdev-tdx.sh's LABEL is the ext4 volume
+# label the initrd falls back to when the provider does not expose the device
+# name, and it defaults to attested-config. They were never the same variable,
+# but until this ticket this script's LABEL was a plain assignment that a child
+# could not see, and a LABEL given in the environment is exported. Leaving it
+# through wrote `purpose=attested` (truncated to ext4's sixteen bytes) onto the
+# config device, and the guest halted looking for a disk whose label it had
+# renamed -- E4's first boot, docs/snp/evidence/ticket24/spikes/E4/boot-1/.
+env -u LABEL bash "$HERE/mkconfigdev-tdx.sh" "$D" "$OUT/config.raw"
 echo
 
 # ---- publish ---------------------------------------------------------------
-echo "############ publishing the two images ############"
+echo "############ publishing the images ############"
 if gcloud compute images describe "$BOOT_IMAGE" >/dev/null 2>&1; then
   echo "boot image $BOOT_IMAGE exists already; reusing it"
 else
   bash "$HERE/publish-tdx-image.sh" "$IMAGE_DIR/disk.raw" "$BOOT_IMAGE"
 fi
 bash "$HERE/publish-tdx-image.sh" "$OUT/config.raw" "$CONFIG_IMAGE"
+# The workload device, if this run has one. It is published exactly as the
+# config device is and for the same reason: Compute Engine takes bytes only
+# through a bucket. Nothing on it is measured and nothing on it is trusted.
+WORKLOAD_DISK_ARGS=()
+if [ -n "$WORKLOAD_RAW" ]; then
+  bash "$HERE/publish-tdx-image.sh" "$WORKLOAD_RAW" "$WORKLOAD_IMAGE"
+  WORKLOAD_DISK_ARGS=(--create-disk "name=$VM-workload,image=$WORKLOAD_IMAGE,size=10GB,type=pd-balanced,device-name=attested-workload,auto-delete=yes")
+fi
 echo
 
 # ---- the instance ----------------------------------------------------------
@@ -195,6 +252,7 @@ gcloud beta compute instances create "$VM" --zone "$ZONE" \
   --image "$BOOT_IMAGE" \
   --boot-disk-size 20GB --boot-disk-type pd-balanced --boot-disk-auto-delete \
   --create-disk "name=$VM-config,image=$CONFIG_IMAGE,size=10GB,type=pd-balanced,device-name=attested-config,auto-delete=yes" \
+  "${WORKLOAD_DISK_ARGS[@]}" \
   --private-network-ip "$IP" \
   --labels "$LABEL" \
   --format 'value(name,zone,machineType,status,networkInterfaces[0].networkIP)'
@@ -253,7 +311,7 @@ done
 echo "console: $(wc -l < "$OUT/console.txt") lines in $OUT/console.txt"
 echo
 echo "---- the lines that matter ----"
-grep -E '^initrd: (loaded|config device|link|loopback|EXIT|FATAL|WARNING|report interface)|^tunneld: (EGRESS|SELFCHECK VERDICT|SELFCHECK measurement|SELFCHECK mrtd|SELFCHECK rtmr|SELFCHECK tcb|policy |listening|PEER |REFUSED|LATENCY|EXIT|refusing)' \
+grep -E '^initrd: (loaded|config device|workload|uptime|running:|no workload|link|loopback|EXIT|FATAL|WARNING|report interface)|^Linux |^tunneld: (EGRESS|SELFCHECK VERDICT|SELFCHECK measurement|SELFCHECK mrtd|SELFCHECK rtmr|SELFCHECK tcb|policy |listening|PEER |REFUSED|LATENCY|EXIT|refusing)' \
   "$OUT/console.txt" || true
 echo
 

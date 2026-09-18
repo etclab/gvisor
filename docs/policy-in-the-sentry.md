@@ -657,8 +657,8 @@ ran under `P`".
 **`x` was enforced on nothing in these four runs.** `P0`'s `x` names `/agent-probe`, the workload's
 own path; the sentry execs the first process itself, before any policy can land, and `agent-probe`
 execs nothing afterwards — every run's strace digest lists one process and an empty `## every
-execve`. The `x` was parsed, subset-checked and carried in the digest the peer watches, the sink it
-installed was installed, and the sink never saw a call. X is exercised in the adapter check and
+execve`. The `x` was parsed, subset-checked and carried in the digest the peer watches, and the exec
+sink it installed never saw a call. X is exercised in the adapter check and
 measured in E2; it is not exercised here and this section must not read as though it were. `f` is
 what it is everywhere else: tracked, and enforced by the mounts the bundle already had.
 

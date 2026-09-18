@@ -16,8 +16,8 @@
 // a fixed task against the Claude API, and which can be made to run behind the
 // sandbox contract without being told that it is.
 //
-//	agent-probe [-network direct|null|socket] [-task summarize|delegate] [-peer NAME]
-//	            [-sandbox-socket PATH] [-dir PATH] [-timeout D]
+//	agent-probe [-network direct|plain|null|socket] [-task summarize|delegate]
+//	            [-peer NAME] [-sandbox-socket PATH] [-dir PATH] [-timeout D]
 //	agent-probe -exit -network socket -sandbox-socket PATH -allow host:port,...
 //
 // It is one binary with two roles because they are two ends of one thing. The
@@ -30,6 +30,19 @@
 //
 // direct is an http.Transport with nothing in front of it: E1's arrangement,
 // and the measurement every other mode is compared against.
+//
+// plain is direct, and that is the whole of it: the same &http.Client{}, the
+// same net/http default transport, the same resolver, no dialer of this
+// program's own. It exists because ticket 25 moves the agent inside a runsc
+// sandbox whose sentry intercepts the connect, and the claim being made there
+// is about this process — that it is an ordinary TCP program which knows
+// nothing about the contract. A run recorded as -network direct would leave a
+// reader of the evidence asking whether "direct" had been quietly given
+// something for the sandbox; a mode that is named for the arrangement it is
+// used in answers that without being believed. The two modes differ by one
+// line in the log and by nothing else, and the test that they are wired
+// identically is what keeps it so: the day plain needs code of its own is the
+// day the ticket's claim has failed, and the finding is that it failed.
 //
 // socket is the real one. sandbox.Dial connects to the socket tunneld listens
 // on, every dial becomes Open to -peer, and a second process running -exit on
@@ -70,6 +83,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -110,7 +124,7 @@ type config struct {
 
 func (c *config) flags(fs *flag.FlagSet) {
 	fs.StringVar(&c.network, "network", "direct",
-		"how the agent reaches the network: direct, null (the contract with a local exit), or socket (tunneld)")
+		"how the agent reaches the network: direct, plain (direct, under the name a run inside a sandbox is recorded with), null (the contract with a local exit), or socket (tunneld)")
 	fs.StringVar(&c.task, "task", "summarize",
 		"which of the two fixed tasks to run: summarize (spike E1's) or delegate (ask -peer for its task)")
 	fs.StringVar(&c.peer, "peer", "b",
@@ -197,6 +211,15 @@ func wire(c config, logf func(string, ...any)) (*wiring, error) {
 		// or opens a socket of its own.
 		return &wiring{client: &http.Client{}, close: func() {}}, nil
 
+	case "plain":
+		// Byte for byte the direct client above. The one line is the whole
+		// difference, and it is here rather than in a comment because the
+		// evidence for ticket 25 is a transcript: a reader has to be able to
+		// see, in the run itself, that the process inside the sandbox held no
+		// contract, built no dialer and asked no proxy to go anywhere for it.
+		logf("PLAIN no contract, no dialer of this program's own, net/http's default transport and the ordinary resolver; proxy variables set in this environment: %s", proxyEnv())
+		return &wiring{client: &http.Client{}, close: func() {}}, nil
+
 	case "null":
 		w := behindTheContract(sandbox.NewNull(&localExit{logf: logf}, logf), c.peer, logf)
 		// There is nobody to delegate to: the far end of a null stream is this
@@ -214,7 +237,27 @@ func wire(c config, logf func(string, ...any)) (*wiring, error) {
 		w.close = func() { inner(); client.Close() }
 		return w, nil
 	}
-	return nil, fmt.Errorf("agent-probe: -network %q is none of direct, null or socket", c.network)
+	return nil, fmt.Errorf("agent-probe: -network %q is none of direct, plain, null or socket", c.network)
+}
+
+// proxyEnv names the proxy variables this run's environment has set, which is
+// the one thing that could put something in plain mode's path without a line
+// of code saying so: net/http's default transport is ProxyFromEnvironment, so
+// an HTTPS_PROXY would make the program dial a proxy rather than the name it
+// was given, and a transcript that did not mention them could not be told
+// apart from one whose environment was empty. It reports the names and never a
+// value, because a proxy URL may carry credentials.
+func proxyEnv() string {
+	var set []string
+	for _, name := range []string{"HTTP_PROXY", "http_proxy", "HTTPS_PROXY", "https_proxy", "ALL_PROXY", "all_proxy", "NO_PROXY", "no_proxy"} {
+		if os.Getenv(name) != "" {
+			set = append(set, name)
+		}
+	}
+	if len(set) == 0 {
+		return "none"
+	}
+	return strings.Join(set, ",")
 }
 
 // behindTheContract is the client for both modes that have a contract in the

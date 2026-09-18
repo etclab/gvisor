@@ -190,3 +190,48 @@ func echoListener(t *testing.T) (net.Listener, string) {
 	}()
 	return l, l.Addr().String()
 }
+
+func TestPlainIsDirectUnderTheNameASandboxRunIsRecordedWith(t *testing.T) {
+	// The claim ticket 25 makes about the process inside the sandbox is that
+	// it is an unmodified TCP program, and the only thing in this binary that
+	// could make it otherwise is a Transport with a DialContext in it. A nil
+	// Transport is net/http's default one, so the absence is the assertion.
+	plain, err := wire(config{network: "plain"}, quiet)
+	if err != nil {
+		t.Fatalf("-network plain: %v", err)
+	}
+	defer plain.close()
+	if plain.client.Transport != nil {
+		t.Errorf("-network plain put a %T in front of the client; plain has to be net/http's default transport and nothing else", plain.client.Transport)
+	}
+	if plain.delegate != nil {
+		t.Error("-network plain offered a delegate, which is a stream to a peer and therefore knowledge of the contract")
+	}
+
+	// And it is direct: the same absent transport and the same absent
+	// delegate. The two modes differ by one line in the log, and this is what
+	// keeps it that way — the day plain needs wiring of its own, the agent
+	// binary has been modified to make the adapter work, which the ticket says
+	// is the finding rather than the fix.
+	direct, err := wire(config{network: "direct"}, quiet)
+	if err != nil {
+		t.Fatalf("-network direct: %v", err)
+	}
+	defer direct.close()
+	if direct.client.Transport != plain.client.Transport || direct.delegate != nil {
+		t.Errorf("-network direct is wired as %T/%v and -network plain as %T/%v; they are meant to be the same wiring under two names",
+			direct.client.Transport, direct.delegate != nil, plain.client.Transport, plain.delegate != nil)
+	}
+}
+
+func TestAnUnknownNetworkNamesTheFourModesThereAre(t *testing.T) {
+	_, err := wire(config{network: "tunnel"}, quiet)
+	if err == nil {
+		t.Fatal("-network tunnel built something; it is not a mode")
+	}
+	for _, mode := range []string{"direct", "plain", "null", "socket"} {
+		if !strings.Contains(err.Error(), mode) {
+			t.Errorf("the error for an unknown -network does not name %q, so a reader of it cannot find the mode they wanted: %v", mode, err)
+		}
+	}
+}

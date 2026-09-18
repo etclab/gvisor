@@ -244,3 +244,93 @@ the sandbox never started. Worth an experiment of its own before ticket 25 relie
 - Nothing under `pkg/` or `runsc/` changed. The writable-must-be-noexec rule was neither
   changed, relaxed nor excepted — on this vendor it was never consulted, which is the
   asymmetry recorded above and not a new decision.
+
+## boot-3, the hardware's answer after E5's fix — the workload runs, and RTMR2 still matches
+
+Added 2026-09-18T11:05:29Z, after E5. Everything above this line was written between boot 2
+and E5 and is unchanged, including the header's "`boot-1/` and `boot-2/` are the two
+consoles": there is a third now, `boot-3/`, and a second image, `image-b/`.
+
+E5 (`../E5/notes.md`) reproduced boot 2's failure locally on the measured initrd itself,
+got the sandbox to name its own cause — `pivot_root failed, make sure that the root mount
+has a parent`, in both the sentry's log and the gofer's — and put the answer in
+`docs/snp/cloud/tdx/init.tdx`: inside the same namespace, before the same runsc command
+with spike S1's flag set untouched, a recursive bind of `/` under `/run`, moved to where
+`/` is, entered through the working directory pinned to it before the move. So **E4's
+hypothesis was right and is no longer a hypothesis**, and this section is what the
+hardware said about the fix.
+
+One image, one instance, deleted the same hour it was created.
+
+    RTMR2 predicted from image-b at 10:49:27Z, and again by hand at 10:50:41Z,
+    both before the instance existed:
+        038e7905a2853bf89285a1e967388a9a8cb5a996830f1eee63d036af532cb25f3d6c7636e071e01663a876dc64ca0b78
+    RTMR2 the hardware reported in the quote at 11:02Z:
+        038e7905a2853bf89285a1e967388a9a8cb5a996830f1eee63d036af532cb25f3d6c7636e071e01663a876dc64ca0b78
+
+**MATCH**, 25 records again, and again exactly one record moved against image-a — record
+24, the initrd's own digest (`image-b/sizes.txt`). So the prediction survives an edit to
+the measured `/init`, which is the sharper version of the question E4 asked.
+
+**And the workload ran, on the hardware:**
+
+    initrd: uptime 1.96s
+    initrd: the workload device carries a bundle at /workload/config.json
+    initrd: running: unshare -Urmnpf sh -c "busybox mkdir -p /run/root; mount --rbind / /run/root; cd /run/root; mount --move . /; exec busybox chroot . sh -c 'mount -t proc -o nosuid,nodev,noexec proc /proc; exec /usr/bin/runsc --root=/run/runsc-state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new run --bundle /workload workload'"
+    initrd: uptime 1.96s
+    Linux workload 4.19.0-gvisor #1 SMP Sun Jan 10 15:06:54 PST 2016 x86_64 GNU/Linux
+    initrd: uptime 2.04s
+    initrd: workload exited with status 0
+
+**0.08 s**, against boot 2's 0.03 s of failing and E3's 0.85 s on SEV-SNP, and the same
+line E3 printed. `4.19.0-gvisor` is the sentry's compile-time constant against this
+guest's own `6.17.0-1022-gcp`, and `workload` is the bundle's `hostname`, so neither half
+of the line can have come from the guest. tunneld started afterwards, unchanged, and
+acquired 8000 bytes of Intel TDX evidence in 41 ms.
+
+| register | what the set pins | what the hardware reported | |
+|---|---|---|---|
+| RTMR2 | `038e7905…a0b78` (predicted offline) | `038e7905…a0b78` | **equal** |
+| MRTD | `c1ee9c16…70a5` | `c1ee9c16…70a5` | equal |
+| RTMR1 | `02c7f19c…913b` or `3a446943…d691` | `02c7f19c…913b` | equal, the first-boot value |
+| RTMR0 | `c2fc12a5…850a` (the two-disk shape) | `8ee4fa36…b70a3f` | **different, exactly as in boot 2** |
+
+Both checks refused the guest and both refused it on RTMR0 alone, in the same words boot 2
+produced: `the TD's observed RTMR0 is 8ee4fa36…b70a3f, which is none of the 1 values this
+reference value lists` (`boot-3/verify-evidence.txt`, exit 2, and the guest's own
+`SELFCHECK VERDICT REFUSED`). `8ee4fa36…b70a3f` is the three-disk `c3-standard-4` value
+boot 2 observed; this run **observed it a second time and authored it nowhere**. It is
+still not in any reference value, not in `build-tdx-image.sh`'s `RTMR0` default and not in
+`image-b/reference-values.json`, whose `observed_rtmr0` still lists only the two-disk
+`c2fc12a5…850a`. The smoke script's composite verdict therefore reads `INCOMPLETE` — the
+same word boot 2 got — because it requires both the RTMR2 match and an admitted guest.
+Read the two apart: the prediction matched, and the set refuses this machine shape.
+
+**Boot time, boot-3 against boot-2, same image size to within a kilobyte:**
+
+| | boot 2 | boot 3 | |
+|---|---|---|---|
+| `Trying to unpack rootfs image as initramfs` | 1.963035 | 1.910563 | |
+| `Freeing initrd memory` (84,524K both) | 2.497169 | 2.438673 | unpack 0.5341 -> 0.5281 s |
+| `Run /init as init process` | 2.708962 | 2.648935 | **-0.060 s** |
+| egress proof done (uptime) | 1.96 s | 1.96 s | |
+| workload start -> exit (uptime) | 1.96 -> 1.99 s (failed) | 1.96 -> 2.04 s (**ran**) | +0.05 s |
+| tunneld (uptime) | 2.00 s | 2.06 s | +0.06 s |
+
+The initrd grew 1,044 bytes and the kernel-side numbers moved by less than that could
+explain — 0.06 s of run-to-run noise on a cloud instance, in the direction of *faster*. The
+whole cost of a sandbox that actually runs is the 0.05 s between the two workload clocks.
+`/proc/uptime` still reads about a second behind the printk clock on this guest, as boot 2
+recorded; every workload number above is uptime-to-uptime.
+
+**The mount table is the same table**, `/dev/nvme0n2` and `/dev/nvme0n3`, both found by
+their ext4 label as before, `/config` `noexec` and `/workload` not. And the asymmetry this
+ticket records is untouched: `/` is `rootfs`, it was `rw` while the sandbox ran, init
+remounts it read-only afterwards and lists the table, and there is still no
+writable-and-executable check on this vendor. Nothing under `pkg/` or `runsc/` changed;
+the runsc flag set is byte for byte spike S1's; the writable-must-be-noexec rule was
+neither changed, relaxed nor excepted.
+
+What did not hold in boot 3: nothing new. The RTMR0 refusal was expected and is recorded
+above and in `../../../../cloud/tdx/RESOURCES.md`; the `reason=` line still does not name
+the register, as boot 2 noted.

@@ -140,3 +140,39 @@ run boots from. The confirmations, as the commands printed them, are in
 disks list --filter="name~t24"` is empty, and both `--filter=labels.purpose=attested-tunnel-t24`
 listings are empty. No firewall rule, network, IAM or org policy was created or changed, and
 nothing pre-existing was touched.
+
+### Boot 3, after E5's fix (2026-09-18)
+
+E5 found why boot 2's sandbox died — `pivot_root` cannot move a root mount with no parent,
+and on TDX the root is the initramfs — and the fix went into `docs/snp/cloud/tdx/init.tdx`.
+That is a new `/init` inside the measured initrd, so it is a new image with a new predicted
+RTMR2, and one more instance was needed to ask the hardware about it. Created and deleted
+inside the same hour, like everything above, and **this run observed the three-disk RTMR0 a
+second time and authored it nowhere.**
+
+| created | name | type | purpose | state |
+|---|---|---|---|---|
+| 2026-09-18T10:59Z | tdx-t24-b | c3-standard-4 TDX, us-central1-a, 20GB pd-balanced boot from custom image `attested-tdx-038e7905a285` + 10GB pd-balanced config disk from `attested-config-tdx-t24-b-20260918105245` + 10GB pd-balanced **workload** disk from `attested-workload-tdx-t24-b-20260918105245` (`device-name attested-workload`), `--private-network-ip 10.128.0.40` | ticket 24 E4, boot 3, the run with E5's fix in the measured `/init`. **RTMR2 predicted offline eight minutes earlier is the register the hardware reported**, `038e7905…a0b78`, 25 records, and **the workload ran**: `Linux workload 4.19.0-gvisor …`, exit 0, 0.08 s, then tunneld started and acquired 8000 bytes of Intel TDX evidence in 41 ms. The guest and this workstation both REFUSED it, and again on RTMR0 alone: the three-disk shape reports `8ee4fa36…b70a3f` and the set (authored for two disks) lists only `c2fc12a5…850a` (`docs/snp/evidence/ticket24/spikes/E4/boot-3/`) | **deleted 2026-09-18T11:02Z** (~3 min) |
+| 2026-09-18T10:52Z | attested-tdx-038e7905a285 | custom image, 10GiB, `purpose=attested-tunnel-t24` | ticket 24: image-b, the guest image with E5's fix in `/init`, predicted RTMR2 `038e7905…a0b78`. One record of twenty-five moved against image-a and it is the initrd's own digest | **deleted 2026-09-18T11:03Z** |
+| 2026-09-18T10:52Z | attested-config-tdx-t24-b-20260918105245, attested-workload-tdx-t24-b-20260918105245 | custom images, 1GiB each, `purpose=attested-tunnel-t24` | ticket 24: boot 3's config and workload devices. The workload device is boot 2's file byte for byte (`ae7e6208…8406`), so all three boots and both vendors ran the same bundle | **deleted 2026-09-18T11:03Z** |
+| 2026-09-18T10:52Z … 10:57Z | `attested-tunnel-t19-20260918{105251,105554,105728}`, three in all | Cloud Storage buckets, us-central1, soft delete off | ticket 24: staging for boot 3's three image creates. The *name* still carries t19 because it is `publish-tdx-image.sh`'s default and this ticket did not change that script; the *labels* are `purpose=attested-tunnel-t24` | **each created and deleted inside the run that made it; none survives** |
+
+State after boot 3, 2026-09-18T11:03:47Z: **no instance, no disk, no image and no bucket of
+this ticket's survives.** Three instances in all were created by ticket 24 — 10:02Z, 10:11Z
+and 10:59Z — and all three were deleted the same hour they were created, at 10:06Z, 10:15Z
+and 11:02Z: about **eleven** `c3-standard-4` TDX instance-minutes, the longest-lived at
+roughly four. All eight images this ticket published were deleted and none was kept,
+because ticket 24's images are experiments and not something a later run boots from. The
+confirmations, as the commands printed them, are appended to
+`docs/snp/evidence/ticket24/spikes/E4/teardown.txt`: `gcloud compute images list
+--no-standard-images` shows only ticket 19's three kept images
+(`attested-tdx-d5ddcc423b1a`, `attested-tdx-640de950bbdd`,
+`attested-config-tdx-smoke-a-20260910214749`), `gcloud compute instances list --zones
+us-central1-a` shows only the seven pre-existing TERMINATED instances, `gcloud compute
+disks list --filter="name~t24"` is empty, both `--filter=labels.purpose=attested-tunnel-t24`
+listings are empty, and the only bucket is the unrelated pre-existing `bucket-sep-25`. No
+firewall rule, network, IAM or org policy was created or changed, and nothing pre-existing
+was touched.
+
+E5 itself created nothing: it is eight boots of a local QEMU on the workstation
+(`docs/snp/evidence/ticket24/spikes/E5/`), no cloud resource and no sudo.

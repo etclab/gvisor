@@ -25,3 +25,42 @@ $ gcloud compute images list --no-standard-images --filter="labels.purpose=attes
 
 $ gcloud storage buckets list --format='value(name)'
 bucket-sep-25
+
+=== teardown confirmations after boot-3, 2026-09-18T11:03:47Z ===
+
+$ gcloud compute images delete attested-tdx-038e7905a285 \
+         attested-config-tdx-t24-b-20260918105245 \
+         attested-workload-tdx-t24-b-20260918105245 --quiet
+Deleted [.../global/images/attested-tdx-038e7905a285].
+Deleted [.../global/images/attested-config-tdx-t24-b-20260918105245].
+Deleted [.../global/images/attested-workload-tdx-t24-b-20260918105245].
+(the instance tdx-t24-b was deleted by the run itself at 2026-09-18T11:02Z)
+
+$ gcloud compute images list --no-standard-images
+NAME                                        PROJECT             FAMILY  DEPRECATED  STATUS
+attested-config-tdx-smoke-a-20260910214749  nsf-2348130-428843                      READY
+attested-tdx-640de950bbdd                   nsf-2348130-428843                      READY
+attested-tdx-d5ddcc423b1a                   nsf-2348130-428843                      READY
+
+$ gcloud compute instances list --zones us-central1-a
+NAME              ZONE           MACHINE_TYPE    PREEMPTIBLE  INTERNAL_IP  EXTERNAL_IP  STATUS
+eval-vm           us-central1-a  e2-standard-2                10.128.0.10               TERMINATED
+listener          us-central1-a  n2d-standard-2               10.128.0.18               TERMINATED
+relay             us-central1-a  e2-small                     10.128.0.19               TERMINATED
+trusted-vm        us-central1-a  n2d-standard-2               10.128.0.8                TERMINATED
+trusted-vm-smh    us-central1-a  n2d-standard-2               10.128.0.11               TERMINATED
+untrusted-vm      us-central1-a  e2-standard-2                10.128.0.9                TERMINATED
+untrusted-vm-smh  us-central1-a  e2-standard-2                10.128.0.12               TERMINATED
+
+$ gcloud compute disks list --filter="name~t24"
+Listed 0 items.
+(empty above means no disk of this ticket's names survives)
+
+$ gcloud compute instances list --filter="labels.purpose=attested-tunnel-t24"
+Listed 0 items.
+
+$ gcloud compute images list --no-standard-images --filter="labels.purpose=attested-tunnel-t24"
+Listed 0 items.
+
+$ gcloud storage buckets list --format='value(name)'
+bucket-sep-25

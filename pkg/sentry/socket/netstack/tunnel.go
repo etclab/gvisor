@@ -122,8 +122,9 @@ func ParseTunnelTable(data []byte) (*TunnelTable, error) {
 	return &t, nil
 }
 
-// peerFor returns the tunneld peer that dials name.
-func (t *TunnelTable) peerFor(e TunnelEntry) string {
+// PeerFor returns the tunneld peer that dials a name, which is the entry's own
+// when it has one and the table's default exit otherwise.
+func (t *TunnelTable) PeerFor(e TunnelEntry) string {
 	if e.Peer != "" {
 		return e.Peer
 	}
@@ -223,7 +224,7 @@ func InstallTunnel(st *Stack, table *TunnelTable, attacher TunnelAttacher) error
 			name: name,
 			addr: tunnelSyntheticAddr(i),
 			port: uint16(e.Port),
-			peer: table.peerFor(e),
+			peer: table.PeerFor(e),
 		}
 		a.byName[name] = b
 		a.byAddr[b.addr] = b

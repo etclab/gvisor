@@ -325,6 +325,14 @@ already configured `eth0`, and the only things between the workload and the gues
 `--network=none` and the network namespace `unshare -n` makes. Both are inside the measurement and
 neither was exercised by these boots.
 
+**Ticket 25 trades the SNP half of that away on purpose.** When the config device carries a
+`tunnel-table.json`, `init.rootfs` starts tunneld first, with `-sandbox-socket`, and launches runsc
+under the adapter only once that socket exists, so the link is up while the workload runs. What
+replaces "no link to leave by" is that the sandbox's own stack is still loopback-only and every
+byte out of it goes through a name the table permitted, over the helper's socketpair, into tunneld
+(`docs/the-adapter.md`, "The SNP transcript"). Without the table the init is this ticket's, line
+for line.
+
 ## The RTMR2 match, and the RTMR0 finding
 
 Both TDX images' RTMR2 were predicted by `predict-rtmr2.py --raw` from the image and from nothing

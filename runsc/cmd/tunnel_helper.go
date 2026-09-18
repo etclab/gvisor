@@ -211,12 +211,26 @@ func (a *policyApplier) narrow(policy []byte) (string, error) {
 }
 
 // live starts the one alive goroutine, or retargets it at a newer policy.
+//
+// The first alive goes out HERE, synchronously, before apply returns and so
+// before the acknowledgement this narrowing is answered with. That ordering is
+// not decoration. The far side starts watching a digest the moment its Apply
+// returns, and the last thing it heard from this sandbox before that was the
+// previous policy's digest — so a ticker whose first tick is a second away
+// leaves a one-second window in which the watch sees a stale digest and calls
+// it a mismatch. The adapter check measured exactly that: a watch on the new
+// policy lost after 250 ms, naming the digest of the policy it had just
+// replaced. One pulse ahead of the ack closes the window, because the socket
+// delivers them in the order they were written.
 func (a *policyApplier) live(digest string) {
 	a.mu.Lock()
 	a.digest = digest
 	start := !a.ticking
 	a.ticking = true
 	a.mu.Unlock()
+	if err := a.client.send(tunneldMessage{ID: 0, Type: tunneldMsgAlive, Digest: digest}, -1); err != nil {
+		log.Warningf("Tunnel helper: the first alive for %s did not go out: %v", digest, err)
+	}
 	if !start {
 		return
 	}

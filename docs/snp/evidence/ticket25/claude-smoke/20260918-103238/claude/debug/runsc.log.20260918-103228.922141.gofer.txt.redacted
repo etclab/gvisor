@@ -1,0 +1,476 @@
+I0918 10:32:28.984098       1 cli.go:275] **************** gVisor ****************
+I0918 10:32:28.984277       1 cli.go:276] Version 0.0.0, go1.26.3, amd64, 64 CPUs, linux, PID 1, PPID 0, UID 0, GID 0
+D0918 10:32:28.984329       1 cli.go:277] Page size: 0x1000 (4096 bytes)
+I0918 10:32:28.984376       1 cli.go:278] Args: [runsc-gofer --tunnel-table=/tmp/pniroula/TestClaudeCodeSmoke810055925/001/claude/table.json --root=/tmp/pniroula/TestClaudeCodeSmoke810055925/001/claude/state --platform=systrap --rootless=true --ignore-cgroups=true --pod-init-config=/tmp/pniroula/TestClaudeCodeSmoke810055925/001/claude/pod-init.json --debug=true --debug-log=/tmp/pniroula/TestClaudeCodeSmoke810055925/001/claude/debug/ --network=none --gofer-network-namespace=new --strace=true --tunnel-socket=/dev/shm/t25-658864456/a.sock --debug-log-fd=3 gofer --bundle /dev/shm/t25-658864456/claude --gofer-mount-confs=lisafs:self --spec-fd=4 --mounts-fd=5 --rpc-fd=6 --pin-ring-fd=7 --sync-sentry-exit-fd=8 --io-fds=9 --sync-chroot-fd=10 t25-claude-635166]
+I0918 10:32:28.984504       1 config.go:569] Platform: systrap
+I0918 10:32:28.984565       1 config.go:570] RootDir: /tmp/pniroula/TestClaudeCodeSmoke810055925/001/claude/state
+I0918 10:32:28.984584       1 config.go:571] FileAccess: exclusive / Directfs: true / Overlay: root:self
+I0918 10:32:28.984632       1 config.go:572] Network: none
+I0918 10:32:28.984656       1 config.go:573] UseCPUNums: false
+I0918 10:32:28.984676       1 config.go:575] Debug: true. Strace: true, max size: 1024, syscalls: 
+W0918 10:32:28.984698       1 config.go:578] --allow-suid is disabled, SUID/SGID bits on executables will be ignored.
+D0918 10:32:28.984724       1 config.go:596] Config.RootDir (--root): /tmp/pniroula/TestClaudeCodeSmoke810055925/001/claude/state
+D0918 10:32:28.984843       1 config.go:596] Config.Traceback (--traceback): system
+D0918 10:32:28.984884       1 config.go:596] Config.Debug (--debug): true
+D0918 10:32:28.984909       1 config.go:596] Config.LogFilename (--log): (empty)
+D0918 10:32:28.984934       1 config.go:596] Config.LogFormat (--log-format): text
+D0918 10:32:28.984952       1 config.go:596] Config.DebugLog (--debug-log): /tmp/pniroula/TestClaudeCodeSmoke810055925/001/claude/debug/
+D0918 10:32:28.984976       1 config.go:596] Config.DebugToUserLog (--debug-to-user-log): false
+D0918 10:32:28.984993       1 config.go:596] Config.DebugCommand (--debug-command): (empty)
+D0918 10:32:28.985014       1 config.go:596] Config.PanicLog (--panic-log): (empty)
+D0918 10:32:28.985037       1 config.go:596] Config.CoverageReport (--coverage-report): (empty)
+D0918 10:32:28.985054       1 config.go:596] Config.DebugLogFormat (--debug-log-format): text
+D0918 10:32:28.985075       1 config.go:596] Config.FileAccess (--file-access): exclusive
+D0918 10:32:28.985098       1 config.go:596] Config.FileAccessMounts (--file-access-mounts): shared
+D0918 10:32:28.985122       1 config.go:596] Config.Overlay (--overlay): false
+D0918 10:32:28.985143       1 config.go:596] Config.Overlay2 (--overlay2): root:self
+D0918 10:32:28.985168       1 config.go:596] Config.FSGoferHostUDS (--fsgofer-host-uds): false
+D0918 10:32:28.985193       1 config.go:596] Config.HostUDS (--host-uds): none
+D0918 10:32:28.985219       1 config.go:596] Config.HostFifo (--host-fifo): none
+D0918 10:32:28.985241       1 config.go:596] Config.CharacterDevicePolicy (--character-device-policy): emulated-only
+D0918 10:32:28.985263       1 config.go:596] Config.HostSettings (--host-settings): check
+D0918 10:32:28.985285       1 config.go:596] Config.Network (--network): none
+D0918 10:32:28.985308       1 config.go:596] Config.GoferNetworkNamespace (--gofer-network-namespace): new
+D0918 10:32:28.985350       1 config.go:596] Config.EnableRaw (--net-raw): false
+D0918 10:32:28.985391       1 config.go:596] Config.AllowPacketEndpointWrite (--allow-packet-socket-write): false
+D0918 10:32:28.985414       1 config.go:596] Config.AllowLiveTCPMigration (--allow-live-tcp-migration): true
+D0918 10:32:28.985436       1 config.go:596] Config.HostGSO (--gso): true
+D0918 10:32:28.985456       1 config.go:596] Config.GVisorGSO (--software-gso): true
+D0918 10:32:28.985497       1 config.go:596] Config.GVisorGRO (--gvisor-gro): false
+D0918 10:32:28.985519       1 config.go:596] Config.TXChecksumOffload (--tx-checksum-offload): false
+D0918 10:32:28.985537       1 config.go:596] Config.RXChecksumOffload (--rx-checksum-offload): true
+D0918 10:32:28.985557       1 config.go:596] Config.QDisc (--qdisc): fifo
+D0918 10:32:28.985600       1 config.go:596] Config.TBFRate (--qdisc-tbf-rate): 0
+D0918 10:32:28.985625       1 config.go:596] Config.TBFBurst (--qdisc-tbf-burst): 0
+D0918 10:32:28.985646       1 config.go:596] Config.LogPackets (--log-packets): false
+D0918 10:32:28.985666       1 config.go:596] Config.PCAP (--pcap-log): (empty)
+D0918 10:32:28.985687       1 config.go:596] Config.Platform (--platform): systrap
+D0918 10:32:28.985710       1 config.go:596] Config.PlatformDevicePath (--platform_device_path): (empty)
+D0918 10:32:28.985729       1 config.go:596] Config.MetricServer (--metric-server): (empty)
+D0918 10:32:28.985792       1 config.go:596] Config.SidecarReleaseEnforcementPolicy (--sidecar-release-enforcement-policy): NEVER
+D0918 10:32:28.985820       1 config.go:596] Config.FinalMetricsLog (--final-metrics-log): (empty)
+D0918 10:32:28.985844       1 config.go:596] Config.ProfilingMetrics (--profiling-metrics): (empty)
+D0918 10:32:28.985867       1 config.go:596] Config.ProfilingMetricsLog (--profiling-metrics-log): (empty)
+D0918 10:32:28.985886       1 config.go:596] Config.ProfilingMetricsRate (--profiling-metrics-rate-us): 1000
+D0918 10:32:28.985945       1 config.go:596] Config.Strace (--strace): true
+D0918 10:32:28.985969       1 config.go:596] Config.StraceSyscalls (--strace-syscalls): (empty)
+D0918 10:32:28.985991       1 config.go:596] Config.StraceLogSize (--strace-log-size): 1024
+D0918 10:32:28.986012       1 config.go:596] Config.StraceEvent (--strace-event): false
+D0918 10:32:28.986032       1 config.go:598] Config.DisableSeccomp: false
+D0918 10:32:28.986059       1 config.go:596] Config.EnableCoreTags (--enable-core-tags): false
+D0918 10:32:28.986082       1 config.go:596] Config.WatchdogAction (--watchdog-action): log
+D0918 10:32:28.986100       1 config.go:596] Config.PanicSignal (--panic-signal): -1
+D0918 10:32:28.986120       1 config.go:596] Config.ProfileEnable (--profile): false
+D0918 10:32:28.986140       1 config.go:596] Config.ProfileBlock (--profile-block): (empty)
+D0918 10:32:28.986162       1 config.go:596] Config.ProfileCPU (--profile-cpu): (empty)
+D0918 10:32:28.986184       1 config.go:596] Config.ProfileGCInterval (--profile-gc-interval): 0s
+D0918 10:32:28.986212       1 config.go:596] Config.ProfileHeap (--profile-heap): (empty)
+D0918 10:32:28.986256       1 config.go:596] Config.ProfileMutex (--profile-mutex): (empty)
+D0918 10:32:28.986274       1 config.go:596] Config.TraceFile (--trace): (empty)
+D0918 10:32:28.986298       1 config.go:596] Config.NumNetworkChannels (--num-network-channels): 1
+D0918 10:32:28.986324       1 config.go:596] Config.NetworkProcessorsPerChannel (--network-processors-per-channel): 0
+D0918 10:32:28.986344       1 config.go:596] Config.Rootless (--rootless): true
+D0918 10:32:28.986366       1 config.go:596] Config.AlsoLogToStderr (--alsologtostderr): false
+D0918 10:32:28.986387       1 config.go:596] Config.ReferenceLeak (--ref-leak-mode): disabled
+D0918 10:32:28.986417       1 config.go:596] Config.CPUNumFromQuota (--cpu-num-from-quota): true
+D0918 10:32:28.986439       1 config.go:596] Config.AllowFlagOverride (--allow-flag-override): false
+D0918 10:32:28.986459       1 config.go:596] Config.OCISeccomp (--oci-seccomp): false
+D0918 10:32:28.986478       1 config.go:596] Config.IgnoreCgroups (--ignore-cgroups): true
+D0918 10:32:28.986497       1 config.go:596] Config.MountCgroupV2 (--mount-cgroup-v2): false
+D0918 10:32:28.986519       1 config.go:596] Config.SystemdCgroup (--systemd-cgroup): false
+D0918 10:32:28.986543       1 config.go:596] Config.PodInitConfig (--pod-init-config): /tmp/pniroula/TestClaudeCodeSmoke810055925/001/claude/pod-init.json
+D0918 10:32:28.986585       1 config.go:596] Config.XDP (--EXPERIMENTAL-xdp): {0 }
+D0918 10:32:28.986619       1 config.go:596] Config.AFXDPUseNeedWakeup (--EXPERIMENTAL-xdp-need-wakeup): true
+D0918 10:32:28.986641       1 config.go:596] Config.FDLimit (--fdlimit): -1
+D0918 10:32:28.986662       1 config.go:596] Config.DCache (--dcache): -1
+D0918 10:32:28.986680       1 config.go:596] Config.IOUring (--iouring): false
+D0918 10:32:28.986702       1 config.go:596] Config.DirectFS (--directfs): true
+D0918 10:32:28.986722       1 config.go:596] Config.AppHugePages (--app-huge-pages): true
+D0918 10:32:28.986845       1 config.go:596] Config.NVProxy (--nvproxy): false
+D0918 10:32:28.986866       1 config.go:596] Config.NVProxyDocker (--nvproxy-docker): false
+D0918 10:32:28.986885       1 config.go:596] Config.NVProxyDriverVersion (--nvproxy-driver-version): (empty)
+D0918 10:32:28.986906       1 config.go:596] Config.NVProxyAllowedDriverCapabilities (--nvproxy-allowed-driver-capabilities): utility,compute
+D0918 10:32:28.986928       1 config.go:596] Config.NVProxyAllowUnsupportedDriver (--nvproxy-allow-unsupported-driver): false
+D0918 10:32:28.986951       1 config.go:596] Config.TPUProxy (--tpuproxy): false
+D0918 10:32:28.986971       1 config.go:596] Config.RDMAProxy (--rdmaproxy): false
+D0918 10:32:28.986990       1 config.go:596] Config.TestOnlyAllowRunAsCurrentUserWithoutChroot (--TESTONLY-unsafe-nonroot): false
+D0918 10:32:28.987010       1 config.go:596] Config.TestOnlyTestNameEnv (--TESTONLY-test-name-env): (empty)
+D0918 10:32:28.987031       1 config.go:596] Config.TestOnlyAFSSyscallPanic (--TESTONLY-afs-syscall-panic): false
+D0918 10:32:28.987054       1 config.go:598] Config.explicitlySet: <map[string]struct {} Value> (unexported)
+D0918 10:32:28.987073       1 config.go:596] Config.ReproduceNAT (--reproduce-nat): false
+D0918 10:32:28.987117       1 config.go:596] Config.ReproduceNftables (--reproduce-nftables): false
+D0918 10:32:28.987140       1 config.go:596] Config.NetDisconnectOk (--net-disconnect-ok): true
+D0918 10:32:28.987160       1 config.go:596] Config.TestOnlyAutosaveImagePath (--TESTONLY-autosave-image-path): (empty)
+D0918 10:32:28.987200       1 config.go:596] Config.TestOnlyAutosaveResume (--TESTONLY-autosave-resume): false
+D0918 10:32:28.987225       1 config.go:596] Config.RestoreSpecValidation (--restore-spec-validation): enforce
+D0918 10:32:28.987250       1 config.go:596] Config.GVisorMarkerFile (--gvisor-marker-file): false
+D0918 10:32:28.987271       1 config.go:596] Config.OverrideProcs (--override-procs): (empty)
+D0918 10:32:28.987290       1 config.go:596] Config.SystrapDisableSyscallPatching (--systrap-disable-syscall-patching): false
+D0918 10:32:28.987309       1 config.go:596] Config.SystrapDisableFastPath (--systrap-disable-fast-path): false
+D0918 10:32:28.987331       1 config.go:596] Config.Nftables (--TESTONLY-nftables): false
+D0918 10:32:28.987350       1 config.go:596] Config.AllowSUID (--allow-suid): false
+D0918 10:32:28.987370       1 config.go:596] Config.UseCPUNums (--kvm-use-cpu-nums): false
+D0918 10:32:28.987393       1 config.go:596] Config.PauseExternalNetworking (--pause-external-networking): false
+D0918 10:32:28.987413       1 config.go:596] Config.AllowConnectedOnSave (--allow-connected-on-save): false
+D0918 10:32:28.987432       1 config.go:596] Config.AllowRootfsTarAnnotation (--allow-rootfs-tar-annotation): false
+D0918 10:32:28.987453       1 config.go:596] Config.ControlRPCStopTimeout (--control-rpc-stop-timeout): 15s
+D0918 10:32:28.987475       1 config.go:596] Config.TunnelSocket (--tunnel-socket): /dev/shm/t25-658864456/a.sock
+D0918 10:32:28.987497       1 config.go:596] Config.TunnelTable (--tunnel-table): /tmp/pniroula/TestClaudeCodeSmoke810055925/001/claude/table.json
+D0918 10:32:28.987519       1 config.go:596] Config.SharedRootDir (--shared-root): (empty)
+D0918 10:32:28.987547       1 cli.go:284] runsc process spawned at 10:32:28.981140, Go started execution at 10:32:28.982022. Startup overhead: 881.072µs
+I0918 10:32:28.987599       1 cli.go:287] **************** gVisor ****************
+D0918 10:32:28.996673       1 fs.go:156] Waiting on chroot sync FD 10...
+D0918 10:32:28.996835       1 fs.go:163] Synced on chroot sync FD 10.
+I0918 10:32:28.997597       1 gofer_mount.go:249] Remounting root as readonly: "/proc/fs/root"
+D0918 10:32:28.999150       1 specutils.go:134] Spec:
+{
+  "ociVersion": "1.0.0",
+  "process": {
+    "user": {
+      "uid": 0,
+      "gid": 0
+    },
+    "args": [
+      "/usr/local/bin/claude",
+      "-p",
+      "Reply with exactly the word OK.",
+      "--output-format",
+      "json",
+      "--model",
+      "claude-haiku-4-5-20251001"
+    ],
+    "env": [
+      "PATH=/usr/local/bin:/usr/bin:/bin",
+      "HOME=/home/agent",
+      "SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt",
+      "ANTHROPIC_API_KEY=<ANTHROPIC_API_KEY>"
+    ],
+    "cwd": "/work",
+    "capabilities": {},
+    "rlimits": [
+      {
+        "type": "RLIMIT_NOFILE",
+        "hard": 4096,
+        "soft": 4096
+      }
+    ]
+  },
+  "root": {
+    "path": "/tmp/pniroula/TestClaudeCodeSmoke810055925/001/rootfs"
+  },
+  "hostname": "workload",
+  "mounts": [
+    {
+      "destination": "/proc",
+      "type": "proc",
+      "source": "/dev/shm/t25-658864456/claude/proc"
+    },
+    {
+      "destination": "/sys",
+      "type": "sysfs",
+      "source": "/dev/shm/t25-658864456/claude/sysfs",
+      "options": [
+        "nosuid",
+        "noexec",
+        "nodev",
+        "ro"
+      ]
+    }
+  ],
+  "linux": {
+    "namespaces": [
+      {
+        "type": "pid"
+      },
+      {
+        "type": "mount"
+      },
+      {
+        "type": "ipc"
+      },
+      {
+        "type": "uts"
+      }
+    ]
+  }
+}
+I0918 10:32:29.019312       1 caps_unsafe.go:163] Capabilities applied to all threads: bounding=0x4001f effective=0x4001f permitted=0x4001f inheritable=0x4001f ambient=0x4001f
+I0918 10:32:29.019454       1 gofer.go:360] Process chroot'd to "/root"
+D0918 10:32:29.019490       1 gofer.go:366] Process running as uid=0 euid=0 gid=0 egid=0
+I0918 10:32:29.019561       1 seccomp.go:68] Installing seccomp filters for 56 syscalls (action=[default])
+D0918 10:32:29.022723       1 seccomp.go:802] Ordered seccomp rules:
+D0918 10:32:29.022839       1 seccomp.go:812]   Hot non-trivial syscalls: None.
+D0918 10:32:29.022885       1 seccomp.go:815]   Cold non-trivial syscalls:
+D0918 10:32:29.023030       1 seccomp.go:822]     - Syscall    9: {(arg[2] & 0x4 == 0x4) => kill process; ((arg[3].high == 0 && (arg[3].low == 0x1 || arg[3].low == 0x22 || arg[3].low == 0x32 || (arg[2] == 0x3 && arg[3].low == 0x28)))) => allow}
+D0918 10:32:29.023076       1 seccomp.go:822]     - Syscall   10: {(arg[2] & 0x4 == 0x4) => kill process; allow}
+D0918 10:32:29.023101       1 seccomp.go:822]     - Syscall   46: ((arg[2].high == 0 && (arg[2].low == 0 || arg[2].low == 0x4040))) => allow
+D0918 10:32:29.023122       1 seccomp.go:822]     - Syscall   47: ((arg[2].high == 0 && (arg[2].low == 0x60 || arg[2].low == 0x62))) => allow
+D0918 10:32:29.023137       1 seccomp.go:822]     - Syscall   48: (arg[1] == 0x2) => allow
+D0918 10:32:29.023160       1 seccomp.go:822]     - Syscall   53: ((arg[0] == 0x1 && arg[1] == 0x80005 && arg[2] == 0)) => allow
+D0918 10:32:29.023182       1 seccomp.go:822]     - Syscall   56: ((arg[0] == 0xd0f00 && arg[2] == 0 && arg[3] == 0)) => allow
+D0918 10:32:29.023231       1 seccomp.go:822]     - Syscall   72: ((arg[1].high == 0 && (arg[1].low == 0x3 || arg[1].low == 0x4 || arg[1].low == 0x1 || arg[1].low == 0x409))) => allow
+D0918 10:32:29.023246       1 seccomp.go:822]     - Syscall  157: ((arg[0] == 0x53564d41 && arg[1] == 0)) => allow
+D0918 10:32:29.023310       1 seccomp.go:822]     - Syscall  202: ((arg[1].high == 0 && ((arg[1].low == 0x80 && arg[4] == 0) || (arg[1].low == 0x81 && arg[4] == 0) || arg[1].low == 0 || arg[1].low == 0x1))) => allow
+D0918 10:32:29.023326       1 seccomp.go:822]     - Syscall  204: (arg[0] == 0) => allow
+D0918 10:32:29.023338       1 seccomp.go:822]     - Syscall  234: (arg[0] == 0x1) => allow
+D0918 10:32:29.023350       1 seccomp.go:822]     - Syscall  281: (arg[4] == 0) => allow
+D0918 10:32:29.023388       1 seccomp.go:822]     - Syscall  290: ((arg[0] == 0 && arg[1] == 0)) => allow
+D0918 10:32:29.023422       1 seccomp.go:822]     - Syscall  309: ((arg[1] == 0 && arg[2] == 0)) => allow
+D0918 10:32:29.023436       1 seccomp.go:822]     - Syscall  332: ((arg[0] NonNegativeFD && arg[2] & 0x1000 == 0x1000)) => allow
+D0918 10:32:29.023445       1 seccomp.go:815]   Trivial syscalls:
+D0918 10:32:29.023465       1 seccomp.go:822]     - Syscall    0: allow
+D0918 10:32:29.023481       1 seccomp.go:822]     - Syscall    1: allow
+D0918 10:32:29.023497       1 seccomp.go:822]     - Syscall    3: allow
+D0918 10:32:29.023511       1 seccomp.go:822]     - Syscall    8: allow
+D0918 10:32:29.023521       1 seccomp.go:822]     - Syscall   11: allow
+D0918 10:32:29.023531       1 seccomp.go:822]     - Syscall   13: allow
+D0918 10:32:29.023541       1 seccomp.go:822]     - Syscall   14: allow
+D0918 10:32:29.023551       1 seccomp.go:822]     - Syscall   15: allow
+D0918 10:32:29.023560       1 seccomp.go:822]     - Syscall   17: allow
+D0918 10:32:29.023573       1 seccomp.go:822]     - Syscall   18: allow
+D0918 10:32:29.023588       1 seccomp.go:822]     - Syscall   24: allow
+D0918 10:32:29.023603       1 seccomp.go:822]     - Syscall   28: allow
+D0918 10:32:29.023617       1 seccomp.go:822]     - Syscall   32: allow
+D0918 10:32:29.023626       1 seccomp.go:822]     - Syscall   35: allow
+D0918 10:32:29.023636       1 seccomp.go:822]     - Syscall   39: allow
+D0918 10:32:29.023646       1 seccomp.go:822]     - Syscall   43: allow
+D0918 10:32:29.023655       1 seccomp.go:822]     - Syscall   60: allow
+D0918 10:32:29.023667       1 seccomp.go:822]     - Syscall   74: allow
+D0918 10:32:29.023682       1 seccomp.go:822]     - Syscall   91: allow
+D0918 10:32:29.023696       1 seccomp.go:822]     - Syscall   96: allow
+D0918 10:32:29.023709       1 seccomp.go:822]     - Syscall  131: allow
+D0918 10:32:29.023720       1 seccomp.go:822]     - Syscall  186: allow
+D0918 10:32:29.023812       1 seccomp.go:822]     - Syscall  189: allow
+D0918 10:32:29.023831       1 seccomp.go:822]     - Syscall  192: allow
+D0918 10:32:29.023842       1 seccomp.go:822]     - Syscall  195: allow
+D0918 10:32:29.023865       1 seccomp.go:822]     - Syscall  198: allow
+D0918 10:32:29.023881       1 seccomp.go:822]     - Syscall  219: allow
+D0918 10:32:29.023895       1 seccomp.go:822]     - Syscall  228: allow
+D0918 10:32:29.023909       1 seccomp.go:822]     - Syscall  231: allow
+D0918 10:32:29.023918       1 seccomp.go:822]     - Syscall  233: allow
+D0918 10:32:29.023928       1 seccomp.go:822]     - Syscall  257: allow
+D0918 10:32:29.023938       1 seccomp.go:822]     - Syscall  260: allow
+D0918 10:32:29.023948       1 seccomp.go:822]     - Syscall  262: allow
+D0918 10:32:29.023957       1 seccomp.go:822]     - Syscall  268: allow
+D0918 10:32:29.023989       1 seccomp.go:822]     - Syscall  271: allow
+D0918 10:32:29.024005       1 seccomp.go:822]     - Syscall  318: allow
+D0918 10:32:29.024016       1 seccomp.go:822]     - Syscall  319: allow
+D0918 10:32:29.024026       1 seccomp.go:822]     - Syscall  437: allow
+D0918 10:32:29.024034       1 seccomp.go:825] End of ordered seccomp rules.
+D0918 10:32:29.032348       1 seccomp.go:529] Seccomp program optimized from 861 to 209 instructions; took 5.752766ms to build and 4.13313ms to optimize
+D0918 10:32:29.032794       1 seccomp.go:77] Seccomp program dump:
+0: A <- P[4:4]
+1: pc += (A == 3221225534) ? 0 [2] : 206 [208]
+2: A <- P[0:4]
+3: pc += (A >= 157) ? 0 [4] : 1 [5]
+4: pc += (A > 157) ? 11 [16] : 21 [26]
+5: pc += (A >= 48) ? 0 [6] : 1 [7]
+6: pc += (A > 48) ? 5 [12] : 27 [34]
+7: pc += (A >= 46) ? 0 [8] : 1 [9]
+8: pc += (A > 46) ? 52 [61] : 29 [38]
+9: pc += (A >= 10) ? 0 [10] : 1 [11]
+10: pc += (A == 10) ? 32 [43] : 138 [149]
+11: pc += (A == 9) ? 34 [46] : 137 [149]
+12: pc += (A >= 56) ? 0 [13] : 1 [14]
+13: pc += (A > 56) ? 1 [15] : 52 [66]
+14: pc += (A == 53) ? 63 [78] : 134 [149]
+15: pc += (A == 72) ? 74 [90] : 133 [149]
+16: pc += (A >= 281) ? 0 [17] : 1 [18]
+17: pc += (A > 281) ? 4 [22] : 79 [97]
+18: pc += (A >= 204) ? 0 [19] : 1 [20]
+19: pc += (A > 204) ? 1 [21] : 81 [101]
+20: pc += (A == 202) ? 84 [105] : 128 [149]
+21: pc += (A == 234) ? 100 [122] : 127 [149]
+22: pc += (A >= 309) ? 0 [23] : 1 [24]
+23: pc += (A > 309) ? 1 [25] : 102 [126]
+24: pc += (A == 290) ? 109 [134] : 124 [149]
+25: pc += (A == 332) ? 116 [142] : 123 [149]
+26: A <- P[16:4]
+27: pc += (A == 1398164801) ? 0 [28] : 180 [208]
+28: A <- P[20:4]
+29: pc += (A == 0) ? 0 [30] : 178 [208]
+30: A <- P[24:4]
+31: pc += (A == 0) ? 0 [32] : 176 [208]
+32: A <- P[28:4]
+33: pc += (A == 0) ? 173 [207] : 174 [208]
+34: A <- P[24:4]
+35: pc += (A == 2) ? 0 [36] : 172 [208]
+36: A <- P[28:4]
+37: pc += (A == 0) ? 169 [207] : 170 [208]
+38: A <- P[36:4]
+39: pc += (A == 0) ? 0 [40] : 168 [208]
+40: A <- P[32:4]
+41: pc += (A == 0) ? 165 [207] : 0 [42]
+42: pc += (A == 16448) ? 164 [207] : 165 [208]
+43: A <- P[32:4]
+44: A <- A & 4
+45: pc += (A == 4) ? 162 [208] : 161 [207]
+46: A <- P[32:4]
+47: A <- A & 4
+48: pc += (A == 4) ? 159 [208] : 0 [49]
+49: A <- P[44:4]
+50: pc += (A == 0) ? 0 [51] : 157 [208]
+51: A <- P[40:4]
+52: pc += (A == 1) ? 154 [207] : 0 [53]
+53: pc += (A == 34) ? 153 [207] : 0 [54]
+54: pc += (A == 50) ? 152 [207] : 0 [55]
+55: A <- P[32:4]
+56: pc += (A == 3) ? 0 [57] : 151 [208]
+57: A <- P[36:4]
+58: pc += (A == 0) ? 0 [59] : 149 [208]
+59: A <- P[40:4]
+60: pc += (A == 40) ? 146 [207] : 147 [208]
+61: A <- P[36:4]
+62: pc += (A == 0) ? 0 [63] : 145 [208]
+63: A <- P[32:4]
+64: pc += (A == 96) ? 142 [207] : 0 [65]
+65: pc += (A == 98) ? 141 [207] : 142 [208]
+66: A <- P[16:4]
+67: pc += (A == 855808) ? 0 [68] : 140 [208]
+68: A <- P[20:4]
+69: pc += (A == 0) ? 0 [70] : 138 [208]
+70: A <- P[32:4]
+71: pc += (A == 0) ? 0 [72] : 136 [208]
+72: A <- P[36:4]
+73: pc += (A == 0) ? 0 [74] : 134 [208]
+74: A <- P[40:4]
+75: pc += (A == 0) ? 0 [76] : 132 [208]
+76: A <- P[44:4]
+77: pc += (A == 0) ? 129 [207] : 130 [208]
+78: A <- P[16:4]
+79: pc += (A == 1) ? 0 [80] : 128 [208]
+80: A <- P[20:4]
+81: pc += (A == 0) ? 0 [82] : 126 [208]
+82: A <- P[24:4]
+83: pc += (A == 524293) ? 0 [84] : 124 [208]
+84: A <- P[28:4]
+85: pc += (A == 0) ? 0 [86] : 122 [208]
+86: A <- P[32:4]
+87: pc += (A == 0) ? 0 [88] : 120 [208]
+88: A <- P[36:4]
+89: pc += (A == 0) ? 117 [207] : 118 [208]
+90: A <- P[28:4]
+91: pc += (A == 0) ? 0 [92] : 116 [208]
+92: A <- P[24:4]
+93: pc += (A == 3) ? 113 [207] : 0 [94]
+94: pc += (A == 4) ? 112 [207] : 0 [95]
+95: pc += (A == 1) ? 111 [207] : 0 [96]
+96: pc += (A == 1033) ? 110 [207] : 111 [208]
+97: A <- P[48:4]
+98: pc += (A == 0) ? 0 [99] : 109 [208]
+99: A <- P[52:4]
+100: pc += (A == 0) ? 106 [207] : 107 [208]
+101: A <- P[16:4]
+102: pc += (A == 0) ? 0 [103] : 105 [208]
+103: A <- P[20:4]
+104: pc += (A == 0) ? 102 [207] : 103 [208]
+105: A <- P[28:4]
+106: pc += (A == 0) ? 0 [107] : 101 [208]
+107: A <- P[24:4]
+108: pc += (A == 128) ? 0 [109] : 4 [113]
+109: A <- P[48:4]
+110: pc += (A == 0) ? 0 [111] : 2 [113]
+111: A <- P[52:4]
+112: pc += (A == 0) ? 94 [207] : 0 [113]
+113: A <- P[24:4]
+114: pc += (A == 129) ? 0 [115] : 4 [119]
+115: A <- P[48:4]
+116: pc += (A == 0) ? 0 [117] : 2 [119]
+117: A <- P[52:4]
+118: pc += (A == 0) ? 88 [207] : 0 [119]
+119: A <- P[24:4]
+120: pc += (A == 0) ? 86 [207] : 0 [121]
+121: pc += (A == 1) ? 85 [207] : 86 [208]
+122: A <- P[16:4]
+123: pc += (A == 1) ? 0 [124] : 84 [208]
+124: A <- P[20:4]
+125: pc += (A == 0) ? 81 [207] : 82 [208]
+126: A <- P[24:4]
+127: pc += (A == 0) ? 0 [128] : 80 [208]
+128: A <- P[28:4]
+129: pc += (A == 0) ? 0 [130] : 78 [208]
+130: A <- P[32:4]
+131: pc += (A == 0) ? 0 [132] : 76 [208]
+132: A <- P[36:4]
+133: pc += (A == 0) ? 73 [207] : 74 [208]
+134: A <- P[16:4]
+135: pc += (A == 0) ? 0 [136] : 72 [208]
+136: A <- P[20:4]
+137: pc += (A == 0) ? 0 [138] : 70 [208]
+138: A <- P[24:4]
+139: pc += (A == 0) ? 0 [140] : 68 [208]
+140: A <- P[28:4]
+141: pc += (A == 0) ? 65 [207] : 66 [208]
+142: A <- P[16:4]
+143: pc += (A & 2147483648) ? 64 [208] : 0 [144]
+144: A <- P[20:4]
+145: pc += (A == 0) ? 0 [146] : 62 [208]
+146: A <- P[32:4]
+147: A <- A & 4096
+148: pc += (A == 4096) ? 58 [207] : 59 [208]
+149: pc += (A >= 96) ? 0 [150] : 1 [151]
+150: pc += (A > 96) ? 28 [179] : 56 [207]
+151: pc += (A >= 18) ? 0 [152] : 1 [153]
+152: pc += (A > 18) ? 12 [165] : 54 [207]
+153: pc += (A >= 11) ? 0 [154] : 1 [155]
+154: pc += (A > 11) ? 5 [160] : 52 [207]
+155: pc += (A >= 3) ? 0 [156] : 1 [157]
+156: pc += (A > 3) ? 2 [159] : 50 [207]
+157: pc += (A >= 1) ? 0 [158] : 49 [207]
+158: pc += (A == 1) ? 48 [207] : 49 [208]
+159: pc += (A == 8) ? 47 [207] : 48 [208]
+160: pc += (A >= 15) ? 0 [161] : 1 [162]
+161: pc += (A > 15) ? 2 [164] : 45 [207]
+162: pc += (A >= 14) ? 44 [207] : 0 [163]
+163: pc += (A == 13) ? 43 [207] : 44 [208]
+164: pc += (A == 17) ? 42 [207] : 43 [208]
+165: pc += (A >= 39) ? 0 [166] : 1 [167]
+166: pc += (A > 39) ? 6 [173] : 40 [207]
+167: pc += (A >= 32) ? 0 [168] : 1 [169]
+168: pc += (A > 32) ? 3 [172] : 38 [207]
+169: pc += (A >= 28) ? 0 [170] : 1 [171]
+170: pc += (A == 28) ? 36 [207] : 37 [208]
+171: pc += (A == 24) ? 35 [207] : 36 [208]
+172: pc += (A == 35) ? 34 [207] : 35 [208]
+173: pc += (A >= 74) ? 0 [174] : 1 [175]
+174: pc += (A > 74) ? 3 [178] : 32 [207]
+175: pc += (A >= 60) ? 0 [176] : 1 [177]
+176: pc += (A == 60) ? 30 [207] : 31 [208]
+177: pc += (A == 43) ? 29 [207] : 30 [208]
+178: pc += (A == 91) ? 28 [207] : 29 [208]
+179: pc += (A >= 233) ? 0 [180] : 1 [181]
+180: pc += (A > 233) ? 14 [195] : 26 [207]
+181: pc += (A >= 195) ? 0 [182] : 1 [183]
+182: pc += (A > 195) ? 6 [189] : 24 [207]
+183: pc += (A >= 189) ? 0 [184] : 1 [185]
+184: pc += (A > 189) ? 3 [188] : 22 [207]
+185: pc += (A >= 186) ? 0 [186] : 1 [187]
+186: pc += (A == 186) ? 20 [207] : 21 [208]
+187: pc += (A == 131) ? 19 [207] : 20 [208]
+188: pc += (A == 192) ? 18 [207] : 19 [208]
+189: pc += (A >= 228) ? 0 [190] : 1 [191]
+190: pc += (A > 228) ? 3 [194] : 16 [207]
+191: pc += (A >= 219) ? 0 [192] : 1 [193]
+192: pc += (A == 219) ? 14 [207] : 15 [208]
+193: pc += (A == 198) ? 13 [207] : 14 [208]
+194: pc += (A == 231) ? 12 [207] : 13 [208]
+195: pc += (A >= 271) ? 0 [196] : 1 [197]
+196: pc += (A > 271) ? 6 [203] : 10 [207]
+197: pc += (A >= 262) ? 0 [198] : 1 [199]
+198: pc += (A > 262) ? 3 [202] : 8 [207]
+199: pc += (A >= 260) ? 0 [200] : 1 [201]
+200: pc += (A == 260) ? 6 [207] : 7 [208]
+201: pc += (A == 257) ? 5 [207] : 6 [208]
+202: pc += (A == 268) ? 4 [207] : 5 [208]
+203: pc += (A >= 319) ? 0 [204] : 1 [205]
+204: pc += (A > 319) ? 1 [206] : 2 [207]
+205: pc += (A == 318) ? 1 [207] : 2 [208]
+206: pc += (A == 437) ? 0 [207] : 1 [208]
+207: ret 2147418112
+208: ret 2147483648
+
+I0918 10:32:29.033325       1 seccomp.go:90] Seccomp filters installed.
+I0918 10:32:29.033369       1 gofer.go:410] Serving "/" mapped to "/root" on FD 9 (ro: true)
+D0918 10:32:37.785434       1 connection.go:150] sock read failed, closing connection: EOF
+I0918 10:32:37.786113       1 gofer.go:513] All lisafs servers exited.
+I0918 10:32:37.890785       1 cli.go:316] Exiting with status: 0

@@ -1,0 +1,3 @@
+listening on /dev/shm/t25-658864456/claude.events
+connected: the sentry speaks wire version 1
+disconnected

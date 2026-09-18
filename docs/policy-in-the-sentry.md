@@ -596,8 +596,9 @@ which is the window, below, seen from the other side.
 
 Both are the fast case the design names: the workload ends, the sentry goes, the helper's fd-3 link
 ends, the helper closes its tunneld client, the attachment goes, and the next quarter-pulse reports
-it. The killed run was stopped 124 ms after the exit had accepted its first stream; runsc exited 137
-after 515 ms and the model request in flight was never answered, so it has no cost to report. With
+it. `runsc kill … KILL` was sent 393 ms into the killed run, 2 ms after the exit had accepted its
+first stream (`tunnel_open=391ms`) and with the first model request in flight; runsc exited 137
+after 515 ms and that request was never answered, so the run has no cost to report. With
 (c)'s mismatch at 185 ms, the three bracket the 250 ms granularity from both ends. Nothing here
 waited three seconds, because nothing here went quiet — that case is E3's.
 

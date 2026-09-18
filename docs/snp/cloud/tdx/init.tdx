@@ -404,12 +404,41 @@ uptime_say
 #
 # --network=none is what stands between this workload and a link that is, unlike
 # the SNP guest's at this point in its boot, already up.
+#
+# The root is the one thing this vendor needs and SEV-SNP does not. The sandbox
+# and the gofer each pivot_root(2) on their way up
+# (runsc/cmd/sandboxsetup/fs.go:32-53, the syscall at :45, reached from
+# runsc/cmd/sentry/sentrycmd/chroot.go:181 and
+# runsc/cmd/sandboxsetup/gofer_mount.go:260), and pivot_root cannot move a root
+# mount that has no parent — the initramfs is the one mount in Linux with none,
+# which is the whole reason switch_root exists. On SEV-SNP init.initrd has
+# switch_root'ed into a squashfs long before this line, so the root there has a
+# parent and this same flag set works untouched (ticket 24, E3); here the
+# initramfs *is* the measured root and stays that way, so E4's boot got a sandbox
+# that died on `pivot_root failed, make sure that the root mount has a parent`.
+# What the namespace gets instead is a second view of that same tmpfs which does
+# have one: a recursive bind under /run, moved to where / is, entered through the
+# working directory that was pinned to it before the move — the only path that
+# names that mount rather than the initramfs underneath it. Both steps carry
+# weight and E5 booted each alone to find out: with the bind but no move, and
+# with the move but no chroot, the kernel calls the process chrooted — current
+# root against the namespace root followed down through whatever is mounted on it
+# — and refuses the gofer's clone(CLONE_NEWUSER) with EPERM. The bind must be
+# recursive; a plain one is refused, because / has mounts a user namespace has
+# locked. Nothing is deleted, nothing is switched and nothing propagates out: the
+# initramfs is still the root of this init's mount namespace and the table
+# printed below is the table ticket 19 printed. mkdir and chroot are reached
+# through /bin/busybox rather than through applet symlinks, so the initrd's file
+# list is exactly what it was (build-tdx-image.sh's APPLETS) and the only thing
+# ticket 24's fix changes in the measurement is this script.
+ROOT_WITH_A_PARENT="busybox mkdir -p /run/root; mount --rbind / /run/root; cd /run/root; mount --move . /"
 RUNSC_CMD="/usr/bin/runsc --root=/run/runsc-state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new run --bundle /workload workload"
+WORKLOAD_SH="$ROOT_WITH_A_PARENT; exec busybox chroot . sh -c 'mount -t proc -o nosuid,nodev,noexec proc /proc; exec $RUNSC_CMD'"
 if [ -f /workload/config.json ]; then
 	say "the workload device carries a bundle at /workload/config.json"
-	say "running: unshare -Urmnpf sh -c 'mount -t proc -o nosuid,nodev,noexec proc /proc; exec $RUNSC_CMD'"
+	say "running: unshare -Urmnpf sh -c \"$WORKLOAD_SH\""
 	uptime_say
-	unshare -Urmnpf sh -c "mount -t proc -o nosuid,nodev,noexec proc /proc; exec $RUNSC_CMD"
+	unshare -Urmnpf sh -c "$WORKLOAD_SH"
 	wrc=$?
 	uptime_say
 	say "workload exited with status $wrc"

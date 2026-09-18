@@ -113,7 +113,7 @@ func TestSinkRefusesWithEACCES(t *testing.T) {
 	if err := s.Execve(context.Background(), seccheckFields(), &pb.ExecveInfo{BinaryPath: "/bin/sh"}); err != nil {
 		t.Errorf("an exec inside x gave %v, wanted nil", err)
 	}
-	checked, refused := s.Counts()
+	checked, refused, _ := s.Counts()
 	if checked != 2 || refused != 1 {
 		t.Errorf("counted %d checked and %d refused, wanted 2 and 1", checked, refused)
 	}

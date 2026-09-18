@@ -214,6 +214,10 @@ func (tn *Tunnel) narrow(policy []byte) (string, error) {
 			policyx.Install(tn.policy.xsink)
 		}
 		tn.policy.xsink.Narrow(policyx.NewAllow(paths, digests))
+		// One line per narrowing about what the sink has cost so far, so that
+		// a run of any length carries the number spike E2 measured rather than
+		// only a run long enough to trip the sink's own counter.
+		tn.policy.xsink.Report()
 	}
 
 	tn.policy.inForce = pushed

@@ -37,6 +37,7 @@ import (
 	"encoding/hex"
 	"slices"
 	"strings"
+	"time"
 
 	"gvisor.dev/gvisor/pkg/atomicbitops"
 	"gvisor.dev/gvisor/pkg/context"
@@ -142,7 +143,14 @@ type Sink struct {
 
 	refused atomicbitops.Uint64
 	checked atomicbitops.Uint64
+	nanos   atomicbitops.Uint64
 }
+
+// reportEvery is how many decisions the sink makes between the lines it writes
+// about itself. One line per exec would cost more than the decision does; one
+// line per hundred is what spike E2's numbers are read off, and is what a run
+// of any length carries afterwards.
+const reportEvery = 100
 
 // NewSink builds a sink that permits everything until Narrow is called.
 func NewSink() *Sink { return &Sink{} }
@@ -161,10 +169,28 @@ func (s *Sink) Allow() *Allow {
 	return s.allow
 }
 
-// Counts returns how many execs this sink has decided on and how many it
-// refused.
-func (s *Sink) Counts() (checked, refused uint64) {
-	return s.checked.Load(), s.refused.Load()
+// Counts returns how many execs this sink has decided on, how many it refused,
+// and how long it spent deciding.
+func (s *Sink) Counts() (checked, refused, nanos uint64) {
+	return s.checked.Load(), s.refused.Load(), s.nanos.Load()
+}
+
+// Report writes the one line this sink says about itself, which is the cost of
+// the decision and the hit rate of the hash the decision is made on. The hash
+// is not computed here — the execve point computed it before this sink was
+// called — so the two numbers belong together: a miss is a binary read and
+// hashed, and a hit is not.
+func (s *Sink) Report() {
+	checked, refused, nanos := s.Counts()
+	mean := time.Duration(0)
+	if checked > 0 {
+		mean = time.Duration(nanos / checked)
+	}
+	var hits, misses uint64
+	if cache := seccheck.Global.ExecveHashCache(); cache != nil {
+		hits, misses = cache.Stats()
+	}
+	log.Infof("exec sink: checked=%d refused=%d mean=%v hash-cache hits=%d misses=%d", checked, refused, mean, hits, misses)
 }
 
 // Name implements seccheck.Sink.Name.
@@ -183,10 +209,16 @@ func (s *Sink) Execve(ctx context.Context, fields seccheck.FieldSet, info *pb.Ex
 	if allow == nil {
 		return nil
 	}
-	s.checked.Add(1)
+	start := time.Now()
+	n := s.checked.Add(1)
 	digest := hex.EncodeToString(info.GetBinarySha256())
 	path := info.GetBinaryPath()
-	if allow.Permits(path, digest) {
+	permitted := allow.Permits(path, digest)
+	s.nanos.Add(uint64(time.Since(start)))
+	if n%reportEvery == 0 {
+		s.Report()
+	}
+	if permitted {
 		return nil
 	}
 	s.refused.Add(1)

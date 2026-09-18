@@ -59,8 +59,11 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -92,6 +95,11 @@ const (
 	// sentry/egress_refused event and says so; the refusal is still asserted,
 	// on the errno the workload reported.
 	receiverEnv = "AGENT_PROBE_SECCHECK_RECEIVER"
+
+	// noteEnv is a sentence the README carries at the top, for whatever a run
+	// needs said about itself that the harness cannot know — which build of
+	// runsc this is, what an earlier directory beside it was.
+	noteEnv = "AGENT_PROBE_NOTE"
 
 	// evidenceEnv puts this run's captures somewhere other than
 	// docs/snp/evidence/ticket25/loopback/<stamp>, which is what a rehearsal
@@ -246,6 +254,7 @@ type loopback struct {
 	root    string // the rootfs every bundle of this run executes
 	socket  string // tunneld a's sandbox socket, which every sandbox attaches to
 	p       proof  // what this run is, in the words its evidence is written in
+	sha     string // the runsc this run used, by content, because the path moves
 
 	// at is the run in progress, or nil between runs. The exit logs and
 	// carries streams for whichever sandbox is running, and this is how those
@@ -269,6 +278,10 @@ type proof struct {
 func newLoopback(t *testing.T, ctx context.Context, out *record, runsc string, p proof) *loopback {
 	t.Helper()
 	l := &loopback{ctx: ctx, out: out, runsc: runsc, p: p, adapter: os.Getenv(adapterEnv) != "0"}
+	// The binary by content and not by path. A pinned copy in a scratch
+	// directory is still a path, and two runs of this test are only comparable
+	// if the record says which build each of them ran.
+	l.sha = sha256Of(t, runsc)
 	l.scratch = t.TempDir()
 
 	shm, err := os.MkdirTemp("/dev/shm", "t25-")
@@ -821,9 +834,12 @@ func (l *loopback) record(t *testing.T, notes string, runs ...*sandboxRun) {
 
 	var b strings.Builder
 	fmt.Fprintf(&b, "# %s: %s\n\n", l.p.title, time.Now().Format(time.RFC3339))
-	fmt.Fprintf(&b, "runsc is `%s`; the adapter flags were %s. The tunnelds `a` and `b` are in the test's own "+
+	fmt.Fprintf(&b, "runsc is `%s`\n(sha256 `%s`); the adapter flags were %s. The tunnelds `a` and `b` are in the test's own "+
 		"process with the fake SNP platform, and ticket 23's exit — `socketSandbox` and `ServeExit`, unchanged — "+
-		"is attached to `b` with `-allow %s`.\n\n%s\n\n", l.runsc, present(l.adapter), l.p.allow, l.p.preamble)
+		"is attached to `b` with `-allow %s`.\n\n%s\n\n", l.runsc, l.sha, present(l.adapter), l.p.allow, l.p.preamble)
+	if note := os.Getenv(noteEnv); note != "" {
+		fmt.Fprintf(&b, "%s\n\n", note)
+	}
 	fmt.Fprintf(&b, "A file here whose name ends `.redacted` is one that carried `ANTHROPIC_API_KEY`: the original "+
 		"was not copied and this is it with the key replaced. One ending `.gz` was over %d MiB and is kept "+
 		"compressed rather than trimmed.\n\n", bigFile>>20)
@@ -1151,6 +1167,22 @@ func present(on bool) string {
 		return "passed"
 	}
 	return "left out (" + adapterEnv + "=0)"
+}
+
+// sha256Of is a file by content. It streams, because one of the things this
+// harness hashes is a hundred megabytes of runsc.
+func sha256Of(t *testing.T, path string) string {
+	t.Helper()
+	f, err := os.Open(path)
+	if err != nil {
+		t.Fatalf("%s: %v", path, err)
+	}
+	defer f.Close()
+	sum := sha256.New()
+	if _, err := io.Copy(sum, f); err != nil {
+		t.Fatalf("hashing %s: %v", path, err)
+	}
+	return hex.EncodeToString(sum.Sum(nil))
 }
 
 // times is a count with its noun, so that a record written for a reader does

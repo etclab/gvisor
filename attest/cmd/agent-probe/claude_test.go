@@ -340,7 +340,11 @@ func askedFor(lines []string) []askedName {
 		}
 		var name, kind, answer string
 		for _, field := range strings.Fields(strings.TrimPrefix(line, "tunnel dns: ")) {
-			switch key, value, _ := strings.Cut(field, "="); key {
+			// The adapter quotes a name it has sanitised, so the value may
+			// arrive as q="name" or as q=name; both are the same name.
+			key, value, _ := strings.Cut(field, "=")
+			value = strings.Trim(value, `"`)
+			switch key {
 			case "q":
 				name = value
 			case "type":

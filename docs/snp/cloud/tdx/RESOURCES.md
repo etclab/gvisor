@@ -176,3 +176,38 @@ was touched.
 
 E5 itself created nothing: it is eight boots of a local QEMU on the workstation
 (`docs/snp/evidence/ticket24/spikes/E5/`), no cloud resource and no sudo.
+
+## Ticket 26: the sandbox honours a pushed policy
+
+Two guests, and for the first time on this branch a **three-disk** shape whose
+RTMR0 the reference value set names: a 20 GB boot disk from the ticket 26 image,
+a 10 GB config device and a 10 GB workload device carrying the OCI bundle. Ticket
+24 observed `8ee4fa3614e96b5c7cdacf52675c069e9de399a3688f83510a9bc3b4180e0e8f06c427eab69fcb4deff05203c0b70a3f`
+twice and authored it nowhere, so every guest of that shape was refused; ticket
+26 authors it deliberately in `build-tdx-image.sh` and `emit-tdx-documents.sh`,
+and `docs/snp/evidence/ticket26/tdx/RTMR0-DECISION.md` is the decision and the
+argument for it.
+
+Everything this ticket creates carries `purpose=attested-tunnel-t26`, so the
+inventory can be checked against the provider with one command:
+
+```sh
+gcloud compute instances list --filter="labels.purpose=attested-tunnel-t26"
+```
+
+`docs/snp/cloud/tdx/run-tdx-t26.sh` prints the rows below already filled in, at
+the end of every run and in `-dry-run`. A person writes them here: on create with
+the timestamp, and again on delete with the state in bold, because a script that
+edited this file would be claiming an instance was gone before the delete
+returned. `docs/snp/evidence/ticket26/tdx/RUNBOOK.md` §9 is the discipline.
+
+**Not ours, and not touched:** `eval-vm`, `listener`, `relay`, `trusted-vm`,
+`trusted-vm-smh`, `untrusted-vm` and `untrusted-vm-smh`, and the firewall rule
+`attested-tunnel-udp-4433`, exactly as every ticket before this one left them.
+
+| created | name | type | purpose | state |
+|---|---|---|---|---|
+
+*(No row yet: nothing has been created. The scenario was prepared —
+`run-tdx-t26.sh`, the image build, the bundle and the two config devices — and
+checked with `-dry-run`, which creates nothing.)*

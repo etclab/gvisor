@@ -1,0 +1,32 @@
+config: reference-values.json  7186aeda2a6b0e6bcdd91f33edb1733d22e3a8b3dedae0d31e61f4a3e3865e22  1070 bytes
+config: reference-values.json.sig  9e0c0af86725094185a3871fc541fbf91d69cf7507a4d314533a471071c83a9e  129 bytes
+config: peers.json  05604bc74f474a072c18246ad0540fe9fc422277366b34d064022255def814b5  109 bytes
+config: tunneld.json  0f789bfb8ae77a982c7e7b0854db5010579fc616cd6a81f239d329d417c5c92f  308 bytes
+config: network.conf  e70a440427371b3aa21caba889a77407c8165c48fb395b59d3714daade08e2a8  365 bytes
+config: collateral/  10 files
+config:   collateral.txt  393d55678e7634c27cfc4518a9606df61d845b4d599b86245e1e7aab448e8fe0
+config:   FETCH.txt  8db3d7e1f4ac78b24c8f4e7e7b2eccb81bcdac41b399df02fb9a6d22771b8109
+config:   pckcrl-platform.body  30bf6088a96d6e785511e7c327702c5b3b29e084f021ef251e3eb64ca298b3ae
+config:   pckcrl-platform.headers  75c84e97bb08f04070db43ac664dfa1f1563848c0b6eaf2d32f96a8d7377be50
+config:   qeidentity.body  9c39b097f5317eb8a15ca118bc7cf25741cb8d616fc4c7a4946d987b48e3dfc6
+config:   qeidentity.headers  83db5a646b9e44bc9c182f70390fcaf1376d90daf8141d589f18a7622e4ac183
+config:   rootcrl.body  c114be5d5ca7aab2d37817eca55aa8a2353853809904ff3695b31c26bcb7465b
+config:   rootcrl.headers  2a0b164e9747239e3c280aa1222ab1c57c7719b86d7e71a6f591f6cb6e7ae4bf
+config:   tcbinfo-00806f050000.body  6bc653ddc0e1a101377b5dc08349b4c3fed0a323d77c50a032e5193c01a5063e
+config:   tcbinfo-00806f050000.headers  25da33ff37c3c25e5825eed414501df3fb930423242f28fc9f8144bf0c17c69f
+config device written to /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t24/46c42ff5-b5e8-48d6-a8bb-ba92dda85a78/scratchpad/e5/dev/config.raw
+  size   67108864 bytes, label attested-config
+  sha256 2d798eb6369fd6a098b635aae5a4892d919a21fa7071108a621b3275099f1217  (not measured, and nothing on it is trusted)
+workload: config.json
+workload: rootfs/  (3 files, 2088 KiB)
+Warning: label too long; will be truncated to 'attested-workloa'
+
+workload device written to /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t24/46c42ff5-b5e8-48d6-a8bb-ba92dda85a78/scratchpad/e5/dev/throwaway-snp-sized.img (root-owned, ext4 without a journal)
+workload device sha256: 6d5b8518ad6852160e8e4b0b1596b12002e5914649c9f2c52f64cda6ac066b20  (not measured)
+workload: config.json  193382ad2dfce082768b777e0b3a8d017a761b51eb97024872bef9a41180b741  632 bytes
+workload: rootfs/  (3 files, 2088 KiB)
+Warning: label too long; will be truncated to 'attested-workloa'
+
+workload device written to /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t24/46c42ff5-b5e8-48d6-a8bb-ba92dda85a78/scratchpad/e5/dev/workload.raw (root-owned, ext4 without a journal)
+  size   67108864 bytes, label attested-workload (ext4 stores the first 16 bytes of it)
+  sha256 7d0e3372d3594565031143dbb32ab15e2a1f2be3b8de3edaa6f2773e21924fa8  (not measured, and nothing on it is trusted)

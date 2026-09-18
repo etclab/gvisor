@@ -1,0 +1,746 @@
+[    0.000000] Linux version 6.17.0-1022-gcp (buildd@lcy02-amd64-073) (x86_64-linux-gnu-gcc-13 (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, GNU ld (GNU Binutils for Ubuntu) 2.42) #25-Ubuntu SMP Sat Jul 25 01:12:40 UTC 2026 (Ubuntu 6.17.0-1022.25-gcp 6.17.13)
+[    0.000000] Command line: console=ttyS0,115200 panic=-1 rdinit=/init
+[    0.000000] KERNEL supported cpus:
+[    0.000000]   Intel GenuineIntel
+[    0.000000]   AMD AuthenticAMD
+[    0.000000]   Hygon HygonGenuine
+[    0.000000]   Centaur CentaurHauls
+[    0.000000]   zhaoxin   Shanghai  
+[    0.000000] BIOS-provided physical RAM map:
+[    0.000000] BIOS-e820: [mem 0x0000000000000000-0x000000000009fbff] usable
+[    0.000000] BIOS-e820: [mem 0x000000000009fc00-0x000000000009ffff] reserved
+[    0.000000] BIOS-e820: [mem 0x00000000000f0000-0x00000000000fffff] reserved
+[    0.000000] BIOS-e820: [mem 0x0000000000100000-0x000000007ffd9fff] usable
+[    0.000000] BIOS-e820: [mem 0x000000007ffda000-0x000000007fffffff] reserved
+[    0.000000] BIOS-e820: [mem 0x00000000feffc000-0x00000000feffffff] reserved
+[    0.000000] BIOS-e820: [mem 0x00000000fffc0000-0x00000000ffffffff] reserved
+[    0.000000] BIOS-e820: [mem 0x000000fd00000000-0x000000ffffffffff] reserved
+[    0.000000] NX (Execute Disable) protection: active
+[    0.000000] APIC: Static calls initialized
+[    0.000000] SMBIOS 2.8 present.
+[    0.000000] DMI: QEMU Standard PC (i440FX + PIIX, 1996), BIOS rel-1.16.3-0-ga6ed6b701f0a-prebuilt.qemu.org 04/01/2014
+[    0.000000] DMI: Memory slots populated: 1/1
+[    0.000000] Hypervisor detected: KVM
+[    0.000000] last_pfn = 0x7ffda max_arch_pfn = 0x10000000000
+[    0.000000] kvm-clock: Using msrs 4b564d01 and 4b564d00
+[    0.000001] kvm-clock: using sched offset of 567563048 cycles
+[    0.000006] clocksource: kvm-clock: mask: 0xffffffffffffffff max_cycles: 0x1cd42e4dffb, max_idle_ns: 881590591483 ns
+[    0.000015] tsc: Detected 3245.122 MHz processor
+[    0.001292] last_pfn = 0x7ffda max_arch_pfn = 0x10000000000
+[    0.001376] MTRR map: 4 entries (3 fixed + 1 variable; max 19), built from 8 variable MTRRs
+[    0.001384] x86/PAT: Configuration [0-7]: WB  WC  UC- UC  WB  WP  UC- WT  
+[    0.005756] found SMP MP-table at [mem 0x000f5470-0x000f547f]
+[    0.005791] Using GB pages for direct mapping
+[    0.006411] RAMDISK: [mem 0x7ad45000-0x7ffcffff]
+[    0.006425] ACPI: Early table checksum verification disabled
+[    0.006430] ACPI: RSDP 0x00000000000F5290 000014 (v00 BOCHS )
+[    0.006441] ACPI: RSDT 0x000000007FFE2373 000034 (v01 BOCHS  BXPC     00000001 BXPC 00000001)
+[    0.006455] ACPI: FACP 0x000000007FFE221F 000074 (v01 BOCHS  BXPC     00000001 BXPC 00000001)
+[    0.006467] ACPI: DSDT 0x000000007FFE0040 0021DF (v01 BOCHS  BXPC     00000001 BXPC 00000001)
+[    0.006474] ACPI: FACS 0x000000007FFE0000 000040
+[    0.006480] ACPI: APIC 0x000000007FFE2293 000080 (v03 BOCHS  BXPC     00000001 BXPC 00000001)
+[    0.006486] ACPI: HPET 0x000000007FFE2313 000038 (v01 BOCHS  BXPC     00000001 BXPC 00000001)
+[    0.006491] ACPI: WAET 0x000000007FFE234B 000028 (v01 BOCHS  BXPC     00000001 BXPC 00000001)
+[    0.006496] ACPI: Reserving FACP table memory at [mem 0x7ffe221f-0x7ffe2292]
+[    0.006500] ACPI: Reserving DSDT table memory at [mem 0x7ffe0040-0x7ffe221e]
+[    0.006503] ACPI: Reserving FACS table memory at [mem 0x7ffe0000-0x7ffe003f]
+[    0.006504] ACPI: Reserving APIC table memory at [mem 0x7ffe2293-0x7ffe2312]
+[    0.006506] ACPI: Reserving HPET table memory at [mem 0x7ffe2313-0x7ffe234a]
+[    0.006508] ACPI: Reserving WAET table memory at [mem 0x7ffe234b-0x7ffe2372]
+[    0.007330] No NUMA configuration found
+[    0.007333] Faking a node at [mem 0x0000000000000000-0x000000007ffd9fff]
+[    0.007360] NODE_DATA(0) allocated [mem 0x7ad1a2c0-0x7ad44fff]
+[    0.008032] Zone ranges:
+[    0.008034]   DMA      [mem 0x0000000000001000-0x0000000000ffffff]
+[    0.008039]   DMA32    [mem 0x0000000001000000-0x000000007ffd9fff]
+[    0.008043]   Normal   empty
+[    0.008046]   Device   empty
+[    0.008047] Movable zone start for each node
+[    0.008052] Early memory node ranges
+[    0.008053]   node   0: [mem 0x0000000000001000-0x000000000009efff]
+[    0.008058]   node   0: [mem 0x0000000000100000-0x000000007ffd9fff]
+[    0.008061] Initmem setup node 0 [mem 0x0000000000001000-0x000000007ffd9fff]
+[    0.008609] On node 0, zone DMA: 1 pages in unavailable ranges
+[    0.008653] On node 0, zone DMA: 97 pages in unavailable ranges
+[    0.024489] On node 0, zone DMA32: 38 pages in unavailable ranges
+[    0.025248] ACPI: PM-Timer IO Port: 0x608
+[    0.025274] ACPI: LAPIC_NMI (acpi_id[0xff] dfl dfl lint[0x1])
+[    0.025343] IOAPIC[0]: apic_id 0, version 17, address 0xfec00000, GSI 0-23
+[    0.025352] ACPI: INT_SRC_OVR (bus 0 bus_irq 0 global_irq 2 dfl dfl)
+[    0.025357] ACPI: INT_SRC_OVR (bus 0 bus_irq 5 global_irq 5 high level)
+[    0.025360] ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 9 high level)
+[    0.025363] ACPI: INT_SRC_OVR (bus 0 bus_irq 10 global_irq 10 high level)
+[    0.025366] ACPI: INT_SRC_OVR (bus 0 bus_irq 11 global_irq 11 high level)
+[    0.025375] ACPI: Using ACPI (MADT) for SMP configuration information
+[    0.025377] ACPI: HPET id: 0x8086a201 base: 0xfed00000
+[    0.025385] TSC deadline timer available
+[    0.025397] CPU topo: Max. logical packages:   1
+[    0.025399] CPU topo: Max. logical dies:       1
+[    0.025401] CPU topo: Max. dies per package:   1
+[    0.025413] CPU topo: Max. threads per core:   1
+[    0.025415] CPU topo: Num. cores per package:     2
+[    0.025417] CPU topo: Num. threads per package:   2
+[    0.025418] CPU topo: Allowing 2 present CPUs plus 0 hotplug CPUs
+[    0.025451] kvm-guest: APIC: eoi() replaced with kvm_guest_apic_eoi_write()
+[    0.025479] kvm-guest: KVM setup pv remote TLB flush
+[    0.025488] kvm-guest: setup PV sched yield
+[    0.025510] PM: hibernation: Registered nosave memory: [mem 0x00000000-0x00000fff]
+[    0.025516] PM: hibernation: Registered nosave memory: [mem 0x0009f000-0x000fffff]
+[    0.025522] [mem 0x80000000-0xfeffbfff] available for PCI devices
+[    0.025528] Booting paravirtualized kernel on KVM
+[    0.025532] clocksource: refined-jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 1910969940391419 ns
+[    0.025550] setup_percpu: NR_CPUS:8192 nr_cpumask_bits:2 nr_cpu_ids:2 nr_node_ids:1
+[    0.026650] percpu: Embedded 84 pages/cpu s221184 r8192 d114688 u1048576
+[    0.026772] kvm-guest: PV spinlocks enabled
+[    0.026779] PV qspinlock hash table entries: 256 (order: 0, 4096 bytes, linear)
+[    0.026789] Kernel command line: console=ttyS0,115200 panic=-1 rdinit=/init
+[    0.026917] random: crng init done
+[    0.026921] printk: log buffer data + meta data: 262144 + 917504 = 1179648 bytes
+[    0.027841] Dentry cache hash table entries: 262144 (order: 9, 2097152 bytes, linear)
+[    0.028648] Inode-cache hash table entries: 131072 (order: 8, 1048576 bytes, linear)
+[    0.028716] Fallback order for Node 0: 0 
+[    0.028723] Built 1 zonelists, mobility grouping on.  Total pages: 524152
+[    0.028727] Policy zone: DMA32
+[    0.028740] mem auto-init: stack:all(zero), heap alloc:on, heap free:off
+[    0.043307] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=2, Nodes=1
+[    0.062823] ftrace: allocating 62261 entries in 244 pages
+[    0.062829] ftrace: allocated 244 pages with 5 groups
+[    0.063755] rcu: Hierarchical RCU implementation.
+[    0.063757] rcu: 	RCU restricting CPUs from NR_CPUS=8192 to nr_cpu_ids=2.
+[    0.063761] 	Rude variant of Tasks RCU enabled.
+[    0.063762] 	Tracing variant of Tasks RCU enabled.
+[    0.063764] rcu: RCU calculated value of scheduler-enlistment delay is 100 jiffies.
+[    0.063766] rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=2
+[    0.063783] RCU Tasks Rude: Setting shift to 1 and lim to 1 rcu_task_cb_adjust=1 rcu_task_cpu_ids=2.
+[    0.063789] RCU Tasks Trace: Setting shift to 1 and lim to 1 rcu_task_cb_adjust=1 rcu_task_cpu_ids=2.
+[    0.074993] NR_IRQS: 524544, nr_irqs: 440, preallocated irqs: 16
+[    0.075318] rcu: srcu_init: Setting srcu_struct sizes based on contention.
+[    0.075604] Console: colour *CGA 80x25
+[    0.075703] printk: legacy console [ttyS0] enabled
+[    0.350226] ACPI: Core revision 20250404
+[    0.352029] clocksource: hpet: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 19112604467 ns
+[    0.355816] APIC: Switch to symmetric I/O mode setup
+[    0.358604] x2apic enabled
+[    0.360756] APIC: Switched APIC routing to: physical x2apic
+[    0.363376] kvm-guest: APIC: send_IPI_mask() replaced with kvm_send_ipi_mask()
+[    0.366284] kvm-guest: APIC: send_IPI_mask_allbutself() replaced with kvm_send_ipi_mask_allbutself()
+[    0.370267] kvm-guest: setup PV IPIs
+[    0.374896] ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
+[    0.377776] clocksource: tsc-early: mask: 0xffffffffffffffff max_cycles: 0x2ec6cb58771, max_idle_ns: 440795340214 ns
+[    0.385103] Calibrating delay loop (skipped) preset value.. 6490.24 BogoMIPS (lpj=3245122)
+[    0.386533] x86/cpu: User Mode Instruction Prevention (UMIP) activated
+[    0.387529] Last level iTLB entries: 4KB 512, 2MB 255, 4MB 127
+[    0.388094] Last level dTLB entries: 4KB 512, 2MB 255, 4MB 127, 1GB 0
+[    0.389125] mitigations: Enabled attack vectors: user_kernel, user_user, guest_host, guest_guest, SMT mitigations: auto
+[    0.390124] Speculative Store Bypass: Mitigation: Speculative Store Bypass disabled via prctl
+[    0.391097] Transient Scheduler Attacks: Vulnerable: No microcode
+[    0.392091] Spectre V2 : Mitigation: Enhanced / Automatic IBRS
+[    0.393090] Speculative Return Stack Overflow: Mitigation: Safe RET
+[    0.394092] Spectre V1 : Mitigation: usercopy/swapgs barriers and __user pointer sanitization
+[    0.395102] Spectre V2 : mitigation: Enabling conditional Indirect Branch Prediction Barrier
+[    0.397093] active return thunk: srso_alias_return_thunk
+[    0.398223] x86/fpu: Supporting XSAVE feature 0x001: 'x87 floating point registers'
+[    0.399091] x86/fpu: Supporting XSAVE feature 0x002: 'SSE registers'
+[    0.400090] x86/fpu: Supporting XSAVE feature 0x004: 'AVX registers'
+[    0.401093] x86/fpu: Supporting XSAVE feature 0x020: 'AVX-512 opmask'
+[    0.402090] x86/fpu: Supporting XSAVE feature 0x040: 'AVX-512 Hi256'
+[    0.403090] x86/fpu: Supporting XSAVE feature 0x080: 'AVX-512 ZMM_Hi256'
+[    0.404090] x86/fpu: Supporting XSAVE feature 0x200: 'Protection Keys User registers'
+[    0.405091] x86/fpu: xstate_offset[2]:  576, xstate_sizes[2]:  256
+[    0.406102] x86/fpu: xstate_offset[5]:  832, xstate_sizes[5]:   64
+[    0.407093] x86/fpu: xstate_offset[6]:  896, xstate_sizes[6]:  512
+[    0.408090] x86/fpu: xstate_offset[7]: 1408, xstate_sizes[7]: 1024
+[    0.409090] x86/fpu: xstate_offset[9]: 2432, xstate_sizes[9]:    8
+[    0.410090] x86/fpu: Enabled xstate features 0x2e7, context size is 2440 bytes, using 'compacted' format.
+[    0.515616] Freeing SMP alternatives memory: 52K
+[    0.516094] pid_max: default: 32768 minimum: 301
+[    0.517250] LSM: initializing lsm=lockdown,capability,landlock,yama,apparmor,ima,evm
+[    0.518129] landlock: Up and running.
+[    0.519090] Yama: becoming mindful.
+[    0.520200] AppArmor: AppArmor initialized
+[    0.521268] Mount-cache hash table entries: 4096 (order: 3, 32768 bytes, linear)
+[    0.522098] Mountpoint-cache hash table entries: 4096 (order: 3, 32768 bytes, linear)
+[    0.524814] smpboot: CPU0: AMD EPYC 9354P 32-Core Processor (family: 0x19, model: 0x11, stepping: 0x1)
+[    0.526649] Performance Events: Fam17h+ core perfctr, AMD PMU driver.
+[    0.527106] ... version:                2
+[    0.528098] ... bit width:              48
+[    0.529097] ... generic registers:      6
+[    0.530098] ... value mask:             0000ffffffffffff
+[    0.531095] ... max period:             00007fffffffffff
+[    0.532095] ... fixed-purpose events:   0
+[    0.533095] ... event mask:             000000000000003f
+[    0.534382] signal: max sigframe size: 3376
+[    0.535214] rcu: Hierarchical SRCU implementation.
+[    0.536098] rcu: 	Max phase no-delay instances is 400.
+[    0.537357] Timer migration: 1 hierarchy levels; 8 children per group; 1 crossnode level
+[    0.545153] smp: Bringing up secondary CPUs ...
+[    0.546579] smpboot: x86: Booting SMP configuration:
+[    0.547108] .... node  #0, CPUs:      #1
+[    0.549180] smp: Brought up 1 node, 2 CPUs
+[    0.551097] smpboot: Total of 2 processors activated (12980.48 BogoMIPS)
+[    0.552845] Memory: 1911284K/2096608K available (22310K kernel code, 4681K rwdata, 15692K rodata, 5416K init, 6080K bss, 178236K reserved, 0K cma-reserved)
+[    0.554105] devtmpfs: initialized
+[    0.555333] x86/mm: Memory block size: 128MB
+[    0.559219] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 1911260446275000 ns
+[    0.560124] posixtimers hash table entries: 1024 (order: 2, 16384 bytes, linear)
+[    0.561125] futex hash table entries: 512 (32768 bytes on 1 NUMA nodes, total 32 KiB, linear).
+[    0.562374] pinctrl core: initialized pinctrl subsystem
+[    0.563604] PM: RTC time: 10:43:27, date: 2026-09-18
+[    0.566738] NET: Registered PF_NETLINK/PF_ROUTE protocol family
+[    0.567605] DMA: preallocated 256 KiB GFP_KERNEL pool for atomic allocations
+[    0.568138] DMA: preallocated 256 KiB GFP_KERNEL|GFP_DMA pool for atomic allocations
+[    0.569133] DMA: preallocated 256 KiB GFP_KERNEL|GFP_DMA32 pool for atomic allocations
+[    0.570122] audit: initializing netlink subsys (disabled)
+[    0.571231] audit: type=2000 audit(1789728207.625:1): state=initialized audit_enabled=0 res=1
+[    0.571887] thermal_sys: Registered thermal governor 'fair_share'
+[    0.572112] thermal_sys: Registered thermal governor 'bang_bang'
+[    0.576116] thermal_sys: Registered thermal governor 'step_wise'
+[    0.580109] thermal_sys: Registered thermal governor 'user_space'
+[    0.584106] thermal_sys: Registered thermal governor 'power_allocator'
+[    0.588227] cpuidle: using governor ladder
+[    0.595129] cpuidle: using governor menu
+[    0.598466] acpiphp: ACPI Hot Plug PCI Controller Driver version: 0.5
+[    0.601698] PCI: Using configuration type 1 for base access
+[    0.604102] PCI: Using configuration type 1 for extended access
+[    0.607226] kprobes: kprobe jump-optimization is enabled. All kprobes are optimized if possible.
+[    0.676147] HugeTLB: registered 1.00 GiB page size, pre-allocated 0 pages
+[    0.677098] HugeTLB: 16380 KiB vmemmap can be freed for a 1.00 GiB page
+[    0.678099] HugeTLB: registered 2.00 MiB page size, pre-allocated 0 pages
+[    0.679102] HugeTLB: 28 KiB vmemmap can be freed for a 2.00 MiB page
+[    0.684736] ACPI: Added _OSI(Module Device)
+[    0.685101] ACPI: Added _OSI(Processor Device)
+[    0.686097] ACPI: Added _OSI(Processor Aggregator Device)
+[    0.694781] ACPI: 1 ACPI AML tables successfully acquired and loaded
+[    0.698508] ACPI: Interpreter enabled
+[    0.699155] ACPI: PM: (supports S0 S3 S4 S5)
+[    0.700097] ACPI: Using IOAPIC for interrupt routing
+[    0.702032] PCI: Using host bridge windows from ACPI; if necessary, use "pci=nocrs" and report a bug
+[    0.702097] PCI: Using E820 reservations for host bridge windows
+[    0.703640] ACPI: Enabled 2 GPEs in block 00 to 0F
+[    0.720212] ACPI: PCI Root Bridge [PCI0] (domain 0000 [bus 00-ff])
+[    0.721111] acpi PNP0A03:00: _OSC: OS supports [ExtendedConfig ASPM ClockPM Segments MSI EDR HPX-Type3]
+[    0.724196] acpiphp: Slot [2] registered
+[    0.725169] acpiphp: Slot [3] registered
+[    0.726161] acpiphp: Slot [4] registered
+[    0.727225] acpiphp: Slot [5] registered
+[    0.728158] acpiphp: Slot [6] registered
+[    0.729158] acpiphp: Slot [7] registered
+[    0.730157] acpiphp: Slot [8] registered
+[    0.731159] acpiphp: Slot [9] registered
+[    0.732176] acpiphp: Slot [10] registered
+[    0.733157] acpiphp: Slot [11] registered
+[    0.734160] acpiphp: Slot [12] registered
+[    0.735165] acpiphp: Slot [13] registered
+[    0.736157] acpiphp: Slot [14] registered
+[    0.737169] acpiphp: Slot [15] registered
+[    0.738158] acpiphp: Slot [16] registered
+[    0.739157] acpiphp: Slot [17] registered
+[    0.740163] acpiphp: Slot [18] registered
+[    0.741269] acpiphp: Slot [19] registered
+[    0.742329] acpiphp: Slot [20] registered
+[    0.743199] acpiphp: Slot [21] registered
+[    0.744158] acpiphp: Slot [22] registered
+[    0.745157] acpiphp: Slot [23] registered
+[    0.746199] acpiphp: Slot [24] registered
+[    0.747164] acpiphp: Slot [25] registered
+[    0.748159] acpiphp: Slot [26] registered
+[    0.749158] acpiphp: Slot [27] registered
+[    0.750157] acpiphp: Slot [28] registered
+[    0.751177] acpiphp: Slot [29] registered
+[    0.752157] acpiphp: Slot [30] registered
+[    0.753157] acpiphp: Slot [31] registered
+[    0.754131] PCI host bridge to bus 0000:00
+[    0.755109] pci_bus 0000:00: root bus resource [io  0x0000-0x0cf7 window]
+[    0.756097] pci_bus 0000:00: root bus resource [io  0x0d00-0xffff window]
+[    0.757097] pci_bus 0000:00: root bus resource [mem 0x000a0000-0x000bffff window]
+[    0.758097] pci_bus 0000:00: root bus resource [mem 0x80000000-0xfebfffff window]
+[    0.759100] pci_bus 0000:00: root bus resource [mem 0x100000000-0x17fffffff window]
+[    0.760098] pci_bus 0000:00: root bus resource [bus 00-ff]
+[    0.761480] pci 0000:00:00.0: [8086:1237] type 00 class 0x060000 conventional PCI endpoint
+[    0.763543] pci 0000:00:01.0: [8086:7000] type 00 class 0x060100 conventional PCI endpoint
+[    0.765409] pci 0000:00:01.1: [8086:7010] type 00 class 0x010180 conventional PCI endpoint
+[    0.768029] pci 0000:00:01.1: BAR 4 [io  0xc120-0xc12f]
+[    0.768174] pci 0000:00:01.1: BAR 0 [io  0x01f0-0x01f7]: legacy IDE quirk
+[    0.769097] pci 0000:00:01.1: BAR 1 [io  0x03f6]: legacy IDE quirk
+[    0.770097] pci 0000:00:01.1: BAR 2 [io  0x0170-0x0177]: legacy IDE quirk
+[    0.771097] pci 0000:00:01.1: BAR 3 [io  0x0376]: legacy IDE quirk
+[    0.772688] pci 0000:00:01.3: [8086:7113] type 00 class 0x068000 conventional PCI endpoint
+[    0.773903] pci 0000:00:01.3: quirk: [io  0x0600-0x063f] claimed by PIIX4 ACPI
+[    0.774116] pci 0000:00:01.3: quirk: [io  0x0700-0x070f] claimed by PIIX4 SMB
+[    0.776027] pci 0000:00:02.0: [1af4:1001] type 00 class 0x010000 conventional PCI endpoint
+[    0.778119] pci 0000:00:02.0: BAR 0 [io  0xc000-0xc07f]
+[    0.779160] pci 0000:00:02.0: BAR 1 [mem 0xfebc0000-0xfebc0fff]
+[    0.780157] pci 0000:00:02.0: BAR 4 [mem 0xfebf4000-0xfebf7fff 64bit pref]
+[    0.787100] pci 0000:00:03.0: [1af4:1001] type 00 class 0x010000 conventional PCI endpoint
+[    0.790164] pci 0000:00:03.0: BAR 0 [io  0xc080-0xc0ff]
+[    0.791115] pci 0000:00:03.0: BAR 1 [mem 0xfebc1000-0xfebc1fff]
+[    0.792159] pci 0000:00:03.0: BAR 4 [mem 0xfebf8000-0xfebfbfff 64bit pref]
+[    0.800881] pci 0000:00:04.0: [1af4:1000] type 00 class 0x020000 conventional PCI endpoint
+[    0.803163] pci 0000:00:04.0: BAR 0 [io  0xc100-0xc11f]
+[    0.804178] pci 0000:00:04.0: BAR 1 [mem 0xfebc2000-0xfebc2fff]
+[    0.805283] pci 0000:00:04.0: BAR 4 [mem 0xfebfc000-0xfebfffff 64bit pref]
+[    0.806304] pci 0000:00:04.0: ROM [mem 0xfeb80000-0xfebbffff pref]
+[    0.835639] ACPI: PCI: Interrupt link LNKA configured for IRQ 10
+[    0.836825] ACPI: PCI: Interrupt link LNKB configured for IRQ 10
+[    0.837938] ACPI: PCI: Interrupt link LNKC configured for IRQ 11
+[    0.838760] ACPI: PCI: Interrupt link LNKD configured for IRQ 11
+[    0.839395] ACPI: PCI: Interrupt link LNKS configured for IRQ 9
+[    0.842161] iommu: Default domain type: Translated
+[    0.845121] iommu: DMA domain TLB invalidation policy: lazy mode
+[    0.851032] SCSI subsystem initialized
+[    0.854233] ACPI: bus type USB registered
+[    0.855256] usbcore: registered new interface driver usbfs
+[    0.856178] usbcore: registered new interface driver hub
+[    0.857169] usbcore: registered new device driver usb
+[    0.858266] pps_core: LinuxPPS API ver. 1 registered
+[    0.859111] pps_core: Software ver. 5.3.6 - Copyright 2005-2007 Rodolfo Giometti <giometti@linux.it>
+[    0.860129] PTP clock support registered
+[    0.861231] EDAC MC: Ver: 3.0.0
+[    0.864603] NetLabel: Initializing
+[    0.865106] NetLabel:  domain hash size = 128
+[    0.866102] NetLabel:  protocols = UNLABELED CIPSOv4 CALIPSO
+[    0.867172] NetLabel:  unlabeled traffic allowed by default
+[    0.868242] mctp: management component transport protocol core
+[    0.869110] NET: Registered PF_MCTP protocol family
+[    0.870184] PCI: Using ACPI for IRQ routing
+[    0.871666] vgaarb: loaded
+[    0.872407] hpet0: at MMIO 0xfed00000, IRQs 2, 8, 0
+[    0.876121] hpet0: 3 comparators, 64-bit 100.000000 MHz counter
+[    0.884329] clocksource: Switched to clocksource kvm-clock
+[    0.895111] VFS: Disk quotas dquot_6.6.0
+[    0.899128] VFS: Dquot-cache hash table entries: 512 (order 0, 4096 bytes)
+[    0.906685] AppArmor: AppArmor Filesystem Enabled
+[    0.911185] pnp: PnP ACPI init
+[    0.917001] pnp: PnP ACPI: found 5 devices
+[    0.945946] clocksource: acpi_pm: mask: 0xffffff max_cycles: 0xffffff, max_idle_ns: 2085701024 ns
+[    0.954948] NET: Registered PF_INET protocol family
+[    0.959979] IP idents hash table entries: 32768 (order: 6, 262144 bytes, linear)
+[    1.039383] tcp_listen_portaddr_hash hash table entries: 1024 (order: 2, 16384 bytes, linear)
+[    1.044456] Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+[    1.049257] TCP established hash table entries: 16384 (order: 5, 131072 bytes, linear)
+[    1.054516] TCP bind hash table entries: 16384 (order: 7, 524288 bytes, linear)
+[    1.059985] TCP: Hash tables configured (established 16384 bind 16384)
+[    1.064060] MPTCP token hash table entries: 2048 (order: 4, 49152 bytes, linear)
+[    1.068645] UDP hash table entries: 1024 (order: 4, 65536 bytes, linear)
+[    1.073882] UDP-Lite hash table entries: 1024 (order: 4, 65536 bytes, linear)
+[    1.078525] NET: Registered PF_UNIX/PF_LOCAL protocol family
+[    1.082012] NET: Registered PF_XDP protocol family
+[    1.084956] pci_bus 0000:00: resource 4 [io  0x0000-0x0cf7 window]
+[    1.090167] pci_bus 0000:00: resource 5 [io  0x0d00-0xffff window]
+[    1.095491] pci_bus 0000:00: resource 6 [mem 0x000a0000-0x000bffff window]
+[    1.101125] pci_bus 0000:00: resource 7 [mem 0x80000000-0xfebfffff window]
+[    1.106208] pci_bus 0000:00: resource 8 [mem 0x100000000-0x17fffffff window]
+[    1.110559] pci 0000:00:01.0: PIIX3: Enabling Passive Release
+[    1.114346] pci 0000:00:00.0: Limiting direct PCI/PCI transfers
+[    1.117737] PCI: CLS 0 bytes, default 64
+[    1.120959] clocksource: tsc: mask: 0xffffffffffffffff max_cycles: 0x2ec6cb58771, max_idle_ns: 440795340214 ns
+[    1.121240] Trying to unpack rootfs image as initramfs...
+[    1.186017] Initialise system trusted keyrings
+[    1.188852] Key type blacklist registered
+[    1.191874] workingset: timestamp_bits=36 max_order=19 bucket_order=0
+[    1.196570] squashfs: version 4.0 (2009/01/31) Phillip Lougher
+[    1.200946] fuse: init (API version 7.44)
+[    1.203707] integrity: Platform Keyring initialized
+[    1.206527] integrity: Machine keyring initialized
+[    1.248849] Key type asymmetric registered
+[    1.251427] Asymmetric key parser 'x509' registered
+[    1.254322] Block layer SCSI generic (bsg) driver version 0.4 loaded (major 242)
+[    1.258707] io scheduler mq-deadline registered
+[    1.262475] ledtrig-cpu: registered to indicate activity on CPUs
+[    1.266789] input: Power Button as /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
+[    1.271166] ACPI: button: Power Button [PWRF]
+[    1.281433] ACPI: \_SB_.LNKB: Enabled at IRQ 10
+[    1.292470] ACPI: \_SB_.LNKC: Enabled at IRQ 11
+[    1.302986] ACPI: \_SB_.LNKD: Enabled at IRQ 11
+[    1.308689] Serial: 8250/16550 driver, 32 ports, IRQ sharing enabled
+[    1.341405] 00:03: ttyS0 at I/O 0x3f8 (irq = 4, base_baud = 115200) is a 16550A
+[    1.356541] Linux agpgart interface v0.103
+[    1.367257] loop: module loaded
+[    1.369529] virtio_blk virtio0: 2/0/0 default/read/poll queues
+[    1.374615] virtio_blk virtio0: [vda] 131072 512-byte logical blocks (67.1 MB/64.0 MiB)
+[    1.382310] virtio_blk virtio1: 2/0/0 default/read/poll queues
+[    1.387821] virtio_blk virtio1: [vdb] 131072 512-byte logical blocks (67.1 MB/64.0 MiB)
+[    1.395513] Key type psk registered
+[    1.403613] scsi host0: ata_piix
+[    1.406934] scsi host1: ata_piix
+[    1.409001] ata1: PATA max MWDMA2 cmd 0x1f0 ctl 0x3f6 bmdma 0xc120 irq 14 lpm-pol 0
+[    1.414095] ata2: PATA max MWDMA2 cmd 0x170 ctl 0x376 bmdma 0xc128 irq 15 lpm-pol 0
+[    1.419253] ACPI: bus type drm_connector registered
+[    1.423865] tun: Universal TUN/TAP device driver, 1.6
+[    1.433267] PPP generic driver version 2.4.2
+[    1.437117] i8042: PNP: PS/2 Controller [PNP0303:KBD,PNP0f13:MOU] at 0x60,0x64 irq 1,12
+[    1.449949] serio: i8042 KBD port at 0x60,0x64 irq 1
+[    1.455724] serio: i8042 AUX port at 0x60,0x64 irq 12
+[    1.462647] mousedev: PS/2 mouse device common for all mice
+[    1.470974] input: AT Translated Set 2 keyboard as /devices/platform/i8042/serio0/input/input1
+[    1.476390] rtc_cmos 00:04: RTC can wake from S4
+[    1.480823] rtc_cmos 00:04: registered as rtc0
+[    1.484451] rtc_cmos 00:04: setting system clock to 2026-09-18T10:43:28 UTC (1789728208)
+[    1.490558] rtc_cmos 00:04: alarms up to one day, y3k, 242 bytes nvram, hpet irqs
+[    1.496631] i2c_dev: i2c /dev entries driver
+[    1.499855] device-mapper: core: CONFIG_IMA_DISABLE_HTABLE is disabled. Duplicate IMA measurements will not be recorded in the IMA log.
+[    1.508893] device-mapper: uevent: version 1.0.3
+[    1.512616] device-mapper: ioctl: 4.50.0-ioctl (2025-04-28) initialised: dm-devel@lists.linux.dev
+[    1.519996] amd_pstate: The CPPC feature is supported but currently disabled by the BIOS.
+[    1.519996] Please enable it if your BIOS has the CPPC option.
+[    1.531094] amd_pstate: the _CPC object is not present in SBIOS or ACPI disabled
+[    1.537933] drop_monitor: Initializing network drop monitor service
+[    1.544031] NET: Registered PF_INET6 protocol family
+[    1.549427] Segment Routing with IPv6
+[    1.552353] In-situ OAM (IOAM) with IPv6
+[    1.555185] NET: Registered PF_PACKET protocol family
+[    1.558957] Key type dns_resolver registered
+[    1.565256] IPI shorthand broadcast: enabled
+[    1.587200] sched_clock: Marking stable (1285008500, 301755750)->(1933570029, -346805779)
+[    1.593209] registered taskstats version 1
+[    1.599682] Loading compiled-in X.509 certificates
+[    1.605316] Loaded X.509 cert 'Build time autogenerated kernel key: 8bf700b70a5c57ec8a5f67210ff11e5fa3a44628'
+[    1.614225] Loaded X.509 cert 'Canonical Ltd. Live Patch Signing 2025 Kmod: d541cef61dc7e793b7eb7e899970a2eef0b5dc8c'
+[    1.624875] Loaded X.509 cert 'Canonical Ltd. Live Patch Signing: 14df34d1a87cf37625abec039ef2bf521249b969'
+[    1.636490] Loaded X.509 cert 'Canonical Ltd. Kernel Module Signing 2025 Kmod: 4627603d2357a2a3f81006370894c221175893e9'
+[    1.646597] Loaded X.509 cert 'Canonical Ltd. Kernel Module Signing: 88f752e560a1e0737e31163a466ad7b70a850c19'
+[    1.656633] blacklist: Loading compiled-in revocation X.509 certificates
+[    1.660906] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing: 61482aa2830d0ab2ad5af10b7250da9033ddcef0'
+[    1.667881] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (2017): 242ade75ac4a15e50d50c84b0d45ff3eae707a03'
+[    1.676961] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (ESM 2018): 365188c1d374d6b07c3c8f240f8ef722433d6a8b'
+[    1.684457] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (2019): c0746fd6c5da3ae827864651ad66ae47fe24b3e8'
+[    1.691454] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (2021 v1): a8d54bbb3825cfb94fa13c9f8a594a195c107b8d'
+[    1.697986] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (2021 v2): 4cf046892d6fd3c9a5b03f98d845f90851dc6a8c'
+[    1.704657] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (2021 v3): 100437bb6de6e469b581e61cd66bce3ef4ed53af'
+[    1.711328] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (Ubuntu Core 2019): c1d57b8f6b743f23ee41f4f7ee292f06eecadfb9'
+[    1.746348] Demotion targets for Node 0: null
+[    1.749661] Key type .fscrypt registered
+[    1.752060] Key type fscrypt-provisioning registered
+[    1.755309] Key type big_key registered
+[    2.554703] Freeing initrd memory: 84524K
+[    2.559251] Key type encrypted registered
+[    2.560935] AppArmor: AppArmor sha256 policy hashing enabled
+[    2.563281] ima: No TPM chip found, activating TPM-bypass!
+[    2.565546] Loading compiled-in module X.509 certificates
+[    2.569131] Loaded X.509 cert 'Build time autogenerated kernel key: 8bf700b70a5c57ec8a5f67210ff11e5fa3a44628'
+[    2.572964] ima: Allocated hash algorithm: sha256
+[    2.574895] ima: No architecture policies found
+[    2.576746] evm: Initialising EVM extended attributes:
+[    2.578821] evm: security.selinux
+[    2.580150] evm: security.SMACK64
+[    2.581492] evm: security.SMACK64EXEC
+[    2.582883] evm: security.SMACK64TRANSMUTE
+[    2.584509] evm: security.SMACK64MMAP
+[    2.585897] evm: security.apparmor
+[    2.587352] evm: security.ima
+[    2.588712] evm: security.capability
+[    2.590082] evm: HMAC attrs: 0x1
+[    2.592497] PM:   Magic number: 10:116:730
+[    2.598285] RAS: Correctable Errors collector initialized.
+[    2.686350] clk: Disabling unused clocks
+[    2.687957] PM: genpd: Disabling unused power domains
+[    2.696295] Freeing unused decrypted memory: 2028K
+[    2.700042] Freeing unused kernel image (initmem) memory: 5416K
+[    2.701876] Write protecting the kernel read-only data: 38912k
+[    2.705279] Freeing unused kernel image (text/rodata gap) memory: 216K
+[    2.707982] Freeing unused kernel image (rodata/data gap) memory: 692K
+[    3.028202] x86/mm: Checked W+X mappings: passed, no W+X pages found.
+[    3.030452] Run /init as init process
+initrd: ======== attested tunnel guest, in the initrd grub measured ========
+initrd: kernel  6.17.0-1022-gcp x86_64
+initrd: cmdline console=ttyS0,115200 panic=-1 rdinit=/init
+insmod: can't insert '/lib/modules/tdx-guest.ko': No such device
+initrd: WARNING: tdx-guest did not load
+initrd: loaded gve
+initrd: loaded nf_tables
+initrd: loaded nf_reject_ipv4
+initrd: loaded nf_reject_ipv6
+initrd: loaded nft_reject
+initrd: loaded nft_reject_inet
+initrd: modules now resident: gve nf_reject_ipv4 nf_reject_ipv6 nf_tables nft_reject nft_reject_inet 
+initrd: report interface present at /sys/kernel/config/tsm/report
+initrd: installing the egress ceiling this image carries, before the link is up:
+tunneld: EGRESS CEILING 197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973 (sha256 over the compiled-in ceiling; eth0, udp/4433)
+tunneld: EGRESS CEILING as this image carries it:
+table inet attested_tunnel {
+	chain input {
+		type filter hook input priority 0; policy drop;
+		iifname "lo" accept
+		meta nfproto ipv4 iifname "eth0" meta l4proto udp udp sport 4433 accept   # a peer answering a dial of ours
+		meta nfproto ipv4 iifname "eth0" meta l4proto udp udp dport 4433 accept   # a peer dialing this sandbox's listener
+	}
+	chain output {
+		type filter hook output priority 0; policy drop;
+		oifname "lo" accept
+		meta l4proto tcp reject with tcp reset        # so that connect() fails now rather than in a minute, and says a rule did it
+		meta nfproto ipv4 ip daddr 169.254.0.0/16 reject with icmpx admin-prohibited   # the provider's metadata server is an address, and the grant below says "any"
+		meta nfproto ipv4 oifname "eth0" meta l4proto udp udp dport 4433 accept   # dialing a peer
+		meta nfproto ipv4 oifname "eth0" meta l4proto udp udp sport 4433 accept   # answering a peer from this sandbox's listener
+		reject with icmpx admin-prohibited            # everything the ceiling does not permit
+	}
+	chain forward {
+		type filter hook forward priority 0; policy drop;
+	}
+}
+tunneld: EGRESS CEILING INSTALLED; as the kernel holds it:
+table inet attested_tunnel {
+	chain forward {
+		type filter hook forward priority 0; policy drop;
+	}
+	chain input {
+		type filter hook input priority 0; policy drop;
+		iifname "lo" accept   # handle 2
+		meta nfproto ipv4 iifname "eth0" meta l4proto udp sport 4433 accept   # handle 3
+		meta nfproto ipv4 iifname "eth0" meta l4proto udp dport 4433 accept   # handle 4
+	}
+	chain output {
+		type filter hook output priority 0; policy drop;
+		oifname "lo" accept   # handle 6
+		meta l4proto tcp reject with tcp reset   # handle 7
+		meta nfproto ipv4 ip daddr 169.254.0.0/16 reject with icmpx code 3   # handle 8
+		meta nfproto ipv4 oifname "eth0" meta l4proto udp dport 4433 accept   # handle 9
+		meta nfproto ipv4 oifname "eth0" meta l4proto udp sport 4433 accept   # handle 10
+		reject with icmpx code 3   # handle 11
+	}
+}
+tunneld: EXIT status=0
+initrd: block devices, as this kernel presents them with no udev running:
+initrd:   /dev/vda sectors=131072 serial='' wwid=''
+initrd:   /dev/vdb sectors=131072 serial='' wwid=''
+initrd: config device /dev/vda found by the ext4 label
+[    3.396649] EXT4-fs (vda): mounted filesystem 72f8b55c-8ee8-4c2e-9a1e-d58ca69c9890 ro without journal. Quota mode: none.
+initrd: config device mounted at /config (ro,noexec,nosuid,nodev); it holds:
+initrd:   collateral/FETCH.txt  12271 bytes  8db3d7e1f4ac78b2…
+initrd:   collateral/collateral.txt  2598 bytes  393d55678e7634c2…
+initrd:   collateral/pckcrl-platform.body  3354 bytes  30bf6088a96d6e78…
+initrd:   collateral/pckcrl-platform.headers  2200 bytes  75c84e97bb08f040…
+initrd:   collateral/qeidentity.body  624 bytes  9c39b097f5317eb8…
+initrd:   collateral/qeidentity.headers  2186 bytes  83db5a646b9e44bc…
+initrd:   collateral/rootcrl.body  294 bytes  c114be5d5ca7aab2…
+initrd:   collateral/rootcrl.headers  529 bytes  2a0b164e9747239e…
+initrd:   collateral/tcbinfo-00806f050000.body  7953 bytes  6bc653ddc0e1a101…
+initrd:   collateral/tcbinfo-00806f050000.headers  2175 bytes  25da33ff37c3c25e…
+initrd:   network.conf  365 bytes  e70a440427371b3a…
+initrd:   peers.json  109 bytes  05604bc74f474a07…
+initrd:   reference-values.json  1070 bytes  7186aeda2a6b0e6b…
+initrd:   reference-values.json.sig  129 bytes  9e0c0af867250941…
+initrd:   tunneld.json  308 bytes  0f789bfb8ae77a98…
+[    3.540132] EXT4-fs (vdb): mounted filesystem c8a26d1f-f66e-46c0-9f03-71e96abf2f6b ro without journal. Quota mode: none.
+initrd: workload device /dev/vdb found by the ext4 label, mounted at /workload (ro,exec,nosuid,nodev; not measured); it holds:
+initrd:   config.json  632 bytes  193382ad2dfce082…
+initrd:   rootfs/bin/busybox  2124608 bytes  dbac288c29ba5684…
+initrd: loopback up (the kernel delivers a rule's refusal to the local socket over it)
+initrd: link eth0 up: 10.0.2.15/24 mtu 1500, gateway 10.0.2.2
+initrd: addr: 1: lo    inet 127.0.0.1/8 scope host lo\       valid_lft forever preferred_lft forever
+initrd: addr: 1: lo    inet6 ::1/128 scope host \       valid_lft forever preferred_lft forever
+initrd: addr: 2: eth0    inet 10.0.2.15/24 scope global eth0\       valid_lft forever preferred_lft forever
+initrd: addr: 2: eth0    inet6 fe80::5054:ff:fe12:3456/64 scope link tentative \       valid_lft forever preferred_lft forever
+initrd: route: default via 10.0.2.2 dev eth0 
+initrd: route: 10.0.2.0/24 dev eth0 scope link  src 10.0.2.15 
+initrd: route: 10.0.2.2 dev eth0 scope link 
+initrd: proving the egress ceiling holds, from inside the guest:
+tunneld: EGRESS PROBE: 6 attempt(s) at addresses the ceiling permits nothing to reach
+tunneld: EGRESS REFUSED tcp/169.254.169.254:80: dial tcp 169.254.169.254:80: connect: connection refused (the provider's metadata server) — the netfilter rule refused it
+tunneld: EGRESS REFUSED tcp/8.8.8.8:53: dial tcp 8.8.8.8:53: connect: connection refused (a public resolver, over TCP) — the netfilter rule refused it
+tunneld: EGRESS REFUSED udp/8.8.8.8:53: write udp 10.0.2.15:34179->8.8.8.8:53: write: operation not permitted (a public resolver, over UDP) — the netfilter rule refused it
+tunneld: EGRESS REFUSED udp/169.254.169.254:4433: write udp 10.0.2.15:49705->169.254.169.254:4433: write: operation not permitted (the metadata server, on the one port the ceiling grants) — the netfilter rule refused it
+tunneld: EGRESS REFUSED udp/10.0.2.2:53: write udp 10.0.2.15:58247->10.0.2.2:53: write: operation not permitted (named by -egress-probe) — the netfilter rule refused it
+tunneld: EGRESS REFUSED tcp/10.0.2.2:80: dial tcp 10.0.2.2:80: connect: connection refused (named by -egress-probe) — the netfilter rule refused it
+tunneld: EGRESS PROBE PASSED: every attempt was refused before it left
+tunneld: EXIT status=0
+initrd: uptime 3.54s
+initrd: ======================== arrangement A-baseline ========================
+initrd:   inside unshare -Urmnpf: sh /run/probe.sh
+initrd: probe: 'unshare -U true' rc=0  (clone(CLONE_NEWUSER); EPERM = the kernel says we are in a chroot)
+initrd: probe: /proc/self/root -> /
+initrd: probe: cwd /
+initrd: probe: mount: rootfs / rootfs rw,size=959184k,nr_inodes=239796,inode64 0 0
+initrd: probe: mount: devtmpfs /dev devtmpfs rw,nosuid,noexec,relatime,size=959184k,nr_inodes=239796,mode=755,inode64 0 0
+initrd: probe: mount: proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: configfs /sys/kernel/config configfs rw,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,inode64 0 0
+initrd: probe: mount: tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,inode64 0 0
+initrd: probe: mount: /dev/vda /config ext4 ro,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: /dev/vdb /workload ext4 ro,nosuid,nodev,relatime 0 0
+initrd: probe: mount: proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+running container: creating container: cannot create sandbox: cannot read client sync file: waiting for sandbox to start: EOF
+initrd: arrangement A-baseline: unshare returned 128
+initrd: ======================== arrangement B-bind-root-onto-root ========================
+initrd:   inside unshare -Urmnpf: mount --bind / /; sh /run/probe.sh
+mount: mounting / on / failed: Invalid argument
+initrd: probe: 'unshare -U true' rc=0  (clone(CLONE_NEWUSER); EPERM = the kernel says we are in a chroot)
+initrd: probe: /proc/self/root -> /
+initrd: probe: cwd /
+initrd: probe: mount: rootfs / rootfs rw,size=959184k,nr_inodes=239796,inode64 0 0
+initrd: probe: mount: devtmpfs /dev devtmpfs rw,nosuid,noexec,relatime,size=959184k,nr_inodes=239796,mode=755,inode64 0 0
+initrd: probe: mount: proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: configfs /sys/kernel/config configfs rw,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,inode64 0 0
+initrd: probe: mount: tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,inode64 0 0
+initrd: probe: mount: /dev/vda /config ext4 ro,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: /dev/vdb /workload ext4 ro,nosuid,nodev,relatime 0 0
+initrd: probe: mount: proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+running container: creating container: cannot create sandbox: cannot read client sync file: waiting for sandbox to start: EOF
+initrd: arrangement B-bind-root-onto-root: unshare returned 128
+initrd: ======================== arrangement C-rbind-run-root-chroot ========================
+initrd:   inside unshare -Urmnpf: busybox mkdir -p /run/root; mount --rbind / /run/root; cd /run/root; exec busybox chroot . sh /run/probe.sh
+unshare: unshare(0x10000000): Operation not permitted
+initrd: probe: 'unshare -U true' rc=1  (clone(CLONE_NEWUSER); EPERM = the kernel says we are in a chroot)
+initrd: probe: /proc/self/root -> /
+initrd: probe: cwd /
+initrd: probe: mount: rootfs / rootfs rw,size=959184k,nr_inodes=239796,inode64 0 0
+initrd: probe: mount: devtmpfs /dev devtmpfs rw,nosuid,noexec,relatime,size=959184k,nr_inodes=239796,mode=755,inode64 0 0
+initrd: probe: mount: proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: configfs /sys/kernel/config configfs rw,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,inode64 0 0
+initrd: probe: mount: tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,inode64 0 0
+initrd: probe: mount: /dev/vda /config ext4 ro,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: /dev/vdb /workload ext4 ro,nosuid,nodev,relatime 0 0
+initrd: probe: mount: proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+running container: creating container: cannot create gofer process: gofer: fork/exec /proc/self/exe: operation not permitted
+initrd: arrangement C-rbind-run-root-chroot: unshare returned 128
+initrd: ======================== arrangement D-rbind-move-onto-root-chroot-cwd ========================
+initrd:   inside unshare -Urmnpf: busybox mkdir -p /run/root; mount --rbind / /run/root; cd /run/root; mount --move . /; exec busybox chroot . sh /run/probe.sh
+initrd: probe: 'unshare -U true' rc=0  (clone(CLONE_NEWUSER); EPERM = the kernel says we are in a chroot)
+initrd: probe: /proc/self/root -> /
+initrd: probe: cwd /
+initrd: probe: mount: rootfs / rootfs rw,size=959184k,nr_inodes=239796,inode64 0 0
+initrd: probe: mount: devtmpfs /dev devtmpfs rw,nosuid,noexec,relatime,size=959184k,nr_inodes=239796,mode=755,inode64 0 0
+initrd: probe: mount: proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: configfs /sys/kernel/config configfs rw,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,inode64 0 0
+initrd: probe: mount: tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,inode64 0 0
+initrd: probe: mount: /dev/vda /config ext4 ro,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: /dev/vdb /workload ext4 ro,nosuid,nodev,relatime 0 0
+initrd: probe: mount: proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+Linux workload 4.19.0-gvisor #1 SMP Sun Jan 10 15:06:54 PST 2016 x86_64 GNU/Linux
+initrd: arrangement D-rbind-move-onto-root-chroot-cwd: unshare returned 0
+initrd: ======================== arrangement E-rbind-root-onto-root-chroot ========================
+initrd:   inside unshare -Urmnpf: mount --rbind / /; exec busybox chroot / sh /run/probe.sh
+unshare: unshare(0x10000000): Operation not permitted
+initrd: probe: 'unshare -U true' rc=1  (clone(CLONE_NEWUSER); EPERM = the kernel says we are in a chroot)
+initrd: probe: /proc/self/root -> /
+initrd: probe: cwd /
+initrd: probe: mount: rootfs / rootfs rw,size=959184k,nr_inodes=239796,inode64 0 0
+initrd: probe: mount: devtmpfs /dev devtmpfs rw,nosuid,noexec,relatime,size=959184k,nr_inodes=239796,mode=755,inode64 0 0
+initrd: probe: mount: proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: configfs /sys/kernel/config configfs rw,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,inode64 0 0
+initrd: probe: mount: tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,inode64 0 0
+initrd: probe: mount: /dev/vda /config ext4 ro,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: /dev/vdb /workload ext4 ro,nosuid,nodev,relatime 0 0
+initrd: probe: mount: rootfs / rootfs rw,size=959184k,nr_inodes=239796,inode64 0 0
+initrd: probe: mount: devtmpfs /dev devtmpfs rw,nosuid,noexec,relatime,size=959184k,nr_inodes=239796,mode=755,inode64 0 0
+initrd: probe: mount: proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: configfs /sys/kernel/config configfs rw,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,inode64 0 0
+initrd: probe: mount: tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,inode64 0 0
+initrd: probe: mount: /dev/vda /config ext4 ro,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: /dev/vdb /workload ext4 ro,nosuid,nodev,relatime 0 0
+initrd: probe: mount: proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+running container: creating container: cannot create gofer process: gofer: fork/exec /proc/self/exe: operation not permitted
+initrd: arrangement E-rbind-root-onto-root-chroot: unshare returned 128
+initrd: ======================== arrangement F-rbind-move-onto-root-chroot-slash ========================
+initrd:   inside unshare -Urmnpf: busybox mkdir -p /run/root; mount --rbind / /run/root; mount --move /run/root /; exec busybox chroot / sh /run/probe.sh
+unshare: unshare(0x10000000): Operation not permitted
+initrd: probe: 'unshare -U true' rc=1  (clone(CLONE_NEWUSER); EPERM = the kernel says we are in a chroot)
+initrd: probe: /proc/self/root -> /
+initrd: probe: cwd /
+initrd: probe: mount: rootfs / rootfs rw,size=959184k,nr_inodes=239796,inode64 0 0
+initrd: probe: mount: devtmpfs /dev devtmpfs rw,nosuid,noexec,relatime,size=959184k,nr_inodes=239796,mode=755,inode64 0 0
+initrd: probe: mount: proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: configfs /sys/kernel/config configfs rw,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,inode64 0 0
+initrd: probe: mount: tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,inode64 0 0
+initrd: probe: mount: /dev/vda /config ext4 ro,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: /dev/vdb /workload ext4 ro,nosuid,nodev,relatime 0 0
+initrd: probe: mount: rootfs / rootfs rw,size=959184k,nr_inodes=239796,inode64 0 0
+initrd: probe: mount: devtmpfs /dev devtmpfs rw,nosuid,noexec,relatime,size=959184k,nr_inodes=239796,mode=755,inode64 0 0
+initrd: probe: mount: proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: configfs /sys/kernel/config configfs rw,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,inode64 0 0
+initrd: probe: mount: tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,inode64 0 0
+initrd: probe: mount: /dev/vda /config ext4 ro,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: /dev/vdb /workload ext4 ro,nosuid,nodev,relatime 0 0
+initrd: probe: mount: proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+running container: creating container: cannot create gofer process: gofer: fork/exec /proc/self/exe: operation not permitted
+initrd: arrangement F-rbind-move-onto-root-chroot-slash: unshare returned 128
+initrd: ======================== arrangement G-rbind-move-onto-root-no-chroot ========================
+initrd:   inside unshare -Urmnpf: busybox mkdir -p /run/root; mount --rbind / /run/root; mount --move /run/root /; sh /run/probe.sh
+unshare: unshare(0x10000000): Operation not permitted
+initrd: probe: 'unshare -U true' rc=1  (clone(CLONE_NEWUSER); EPERM = the kernel says we are in a chroot)
+initrd: probe: /proc/self/root -> /
+initrd: probe: cwd /
+initrd: probe: mount: rootfs / rootfs rw,size=959184k,nr_inodes=239796,inode64 0 0
+initrd: probe: mount: devtmpfs /dev devtmpfs rw,nosuid,noexec,relatime,size=959184k,nr_inodes=239796,mode=755,inode64 0 0
+initrd: probe: mount: proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: configfs /sys/kernel/config configfs rw,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,inode64 0 0
+initrd: probe: mount: tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,inode64 0 0
+initrd: probe: mount: /dev/vda /config ext4 ro,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: /dev/vdb /workload ext4 ro,nosuid,nodev,relatime 0 0
+initrd: probe: mount: rootfs / rootfs rw,size=959184k,nr_inodes=239796,inode64 0 0
+initrd: probe: mount: devtmpfs /dev devtmpfs rw,nosuid,noexec,relatime,size=959184k,nr_inodes=239796,mode=755,inode64 0 0
+initrd: probe: mount: proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: configfs /sys/kernel/config configfs rw,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,inode64 0 0
+initrd: probe: mount: tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,inode64 0 0
+initrd: probe: mount: /dev/vda /config ext4 ro,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: /dev/vdb /workload ext4 ro,nosuid,nodev,relatime 0 0
+initrd: probe: mount: proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+running container: creating container: cannot create gofer process: gofer: fork/exec /proc/self/exe: operation not permitted
+initrd: arrangement G-rbind-move-onto-root-no-chroot: unshare returned 128
+initrd: ======================== arrangement H-pivot-root-by-init ========================
+initrd:   inside unshare -Urmnpf: busybox mkdir -p /run/root; mount --rbind / /run/root; busybox mkdir -p /run/root/oldroot; cd /run/root; busybox pivot_root . oldroot; sh /run/probe.sh
+pivot_root: Invalid argument
+initrd: probe: 'unshare -U true' rc=0  (clone(CLONE_NEWUSER); EPERM = the kernel says we are in a chroot)
+initrd: probe: /proc/self/root -> /
+initrd: probe: cwd /run/root
+initrd: probe: mount: rootfs / rootfs rw,size=959184k,nr_inodes=239796,inode64 0 0
+initrd: probe: mount: devtmpfs /dev devtmpfs rw,nosuid,noexec,relatime,size=959184k,nr_inodes=239796,mode=755,inode64 0 0
+initrd: probe: mount: proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: configfs /sys/kernel/config configfs rw,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,inode64 0 0
+initrd: probe: mount: tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,inode64 0 0
+initrd: probe: mount: /dev/vda /config ext4 ro,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: /dev/vdb /workload ext4 ro,nosuid,nodev,relatime 0 0
+initrd: probe: mount: rootfs /run/root rootfs rw,size=959184k,nr_inodes=239796,inode64 0 0
+initrd: probe: mount: devtmpfs /run/root/dev devtmpfs rw,nosuid,noexec,relatime,size=959184k,nr_inodes=239796,mode=755,inode64 0 0
+initrd: probe: mount: proc /run/root/proc proc rw,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: sysfs /run/root/sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: configfs /run/root/sys/kernel/config configfs rw,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: tmpfs /run/root/run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,inode64 0 0
+initrd: probe: mount: tmpfs /run/root/tmp tmpfs rw,nosuid,nodev,noexec,relatime,inode64 0 0
+initrd: probe: mount: /dev/vda /run/root/config ext4 ro,nosuid,nodev,noexec,relatime 0 0
+initrd: probe: mount: /dev/vdb /run/root/workload ext4 ro,nosuid,nodev,relatime 0 0
+initrd: probe: mount: proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+running container: creating container: cannot create sandbox: cannot read client sync file: waiting for sandbox to start: EOF
+initrd: arrangement H-pivot-root-by-init: unshare returned 128
+initrd: ======================== the probe is done ========================
+initrd: the initramfs is remounted read-only
+initrd: mount: rootfs / rootfs ro,size=959184k,nr_inodes=239796,inode64 0 0
+initrd: mount: devtmpfs /dev devtmpfs rw,nosuid,noexec,relatime,size=959184k,nr_inodes=239796,mode=755,inode64 0 0
+initrd: mount: proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+initrd: mount: sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+initrd: mount: tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,inode64 0 0
+initrd: mount: tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,inode64 0 0
+initrd: mount: configfs /sys/kernel/config configfs rw,nosuid,nodev,noexec,relatime 0 0
+initrd: mount: /dev/vda /config ext4 ro,nosuid,nodev,noexec,relatime 0 0
+initrd: mount: /dev/vdb /workload ext4 ro,nosuid,nodev,relatime 0 0
+initrd: uptime 5.05s
+initrd: starting tunneld
+tunneld: sandbox "e5-local"
+tunneld: author key 665053d10032f5b9… (/etc/attested-tunnel/author.pub, inside the launch measurement)
+tunneld: peer table: self = 10.0.2.15:4433
+tunneld: report interface /sys/kernel/config/tsm/report: present, 0 request(s) outstanding; a platform driver that does not answer it is what a non-confidential VM looks like from inside
+tunneld: refusing to start: tsm: creating the request /sys/kernel/config/tsm/report/tunneld-434-0: mkdir /sys/kernel/config/tsm/report/tunneld-434-0: no such device or address
+tunneld: EXIT status=1
+initrd: EXIT status=1
+[    5.412962] ACPI: PM: Preparing to enter system sleep state S5
+[    5.416955] reboot: Power down

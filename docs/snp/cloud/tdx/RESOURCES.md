@@ -100,3 +100,43 @@ only the seven pre-existing TERMINATED instances this study never touched, and
 Total machine time is about 62 instance-minutes of `c3-standard-4` (~$0.20/h on-demand in
 us-central1), so the whole study cost well under a dollar of compute. No firewall rule, no
 network, no IAM and no org policy was created or changed.
+
+## Ticket 24: runsc inside the measured guest (experiment E4)
+
+Ticket 24's TDX resources carry the label `purpose=attested-tunnel-t24`, so this run's
+inventory can be checked apart from ticket 19's and from the feasibility study's:
+
+```sh
+gcloud compute instances list --zones us-central1-a --filter="labels.purpose=attested-tunnel-t24"
+gcloud compute images    list --no-standard-images --filter="labels.purpose=attested-tunnel-t24"
+```
+
+The three images ticket 19 kept — `attested-tdx-d5ddcc423b1a`, `attested-tdx-640de950bbdd`
+and `attested-config-tdx-smoke-a-20260910214749` — were not touched by this run, and neither
+were the seven pre-existing instances. Everything below was created and deleted inside the
+same hour. This is the first TDX guest in the project with **three** disks (boot, config and
+workload), which is a machine shape whose RTMR0 nobody has measured
+(`docs/snp/evidence/ticket19/rtmr0/`); the row says what it reported, and no value read off
+this machine was written into any reference value or build parameter.
+
+| created | name | type | purpose | state |
+|---|---|---|---|---|
+| 2026-09-18T10:02Z | tdx-t24-a | c3-standard-4 TDX, us-central1-a, 20GB pd-balanced boot from custom image `attested-tdx-cd68e874bbfb` + 10GB pd-balanced config disk from `attested-config-tdx-t24-a-20260918095609` + 10GB pd-balanced **workload** disk from `attested-workload-tdx-t24-a-20260918095609` (`device-name attested-workload`), `--private-network-ip 10.128.0.40` | ticket 24 E4, boot 1, **inconclusive and not the design's fault**: the run's new `LABEL` knob (the Compute Engine resource label) leaked into `mkconfigdev-tdx.sh`, whose `LABEL` is the ext4 volume label, so the config device was written `purpose=attested` and the guest halted after 30 seconds looking for `attested-config`. Nothing about runsc, the workload disk or the measurement was reached. `smoke-tdx-guest.sh` now unsets `LABEL` for that one call (`docs/snp/evidence/ticket24/spikes/E4/boot-1/`) | **deleted 2026-09-18T10:06Z** (~4 min) |
+| 2026-09-18T10:11Z | tdx-t24-a | as above, with the config device's volume label written correctly; config and workload images `attested-{config,workload}-tdx-t24-a-20260918100827` | ticket 24 E4, boot 2, the run that counts. **RTMR2 predicted offline nine minutes earlier is the register the hardware reported**, `cd68e874…f6e25`, and MRTD and RTMR1 are the pinned provider constants. The guest and this workstation both REFUSED it, and both on RTMR0 alone: this is the project's first three-disk TDX guest and it reports `8ee4fa36…b70a3f`, which the set (authored for the two-disk shape) does not list. runsc did **not** run the bundle: it reached the sandbox and the sandbox died, exit 128 (`docs/snp/evidence/ticket24/spikes/E4/boot-2/`) | **deleted 2026-09-18T10:15Z** (~4 min) |
+| 2026-09-18T09:56Z | attested-config-tdx-t24-a-20260918095609, attested-workload-tdx-t24-a-20260918095609 | custom images, 1GiB each, `purpose=attested-tunnel-t24` | ticket 24: boot 1's config and workload devices; the config one carries the wrong volume label | **deleted 2026-09-18T10:08Z** |
+| 2026-09-18T09:59Z | attested-tdx-cd68e874bbfb | custom image, 10GiB, `purpose=attested-tunnel-t24` | ticket 24: the guest image with runsc in the initrd, predicted RTMR2 `cd68e874…f6e25`. Published once and reused by boot 2 rather than uploaded again | **deleted 2026-09-18T10:16Z** |
+| 2026-09-18T10:08Z | attested-config-tdx-t24-a-20260918100827, attested-workload-tdx-t24-a-20260918100827 | custom images, 1GiB each, `purpose=attested-tunnel-t24` | ticket 24: boot 2's config and workload devices | **deleted 2026-09-18T10:16Z** |
+| 2026-09-18T09:56Z … 10:10Z | `attested-tunnel-t19-20260918{095615,095930,100112,100833,101018}`, five in all | Cloud Storage buckets, us-central1, soft delete off | ticket 24: staging for the five image creates across the two boots. The *name* still carries t19 because it is `publish-tdx-image.sh`'s default and this ticket did not change that script; the *labels* are `purpose=attested-tunnel-t24` | **each created and deleted inside the run that made it; none survives** |
+
+State after E4, 2026-09-18T10:16:31Z: **no instance, no disk, no image and no bucket of this
+ticket's survives.** Two instances were created, at 10:02Z and 10:11Z, and both were deleted the
+same hour, at 10:06Z and 10:15Z — about eight `c3-standard-4` TDX instance-minutes in all, the
+longest-lived at roughly four minutes. All five images this ticket published were deleted; unlike
+ticket 19, none was kept, because ticket 24's image is an experiment and not something a later
+run boots from. The confirmations, as the commands printed them, are in
+`docs/snp/evidence/ticket24/spikes/E4/teardown.txt`: `gcloud compute images list
+--no-standard-images` shows only ticket 19's three kept images, `gcloud compute instances list
+--zones us-central1-a` shows only the seven pre-existing TERMINATED instances, `gcloud compute
+disks list --filter="name~t24"` is empty, and both `--filter=labels.purpose=attested-tunnel-t24`
+listings are empty. No firewall rule, network, IAM or org policy was created or changed, and
+nothing pre-existing was touched.

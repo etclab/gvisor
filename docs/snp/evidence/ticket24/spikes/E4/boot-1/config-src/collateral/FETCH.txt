@@ -1,0 +1,200 @@
+=== Intel PCS collateral fetch, one time, 2026-09-08T19:57:30Z ===
+for FMSPC 00806f050000, PCK CA 'platform' (every recorded quote on this branch, see collateral.txt)
+URLs are the ones github.com/google/go-tdx-guest@v0.3.2-0.20240902060211-1f7f7b9b42b9 pcs.TcbInfoURL / QeIdentityURL / PckCrlURL build,
+plus the root CA CRL distribution point named in the PCK Platform CA certificate.
+
+--- tcbinfo-00806f050000
+GET https://api.trustedservices.intel.com/tdx/certification/v4/tcb?fmspc=00806f050000
+http 200, 7953 bytes, 0.463511s
+Content-Type: application/json
+TCB-Info-Issuer-Chain: <PEM chain, url-encoded, kept in the .headers file>
+Date: Tue, 08 Sep 2026 19:57:31 GMT
+sha256 857fc7e41a832a5957fc0f8724c2516e5669f988b8e9b3b15ed4d1ac1877312c  tcbinfo-00806f050000.body
+
+--- qeidentity
+GET https://api.trustedservices.intel.com/tdx/certification/v4/qe/identity
+http 200, 624 bytes, 0.159741s
+Content-Type: application/json
+SGX-Enclave-Identity-Issuer-Chain: <PEM chain, url-encoded, kept in the .headers file>
+Date: Tue, 08 Sep 2026 19:57:31 GMT
+sha256 550f110a50541821aab6e472a2d4c2edc26022d2f59b72a0577f875b56d7d984  qeidentity.body
+
+--- pckcrl-platform
+GET https://api.trustedservices.intel.com/sgx/certification/v4/pckcrl?ca=platform&encoding=der
+http 200, 3356 bytes, 0.131117s
+Content-Type: application/pkix-crl
+SGX-PCK-CRL-Issuer-Chain: <PEM chain, url-encoded, kept in the .headers file>
+Date: Tue, 08 Sep 2026 19:57:31 GMT
+sha256 3bf7fa8fb2c2f3131ebbbbb1d7dfb97f8fe8b3b0996e85534973b2d5d9f2fffd  pckcrl-platform.body
+
+--- rootcrl
+GET https://certificates.trustedservices.intel.com/IntelSGXRootCA.der
+http 200, 294 bytes, 0.261738s
+content-type: binary/octet-stream
+date: Tue, 08 Sep 2026 19:56:30 GMT
+sha256 c114be5d5ca7aab2d37817eca55aa8a2353853809904ff3695b31c26bcb7465b  rootcrl.body
+
+=== Intel PCS collateral re-fetch, 2026-09-15T19:05:51Z ===
+The 2026-09-08 copy above expires 2026-10-08, and ADR-0007 makes re-provisioning before that
+date a calendar task rather than an incident: past it this directory refuses every TDX peer,
+however healthy. Same four requests, same FMSPC 00806f050000 and PCK CA 'platform', same URLs,
+issued with `curl -sS -D <name>.headers -o <name>.body`. All eight files in this directory are
+the ones this fetch wrote; the previous copy is not kept here (git has it).
+
+--- tcbinfo-00806f050000
+GET https://api.trustedservices.intel.com/tdx/certification/v4/tcb?fmspc=00806f050000
+http 200, 7953 bytes, 0.198645s
+Content-Type: application/json
+TCB-Info-Issuer-Chain: <PEM chain, url-encoded, kept in the .headers file>
+Date: Tue, 15 Sep 2026 19:05:51 GMT
+sha256 f8e22141176bb08292952ae94aa908900bdd1163358275ab73adcaa8116293ba  tcbinfo-00806f050000.body
+
+--- qeidentity
+GET https://api.trustedservices.intel.com/tdx/certification/v4/qe/identity
+http 200, 624 bytes, 0.147337s
+Content-Type: application/json
+SGX-Enclave-Identity-Issuer-Chain: <PEM chain, url-encoded, kept in the .headers file>
+Date: Tue, 15 Sep 2026 19:05:51 GMT
+sha256 516868aab1f065da154a609d50b16c015153738386572a7712f24ed73afc7239  qeidentity.body
+
+--- pckcrl-platform
+GET https://api.trustedservices.intel.com/sgx/certification/v4/pckcrl?ca=platform&encoding=der
+http 200, 3356 bytes, 0.152321s
+Content-Type: application/pkix-crl
+SGX-PCK-CRL-Issuer-Chain: <PEM chain, url-encoded, kept in the .headers file>
+Date: Tue, 15 Sep 2026 19:05:51 GMT
+sha256 e71cf6bea348a90ee83cf05b7d84ad2002701d797b75c7b63a31807383026bb9  pckcrl-platform.body
+
+--- rootcrl
+GET https://certificates.trustedservices.intel.com/IntelSGXRootCA.der
+http 200, 294 bytes, 0.287626s
+content-type: binary/octet-stream
+date: Tue, 15 Sep 2026 19:05:49 GMT
+sha256 c114be5d5ca7aab2d37817eca55aa8a2353853809904ff3695b31c26bcb7465b  rootcrl.body
+(byte for byte the body fetched on 2026-09-08 -- Intel has not reissued the root CA CRL since
+2026-02-26. Only rootcrl.headers changed, and only in its Date and CloudFront fields.)
+
+--- validity window this fetch bought
+tcbinfo-00806f050000  issueDate 2026-09-15T18:50:02Z  nextUpdate 2026-10-15T18:50:02Z
+qeidentity            issueDate 2026-09-15T18:17:59Z  nextUpdate 2026-10-15T18:17:59Z
+pckcrl-platform       thisUpdate 2026-09-15T17:59:38Z nextUpdate 2026-10-15T17:59:38Z
+rootcrl               thisUpdate 2026-02-26T13:04:00Z nextUpdate 2027-02-26T13:04:00Z
+
+The earliest of the four -- what TDXCollateral.EarliestExpiry reports, and so the date this
+directory has to be re-provisioned before -- is the PCK CRL's, 2026-10-15T17:59:38Z. The three
+signing chains are far outside it: Intel SGX TCB Signing notAfter 2032-05-06T09:25:00Z, Intel
+SGX PCK Platform CA notAfter 2033-05-21T10:50:10Z, Intel SGX Root CA notAfter 2049-12-31.
+
+--- what did not change
+tcbEvaluationDataNumber is still 20, and the six TCB levels are identical to the 2026-09-08
+copy, component for component, tcbDate for tcbDate, status for status; qeidentity still holds
+the one level, isvsvn 4, UpToDate. So there has been no TCB recovery between the two fetches:
+the recorded platform is UpToDate at evaluation number 20 exactly as collateral.txt describes,
+and no reference value's `minimum_tcb` floor has to move. The issuer chains in the three
+.headers files are byte identical to the previous fetch; what differs in them is Intel's
+per-request Date and Request-ID.
+
+Replayed with the ticket 21 harness (docs/snp/evidence/ticket21/harness/) across all 64 live
+invocations, exactly one transcript changes, and only inside a quoted date: tdx-smoke-future,
+which pins -now 2030-01-01 and is refused for expired collateral either way, now names
+2026-10-15T18:50:02Z where it named 2026-10-08T19:20:02Z. Every other verdict, reason and exit
+status is byte identical, and `go test ./... -count=1` in attest/ passes unchanged.
+
+=== Intel PCS collateral re-fetch, 2026-09-18T08:51:43Z ===
+Ticket 24 requires fresh collateral before its E4 TDX boot and on the same day as that boot:
+this is that fetch. The 2026-09-15 copy above expires 2026-10-15, so it would still have been
+in date, but E4 is judged against collateral fetched the same day, and ADR-0007 makes the
+refusal that follows expiry the verifier's own, not the peer's. Same four requests, same FMSPC
+00806f050000 and PCK CA 'platform', same URLs, issued with `curl -sS -D <name>.headers -o
+<name>.body`. All eight files in this directory are the ones this fetch wrote; the previous
+copy is not kept here (git has it).
+
+Still curl, and not `attest-tool provision fetch`: that subcommand is the AMD chain tool and
+nothing else. Its only inputs are `-report REPORT.bin -out DIR`, it parses that file as an
+SEV-SNP attestation report and calls provision.Fetch to pull the VCEK chain for the platform
+the report names; it has no vendor flag and no Intel mode, so there is no way to ask it for a
+TCB info, a QE identity or a CRL. That is ticket 22's deviation and it is carried forward
+unchanged here: ADR-0005 and ADR-0007 require the Intel documents to be provisioned ahead of
+use, not that one binary do the provisioning, and what is checked is not the fetch but the
+result -- `attest-tool verify -vendor intel-tdx` against this directory, plus the ticket 21
+byte-level verdict replay. Both are recorded in
+docs/snp/evidence/ticket24/collateral-refresh.txt.
+
+--- tcbinfo-00806f050000
+GET https://api.trustedservices.intel.com/tdx/certification/v4/tcb?fmspc=00806f050000
+http 200, 7953 bytes, 0.514738s
+Content-Type: application/json
+TCB-Info-Issuer-Chain: <PEM chain, url-encoded, kept in the .headers file>
+Date: Fri, 18 Sep 2026 08:51:43 GMT
+sha256 6bc653ddc0e1a101377b5dc08349b4c3fed0a323d77c50a032e5193c01a5063e  tcbinfo-00806f050000.body
+
+--- qeidentity
+GET https://api.trustedservices.intel.com/tdx/certification/v4/qe/identity
+http 200, 624 bytes, 0.230175s
+Content-Type: application/json
+SGX-Enclave-Identity-Issuer-Chain: <PEM chain, url-encoded, kept in the .headers file>
+Date: Fri, 18 Sep 2026 08:51:43 GMT
+sha256 9c39b097f5317eb8a15ca118bc7cf25741cb8d616fc4c7a4946d987b48e3dfc6  qeidentity.body
+
+--- pckcrl-platform
+GET https://api.trustedservices.intel.com/sgx/certification/v4/pckcrl?ca=platform&encoding=der
+http 200, 3354 bytes, 0.226837s
+Content-Type: application/pkix-crl
+SGX-PCK-CRL-Issuer-Chain: <PEM chain, url-encoded, kept in the .headers file>
+Date: Fri, 18 Sep 2026 08:51:43 GMT
+sha256 30bf6088a96d6e785511e7c327702c5b3b29e084f021ef251e3eb64ca298b3ae  pckcrl-platform.body
+(3354 bytes where the previous two fetches were 3356: the ECDSA signature encodes two bytes
+shorter. The list itself is unchanged, see below.)
+
+--- rootcrl
+GET https://certificates.trustedservices.intel.com/IntelSGXRootCA.der
+http 200, 294 bytes, 0.413689s
+content-type: binary/octet-stream
+date: Fri, 18 Sep 2026 08:51:45 GMT
+sha256 c114be5d5ca7aab2d37817eca55aa8a2353853809904ff3695b31c26bcb7465b  rootcrl.body
+(byte for byte the body fetched on 2026-09-08 and again on 2026-09-15 -- Intel has not
+reissued the root CA CRL since 2026-02-26. Only rootcrl.headers changed, and only in its date
+and CloudFront fields: x-cache is now RefreshHit rather than Hit, via and x-amz-cf-id are new,
+and the `age` line is gone.)
+
+--- validity window this fetch bought
+tcbinfo-00806f050000  issueDate 2026-09-18T07:56:25Z  nextUpdate 2026-10-18T07:56:25Z
+qeidentity            issueDate 2026-09-18T08:30:58Z  nextUpdate 2026-10-18T08:30:58Z
+pckcrl-platform       thisUpdate 2026-09-18T08:00:58Z nextUpdate 2026-10-18T08:00:58Z
+rootcrl               thisUpdate 2026-02-26T13:04:00Z nextUpdate 2027-02-26T13:04:00Z
+
+The earliest of the four -- what TDXCollateral.EarliestExpiry reports, and so the date this
+directory has to be re-provisioned before -- is the TCB info's, 2026-10-18T07:56:25Z. Which
+document goes first has changed: on the 2026-09-15 copy it was the PCK CRL, and this time Intel
+issued the TCB info four and a half minutes ahead of the CRL, so the three one-month documents
+come due within thirty-five minutes of each other on 2026-10-18 with the TCB info leading. The
+three signing chains are far outside it, and are the same certificates as before: Intel SGX TCB
+Signing notAfter 2032-05-06T09:25:00Z, Intel SGX PCK Platform CA notAfter 2033-05-21T10:50:10Z,
+Intel SGX Root CA notAfter 2049-12-31T23:59:59Z.
+
+--- what did not change
+tcbEvaluationDataNumber is still 20, and tcbInfo is identical to the 2026-09-15 copy in every
+field but issueDate, nextUpdate and the signature over them: version 3, id TDX, fmspc
+00806f050000, pceId 0000, tcbType 0, and the same six TCB levels, component for component,
+tcbDate for tcbDate, status for status. qeidentity is likewise identical apart from its two
+dates and its signature -- id TD_QE, version 2, tcbEvaluationDataNumber 20, the same mrsigner
+and masks, and the one level, isvsvn 4, UpToDate. pckcrl-platform has the same issuer (Intel
+SGX PCK Platform CA), the same CRL number 1, and the same 57 revoked serial numbers; only
+thisUpdate, nextUpdate and the signature moved. rootcrl.body is byte-identical. The issuer
+chains in the three .headers files are byte-identical to the previous fetch; what differs in
+them is Intel's per-request Date and Request-ID.
+
+So there has again been no TCB recovery: the recorded platform is UpToDate at evaluation number
+20 exactly as collateral.txt describes, the QE at ISVSVN 6 is UpToDate under qeidentity, and no
+reference value's `minimum_tcb` floor has to move. Of the eight files this fetch wrote, seven
+show in `git diff`: all four .headers and three .body (rootcrl.body is byte-identical).
+
+Checked with `attest-tool verify -vendor intel-tdx` on the ticket 19 smoke quote against this
+directory -- ACCEPTED, the same verdict ticket 19 recorded, every field identical (the smoke
+record's own -policy-digest d47dce59... has to be passed, because the compiled-in ceiling digest
+has moved to 197d4aae... since ticket 19; that is a ceiling change, not a collateral one). And
+replayed with the ticket 21 harness (docs/snp/evidence/ticket21/harness/) across all 64 live
+invocations: exactly one transcript changes, and only inside a quoted date -- tdx-smoke-future,
+which pins -now 2030-01-01 and is refused for expired collateral either way, now names
+2026-10-18T07:56:25Z where it named 2026-10-15T18:50:02Z. Every other verdict, reason and exit
+status is byte identical, and `go test ./... -count=1` in attest/ passes unchanged.

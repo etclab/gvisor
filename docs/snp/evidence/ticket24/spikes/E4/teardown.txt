@@ -1,0 +1,27 @@
+=== teardown confirmations, 2026-09-18T10:16:31Z ===
+
+$ gcloud compute images list --no-standard-images
+NAME                                        STATUS  LABELS
+attested-config-tdx-smoke-a-20260910214749  READY   {'purpose': 'attested-tunnel-t19'}
+attested-tdx-640de950bbdd                   READY   {'purpose': 'attested-tunnel-t19'}
+attested-tdx-d5ddcc423b1a                   READY   {'purpose': 'attested-tunnel-t19'}
+
+$ gcloud compute instances list --zones us-central1-a
+NAME              ZONE           STATUS
+eval-vm           us-central1-a  TERMINATED
+listener          us-central1-a  TERMINATED
+relay             us-central1-a  TERMINATED
+trusted-vm        us-central1-a  TERMINATED
+trusted-vm-smh    us-central1-a  TERMINATED
+untrusted-vm      us-central1-a  TERMINATED
+untrusted-vm-smh  us-central1-a  TERMINATED
+
+$ gcloud compute disks list --filter="name~t24"
+(empty above means no disk of this ticket's names survives)
+
+$ gcloud compute instances list --filter="labels.purpose=attested-tunnel-t24"
+
+$ gcloud compute images list --no-standard-images --filter="labels.purpose=attested-tunnel-t24"
+
+$ gcloud storage buckets list --format='value(name)'
+bucket-sep-25

@@ -40,7 +40,7 @@ paused, a sentry wedged — which is the case the miss count exists for.
 | go | go1.26.3 linux/amd64 |
 | commit | `5f7691a47` plus the uncommitted contract v3 working tree |
 | spike | `e3_spike_test.go`, sha256 `0740c3d4815274322dbfa33163a057a526d2951e56f8f1b2f2974e76e8fde969` |
-| code measured | `attest/sandbox/{live,socket,client,host}.go` and `attest/tunneld/push.go` exactly as this branch lands them in the commits that follow this evidence.  There is no `patch-*.diff` because there is no difference: the prototype **is** what was committed |
+| code measured | `attest/sandbox/{live,socket,client,host}.go` and `attest/tunneld/push.go`, the prototype being what the branch then committed unchanged — there is no `patch-*.diff` because there was no difference.  Two things landed on those files *after* this run and touch nothing it measured: `attest/sandbox/host.go` gained `Host.said`, one console line per acknowledged push, on the `Apply` path and not on the heartbeat or the watch; and `attest/refusal.go`'s new doc comment was shortened.  Neither is on the send path, the receive path, the ticker or the teardown |
 | wiring | two tunnelds on loopback with the fake platform (`start`, `startPushNode`, `toward`, `pushing` from the package's own harness), an `AF_UNIX` socket between the receiving one and a sandbox in a second process, and signals |
 | network, hardware, keys | none.  No API call was made and no money was spent |
 

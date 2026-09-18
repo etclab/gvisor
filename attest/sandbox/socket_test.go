@@ -657,17 +657,18 @@ func TestTheHostSaysWhatItPushedWithItsDigest(t *testing.T) {
 		t.Fatalf("listening on %s: %v", socket, err)
 	}
 	defer host.Close()
-	// The composition an out-of-process sandbox makes, with its own console
-	// silenced so that what is read back is the host's alone.
-	var null *sandbox.Null
-	client, err := sandbox.Dial(socket, func(ctx context.Context, policy []byte) error {
-		return null.Apply(ctx, policy)
+	// A sandbox that takes a version 1 policy and refuses anything else, which
+	// is the whole of what the null one does with an envelope — and which says
+	// so without composing a Null around the client this test does not need,
+	// and so without that composition's knot (socketSandbox, cmd/agent-probe).
+	client, err := sandbox.Dial(socket, func(_ context.Context, policy []byte) error {
+		_, err := sandbox.ReadEnvelope(policy)
+		return err
 	})
 	if err != nil {
 		t.Fatalf("dialing %s: %v", socket, err)
 	}
 	defer client.Close()
-	null = sandbox.NewNull(client, nil)
 	waitFor(t, "the sandbox to attach", func() bool { return host.Attached() > 0 })
 
 	if err := host.Apply(context.Background(), []byte(policyV1)); err != nil {

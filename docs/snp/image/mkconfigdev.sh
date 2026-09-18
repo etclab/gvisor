@@ -76,9 +76,51 @@ for f in policy.json policy.json.sig; do
 done
 find "$SRC" -type f -perm /111 -print | sed 's/^/config: WARNING executable bit (ignored: mounted noexec): /' || true
 
+# Every path is named to debugfs below in a command file with no quoting of its
+# own, so a path with whitespace in it would silently be left unowned.
+if find "$SRC" -mindepth 1 -print | grep -q '[[:space:]]'; then
+  echo "config: refusing to build: a path under $SRC contains whitespace" >&2
+  exit 1
+fi
+
 rm -f "$OUT"
 truncate -s "${SIZE_MB}M" "$OUT"
 # ext4, no journal (read-only), all files owned by root, populated from SRC
 # without needing root on the host.
 mke2fs -q -t ext4 -O ^has_journal -L attested-config -m 0 -E root_owner=0:0 -d "$SRC" "$OUT"
-echo "config device written to $OUT ($(sha256sum "$OUT" | cut -c1-16)…, not measured)"
+
+# Root-owned, and every inode and not just the root directory: -E root_owner
+# sets that one and -d copies the caller's uid onto everything else. This is
+# mkworkloaddev.sh:59-78's paragraph, one device over, and until ticket 25 it did
+# not matter here — every reader of this device was tunneld, which runs as init's
+# root in the initial user namespace and therefore has CAP_DAC_OVERRIDE over a
+# file whoever it belongs to.
+#
+# The tunnel table broke that. It is read by `runsc run`, which runs inside the
+# user namespace busybox unshare makes, and that namespace maps exactly one id,
+# 0 to 0. A capability over a file is only a capability when the file's owner is
+# mapped into the namespace (capable_wrt_inode_uidgid, user_namespaces(7)), so a
+# device built by an ordinary user hands runsc a table owned by an id that does
+# not exist in there — and the error is a flat `open /config/tunnel-table.json:
+# permission denied` at the moment the helper starts, with nothing pointing back
+# at this script. Found exactly that way, on a control boot, before the hardware
+# run.
+#
+# The modes are left alone rather than widened. mke2fs writes them through the
+# caller's umask, so on a session with umask 077 every file here is 0600; owned
+# by root that is readable by root in both namespaces, which is the whole
+# requirement. debugfs does the chown because chown needs root and this script
+# does not have it.
+{ find "$SRC" -mindepth 1 | sed "s#^$SRC##" | while read -r f; do
+    echo "sif $f uid 0"; echo "sif $f gid 0"
+  done
+} | debugfs -w -f /dev/stdin "$OUT" >/dev/null 2>&1
+
+# And checked, because a silent miss here is a guest that boots, attests, and
+# then cannot start its sandbox.
+BAD=$( { echo "/"; find "$SRC" -mindepth 1 -type d | sed "s#^$SRC##"; } | while read -r d; do
+         debugfs -R "ls -l $d" "$OUT" 2>/dev/null | awk 'NF>6 && ($4!=0 || $5!=0) {print $NF}'
+       done )
+[ -z "$BAD" ] || { echo "config: refusing: not root-owned in the image: $BAD" >&2; exit 1; }
+
+echo "config device written to $OUT ($(sha256sum "$OUT" | cut -c1-16)…, not measured; every inode root-owned)"

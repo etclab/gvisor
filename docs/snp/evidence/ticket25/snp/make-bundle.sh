@@ -12,7 +12,12 @@
 #
 # The three additions, each because the workload now talks:
 #
-#   wget          another applet of the same pinned static busybox.
+#   wget, sleep   two more applets of the same pinned static busybox. sleep is
+#                 there because the fetch retries: both guests boot at once and
+#                 the peer may not have an exit attached yet, so a failure that
+#                 is not a name failure is tried again for about twenty seconds
+#                 (adapter-probe.sh). A name that did not resolve is never
+#                 retried, which is what keeps the two controls immediate.
 #   /etc/resolv.conf
 #                 nameserver 127.0.0.53, which is where the sentry answers. The
 #                 sandbox has a loopback-only stack and no resolver of its own,
@@ -43,7 +48,7 @@ rm -rf "$SRC"; mkdir -p "$SRC/rootfs/bin" "$SRC/rootfs/etc" "$SRC/rootfs/proc"
 # The same pinned static busybox the image itself carries
 # (busybox-static 1:1.36.1-6ubuntu3.1, docs/snp/image/build-image.sh).
 install -m 755 /bin/busybox "$SRC/rootfs/bin/busybox"
-for a in sh wget uname echo cat; do ln -s busybox "$SRC/rootfs/bin/$a"; done
+for a in sh wget uname echo cat sleep; do ln -s busybox "$SRC/rootfs/bin/$a"; done
 install -m 755 "$HERE/adapter-probe.sh" "$SRC/rootfs/adapter-probe.sh"
 install -m 644 "$HERE/config.json" "$SRC/config.json"
 

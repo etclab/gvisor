@@ -12,11 +12,45 @@
 # guest's serial console, which the harness captures. There is no network in
 # here to put it on: --network=none, one loopback-only stack, and the adapter.
 say() { echo "workload: $*"; }
+
+# fetch retries, and what it will not retry is the whole point of it.
+#
+# Both guests are booted at once and this sandbox starts about a tenth of a
+# second after its own tunneld. The peer it wants may still be acquiring its
+# evidence, or may have a listener and no exit attached to it yet, and a fetch
+# that gave up on the first attempt would record that race as a refusal. So a
+# failure is tried again, for about twenty seconds.
+#
+# A name that did not resolve is *not* tried again. That is not a race: the
+# sentry answers NXDOMAIN for a name this guest's tunnel table does not carry,
+# and it will answer NXDOMAIN for the next twenty seconds too. Telling the two
+# apart is what keeps a control fast and honest — the control's line is the
+# first attempt's, and it says out loud that it is not being retried.
 fetch() { # NAME
-  say "--- GET http://$1/"
-  wget -q -O - "http://$1/"
-  say "wget exit $? for $1"
+  n=1
+  while :; do
+    say "--- GET http://$1/ (attempt $n)"
+    out=$(wget -q -O - "http://$1/" 2>&1)
+    rc=$?
+    [ -n "$out" ] && echo "$out"
+    if [ "$rc" = 0 ]; then
+      say "wget exit 0 for $1"
+      return 0
+    fi
+    case "$out" in
+      *"bad address"*)
+        say "wget exit $rc for $1: the name did not resolve, so it is not in this guest's tunnel table; not retrying"
+        return 1 ;;
+    esac
+    if [ "$n" -ge 10 ]; then
+      say "wget exit $rc for $1 after $n attempts"
+      return 1
+    fi
+    n=$((n+1))
+    sleep 2
+  done
 }
+
 say "=== ticket 25: a sandbox on the adapter ==="
 say "this process has no interface of its own; its only way out is the adapter"
 # 1. guest A's permitted name: A's table maps it to peer guest-b, whose exit

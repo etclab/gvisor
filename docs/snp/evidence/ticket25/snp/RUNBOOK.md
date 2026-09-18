@@ -190,8 +190,18 @@ resolved on the segment are `10.14.0.2` and `10.14.0.3`.
 | `EXIT dialed web.peer-b:80 -> …` then nothing | `httpd` on the serving guest: check its `init: httpd says:` block. |
 | the runner never ran the job | `tmux attach -t root-runner-m4` — and check the harness is not itself a job in the spool |
 | `open /config/tunnel-table.json: permission denied` | the config device's inodes are not root-owned; `mkconfigdev.sh` chowns them all and checks, since 2026-09-18 |
-| an `EXIT` line is missing but the page arrived | the guest's serial console drops lines under contention; `EXIT <dest> ended` is the same evidence |
+| an `EXIT` line is missing but the page arrived | the guest's serial console drops lines under contention; `EXIT <dest> ended` is the same evidence, and `exit_served` accepts either |
 | a stream opens but no peer is admitted | the ordinary attestation failure surface; `tunneld: REFUSED` names it. |
+
+## 8b. It has been run
+
+Twice, both recorded. `run/` is the first pair, on runsc `ab593dc2…4f70`:
+51 of 53, with two failures that were two log lines lost to a contended serial
+console rather than two things that did not happen, plus the pair before it that
+a spooled harness stranded (`run/segment-down/`). `run-2/` is the record the
+ticket names, on the reviewed runsc `ea305e12…4ba0`, launch measurement
+`81dbfc38…add9`: **52 of 52**, both hops, four controls, and no line loss. The
+two images differ in the adapter binary and in nothing else a guest executes.
 
 ## 9. Afterwards
 

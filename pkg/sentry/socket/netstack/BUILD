@@ -91,6 +91,22 @@ go_test(
     deps = [":netstack"],
 )
 
+go_test(
+    name = "tunnel_test",
+    size = "small",
+    srcs = [
+        "tunnel_dns_test.go",
+        "tunnel_test.go",
+    ],
+    library = ":netstack",
+    deps = [
+        "//pkg/abi/linux",
+        "//pkg/tcpip",
+        "//pkg/waiter",
+        "@org_golang_x_sys//unix:go_default_library",
+    ],
+)
+
 proto_library(
     name = "events",
     srcs = ["events.proto"],

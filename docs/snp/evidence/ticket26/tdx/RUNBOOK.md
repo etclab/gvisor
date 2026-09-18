@@ -27,13 +27,23 @@ step 7 of every boot, with the errno, thirty times over.
 
 ## 0. What this needs from the rest of the ticket
 
-Identical to `../snp/RUNBOOK.md` §0, and read that table first: runsc with
-`Policy.Narrow` and the exec sink, the `SANDBOX applied` line on the `Host` path
-(**which does not exist today** — only `attest/sandbox/null.go:115` has it, and
-the adapter path uses `Host`), the liveness refusal sentence out of
-`attest/refusal.go`, and the `exec_refused` reason string. The TDX runner reads
-the sentence out of one variable, `LIVENESS_REASON`, for the same reason the SNP
-harness does.
+Identical to `../snp/RUNBOOK.md` §0, and read that table first. Two of its four
+rows have landed and were checked against the tree rather than assumed: the
+eleventh refusal reason is `attest/refusal.go:147`, *"the policy pushed to the
+peer is no longer live"*, wired at `attest/tunneld/push.go:256`; and the exec
+sink's point is `sentry/exec_refused` with `reason="not-in-x"`. The two that had
+not landed when this was written are runsc itself — build it and check
+`runsc flags` — and, the one that matters here:
+
+> **`Host.Apply` logs nothing.** `SANDBOX applied format=… version=… bytes=…
+> sha256=…` exists only in `attest/sandbox/null.go:115`, and the adapter path
+> uses `Host`. Five assertions in the runner read the digest off that line, and
+> without it the run has no console evidence that the sandbox took the policy at
+> all — on a vendor where the console is the whole record. Ask the contract agent
+> for the same four fields on the `Host` path before booting anything.
+
+The TDX runner reads the refusal sentence out of one variable,
+`LIVENESS_REASON`, for the same reason the SNP harness does.
 
 One more, TDX-only: **the image must be built from this branch.** Ticket 19's and
 ticket 24's TDX images carry no `agent-probe`, no `/srv/index.html` and no

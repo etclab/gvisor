@@ -47,8 +47,13 @@
 #   7. the egress proof: four or more attempts to reach what the ceiling
 #      forbids, each one refused, on the console, before anything is trusted
 #   8. the workload the device carried, if it carried one, under runsc in a user
-#      namespace (ticket 24)
-#   9. tunneld
+#      namespace (ticket 24) -- or, when the config device carries a tunnel
+#      table at /config/tunnel-table.json, the whole of ticket 25's adapter
+#      order instead: tunneld first with a sandbox socket, the exit attached to
+#      it, the page the exit will be asked for, and only then runsc carrying
+#      --tunnel-socket and --tunnel-table, with ticket 26's two timing knobs
+#      beside it
+#   9. tunneld, unless step 8 has already started it and waited for it
 #
 # Step 3 is where it is, and that is ticket 22's doing. It used to sit after the
 # network, because the rule set was generated from policy.json and could not be
@@ -66,6 +71,26 @@
 # then and the egress proof has just shown that it holds, so the workload runs
 # with the guest already constrained; and it runs before tunneld, so nothing it
 # does can be mistaken for something a peer was talking to.
+#
+# Ticket 25 trades the second half of that away, and only when the config device
+# asks for it. A sandbox on the adapter has no network of its own and its only
+# way out is the socket tunneld serves, so on that path tunneld exists before the
+# workload and the link is up while the workload runs. What replaces "nothing it
+# does can be mistaken for something a peer was talking to" is stronger and is
+# the claim ticket 25 and ticket 26 are about: the workload has no interface, no
+# address and no route, every byte it sends leaves through a name the measured
+# table permitted to a peer the signed set admitted, and ticket 26 adds that it
+# leaves under a policy the peer pushed and the sentry judged a subset of that
+# table. Without that file this script is ticket 24's, line for line.
+#
+# Ticket 26 adds no check to this file. docs/snp/image/init.rootfs walks
+# /proc/mounts before anything else and powers the guest off if any writable
+# mount is executable; there has never been a counterpart here, so on this
+# vendor runsc still runs with a writable, executable / underneath it
+# (docs/runsc-in-the-guest.md, leftover 1). That asymmetry is recorded and is
+# deliberately not closed by this ticket: adding the rule here would be a change
+# to what a TDX guest refuses to boot with, which is a decision about the
+# measured image and not about a policy the sandbox honours.
 export PATH=/bin:/sbin:/usr/bin
 
 say() { echo "initrd: $*"; }
@@ -375,11 +400,14 @@ tunneld -egress probe -egress-probe "udp:$NET_GW:53,tcp:$NET_GW:80" \
 	|| fail "the egress probe reached something the ceiling forbids"
 uptime_say
 
-# ---- 8. the workload, under runsc (ticket 24) -----------------------------
-# Here and nowhere else. After the ceiling and after the proof that it holds,
-# because a workload that ran before them would run in a guest that could still
-# address a packet; and before tunneld, because tunneld is what this guest
-# presents itself to a peer with.
+# ---- 8. the workload, under runsc (tickets 24, 25 and 26) -----------------
+# After the ceiling and after the proof that it holds, because a workload that
+# ran before them would run in a guest that could still address a packet.
+# Whether it also runs before tunneld is the question the two orders at the
+# bottom of this file answer, and the answer is the config device's: with a
+# tunnel table at /config/tunnel-table.json the workload is a sandbox on the
+# adapter and tunneld has to exist before it (ticket 25), and without one
+# nothing changes and this is ticket 24's script line for line.
 #
 # The bundle comes off the workload device mounted at /workload
 # (ro,exec,nosuid,nodev) at step 5, which is outside the measurement. What is
@@ -403,7 +431,12 @@ uptime_say
 # keeps runsc from bind-mounting an nsfs rw into it (spike S1, E2 and E3).
 #
 # --network=none is what stands between this workload and a link that is, unlike
-# the SNP guest's at this point in its boot, already up.
+# the SNP guest's at this point in its boot, already up. On the adapter path it
+# is also what makes the adapter the sandbox's only way out.
+#
+# Ticket 26 adds nothing to the flag set. --tunnel-socket and --tunnel-table are
+# ticket 25's and they are the whole of the adapter; what ticket 26 pushes over
+# the contract narrows the table the sentry already holds, and no flag says so.
 #
 # The root is the one thing this vendor needs and SEV-SNP does not. The sandbox
 # and the gofer each pivot_root(2) on their way up
@@ -430,20 +463,298 @@ uptime_say
 # printed below is the table ticket 19 printed. mkdir and chroot are reached
 # through /bin/busybox rather than through applet symlinks, so the initrd's file
 # list is exactly what it was (build-tdx-image.sh's APPLETS) and the only thing
-# ticket 24's fix changes in the measurement is this script.
+# ticket 24's fix changes in the measurement is this script. Ticket 26 keeps that
+# rule and every applet it adds — httpd, wget, kill, wc, mkdir, dd, tail, cp — is
+# reached the same way, so this ticket adds no cpio entry either.
+#
+# The rbind is also what puts the sandbox socket in reach. /run is bound
+# recursively, and a bind is the same superblock, so /run/tunneld/sandbox.sock
+# inside the chroot is the same socket inode tunneld created outside it. The
+# helper runsc spawns dials it by that path, across the copied mount namespace
+# and the fresh network namespace both — only an abstract socket is
+# per-network-namespace, and this one is a pathname socket for exactly that
+# reason (docs/the-adapter.md).
+SANDBOX_SOCKET=/run/tunneld/sandbox.sock
+TUNNEL_TABLE=/config/tunnel-table.json
+EXIT_ALLOW=/config/exit-allow
+RUNSC_DEBUG_DIR=/run/runsc-debug
+RUNSC_FLAGS="--root=/run/runsc-state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new"
+ADAPTER=0
+if [ -f "$TUNNEL_TABLE" ]; then
+	ADAPTER=1
+	RUNSC_FLAGS="$RUNSC_FLAGS --tunnel-socket=$SANDBOX_SOCKET --tunnel-table=$TUNNEL_TABLE"
+	# The sentry's own account of what it did, which is the only diagnostic
+	# this guest has for the adapter. `tunnel dns:` for a name it resolved or
+	# refused and `tunnel attach:` for a stream it asked tunneld for are
+	# debug-level, so they exist only with --debug. They go to files under
+	# /run rather than to the console, because --debug on a serial port is
+	# tens of thousands of lines and would bury the workload's own output;
+	# the adapter branch below picks those lines back out afterwards. /run is
+	# rw,noexec and a log file is not an exec.
+	RUNSC_FLAGS="$RUNSC_FLAGS --debug --debug-log=$RUNSC_DEBUG_DIR/"
+fi
 ROOT_WITH_A_PARENT="busybox mkdir -p /run/root; mount --rbind / /run/root; cd /run/root; mount --move . /"
-RUNSC_CMD="/usr/bin/runsc --root=/run/runsc-state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new run --bundle /workload workload"
+RUNSC_CMD="/usr/bin/runsc $RUNSC_FLAGS run --bundle /workload workload"
 WORKLOAD_SH="$ROOT_WITH_A_PARENT; exec busybox chroot . sh -c 'mount -t proc -o nosuid,nodev,noexec proc /proc; exec $RUNSC_CMD'"
-if [ -f /workload/config.json ]; then
-	say "the workload device carries a bundle at /workload/config.json"
-	say "running: unshare -Urmnpf sh -c \"$WORKLOAD_SH\""
+
+# run_workload is ticket 24's block in a function, so that the two orders below
+# both run exactly it and neither has a copy.
+run_workload() {
+	if [ -f /workload/config.json ]; then
+		say "the workload device carries a bundle at /workload/config.json"
+		say "running: unshare -Urmnpf sh -c \"$WORKLOAD_SH\""
+		uptime_say
+		unshare -Urmnpf sh -c "$WORKLOAD_SH"
+		wrc=$?
+		uptime_say
+		say "workload exited with status $wrc"
+	else
+		say "no workload bundle at /workload/config.json; continuing to tunneld"
+	fi
+}
+
+# A number off the config device, or nothing. The file is read rather than
+# sourced and its contents are checked against the shape a number has before
+# they reach a command line, exactly as network.conf's fields are: nothing on
+# that device may execute and a shell that ran it would be doing that.
+#
+# Every knob these read is a TIMING knob and none of them is measured. What they
+# move is when this script does something, never what it is allowed to do: the
+# ceiling is compiled in, the flag set is above, and the policy the sandbox ends
+# up under is decided by the peer that pushed it and by the sentry that judged
+# the subset. A host that changed one of these numbers would change how long a
+# recording lasts and nothing else, and a reader of the console can see the
+# number this boot used because it is printed next to what it did.
+knob() { # FILE
+	[ -f "$1" ] || return 1
+	v=$(cat "$1" 2>/dev/null | tr -d ' \r\n\t')
+	case "$v" in '' | *[!0-9]*) say "WARNING: $1 is not a number ('$v'); ignoring it"; return 1 ;; esac
+	[ "$v" != 0 ] || return 1
+	printf '%s' "$v"
+}
+
+# A policy to push, if the config device carries one (ticket 22,
+# docs/policy-push.md). The file is looked for rather than named
+# unconditionally, because no policy is the ordinary case — it is what every
+# scenario recorded before ticket 22 runs — and a tunneld handed a path it
+# cannot read refuses to start.
+#
+# The name is deliberately not policy.json. That document and its signature are
+# what ticket 22 took OFF the config device, and tunneld refuses to start on a
+# device carrying either half of it. This is a different document with a
+# different life: nothing here loads it, parses it or enforces it. It is handed
+# to a peer over a tunnel that peer was already admitted on, and what makes it
+# trustworthy there is the evidence this guest presented — not the disk it was
+# read from, which is the host's and is not measured.
+PUSH=
+if [ -f /config/push-policy.json ]; then
+	PUSH="-push-policy /config/push-policy.json"
+	say "the config device carries a policy to push: /config/push-policy.json"
+fi
+
+# ---- ticket 26's two watchdogs, and what each one is for -------------------
+#
+# Both are background children of this script, both are started just before the
+# workload, and both measure their delay from that moment. Neither is in the
+# measurement's way: one starts a second tunneld, which is the same measured
+# binary reading the same measured author key, and the other sends a signal.
+#
+# narrow_later starts a SECOND tunneld that pushes a narrower policy at the peer
+# while the first one's tunnel is still carrying the sandbox's bytes. It is a
+# second process rather than a restart of the first because a restart would take
+# this guest's tunnel down with it, and the whole claim under test is that a
+# policy can be replaced with the workload running. The two share this guest's
+# documents through -config /config and differ in one file: -run names a second
+# run configuration on the same device, whose `listen` is empty so that it binds
+# no port the first tunneld holds (attest/cmd/tunneld/runconfig.go: an empty
+# listen is the one the ceiling has no opinion about, and package tunneld takes
+# 127.0.0.1:0 for it), and whose `exercise` names the peer to dial. The dial is
+# what makes a push happen at all, and it opens its own socket — the ceiling
+# grants udp/4433 outbound from any source port on eth0 and the reply back in on
+# source port 4433, so this second tunneld reaches the peer under exactly the
+# rules the first one does. Its exchange is expected to fail and says nothing:
+# the push lands when the tunnel is established and before anything is sent over
+# it, and what answers a stream on the far side is that guest's exit, which holds
+# a list of destinations and will not find this payload in it.
+narrow_later() { # SECONDS
+	sleep "$1"
+	say "narrow-after: ${1}s elapsed; starting a second tunneld to push /config/push-policy-narrow.json at the peer"
 	uptime_say
-	unshare -Urmnpf sh -c "$WORKLOAD_SH"
-	wrc=$?
+	/usr/bin/tunneld -config /config -run /config/tunneld-narrow.json \
+		-tdx-collateral-dir /config/collateral \
+		-push-policy /config/push-policy-narrow.json &
+	say "narrow-after: the second tunneld is pid $! (its lines say tunneld: like the first one's)"
+}
+
+# kill_later ends the workload's liveness the way a workload that died would.
+# It kills the sandbox rather than asking it to stop: the point is that nothing
+# inside cooperated. The sentry goes, the helper's link to it ends, the helper
+# closes its tunneld client, and the tunneld beside it stops hearing the pulse
+# that says which policy is in force — which is the contract's liveness rule and
+# the reason ticket 23's "apply then ack" was not enough (DOCTRINE, ticket 26).
+#
+# Processes are found by name in this init's own /proc rather than by pid,
+# because the workload runs behind `unshare -f`: the process this script would
+# have a pid for is unshare, and the one that is init of the new PID namespace
+# is its child. A PID namespace is visible from its parent, so every process the
+# sandbox is made of is in this table under a pid of this namespace's; matching
+# runsc's own comm reaches all of them, and unshare is killed after them so that
+# the wait below returns.
+kill_later() { # SECONDS
+	sleep "$1"
+	say "kill-after: ${1}s elapsed; killing the sandbox, so that nothing inside it gets to say goodbye"
 	uptime_say
-	say "workload exited with status $wrc"
+	k=0
+	for p in /proc/[0-9]*; do
+		pid=${p#/proc/}
+		c=$(cat "$p/comm" 2>/dev/null) || continue
+		case "$c" in
+		runsc*) busybox kill -9 "$pid" 2>/dev/null && k=$((k + 1)) ;;
+		esac
+	done
+	for p in /proc/[0-9]*; do
+		pid=${p#/proc/}
+		c=$(cat "$p/comm" 2>/dev/null) || continue
+		case "$c" in
+		unshare) busybox kill -9 "$pid" 2>/dev/null && k=$((k + 1)) ;;
+		esac
+	done
+	say "kill-after: killed $k processes"
+}
+
+# ---- the two orders ---------------------------------------------------------
+# Ticket 24's is the second branch and is what every TDX boot before ticket 26
+# ran: the workload, then tunneld in the foreground, then poweroff. It puts the
+# one thing this guest runs that is not measured at a moment when the ceiling is
+# in the kernel and the egress proof has just passed.
+#
+# Ticket 25's is the first, ported here from docs/snp/image/init.rootfs, and it
+# gives up one property deliberately. A sandbox on the adapter has no network of
+# its own — --network=none, a loopback-only stack — and its only way out is the
+# socket tunneld serves, so tunneld has to exist before it. What replaces "the
+# workload ran before anything was attested" is stronger and it is the ticket's
+# claim: the workload has no interface, no address and no route, and every byte
+# it sends leaves through a name the measured table permitted, to a peer the
+# reference value set admitted, under a policy that peer pushed.
+#
+# The order inside the branch is the order the dependencies run in:
+#
+#   1. tunneld, in the background, with -sandbox-socket and -self-check. It
+#      acquires this guest's evidence, prints it for the record and listens.
+#      It is NOT run in the foreground any more and this guest does not power
+#      off when it returns: the scenario outlives it, and the console's last
+#      line is still this script's EXIT status.
+#   2. the socket, waited for rather than slept on. A tunneld that refused to
+#      start never creates it, and this loop stops at once on that.
+#   3. the exit, which answers a stream a peer opens: it reads the destination
+#      off the first line, checks it against the list the config device carries,
+#      and dials it. With a socket configured tunneld's own echo stands down, so
+#      the exit is the only thing on this guest that answers a peer at all.
+#   4. the page the exit will be asked for: busybox httpd on 127.0.0.1:80, out
+#      of a directory on /run. It is on loopback and nowhere else, so the segment
+#      cannot reach it and the only route to it is this guest's own exit. The
+#      body is the image's /srv/index.html plus one line naming this guest, read
+#      off the run configuration, because one image boots both guests and a page
+#      that could not say which one served it would prove nothing. Beside it is
+#      /run/httpd/large, a file of a fixed size generated here from /dev/zero so
+#      that a fetch of it takes long enough to still be running when the policy
+#      underneath it is replaced. It is generated rather than carried because a
+#      file in the image is a file in the measurement, and this one has nothing
+#      to say to a verifier.
+#   5. the two watchdogs, if the config device asked for them.
+#   6. the workload, under runsc, with the adapter's flags.
+#   7. what the sentry said, out of the debug log and onto the console.
+#   8. tunneld, waited for.
+if [ "$ADAPTER" = 1 ]; then
+	say "the config device carries a tunnel table; the workload is a sandbox on the adapter (ticket 25)"
+	sed 's/^/initrd: tunnel-table: /' "$TUNNEL_TABLE"
+	uptime_say
+	say "running /usr/bin/tunneld $PUSH -sandbox-socket $SANDBOX_SOCKET -self-check in the background, ahead of the workload"
+	/usr/bin/tunneld -config /config -tdx-collateral-dir /config/collateral -self-check \
+		$PUSH -sandbox-socket "$SANDBOX_SOCKET" &
+	TPID=$!
+	i=0
+	while [ ! -S "$SANDBOX_SOCKET" ]; do
+		busybox kill -0 "$TPID" 2>/dev/null || { say "tunneld exited before $SANDBOX_SOCKET existed; no sandbox can attach"; break; }
+		i=$((i + 1))
+		[ $i -lt 120 ] || { say "WARNING: $SANDBOX_SOCKET did not appear within 60s"; break; }
+		sleep 0.5
+	done
+	if [ -S "$SANDBOX_SOCKET" ]; then
+		say "the sandbox socket is up at $SANDBOX_SOCKET"
+		uptime_say
+		ALLOW=
+		[ -f "$EXIT_ALLOW" ] && ALLOW=$(cat "$EXIT_ALLOW")
+		say "running /usr/bin/agent-probe -exit -network socket -sandbox-socket $SANDBOX_SOCKET -allow $ALLOW"
+		say "(an empty list refuses every destination, which is the honest default for the place a destination is checked)"
+		/usr/bin/agent-probe -exit -network socket -sandbox-socket "$SANDBOX_SOCKET" -allow "$ALLOW" -timeout 30m &
+		say "the exit is pid $! (its own lines below say EXIT; it is torn down with the guest)"
+	else
+		say "not starting the exit: there is no sandbox socket for it to attach to"
+	fi
+
+	# The page, and the one line of it that is not in the measurement.
+	busybox mkdir -p /run/httpd
+	SANDBOX_ID=$(sed -n 's/.*"sandbox_id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' /config/tunneld.json 2>/dev/null)
+	{ cat /srv/index.html; echo "served-by: ${SANDBOX_ID:-unknown}"; } > /run/httpd/index.html
+	# The long body. Zeros, because what a fetch of it proves is that it was
+	# still arriving when the policy changed and not what it said; its size is
+	# fixed here so that the workload can say whether it got all of it.
+	LARGE_MIB=8
+	dd if=/dev/zero of=/run/httpd/large bs=1048576 count="$LARGE_MIB" 2>/dev/null
+	say "httpd large: /run/httpd/large is $(busybox wc -c < /run/httpd/large) bytes of zeros, generated here and in no measurement"
+	if busybox httpd -p 127.0.0.1:80 -h /run/httpd; then
+		say "busybox httpd is serving /run/httpd on 127.0.0.1:80 (loopback only: the segment cannot reach it)"
+	else
+		say "WARNING: httpd would not start; a peer asking this guest for the page will get nothing"
+	fi
+	# Fetched here, by this guest, before the workload exists: it separates "the
+	# page is not being served" from "the tunnel did not carry it", which are the
+	# two ways the run below can fail and which look alike from the other guest.
+	busybox wget -q -O - http://127.0.0.1:80/ 2>&1 | sed 's/^/initrd: httpd says: /'
+
+	NARROW_AFTER=$(knob /config/narrow-after) || NARROW_AFTER=
+	if [ -n "$NARROW_AFTER" ] && [ -f /config/push-policy-narrow.json ] && [ -f /config/tunneld-narrow.json ]; then
+		say "narrow-after: ${NARROW_AFTER}s from now, a second tunneld will push the narrower policy; this guest's own tunnel is not restarted"
+		narrow_later "$NARROW_AFTER" &
+	else
+		say "no second pusher on this guest (narrow-after, push-policy-narrow.json and tunneld-narrow.json are not all on the config device)"
+	fi
+	KILL_AFTER=$(knob /config/kill-after) || KILL_AFTER=
+	if [ -n "$KILL_AFTER" ]; then
+		say "kill-after: ${KILL_AFTER}s from now, the sandbox is killed and its liveness ends"
+		kill_later "$KILL_AFTER" &
+	else
+		say "no kill-after on this guest; the workload ends when it ends"
+	fi
+
+	busybox mkdir -p "$RUNSC_DEBUG_DIR"
+	run_workload
+
+	# The sentry's account, pulled out of the debug log and put on the console in
+	# the order it happened. One line per name the responder answered and one per
+	# stream the adapter asked for; that is the whole of what this guest can say
+	# about where the workload's bytes went, and without it a fetch that failed
+	# would be indistinguishable from a fetch that was refused.
+	say "the sentry's own account of the adapter, out of $RUNSC_DEBUG_DIR:"
+	grep -h 'tunnel dns:\|tunnel attach:\|tunnel policy:\|exec refused' "$RUNSC_DEBUG_DIR"/* 2>/dev/null \
+		| sed 's/^/initrd: sentry: /' \
+		|| say "no tunnel lines in the debug log"
+	for f in "$RUNSC_DEBUG_DIR"/*; do
+		[ -f "$f" ] && say "debug log $f: $(busybox wc -c < "$f") bytes, $(busybox wc -l < "$f") lines"
+	done
+	if [ "${wrc:-0}" != 0 ]; then
+		say "runsc exited $wrc; the tail of each debug log follows"
+		for f in "$RUNSC_DEBUG_DIR"/*; do
+			[ -f "$f" ] && { say "--- tail of $f"; busybox tail -n 60 "$f" | sed 's/^/initrd: debug: /'; }
+		done
+	fi
+
+	say "waiting for tunneld (pid $TPID)"
+	wait "$TPID"
+	rc=$?
 else
-	say "no workload bundle at /workload/config.json; continuing to tunneld"
+	run_workload
 fi
 
 # Every writable mount that is executable, listed rather than assumed, as
@@ -458,10 +769,20 @@ mount -o remount,ro / 2>/dev/null \
 sed 's/^/initrd: mount: /' /proc/mounts
 
 # ---- 9. tunneld -----------------------------------------------------------
-uptime_say
-say "starting tunneld"
-tunneld -config /config -tdx-collateral-dir /config/collateral -self-check
-rc=$?
-say "EXIT status=$rc"
+# On the adapter path tunneld has already run and has already been waited for:
+# step 8 starts it first, because the sandbox beside it has to have something to
+# attach to, and $rc is what it exited with. Only ticket 24's order reaches the
+# foreground run below, and that is the one difference ticket 26 makes to this
+# step. The last line is the same line either way, because it is the line the
+# console watchers stop on (docs/snp/cloud/tdx/smoke-tdx-guest.sh,
+# run-tdx-scenario.sh: '^initrd: EXIT status=').
+if [ "$ADAPTER" != 1 ]; then
+	uptime_say
+	say "starting tunneld"
+	tunneld -config /config -tdx-collateral-dir /config/collateral -self-check
+	rc=$?
+fi
+say "tunneld exited with status ${rc:-0}"
+say "EXIT status=${rc:-0}"
 sync
 poweroff -f

@@ -425,10 +425,32 @@ type sock struct {
 	socket.SendReceiveTimeout
 	*waiter.Queue
 
-	family   int
+	family int
+	// Endpoint is the socket's transport endpoint. Read it with sock.ep() and
+	// never directly: the tunnel adapter replaces the endpoint of a socket
+	// that is connecting to one of the names its table carries, and it does so
+	// while other task goroutines may be reading this field. An interface
+	// value is two words, so a reader that saw one word of the old value and
+	// one of the new would call a method of one type on a value of another.
+	//
+	// +checklocks:epMu
 	Endpoint tcpip.Endpoint
-	skType   linux.SockType
-	protocol int
+	// epMu guards Endpoint, and the tunnel adapter's two bits of per-socket
+	// state below. It is a leaf: nothing is acquired while it is held, and it
+	// is held only across a field access, never across a call into the
+	// endpoint.
+	epMu sync.RWMutex `state:"nosave"`
+	// tunnelAttaching is set while the tunnel adapter is asking the helper for
+	// a stream for this socket, and tunnelAttached once it has one. Together
+	// they make the attach happen at most once: a second connect(2) is
+	// answered EALREADY or EISCONN and never asks for a second stream.
+	//
+	// +checklocks:epMu
+	tunnelAttaching bool
+	// +checklocks:epMu
+	tunnelAttached bool
+	skType         linux.SockType
+	protocol       int
 
 	namespace *inet.Namespace
 
@@ -458,6 +480,19 @@ type sock struct {
 }
 
 var _ = socket.Socket(&sock{})
+
+// ep returns the socket's transport endpoint.
+//
+// It is a function and not a field read because the tunnel adapter can replace
+// the endpoint under a running socket; see the Endpoint field.
+//
+// +checklocksignore
+func (s *sock) ep() tcpip.Endpoint {
+	s.epMu.RLock()
+	ep := s.Endpoint
+	s.epMu.RUnlock()
+	return ep
+}
 
 // New creates a new endpoint socket.
 func New(t *kernel.Task, family int, skType linux.SockType, protocol int, queue *waiter.Queue, endpoint tcpip.Endpoint) (*vfs.FileDescription, *syserr.Error) {
@@ -499,12 +534,12 @@ func (s *sock) Release(ctx context.Context) {
 	s.EventRegister(&e)
 	defer s.EventUnregister(&e)
 
-	s.Endpoint.Close()
+	s.ep().Close()
 
 	// SO_LINGER option is valid only for TCP. For other socket types
 	// return after endpoint close.
 	if family, skType, _ := s.Type(); skType == linux.SOCK_STREAM && (family == linux.AF_INET || family == linux.AF_INET6) {
-		v := s.Endpoint.SocketOptions().GetLinger()
+		v := s.ep().SocketOptions().GetLinger()
 		// The case for zero timeout is handled in tcp endpoint close function.
 		// Close is blocked until either:
 		// 1. The endpoint state is not in any of the states: FIN-WAIT1,
@@ -553,14 +588,14 @@ func (s *sock) Write(ctx context.Context, src usermem.IOSequence, opts vfs.Write
 
 	var n int64
 	var err tcpip.Error
-	switch s.Endpoint.(type) {
+	switch s.ep().(type) {
 	case *tcp.Endpoint:
 		s.mu.Lock()
 		s.readWriter.Init(ctx, src)
-		n, err = s.Endpoint.Write(&s.readWriter, tcpip.WriteOptions{})
+		n, err = s.ep().Write(&s.readWriter, tcpip.WriteOptions{})
 		s.mu.Unlock()
 	default:
-		n, err = s.Endpoint.Write(src.Reader(ctx), tcpip.WriteOptions{})
+		n, err = s.ep().Write(src.Reader(ctx), tcpip.WriteOptions{})
 	}
 	if _, ok := err.(*tcpip.ErrWouldBlock); ok {
 		return 0, linuxerr.ErrWouldBlock
@@ -584,7 +619,7 @@ func (s *sock) Accept(t *kernel.Task, peerRequested bool, flags int, blocking bo
 	if peerRequested {
 		peerAddr = &tcpip.FullAddress{}
 	}
-	ep, wq, terr := s.Endpoint.Accept(peerAddr)
+	ep, wq, terr := s.ep().Accept(peerAddr)
 	if terr != nil {
 		if _, ok := terr.(*tcpip.ErrWouldBlock); !ok || !blocking {
 			return 0, nil, 0, syserr.TranslateNetstackError(terr)
@@ -658,22 +693,22 @@ func (s *sock) GetSockOpt(t *kernel.Task, level, name int, outPtr hostarch.Addr,
 
 	switch level {
 	case linux.SOL_SOCKET:
-		return GetSockOptSocket(t, s, s.Endpoint, s.family, s.skType, name, outLen)
+		return GetSockOptSocket(t, s, s.ep(), s.family, s.skType, name, outLen)
 
 	case linux.SOL_TCP:
-		return s.getSockOptTCP(t, s.Endpoint, name, outLen)
+		return s.getSockOptTCP(t, s.ep(), name, outLen)
 
 	case linux.SOL_IPV6:
-		return s.getSockOptIPv6(t, s.Endpoint, name, outPtr, outLen)
+		return s.getSockOptIPv6(t, s.ep(), name, outPtr, outLen)
 
 	case linux.SOL_IP:
-		return s.getSockOptIP(t, s.Endpoint, name, outPtr, outLen, s.family)
+		return s.getSockOptIP(t, s.ep(), name, outPtr, outLen, s.family)
 
 	case linux.SOL_ICMPV6:
-		return s.getSockOptICMPv6(t, s.Endpoint, name, outLen)
+		return s.getSockOptICMPv6(t, s.ep(), name, outLen)
 
 	case linux.SOL_PACKET:
-		return s.getSockOptPacket(t, s.Endpoint, name, outPtr, outLen)
+		return s.getSockOptPacket(t, s.ep(), name, outPtr, outLen)
 	case linux.SOL_UDP, linux.SOL_RAW:
 		// Not supported.
 	}
@@ -711,22 +746,22 @@ func (s *sock) SetSockOpt(t *kernel.Task, level int, name int, optVal []byte) *s
 
 	switch level {
 	case linux.SOL_SOCKET:
-		return SetSockOptSocket(t, s, s.Endpoint, name, optVal)
+		return SetSockOptSocket(t, s, s.ep(), name, optVal)
 
 	case linux.SOL_TCP:
-		return s.setSockOptTCP(t, s.Endpoint, name, optVal)
+		return s.setSockOptTCP(t, s.ep(), name, optVal)
 
 	case linux.SOL_ICMPV6:
-		return s.setSockOptICMPv6(t, s.Endpoint, name, optVal)
+		return s.setSockOptICMPv6(t, s.ep(), name, optVal)
 
 	case linux.SOL_IPV6:
-		return s.setSockOptIPv6(t, s.Endpoint, name, optVal)
+		return s.setSockOptIPv6(t, s.ep(), name, optVal)
 
 	case linux.SOL_IP:
-		return s.setSockOptIP(t, s.Endpoint, name, optVal)
+		return s.setSockOptIP(t, s.ep(), name, optVal)
 
 	case linux.SOL_PACKET:
-		return s.setSockOptPacket(t, s.Endpoint, name, optVal)
+		return s.setSockOptPacket(t, s.ep(), name, optVal)
 
 	case linux.SOL_UDP, linux.SOL_RAW:
 		// Not supported.
@@ -762,7 +797,7 @@ func (s *sock) isPacketBased() bool {
 
 // Readiness returns a mask of ready events for socket s.
 func (s *sock) Readiness(mask waiter.EventMask) waiter.EventMask {
-	return s.Endpoint.Readiness(mask)
+	return s.ep().Readiness(mask)
 }
 
 // checkFamily returns true iff the specified address family may be used with
@@ -775,7 +810,7 @@ func (s *sock) checkFamily(family uint16, exact bool) bool {
 		return true
 	}
 	if !exact && family == linux.AF_INET && s.family == linux.AF_INET6 {
-		if !s.Endpoint.SocketOptions().GetV6Only() {
+		if !s.ep().SocketOptions().GetV6Only() {
 			return true
 		}
 	}
@@ -805,7 +840,7 @@ func (s *sock) Connect(t *kernel.Task, sockaddr []byte, blocking bool) *syserr.E
 	}
 
 	if family == linux.AF_UNSPEC {
-		err := s.Endpoint.Disconnect()
+		err := s.ep().Disconnect()
 		if _, ok := err.(*tcpip.ErrNotSupported); ok {
 			return syserr.ErrAddressFamilyNotSupported
 		}
@@ -827,7 +862,7 @@ func (s *sock) Connect(t *kernel.Task, sockaddr []byte, blocking bool) *syserr.E
 
 	// Always return right away in the non-blocking case.
 	if !blocking {
-		return syserr.TranslateNetstackError(s.Endpoint.Connect(addr))
+		return syserr.TranslateNetstackError(s.ep().Connect(addr))
 	}
 
 	// Register for notification when the endpoint becomes writable, then
@@ -836,7 +871,7 @@ func (s *sock) Connect(t *kernel.Task, sockaddr []byte, blocking bool) *syserr.E
 	s.EventRegister(&e)
 	defer s.EventUnregister(&e)
 
-	switch err := s.Endpoint.Connect(addr); err.(type) {
+	switch err := s.ep().Connect(addr); err.(type) {
 	case *tcpip.ErrConnectStarted, *tcpip.ErrAlreadyConnecting:
 	case *tcpip.ErrNoPortAvailable:
 		if (s.family == unix.AF_INET || s.family == unix.AF_INET6) && s.skType == linux.SOCK_STREAM {
@@ -856,7 +891,7 @@ func (s *sock) Connect(t *kernel.Task, sockaddr []byte, blocking bool) *syserr.E
 	}
 
 	// Call Connect() again after blocking to find connect's result.
-	return syserr.TranslateNetstackError(s.Endpoint.Connect(addr))
+	return syserr.TranslateNetstackError(s.ep().Connect(addr))
 }
 
 // Bind implements the linux syscall bind(2) for sockets backed by
@@ -906,7 +941,7 @@ func (s *sock) Bind(_ *kernel.Task, sockaddr []byte) *syserr.Error {
 	}
 
 	// Issue the bind request to the endpoint.
-	err := s.Endpoint.Bind(addr)
+	err := s.ep().Bind(addr)
 	if _, ok := err.(*tcpip.ErrNoPortAvailable); ok {
 		// Bind always returns EADDRINUSE irrespective of if the specified port was
 		// already bound or if an ephemeral port was requested but none were
@@ -925,7 +960,7 @@ func (s *sock) Bind(_ *kernel.Task, sockaddr []byte) *syserr.Error {
 // Listen implements the linux syscall listen(2) for sockets backed by
 // tcpip.Endpoint.
 func (s *sock) Listen(_ *kernel.Task, backlog int) *syserr.Error {
-	if err := s.Endpoint.Listen(backlog); err != nil {
+	if err := s.ep().Listen(backlog); err != nil {
 		return syserr.TranslateNetstackError(err)
 	}
 	if !socket.IsTCP(s) {
@@ -933,7 +968,7 @@ func (s *sock) Listen(_ *kernel.Task, backlog int) *syserr.Error {
 	}
 
 	// Emit SentryTCPListenEvent with the bound port for tcp sockets.
-	addr, err := s.Endpoint.GetLocalAddress()
+	addr, err := s.ep().GetLocalAddress()
 	if err != nil {
 		panic(fmt.Sprintf("GetLocalAddress failed for tcp socket: %s", err))
 	}
@@ -954,7 +989,7 @@ func (s *sock) blockingAccept(t *kernel.Task, peerAddr *tcpip.FullAddress) (tcpi
 	// Try to accept the connection again; if it fails, then wait until we
 	// get a notification.
 	for {
-		ep, wq, err := s.Endpoint.Accept(peerAddr)
+		ep, wq, err := s.ep().Accept(peerAddr)
 		if _, ok := err.(*tcpip.ErrWouldBlock); !ok {
 			return ep, wq, syserr.TranslateNetstackError(err)
 		}
@@ -990,7 +1025,7 @@ func (s *sock) Shutdown(_ *kernel.Task, how int) *syserr.Error {
 	}
 
 	// Issue shutdown request.
-	return syserr.TranslateNetstackError(s.Endpoint.Shutdown(f))
+	return syserr.TranslateNetstackError(s.ep().Shutdown(f))
 }
 
 func boolToInt32(v bool) int32 {
@@ -3062,7 +3097,7 @@ func (s *sock) setSockOptPacket(t *kernel.Task, ep commonEndpoint, name int, opt
 // GetSockName implements the linux syscall getsockname(2) for sockets backed by
 // tcpip.Endpoint.
 func (s *sock) GetSockName(*kernel.Task) (linux.SockAddr, uint32, *syserr.Error) {
-	addr, err := s.Endpoint.GetLocalAddress()
+	addr, err := s.ep().GetLocalAddress()
 	if err != nil {
 		return nil, 0, syserr.TranslateNetstackError(err)
 	}
@@ -3074,7 +3109,7 @@ func (s *sock) GetSockName(*kernel.Task) (linux.SockAddr, uint32, *syserr.Error)
 // GetPeerName implements the linux syscall getpeername(2) for sockets backed by
 // tcpip.Endpoint.
 func (s *sock) GetPeerName(*kernel.Task) (linux.SockAddr, uint32, *syserr.Error) {
-	addr, err := s.Endpoint.GetRemoteAddress()
+	addr, err := s.ep().GetRemoteAddress()
 	if err != nil {
 		return nil, 0, syserr.TranslateNetstackError(err)
 	}
@@ -3091,7 +3126,7 @@ func (s *sock) fillCmsgInq(cmsg *socket.ControlMessages) {
 	if !s.sockOptInq {
 		return
 	}
-	rcvBufUsed, err := s.Endpoint.GetSockOptInt(tcpip.ReceiveQueueSizeOption)
+	rcvBufUsed, err := s.ep().GetSockOptInt(tcpip.ReceiveQueueSizeOption)
 	if err != nil {
 		return
 	}
@@ -3147,16 +3182,16 @@ func (s *sock) nonBlockingRead(ctx context.Context, dst usermem.IOSequence, peek
 			W: io.Discard,
 			N: dst.NumBytes(),
 		}
-		res, err = s.Endpoint.Read(w, readOptions)
+		res, err = s.ep().Read(w, readOptions)
 	} else {
-		switch s.Endpoint.(type) {
+		switch s.ep().(type) {
 		case *tcp.Endpoint:
 			s.mu.Lock()
 			s.readWriter.Init(ctx, dst)
-			res, err = s.Endpoint.Read(&s.readWriter, readOptions)
+			res, err = s.ep().Read(&s.readWriter, readOptions)
 			s.mu.Unlock()
 		default:
-			res, err = s.Endpoint.Read(dst.Writer(ctx), readOptions)
+			res, err = s.ep().Read(dst.Writer(ctx), readOptions)
 		}
 	}
 
@@ -3200,7 +3235,7 @@ func (s *sock) nonBlockingRead(ctx context.Context, dst usermem.IOSequence, peek
 		if trunc {
 			// TCP endpoint does not return the total bytes in buffer as numTotal.
 			// We need to query it from socket option.
-			rql, err := s.Endpoint.GetSockOptInt(tcpip.ReceiveQueueSizeOption)
+			rql, err := s.ep().GetSockOptInt(tcpip.ReceiveQueueSizeOption)
 			if err != nil {
 				return 0, 0, nil, 0, socket.ControlMessages{}, syserr.TranslateNetstackError(err)
 			}
@@ -3211,7 +3246,7 @@ func (s *sock) nonBlockingRead(ctx context.Context, dst usermem.IOSequence, peek
 			return msgLen, 0, nil, 0, socket.ControlMessages{}, nil
 		}
 	} else if n := res.Count; n != 0 {
-		s.Endpoint.ModerateRecvBuf(n)
+		s.ep().ModerateRecvBuf(n)
 	}
 
 	cmsg := s.netstackToLinuxControlMessages(res.ControlMessages)
@@ -3268,7 +3303,7 @@ func (s *sock) updateTimestamp(cm tcpip.ReceivableControlMessages) {
 
 // dequeueErr is analogous to net/core/skbuff.c:sock_dequeue_err_skb().
 func (s *sock) dequeueErr() *tcpip.SockError {
-	so := s.Endpoint.SocketOptions()
+	so := s.ep().SocketOptions()
 	err := so.DequeueErr()
 	if err == nil {
 		return nil
@@ -3438,7 +3473,7 @@ func (s *sock) SendMsg(t *kernel.Task, src usermem.IOSequence, to []byte, flags 
 		ch    <-chan struct{}
 	)
 	for {
-		n, err := s.Endpoint.Write(r, opts)
+		n, err := s.ep().Write(r, opts)
 		total += n
 		if flags&linux.MSG_DONTWAIT != 0 {
 			return int(total), syserr.TranslateNetstackError(err)
@@ -3499,7 +3534,7 @@ func (s *sock) Ioctl(ctx context.Context, uio usermem.IO, sysno uintptr, args ar
 		return 0, err
 
 	case linux.TIOCINQ:
-		v, terr := s.Endpoint.GetSockOptInt(tcpip.ReceiveQueueSizeOption)
+		v, terr := s.ep().GetSockOptInt(tcpip.ReceiveQueueSizeOption)
 		if terr != nil {
 			return 0, syserr.TranslateNetstackError(terr).ToError()
 		}
@@ -3514,7 +3549,7 @@ func (s *sock) Ioctl(ctx context.Context, uio usermem.IO, sysno uintptr, args ar
 		return 0, err
 	}
 
-	return Ioctl(ctx, s.Endpoint, uio, sysno, args)
+	return Ioctl(ctx, s.ep(), uio, sysno, args)
 }
 
 // Ioctl performs a socket ioctl.
@@ -3832,7 +3867,7 @@ func (s *sock) State() uint32 {
 	switch {
 	case socket.IsTCP(s):
 		// TCP socket.
-		switch tcp.EndpointState(s.Endpoint.State()) {
+		switch tcp.EndpointState(s.ep().State()) {
 		case tcp.StateEstablished:
 			return linux.TCP_ESTABLISHED
 		case tcp.StateSynSent:
@@ -3861,7 +3896,7 @@ func (s *sock) State() uint32 {
 		}
 	case socket.IsUDP(s):
 		// UDP socket.
-		switch transport.DatagramEndpointState(s.Endpoint.State()) {
+		switch transport.DatagramEndpointState(s.ep().State()) {
 		case transport.DatagramEndpointStateInitial, transport.DatagramEndpointStateBound, transport.DatagramEndpointStateClosed:
 			return linux.TCP_CLOSE
 		case transport.DatagramEndpointStateConnected:
@@ -3875,7 +3910,7 @@ func (s *sock) State() uint32 {
 		// We don't support this yet.
 	default:
 		// Unknown transport protocol, how did we make this socket?
-		log.Warningf("Unknown transport protocol for an existing socket: family=%v, type=%v, protocol=%v, internal type %v", s.family, s.skType, s.protocol, reflect.TypeOf(s.Endpoint).Elem())
+		log.Warningf("Unknown transport protocol for an existing socket: family=%v, type=%v, protocol=%v, internal type %v", s.family, s.skType, s.protocol, reflect.TypeOf(s.ep()).Elem())
 		return 0
 	}
 
@@ -3900,7 +3935,7 @@ func (s *sock) EventUnregister(e *waiter.Entry) {
 
 // ConfigureMMap implements vfs.FileDescriptionImpl.ConfigureMMap.
 func (s *sock) ConfigureMMap(ctx context.Context, opts *memmap.MMapOpts) error {
-	if mappablePacketEP, ok := s.Endpoint.(stack.MappablePacketEndpoint); ok {
+	if mappablePacketEP, ok := s.ep().(stack.MappablePacketEndpoint); ok {
 		packetMMapEP := mappablePacketEP.GetPacketMMapEndpoint()
 		if packetMMapEP == nil {
 			return linuxerr.ENODEV

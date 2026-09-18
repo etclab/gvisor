@@ -341,13 +341,16 @@ func tunnelConnect(t *kernel.Task, s *sock, addr tcpip.FullAddress) (bool, *syse
 	if a == nil {
 		return false, nil
 	}
-	if _, attached := s.Endpoint.(*tunnelEndpoint); attached {
-		// A socket that already holds a stream is connected, and connect(2) on
-		// a connected TCP socket is EISCONN. Answering anything else would let
-		// a second call ask for a second stream and drop the first.
-		return true, syserr.ErrAlreadyConnected
+	// A socket that already holds a stream, or is in the middle of being given
+	// one, is answered the way Linux answers a second connect(2) on the same
+	// socket. This is also the reservation: it is taken before the helper is
+	// asked, so two threads racing connect(2) on one descriptor produce one
+	// stream and not two, and never leak the loser's.
+	if err := s.tunnelReserve(); err != nil {
+		return true, err
 	}
 	if tunnelIsLoopback(addr.Addr) {
+		s.tunnelRelease(nil)
 		return false, nil
 	}
 	proto := "tcp"
@@ -358,12 +361,15 @@ func tunnelConnect(t *kernel.Task, s *sock, addr tcpip.FullAddress) (bool, *syse
 	switch {
 	case !bound:
 		// Nothing the sentry allocated, so nothing a name resolves to.
+		s.tunnelRelease(nil)
 		return true, a.refuse(t, proto, addr, "", tunnelReasonNotInTable)
 	case s.family != linux.AF_INET || s.skType != linux.SOCK_STREAM:
 		// A name's address is a TCP destination and only that: a datagram sent
 		// to one has no stream to be handed, and there is nothing to attach.
+		s.tunnelRelease(nil)
 		return true, a.refuse(t, proto, addr, b.name, tunnelReasonNotStream)
 	case addr.Port != b.port:
+		s.tunnelRelease(nil)
 		return true, a.refuse(t, proto, addr, b.name, tunnelReasonWrongPort)
 	}
 
@@ -371,6 +377,7 @@ func tunnelConnect(t *kernel.Task, s *sock, addr tcpip.FullAddress) (bool, *syse
 	start := time.Now()
 	fd, err := a.attacher.Attach(b.peer, hostPort)
 	if err != nil {
+		s.tunnelRelease(nil)
 		if errors.Is(err, ErrTunnelRefused) {
 			// The far exit's own list said no. That refusal is ticket 23's and
 			// is recorded there; this sentry refused nothing, so it records
@@ -385,16 +392,47 @@ func tunnelConnect(t *kernel.Task, s *sock, addr tcpip.FullAddress) (bool, *syse
 	local := a.nextLocal()
 	ep, epErr := newTunnelEndpoint(fd, local, addr, s.Queue)
 	if epErr != nil {
+		s.tunnelRelease(nil)
 		log.Infof("tunnel attach: %s -> peer %q: the endpoint would not start after %v (%v)", hostPort, b.peer, time.Since(start), epErr)
 		return true, a.refuse(t, proto, addr, b.name, tunnelReasonUnavailable)
 	}
-	old := s.Endpoint
-	s.Endpoint = ep
-	old.Close()
+	s.tunnelRelease(ep)
 	log.Infof("tunnel attach: %s -> peer %q: ok in %v, host fd %d, local %s:%d", hostPort, b.peer, time.Since(start), fd, local.Addr.String(), local.Port)
 	// Synchronously successful: the stream is already up by the time connect
 	// returns, so there is nothing for the caller to wait for (spike E1b, §4).
 	return true, nil
+}
+
+// tunnelReserve claims the right to attach a stream to this socket, or reports
+// the errno a second connect(2) gets. Exactly one caller ever wins it.
+func (s *sock) tunnelReserve() *syserr.Error {
+	s.epMu.Lock()
+	defer s.epMu.Unlock()
+	switch {
+	case s.tunnelAttached:
+		return syserr.ErrAlreadyConnected
+	case s.tunnelAttaching:
+		return syserr.ErrAlreadyInProgress
+	}
+	s.tunnelAttaching = true
+	return nil
+}
+
+// tunnelRelease gives the reservation back. With a non-nil endpoint it also
+// publishes it, which is the one write this field ever takes after the socket
+// is created, and it happens under the same lock every read takes.
+func (s *sock) tunnelRelease(ep *tunnelEndpoint) {
+	s.epMu.Lock()
+	s.tunnelAttaching = false
+	var old tcpip.Endpoint
+	if ep != nil {
+		old, s.Endpoint, s.tunnelAttached = s.Endpoint, ep, true
+	}
+	s.epMu.Unlock()
+	if old != nil {
+		// Outside the lock: closing a netstack endpoint is not a field access.
+		old.Close()
+	}
 }
 
 // tunnelSendTo is sock.SendMsg's hook, for the sendto(2) style of client that
@@ -435,10 +473,37 @@ func (a *adapter) refuse(t *kernel.Task, proto string, addr tcpip.FullAddress, n
 	return syserr.ErrNetworkUnreachable
 }
 
+// tunnelMaxName bounds a name taken from the sandbox in a log line or an event.
+// A DNS question may carry 255 bytes and a table lookup no more; anything
+// longer is a caller trying to make a record unreadable.
+const tunnelMaxName = 255
+
+// tunnelPrintable renders a name the sandbox chose. It is not trusted to be
+// text: a DNS label may hold any byte, and a newline in one would otherwise
+// forge a line in the sentry's log or in a trace a reader takes at face value.
+// Everything outside printable ASCII becomes '?'.
+func tunnelPrintable(name string) string {
+	if len(name) > tunnelMaxName {
+		name = name[:tunnelMaxName]
+	}
+	clean := []byte(name)
+	for i, b := range clean {
+		if b < 0x20 || b > 0x7e {
+			clean[i] = '?'
+		}
+	}
+	return string(clean)
+}
+
 // emitEgressRefused sends one sentry/egress_refused point. t may be nil: the
 // resolver answers on its own goroutine and has no task to speak of, and the
 // event is still worth having with only the time on it.
+//
+// One event per refused connect, datagram or query, and nothing rate-limits
+// them: a workload that dials a refused destination in a loop makes the sink
+// work at the rate it dials. Bounding that is a leftover.
 func emitEgressRefused(t *kernel.Task, proto, address string, port uint32, name, reason string) {
+	name = tunnelPrintable(name)
 	log.Infof("tunnel: refused %s %s:%d name=%q reason=%s", proto, address, port, name, reason)
 	if !seccheck.Global.Enabled(seccheck.PointEgressRefused) {
 		return

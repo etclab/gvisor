@@ -57,6 +57,15 @@
 #             fetches guest B's page through guest B's exit, guest B fetches
 #             guest A's, and the other two names do not resolve at all. Needs
 #             -workload.
+#   policy    (ticket 26) the adapter scenario with the policy each guest pushes
+#             at the other actually enforced by the sentry, and three things done
+#             to it: an exec outside the policy's `x` refused EACCES inside the
+#             sandbox, a NARROWER policy pushed by a second tunneld on guest B
+#             while guest A's sandbox is in the middle of a long fetch, and the
+#             sandbox killed at the end so that the tunneld beside it loses the
+#             liveness the contract's third version watches for. Needs
+#             -workload, and it is driven by the knobs on the two config
+#             devices rather than by -run-for.
 #
 # The topology is the evidence for two of the criteria on its own, so it is
 # worth stating plainly. The guests' only network is
@@ -288,7 +297,16 @@ spool_run() {
 #
 #   make_config DIR SANDBOX ADDRESS PEER_NAME PEER_ADDRESS RUN_JSON \
 #               [-stale] [-refvals DIR] [-policy DIR] [-push FILE] \
-#               [-tunnel-table FILE] [-exit-allow FILE]
+#               [-tunnel-table FILE] [-exit-allow FILE] \
+#               [-push-narrow FILE] [-run-narrow JSON] [-knobs DIR]
+#
+# The last three are ticket 26's and they are the whole of what that scenario
+# adds to a config device: a second policy document, the run configuration the
+# second tunneld is started with, and the two timing files init reads
+# (kill-after, narrow-after). None of them is measured and none of them is
+# signed, which is the point — a pushed policy is trustworthy at the far end
+# because of the evidence the pushing guest presented, not because of the disk
+# it was read from.
 #
 # The last two are ticket 25's and they are the only difference between the two
 # guests of the adapter scenario. Both go onto the device unchanged: the table is
@@ -312,7 +330,7 @@ spool_run() {
 make_config() {
   local dir="$1" sandbox="$2" address="$3" peer="$4" peeraddr="$5" runjson="$6"; shift 6
   local refvals="$IMAGE" policysrc="" pushpolicy="" chainsrc="$CHAIN" chainbin="certificate-chain.bin" chainjson="certificate-chain.json"
-  local tunneltable="" exitallow=""
+  local tunneltable="" exitallow="" pushnarrow="" runnarrow="" knobs=""
   while [ -n "${1:-}" ]; do
     case "$1" in
       -stale)   chainsrc="$STALE"; chainbin="certificate-chain-stale.bin"; chainjson="certificate-chain-stale.json"; shift ;;
@@ -321,6 +339,9 @@ make_config() {
       -push)    pushpolicy="$2"; shift 2 ;;
       -tunnel-table) tunneltable="$2"; shift 2 ;;
       -exit-allow)   exitallow="$2"; shift 2 ;;
+      -push-narrow)  pushnarrow="$2"; shift 2 ;;
+      -run-narrow)   runnarrow="$2"; shift 2 ;;
+      -knobs)        knobs="$2"; shift 2 ;;
       *) echo "make_config: unknown option $1" >&2; exit 2 ;;
     esac
   done
@@ -335,6 +356,13 @@ make_config() {
   if [ -n "$pushpolicy" ]; then cp "$pushpolicy" "$dir/$PUSH_POLICY_NAME"; fi
   if [ -n "$tunneltable" ]; then cp "$tunneltable" "$dir/tunnel-table.json"; fi
   if [ -n "$exitallow" ];   then cp "$exitallow"   "$dir/exit-allow";        fi
+  if [ -n "$pushnarrow" ];  then cp "$pushnarrow"  "$dir/push-policy-narrow.json"; fi
+  if [ -n "$runnarrow" ];   then printf '%s\n' "$runnarrow" > "$dir/tunneld-narrow.json"; fi
+  if [ -n "$knobs" ]; then
+    for k in kill-after narrow-after; do
+      [ -f "$knobs/$k" ] && cp "$knobs/$k" "$dir/$k"
+    done
+  fi
   # The device, from a copy of the source with the policy left behind. The two
   # names are matched exactly rather than by pattern: a policy to push is a
   # policy too, and that one does go on the device, which is the whole point of
@@ -1534,6 +1562,312 @@ scenario_adapter() {
   check "no guest looked for a gateway or anything else off the segment" test -z "$bad"
 }
 
+# ---- scenario: a sandbox that honours a pushed policy (ticket 26) ----------
+# Ticket 25's topology with one thing added and it is the ticket: each guest's
+# tunneld pushes a policy at the other when it dials, the sentry narrows the
+# table it already holds to what that policy names, and the run asks four
+# questions of the result.
+#
+#   1. it is in force      the page the policy permits is fetched, and two
+#                          controls are refused — a name nobody's policy carries
+#                          (NXDOMAIN, as in ticket 25) and an exec identity the
+#                          policy's `x` does not name (EACCES, new here).
+#   2. it can be replaced  a SECOND tunneld on guest B pushes a narrower policy
+#                          at guest A while guest A's sandbox is in the middle of
+#                          a fetch. The name that policy drops stops resolving,
+#                          and the stream that was already open arrives whole.
+#   3. it is watched       guest A's tunneld applied guest B's first policy and
+#                          watches guest A's sandbox for the digest of it; the
+#                          narrowing makes that sandbox pulse a different digest,
+#                          and the tunnel the first policy came in on goes.
+#   4. it ends when the workload does
+#                          init kills the sandbox after `kill-after` seconds, the
+#                          helper's socket closes, and the tunneld beside it says
+#                          so and closes the tunnel.
+#
+# What each guest holds, and which half of it is measured, is ticket 25's answer
+# with two more unmeasured files: the policy this guest pushes and the narrower
+# one it pushes second. Nothing about them is signed and nothing about them needs
+# to be — what makes a pushed policy trustworthy at the far end is the evidence
+# the pushing guest presented, not the disk it was read from.
+#
+# Why only guest B pushes a second time: tunneld's liveness rule is
+# sandbox-agnostic and compares digests, so it cannot tell a narrowing from a
+# different policy. Narrowing guest A therefore costs the tunnel guest B dialed
+# — which is asserted — and leaves the tunnel guest A dialed alone, which is the
+# one carrying guest A's long fetch. Narrowing guest B instead would have torn
+# down the tunnel under the fetch and the run would have shown the opposite of
+# what it set out to. docs/snp/evidence/ticket26/snp/config/README.md has the
+# picture.
+POLICY_INPUTS="${POLICY_INPUTS:-$REPO/docs/snp/evidence/ticket26/snp/config}"
+# The sentence a tunneld writes when a policy it applied stops being live. It is
+# attest/refusal.go's eleventh reason and it is read out of one variable here so
+# that the day it is worded differently this is a one-line change and not six
+# assertions to find.
+LIVENESS_REASON="${LIVENESS_REASON:-the policy pushed to the peer is no longer live}"
+# The body /run/httpd/large carries, generated by init from /dev/zero at a fixed
+# size. The workload compares against the same number from the other side.
+POLICY_LONG_BYTES=8388608
+
+# The second run configuration, for the tunneld that pushes the narrower policy.
+#
+# `listen` is empty on purpose: it binds no port the first tunneld already holds,
+# and an empty listen is the one the ceiling has no opinion about
+# (attest/cmd/tunneld/runconfig.go). It carries no `link` section, because this
+# guest's interface is already up — the first tunneld brought it up out of its
+# own run configuration — and a second one asking for the same address would
+# fail. What is left is an identity, a peer to dial and a hold: the dial is what
+# makes a push happen at all, and the exchange after it is expected to fail,
+# because the far end's exit reads a destination off the first line of a stream
+# and this payload is not one.
+narrow_json() { # SANDBOX PEER HOLD
+  cat <<JSON
+{
+  "format": "gvisor.dev/gvisor/attest/tunneld-run",
+  "version": 1,
+  "sandbox_id": "$1-narrow",
+  "listen": "",
+  "limits": {"idle_timeout": "60s", "max_age": "15m"},
+  "exercise": {
+    "dial": ["$2"],
+    "wait": "2s",
+    "payload": "the-second-pusher-does-not-exchange",
+    "exchanges": 1,
+    "concurrency": 1,
+    "rounds": 1,
+    "timeout": "20s"
+  },
+  "hold": "$3"
+}
+JSON
+}
+
+# Every digest a console said its sandbox applied, in the order they were
+# applied. Ticket 22's applied_digest takes the first; a narrowing is the second,
+# and the difference between the two is what this scenario is about.
+applied_digests() { sed -n 's/.*tunneld: SANDBOX applied .*sha256=\([0-9a-f]\{64\}\).*/\1/p' "$1"; }
+nth_applied()     { applied_digests "$1" | sed -n "$2p"; }
+applied_count()   { applied_digests "$1" | wc -l | tr -d ' '; }
+knob_of()         { tr -d ' \r\n\t' < "$1" 2>/dev/null; }
+
+scenario_policy() {
+  local work="$OUT/policy"
+  echo
+  echo "### policy: two sandboxes under a pushed policy, one of them narrowed while it is fetching"
+  if [ -z "$WORKLOAD" ]; then
+    fail "policy: needs -workload; the sandbox that does the fetching is the bundle on that disk"
+    return
+  fi
+  local side f
+  for side in a b; do
+    for f in tunnel-table.json exit-allow push-policy.json push-policy-narrow.json kill-after narrow-after; do
+      [ -f "$POLICY_INPUTS/$side/$f" ] || { fail "policy: missing $POLICY_INPUTS/$side/$f"; return; }
+    done
+  done
+  mkdir -p "$work"
+
+  local kill_a kill_b narrow_b last hold boot
+  kill_a=$(knob_of "$POLICY_INPUTS/a/kill-after")
+  kill_b=$(knob_of "$POLICY_INPUTS/b/kill-after")
+  narrow_b=$(knob_of "$POLICY_INPUTS/b/narrow-after")
+  last=$kill_a; [ "$kill_b" -gt "$last" ] && last=$kill_b
+  # The hold has to outlive the last thing that happens inside the guest, and
+  # the boot timeout has to outlive the hold. Neither is -run-for: this scenario
+  # is driven by the knobs on the config devices and not by a wall clock the
+  # harness chose, so -quick and -run-for change nothing here and the numbers
+  # below are derived from the files a reader can open.
+  hold=$((last + 150))
+  boot=$((last + 330))
+  echo "    kill-after   : guest A ${kill_a}s, guest B ${kill_b}s (seconds after each guest starts its workload)"
+  echo "    narrow-after : guest B ${narrow_b}s — the second tunneld that pushes the narrower policy at guest A"
+  echo "    tunneld hold : ${hold}s, boot timeout ${boot}s, both derived from the knobs and not from -run-for"
+
+  local p0a p0b p1b
+  p0a=$(sha256sum "$POLICY_INPUTS/a/push-policy.json" | cut -d' ' -f1)
+  p0b=$(sha256sum "$POLICY_INPUTS/b/push-policy.json" | cut -d' ' -f1)
+  p1b=$(sha256sum "$POLICY_INPUTS/b/push-policy-narrow.json" | cut -d' ' -f1)
+  echo "    the three documents this run turns on, and what each governs:"
+  echo "      A pushes at B : $p0a  $(cat "$POLICY_INPUTS/a/push-policy.json")"
+  echo "      B pushes at A : $p0b  $(cat "$POLICY_INPUTS/b/push-policy.json")"
+  echo "      B pushes at A : $p1b  $(cat "$POLICY_INPUTS/b/push-policy-narrow.json")   (second, narrower)"
+
+  make_config "$work/config-a" guest-a 10.14.0.2 guest-b 10.14.0.3:4433 \
+      "$(adapter_json guest-a 10.14.0.2 "${hold}s")" \
+      -tunnel-table "$POLICY_INPUTS/a/tunnel-table.json" -exit-allow "$POLICY_INPUTS/a/exit-allow" \
+      -push "$POLICY_INPUTS/a/push-policy.json" \
+      -push-narrow "$POLICY_INPUTS/a/push-policy-narrow.json" \
+      -run-narrow "$(narrow_json guest-a guest-b "${hold}s")" \
+      -knobs "$POLICY_INPUTS/a"
+  make_config "$work/config-b" guest-b 10.14.0.3 guest-a 10.14.0.2:4433 \
+      "$(adapter_json guest-b 10.14.0.3 "${hold}s")" \
+      -tunnel-table "$POLICY_INPUTS/b/tunnel-table.json" -exit-allow "$POLICY_INPUTS/b/exit-allow" \
+      -push "$POLICY_INPUTS/b/push-policy.json" \
+      -push-narrow "$POLICY_INPUTS/b/push-policy-narrow.json" \
+      -run-narrow "$(narrow_json guest-b guest-a "${hold}s")" \
+      -knobs "$POLICY_INPUTS/b"
+  # Everything each guest was given, kept beside its console: a reader of the
+  # capture should not have to open an ext4 image to see what differed.
+  for side in a b; do
+    cp "$work/config-$side/tunnel-table.json"       "$work/tunnel-table-$side.json"       2>/dev/null || true
+    cp "$work/config-$side/exit-allow"              "$work/exit-allow-$side"              2>/dev/null || true
+    cp "$work/config-$side/push-policy.json"        "$work/push-policy-$side.json"        2>/dev/null || true
+    cp "$work/config-$side/push-policy-narrow.json" "$work/push-policy-narrow-$side.json" 2>/dev/null || true
+    cp "$work/config-$side/tunneld-narrow.json"     "$work/tunneld-narrow-$side.json"     2>/dev/null || true
+    cp "$work/config-$side/kill-after"              "$work/kill-after-$side"              2>/dev/null || true
+    cp "$work/config-$side/narrow-after"            "$work/narrow-after-$side"            2>/dev/null || true
+  done
+
+  local saved="$MARKER"
+  MARKER="$ADAPTER_MARKER"
+  boot_pair "$work" "$IMAGE" "$IMAGE" "$boot" 1
+  MARKER="$saved"
+
+  local a="$work/console-a.txt" b="$work/console-b.txt"
+  [ -f "$a" ] && [ -f "$b" ] || { fail "policy: one of the guests left no console"; return; }
+  assert_booted "$a" "guest-a"; assert_booted "$b" "guest-b"
+
+  # ---- it is the run that was intended (both guests, ticket 25's checks) ----
+  local g c
+  for g in a b; do
+    c="$work/console-$g.txt"
+    check "guest-$g: the config device's tunnel table put this guest on the adapter path" \
+          in_file "$c" "init: the config device carries a tunnel table"
+    check "guest-$g: tunneld was started before the workload, not after it" \
+          before "$c" "in the background, ahead of the workload" "the workload device carries a bundle"
+    check "guest-$g: runsc was launched with the adapter's two flags" \
+          in_file "$c" "--tunnel-socket=/run/tunneld/sandbox.sock --tunnel-table=/config/tunnel-table.json"
+    check "guest-$g: the config device carried a policy for this guest to push" \
+          in_file "$c" "init: the config device carries a policy to push: /config/push-policy.json"
+    check "guest-$g: busybox httpd is serving the page on its own loopback" \
+          in_file "$c" "init: busybox httpd is serving"
+    check "guest-$g: and the long body beside it is the size both ends agree on" \
+          in_file "$c" "init: httpd large: /run/httpd/large is $POLICY_LONG_BYTES bytes"
+    check "guest-$g: the page is really being served, fetched by init before any sandbox existed" \
+          in_file "$c" "init: httpd says: served-by: guest-$g"
+    check "guest-$g: no writable executable path was ever found" \
+          not_in_file "$c" "WRITABLE AND EXECUTABLE"
+  done
+
+  if [ "$SNP" = 0 ]; then
+    check "control boot: tunneld refused to start rather than proceeding without evidence" \
+          in_file "$b" "refusing to start"
+    check "control boot: init noticed there was no socket and did not start an exit into nothing" \
+          in_file "$b" "not starting the exit"
+    return
+  fi
+
+  assert_attested "$a" "guest-a"; assert_attested "$b" "guest-b"
+  for g in a b; do
+    c="$work/console-$g.txt"
+    check "guest-$g: the sandbox socket came up for the adapter's helper to dial" \
+          in_file "$c" "init: the sandbox socket is up at /run/tunneld/sandbox.sock"
+    check "guest-$g: a sandbox in another process attached to it" \
+          in_file "$c" "tunneld: SANDBOX attached on /run/tunneld/sandbox.sock"
+    check "guest-$g: the exit attached and is holding the list its config device carries" \
+          in_file "$c" "EXIT serving, allow="
+    check "guest-$g: admitted its peer's evidence" in_file "$c" "tunneld: PEER key="
+    check "guest-$g: said what it was about to push, out of the file on its own config device" \
+          in_file "$c" "tunneld: push policy /config/push-policy.json: format=policy version=1"
+  done
+
+  # ---- 1. the policy is in force -------------------------------------------
+  # Each guest's console carries the digest of the document the OTHER guest
+  # pushed, because a push is applied by the tunneld beside the sandbox it
+  # governs. So A's first applied digest is the sha256 of b/push-policy.json.
+  check "guest-a's sandbox was given the policy guest-b pushed, and the digest is that document's" \
+        test "$(nth_applied "$a" 1)" = "$p0b"
+  check "guest-b's sandbox was given the policy guest-a pushed, and the digest is that document's" \
+        test "$(nth_applied "$b" 1)" = "$p0a"
+  check "guest-a's sandbox was served guest-b's page, through guest-b's exit, under that policy" \
+        in_file "$a" "served-by: guest-b"
+  check "guest-b's sandbox was served guest-a's page, through guest-a's exit, under that policy" \
+        in_file "$b" "served-by: guest-a"
+  check "guest-b's exit served a stream a peer opened and dialed the one destination its list permits" \
+        exit_served "$b" web.peer-b:80
+  check "guest-a's exit served a stream a peer opened and dialed the one destination its list permits" \
+        exit_served "$a" web.peer-a:80
+  check "an exit recorded the attested identity of the peer whose stream it served" \
+        grep -qF -- "EXIT accepted a stream from peer=" "$a" "$b"
+  check "guest-a: the fetching process was inside a gVisor sandbox" in_file "$a" "4.19.0-gvisor"
+  check "guest-b: the fetching process was inside a gVisor sandbox" in_file "$b" "4.19.0-gvisor"
+
+  # ---- the two controls, one per letter ------------------------------------
+  # N: a name no policy on this segment carries never becomes an address, so the
+  # sandbox is told the name does not exist rather than that a connection was
+  # refused.
+  check "guest-a: the name that is in nobody's policy did not resolve inside the sandbox" \
+        in_file "$a" "bad address 'not-in-the-table.example'"
+  check "guest-b: the name that is in nobody's policy did not resolve inside the sandbox" \
+        in_file "$b" "bad address 'not-in-the-table.example'"
+  # X: an execve of a file at a path the policy's x does not name, whose sha256
+  # it does not name either. The workload runs it in a loop and prints the
+  # attempt on which it flipped, so the transcript carries the moment exec went
+  # from unrestricted to governed rather than one attempt at a guessed time.
+  check "guest-a: an exec outside the policy's x was refused inside the sandbox" \
+        in_file "$a" "workload: EXEC REFUSED /bin/probe"
+  check "guest-b: an exec outside the policy's x was refused inside the sandbox" \
+        in_file "$b" "workload: EXEC REFUSED /bin/probe"
+  check "guest-a: and it was allowed before the policy landed, so the control is a transition and not a constant" \
+        in_file "$a" "no policy carrying an x is in force in this sandbox yet"
+
+  # ---- 2. the policy can be replaced, with the workload running -------------
+  check "guest-a's sandbox was given a second policy without being restarted" \
+        test "$(applied_count "$a")" -ge 2
+  check "and the second one is the narrower document guest-b pushed, by digest" \
+        test "$(nth_applied "$a" 2)" = "$p1b"
+  check "guest-b started a second tunneld to push it, rather than restarting the first" \
+        in_file "$b" "init: narrow-after: ${narrow_b}s elapsed; starting a second tunneld"
+  check "guest-b's own sandbox was never narrowed: one policy, one digest" \
+        test "$(applied_count "$b")" = "1"
+  check "guest-a's sandbox stopped resolving the name the narrower policy dropped" \
+        in_file "$a" "workload: NARROWED web.peer-b stopped resolving"
+  check "and the stream that was already open when that happened arrived whole" \
+        in_file "$a" "workload: LONG COMPLETE bytes=$POLICY_LONG_BYTES"
+  check "guest-b took the same body in one read from the other side, so the bytes are not the finding" \
+        in_file "$b" "workload: LONG-B bytes=$POLICY_LONG_BYTES"
+
+  # ---- 3. the policy is watched --------------------------------------------
+  # The narrowing is a digest guest-a's tunneld was not watching for, on the
+  # tunnel guest-b's FIRST tunneld opened. Tunneld does not parse n, f or x, so
+  # it cannot tell a narrowing from a different policy and closes that tunnel —
+  # which is the mismatch branch of the liveness rule, and it costs nothing here
+  # because the stream under test is on the tunnel guest-a dialed.
+  check "guest-a's tunneld noticed its sandbox pulsing a digest it was not watching for" \
+        grep -qF -- "tunneld: SANDBOX liveness lost: it pulsed" "$a"
+  check "and refused, naming liveness rather than inferring it from a tunnel that went quiet" \
+        grep -qF -- "$LIVENESS_REASON" "$a"
+
+  # ---- 4. the workload's exit ends liveness --------------------------------
+  check "guest-a: init killed the sandbox after the seconds its config device asked for" \
+        in_file "$a" "init: kill-after: ${kill_a}s elapsed"
+  check "guest-b: and the same on the other guest, later" \
+        in_file "$b" "init: kill-after: ${kill_b}s elapsed"
+  check "guest-a: the sandbox's socket closing is what its tunneld saw, immediately and not after three misses" \
+        grep -qF -- "tunneld: SANDBOX liveness lost: the sandbox closed its socket" "$a"
+  check "guest-b: the same on the other guest" \
+        grep -qF -- "tunneld: SANDBOX liveness lost: the sandbox closed its socket" "$b"
+  check "guest-b's tunneld refused the tunnel it had applied a policy on, naming liveness" \
+        grep -qF -- "$LIVENESS_REASON" "$b"
+  check "guest-a: the workload was killed rather than running out of work" \
+        not_in_file "$a" "nothing killed this workload"
+  check "guest-b: the same" \
+        not_in_file "$b" "nothing killed this workload"
+
+  # ---- and the segment ------------------------------------------------------
+  check "the exchange went through the relay"      grep -q "a_to_b_frames=[1-9]" "$work/relay.txt"
+  check "the relay could not find the page's text on the wire" in_file "$work/relay.txt" "MARKER not found"
+  local targets bad
+  targets=$(sed -n 's/.*arp targets : //p' "$work/relay.txt" | head -1)
+  bad=$(printf '%s' "$targets" | tr ',' '\n' | tr -d ' ' | grep -v '^$' | grep -vE '^10\.14\.0\.(2|3)$' || true)
+  echo "    addresses resolved on the segment: ${targets:-none}"
+  check "no guest looked for a gateway or anything else off the segment" test -z "$bad"
+
+  # Not an assertion: what the sentry resolved a symlinked exec to. It decides
+  # what an `x` written by path can mean and nothing in this run depends on it.
+  echo "    what the sentry did with an exec through a symlink, from both guests:"
+  grep -h "workload: OBSERVE exec" "$a" "$b" 2>/dev/null | sed 's/^/      /' || echo "      (no OBSERVE lines on either console)"
+}
+
 # ---- run them -------------------------------------------------------------
 for s in "${SCENARIOS[@]}"; do
   case "$s" in
@@ -1550,6 +1884,7 @@ for s in "${SCENARIOS[@]}"; do
     policy-mismatch) scenario_policy_mismatch ;;
     mutual)          scenario_mutual "$RUN_FOR" ;;
     adapter)         scenario_adapter "$RUN_FOR" ;;
+    policy)          scenario_policy ;;
     *) echo "unknown scenario: $s" >&2; exit 2 ;;
   esac
 done
@@ -1573,6 +1908,10 @@ if [ -n "$CAPTURE" ]; then
        "$d"/policy-a.json "$d"/policy-a.json.sig "$d"/policy-b.json "$d"/policy-b.json.sig \
        "$d"/push-policy.json \
        "$d"/tunnel-table-a.json "$d"/tunnel-table-b.json "$d"/exit-allow-a "$d"/exit-allow-b \
+       "$d"/push-policy-a.json "$d"/push-policy-b.json \
+       "$d"/push-policy-narrow-a.json "$d"/push-policy-narrow-b.json \
+       "$d"/tunneld-narrow-a.json "$d"/tunneld-narrow-b.json \
+       "$d"/kill-after-a "$d"/kill-after-b "$d"/narrow-after-a "$d"/narrow-after-b \
        "$CAPTURE/$n/" 2>/dev/null || true
 
     # The egress record, cut out of each console into a file of its own: the

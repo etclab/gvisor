@@ -10,6 +10,13 @@
 # shell is ever spawned (the busybox that runs this script is present, but
 # nothing listens and nothing else is run), no getty, nothing else.
 #
+# Ticket 26 adds two timing knobs to that order and nothing else: a second
+# tunneld that pushes a narrower policy at the peer while the first one's tunnel
+# is still carrying the sandbox's bytes, and a kill that ends the workload's
+# liveness the way a workload that died would. Both are read off the config
+# device, both are numbers of seconds, and neither is in the measurement — what
+# they move is when this script does something, never what it is allowed to do.
+#
 # Ticket 25 adds one alternative order, and the config device chooses between
 # them by carrying a file or not. With a tunnel table at /config/tunnel-table.json
 # the workload is a sandbox on the adapter, so the things it talks to have to
@@ -218,6 +225,90 @@ if [ -f /config/push-policy.json ]; then
   say "the config device carries a policy to push: /config/push-policy.json"
 fi
 
+# ---- ticket 26's two watchdogs, and what each one is for -------------------
+#
+# A number off the config device, or nothing. The file is read rather than
+# sourced and its contents are checked against the shape a number has before
+# they reach a command line: nothing on that device may execute, and a shell
+# that ran it would be doing exactly that. Zero and absent mean the same thing,
+# which is "not set", so that a device can carry every knob and turn one off.
+#
+# Every knob here is a TIMING knob and none of them is measured. The ceiling is
+# compiled into the binary, the runsc flag set is above, and the policy the
+# sandbox ends up under is decided by the peer that pushed it and by the sentry
+# that judged the subset. A host that changed one of these numbers would change
+# how long a recording lasts and nothing else, and a reader of the console can
+# see the number this boot used, because it is printed beside what it did.
+knob() { # FILE
+  [ -f "$1" ] || return 1
+  v=$(cat "$1" 2>/dev/null | tr -d ' \r\n\t')
+  case "$v" in '' | *[!0-9]*) say "WARNING: $1 is not a number ('$v'); ignoring it"; return 1 ;; esac
+  [ "$v" != 0 ] || return 1
+  printf '%s' "$v"
+}
+
+# narrow_later starts a SECOND tunneld that pushes a narrower policy at the peer
+# while the first one's tunnel is still carrying the sandbox's bytes. It is a
+# second process rather than a restart of the first, and that is the whole
+# design: a restart would take this guest's tunnel down with it, and the claim
+# under test is that a policy can be replaced with the workload running.
+#
+# The two share this guest's documents through -config /config and differ in one
+# file: -run names a second run configuration on the same device, whose `listen`
+# is empty so that it binds no port the first tunneld holds
+# (attest/cmd/tunneld/runconfig.go: an empty listen is the one the ceiling has
+# no opinion about, and package tunneld takes 127.0.0.1:0 for it), and whose
+# `exercise` names the peer to dial. The dial is what makes a push happen at all
+# — a push goes to every peer this tunneld dials — and quic.DialAddr opens its
+# own socket, so the second tunneld reaches the peer under exactly the rules the
+# first one does. It carries NO `link` section: this guest's interface is
+# already up, brought up by the first tunneld out of its own run configuration,
+# and a second one asking for the same address would fail.
+#
+# Its exchange is expected to fail and says nothing. The push lands when the
+# tunnel is established and before anything is sent over it; what answers a
+# stream on the far side is that guest's exit, which holds a list of
+# destinations and will not find this payload in it.
+narrow_later() { # SECONDS
+  sleep "$1"
+  say "narrow-after: $1s elapsed; starting a second tunneld to push /config/push-policy-narrow.json at the peer"
+  uptime_say
+  /usr/bin/tunneld -run /config/tunneld-narrow.json -push-policy /config/push-policy-narrow.json &
+  say "narrow-after: the second tunneld is pid $! (its lines say tunneld: like the first one's)"
+}
+
+# kill_later ends the workload's liveness the way a workload that died would. It
+# kills the sandbox rather than asking it to stop: the point is that nothing
+# inside cooperated. The sentry goes, the helper's link to it ends, the helper
+# closes its tunneld client, and the tunneld beside it stops hearing the pulse
+# that says which policy is in force — which is the contract's liveness rule and
+# the reason ticket 23's "apply then ack" was not enough.
+#
+# Processes are found by name in this init's own /proc rather than by pid,
+# because the workload runs behind `unshare -f`: the process this script would
+# have a pid for is unshare, and the one that is init of the new PID namespace
+# is its child. A PID namespace is visible from its parent, so every process the
+# sandbox is made of is in this table under a pid of this namespace's; matching
+# runsc's own comm reaches all of them, and unshare is killed after them so that
+# the wait in run_workload returns.
+kill_later() { # SECONDS
+  sleep "$1"
+  say "kill-after: $1s elapsed; killing the sandbox, so that nothing inside it gets to say goodbye"
+  uptime_say
+  k=0
+  for p in /proc/[0-9]*; do
+    pid=${p#/proc/}
+    c=$(cat "$p/comm" 2>/dev/null) || continue
+    case "$c" in runsc*) kill -9 "$pid" 2>/dev/null && k=$((k+1)) ;; esac
+  done
+  for p in /proc/[0-9]*; do
+    pid=${p#/proc/}
+    c=$(cat "$p/comm" 2>/dev/null) || continue
+    case "$c" in unshare) kill -9 "$pid" 2>/dev/null && k=$((k+1)) ;; esac
+  done
+  say "kill-after: killed $k processes"
+}
+
 # ---- the two orders ---------------------------------------------------------
 # Ticket 24's is the second branch and is what every scenario recorded before
 # ticket 25 runs: the workload, then tunneld in the foreground. It puts the one
@@ -286,6 +377,16 @@ if [ "$ADAPTER" = 1 ]; then
   mkdir -p /run/httpd
   SANDBOX_ID=$(sed -n 's/.*"sandbox_id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' /config/tunneld.json 2>/dev/null)
   { cat /srv/index.html; echo "served-by: ${SANDBOX_ID:-unknown}"; } > /run/httpd/index.html
+  # The long body (ticket 26). Zeros, because what a fetch of it proves is that
+  # it was still arriving when the policy under it was replaced and not what it
+  # said; its size is fixed here so that the workload can say whether it got all
+  # of it, and it is generated rather than carried because a file in the image
+  # is a file in the measurement and this one has nothing to say to a verifier.
+  # /run is a tmpfs, so this costs eight mebibytes of this guest's memory and
+  # nothing on any disk.
+  LARGE_MIB=8
+  busybox dd if=/dev/zero of=/run/httpd/large bs=1048576 count="$LARGE_MIB" 2>/dev/null
+  say "httpd large: /run/httpd/large is $(wc -c < /run/httpd/large) bytes of zeros, generated here and in no measurement"
   if httpd -p 127.0.0.1:80 -h /run/httpd; then
     say "busybox httpd is serving /run/httpd on 127.0.0.1:80 (loopback only: the segment cannot reach it)"
   else
@@ -295,6 +396,21 @@ if [ "$ADAPTER" = 1 ]; then
   # page is not being served" from "the tunnel did not carry it", which are the
   # two ways the run below can fail and which look alike from the other guest.
   wget -q -O - http://127.0.0.1:80/ 2>&1 | sed 's/^/init: httpd says: /'
+
+  NARROW_AFTER=$(knob /config/narrow-after) || NARROW_AFTER=
+  if [ -n "$NARROW_AFTER" ] && [ -f /config/push-policy-narrow.json ] && [ -f /config/tunneld-narrow.json ]; then
+    say "narrow-after: ${NARROW_AFTER}s from now, a second tunneld will push the narrower policy; this guest's own tunnel is not restarted"
+    narrow_later "$NARROW_AFTER" &
+  else
+    say "no second pusher on this guest (narrow-after, push-policy-narrow.json and tunneld-narrow.json are not all on the config device)"
+  fi
+  KILL_AFTER=$(knob /config/kill-after) || KILL_AFTER=
+  if [ -n "$KILL_AFTER" ]; then
+    say "kill-after: ${KILL_AFTER}s from now, the sandbox is killed and its liveness ends"
+    kill_later "$KILL_AFTER" &
+  else
+    say "no kill-after on this guest; the workload ends when it ends"
+  fi
 
   mkdir -p "$RUNSC_DEBUG_DIR"
   run_workload
@@ -306,7 +422,7 @@ if [ "$ADAPTER" = 1 ]; then
   # and without it a fetch that failed would be indistinguishable from a fetch
   # that was refused (docs/snp/evidence/ticket25/adapter-check/notes.md).
   say "the sentry's own account of the adapter, out of $RUNSC_DEBUG_DIR:"
-  grep -h 'tunnel dns:\|tunnel attach:' "$RUNSC_DEBUG_DIR"/* 2>/dev/null \
+  grep -h 'tunnel dns:\|tunnel attach:\|tunnel policy:\|exec refused' "$RUNSC_DEBUG_DIR"/* 2>/dev/null \
     | sed 's/^/init: sentry: /' \
     || say "no tunnel lines in the debug log"
   for f in "$RUNSC_DEBUG_DIR"/*; do

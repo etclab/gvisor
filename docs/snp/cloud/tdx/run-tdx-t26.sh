@@ -69,15 +69,26 @@
 # emitted set for both values before it creates anything.
 #
 # ---------------------------------------------------------------------------
-# What a set says, and why the self-checks here are refused
+# What a set says, and what a guest of this image presents
 # ---------------------------------------------------------------------------
 #
-# A reference value set says whom this guest ADMITS. Each guest here pins the
-# other's (measurement, policy digest) pair and not its own, so each guest's own
-# self-check is REFUSED on the policy digest with the measurement matching — the
-# same thing run-tdx-scenario.sh's scenario one records, for the same reason, and
-# not a failure of the run. The check that matters is the one the PEER makes,
-# which this script also makes here from the same quote against the peer's set.
+# A reference value set says whom this guest ADMITS: a measurement, and a policy
+# digest the peer must present. Since ticket 22 what a guest presents is the
+# sha256 over the egress ceiling compiled into its own tunneld — not the digest
+# of any document on any disk — and both guests here boot one image, so both
+# present one number. Both sets therefore admit that number, each guest's
+# self-check is ACCEPTED, and each guest admits the other.
+#
+# This file asserted the opposite until boot pair 1 of ticket 26. It authored each
+# set to admit the digest of the policy document the OTHER guest was emitted with,
+# which is the pre-ticket-22 arrangement, and the two guests said so on their
+# consoles: `peer presents policy digest 197d4aae…`, which no set listed, on every
+# dial in both directions. Nothing the scenario is about can happen without a
+# tunnel, so the run proved nothing and the pair was paid for anyway
+# (docs/snp/evidence/ticket26/tdx/boot-1/).
+#
+# What still makes the two guests two guests is the measurement pinning and B's
+# extra forward to a measurement nobody has built.
 #
 # ---------------------------------------------------------------------------
 # Nothing here runs without being printed first
@@ -294,6 +305,21 @@ RTMR2=$(sed -n 's/^predicted_rtmr2: //p' "$IMAGE_DIR/manifest.txt")
 [[ "$RTMR2" =~ ^[0-9a-f]{96}$ ]] || { echo "no predicted_rtmr2 in $IMAGE_DIR/manifest.txt" >&2; exit 2; }
 echo "predicted RTMR2 of the image both guests boot: $RTMR2"
 
+# And the digest a guest of this image actually PRESENTS, which since ticket 22 is
+# the sha256 over the egress ceiling compiled into its tunneld and not the digest
+# of any document on any disk. It is read out of the manifest rather than typed.
+#
+# The first TDX pair of this ticket (2026-09-18T21:06Z) was authored the older
+# way — each set admitting the digest of the policy document the OTHER guest was
+# emitted with — and the two guests refused each other on exactly that, in these
+# words: `peer presents policy digest 197d4aae…`, which no set listed. A guest
+# that presents one number and a set that admits another is a pair that cannot
+# establish a tunnel, so nothing the scenario is about could happen. Both sets
+# admit this one now, and the self-check is accepted rather than refused.
+CEILING=$(sed -n 's/^policy_digest: *//p' "$IMAGE_DIR/manifest.txt" | awk '{print $1}')
+[[ "$CEILING" =~ ^[0-9a-f]{64}$ ]] || { echo "no policy_digest in $IMAGE_DIR/manifest.txt" >&2; exit 2; }
+echo "the ceiling digest a guest of this image presents: $CEILING"
+
 # The image must carry the two things ticket 26 needs in the measurement and
 # ticket 19's image did not have: the exit, and the page it will be asked for.
 grep -q '^/usr/bin/agent-probe ' "$IMAGE_DIR/manifest.txt" \
@@ -401,10 +427,16 @@ else
   D_B_EMIT=$(sed -n 's/^policy digest of the policy just written: //p' "$W/probe-b/emit.txt")
   echo "    D_A (guest A's own policy) = $D_A_EMIT"
   echo "    D_B (guest B's own policy) = $D_B_EMIT"
+  # -admit-policy is the CEILING digest on both sides, and not the other guest's
+  # emitted policy digest: what a guest of this image presents is the ceiling it
+  # compiled in (ticket 22), so a set naming anything else refuses every peer on
+  # the policy digest before it looks at a register. The probe pair above is kept
+  # because its two digests are still what makes the two policy documents two
+  # documents, and the assertion below still reads them.
   bash "$HERE/emit-tdx-documents.sh" -out "$W/a" -key "$KEY" -forward-to "$RTMR2" \
-       -admit "$RTMR2" -admit-policy "$D_B_EMIT" > "$W/a/emit.txt" 2>&1
+       -admit "$RTMR2" -admit-policy "$CEILING" > "$W/a/emit.txt" 2>&1
   bash "$HERE/emit-tdx-documents.sh" -out "$W/b" -key "$KEY" -forward-to "$RTMR2" -forward-to "$FICTION" \
-       -admit "$RTMR2" -admit-policy "$D_A_EMIT" > "$W/b/emit.txt" 2>&1
+       -admit "$RTMR2" -admit-policy "$CEILING" > "$W/b/emit.txt" 2>&1
   sed 's/^/    a| /' "$W/a/emit.txt"
   sed 's/^/    b| /' "$W/b/emit.txt"
   D_A=$(sed -n 's/^policy digest of the policy just written: //p' "$W/a/emit.txt")
@@ -703,10 +735,16 @@ verify_one() { # a|b REFVALS POLICYDIGEST LABEL OUTFILE
 }
 : > "$OUT/verify-evidence-a.txt"; : > "$OUT/verify-evidence-b.txt"
 VA_OWN=0; VA_PEER=0; VB_OWN=0; VB_PEER=0
-verify_one a "$OUT/set-a.json" "$D_A" "guest A's quote against guest A's OWN set (the self-check, remade here)" "$OUT/verify-evidence-a.txt" || VA_OWN=$?
-verify_one a "$OUT/set-b.json" "$D_A" "guest A's quote against guest B's set (the check guest B makes of A)"     "$OUT/verify-evidence-a.txt" || VA_PEER=$?
-verify_one b "$OUT/set-b.json" "$D_B" "guest B's quote against guest B's OWN set (the self-check, remade here)" "$OUT/verify-evidence-b.txt" || VB_OWN=$?
-verify_one b "$OUT/set-a.json" "$D_B" "guest B's quote against guest A's set (the check guest A makes of B)"     "$OUT/verify-evidence-b.txt" || VB_PEER=$?
+# The digest passed here is the one the quote is BOUND to — the ceiling the guest
+# presented — and not a document's. The binding context mixes the presented key
+# and the presented policy digest into the report data, so a verify given the
+# wrong digest does not refuse on the policy: it refuses on the binding, with
+# `caller-supplied bytes do not match the presented public key`, which is what
+# boot pair 1's four verdicts say (`../boot-1/verify-evidence-a.txt`).
+verify_one a "$OUT/set-a.json" "$CEILING" "guest A's quote against guest A's OWN set (the self-check, remade here)" "$OUT/verify-evidence-a.txt" || VA_OWN=$?
+verify_one a "$OUT/set-b.json" "$CEILING" "guest A's quote against guest B's set (the check guest B makes of A)"     "$OUT/verify-evidence-a.txt" || VA_PEER=$?
+verify_one b "$OUT/set-b.json" "$CEILING" "guest B's quote against guest B's OWN set (the self-check, remade here)" "$OUT/verify-evidence-b.txt" || VB_OWN=$?
+verify_one b "$OUT/set-a.json" "$CEILING" "guest B's quote against guest A's set (the check guest A makes of B)"     "$OUT/verify-evidence-b.txt" || VB_PEER=$?
 grep -E '^(===|verify-evidence exit status|ACCEPTED|REFUSED|refused|accepted)' "$OUT/verify-evidence-a.txt" | sed 's/^/    a| /' || true
 grep -E '^(===|verify-evidence exit status|ACCEPTED|REFUSED|refused|accepted)' "$OUT/verify-evidence-b.txt" | sed 's/^/    b| /' || true
 
@@ -762,10 +800,22 @@ check "guest B's quote reports it too, so the shape is the shape the set names" 
       grep -qF "$RTMR0_THREE_DISK" "$OUT/quote-b.txt"
 check "guest A's quote is admitted by the set guest B holds" test "$VA_PEER" = 0
 check "guest B's quote is admitted by the set guest A holds" test "$VB_PEER" = 0
-check "guest A's self-check is refused on the policy digest, because its set names B's digest and not its own" \
-      in_file "$A" "SELFCHECK VERDICT REFUSED reason=guest policy or policy digest not permitted"
-check "guest B's self-check is refused the same way, for the same reason" \
-      in_file "$B" "SELFCHECK VERDICT REFUSED reason=guest policy or policy digest not permitted"
+# Both sets admit the ceiling every guest of this image presents, so a guest's
+# own self-check is ACCEPTED here. That is a change from what this file asserted
+# before boot pair 1, and the reason is in the comment beside -admit-policy
+# above: the self-check refusal the older arrangement produced was a guest
+# refusing itself over a document nobody presents, and the same arrangement
+# refused every peer.
+# The word tunneld writes is ADMITTED, not ACCEPTED (attest/cmd/tunneld/selfcheck.go):
+# boot pair 2 passed this check and was marked FAIL for the wording, with
+# `tunneld: SELFCHECK VERDICT ADMITTED: this platform satisfies this sandbox's own
+# reference value set` on both consoles (../boot-2/console-{a,b}.txt).
+check "guest A's self-check is admitted by the set it holds" \
+      in_file "$A" "SELFCHECK VERDICT ADMITTED"
+check "guest B's self-check is admitted the same way" \
+      in_file "$B" "SELFCHECK VERDICT ADMITTED"
+check "guest A's own quote is accepted by this workstation against that same set" test "$VA_OWN" = 0
+check "guest B's own quote is accepted the same way"                              test "$VB_OWN" = 0
 
 # 1. the policy is in force
 applied_digests() { sed -n 's/.*tunneld: SANDBOX applied .*sha256=\([0-9a-f]\{64\}\).*/\1/p' "$1"; }

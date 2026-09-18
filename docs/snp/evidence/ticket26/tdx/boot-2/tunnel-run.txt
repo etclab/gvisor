@@ -1,0 +1,796 @@
+=== ticket 26, policy: a sandbox that honours a pushed policy, on two Google Cloud TDX guests ===
+date        : 2026-09-18T23:17:03Z
+repo        : 2665c47a76da2dfa907b751f73c397c02bba7adc on ticket-26-the-sandbox-honors-a-pushed-policy
+mode        : live
+project     : nsf-2348130-428843, zone us-central1-a
+image dir   : /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket26-tdx/image
+out         : /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run
+policy input: /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/snp/config
+collateral  : /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/tdx/collateral (provisioned, never fetched)
+
+############ 0. preconditions ############
+predicted RTMR2 of the image both guests boot: 7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1
+the ceiling digest a guest of this image presents: 197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+the image carries agent-probe, /srv/index.html and /etc/hosts, so its exit has something to serve
+the emitted set names the three-disk RTMR0 this ticket authored
+collateral valid until: 2026-10-18T07:56:25Z
+kill-after  : guest A 150s, guest B 210s (from each guest's own workload start)
+narrow-after: guest B 40s — the second tunneld that pushes the narrower policy at guest A
+tunneld hold: 360s; console deadline 1500s. Both are derived from the knobs, not chosen here.
+idle timeout: 420s on every tunnel, so that no tunnel a policy arrived on idles out
+              before the kill that is supposed to end it
+the three documents this run turns on, and what each governs:
+  A pushes at B : b23887d06a044f0752371ed8899c752ce0023a2aeaec56424e0cc3b747381268  {"format":"policy","version":1,"n":[{"host":"web.peer-a","ports":[80]}],"f":[],"x":[{"path":"/bin/busybox"}]}
+  B pushes at A : 681331c69aedad34d51e9e1f325889ff81863885d1067055bf005ca9e33b785d  {"format":"policy","version":1,"n":[{"host":"web.peer-b","ports":[80]}],"f":[],"x":[{"path":"/bin/busybox"}]}
+  B pushes at A : 92fb0e17644f61d44d0fa7c8ed10d2c5af5b9ccf75911a4d106463ba2967248e  {"format":"policy","version":1,"n":[],"f":[],"x":[{"path":"/bin/busybox"}]}   (second, narrower)
+
+############ 1. the workload disk, one bundle, attached to both guests ############
+    + bash /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/snp/make-bundle.sh /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/workload-src-tdx /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/workload.raw -tdx
+bundle:
+  ./config.json  8097d6bcbb09d561…  645 bytes
+  ./rootfs/bin/busybox  dbac288c29ba5684…  2124608 bytes
+  ./rootfs/bin/cat -> busybox
+  ./rootfs/bin/echo -> busybox
+  ./rootfs/bin/head -> busybox
+  ./rootfs/bin/probe  75dfb7becbff66f9…  2124825 bytes
+  ./rootfs/bin/sh -> busybox
+  ./rootfs/bin/sleep -> busybox
+  ./rootfs/bin/uname -> busybox
+  ./rootfs/bin/wc -> busybox
+  ./rootfs/bin/wget -> busybox
+  ./rootfs/etc/hosts  5b482934e8156847…  34 bytes
+  ./rootfs/etc/nsswitch.conf  2ad90a00ddc40e29…  17 bytes
+  ./rootfs/etc/resolv.conf  192a7dd1559c24eb…  22 bytes
+  ./rootfs/policy-probe.sh  74bd53e6eb1d3f94…  12980 bytes
+
+the two identities the exec control turns on, at full width:
+  /bin/busybox  dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14
+  /bin/probe    75dfb7becbff66f9083b1fa955bef2d0c6de178a8892bbfaff82fa26515d00b9
+
+workload: config.json  8097d6bcbb09d56162d8d30dcc61a73fee6a2d6cd99ca96f181db3337359e9a9  645 bytes
+workload: rootfs/  (14 files, 4196 KiB)
+Warning: label too long; will be truncated to 'attested-workloa'
+
+workload device written to /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/workload.raw (root-owned, ext4 without a journal)
+  size   1073741824 bytes, label attested-workload (ext4 stores the first 16 bytes of it)
+  sha256 d9b52e506f065644080e0616bfe71315f1bc851eb6736ecb42d04e72d45905df  (not measured, and nothing on it is trusted)
+
+############ 2. authoring the four signed documents ############
+    D_A (guest A's own policy) = 08e453bb09cc4d58cdb0733a3e824c2fa4e02815b7ab601bb2da71ef0744a319
+    D_B (guest B's own policy) = 6385a230b994a108247c12845b207301a5486bec6f5f1372365647523cc4237c
+    a| author public key: 5660943e0b95a93d4f0dee932e193f4635f74df1f34e5125c5df1089a73b048a
+    a| wrote /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/config-src/a/policy.json and /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/config-src/a/policy.json.sig (loads back through attest.LoadPolicyFile)
+    a| forwards to: 7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1
+    a| policy digest: 08e453bb09cc4d58cdb0733a3e824c2fa4e02815b7ab601bb2da71ef0744a319
+    a| author public key: 5660943e0b95a93d4f0dee932e193f4635f74df1f34e5125c5df1089a73b048a
+    a| admits peer policy: 197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+    a| wrote /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/config-src/a/reference-values.json and /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/config-src/a/reference-values.json.sig (loads back through attest.LoadReferenceValueSetFile)
+    a| 
+    a| policy digest of the policy just written: 08e453bb09cc4d58cdb0733a3e824c2fa4e02815b7ab601bb2da71ef0744a319
+    a|   (this is the number the OTHER guest passes as -admit-policy)
+    b| author public key: 5660943e0b95a93d4f0dee932e193f4635f74df1f34e5125c5df1089a73b048a
+    b| wrote /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/config-src/b/policy.json and /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/config-src/b/policy.json.sig (loads back through attest.LoadPolicyFile)
+    b| forwards to: 7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1
+    b| forwards to: d79409ccd2bdca0bafc6b4a452899e79a6f4acf3102221b77626d96b0a327e0ee55cc7d5a5034f7aaf2eb39da3a39592
+    b| policy digest: 6385a230b994a108247c12845b207301a5486bec6f5f1372365647523cc4237c
+    b| author public key: 5660943e0b95a93d4f0dee932e193f4635f74df1f34e5125c5df1089a73b048a
+    b| admits peer policy: 197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+    b| wrote /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/config-src/b/reference-values.json and /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/config-src/b/reference-values.json.sig (loads back through attest.LoadReferenceValueSetFile)
+    b| 
+    b| policy digest of the policy just written: 6385a230b994a108247c12845b207301a5486bec6f5f1372365647523cc4237c
+    b|   (this is the number the OTHER guest passes as -admit-policy)
+PASS  the two policies have distinct digests, so 'each names the other' is two numbers
+PASS  guest A's set names the three-disk RTMR0 this ticket authored
+PASS  guest B's set names it too
+
+############ 3. the two config devices ############
+    guest a's device carries:
+      ./collateral
+      ./exit-allow
+      ./kill-after
+      ./narrow-after
+      ./network.conf
+      ./peers.json
+      ./push-policy.json
+      ./push-policy-narrow.json
+      ./reference-values.json
+      ./reference-values.json.sig
+      ./tunneld.json
+      ./tunneld-narrow.json
+      ./tunnel-table.json
+    guest b's device carries:
+      ./collateral
+      ./exit-allow
+      ./kill-after
+      ./narrow-after
+      ./network.conf
+      ./peers.json
+      ./push-policy.json
+      ./push-policy-narrow.json
+      ./reference-values.json
+      ./reference-values.json.sig
+      ./tunneld.json
+      ./tunneld-narrow.json
+      ./tunnel-table.json
+    a| config: reference-values.json  5df551e98d2ba34efb6d852ed0446c79fb118bfd71d82b369e5e0d93a1258eb6  1178 bytes
+    a| config: reference-values.json.sig  b38fee4507ded5e39df5f5faf8e42da8c168196a010fe1ec865a14f56c84425a  129 bytes
+    a| config: peers.json  4ff5f243997be0fb0390c51557b5f847c9f4fc43aaf573b7d62ba4b17d184151  114 bytes
+    a| config: tunneld.json  31e30e71ae57d19dc791b15414f69cee713c8bbc2ae93b107d4de9fefa13b1b1  230 bytes
+    a| config: network.conf  f62ce12ab98cfaf4583c1150344bd1160c00201a1a707c52216156a2f222c6a6  290 bytes
+    a| config: collateral/  10 files
+    a| config:   collateral.txt  393d55678e7634c27cfc4518a9606df61d845b4d599b86245e1e7aab448e8fe0
+    a| config:   FETCH.txt  8db3d7e1f4ac78b24c8f4e7e7b2eccb81bcdac41b399df02fb9a6d22771b8109
+    a| config:   pckcrl-platform.body  30bf6088a96d6e785511e7c327702c5b3b29e084f021ef251e3eb64ca298b3ae
+    a| config:   pckcrl-platform.headers  75c84e97bb08f04070db43ac664dfa1f1563848c0b6eaf2d32f96a8d7377be50
+    a| config:   qeidentity.body  9c39b097f5317eb8a15ca118bc7cf25741cb8d616fc4c7a4946d987b48e3dfc6
+    a| config:   qeidentity.headers  83db5a646b9e44bc9c182f70390fcaf1376d90daf8141d589f18a7622e4ac183
+    a| config:   rootcrl.body  c114be5d5ca7aab2d37817eca55aa8a2353853809904ff3695b31c26bcb7465b
+    a| config:   rootcrl.headers  2a0b164e9747239e3c280aa1222ab1c57c7719b86d7e71a6f591f6cb6e7ae4bf
+    a| config:   tcbinfo-00806f050000.body  6bc653ddc0e1a101377b5dc08349b4c3fed0a323d77c50a032e5193c01a5063e
+    a| config:   tcbinfo-00806f050000.headers  25da33ff37c3c25e5825eed414501df3fb930423242f28fc9f8144bf0c17c69f
+    a| config device written to /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/config-a.raw (every inode root-owned)
+    a|   size   1073741824 bytes, label attested-config
+    a|   sha256 8320af915e254ef8d7600371e6b32940aba6c37d34b87251b165b47a5f93e1ac  (not measured, and nothing on it is trusted)
+    b| config: reference-values.json  5df551e98d2ba34efb6d852ed0446c79fb118bfd71d82b369e5e0d93a1258eb6  1178 bytes
+    b| config: reference-values.json.sig  b38fee4507ded5e39df5f5faf8e42da8c168196a010fe1ec865a14f56c84425a  129 bytes
+    b| config: peers.json  82064b82ebab8340ab20ac43501e493976b9d8860036c25201d3ca2d0067545e  114 bytes
+    b| config: tunneld.json  2c627186aaafda052e5bb5973733d743b2c0b1a2e4c90407455d455f79aa3c58  230 bytes
+    b| config: network.conf  c860983b2e25e713540010ddba6a917265f9416e74e0039a646c9873978f83bc  290 bytes
+    b| config: collateral/  10 files
+    b| config:   collateral.txt  393d55678e7634c27cfc4518a9606df61d845b4d599b86245e1e7aab448e8fe0
+    b| config:   FETCH.txt  8db3d7e1f4ac78b24c8f4e7e7b2eccb81bcdac41b399df02fb9a6d22771b8109
+    b| config:   pckcrl-platform.body  30bf6088a96d6e785511e7c327702c5b3b29e084f021ef251e3eb64ca298b3ae
+    b| config:   pckcrl-platform.headers  75c84e97bb08f04070db43ac664dfa1f1563848c0b6eaf2d32f96a8d7377be50
+    b| config:   qeidentity.body  9c39b097f5317eb8a15ca118bc7cf25741cb8d616fc4c7a4946d987b48e3dfc6
+    b| config:   qeidentity.headers  83db5a646b9e44bc9c182f70390fcaf1376d90daf8141d589f18a7622e4ac183
+    b| config:   rootcrl.body  c114be5d5ca7aab2d37817eca55aa8a2353853809904ff3695b31c26bcb7465b
+    b| config:   rootcrl.headers  2a0b164e9747239e3c280aa1222ab1c57c7719b86d7e71a6f591f6cb6e7ae4bf
+    b| config:   tcbinfo-00806f050000.body  6bc653ddc0e1a101377b5dc08349b4c3fed0a323d77c50a032e5193c01a5063e
+    b| config:   tcbinfo-00806f050000.headers  25da33ff37c3c25e5825eed414501df3fb930423242f28fc9f8144bf0c17c69f
+    b| config device written to /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/config-b.raw (every inode root-owned)
+    b|   size   1073741824 bytes, label attested-config
+    b|   sha256 35d4a6a0fc1c05b38ec2375b834e8a0074977cac684d72484bf4df1b818cd392  (not measured, and nothing on it is trusted)
+
+############ 4. publishing the images ############
+    + bash /home/pniroula/Projects/gvisor-t26/docs/snp/cloud/tdx/publish-tdx-image.sh /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket26-tdx/image/disk.raw attested-tdx-7f7c43153cab
+=== publish-tdx-image 2026-09-18T23:17:28Z
+raw    /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket26-tdx/image/disk.raw (10737418240 bytes, sha256 6164bca4a59f3f10e425789cbca08a5e807b24a75a744169908783bf2d3f8d55)
+image  attested-tdx-7f7c43153cab
+packing /tmp/pniroula/tmp.iZoCd8Typw/disk.tar.gz (sparse, old GNU format)
+  1167067540 bytes
+creating gs://attested-tunnel-t19-20260918231728 in us-central1
+Creating gs://attested-tunnel-t19-20260918231728/...
+  
+Updating gs://attested-tunnel-t19-20260918231728/...
+.
+WARNING: Parallel composite upload was turned ON to get the best performance on
+uploading large objects. If you would like to opt-out and instead
+perform a normal upload, run:
+`gcloud config set storage/parallel_composite_upload_enabled False`
+If you would like to disable this warning, run:
+`gcloud config set storage/parallel_composite_upload_enabled True`
+Note that with parallel composite uploads, your object might be
+uploaded as a composite object
+(https://cloud.google.com/storage/docs/composite-objects), which means
+that any user who downloads your object will need to use crc32c
+checksums to verify data integrity. gcloud storage is capable of
+computing crc32c checksums, but this might pose a problem for other
+clients.
+
+Copying file:///tmp/pniroula/tmp.iZoCd8Typw/disk.tar.gz to gs://attested-tunnel-t19-20260918231728/attested-tdx-7f7c43153cab.tar.gz
+  
+.............................
+
+Average throughput: 318.3MiB/s
+creating the image
+Created [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/global/images/attested-tdx-7f7c43153cab].
+attested-tdx-7f7c43153cab	READY	10
+diskSizeGb: '10'
+guestOsFeatures:
+- type: UEFI_COMPATIBLE
+- type: TDX_CAPABLE
+- type: GVNIC
+- type: VIRTIO_SCSI_MULTIQUEUE
+- type: SEV_CAPABLE
+- type: SEV_SNP_CAPABLE
+labels:
+  purpose: attested-tunnel-t26
+name: attested-tdx-7f7c43153cab
+status: READY
+published attested-tdx-7f7c43153cab
+staged through gs://attested-tunnel-t19-20260918231728 (created and deleted inside this run)
+deleting gs://attested-tunnel-t19-20260918231728
+Removing objects:
+  
+Removing gs://attested-tunnel-t19-20260918231728/attested-tdx-7f7c43153cab.tar.gz#1789773511936790...
+.
+Removing buckets:
+  
+Removing gs://attested-tunnel-t19-20260918231728/...
+...
+    + bash /home/pniroula/Projects/gvisor-t26/docs/snp/cloud/tdx/publish-tdx-image.sh /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/config-a.raw attested-config-t26-a-20260918231703
+=== publish-tdx-image 2026-09-18T23:20:23Z
+raw    /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/config-a.raw (1073741824 bytes, sha256 8320af915e254ef8d7600371e6b32940aba6c37d34b87251b165b47a5f93e1ac)
+image  attested-config-t26-a-20260918231703
+packing /tmp/pniroula/tmp.U7neCW232H/disk.tar.gz (sparse, old GNU format)
+  15976 bytes
+creating gs://attested-tunnel-t19-20260918232023 in us-central1
+Creating gs://attested-tunnel-t19-20260918232023/...
+  
+Updating gs://attested-tunnel-t19-20260918232023/...
+.
+Copying file:///tmp/pniroula/tmp.U7neCW232H/disk.tar.gz to gs://attested-tunnel-t19-20260918232023/attested-config-t26-a-20260918231703.tar.gz
+  
+.
+creating the image
+Created [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/global/images/attested-config-t26-a-20260918231703].
+attested-config-t26-a-20260918231703	READY	1
+diskSizeGb: '1'
+guestOsFeatures:
+- type: UEFI_COMPATIBLE
+- type: TDX_CAPABLE
+- type: GVNIC
+- type: VIRTIO_SCSI_MULTIQUEUE
+- type: SEV_CAPABLE
+- type: SEV_SNP_CAPABLE
+labels:
+  purpose: attested-tunnel-t26
+name: attested-config-t26-a-20260918231703
+status: READY
+published attested-config-t26-a-20260918231703
+staged through gs://attested-tunnel-t19-20260918232023 (created and deleted inside this run)
+deleting gs://attested-tunnel-t19-20260918232023
+Removing objects:
+  
+Removing gs://attested-tunnel-t19-20260918232023/attested-config-t26-a-20260918231703.tar.gz#1789773635110964...
+.
+Removing buckets:
+  
+Removing gs://attested-tunnel-t19-20260918232023/...
+..
+    + bash /home/pniroula/Projects/gvisor-t26/docs/snp/cloud/tdx/publish-tdx-image.sh /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/config-b.raw attested-config-t26-b-20260918231703
+=== publish-tdx-image 2026-09-18T23:21:59Z
+raw    /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/config-b.raw (1073741824 bytes, sha256 35d4a6a0fc1c05b38ec2375b834e8a0074977cac684d72484bf4df1b818cd392)
+image  attested-config-t26-b-20260918231703
+packing /tmp/pniroula/tmp.ej1Jt6S7W4/disk.tar.gz (sparse, old GNU format)
+  15973 bytes
+creating gs://attested-tunnel-t19-20260918232159 in us-central1
+Creating gs://attested-tunnel-t19-20260918232159/...
+  
+Updating gs://attested-tunnel-t19-20260918232159/...
+.
+Copying file:///tmp/pniroula/tmp.ej1Jt6S7W4/disk.tar.gz to gs://attested-tunnel-t19-20260918232159/attested-config-t26-b-20260918231703.tar.gz
+  
+.
+creating the image
+Created [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/global/images/attested-config-t26-b-20260918231703].
+attested-config-t26-b-20260918231703	READY	1
+diskSizeGb: '1'
+guestOsFeatures:
+- type: UEFI_COMPATIBLE
+- type: TDX_CAPABLE
+- type: GVNIC
+- type: VIRTIO_SCSI_MULTIQUEUE
+- type: SEV_CAPABLE
+- type: SEV_SNP_CAPABLE
+labels:
+  purpose: attested-tunnel-t26
+name: attested-config-t26-b-20260918231703
+status: READY
+published attested-config-t26-b-20260918231703
+staged through gs://attested-tunnel-t19-20260918232159 (created and deleted inside this run)
+deleting gs://attested-tunnel-t19-20260918232159
+Removing objects:
+  
+Removing gs://attested-tunnel-t19-20260918232159/attested-config-t26-b-20260918231703.tar.gz#1789773731031168...
+.
+Removing buckets:
+  
+Removing gs://attested-tunnel-t19-20260918232159/...
+..
+    + bash /home/pniroula/Projects/gvisor-t26/docs/snp/cloud/tdx/publish-tdx-image.sh /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/workload.raw attested-workload-t26-20260918231703
+=== publish-tdx-image 2026-09-18T23:23:30Z
+raw    /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/workload.raw (1073741824 bytes, sha256 d9b52e506f065644080e0616bfe71315f1bc851eb6736ecb42d04e72d45905df)
+image  attested-workload-t26-20260918231703
+packing /tmp/pniroula/tmp.AD8wHuNcpK/disk.tar.gz (sparse, old GNU format)
+  2230827 bytes
+creating gs://attested-tunnel-t19-20260918232330 in us-central1
+Creating gs://attested-tunnel-t19-20260918232330/...
+  
+Updating gs://attested-tunnel-t19-20260918232330/...
+.
+Copying file:///tmp/pniroula/tmp.AD8wHuNcpK/disk.tar.gz to gs://attested-tunnel-t19-20260918232330/attested-workload-t26-20260918231703.tar.gz
+  
+...
+creating the image
+Created [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/global/images/attested-workload-t26-20260918231703].
+attested-workload-t26-20260918231703	READY	1
+diskSizeGb: '1'
+guestOsFeatures:
+- type: UEFI_COMPATIBLE
+- type: TDX_CAPABLE
+- type: GVNIC
+- type: VIRTIO_SCSI_MULTIQUEUE
+- type: SEV_CAPABLE
+- type: SEV_SNP_CAPABLE
+labels:
+  purpose: attested-tunnel-t26
+name: attested-workload-t26-20260918231703
+status: READY
+published attested-workload-t26-20260918231703
+staged through gs://attested-tunnel-t19-20260918232330 (created and deleted inside this run)
+deleting gs://attested-tunnel-t19-20260918232330
+Removing objects:
+  
+Removing gs://attested-tunnel-t19-20260918232330/attested-workload-t26-20260918231703.tar.gz#1789773822997138...
+.
+Removing buckets:
+  
+Removing gs://attested-tunnel-t19-20260918232330/...
+..
+
+############ 5. creating both guests ############
+creating t26-policy-a and t26-policy-b at 2026-09-18T23:25Z (three disks each; both auto-delete with the instance)
+    a|     + gcloud beta compute instances create t26-policy-a --zone us-central1-a --machine-type c3-standard-4 --confidential-compute-type TDX --maintenance-policy TERMINATE --image attested-tdx-7f7c43153cab --boot-disk-size 20GB --boot-disk-type pd-balanced --boot-disk-auto-delete --create-disk name=t26-policy-a-config,image=attested-config-t26-a-20260918231703,size=10GB,type=pd-balanced,device-name=attested-config,auto-delete=yes --create-disk name=t26-policy-a-workload,image=attested-workload-t26-20260918231703,size=10GB,type=pd-balanced,device-name=attested-workload,auto-delete=yes --private-network-ip 10.128.0.40 --labels purpose=attested-tunnel-t26 --format value(name,zone,machineType,status,networkInterfaces[0].networkIP)
+    a| Created [https://www.googleapis.com/compute/beta/projects/nsf-2348130-428843/zones/us-central1-a/instances/t26-policy-a].
+    a| WARNING: Some requests generated warnings:
+    a|  - Disk size: '10 GB' is larger than image size: '1 GB'. You might need to resize the root repartition manually if the operating system does not support automatic resizing. See https://cloud.google.com/compute/docs/disks/add-persistent-disk#resize_pd for details.
+    a|  - Disk size: '20 GB' is larger than image size: '10 GB'. You might need to resize the root repartition manually if the operating system does not support automatic resizing. See https://cloud.google.com/compute/docs/disks/add-persistent-disk#resize_pd for details.
+    a| 
+    a| t26-policy-a	us-central1-a	c3-standard-4	RUNNING	10.128.0.40
+    b|     + gcloud beta compute instances create t26-policy-b --zone us-central1-a --machine-type c3-standard-4 --confidential-compute-type TDX --maintenance-policy TERMINATE --image attested-tdx-7f7c43153cab --boot-disk-size 20GB --boot-disk-type pd-balanced --boot-disk-auto-delete --create-disk name=t26-policy-b-config,image=attested-config-t26-b-20260918231703,size=10GB,type=pd-balanced,device-name=attested-config,auto-delete=yes --create-disk name=t26-policy-b-workload,image=attested-workload-t26-20260918231703,size=10GB,type=pd-balanced,device-name=attested-workload,auto-delete=yes --private-network-ip 10.128.0.41 --labels purpose=attested-tunnel-t26 --format value(name,zone,machineType,status,networkInterfaces[0].networkIP)
+    b| Created [https://www.googleapis.com/compute/beta/projects/nsf-2348130-428843/zones/us-central1-a/instances/t26-policy-b].
+    b| WARNING: Some requests generated warnings:
+    b|  - Disk size: '10 GB' is larger than image size: '1 GB'. You might need to resize the root repartition manually if the operating system does not support automatic resizing. See https://cloud.google.com/compute/docs/disks/add-persistent-disk#resize_pd for details.
+    b|  - Disk size: '20 GB' is larger than image size: '10 GB'. You might need to resize the root repartition manually if the operating system does not support automatic resizing. See https://cloud.google.com/compute/docs/disks/add-persistent-disk#resize_pd for details.
+    b| 
+    b| t26-policy-b	us-central1-a	c3-standard-4	RUNNING	10.128.0.41
+
+############ 6. watching both serial consoles ############
+guest A: the instance is STOPPING; the guest powered itself off
+guest B: the instance is STOPPING; the guest powered itself off
+console A: 962 lines; console B: 1001 lines
+
+---- guest a, the lines that matter ----
+    a| initrd: loaded tdx-guest
+    a| initrd: loaded gve
+    a| initrd: loaded nf_tables
+    a| initrd: loaded nf_reject_ipv4
+    a| initrd: loaded nf_reject_ipv6
+    a| initrd: loaded nft_reject
+    a| initrd: loaded nft_reject_inet
+    a| tunneld: EXIT status=0
+    a| initrd: config device /dev/nvme0n2 found by the ext4 label
+    a| initrd: config device mounted at /config (ro,noexec,nosuid,nodev); it holds:
+    a| initrd: workload device /dev/nvme0n3 found by the ext4 label, mounted at /workload (ro,exec,nosuid,nodev; not measured); it holds:
+    a| initrd: loopback up (the kernel delivers a rule's refusal to the local socket over it)
+    a| initrd: link eth0 up: 10.128.0.40/32 mtu 1460, gateway 10.128.0.1
+    a| tunneld: EGRESS PROBE: 6 attempt(s) at addresses the ceiling permits nothing to reach
+    a| tunneld: EGRESS PROBE PASSED: every attempt was refused before it left
+    a| tunneld: EXIT status=0
+    a| initrd: uptime 2.18s
+    a| initrd: the config device carries a policy to push: /config/push-policy.json
+    a| initrd: the config device carries a tunnel table; the workload is a sandbox on the adapter (ticket 25)
+    a| initrd: uptime 2.18s
+    a| initrd: running /usr/bin/tunneld -push-policy /config/push-policy.json -sandbox-socket /run/tunneld/sandbox.sock -self-check in the background, ahead of the workload
+    a| tunneld: push policy /config/push-policy.json: format=policy version=1 bytes=110 sha256=b23887d06a044f0752371ed8899c752ce0023a2aeaec56424e0cc3b747381268
+    a| tunneld: policy digest 197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973 (sha256 over the compiled-in egress ceiling; put it in a peer's policy_digest)
+    a| tunneld: listening on 10.128.0.40:4433 as "guest-a"; idle 7m0s, maximum age 15m0s
+    a| tunneld: SELFCHECK VERDICT ADMITTED: this platform satisfies this sandbox's own reference value set
+    a| tunneld: SELFCHECK mrtd  c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+    a| tunneld: SELFCHECK rtmr0 8ee4fa3614e96b5c7cdacf52675c069e9de399a3688f83510a9bc3b4180e0e8f06c427eab69fcb4deff05203c0b70a3f
+    a| tunneld: SELFCHECK rtmr1 02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b
+    a| tunneld: SELFCHECK rtmr2 7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1
+    a| tunneld: PEER key=0832a61c66db7f17… chain=none measurement=7f7c43153cab5dd6… vendor=intel-tdx mrtd=c1ee9c16e3afc506… rtmr2=7f7c43153cab5dd6… tcb=UpToDate,evaluation=20
+    a| tunneld: REFUSED verification refused: the policy pushed to the peer was not applied: a peer at 10.128.0.41:42561 pushed a policy this sandbox did not apply: sandbox: policy refused: no sandbox is attached to /run/tunneld/sandbox.sock
+    a| tunneld: REFUSED verification refused: the policy pushed to the peer was not applied: a peer at 10.128.0.41:36232 pushed a policy this sandbox did not apply: sandbox: policy refused: no sandbox is attached to /run/tunneld/sandbox.sock
+    a| initrd: the sandbox socket is up at /run/tunneld/sandbox.sock
+    a| initrd: uptime 2.68s
+    a| initrd: running /usr/bin/agent-probe -exit -network socket -sandbox-socket /run/tunneld/sandbox.sock -allow web.peer-a:80
+    a| EXIT serving, allow=web.peer-a:80
+    a| tunneld: SANDBOX attached on /run/tunneld/sandbox.sock
+    a| initrd: httpd large: /run/httpd/large is 8388608 bytes of zeros, generated here and in no measurement
+    a| initrd: busybox httpd is serving /run/httpd on 127.0.0.1:80 (loopback only: the segment cannot reach it)
+    a| initrd: httpd says: <!doctype html>
+    a| initrd: httpd says: <meta charset="utf-8">
+    a| initrd: httpd says: <title>attested tunnel: the page behind an exit</title>
+    a| initrd: httpd says: <h1>attested-tunnel ticket 25</h1>
+    a| initrd: httpd says: <p>This page is served by busybox httpd on 127.0.0.1:80 inside a measured
+    a| initrd: httpd says: SEV-SNP guest. It is bound to loopback and to nothing else, so the ethernet
+    a| initrd: httpd says: segment between the two guests cannot reach it: the only route to it is this
+    a| initrd: httpd says: guest's own exit, at the far end of a tunnel a peer was admitted on.</p>
+    a| initrd: httpd says: <p>This file is inside the launch measurement. The line below it is not: it is
+    a| initrd: httpd says: written by /sbin/init out of the sandbox_id on the config device, which is what
+    a| initrd: httpd says: tells one guest from the other when both booted the same image.</p>
+    a| initrd: httpd says: served-by: guest-a
+    a| initrd: kill-after: 150s from now, the sandbox is killed and its liveness ends
+    a| initrd: running: unshare -Urmnpf sh -c "busybox mkdir -p /run/root; mount --rbind / /run/root; cd /run/root; mount --move . /; exec busybox chroot . sh -c 'mount -t proc -o nosuid,nodev,noexec proc /proc; exec /usr/bin/runsc --root=/run/runsc-state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new --tunnel-socket=/run/tunneld/sandbox.sock --tunnel-table=/config/tunnel-table.json --debug --debug-log=/run/runsc-debug/ run --bundle /workload workload'"
+    a| initrd: uptime 2.74s
+    a| tunneld: SANDBOX attached on /run/tunneld/sandbox.sock
+    a| workload: === ticket 26: a sandbox that honours a pushed policy ===
+    a| workload: this process has no interface of its own; its only way out is the adapter
+    a| workload: exec /bin/probe attempt 0: it ran (rc=127); no policy carrying an x is in force in this sandbox yet
+    a| workload: ROLE=a peer-page=web.peer-b
+    a| workload: --- GET http://web.peer-b/ (attempt 1)
+    a| workload: wget exit 0 for http://web.peer-b/
+    a| workload: the long stream is pid 5; the controls below run while it is open
+    a| workload: --- GET http://not-in-the-table.example/ (attempt 1)
+    a| workload: LONG start http://web.peer-b/large, 131072 bytes every 1s until 8388608 arrive
+    a| workload: wget exit 1 for http://not-in-the-table.example/: the name did not resolve, so this sandbox's policy does not carry it; not retrying
+    a| workload: exec /bin/probe attempt 1: it ran (rc=127); no policy carrying an x is in force in this sandbox yet
+    a| tunneld: SANDBOX applied format=policy version=1 bytes=110 sha256=681331c69aedad34d51e9e1f325889ff81863885d1067055bf005ca9e33b785d
+    a| EXIT accepted a stream from peer="guest-b" vendor=intel-tdx measurement=7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1 policy_digest=197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+    a| EXIT dialed web.peer-a:80 -> 127.0.0.1:80
+    a| EXIT web.peer-a:80 ended
+    a| EXIT accepted a stream from peer="guest-b" vendor=intel-tdx measurement=7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1 policy_digest=197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+    a| EXIT dialed web.peer-a:80 -> 127.0.0.1:80
+    a| EXIT web.peer-a:80 ended
+    a| workload: EXEC REFUSED /bin/probe on attempt 2: /policy-probe.sh: line 150: /bin/probe: Permission denied
+    a| workload: (a path the pushed x does not name and a digest it does not name; /bin/busybox is the only identity in x)
+    a| workload: OBSERVE exec /bin/uname (a symlink to busybox): rc=0 out='Linux workload 4.19.0-gvisor #1 SMP Sun Jan 10 15:06:54 PST 2016 x86_64 GNU/Linux'
+    a| workload: OBSERVE exec /bin/sh (a symlink to busybox): rc=0 out='ran'
+    a| workload: LONG reading bytes=2097152
+    a| workload: LONG reading bytes=4194304
+    a| tunneld: PEER key=d670f2594ed6f0f9… chain=none measurement=7f7c43153cab5dd6… vendor=intel-tdx mrtd=c1ee9c16e3afc506… rtmr2=7f7c43153cab5dd6… tcb=UpToDate,evaluation=20
+    a| tunneld: SANDBOX applied format=policy version=1 bytes=76 sha256=92fb0e17644f61d44d0fa7c8ed10d2c5af5b9ccf75911a4d106463ba2967248e
+    a| EXIT accepted a stream from peer="guest-b" vendor=intel-tdx measurement=7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1 policy_digest=197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+    a| EXIT could not read the destination: EOF
+    a| EXIT accepted a stream from peer="guest-b" vendor=intel-tdx measurement=7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1 policy_digest=197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+    a| EXIT could not read the destination: EOF
+    a| tunneld: SANDBOX liveness lost: it pulsed 92fb0e17644f61d44d0fa7c8ed10d2c5af5b9ccf75911a4d106463ba2967248e, expected 681331c69aedad34d51e9e1f325889ff81863885d1067055bf005ca9e33b785d
+    a| tunneld: REFUSED verification refused: the policy pushed to the peer is no longer live: a peer at 10.128.0.41:42903 pushed a policy this sandbox no longer enforces: it pulsed 92fb0e17644f61d44d0fa7c8ed10d2c5af5b9ccf75911a4d106463ba2967248e, expected 681331c69aedad34d51e9e1f325889ff81863885d1067055bf005ca9e33b785d
+    a| workload: NARROWED web.peer-b stopped resolving on attempt 13: wget: bad address 'web.peer-b'
+    a| workload: (the second push dropped it from n; the sentry's responder answers NXDOMAIN for a name the policy in force does not carry)
+    a| workload: waiting for the long stream (pid 5)
+    a| workload: LONG reading bytes=6291456
+    a| workload: LONG reading bytes=8384705
+    a| workload: LONG SHORT bytes=8384705 expected=8388608
+    a| workload: === controls done; standing still so that a kill is what ends this workload ===
+    a| initrd: kill-after: 150s elapsed; killing the sandbox, so that nothing inside it gets to say goodbye
+    a| initrd: uptime 152.75s
+    a| initrd: kill-after: round 1, the sandbox in this table is unshare(379) /usr/bin/runsc(380) runsc-gofer(391) runsc-tunnel-helper(392) runsc-sandbox(399)
+    a| initrd: uptime 152.83s
+    a| initrd: kill-after: round 1 killed 2 processes
+    a| initrd: uptime 152.84s
+    a| initrd: sentry: I0918 23:26:08.999394       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=A answer=100.64.1.0
+    a| initrd: sentry: I0918 23:26:08.999420       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=AAAA answer=noerror-empty
+    a| initrd: sentry: I0918 23:26:09.016967       1 tunnel.go:467] tunnel attach: web.peer-b:80 -> peer "guest-b": ok in 16.987645ms, host fd 41, local 100.64.0.1:40001
+    a| initrd: sentry: I0918 23:26:09.025978       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=A answer=100.64.1.0
+    a| initrd: sentry: I0918 23:26:09.026001       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=AAAA answer=noerror-empty
+    a| initrd: sentry: I0918 23:26:09.032412       1 tunnel.go:467] tunnel attach: web.peer-b:80 -> peer "guest-b": ok in 5.841921ms, host fd 41, local 100.64.0.1:40002
+    a| initrd: sentry: I0918 23:26:09.056508       1 tunnel_dns.go:203] tunnel dns: q="not-in-the-table.example" type=A answer=nxdomain
+    a| initrd: sentry: I0918 23:26:09.056619       1 tunnel_dns.go:203] tunnel dns: q="not-in-the-table.example" type=AAAA answer=nxdomain
+    a| initrd: sentry: I0918 23:26:09.064130       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=A answer=100.64.1.0
+    a| initrd: sentry: I0918 23:26:09.064153       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=AAAA answer=noerror-empty
+    a| initrd: sentry: I0918 23:26:09.071776       1 tunnel.go:467] tunnel attach: web.peer-b:80 -> peer "guest-b": ok in 6.950435ms, host fd 47, local 100.64.0.1:40003
+    a| initrd: sentry: I0918 23:26:10.841353       1 tunnel.go:312] tunnel narrow: 1 of 1 names kept
+    a| initrd: sentry: I0918 23:26:10.841426       1 policy.go:225] tunnel narrow: sha256=681331c69aedad34d51e9e1f325889ff81863885d1067055bf005ca9e33b785d n=1 of 1 names kept x=1 f=0
+    a| initrd: sentry: I0918 23:26:10.841433       1 policy.go:230] tunnel narrow: applied in 176.747µs, of which the table swap was 13.894µs
+    a| initrd: sentry: W0918 23:26:11.088547       1 policyx.go:228] exec refused: path="/bin/probe" sha256=75dfb7becbff66f9083b1fa955bef2d0c6de178a8892bbfaff82fa26515d00b9 reason=not-in-x
+    a| initrd: sentry: I0918 23:26:11.120134       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=A answer=100.64.1.0
+    a| initrd: sentry: I0918 23:26:11.120167       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=AAAA answer=noerror-empty
+    a| initrd: sentry: I0918 23:26:11.127177       1 tunnel.go:467] tunnel attach: web.peer-b:80 -> peer "guest-b": ok in 6.481663ms, host fd 50, local 100.64.0.1:40004
+    a| initrd: sentry: I0918 23:26:14.138695       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=A answer=100.64.1.0
+    a| initrd: sentry: I0918 23:26:14.138749       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=AAAA answer=noerror-empty
+    a| initrd: sentry: I0918 23:26:14.142120       1 tunnel.go:467] tunnel attach: web.peer-b:80 -> peer "guest-b": ok in 2.951108ms, host fd 50, local 100.64.0.1:40005
+    a| initrd: sentry: I0918 23:26:17.153830       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=A answer=100.64.1.0
+    a| initrd: sentry: I0918 23:26:17.153864       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=AAAA answer=noerror-empty
+    a| initrd: sentry: I0918 23:26:17.160328       1 tunnel.go:467] tunnel attach: web.peer-b:80 -> peer "guest-b": ok in 6.05449ms, host fd 50, local 100.64.0.1:40006
+    a| initrd: sentry: I0918 23:26:20.171511       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=A answer=100.64.1.0
+    a| initrd: sentry: I0918 23:26:20.171547       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=AAAA answer=noerror-empty
+    a| initrd: sentry: I0918 23:26:20.174570       1 tunnel.go:467] tunnel attach: web.peer-b:80 -> peer "guest-b": ok in 2.554273ms, host fd 50, local 100.64.0.1:40007
+    a| initrd: sentry: I0918 23:26:23.185536       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=A answer=100.64.1.0
+    a| initrd: sentry: I0918 23:26:23.185569       1 tunnel_dns.go:203] tunnel dns: q="web.peer-binitrd: no tunnel lines in the debug log
+    a| tunneld: REFUSED verification refused: the policy pushed to the peer is no longer live: a peer at 10.128.0.41:41169 pushed a policy this sandbox no longer enforces: the sandbox closed its socket
+    a| initrd: kill-after: nothing of the sandbox is left in this init's process table
+    a| initrd: uptime 153.90s
+
+---- guest b, the lines that matter ----
+    b| initrd: loaded tdx-guest
+    b| initrd: loaded gve
+    b| initrd: loaded nf_tables
+    b| initrd: loaded nf_reject_ipv4
+    b| initrd: loaded nf_reject_ipv6
+    b| initrd: loaded nft_reject
+    b| initrd: loaded nft_reject_inet
+    b| tunneld: EXIT status=0
+    b| initrd: config device /dev/nvme0n2 found by the ext4 label
+    b| initrd: config device mounted at /config (ro,noexec,nosuid,nodev); it holds:
+    b| initrd: workload device /dev/nvme0n3 found by the ext4 label, mounted at /workload (ro,exec,nosuid,nodev; not measured); it holds:
+    b| initrd: loopback up (the kernel delivers a rule's refusal to the local socket over it)
+    b| initrd: link eth0 up: 10.128.0.41/32 mtu 1460, gateway 10.128.0.1
+    b| tunneld: EGRESS PROBE: 6 attempt(s) at addresses the ceiling permits nothing to reach
+    b| tunneld: EGRESS PROBE PASSED: every attempt was refused before it left
+    b| tunneld: EXIT status=0
+    b| initrd: uptime 2.18s
+    b| initrd: the config device carries a policy to push: /config/push-policy.json
+    b| initrd: the config device carries a tunnel table; the workload is a sandbox on the adapter (ticket 25)
+    b| initrd: uptime 2.18s
+    b| initrd: running /usr/bin/tunneld -push-policy /config/push-policy.json -sandbox-socket /run/tunneld/sandbox.sock -self-check in the background, ahead of the workload
+    b| tunneld: push policy /config/push-policy.json: format=policy version=1 bytes=110 sha256=681331c69aedad34d51e9e1f325889ff81863885d1067055bf005ca9e33b785d
+    b| tunneld: policy digest 197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973 (sha256 over the compiled-in egress ceiling; put it in a peer's policy_digest)
+    b| tunneld: listening on 10.128.0.41:4433 as "guest-b"; idle 7m0s, maximum age 15m0s
+    b| tunneld: SELFCHECK VERDICT ADMITTED: this platform satisfies this sandbox's own reference value set
+    b| tunneld: SELFCHECK mrtd  c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+    b| tunneld: SELFCHECK rtmr0 8ee4fa3614e96b5c7cdacf52675c069e9de399a3688f83510a9bc3b4180e0e8f06c427eab69fcb4deff05203c0b70a3f
+    b| tunneld: SELFCHECK rtmr1 02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b
+    b| tunneld: SELFCHECK rtmr2 7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1
+    b| initrd: the sandbox socket is up at /run/tunneld/sandbox.sock
+    b| initrd: uptime 2.68s
+    b| initrd: running /usr/bin/agent-probe -exit -network socket -sandbox-socket /run/tunneld/sandbox.sock -allow web.peer-b:80
+    b| EXIT serving, allow=web.peer-b:80
+    b| tunneld: SANDBOX attached on /run/tunneld/sandbox.sock
+    b| initrd: httpd large: /run/httpd/large is 8388608 bytes of zeros, generated here and in no measurement
+    b| initrd: busybox httpd is serving /run/httpd on 127.0.0.1:80 (loopback only: the segment cannot reach it)
+    b| initrd: httpd says: <!doctype html>
+    b| initrd: httpd says: <meta charset="utf-8">
+    b| initrd: httpd says: <title>attested tunnel: the page behind an exit</title>
+    b| initrd: httpd says: <h1>attested-tunnel ticket 25</h1>
+    b| initrd: httpd says: <p>This page is served by busybox httpd on 127.0.0.1:80 inside a measured
+    b| initrd: httpd says: SEV-SNP guest. It is bound to loopback and to nothing else, so the ethernet
+    b| initrd: httpd says: segment between the two guests cannot reach it: the only route to it is this
+    b| initrd: httpd says: guest's own exit, at the far end of a tunnel a peer was admitted on.</p>
+    b| initrd: httpd says: <p>This file is inside the launch measurement. The line below it is not: it is
+    b| initrd: httpd says: written by /sbin/init out of the sandbox_id on the config device, which is what
+    b| initrd: httpd says: tells one guest from the other when both booted the same image.</p>
+    b| initrd: httpd says: served-by: guest-b
+    b| initrd: narrow-after: 40s from now, a second tunneld will push the narrower policy; this guest's own tunnel is not restarted
+    b| initrd: kill-after: 210s from now, the sandbox is killed and its liveness ends
+    b| initrd: running: unshare -Urmnpf sh -c "busybox mkdir -p /run/root; mount --rbind / /run/root; cd /run/root; mount --move . /; exec busybox chroot . sh -c 'mount -t proc -o nosuid,nodev,noexec proc /proc; exec /usr/bin/runsc --root=/run/runsc-state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new --tunnel-socket=/run/tunneld/sandbox.sock --tunnel-table=/config/tunnel-table.json --debug --debug-log=/run/runsc-debug/ run --bundle /workload workload'"
+    b| initrd: uptime 2.72s
+    b| tunneld: SANDBOX attached on /run/tunneld/sandbox.sock
+    b| workload: === ticket 26: a sandbox that honours a pushed policy ===
+    b| workload: this process has no interface of its own; its only way out is the adapter
+    b| workload: exec /bin/probe attempt 0: it ran (rc=127); no policy carrying an x is in force in this sandbox yet
+    b| tunneld: PEER key=1142f8e3795984ce… chain=none measurement=7f7c43153cab5dd6… vendor=intel-tdx mrtd=c1ee9c16e3afc506… rtmr2=7f7c43153cab5dd6… tcb=UpToDate,evaluation=20
+    b| tunneld: REFUSED verification refused: the policy pushed to the peer was not applied: "guest-a" at 10.128.0.40:4433 did not apply the policy pushed to it: the peer refused it: the sandbox beside this tunneld did not apply it
+    b| workload: ROLE=b peer-page=web.peer-a
+    b| workload: --- GET http://web.peer-a/ (attempt 1)
+    b| tunneld: REFUSED verification refused: the policy pushed to the peer was not applied: "guest-a" at 10.128.0.40:4433 did not apply the policy pushed to it: the peer refused it: the sandbox beside this tunneld did not apply it
+    b| tunneld: SANDBOX applied format=policy version=1 bytes=110 sha256=b23887d06a044f0752371ed8899c752ce0023a2aeaec56424e0cc3b747381268
+    b| EXIT accepted a stream from peer="guest-a" vendor=intel-tdx measurement=7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1 policy_digest=197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+    b| EXIT dialed web.peer-b:80 -> 127.0.0.1:80
+    b| EXIT web.peer-b:80 ended
+    b| EXIT accepted a stream from peer="guest-a" vendor=intel-tdx measurement=7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1 policy_digest=197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+    b| EXIT dialed web.peer-b:80 -> 127.0.0.1:80
+    b| EXIT web.peer-b:80 ended
+    b| EXIT accepted a stream from peer="guest-a" vendor=intel-tdx measurement=7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1 policy_digest=197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+    b| EXIT dialed web.peer-b:80 -> 127.0.0.1:80
+    b| workload: --- GET http://web.peer-a/ (attempt 2)
+    b| workload: wget exit 0 for http://web.peer-a/
+    b| workload: --- GET http://not-in-the-table.example/ (attempt 1)
+    b| workload: wget exit 1 for http://not-in-the-table.example/: the name did not resolve, so this sandbox's policy does not carry it; not retrying
+    b| workload: EXEC REFUSED /bin/probe on attempt 1: /policy-probe.sh: line 150: /bin/probe: Permission denied
+    b| workload: (a path the pushed x does not name and a digest it does not name; /bin/busybox is the only identity in x)
+    b| workload: OBSERVE exec /bin/uname (a symlink to busybox): rc=0 out='Linux workload 4.19.0-gvisor #1 SMP Sun Jan 10 15:06:54 PST 2016 x86_64 GNU/Linux'
+    b| workload: OBSERVE exec /bin/sh (a symlink to busybox): rc=0 out='ran'
+    b| workload: --- GET http://web.peer-a/large in one read (this guest is not the one being narrowed)
+    b| workload: LONG-B bytes=8388608 expected=8388608
+    b| workload: === controls done; standing still so that a kill is what ends this workload ===
+    b| EXIT accepted a stream from peer="guest-a" vendor=intel-tdx measurement=7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1 policy_digest=197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+    b| EXIT dialed web.peer-b:80 -> 127.0.0.1:80
+    b| EXIT web.peer-b:80 ended
+    b| EXIT accepted a stream from peer="guest-a" vendor=intel-tdx measurement=7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1 policy_digest=197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+    b| EXIT dialed web.peer-b:80 -> 127.0.0.1:80
+    b| EXIT web.peer-b:80 ended
+    b| EXIT accepted a stream from peer="guest-a" vendor=intel-tdx measurement=7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1 policy_digest=197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+    b| EXIT dialed web.peer-b:80 -> 127.0.0.1:80
+    b| EXIT web.peer-b:80 ended
+    b| EXIT accepted a stream from peer="guest-a" vendor=intel-tdx measurement=7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1 policy_digest=197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+    b| EXIT dialed web.peer-b:80 -> 127.0.0.1:80
+    b| EXIT web.peer-b:80 ended
+    b| EXIT accepted a stream from peer="guest-a" vendor=intel-tdx measurement=7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1 policy_digest=197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+    b| EXIT dialed web.peer-b:80 -> 127.0.0.1:80
+    b| EXIT web.peer-b:80 ended
+    b| EXIT accepted a stream from peer="guest-a" vendor=intel-tdx measurement=7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1 policy_digest=197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+    b| EXIT dialed web.peer-b:80 -> 127.0.0.1:80
+    b| EXIT web.peer-b:80 ended
+    b| EXIT accepted a stream from peer="guest-a" vendor=intel-tdx measurement=7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1 policy_digest=197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+    b| EXIT dialed web.peer-b:80 -> 127.0.0.1:80
+    b| EXIT web.peer-b:80 ended
+    b| EXIT accepted a stream from peer="guest-a" vendor=intel-tdx measurement=7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1 policy_digest=197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+    b| EXIT dialed web.peer-b:80 -> 127.0.0.1:80
+    b| EXIT web.peer-b:80 ended
+    b| EXIT accepted a stream from peer="guest-a" vendor=intel-tdx measurement=7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1 policy_digest=197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+    b| EXIT dialed web.peer-b:80 -> 127.0.0.1:80
+    b| EXIT web.peer-b:80 ended
+    b| EXIT accepted a stream from peer="guest-a" vendor=intel-tdx measurement=7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1 policy_digest=197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+    b| EXIT dialed web.peer-b:80 -> 127.0.0.1:80
+    b| EXIT web.peer-b:80 ended
+    b| EXIT accepted a stream from peer="guest-a" vendor=intel-tdx measurement=7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1 policy_digest=197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+    b| EXIT dialed web.peer-b:80 -> 127.0.0.1:80
+    b| EXIT web.peer-b:80 ended
+    b| EXIT accepted a stream from peer="guest-a" vendor=intel-tdx measurement=7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1 policy_digest=197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+    b| EXIT dialed web.peer-b:80 -> 127.0.0.1:80
+    b| EXIT web.peer-b:80 ended
+    b| initrd: narrow-after: 40s elapsed; starting a second tunneld to push /config/push-policy-narrow.json at the peer
+    b| initrd: uptime 42.72s
+    b| initrd: narrow-after: the second tunneld is pid 442 (its lines say tunneld: like the first one's)
+    b| tunneld: push policy /config/push-policy-narrow.json: format=policy version=1 bytes=76 sha256=92fb0e17644f61d44d0fa7c8ed10d2c5af5b9ccf75911a4d106463ba2967248e
+    b| tunneld: policy digest 197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973 (sha256 over the compiled-in egress ceiling; put it in a peer's policy_digest)
+    b| tunneld: listening on 127.0.0.1:59344 as "guest-b-narrow"; idle 7m0s, maximum age 15m0s
+    b| tunneld: PEER key=1142f8e3795984ce… chain=none measurement=7f7c43153cab5dd6… vendor=intel-tdx mrtd=c1ee9c16e3afc506… rtmr2=7f7c43153cab5dd6… tcb=UpToDate,evaluation=20
+    b| EXIT web.peer-b:80 ended
+    b| initrd: kill-after: 210s elapsed; killing the sandbox, so that nothing inside it gets to say goodbye
+    b| initrd: uptime 212.72s
+    b| initrd: kill-after: round 1, the sandbox in this table is unshare(379) /usr/bin/runsc(380) runsc-gofer(391) runsc-tunnel-helper(396) runsc-sandbox(401)
+    b| initrd: uptime 212.80s
+    b| initrd: kill-after: round 1 killed 3 processes
+    b| initrd: uptime 212.80s
+    b| initrd: sentry: I0918 23:26:05.951822       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=A answer=nxdomain
+    b| initrd: sentry: I0918 23:26:05.951903       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=AAAA answer=nxdomain
+    b| initrd: sentry: I0918 23:26:05.956992       1 tunnel_dns.go:203] tunnel dns: q="web.peer-a" type=A answer=100.64.1.0
+    b| initrd: sentry: I0918 23:26:05.957014       1 tunnel_dns.go:203] tunnel dns: q="web.peer-a" type=AAAA answer=noerror-empty
+    b| initrd: sentry: I0918 23:26:08.985033       1 tunnel.go:455] tunnel attach: web.peer-a:80 -> peer "guest-a": unavailable in 3.027570777s (TunnelHelper.Open(web.peer-a:80): unavailable: asking tunneld for a stream to peer "guest-a": attest: verification failed)
+    b| initrd: sentry: I0918 23:26:08.993277       1 tunnel_dns.go:203] tunnel dns: q="web.peer-a" type=A answer=100.64.1.0
+    b| initrd: sentry: I0918 23:26:08.993309       1 tunnel_dns.go:203] tunnel dns: q="web.peer-a" type=AAAA answer=noerror-empty
+    b| initrd: sentry: I0918 23:26:09.013673       1 tunnel.go:455] tunnel attach: web.peer-a:80 -> peer "guest-a": unavailable in 19.966899ms (TunnelHelper.Open(web.peer-a:80): unavailable: asking tunneld for a stream to peer "guest-a": attest: verification failed)
+    b| initrd: sentry: I0918 23:26:09.221400       1 tunnel.go:312] tunnel narrow: 1 of 1 names kept
+    b| initrd: sentry: I0918 23:26:09.221458       1 policy.go:225] tunnel narrow: sha256=b23887d06a044f0752371ed8899c752ce0023a2aeaec56424e0cc3b747381268 n=1 of 1 names kept x=1 f=0
+    b| initrd: sentry: I0918 23:26:09.221465       1 policy.go:230] tunnel narrow: applied in 200.259µs, of which the table swap was 18.388µs
+    b| initrd: sentry: I0918 23:26:11.030716       1 tunnel_dns.go:203] tunnel dns: q="web.peer-a" type=A answer=100.64.1.0
+    b| initrd: sentry: I0918 23:26:11.030750       1 tunnel_dns.go:203] tunnel dns: q="web.peer-a" type=AAAA answer=noerror-empty
+    b| initrd: sentry: I0918 23:26:11.051046       1 tunnel.go:467] tunnel attach: web.peer-a:80 -> peer "guest-a": ok in 19.731034ms, host fd 41, local 100.64.0.1:40001
+    b| initrd: sentry: I0918 23:26:11.060344       1 tunnel_dns.go:203] tunnel dns: q="not-in-the-table.example" type=A answer=nxdomain
+    b| initrd: sentry: I0918 23:26:11.060375       1 tunnel_dns.go:203] tunnel dns: q="not-in-the-table.example" type=AAAA answer=nxdomain
+    b| initrd: sentry: W0918 23:26:11.065772       1 policyx.go:228] exec refused: path="/bin/probe" sha256=75dfb7becbff66f9083b1fa955bef2d0c6de178a8892bbfaff82fa26515d00b9 reason=not-in-x
+    b| initrd: sentry: I0918 23:26:11.088980       1 tunnel_dns.go:203] tunnel dns: q="web.peer-a" type=A answer=100.64.1.0
+    b| initrd: sentry: I0918 23:26:11.089003       1 tunnel_dns.go:203] tunnel dns: q="web.peer-a" type=AAAA answer=noerror-empty
+    b| initrd: sentry: I0918 23:26:11.095633       1 tunnel.go:467] tunnel attach: web.peer-a:80 -> peer "guest-a": ok in 6.30094ms, host fd 45, local 100.64.0.1:40002
+    b| tunneld: REFUSED verification refused: the policy pushed to the peer is no longer live: a peer at 10.128.0.40:35677 pushed a policy this sandbox initrd: kill-after: nothing of the sandbox is left in this init's process table
+    b| initrd: uptime 213.86s
+
+############ 7. each guest's quote, judged on this workstation ############
+    a| === guest A's quote against guest A's OWN set (the self-check, remade here) ===
+    a| ACCEPTED
+    a| verify-evidence exit status: 0  (0 accepted, 2 refused)
+    a| === guest A's quote against guest B's set (the check guest B makes of A) ===
+    a| ACCEPTED
+    a| verify-evidence exit status: 0  (0 accepted, 2 refused)
+    b| === guest B's quote against guest B's OWN set (the self-check, remade here) ===
+    b| ACCEPTED
+    b| verify-evidence exit status: 0  (0 accepted, 2 refused)
+    b| === guest B's quote against guest A's set (the check guest A makes of B) ===
+    b| ACCEPTED
+    b| verify-evidence exit status: 0  (0 accepted, 2 refused)
+    # ticket 26, policy: the registers each boot reported.
+    #
+    # RTMR2 is the only one that had to be PREDICTED; MRTD, RTMR0 and RTMR1 are the
+    # provider's constants for this shape and are pinned from observation. This is the
+    # first run of this project on a THREE-disk shape whose RTMR0 the set names.
+    
+    predicted rtmr2 (both guests): 7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1
+    guest a
+      quoted rtmr2 : 7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1
+      quoted mrtd  : c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+      quoted rtmr0 : 8ee4fa3614e96b5c7cdacf52675c069e9de399a3688f83510a9bc3b4180e0e8f06c427eab69fcb4deff05203c0b70a3f
+      quoted rtmr1 : 02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b
+    guest b
+      quoted rtmr2 : 7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1
+      quoted mrtd  : c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+      quoted rtmr0 : 8ee4fa3614e96b5c7cdacf52675c069e9de399a3688f83510a9bc3b4180e0e8f06c427eab69fcb4deff05203c0b70a3f
+      quoted rtmr1 : 02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b
+
+############ 8. what the run showed ############
+PASS  guest a: the initrd ran and loaded the TDX guest driver
+PASS  guest a: the config device was found and mounted read-only
+PASS  guest a: the workload device was found and mounted read-only and exec-permitted
+PASS  guest a: the address on the config device came up with the VPC's gateway route
+PASS  guest a: every attempt at the egress the ceiling forbids was refused before it left
+PASS  guest a: the config device's tunnel table put this guest on the adapter path
+PASS  guest a: runsc was launched with the adapter's two flags
+PASS  guest a: the sandbox socket came up for the adapter's helper to dial
+PASS  guest a: the exit attached and is holding the list its config device carries
+PASS  guest a: busybox httpd is serving the page on its own loopback
+PASS  guest a: and the long body beside it is the size both ends agree on
+PASS  guest a: the page is really being served, fetched by init before any sandbox existed
+PASS  guest a: it acquired its own evidence from this platform
+PASS  guest a: it is listening
+PASS  guest a: it said what it was about to push, out of the file on its own config device
+PASS  guest a: nothing was refused for being below the TCB floor
+FAIL  guest a: the boot reached the end rather than being stopped
+PASS  guest b: the initrd ran and loaded the TDX guest driver
+PASS  guest b: the config device was found and mounted read-only
+PASS  guest b: the workload device was found and mounted read-only and exec-permitted
+PASS  guest b: the address on the config device came up with the VPC's gateway route
+PASS  guest b: every attempt at the egress the ceiling forbids was refused before it left
+PASS  guest b: the config device's tunnel table put this guest on the adapter path
+PASS  guest b: runsc was launched with the adapter's two flags
+PASS  guest b: the sandbox socket came up for the adapter's helper to dial
+PASS  guest b: the exit attached and is holding the list its config device carries
+PASS  guest b: busybox httpd is serving the page on its own loopback
+PASS  guest b: and the long body beside it is the size both ends agree on
+PASS  guest b: the page is really being served, fetched by init before any sandbox existed
+PASS  guest b: it acquired its own evidence from this platform
+PASS  guest b: it is listening
+PASS  guest b: it said what it was about to push, out of the file on its own config device
+PASS  guest b: nothing was refused for being below the TCB floor
+FAIL  guest b: the boot reached the end rather than being stopped
+PASS  guest A's quote reports the three-disk RTMR0 this ticket authored
+PASS  guest B's quote reports it too, so the shape is the shape the set names
+PASS  guest A's quote is admitted by the set guest B holds
+PASS  guest B's quote is admitted by the set guest A holds
+FAIL  guest A's self-check is accepted by the set it holds
+FAIL  guest B's self-check is accepted the same way
+PASS  guest A's own quote is accepted by this workstation against that same set
+PASS  guest B's own quote is accepted the same way
+PASS  guest A's sandbox was given the policy guest B pushed, and the digest is that document's
+PASS  guest B's sandbox was given the policy guest A pushed, and the digest is that document's
+PASS  guest A's sandbox was served guest B's page, through guest B's exit, under that policy
+PASS  guest B's sandbox was served guest A's page, through guest A's exit, under that policy
+PASS  guest A's exit served a stream a peer opened and dialed the one destination its list permits
+PASS  guest B's exit served a stream a peer opened and dialed the one destination its list permits
+PASS  guest A: the fetching process was inside a gVisor sandbox
+PASS  guest B: the fetching process was inside a gVisor sandbox
+PASS  guest A: the name that is in nobody's policy did not resolve inside the sandbox
+PASS  guest B: the name that is in nobody's policy did not resolve inside the sandbox
+PASS  guest A: an exec outside the policy's x was refused inside the sandbox
+PASS  guest B: an exec outside the policy's x was refused inside the sandbox
+PASS  guest A: and it was allowed before the policy landed, so the control is a transition and not a constant
+PASS  guest A's sandbox was given a second policy without being restarted
+PASS  and the second one is the narrower document guest B pushed, by digest
+PASS  guest B started a second tunneld to push it, rather than restarting the first
+PASS  guest B's own sandbox was never narrowed: one policy, one digest
+PASS  guest A's sandbox stopped resolving the name the narrower policy dropped
+FAIL  and the stream that was already open when that happened arrived whole
+PASS  guest B took the same body in one read from the other side, so the bytes are not the finding
+PASS  guest A's tunneld noticed its sandbox pulsing a digest it was not watching for
+PASS  and refused, naming liveness rather than inferring it from a tunnel that went quiet
+PASS  guest A: init killed the sandbox after the seconds its config device asked for
+PASS  guest B: and the same on the other guest, later
+PASS  guest A: the sandbox's socket closing is what its tunneld saw, immediately and not after three misses
+PASS  guest B: the same on the other guest
+PASS  guest B's tunneld refused the tunnel it had applied a policy on, naming liveness
+PASS  guest A: the workload was killed rather than running out of work
+PASS  guest B: the same
+
+    what the sentry did with an exec through a symlink, from both guests:
+      workload: OBSERVE exec /bin/uname (a symlink to busybox): rc=0 out='Linux workload 4.19.0-gvisor #1 SMP Sun Jan 10 15:06:54 PST 2016 x86_64 GNU/Linux'
+      workload: OBSERVE exec /bin/sh (a symlink to busybox): rc=0 out='ran'
+      workload: OBSERVE exec /bin/uname (a symlink to busybox): rc=0 out='Linux workload 4.19.0-gvisor #1 SMP Sun Jan 10 15:06:54 PST 2016 x86_64 GNU/Linux'
+      workload: OBSERVE exec /bin/sh (a symlink to busybox): rc=0 out='ran'
+
+the egress capture is in /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/egress-a.txt and /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/egress-b.txt
+
+############ tearing down ############
+    + gcloud compute instances delete t26-policy-a --zone us-central1-a --quiet
+Deleted [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/zones/us-central1-a/instances/t26-policy-a].
+    + gcloud compute instances delete t26-policy-b --zone us-central1-a --quiet
+Deleted [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/zones/us-central1-a/instances/t26-policy-b].
+    + gcloud compute images delete attested-tdx-7f7c43153cab --quiet
+Deleted [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/global/images/attested-tdx-7f7c43153cab].
+deleted image attested-tdx-7f7c43153cab
+    + gcloud compute images delete attested-config-t26-a-20260918231703 --quiet
+Deleted [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/global/images/attested-config-t26-a-20260918231703].
+deleted image attested-config-t26-a-20260918231703
+    + gcloud compute images delete attested-config-t26-b-20260918231703 --quiet
+Deleted [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/global/images/attested-config-t26-b-20260918231703].
+deleted image attested-config-t26-b-20260918231703
+    + gcloud compute images delete attested-workload-t26-20260918231703 --quiet
+Deleted [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/global/images/attested-workload-t26-20260918231703].
+deleted image attested-workload-t26-20260918231703
+
+what still carries purpose=attested-tunnel-t26:
+disks:
+images:
+attested-config-tdx-smoke-a-20260910214749	READY
+attested-tdx-640de950bbdd	READY
+attested-tdx-d5ddcc423b1a	READY
+buckets:
+bucket-sep-25
+
+############ rows for docs/snp/cloud/tdx/RESOURCES.md ############
+| created | name | type | purpose | state |
+|---|---|---|---|---|
+| 2026-09-18T23:25Z | t26-policy-a | c3-standard-4 TDX, us-central1-a, 20GB pd-balanced boot from `attested-tdx-7f7c43153cab` + 10GB pd-balanced config disk + 10GB pd-balanced workload disk (`device-name attested-workload`) — a THREE-disk shape, whose RTMR0 `8ee4fa36…b70a3f` this ticket authored, `--private-network-ip 10.128.0.40` | ticket 26 policy, guest A: the sandbox that is narrowed mid-fetch and killed at 150s | **deleted 2026-09-18T23:36Z** |
+| 2026-09-18T23:25Z | t26-policy-b | c3-standard-4 TDX, us-central1-a, 20GB pd-balanced boot from `attested-tdx-7f7c43153cab` + 10GB pd-balanced config disk + 10GB pd-balanced workload disk (`device-name attested-workload`) — a THREE-disk shape, whose RTMR0 `8ee4fa36…b70a3f` this ticket authored, `--private-network-ip 10.128.0.41` | ticket 26 policy, guest B: the second pusher (narrow-after 40s), killed at 210s | **deleted 2026-09-18T23:36Z** |
+| 2026-09-18T23:25Z | attested-tdx-7f7c43153cab | custom image, label `purpose=attested-tunnel-t26` | ticket 26 policy | **deleted with the run** |
+| 2026-09-18T23:25Z | attested-config-t26-a-20260918231703 | custom image, label `purpose=attested-tunnel-t26` | ticket 26 policy | **deleted with the run** |
+| 2026-09-18T23:25Z | attested-config-t26-b-20260918231703 | custom image, label `purpose=attested-tunnel-t26` | ticket 26 policy | **deleted with the run** |
+| 2026-09-18T23:25Z | attested-workload-t26-20260918231703 | custom image, label `purpose=attested-tunnel-t26` | ticket 26 policy | **deleted with the run** |
+
+Every bucket this run used was created and deleted inside publish-tdx-image.sh, which is
+where Compute Engine takes bytes from; none survives the call that made it.
+
+=== 69 passed, 5 failed ===
+=== done 2026-09-18T23:37:36Z, exit 0 ===

@@ -1,0 +1,78 @@
+=== guest B's quote against guest B's OWN set (the self-check, remade here) ===
+evidence : /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/quote-b.bin
+refvals  : /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/set-b.json
+policy   : 197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+
+evidence            : /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/quote-b.bin, 8000 bytes
+vendor              : intel-tdx
+certificate chain   : carried inside the quote
+public key (SPKI)   : /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/public-key-b.der, 44 bytes, 302a300506032b65700321008caaefea5af6e471db8c076482a8cbfdc8b88a3b0f46fcd31885dff5aaf573d4
+binding context     : v2, 02000000000000000000000000000000
+policy digest       : 197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+intel collateral    : /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/tdx/collateral (provisioned, ADR-0005)
+intel root          : the Intel root embedded in the verification library — no fetch, no file
+reference value set : /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/set-b.json, 1 value(s), author 5660943e0b95a93d4f0dee932e193f4635f74df1f34e5125c5df1089a73b048a
+  [0] intel-tdx predicted RTMR2 7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1
+      observed MRTD      c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+      observed RTMR0     c2fc12a52db868515eff7c657e42ce04b0b7363fa6ddf7c1cca87aa8e6a061a11f9981924a600ad6d2232f75182a850a | 8ee4fa3614e96b5c7cdacf52675c069e9de399a3688f83510a9bc3b4180e0e8f06c427eab69fcb4deff05203c0b70a3f
+      observed RTMR1     02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b | 3a446943925fef7f1682fd54e1b6697df864692e28592ec373860d1868582ac14ca3029c48282eb964868a785bafd691
+      minimum TCB        status=UpToDate evaluation_data_number=20
+      TD policy          debug=false
+      admits policy      197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+WARN : 2026/09/18 19:36:31.851965 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/18 19:36:31.854713 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/18 19:36:31.856875 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+
+ACCEPTED
+  vendor            : intel-tdx
+  RTMR2             : 7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1
+  MRTD              : c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+  RTMR0             : 8ee4fa3614e96b5c7cdacf52675c069e9de399a3688f83510a9bc3b4180e0e8f06c427eab69fcb4deff05203c0b70a3f
+  RTMR1             : 02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b
+  TD attributes     : 0000001000000000 (debug=false)
+  Intel TCB         : status=UpToDate evaluation_data_number=20 fmspc=00806f050000
+  caller-supplied   : bf2d73e1ec74d682d57cadcf3ce4290ca19dc18b5e26c1a4936ca312f6f7667c8e5e4ecf6ae2e832e30715874e4858e4f481339c7551f5741b81baa1d1af20ab
+    = SHA-512(public key ‖ binding context ‖ policy digest), recomputed from the key above (ADR-0002, v2)
+  satisfied         : reference value with predicted RTMR2 7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1
+
+verify-evidence exit status: 0  (0 accepted, 2 refused)
+
+=== guest B's quote against guest A's set (the check guest A makes of B) ===
+evidence : /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/quote-b.bin
+refvals  : /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/set-a.json
+policy   : 197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+
+evidence            : /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/quote-b.bin, 8000 bytes
+vendor              : intel-tdx
+certificate chain   : carried inside the quote
+public key (SPKI)   : /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/public-key-b.der, 44 bytes, 302a300506032b65700321008caaefea5af6e471db8c076482a8cbfdc8b88a3b0f46fcd31885dff5aaf573d4
+binding context     : v2, 02000000000000000000000000000000
+policy digest       : 197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+intel collateral    : /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/tdx/collateral (provisioned, ADR-0005)
+intel root          : the Intel root embedded in the verification library — no fetch, no file
+reference value set : /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/set-a.json, 1 value(s), author 5660943e0b95a93d4f0dee932e193f4635f74df1f34e5125c5df1089a73b048a
+  [0] intel-tdx predicted RTMR2 7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1
+      observed MRTD      c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+      observed RTMR0     c2fc12a52db868515eff7c657e42ce04b0b7363fa6ddf7c1cca87aa8e6a061a11f9981924a600ad6d2232f75182a850a | 8ee4fa3614e96b5c7cdacf52675c069e9de399a3688f83510a9bc3b4180e0e8f06c427eab69fcb4deff05203c0b70a3f
+      observed RTMR1     02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b | 3a446943925fef7f1682fd54e1b6697df864692e28592ec373860d1868582ac14ca3029c48282eb964868a785bafd691
+      minimum TCB        status=UpToDate evaluation_data_number=20
+      TD policy          debug=false
+      admits policy      197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+WARN : 2026/09/18 19:36:31.902540 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/18 19:36:31.908237 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/18 19:36:31.911620 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+
+ACCEPTED
+  vendor            : intel-tdx
+  RTMR2             : 7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1
+  MRTD              : c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+  RTMR0             : 8ee4fa3614e96b5c7cdacf52675c069e9de399a3688f83510a9bc3b4180e0e8f06c427eab69fcb4deff05203c0b70a3f
+  RTMR1             : 02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b
+  TD attributes     : 0000001000000000 (debug=false)
+  Intel TCB         : status=UpToDate evaluation_data_number=20 fmspc=00806f050000
+  caller-supplied   : bf2d73e1ec74d682d57cadcf3ce4290ca19dc18b5e26c1a4936ca312f6f7667c8e5e4ecf6ae2e832e30715874e4858e4f481339c7551f5741b81baa1d1af20ab
+    = SHA-512(public key ‖ binding context ‖ policy digest), recomputed from the key above (ADR-0002, v2)
+  satisfied         : reference value with predicted RTMR2 7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1
+
+verify-evidence exit status: 0  (0 accepted, 2 refused)
+

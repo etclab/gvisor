@@ -221,3 +221,33 @@ pre-existing TERMINATED instances) and
 instances existed for about eleven minutes each — about **22 instance-minutes** —
 and both were deleted the same hour they were created. Four custom images and
 four buckets were created and deleted inside the same run.
+
+### Boot pair 2, with boot pair 1's two faults fixed in the harness
+
+| created | name | type | purpose | state |
+|---|---|---|---|---|
+| 2026-09-18T23:25Z | t26-policy-a | c3-standard-4 TDX, us-central1-a, 20GB pd-balanced boot from custom image `attested-tdx-7f7c43153cab` + 10GB pd-balanced config disk from `attested-config-t26-a-20260918231703` + 10GB pd-balanced **workload** disk from `attested-workload-t26-20260918231703` (`device-name attested-workload`), `--private-network-ip 10.128.0.40`, `--labels purpose=attested-tunnel-t26` | ticket 26, boot pair 2, guest A: the sandbox narrowed mid-fetch and killed at 150 s. Boot pair 1's two faults are fixed in the harness: the config device's inodes are root-owned, and both sets admit the ceiling digest a guest of this image actually presents. **This is the pair the ticket's TDX item rests on** — `=== 69 passed, 5 failed ===`, both quotes reporting the three-disk RTMR0, each admitted by the peer's set, both sandboxes under a pushed policy, both controls, the narrowing, and the liveness teardown | **deleted 2026-09-18T23:37Z** (~12 min) |
+| 2026-09-18T23:25Z | t26-policy-b | the same three-disk shape, config disk `attested-config-t26-b-20260918231703`, `--private-network-ip 10.128.0.41`, `--labels purpose=attested-tunnel-t26` | ticket 26, boot pair 2, guest B: the second pusher (narrow-after 40 s), killed at 210 s | **deleted 2026-09-18T23:37Z** (~12 min) |
+| 2026-09-18T23:17Z | attested-tdx-7f7c43153cab | custom image, 10 GiB, `purpose=attested-tunnel-t26` | ticket 26 boot pair 2: the same guest image as pair 1, republished after pair 1 deleted it; predicted RTMR2 `7f7c4315…04aa1`, which is what both guests reported | **deleted 2026-09-18T23:37Z, with the run** |
+| 2026-09-18T23:17Z | attested-config-t26-{a,b}-20260918231703, attested-workload-t26-20260918231703 | custom images, 1 GiB each, `purpose=attested-tunnel-t26` | ticket 26 boot pair 2: the two config devices (now root-owned inside) and the workload device | **each deleted 2026-09-18T23:37Z, with the run** |
+| 2026-09-18T23:17Z … 23:23Z | `attested-tunnel-t19-20260918{231728,232023,232159,232330}`, four in all | Cloud Storage buckets, us-central1 | ticket 26 boot pair 2: staging for the four image publishes; the name is `publish-tdx-image.sh`'s default and the labels are this ticket's | **each created and deleted inside the publish that made it; none survives** |
+
+
+**State after boot pair 2, 2026-09-18T23:37Z**, confirmed at 23:38Z by the four
+commands this ticket's discipline names: `gcloud compute instances list --zones
+us-central1-a` shows only the seven pre-existing TERMINATED instances,
+`gcloud compute instances list --filter="labels.purpose=attested-tunnel-t26"`
+and `gcloud compute disks list --filter="name~t26"` both print `Listed 0 items.`,
+and `gcloud compute images list --no-standard-images` shows only ticket 19's
+three kept images (`attested-config-tdx-smoke-a-20260910214749`,
+`attested-tdx-640de950bbdd`, `attested-tdx-d5ddcc423b1a`). **Nothing this ticket
+created survives.**
+
+Ticket 26 created **four** `c3-standard-4` TDX instances in all, in two pairs —
+21:06Z–21:17Z and 23:25Z–23:37Z — and every one was deleted the same hour it was
+created: about **46 TDX instance-minutes**, the longest-lived at roughly twelve.
+Eight custom images and eight Cloud Storage buckets were created and deleted
+inside the runs that made them; none was kept, because a ticket 26 image is a
+record of a run and not something a later run boots from. No firewall rule,
+network, IAM or org policy was created or changed, and none of the seven
+pre-existing instances was touched.

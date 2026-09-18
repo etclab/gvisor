@@ -21,14 +21,26 @@
 #                              again here with file(1), because the guard runs
 #                              on a build of its own and this is the file that
 #                              is actually installed.
-#   3. build-image.sh          with TUNNELD and RUNSC set and nothing else set.
-#                              Every byte of the image is a byte in the
-#                              measurement, so the build is the one ticket 06
-#                              wrote and the only parameters set here are those
-#                              two. runsc is not built here — `make runsc` is
-#                              the only thing that builds it on this branch —
-#                              so it is named, hashed and passed through, and
-#                              the build refuses one that is not static.
+#   2b. CGO_ENABLED=0 go build attest/cmd/agent-probe, the exit the measured
+#                              init runs when the config device carries a tunnel
+#                              table (ticket 25). It is built exactly as tunneld
+#                              is and checked exactly as tunneld is — static, and
+#                              carrying no checkout path — and it is deliberately
+#                              *not* run through a guard of its own: the guard in
+#                              step 1 is about a binary that acquires evidence and
+#                              judges a peer's, and agent-probe does neither. What
+#                              it does is dial what a stream asked for if a list
+#                              permits it, and the thing that could go wrong there
+#                              is the list, which is on the config device.
+#   3. build-image.sh          with TUNNELD, RUNSC and AGENT_PROBE set and
+#                              nothing else set. Every byte of the image is a
+#                              byte in the measurement, so the build is the one
+#                              ticket 06 wrote and the only parameters set here
+#                              are those three. runsc is not built here — `make
+#                              runsc` is the only thing that builds it on this
+#                              branch — so it is named, hashed and passed
+#                              through, and the build refuses one that is not
+#                              static.
 #
 # It emits, in OUT: the image (OVMF.fd, vmlinuz, initrd.img, cmdline.txt,
 # rootfs.img), the predicted launch measurement, the signed reference value set
@@ -40,6 +52,9 @@
 #   AUTHOR_KEY  the reference value author's Ed25519 private key, PKCS#8 PEM.
 #               Generated into OUT/author.key if unset — a throwaway, which is
 #               what every run so far has used (spec, Out of Scope: key custody).
+#   AGENT_PROBE not read: this script builds it from attest/cmd/agent-probe and
+#               passes it to build-image.sh. A binary this tree builds is built
+#               here, and one it does not (runsc) is named.
 #   RUNSC       required. The static runsc the image carries at /usr/bin/runsc
 #               (ticket 24), from `make runsc`: bazel-bin/runsc/runsc_/runsc.
 #               Passed through to build-image.sh untouched; its sha256 and size
@@ -110,7 +125,24 @@ echo "runsc sha256  : $(sha256sum "$RUNSC" | cut -d' ' -f1)"
 echo "runsc bytes   : $(stat -c %s "$RUNSC")"
 echo
 
-echo "=== 3. the image, with TUNNELD and RUNSC set and nothing else"
+echo "=== 2b. the exit the measured init runs (ticket 25)"
+PROBE="$WORK/agent-probe"
+echo "\$ CGO_ENABLED=0 go build -trimpath -buildvcs=false -o $PROBE ./cmd/agent-probe"
+(cd "$REPO/attest" && CGO_ENABLED=0 go build -trimpath -buildvcs=false -o "$PROBE" ./cmd/agent-probe)
+if strings -a "$PROBE" | grep -q "$REPO"; then
+  echo "REFUSING: $PROBE embeds the checkout path $REPO, so its measurement is not reproducible elsewhere" >&2
+  exit 1
+fi
+file "$PROBE"
+file "$PROBE" | grep -q 'statically linked' || {
+  echo "REFUSING: $PROBE is not statically linked; the image's root filesystem carries no dynamic loader" >&2
+  exit 1
+}
+echo "agent-probe sha256: $(sha256sum "$PROBE" | cut -d' ' -f1)"
+echo "agent-probe bytes : $(stat -c %s "$PROBE")"
+echo
+
+echo "=== 3. the image, with TUNNELD, RUNSC and AGENT_PROBE set and nothing else"
 if [ -z "${AUTHOR_KEY:-}" ]; then
   AUTHOR_KEY="$WORK/author.key"
   openssl genpkey -algorithm ed25519 -out "$AUTHOR_KEY" 2>/dev/null
@@ -118,10 +150,13 @@ if [ -z "${AUTHOR_KEY:-}" ]; then
   echo "generated a throwaway reference value author key at $AUTHOR_KEY"
 fi
 export AUTHOR_KEY OUT STACK RUNSC
+AGENT_PROBE="$PROBE"
+export AGENT_PROBE
 TUNNELD="$BIN" bash "$HERE/build-image.sh"
 
 cp "$LOG" "$OUT/packaging.txt" 2>/dev/null || true
 cp "$BIN" "$OUT/tunneld"
+cp "$PROBE" "$OUT/agent-probe"
 
 echo
 echo "=== packaged"
@@ -135,4 +170,5 @@ echo "author public key:            $(cat "$OUT/build/author.pub" 2>/dev/null ||
 echo "author key:                   $AUTHOR_KEY (keep it: re-signing a set needs it)"
 echo "packaged binary:              $OUT/tunneld (the copy inside rootfs.img is what is measured)"
 echo "runsc:                        $RUNSC (the copy inside rootfs.img is what is measured)"
+echo "agent-probe:                  $OUT/agent-probe (the copy inside rootfs.img is what is measured)"
 echo "packaging record:             $LOG, copied to $OUT/packaging.txt"

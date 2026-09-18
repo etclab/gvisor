@@ -187,7 +187,10 @@ func (a *adapter) answerDNS(q []byte) []byte {
 // the sentry's own: --strace prints a sendto's buffer as a pointer, so the
 // query itself never appears there.
 func (a *adapter) logQuery(name string, qtype int, answer string) {
-	log.Infof("tunnel dns: q=%s type=%s answer=%s", name, dnsTypeName(qtype), answer)
+	// Quoted and scrubbed: the name is whatever the workload put in a
+	// question, and a label carrying a newline would otherwise write a line of
+	// this log itself.
+	log.Infof("tunnel dns: q=%q type=%s answer=%s", tunnelPrintable(name), dnsTypeName(qtype), answer)
 }
 
 // dnsTypeName names the two record types this responder has an opinion about.

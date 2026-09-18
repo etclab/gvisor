@@ -379,6 +379,17 @@ make_config() {
 # deliberately: QUIC's idle timeout is the minimum of what the two peers
 # advertise, so two guests that differ there leave one of them running on a
 # number that appears nowhere in its own configuration.
+#
+# IDLE_TIMEOUT is that number and it is a variable rather than a literal for one
+# scenario's sake: a liveness watch lives exactly as long as the tunnel the
+# policy arrived on, because attest/tunneld/push.go's watchLiveness returns —
+# silently, with no line and no refusal — the moment conn.Live() is false. Sixty
+# seconds is right for every scenario whose exchanges are over in ten, and wrong
+# for the policy scenario, where the thing under test happens a hundred and fifty
+# seconds after the last stream closed. scenario_policy sets it to outlive its
+# own hold; nothing else sets it, so every other scenario's configuration is the
+# byte-for-byte one the earlier records were made with.
+IDLE_TIMEOUT="${IDLE_TIMEOUT:-60s}"
 answerer_json() { # SANDBOX ADDRESS HOLD
   cat <<JSON
 {
@@ -431,7 +442,7 @@ adapter_json() { # SANDBOX ADDRESS HOLD
   "sandbox_id": "$1",
   "listen": "$2:4433",
   "link": {"interface": "eth0", "address": "$2", "prefix_length": 24},
-  "limits": {"idle_timeout": "60s", "max_age": "15m"},
+  "limits": {"idle_timeout": "$IDLE_TIMEOUT", "max_age": "15m"},
   "hold": "$3"
 }
 JSON
@@ -1627,7 +1638,7 @@ narrow_json() { # SANDBOX PEER HOLD
   "version": 1,
   "sandbox_id": "$1-narrow",
   "listen": "",
-  "limits": {"idle_timeout": "60s", "max_age": "15m"},
+  "limits": {"idle_timeout": "$IDLE_TIMEOUT", "max_age": "15m"},
   "exercise": {
     "dial": ["$2"],
     "wait": "2s",
@@ -1678,9 +1689,21 @@ scenario_policy() {
   # below are derived from the files a reader can open.
   hold=$((last + 150))
   boot=$((last + 330))
+  # And the third derived number, which the first run of this scenario did not
+  # have. A liveness watch is polled against the tunnel the policy arrived on and
+  # ends the moment that tunnel is not live — without a line, because a watch
+  # whose tunnel is gone has nothing left to tear down. With the sixty seconds
+  # every other scenario uses, both tunnels here idle out about a minute after
+  # the last fetch and a hundred seconds before the first kill, so a kill has
+  # nothing to say to anybody. The idle timeout is therefore set to outlive this
+  # scenario's own hold: the tunnels stay up until the guests power off, and what
+  # ends a watch is the sandbox and not the clock.
+  local IDLE_TIMEOUT="${POLICY_IDLE_TIMEOUT:-$((hold + 60))s}"
   echo "    kill-after   : guest A ${kill_a}s, guest B ${kill_b}s (seconds after each guest starts its workload)"
   echo "    narrow-after : guest B ${narrow_b}s — the second tunneld that pushes the narrower policy at guest A"
   echo "    tunneld hold : ${hold}s, boot timeout ${boot}s, both derived from the knobs and not from -run-for"
+  echo "    idle timeout : $IDLE_TIMEOUT on every tunnel of this scenario, so that no tunnel a policy"
+  echo "                   arrived on idles out before the kill that is supposed to end it"
 
   local p0a p0b p1b
   p0a=$(sha256sum "$POLICY_INPUTS/a/push-policy.json" | cut -d' ' -f1)

@@ -331,9 +331,21 @@ NARROW_B=$(knob_of "$POLICY_INPUTS/b/narrow-after")
 LAST=$KILL_A; [ "$KILL_B" -gt "$LAST" ] && LAST=$KILL_B
 HOLD=$((LAST + 150))
 [ "$DEADLINE" -gt $((LAST + 330)) ] || DEADLINE=$((LAST + 330))
+# A liveness watch lives exactly as long as the tunnel the policy arrived on:
+# attest/tunneld/push.go's watchLiveness polls conn.Live() and returns the moment
+# it is false, silently, because a watch whose tunnel is gone has nothing left to
+# tear down. At the sixty seconds every other scenario uses, both tunnels here
+# idle out about a minute after the last fetch and long before the first kill, so
+# the kill that is supposed to end liveness has nobody watching — which is what
+# the first SEV-SNP pair of this scenario recorded (../../evidence/ticket26/snp/run).
+# The idle timeout therefore outlives this scenario's own hold: the tunnels stay
+# up until the guests power off, and what ends a watch is the sandbox.
+IDLE_TIMEOUT="${IDLE_TIMEOUT:-$((HOLD + 60))s}"
 echo "kill-after  : guest A ${KILL_A}s, guest B ${KILL_B}s (from each guest's own workload start)"
 echo "narrow-after: guest B ${NARROW_B}s — the second tunneld that pushes the narrower policy at guest A"
 echo "tunneld hold: ${HOLD}s; console deadline ${DEADLINE}s. Both are derived from the knobs, not chosen here."
+echo "idle timeout: ${IDLE_TIMEOUT} on every tunnel, so that no tunnel a policy arrived on idles out"
+echo "              before the kill that is supposed to end it"
 P0A=$(sha256sum "$POLICY_INPUTS/a/push-policy.json" | cut -d' ' -f1)
 P0B=$(sha256sum "$POLICY_INPUTS/b/push-policy.json" | cut -d' ' -f1)
 P1B=$(sha256sum "$POLICY_INPUTS/b/push-policy-narrow.json" | cut -d' ' -f1)
@@ -426,7 +438,7 @@ EOF
   "version": 1,
   "sandbox_id": "$sandbox",
   "listen": "$ip:$PORT",
-  "limits": {"idle_timeout": "60s", "max_age": "15m"},
+  "limits": {"idle_timeout": "$IDLE_TIMEOUT", "max_age": "15m"},
   "start_timeout": "60s",
   "hold": "${HOLD}s"
 }
@@ -446,7 +458,7 @@ EOF
   "version": 1,
   "sandbox_id": "$sandbox-narrow",
   "listen": "",
-  "limits": {"idle_timeout": "60s", "max_age": "15m"},
+  "limits": {"idle_timeout": "$IDLE_TIMEOUT", "max_age": "15m"},
   "exercise": {
     "dial": ["$peer"],
     "wait": "2s",

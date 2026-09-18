@@ -600,28 +600,55 @@ narrow_later() { # SECONDS
 # have a pid for is unshare, and the one that is init of the new PID namespace
 # is its child. A PID namespace is visible from its parent, so every process the
 # sandbox is made of is in this table under a pid of this namespace's; matching
-# runsc's own comm reaches all of them, and unshare is killed after them so that
-# the wait below returns.
+# runsc's own comm reaches all of them, and unshare is matched with them.
+#
+# The name matched is argv[0] out of /proc/PID/cmdline and NOT comm: the sentry,
+# the gofer and the tunnel helper are re-execs of /proc/self/exe with argv[0] set
+# afterwards, so each one's comm is `exe` (runsc/container/container.go:1486 says
+# so) and only cmdline carries `runsc-sandbox`, `runsc-gofer` and
+# `runsc-tunnel-helper`. The helper is the sandbox's end of tunneld's socket and
+# its death is the contract's teardown, so a scan that cannot see it cannot end
+# liveness at all.
+#
+# The table is read in full before anything is signalled, and read again
+# afterwards. The first version of this walked /proc killing as it went, and the
+# two SEV-SNP boots that ran it both printed `killed 1 processes`: the first
+# signal took the foreground runsc down, every entry the walk had not reached
+# changed under it, and the sandbox's socket — whose closing is the contract's
+# teardown — closed at the end of the run on one guest and not at all on the
+# other (docs/snp/evidence/ticket26/snp/run, run-2). A killer that cannot say
+# when it finished cannot be the clock for the delay this ticket measures.
 kill_later() { # SECONDS
 	sleep "$1"
 	say "kill-after: ${1}s elapsed; killing the sandbox, so that nothing inside it gets to say goodbye"
 	uptime_say
-	k=0
-	for p in /proc/[0-9]*; do
-		pid=${p#/proc/}
-		c=$(cat "$p/comm" 2>/dev/null) || continue
-		case "$c" in
-		runsc*) busybox kill -9 "$pid" 2>/dev/null && k=$((k + 1)) ;;
-		esac
+	r=1
+	while [ "$r" -le 3 ]; do
+		pids=
+		names=
+		for p in /proc/[0-9]*; do
+			pid=${p#/proc/}
+			a0=$(busybox tr '\0' '\n' < "$p/cmdline" 2>/dev/null | busybox sed -n 1p) || continue
+			case "$a0" in
+			runsc* | /usr/bin/runsc* | unshare*)
+				pids="$pids $pid"
+				names="$names $a0($pid)"
+				;;
+			esac
+		done
+		[ -n "$pids" ] || break
+		say "kill-after: round $r, the sandbox in this table is$names"
+		k=0
+		for pid in $pids; do
+			busybox kill -9 "$pid" 2>/dev/null && k=$((k + 1))
+		done
+		say "kill-after: round $r killed $k processes"
+		uptime_say
+		sleep 1
+		r=$((r + 1))
 	done
-	for p in /proc/[0-9]*; do
-		pid=${p#/proc/}
-		c=$(cat "$p/comm" 2>/dev/null) || continue
-		case "$c" in
-		unshare) busybox kill -9 "$pid" 2>/dev/null && k=$((k + 1)) ;;
-		esac
-	done
-	say "kill-after: killed $k processes"
+	say "kill-after: nothing of the sandbox is left in this init's process table"
+	uptime_say
 }
 
 # ---- the two orders ---------------------------------------------------------

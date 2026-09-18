@@ -1,13 +1,13 @@
 # Predicted SEV-SNP launch measurement, computed offline from the inputs below.
 # Not read from any machine. Cross-checked once: docs/snp-measurement-prediction.md.
-launch_measurement: 5d73c959b5356dc63bf1ea4dd39562dee6679713c6fe87168bb75817defea9fde1c213863ea2d3beed28d9da4feb6dbc
+launch_measurement: 5dad2470be1754403c9b6e475607ae5db92d5f82c8f3efaf297b4ec57c80d2d70ce46fa7a119939f68eddd2b15dec5fb
 
 ## Inputs (sha256 of each file as measured; cmdline is the -append string plus NUL)
 ffd6bfa8c76c460a4dba62c39b2c9cf5a7ac425148eede7fb610f4c3cd96a895  OVMF.fd
 c3b443dbdafbaf3cb92d119482143a76876a752c7335a61faa917361d9724b75  vmlinuz
 494d6c1f5e95da4aebb4e5f60cac6f203ba45e75c6bd95ef7646f4bcbd7a34cd  initrd.img
-91a43d34b269da2cd64ce7a09e643d37b16cbdda828a864a1bf30801a7370d90  cmdline (196 bytes + NUL)
-cmdline: console=ttyS0 earlyprintk=serial panic=-1 rdinit=/init verity.roothash=4fe103f12515250a74ee88a8675d25543bbbd58135531262732176979034658e verity.salt=- verity.datablocks=21916 verity.hashstart=21916
+651466d228c24b46c4a7e5030dd6344b5470238b4b040c9753d0ec2193a3cf0b  cmdline (196 bytes + NUL)
+cmdline: console=ttyS0 earlyprintk=serial panic=-1 rdinit=/init verity.roothash=494553da207dbf0622cede04e67adbcbc4dfa1d39272f329fefd4a3eda08ba9b verity.salt=- verity.datablocks=21916 verity.hashstart=21916
 vcpus: 4
 vcpu_type: EPYC-v4
 vmm: QEMU (sev-snp-guest, kernel-hashes=on; firmware OvmfPkg/AmdSev/AmdSevX64 with BlobVerifierLibSevHashes)

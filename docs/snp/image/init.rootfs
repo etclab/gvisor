@@ -291,25 +291,59 @@ narrow_later() { # SECONDS
 # because the workload runs behind `unshare -f`: the process this script would
 # have a pid for is unshare, and the one that is init of the new PID namespace
 # is its child. A PID namespace is visible from its parent, so every process the
-# sandbox is made of is in this table under a pid of this namespace's; matching
-# runsc's own comm reaches all of them, and unshare is killed after them so that
-# the wait in run_workload returns.
+# sandbox is made of is in this table under a pid of this namespace's.
+#
+# The name that is matched is argv[0] out of /proc/PID/cmdline, and NOT comm,
+# which is what this script read until the third boot pair of ticket 26 printed
+# the table it was matching against: `unshare(183) runsc(184)`, and nothing else.
+# The sentry, the gofer and the tunnel helper are all started by re-execing
+# /proc/self/exe with a recognisable argv[0] set afterwards, so the kernel's comm
+# for each of them is `exe` — runsc/container/container.go:1486 says so in as
+# many words ("Otherwise it's shown as `exe`") — and `runsc-sandbox`,
+# `runsc-gofer` and `runsc-tunnel-helper` are only in cmdline. A scan matching
+# comm therefore reached the foreground `runsc run` and missed the three
+# processes that matter, the helper above all: the helper is the sandbox's end of
+# tunneld's socket, and its death is the contract's teardown. Two recorded boot
+# pairs killed the foreground process, left the helper running, and recorded no
+# teardown at all (docs/snp/evidence/ticket26/snp/run, run-2, run-3).
+#
+# The table is read in full before anything is signalled, and read again
+# afterwards, which the first version of this did not do and which two recorded
+# boots say the cost of. That version walked /proc killing as it went, and both
+# guests printed `killed 1 processes`: the first signal took the foreground runsc
+# down, every /proc entry the walk had not reached yet changed under it, and the
+# count it printed said nothing about what was still alive. On guest B the line
+# arrived a hundred and fifty seconds late and on guest A it never arrived at
+# all, so the socket whose closing is the contract's teardown closed at the end
+# of the run or not before the power-off (docs/snp/evidence/ticket26/snp/run and
+# run-2). What this ticket is trying to time is the delay between a workload
+# dying and the tunnel beside it going, and a killer that cannot say when it
+# finished cannot be the clock for it. So: collect, print what the sandbox is
+# made of, signal it all, and look again — up to three rounds, each with the
+# uptime beside it, and a last line that says the table is clear.
 kill_later() { # SECONDS
   sleep "$1"
   say "kill-after: $1s elapsed; killing the sandbox, so that nothing inside it gets to say goodbye"
   uptime_say
-  k=0
-  for p in /proc/[0-9]*; do
-    pid=${p#/proc/}
-    c=$(cat "$p/comm" 2>/dev/null) || continue
-    case "$c" in runsc*) kill -9 "$pid" 2>/dev/null && k=$((k+1)) ;; esac
+  r=1
+  while [ "$r" -le 3 ]; do
+    pids=; names=
+    for p in /proc/[0-9]*; do
+      pid=${p#/proc/}
+      a0=$(tr '\0' '\n' < "$p/cmdline" 2>/dev/null | sed -n 1p) || continue
+      case "$a0" in runsc*|/usr/bin/runsc*|unshare*) pids="$pids $pid"; names="$names $a0($pid)" ;; esac
+    done
+    [ -n "$pids" ] || break
+    say "kill-after: round $r, the sandbox in this table is$names"
+    k=0
+    for pid in $pids; do kill -9 "$pid" 2>/dev/null && k=$((k+1)); done
+    say "kill-after: round $r killed $k processes"
+    uptime_say
+    sleep 1
+    r=$((r+1))
   done
-  for p in /proc/[0-9]*; do
-    pid=${p#/proc/}
-    c=$(cat "$p/comm" 2>/dev/null) || continue
-    case "$c" in unshare) kill -9 "$pid" 2>/dev/null && k=$((k+1)) ;; esac
-  done
-  say "kill-after: killed $k processes"
+  say "kill-after: nothing of the sandbox is left in this init's process table"
+  uptime_say
 }
 
 # ---- the two orders ---------------------------------------------------------

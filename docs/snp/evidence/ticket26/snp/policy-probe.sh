@@ -200,6 +200,29 @@ narrowing_control() { # NAME SECONDS
 say "=== ticket 26: a sandbox that honours a pushed policy ==="
 say "this process has no interface of its own; its only way out is the adapter"
 
+# 0. the exec control's other half, and it has to be first.
+#
+# What makes /bin/probe a control is that the same execve succeeds before a
+# policy carrying an `x` is in force and fails after it, and the window in which
+# it succeeds is the one between this sandbox starting and the peer's tunneld
+# dialing — about a fifth of a second on the bench, and gone by the time a page
+# has been fetched. The first run of this scenario put the exec loop after two
+# fetches and recorded a refusal on attempt 1 and nothing before it, which is a
+# true observation of a governed sandbox and no observation at all of the
+# transition. So one attempt is made here, before anything else this script does,
+# and whichever way it comes out is printed: it is a race with the push and the
+# transcript says which side won it.
+out=$(/bin/probe 2>&1)
+rc=$?
+case "$out" in
+*"Permission denied"* | *"permission denied"*)
+  say "exec /bin/probe attempt 0: already refused ($out); the push landed before this sandbox ran a thing"
+  ;;
+*)
+  say "exec /bin/probe attempt 0: it ran (rc=$rc); no policy carrying an x is in force in this sandbox yet"
+  ;;
+esac
+
 # Which guest is this? The only thing that differs between them from in here is
 # which name the sentry will resolve, so that is the question asked. Guest A's
 # table names web.peer-b and guest B's names web.peer-a, and the policy each

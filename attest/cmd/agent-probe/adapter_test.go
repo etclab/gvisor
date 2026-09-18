@@ -256,10 +256,40 @@ type loopback struct {
 	p       proof  // what this run is, in the words its evidence is written in
 	sha     string // the runsc this run used, by content, because the path moves
 
+	// The four things a governed run needs of this world and an ungoverned one
+	// does not (governed_test.go): the world the tunnelds were built in, so
+	// that a third peer can be admitted by the same reference values; a itself,
+	// so that peer can dial it; a's contract socket, so a pusher can wait until
+	// there is a sandbox on it to push to; and a's console with a clock on it,
+	// because a liveness teardown is a duration between two lines.
+	w       *hopWorld
+	aTd     *tunneld.Tunneld
+	aHost   *sandbox.Host
+	console *timeline
+
+	// pushing is the pusher whose push is in flight, so that a's own clock on
+	// Apply — which runs on a's goroutine and not the pusher's — lands on the
+	// push it belongs to.
+	pushing atomic.Pointer[pusher]
+
+	// stateIn puts --root somewhere other than the run's own directory. A
+	// pushed policy is delivered over the sentry's control socket, whose path
+	// is --root plus runsc-<container id>.sock, and a sockaddr_un holds 108
+	// bytes — so a deep root is a sandbox that cannot be narrowed at all
+	// (spike E1 §7a). A run that pushes keeps its root short.
+	stateIn string
+
+	// points are the seccheck points this run's trace session names. The
+	// default is the one ticket 25 recorded; a run that pushes an x adds the
+	// point an exec refusal is emitted on.
+	points []string
+
 	// at is the run in progress, or nil between runs. The exit logs and
 	// carries streams for whichever sandbox is running, and this is how those
-	// lines find the run they belong to.
-	at atomic.Pointer[stamps]
+	// lines find the run they belong to. now is the same run, for a caller
+	// outside it that needs the container `runsc kill` names.
+	at  atomic.Pointer[stamps]
+	now atomic.Pointer[sandboxRun]
 }
 
 // A proof is what one of the two tests in this package is, in the terms its
@@ -277,7 +307,8 @@ type proof struct {
 // sandbox and share everything around it.
 func newLoopback(t *testing.T, ctx context.Context, out *record, runsc string, p proof) *loopback {
 	t.Helper()
-	l := &loopback{ctx: ctx, out: out, runsc: runsc, p: p, adapter: os.Getenv(adapterEnv) != "0"}
+	l := &loopback{ctx: ctx, out: out, runsc: runsc, p: p, adapter: os.Getenv(adapterEnv) != "0",
+		points: []string{"sentry/egress_refused"}}
 	// The binary by content and not by path. A pinned copy in a scratch
 	// directory is still a path, and two runs of this test are only comparable
 	// if the record says which build each of them ran.
@@ -308,6 +339,7 @@ func newLoopback(t *testing.T, ctx context.Context, out *record, runsc string, p
 func (l *loopback) buildTunnelds(t *testing.T) {
 	t.Helper()
 	w := newWorld(t, l.ctx, l.out, "")
+	l.w = w
 
 	// b first, because a's peer table needs its address. b pushes nothing: the
 	// far end of this arrangement is an exit and an exit holds no policy.
@@ -325,14 +357,19 @@ func (l *loopback) buildTunnelds(t *testing.T) {
 	// destinations crosses the tunnel and is recorded at the far end. Nothing
 	// enforces it here; the exit's -allow is the enforcement point and the
 	// sentry's table is the near one.
-	a := w.start(t, "a", aImage, tunneld.PeerTable{"b": b.Addr().String()}, p0, nil)
+	a := w.start(t, "a", aImage, tunneld.PeerTable{"b": b.Addr().String()}, p0, l.aRefused)
 	l.socket = filepath.Join(l.shm, "a.sock")
-	aHost, err := sandbox.Listen(l.socket, a, w.logf("a"))
+	aHost, err := sandbox.Listen(l.socket, a, l.aSays(w.logf("a")))
 	if err != nil {
 		t.Fatalf("a's sandbox socket: %v", err)
 	}
 	t.Cleanup(func() { aHost.Close() })
-	a.Attach(aHost)
+	l.aTd, l.aHost = a, aHost
+	// The wrapper is a's own clock on a push, and nothing else: it embeds the
+	// host, so the sandbox a tunneld sees is still the one that says which
+	// policy it is enforcing. A run in which nobody pushes at a — every run
+	// ticket 25 recorded — never reaches it.
+	a.Attach(&appliedAt{Host: aHost, l: l})
 	l.out.logf("a serves the contract on %s and dials b at %s", l.socket, b.Addr())
 }
 
@@ -511,8 +548,11 @@ type sandboxRun struct {
 	tunnel  []string // the adapter's own lines: every query it answered and every attach
 	events  string   // the seccheck receiver's output, empty when there was none
 	args    []string
+	id      string // the container id, for a `runsc kill` from outside
+	root    string // --root, which is also where the control socket is
 	status  int
 	err     error
+	began   time.Time // when runsc was started, so that a line elsewhere can be placed against it
 	elapsed time.Duration
 	at      *stamps
 }
@@ -546,8 +586,20 @@ func (l *loopback) sandbox(t *testing.T, name string, names map[string]int, w wo
 	defer stop()
 
 	state := filepath.Join(r.dir, "state")
+	if l.stateIn != "" {
+		state = filepath.Join(l.stateIn, name+"-state")
+	}
 	if err := os.MkdirAll(state, 0o700); err != nil {
 		t.Fatalf("%s: %v", state, err)
+	}
+	r.root, r.id = state, fmt.Sprintf("t25-%s-%d", name, os.Getpid())
+	// The sentry's control socket is --root plus runsc-<id>.sock, and it is
+	// where a pushed policy is delivered. A sockaddr_un holds 108 bytes, so a
+	// path over it is EINVAL at the connect and the peer that pushed is told
+	// its policy did not land — spike E1 §7a, found the hard way. Saying so
+	// here is cheaper than reading it out of a refusal.
+	if sock := filepath.Join(state, "runsc-"+r.id+".sock"); len(sock) >= 108 {
+		t.Fatalf("the control socket would be %d bytes at %s, and a sockaddr_un holds 108: no policy could be pushed into this sandbox (spike E1 §7a)", len(sock), sock)
 	}
 	// S1's flag set, unchanged, plus the two the adapter adds. --network=none
 	// is required with them and is what the sandbox has either way: the only
@@ -569,7 +621,7 @@ func (l *loopback) sandbox(t *testing.T, name string, names map[string]int, w wo
 	}
 	r.args = append(r.args,
 		"--debug", "--debug-log="+r.debug+"/", "--strace",
-		"run", "--bundle", l.bundle(t, name, w), fmt.Sprintf("t25-%s-%d", name, os.Getpid()))
+		"run", "--bundle", l.bundle(t, name, w), r.id)
 
 	l.out.logf("\n===== sandbox %s =====", name)
 	l.out.logf("%s  table = %s", name, text)
@@ -585,12 +637,14 @@ func (l *loopback) sandbox(t *testing.T, name string, names map[string]int, w wo
 	// zero written after the Store would be a write racing that goroutine's
 	// read. The Store is the release that makes it visible.
 	began := time.Now()
-	r.at.zero = began
+	r.at.zero, r.began = began, began
 	l.at.Store(r.at)
+	l.now.Store(r)
 	r.err = cmd.Run()
 	r.elapsed = time.Since(began)
 	r.at.mark("task_end")
 	l.at.Store(nil)
+	l.now.Store(nil)
 	so.Close()
 	se.Close()
 	if cmd.ProcessState != nil {
@@ -652,9 +706,13 @@ func (l *loopback) receiver(t *testing.T, r *sandboxRun) (string, func()) {
 		time.Sleep(50 * time.Millisecond)
 	}
 
+	points := make([]any, 0, len(l.points))
+	for _, name := range l.points {
+		points = append(points, map[string]any{"name": name, "context_fields": []string{"time", "container_id", "thread_id"}})
+	}
 	session := map[string]any{"trace_session": map[string]any{
 		"name":   "Default",
-		"points": []any{map[string]any{"name": "sentry/egress_refused", "context_fields": []string{"time", "container_id", "thread_id"}}},
+		"points": points,
 		"sinks": []any{map[string]any{
 			"name":               "remote",
 			"config":             map[string]any{"endpoint": socket, "retries": 3},
@@ -669,7 +727,7 @@ func (l *loopback) receiver(t *testing.T, r *sandboxRun) (string, func()) {
 	if err := os.WriteFile(path, text, 0o644); err != nil {
 		t.Fatalf("%s: %v", path, err)
 	}
-	l.out.logf("%s  the seccheck receiver is %s on %s, recording sentry/egress_refused", r.name, binary, socket)
+	l.out.logf("%s  the seccheck receiver is %s on %s, recording %s", r.name, binary, socket, strings.Join(l.points, " and "))
 	return path, func() {
 		if cmd.Process != nil {
 			cmd.Process.Kill()
@@ -1008,7 +1066,10 @@ func (l *loopback) digest(t *testing.T, r *sandboxRun) {
 	// account anywhere of what the sandbox asked the network for: --strace
 	// cannot give it, because gVisor formats a sendto buffer as a pointer and
 	// a DNS query's payload never reaches the log.
-	marks := []string{"tunnel dns: ", "tunnel attach: ", "tunnel: refused "}
+	// "tunnel narrow: " and "exec refused: " are the sentry's account of a
+	// pushed policy landing and of an execve the policy in force did not name.
+	// A run in which nobody pushes has neither.
+	marks := []string{"tunnel dns: ", "tunnel attach: ", "tunnel: refused ", "tunnel narrow: ", "exec refused: "}
 	var execs, binds []string
 	resolver := 0
 	sc := bufio.NewScanner(f)

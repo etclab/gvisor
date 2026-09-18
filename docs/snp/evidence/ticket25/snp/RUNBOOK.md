@@ -94,6 +94,13 @@ docs/snp/tunnel-on-two-guests.sh \
     -capture docs/snp/evidence/ticket25/snp/run
 ```
 
+**Run this from an ordinary session, never from inside the spool.** The harness
+spools the boot job itself, and `docs/snp/root-runner.sh` is a single-threaded
+loop: a harness placed in the spool cannot be handed the job it is waiting for,
+and it times out after 630 s while the orphaned boot job runs afterwards with no
+relay. That cost one boot pair on 2026-09-18 (`run/notes.md`, "what did not
+hold" 5). Only the two QEMUs need root, and the harness arranges that itself.
+
 `-quick` is `-run-for 150`, which gives each tunneld a 240 s hold — the workload
 finishes in seconds and the hold is what keeps a peer's answerer alive while the
 other guest is still fetching. **Do not run this scenario past half an hour**
@@ -117,7 +124,7 @@ the directory it was built from. Add by hand:
 - the spooled job, its `.out` and its `.rc` from the spool directory;
 - `packaging.txt` and `manifest.txt` from step 1, and the independent prediction
   from step 2;
-- a `notes.md` in the shape of `rehearsal/notes.md`: the order with line numbers,
+- a `notes.md` in the shape of `run/notes.md`: the order with line numbers,
   the two hops, the controls, the timings off init's own clock, the image-size
   delta against the rehearsal image (which isolates the adapter's cost in runsc,
   because everything else about the two images is the same), and a "what did not
@@ -181,7 +188,9 @@ resolved on the segment are `10.14.0.2` and `10.14.0.3`.
 | `bad address 'web.peer-b'` on guest **A** | A's `tunnel-table.json`, or the sentry's resolver. That name is the one A is supposed to reach. |
 | `wget: can't connect … Network unreachable` | the name resolved and the connect was refused: wrong port in the table, or the helper/tunneld path. Not a resolver problem. |
 | `EXIT dialed web.peer-b:80 -> …` then nothing | `httpd` on the serving guest: check its `init: httpd says:` block. |
-| the runner never ran the job | `tmux attach -t root-runner-m4` |
+| the runner never ran the job | `tmux attach -t root-runner-m4` — and check the harness is not itself a job in the spool |
+| `open /config/tunnel-table.json: permission denied` | the config device's inodes are not root-owned; `mkconfigdev.sh` chowns them all and checks, since 2026-09-18 |
+| an `EXIT` line is missing but the page arrived | the guest's serial console drops lines under contention; `EXIT <dest> ended` is the same evidence |
 | a stream opens but no peer is admitted | the ordinary attestation failure surface; `tunneld: REFUSED` names it. |
 
 ## 9. Afterwards

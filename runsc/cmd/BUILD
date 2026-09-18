@@ -48,6 +48,8 @@ go_library(
         "symbolize.go",
         "syscalls.go",
         "tar.go",
+        "tunnel_client.go",
+        "tunnel_helper.go",
         "update.go",
         "usage.go",
         "wait.go",

@@ -1,0 +1,34 @@
+What a 108 MB runsc costs the SEV-SNP image, byte for byte.
+
+Ticket 22's image ($STACK/image-ticket22, recorded in
+docs/snp/evidence/ticket22/manifest.txt) against this one
+($STACK/image-ticket24). Same firmware, same kernel, same busybox, same build
+script but for ticket 24's additions: /usr/bin/runsc, the unshare applet symlink,
+the empty /workload directory, and the two init scripts' new text.
+
+file            ticket 22    ticket 24        delta    ratio  what it is
+OVMF.fd           4194304      4194304           +0     1.00x  measured directly
+vmlinuz          12825088     12825088           +0     1.00x  measured through the hashes table
+initrd.img        1507232      1508081         +849     1.00x  measured through the hashes table
+cmdline.txt           195          197           +2     1.01x  measured through the hashes table
+rootfs.img        9977856     85319680    +75341824     8.55x  measured through verity.roothash on the command line
+tunneld          17569474     17573981        +4507     1.00x  the copy inside rootfs.img is what is measured
+
+runsc                   0    108668311   +108668311       -    /usr/bin/runsc, from `make runsc`
+             sha256 8070bcdf0b7889d8ed3710f5920f06cf909682434b21437eb9df8d7fb6c72518
+             (the same binary spike S1 used, rebuilt from the same tree: bit for bit)
+
+The whole cost is in rootfs.img, and it is smaller than the binary that
+caused it: squashfs with zstd compresses the 108,668,311-byte runsc into a
+9,977,856 -> 85,319,680 byte image, so 75.34 MB of image bought 103.6 MB of
+binary. The dm-verity hash tree over it grew with it: 2,416 -> 20,665 data
+blocks of 4,096 bytes, the tree starting right after the data in the same file.
+
+initrd.img grew by 849 bytes and cmdline.txt by 2, and neither is runsc: the
+initrd's growth is init.initrd's new workload-device block, and the command
+line's is the verity data-block count going from four digits to five. runsc is
+in the verity root on SNP, not in the initrd — that asymmetry is TDX's, where
+the initramfs is the root.
+
+tunneld grew 4,507 bytes between the two builds for reasons that are not this
+ticket's (the two tickets are 3 days and several commits apart).

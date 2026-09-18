@@ -1,0 +1,82 @@
+=== build-tdx-image: 2026-09-18T20:42:38Z on shs1
+repo 946cc3ea948bb2b71eb43a8aa1b2830b8eda52d2 on ticket-26-the-sandbox-honors-a-pushed-policy
+go   go version go1.26.3 linux/amd64
+out  /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket26-tdx/image
+
+=== 0. the base image, pinned by hash
+/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-tdx-work/c555559c-f76b-4220-8c97-490f1962a496/scratchpad/img/base-disk.raw d0b2b2c29a0bcc42c9dc414706b2b45af99fabf375150afaabcd59cd0785474f (10737418240 bytes)
+GPT PMBR size mismatch (8388607 != 20971519) will be corrected by write.
+The backup GPT table is not on the end of the device.
+partitions: root at byte 1074790400, ESP at byte 5242880, /boot at byte 116391936
+/boot filesystem UUID b4f9057b-66e6-4f5a-bbba-a8086989e88f (what grub's `search --fs-uuid` will resolve)
+
+=== 1. the kernel and the modules, taken out of the image itself
+kernel release 6.17.0-1022-gcp, the one the provider's image carries
+vmlinuz-6.17.0-1022-gcp ddd8198f9bdca634295d6a35b6135ca9a30db8b5e3f8e91cf08b776bfd11e6be (16775240 bytes)
+  tdx-guest.ko 808e90f676fed82d040190b0aca2cb78192043e227d1e1f86ba9d9ac18f779d6 25673 bytes from kernel/drivers/virt/coco/tdx-guest/tdx-guest.ko.zst
+  gve.ko 710a1fd65e546d0895b1b8890f284a5e1048b75d06a7e53e2e9c843ebe25b3fa 357145 bytes from kernel/drivers/net/ethernet/google/gve/gve.ko.zst
+  nf_tables.ko 9da74ffdf3ef28deabb5b174f42ab9a602809d1cbcbf58c6c5024b11001dd896 759657 bytes from kernel/net/netfilter/nf_tables.ko.zst
+  nf_reject_ipv4.ko 5cd0952662e88bf04ada0160c732d9f25238cd07e776f369d8f9c90b3842dc01 21265 bytes from kernel/net/ipv4/netfilter/nf_reject_ipv4.ko.zst
+  nf_reject_ipv6.ko 4aec3e8b0c915a85b0c3fbedff60e5ef8fcbee540bb912ab9bd659fa93e61367 26137 bytes from kernel/net/ipv6/netfilter/nf_reject_ipv6.ko.zst
+  nft_reject.ko 53cee8e9549260ca39e322ebcbfce5c19841db3b36336348e7a3d45ba8bf59fb 16729 bytes from kernel/net/netfilter/nft_reject.ko.zst
+  nft_reject_inet.ko 8f570d2e50250862406faad7c93e15d5542a8e16e524461f6e003bb3cfb6e43b 15777 bytes from kernel/net/netfilter/nft_reject_inet.ko.zst
+
+=== 2. tunneld, checked before it is built and built before it is measured
+$ go test ./cmd/tunneld
+ok  	gvisor.dev/gvisor/attest/cmd/tunneld	2.705s
+guard passed: the packaged graph reaches no fake platform and no test support
+$ CGO_ENABLED=0 go build -trimpath -buildvcs=false -o /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket26-tdx/image/build/tunneld ./cmd/tunneld
+$ CGO_ENABLED=0 go build -trimpath -buildvcs=false -o /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket26-tdx/image/build/agent-probe ./cmd/agent-probe
+agent-probe fc100aad383a0023079f64d2272585fe871e6539a7f87cd075233577dd22af6a (9214897 bytes)
+/home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket26-tdx/image/build/tunneld: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, Go BuildID=-sSRpDuT6RIcOHLFSwek/-OzEvuG9KygQio4AXGTM/aei4pBLUg7i2zYRqcQ52/JfOI4AOc01rnL0jYQgb8, BuildID[sha1]=0a9d81cf5ff5be699791789b829472a5f98ac6c8, with debug_info, not stripped
+tunneld 241fb424f1f3db04dfbd8688c993b7f2d0cf63baa2c3bc31bc11802388a027c6 (17597809 bytes)
+runsc   6019cbf49bc87c5c1ca21382ec069376661bfb56ab74eb3840d61378fbab7819 (109044910 bytes, from /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/runsc-ticket26)
+busybox /usr/bin/busybox dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 (busybox-static 1:1.36.1-6ubuntu3.1)
+
+=== 3. author public key 5660943e0b95a93d4f0dee932e193f4635f74df1f34e5125c5df1089a73b048a (goes into the initrd, and therefore into RTMR2)
+
+=== 4. the initrd: the whole guest, in one file grub measures
+initrd.img d6b8dd9b8924af5669f6d6bfb2c624422051245612afed12a1ea9841ed76fe60 (91913112 bytes, from 56 entries)
+
+=== 5. the fixed boot configuration
+  set default=0
+  set timeout=0
+  menuentry 'attested-tunnel' {
+  	insmod part_gpt
+  	insmod ext2
+  	search --no-floppy --fs-uuid --set=root b4f9057b-66e6-4f5a-bbba-a8086989e88f
+  	linux	/vmlinuz-6.17.0-1022-gcp console=ttyS0,115200 panic=-1 rdinit=/init
+  	initrd	/initrd.img-attested
+  }
+grub.cfg aacf982e03961d45266db8c79df10495fe36e2fc06167a2eb11535d8e79731b1 (272 bytes)
+
+=== 6. the image: two files changed on the /boot partition, nothing else
+grub.cfg inode flags 0x80000 -> 0x80010 (immutable set)
+Pass 5: Checking group summary information
+BOOT: 601/58496 files (0.3% non-contiguous), 47606/233728 blocks
+disk.raw 6164bca4a59f3f10e425789cbca08a5e807b24a75a744169908783bf2d3f8d55 (10737418240 bytes)
+ESP unchanged (917fa42848b63601d35ca66a75e49c32e42b8515e2b0e0ff949415c5750c5323); Ubuntu's root partition unchanged (e8fd5d72634f58d772b4b85d04608173e1ee7937518d4fd987dcca80f1c7de03)
+GPT unchanged (a5fb8e097e42ade5161b074b8dd0fc953d090b7844d4895175c21a4866a36163); RTMR1 keeps the two values the reference value pins
+
+=== 7. RTMR2, predicted from the image just built and from nothing else
+predicted RTMR2 7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1 over 25 records
+
+=== 8. the policy and the reference value set
+author public key: 5660943e0b95a93d4f0dee932e193f4635f74df1f34e5125c5df1089a73b048a
+wrote /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket26-tdx/image/policy.json and /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket26-tdx/image/policy.json.sig (loads back through attest.LoadPolicyFile)
+forwards to: 7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1
+policy digest: 08e453bb09cc4d58cdb0733a3e824c2fa4e02815b7ab601bb2da71ef0744a319
+egress ceiling digest: 197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973 (what a guest from this image presents)
+author public key: 5660943e0b95a93d4f0dee932e193f4635f74df1f34e5125c5df1089a73b048a
+admits peer policy: 197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+wrote /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket26-tdx/image/reference-values.json and /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket26-tdx/image/reference-values.json.sig (loads back through attest.LoadReferenceValueSetFile)
+
+=== built
+image:                   /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket26-tdx/image/disk.raw (6164bca4a59f3f10e425789cbca08a5e807b24a75a744169908783bf2d3f8d55)
+predicted RTMR2:         7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1
+ceiling digest:          197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973 (what a guest presents; attest-tool ceiling -digest)
+emitted policy digest:   08e453bb09cc4d58cdb0733a3e824c2fa4e02815b7ab601bb2da71ef0744a319 (policy.json beside the image; pushed, not delivered)
+reference value set:     /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket26-tdx/image/reference-values.json (+ .sig)
+policy:                  /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket26-tdx/image/policy.json (+ .sig)
+manifest:                /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket26-tdx/image/manifest.txt
+packaging record:        /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket26-tdx/image/packaging.txt

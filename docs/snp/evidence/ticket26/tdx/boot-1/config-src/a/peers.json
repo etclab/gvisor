@@ -1,0 +1,5 @@
+{
+  "format": "gvisor.dev/gvisor/attest/peer-table",
+  "version": 1,
+  "peers": {"guest-b": "10.128.0.41:4433"}
+}

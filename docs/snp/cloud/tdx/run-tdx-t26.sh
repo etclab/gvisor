@@ -419,7 +419,13 @@ echo
 # ---- 3. the two config devices ---------------------------------------------
 echo "############ 3. the two config devices ############"
 write_side() { # a|b  OWN_IP  PEER_LABEL  PEER_IP  SANDBOX
-  local g="$1" ip="$2" peer="$3" peerip="$4" sandbox="$5" d="$W/$g"
+  # Two statements, not one: bash expands every word of a `local` command before
+  # it assigns any of them, so `d="$W/$g"` in the same statement as `g="$1"`
+  # reads the *outer* g — which does not exist, and under `set -u` ends the run
+  # with `g: unbound variable` at the first config device. The dry run cannot
+  # catch it, because the dry run does not write the config devices.
+  local g="$1" ip="$2" peer="$3" peerip="$4" sandbox="$5"
+  local d="$W/$g"
   cat > "$d/peers.json" <<EOF
 {
   "format": "gvisor.dev/gvisor/attest/peer-table",

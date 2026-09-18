@@ -1,0 +1,111 @@
+=== ticket 26, policy: a sandbox that honours a pushed policy, on two Google Cloud TDX guests ===
+date        : 2026-09-18T20:46:39Z
+repo        : 47d4dfdf2d13731b62f492532c9b07096a50c4b1 on ticket-26-the-sandbox-honors-a-pushed-policy
+mode        : live
+project     : nsf-2348130-428843, zone us-central1-a
+image dir   : /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket26-tdx/image
+out         : /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run
+policy input: /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/snp/config
+collateral  : /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/tdx/collateral (provisioned, never fetched)
+
+############ 0. preconditions ############
+predicted RTMR2 of the image both guests boot: 7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1
+the image carries agent-probe, /srv/index.html and /etc/hosts, so its exit has something to serve
+the emitted set names the three-disk RTMR0 this ticket authored
+collateral valid until: 2026-10-18T07:56:25Z
+kill-after  : guest A 150s, guest B 210s (from each guest's own workload start)
+narrow-after: guest B 40s — the second tunneld that pushes the narrower policy at guest A
+tunneld hold: 360s; console deadline 1500s. Both are derived from the knobs, not chosen here.
+idle timeout: 420s on every tunnel, so that no tunnel a policy arrived on idles out
+              before the kill that is supposed to end it
+the three documents this run turns on, and what each governs:
+  A pushes at B : b23887d06a044f0752371ed8899c752ce0023a2aeaec56424e0cc3b747381268  {"format":"policy","version":1,"n":[{"host":"web.peer-a","ports":[80]}],"f":[],"x":[{"path":"/bin/busybox"}]}
+  B pushes at A : 681331c69aedad34d51e9e1f325889ff81863885d1067055bf005ca9e33b785d  {"format":"policy","version":1,"n":[{"host":"web.peer-b","ports":[80]}],"f":[],"x":[{"path":"/bin/busybox"}]}
+  B pushes at A : 92fb0e17644f61d44d0fa7c8ed10d2c5af5b9ccf75911a4d106463ba2967248e  {"format":"policy","version":1,"n":[],"f":[],"x":[{"path":"/bin/busybox"}]}   (second, narrower)
+
+############ 1. the workload disk, one bundle, attached to both guests ############
+    + bash /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/snp/make-bundle.sh /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/workload-src-tdx /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/workload.raw -tdx
+bundle:
+  ./config.json  8097d6bcbb09d561…  645 bytes
+  ./rootfs/bin/busybox  dbac288c29ba5684…  2124608 bytes
+  ./rootfs/bin/cat -> busybox
+  ./rootfs/bin/echo -> busybox
+  ./rootfs/bin/head -> busybox
+  ./rootfs/bin/probe  75dfb7becbff66f9…  2124825 bytes
+  ./rootfs/bin/sh -> busybox
+  ./rootfs/bin/sleep -> busybox
+  ./rootfs/bin/uname -> busybox
+  ./rootfs/bin/wc -> busybox
+  ./rootfs/bin/wget -> busybox
+  ./rootfs/etc/hosts  5b482934e8156847…  34 bytes
+  ./rootfs/etc/nsswitch.conf  2ad90a00ddc40e29…  17 bytes
+  ./rootfs/etc/resolv.conf  192a7dd1559c24eb…  22 bytes
+  ./rootfs/policy-probe.sh  74bd53e6eb1d3f94…  12980 bytes
+
+the two identities the exec control turns on, at full width:
+  /bin/busybox  dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14
+  /bin/probe    75dfb7becbff66f9083b1fa955bef2d0c6de178a8892bbfaff82fa26515d00b9
+
+workload: config.json  8097d6bcbb09d56162d8d30dcc61a73fee6a2d6cd99ca96f181db3337359e9a9  645 bytes
+workload: rootfs/  (14 files, 4196 KiB)
+Warning: label too long; will be truncated to 'attested-workloa'
+
+workload device written to /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/workload.raw (root-owned, ext4 without a journal)
+  size   1073741824 bytes, label attested-workload (ext4 stores the first 16 bytes of it)
+  sha256 30a18c238b86b6d4a6aae0cc637c4d27d15b888b5b1ca81a8021b8971d7bcbc1  (not measured, and nothing on it is trusted)
+
+############ 2. authoring the four signed documents ############
+    D_A (guest A's own policy) = 08e453bb09cc4d58cdb0733a3e824c2fa4e02815b7ab601bb2da71ef0744a319
+    D_B (guest B's own policy) = 6385a230b994a108247c12845b207301a5486bec6f5f1372365647523cc4237c
+    a| author public key: 5660943e0b95a93d4f0dee932e193f4635f74df1f34e5125c5df1089a73b048a
+    a| wrote /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/config-src/a/policy.json and /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/config-src/a/policy.json.sig (loads back through attest.LoadPolicyFile)
+    a| forwards to: 7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1
+    a| policy digest: 08e453bb09cc4d58cdb0733a3e824c2fa4e02815b7ab601bb2da71ef0744a319
+    a| author public key: 5660943e0b95a93d4f0dee932e193f4635f74df1f34e5125c5df1089a73b048a
+    a| admits peer policy: 6385a230b994a108247c12845b207301a5486bec6f5f1372365647523cc4237c
+    a| wrote /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/config-src/a/reference-values.json and /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/config-src/a/reference-values.json.sig (loads back through attest.LoadReferenceValueSetFile)
+    a| 
+    a| policy digest of the policy just written: 08e453bb09cc4d58cdb0733a3e824c2fa4e02815b7ab601bb2da71ef0744a319
+    a|   (this is the number the OTHER guest passes as -admit-policy)
+    b| author public key: 5660943e0b95a93d4f0dee932e193f4635f74df1f34e5125c5df1089a73b048a
+    b| wrote /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/config-src/b/policy.json and /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/config-src/b/policy.json.sig (loads back through attest.LoadPolicyFile)
+    b| forwards to: 7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1
+    b| forwards to: d79409ccd2bdca0bafc6b4a452899e79a6f4acf3102221b77626d96b0a327e0ee55cc7d5a5034f7aaf2eb39da3a39592
+    b| policy digest: 6385a230b994a108247c12845b207301a5486bec6f5f1372365647523cc4237c
+    b| author public key: 5660943e0b95a93d4f0dee932e193f4635f74df1f34e5125c5df1089a73b048a
+    b| admits peer policy: 08e453bb09cc4d58cdb0733a3e824c2fa4e02815b7ab601bb2da71ef0744a319
+    b| wrote /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/config-src/b/reference-values.json and /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/config-src/b/reference-values.json.sig (loads back through attest.LoadReferenceValueSetFile)
+    b| 
+    b| policy digest of the policy just written: 6385a230b994a108247c12845b207301a5486bec6f5f1372365647523cc4237c
+    b|   (this is the number the OTHER guest passes as -admit-policy)
+PASS  the two policies have distinct digests, so 'each names the other' is two numbers
+PASS  guest A's set names the three-disk RTMR0 this ticket authored
+PASS  guest B's set names it too
+
+############ 3. the two config devices ############
+docs/snp/cloud/tdx/run-tdx-t26.sh: line 422: g: unbound variable
+
+############ tearing down ############
+t26-policy-a was never created; nothing to delete
+t26-policy-b was never created; nothing to delete
+
+what still carries purpose=attested-tunnel-t26:
+disks:
+images:
+attested-config-tdx-smoke-a-20260910214749	READY
+attested-tdx-640de950bbdd	READY
+attested-tdx-d5ddcc423b1a	READY
+buckets:
+bucket-sep-25
+
+############ rows for docs/snp/cloud/tdx/RESOURCES.md ############
+| created | name | type | purpose | state |
+|---|---|---|---|---|
+| (never created) | t26-policy-a | c3-standard-4 TDX, us-central1-a, 20GB pd-balanced boot from `?` + 10GB pd-balanced config disk + 10GB pd-balanced workload disk (`device-name attested-workload`) — a THREE-disk shape, whose RTMR0 `8ee4fa36…b70a3f` this ticket authored, `--private-network-ip 10.128.0.40` | ticket 26 policy, guest A: the sandbox that is narrowed mid-fetch and killed at 150s | **deleted (not deleted)** |
+| (never created) | t26-policy-b | c3-standard-4 TDX, us-central1-a, 20GB pd-balanced boot from `?` + 10GB pd-balanced config disk + 10GB pd-balanced workload disk (`device-name attested-workload`) — a THREE-disk shape, whose RTMR0 `8ee4fa36…b70a3f` this ticket authored, `--private-network-ip 10.128.0.41` | ticket 26 policy, guest B: the second pusher (narrow-after 40s), killed at 210s | **deleted (not deleted)** |
+
+Every bucket this run used was created and deleted inside publish-tdx-image.sh, which is
+where Compute Engine takes bytes from; none survives the call that made it.
+
+=== 3 passed, 0 failed ===
+=== done 2026-09-18T20:47:05Z, exit 1 ===

@@ -207,7 +207,17 @@ returned. `docs/snp/evidence/ticket26/tdx/RUNBOOK.md` §9 is the discipline.
 
 | created | name | type | purpose | state |
 |---|---|---|---|---|
+| 2026-09-18T21:06Z | t26-policy-a | c3-standard-4 TDX, us-central1-a, 20GB pd-balanced boot from custom image `attested-tdx-7f7c43153cab` + 10GB pd-balanced config disk from `attested-config-t26-a-20260918205702` + 10GB pd-balanced **workload** disk from `attested-workload-t26-20260918205702` (`device-name attested-workload`), `--private-network-ip 10.128.0.40`, `--labels purpose=attested-tunnel-t26` | ticket 26, boot pair 1, guest A: the sandbox to be narrowed mid-fetch and killed at 150 s. **The guest booted, attested and reported the three-disk RTMR0 this ticket authored; its sandbox never started.** `runsc` died on `open /config/tunnel-table.json: permission denied` — `mkconfigdev-tdx.sh` did not chown the device's inodes to root, so the table belonged to an id the workload's user namespace does not map (`docs/snp/evidence/ticket26/tdx/run/console-a.txt:776`) | **deleted 2026-09-18T21:17Z** (~11 min) |
+| 2026-09-18T21:06Z | t26-policy-b | the same three-disk shape, config disk `attested-config-t26-b-20260918205702`, `--private-network-ip 10.128.0.41`, `--labels purpose=attested-tunnel-t26` | ticket 26, boot pair 1, guest B: the second pusher (narrow-after 40 s), killed at 210 s. The same failure, and its second tunneld started and pushed as asked | **deleted 2026-09-18T21:17Z** (~11 min) |
+| 2026-09-18T21:06Z | attested-tdx-7f7c43153cab | custom image, 10 GiB, `purpose=attested-tunnel-t26` | ticket 26 boot pair 1: the guest image, predicted RTMR2 `7f7c4315…04aa1`, which is what both guests reported | **deleted 2026-09-18T21:17Z, with the run** |
+| 2026-09-18T21:06Z | attested-config-t26-{a,b}-20260918205702, attested-workload-t26-20260918205702 | custom images, 1 GiB each, `purpose=attested-tunnel-t26` | ticket 26 boot pair 1: the two config devices and the workload device (one bundle, attached to both guests) | **each deleted 2026-09-18T21:17Z, with the run** |
+| 2026-09-18T20:57Z … 21:06Z | `attested-tunnel-t19-20260918{205702,205855,210124,210437}`, four in all | Cloud Storage buckets, us-central1 | ticket 26 boot pair 1: staging for the four image publishes. The *name* still carries t19 because it is `publish-tdx-image.sh`'s default and this ticket did not change that script; the *labels* are `purpose=attested-tunnel-t26` | **each created and deleted inside the publish that made it; none survives** |
 
-*(No row yet: nothing has been created. The scenario was prepared —
-`run-tdx-t26.sh`, the image build, the bundle and the two config devices — and
-checked with `-dry-run`, which creates nothing.)*
+**State after boot pair 1, 2026-09-18T21:17Z**, confirmed at 23:12Z by
+`gcloud compute instances list --zones us-central1-a` (only the seven
+pre-existing TERMINATED instances) and
+`gcloud compute instances list --filter="labels.purpose=attested-tunnel-t26"`
+(`Listed 0 items.`): **nothing of this pair survives.** Two `c3-standard-4` TDX
+instances existed for about eleven minutes each — about **22 instance-minutes** —
+and both were deleted the same hour they were created. Four custom images and
+four buckets were created and deleted inside the same run.

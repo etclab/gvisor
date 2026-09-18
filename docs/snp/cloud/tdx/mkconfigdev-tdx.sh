@@ -94,6 +94,43 @@ truncate -s "${SIZE_MB}M" "$OUT"
 # the initrd falls back to when the provider does not expose the device name
 # the disk was attached with.
 mke2fs -q -t ext4 -O ^has_journal -L "$LABEL" -m 0 -E root_owner=0:0 -d "$SRC" "$OUT"
-echo "config device written to $OUT"
+
+# Root-owned, and every inode and not just the root directory: `-E root_owner`
+# sets that one and `-d` copies the caller's uid onto everything else. This is
+# docs/snp/image/mkconfigdev.sh's paragraph, one vendor over, and it is here
+# because ticket 26's first TDX pair died of its absence. Until ticket 25 every
+# reader of this device was tunneld, which runs as the initrd's root in the
+# initial user namespace and has CAP_DAC_OVERRIDE over a file whoever owns it.
+#
+# The tunnel table broke that. It is read by `runsc run`, inside the user
+# namespace busybox unshare makes, which maps exactly one id, 0 to 0. A
+# capability over a file is only a capability when the file's owner is mapped
+# into the namespace (capable_wrt_inode_uidgid, user_namespaces(7)), so a device
+# built by an ordinary user hands runsc a table owned by an id that does not
+# exist in there. Both guests of 2026-09-18T21:06Z said so and said nothing that
+# pointed back here:
+#
+#   cannot create sandbox process: starting the tunnel helper:
+#   opening the tunnel table "/config/tunnel-table.json":
+#   open /config/tunnel-table.json: permission denied
+#
+# The modes are left alone rather than widened: mke2fs writes them through the
+# caller's umask, so on a session with umask 077 every file is 0600, and owned by
+# root that is readable by root in both namespaces, which is the whole
+# requirement. debugfs does the chown because chown needs root and this script
+# does not have it.
+{ find "$SRC" -mindepth 1 | sed "s#^$SRC##" | while read -r f; do
+    echo "sif $f uid 0"; echo "sif $f gid 0"
+  done
+} | debugfs -w -f /dev/stdin "$OUT" >/dev/null 2>&1
+
+# And checked, because a silent miss here is a guest that boots, attests, and
+# then cannot start its sandbox — which is what it cost to learn this.
+BAD=$( { echo "/"; find "$SRC" -mindepth 1 -type d | sed "s#^$SRC##"; } | while read -r d; do
+         debugfs -R "ls -l $d" "$OUT" 2>/dev/null | awk 'NF>6 && ($4!=0 || $5!=0) {print $NF}'
+       done )
+[ -z "$BAD" ] || { echo "config: refusing: not root-owned in the image: $BAD" >&2; exit 1; }
+
+echo "config device written to $OUT (every inode root-owned)"
 echo "  size   $(stat -c %s "$OUT") bytes, label $LABEL"
 echo "  sha256 $(sha256sum "$OUT" | cut -d' ' -f1)  (not measured, and nothing on it is trusted)"

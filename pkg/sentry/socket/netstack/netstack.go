@@ -817,6 +817,14 @@ func (s *sock) Connect(t *kernel.Task, sockaddr []byte, blocking bool) *syserr.E
 	}
 	addr = s.mapFamily(addr, family)
 
+	// The tunnel adapter's one hook on this path: a destination the sentry
+	// allocated for a name in the table is attached through the helper and
+	// answered here, and every other address that is not this sandbox's own
+	// loopback is refused here. Without --tunnel-* nothing below changes.
+	if handled, err := tunnelConnect(t, s, addr); handled {
+		return err
+	}
+
 	// Always return right away in the non-blocking case.
 	if !blocking {
 		return syserr.TranslateNetstackError(s.Endpoint.Connect(addr))
@@ -3404,6 +3412,14 @@ func (s *sock) SendMsg(t *kernel.Task, src usermem.IOSequence, to []byte, flags 
 			return 0, syserr.ErrInvalidArgument
 		}
 		addrBuf = s.mapFamily(addrBuf, family)
+
+		// The tunnel adapter refuses a datagram that names a destination
+		// outside this sandbox's loopback. A connected datagram socket does
+		// not come through here at all: it gave its address to connect(2),
+		// which is the hook above (spike E2, finding 2).
+		if err := tunnelSendTo(t, s, addrBuf); err != nil {
+			return 0, err
+		}
 
 		addr = &addrBuf
 	}

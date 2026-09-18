@@ -99,6 +99,19 @@ type tunnelEndpoint struct {
 	// take.
 	// +checklocks:mu
 	wbuf []byte
+	// pendingShutWr records a SHUT_WR that has been asked for and cannot be
+	// issued yet, because wbuf still holds the tail of a request. Telling the
+	// peer the stream ended while bytes of it are still in hand would truncate
+	// it silently, so the shutdown is issued from the flush path instead, once
+	// the backlog drains.
+	// +checklocks:mu
+	pendingShutWr bool
+	// werr is an error the descriptor gave for bytes this endpoint had already
+	// taken from a Payloader. Those bytes cannot be handed back, so they stay
+	// in wbuf and the error is reported on the next call rather than dropped
+	// with them.
+	// +checklocks:mu
+	werr tcpip.Error
 	// The keepalive options are remembered so that the four setsockopt calls
 	// Go makes on every connection look honoured.
 	// +checklocks:mu
@@ -147,7 +160,11 @@ func newTunnelEndpoint(fd int, local, remote tcpip.FullAddress, target *waiter.Q
 			// A backed-up write can only be drained here.
 			if mask&waiter.WritableEvents != 0 {
 				e.mu.Lock()
-				e.flushLocked()
+				if err := e.flushLocked(); err != nil {
+					// Nothing here can be told; the error is sticky and the
+					// next Write reports it.
+					log.Debugf("tunnel: host fd %d: flushing the backlog: %v", e.fd, err)
+				}
 				e.mu.Unlock()
 			}
 			e.target.Notify(mask)
@@ -234,7 +251,8 @@ func (e *tunnelEndpoint) Read(w io.Writer, opts tcpip.ReadOptions) (tcpip.ReadRe
 	return res, nil
 }
 
-// flushLocked drains whatever the descriptor would not take earlier.
+// flushLocked drains whatever the descriptor would not take earlier, and
+// issues a SHUT_WR that was waiting for the backlog to go.
 // +checklocks:e.mu
 func (e *tunnelEndpoint) flushLocked() tcpip.Error {
 	for len(e.wbuf) > 0 {
@@ -245,16 +263,32 @@ func (e *tunnelEndpoint) flushLocked() tcpip.Error {
 		if err == unix.EINTR {
 			continue
 		}
-		if err != nil {
-			return tunnelMapErr(err)
-		}
-		if n == 0 {
+		if err == unix.EAGAIN {
 			break
 		}
+		if err != nil {
+			e.werr = tunnelMapErr(err)
+			return e.werr
+		}
+		if n == 0 {
+			e.werr = &tcpip.ErrClosedForSend{}
+			return e.werr
+		}
 	}
-	if len(e.wbuf) == 0 {
-		e.wbuf = nil
+	if len(e.wbuf) > 0 {
+		return nil
 	}
+	e.wbuf = nil
+	if !e.pendingShutWr {
+		return nil
+	}
+	// The tail is out; the peer may be told the stream ended.
+	e.pendingShutWr = false
+	if err := unix.Shutdown(int(e.fd), unix.SHUT_WR); err != nil {
+		e.werr = tunnelMapErr(err)
+		return e.werr
+	}
+	log.Debugf("tunnel: host fd %d: the deferred SHUT_WR went out behind the backlog", e.fd)
 	return nil
 }
 
@@ -269,11 +303,18 @@ func (e *tunnelEndpoint) Write(p tcpip.Payloader, opts tcpip.WriteOptions) (int6
 	if e.closed || e.shutWr {
 		return 0, &tcpip.ErrClosedForSend{}
 	}
+	if e.werr != nil {
+		return 0, e.werr
+	}
 	// Drain the backlog first, and do not touch the Payloader until it is
 	// gone: Write takes ownership of what it reads, so a partial host write
-	// after a partial read would lose bytes.
+	// after a partial read would lose bytes, and taking more while a backlog
+	// stands would let the backlog grow without bound.
 	if err := e.flushLocked(); err != nil {
 		return 0, err
+	}
+	if len(e.wbuf) > 0 {
+		return 0, &tcpip.ErrWouldBlock{}
 	}
 	want := p.Len()
 	if want == 0 {
@@ -298,20 +339,29 @@ func (e *tunnelEndpoint) Write(p tcpip.Payloader, opts tcpip.WriteOptions) (int6
 		if err == unix.EAGAIN {
 			// Keep the rest; the notification path will flush it.
 			e.wbuf = append(e.wbuf, buf[written:]...)
-			written = want
 			break
 		}
-		if err != nil {
-			if written > 0 {
-				return int64(written), nil
+		if err != nil || n == 0 {
+			// The same rule as EAGAIN, for the same reason: these bytes came
+			// out of the Payloader and cannot be given back, so dropping them
+			// here would leave a hole in the middle of the stream that nothing
+			// ever fills. They go to the backlog and the error becomes sticky,
+			// which is also how a real socket behaves — the write after the
+			// peer went away is the one that fails, not the one that raced it.
+			e.wbuf = append(e.wbuf, buf[written:]...)
+			if err != nil {
+				e.werr = tunnelMapErr(err)
+			} else {
+				e.werr = &tcpip.ErrClosedForSend{}
 			}
-			return 0, tunnelMapErr(err)
-		}
-		if n == 0 {
 			break
 		}
 	}
-	return int64(written), nil
+	// Every one of the bytes taken from the Payloader is this endpoint's now,
+	// whether it reached the descriptor or the backlog, so the count is what
+	// was taken. Reporting less would make the caller send the same bytes
+	// twice from its own accounting.
+	return int64(want), nil
 }
 
 // Connect implements tcpip.Endpoint.Connect. The stream is up before the
@@ -322,29 +372,51 @@ func (e *tunnelEndpoint) Connect(tcpip.FullAddress) tcpip.Error { return nil }
 func (e *tunnelEndpoint) Disconnect() tcpip.Error { return &tcpip.ErrNotSupported{} }
 
 // Shutdown implements tcpip.Endpoint.Shutdown.
+//
+// The write half is the one that matters: spike E1a's run 18 showed that a
+// SHUT_WR which does not reach the peer stalls a request/response protocol
+// until some timeout. It must not reach the peer *early* either — a shutdown
+// issued while the tail of the request is still in the backlog would end the
+// stream in the middle of it — so when there is a backlog the shutdown is
+// remembered and the flush path issues it.
 func (e *tunnelEndpoint) Shutdown(flags tcpip.ShutdownFlags) tcpip.Error {
+	if flags&(tcpip.ShutdownRead|tcpip.ShutdownWrite) == 0 {
+		return &tcpip.ErrInvalidEndpointState{}
+	}
 	e.mu.Lock()
 	if e.closed {
 		e.mu.Unlock()
 		return &tcpip.ErrNotConnected{}
 	}
-	var how int
-	switch {
-	case flags&tcpip.ShutdownRead != 0 && flags&tcpip.ShutdownWrite != 0:
-		how, e.shutRd, e.shutWr = unix.SHUT_RDWR, true, true
-	case flags&tcpip.ShutdownWrite != 0:
-		how, e.shutWr = unix.SHUT_WR, true
-	case flags&tcpip.ShutdownRead != 0:
-		how, e.shutRd = unix.SHUT_RD, true
-	default:
-		e.mu.Unlock()
-		return &tcpip.ErrInvalidEndpointState{}
-	}
-	e.flushLocked()
 	fd := e.fd
+	var now []int
+	if flags&tcpip.ShutdownRead != 0 && !e.shutRd {
+		e.shutRd = true
+		now = append(now, unix.SHUT_RD)
+	}
+	deferred := false
+	if flags&tcpip.ShutdownWrite != 0 && !e.shutWr {
+		e.shutWr = true
+		if err := e.flushLocked(); err != nil {
+			e.mu.Unlock()
+			return err
+		}
+		if len(e.wbuf) > 0 {
+			e.pendingShutWr = true
+			deferred = true
+		} else {
+			now = append(now, unix.SHUT_WR)
+		}
+	}
+	backlog := len(e.wbuf)
 	e.mu.Unlock()
-	if err := unix.Shutdown(int(fd), how); err != nil {
-		return tunnelMapErr(err)
+	for _, how := range now {
+		if err := unix.Shutdown(int(fd), how); err != nil {
+			return tunnelMapErr(err)
+		}
+	}
+	if deferred {
+		log.Debugf("tunnel: host fd %d: SHUT_WR is held until %d backlogged bytes go out", fd, backlog)
 	}
 	return nil
 }
@@ -378,12 +450,21 @@ func (e *tunnelEndpoint) GetRemoteAddress() (tcpip.FullAddress, tcpip.Error) {
 // non-blocking poll, and anything already buffered in the sentry is added,
 // because the descriptor no longer holds it.
 func (e *tunnelEndpoint) Readiness(mask waiter.EventMask) waiter.EventMask {
-	ready := fdnotifier.NonBlockingPoll(e.fd, mask)
 	e.mu.Lock()
-	if len(e.rbuf) > 0 {
+	if e.closed {
+		e.mu.Unlock()
+		// The descriptor is gone and its number may already belong to
+		// something else, so it must not be polled. A closed endpoint is
+		// hung up and neither blocks nor delivers.
+		return mask & (waiter.EventHUp | waiter.ReadableEvents | waiter.WritableEvents)
+	}
+	fd, buffered := e.fd, len(e.rbuf) > 0
+	e.mu.Unlock()
+	// Asked outside the lock: the notification callback takes it too.
+	ready := fdnotifier.NonBlockingPoll(fd, mask)
+	if buffered {
 		ready |= waiter.ReadableEvents & mask
 	}
-	e.mu.Unlock()
 	return ready
 }
 

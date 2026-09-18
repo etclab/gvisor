@@ -15,6 +15,7 @@
 package netstack
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -403,6 +404,125 @@ func TestTunnelEndpointCarriesBytesAndTheHalfClose(t *testing.T) {
 	n, rerr = unix.Read(peer, buf)
 	if rerr != nil || n != 0 {
 		t.Errorf("after SHUT_WR the peer read %d bytes, %v; wanted a clean end of file", n, rerr)
+	}
+}
+
+func TestTunnelEndpointHoldsTheHalfCloseBehindABacklog(t *testing.T) {
+	ep, peer := testEndpoint(t)
+
+	// Fill the socketpair until the descriptor stops taking bytes. What the
+	// last Write could not hand over is the backlog, and it is the tail of
+	// what the sandbox meant to send.
+	chunk := make([]byte, 64<<10)
+	for i := range chunk {
+		chunk[i] = byte(i)
+	}
+	sent := 0
+	backlogged := false
+	for i := 0; i < 256; i++ {
+		before := ep.backlogLen()
+		n, err := ep.Write(&payload{b: chunk}, tcpip.WriteOptions{})
+		if err != nil {
+			t.Fatalf("Write #%d = %v", i, err)
+		}
+		sent += int(n)
+		if ep.backlogLen() > before {
+			backlogged = true
+			break
+		}
+	}
+	if !backlogged {
+		t.Skip("the socketpair took 16 MiB without blocking; there is no backlog to hold the shutdown behind")
+	}
+
+	// The half-close must NOT reach the peer yet: the tail is still here.
+	if err := ep.Shutdown(tcpip.ShutdownWrite); err != nil {
+		t.Fatalf("Shutdown(SHUT_WR): %v", err)
+	}
+	if !ep.shutWrPending() {
+		t.Fatalf("Shutdown(SHUT_WR) did not hold the shutdown behind a %d byte backlog", ep.backlogLen())
+	}
+
+	// Drain the peer. Every byte the endpoint took must come back in order,
+	// and the end of the stream must come after the last of them and not
+	// before — a shutdown issued early truncates the request silently.
+	got, err := drain(t, peer, ep)
+	if err != nil {
+		t.Fatalf("draining the peer: %v", err)
+	}
+	if got != sent {
+		t.Errorf("the peer read %d bytes and the endpoint took %d: the backlog was lost", got, sent)
+	}
+	if ep.shutWrPending() {
+		t.Errorf("the backlog drained and the shutdown is still being held")
+	}
+}
+
+// drain reads the peer to end of file, flushing the endpoint's backlog from
+// the same goroutine, which is what the notification path does in a sandbox.
+func drain(t *testing.T, peer int, ep *tunnelEndpoint) (int, error) {
+	t.Helper()
+	buf := make([]byte, 64<<10)
+	total := 0
+	for i := 0; i < 100000; i++ {
+		ep.mu.Lock()
+		ferr := ep.flushLocked()
+		ep.mu.Unlock()
+		if ferr != nil {
+			return total, fmt.Errorf("flushing: %v", ferr)
+		}
+		n, err := unix.Read(peer, buf)
+		if err == unix.EAGAIN || err == unix.EINTR {
+			continue
+		}
+		if err != nil {
+			return total, err
+		}
+		if n == 0 {
+			return total, nil // the half-close arrived
+		}
+		total += n
+	}
+	return total, fmt.Errorf("no end of file after 100000 reads")
+}
+
+// backlogLen and shutWrPending read the two pieces of state the deferred
+// shutdown turns on, so the test asserts the mechanism and not just the bytes.
+func (e *tunnelEndpoint) backlogLen() int {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	return len(e.wbuf)
+}
+
+func (e *tunnelEndpoint) shutWrPending() bool {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	return e.pendingShutWr
+}
+
+func TestTunnelPrintable(t *testing.T) {
+	// A name reaches the log and the trace straight from a DNS question, where
+	// a label may carry any byte at all.
+	for _, tc := range []struct{ in, want string }{
+		{"api.anthropic.com", "api.anthropic.com"},
+		{"a\nI0918 12:00:00.000000 1 forged.go:1] nothing happened", "a?I0918 12:00:00.000000 1 forged.go:1] nothing happened"},
+		{"a\x00b\x7f\xffc", "a?b??c"},
+		{strings.Repeat("x", 300), strings.Repeat("x", tunnelMaxName)},
+	} {
+		if got := tunnelPrintable(tc.in); got != tc.want {
+			t.Errorf("tunnelPrintable(%q) = %q, wanted %q", tc.in, got, tc.want)
+		}
+	}
+}
+
+func TestTunnelEndpointReadinessAfterClose(t *testing.T) {
+	ep, _ := testEndpoint(t)
+	ep.Close()
+	// The descriptor number may already belong to something else, so a closed
+	// endpoint must answer from its own state and not poll.
+	got := ep.Readiness(waiter.ReadableEvents | waiter.WritableEvents | waiter.EventHUp)
+	if got&waiter.EventHUp == 0 {
+		t.Errorf("Readiness() after Close = %#x, wanted it to report a hangup", got)
 	}
 }
 

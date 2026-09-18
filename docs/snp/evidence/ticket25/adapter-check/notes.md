@@ -136,7 +136,7 @@ and it does not hang.** Both of the two ways it can happen:
     no-helper:  tunnel attach: www.rfc-editor.org:443 -> peer "b": unavailable in 419.576µs
                 (TunnelHelper.Open(www.rfc-editor.org:443): broken pipe)
 
-    egress_refused protocol=tcp address=100.64.1.0 port=443 name=www.rfc-editor.org reason=unavailable
+    egress_refused protocol=tcp address=100.64.1.1 port=443 name=www.rfc-editor.org reason=unavailable
 
 Note the second one's shape: a helper that could not connect to tunneld exits,
 and the sentry's next call fails with a raw `EPIPE` from the write of the

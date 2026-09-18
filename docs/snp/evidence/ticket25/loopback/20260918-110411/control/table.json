@@ -1,0 +1,8 @@
+{
+	"default_exit": "b",
+	"names": {
+		"www.rfc-editor.org": {
+			"port": 443
+		}
+	}
+}

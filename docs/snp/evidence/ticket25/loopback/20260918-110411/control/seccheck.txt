@@ -1,0 +1,5 @@
+listening on /dev/shm/t25-1696591995/control.events
+connected: the sentry speaks wire version 1
+egress_refused protocol=dns name=api.anthropic.com reason=unknown-name time=2026-09-18T15:04:11.817556769Z
+egress_refused protocol=dns name=api.anthropic.com reason=unknown-name time=2026-09-18T15:04:11.822416964Z
+disconnected

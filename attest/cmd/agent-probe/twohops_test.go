@@ -277,13 +277,7 @@ type bSide struct {
 func (b *bSide) matching(prefix string) []string {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	var found []string
-	for _, line := range b.lines {
-		if strings.Contains(line, prefix) {
-			found = append(found, line)
-		}
-	}
-	return found
+	return containing(b.lines, prefix)
 }
 
 // startB brings up the far side and the goroutine that answers a's stream.

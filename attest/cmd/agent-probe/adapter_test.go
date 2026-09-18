@@ -335,8 +335,14 @@ func (l *loopback) buildRootfs(t *testing.T) {
 		}
 	}
 
-	go_ := goTool(t)
-	cmd := exec.Command(go_, "build", "-o", filepath.Join(l.root, "agent-probe"), ".")
+	// The toolchain has to be on PATH. A tree without one skips rather than
+	// failing: there is nothing to prove about the adapter if the thing that
+	// goes inside the sandbox cannot be built at all.
+	tool, err := exec.LookPath("go")
+	if err != nil {
+		t.Skipf("no go on PATH to build the workload with (try PATH=/usr/local/go/bin:$PATH): %v", err)
+	}
+	cmd := exec.Command(tool, "build", "-o", filepath.Join(l.root, "agent-probe"), ".")
 	cmd.Env = append(os.Environ(), "CGO_ENABLED=0")
 	if built, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("building the workload: %v\n%s", err, built)
@@ -458,7 +464,7 @@ type sandboxRun struct {
 // sandbox writes one bundle, runs runsc over it and captures everything.
 func (l *loopback) sandbox(t *testing.T, name string, names map[string]int) *sandboxRun {
 	t.Helper()
-	r := &sandboxRun{name: name, dir: filepath.Join(l.scratch, name), at: newStamps()}
+	r := &sandboxRun{name: name, dir: filepath.Join(l.scratch, name), at: &stamps{at: map[string]time.Duration{}}}
 	r.debug = filepath.Join(r.dir, "debug")
 	if err := os.MkdirAll(r.debug, 0o700); err != nil {
 		t.Fatalf("%s: %v", r.dir, err)
@@ -513,13 +519,18 @@ func (l *loopback) sandbox(t *testing.T, name string, names map[string]int) *san
 	l.out.logf("%s  table = %s", name, text)
 	l.out.logf("%s  $ %s %s", name, l.runsc, strings.Join(r.args, " "))
 
-	so, se := create(t, r.stdout), create(t, r.stderr)
+	capture := create(t, r.stdout, r.stderr)
+	so, se := capture[0], capture[1]
 	cmd := exec.CommandContext(l.ctx, l.runsc, r.args...)
 	cmd.Stdout, cmd.Stderr = so, se
 
-	l.at.Store(r.at)
-	r.at.begin()
+	// The clock is set before the pointer is published, not after: the exit
+	// runs in its own goroutine and marks the moment it sees a stream, so a
+	// zero written after the Store would be a write racing that goroutine's
+	// read. The Store is the release that makes it visible.
 	began := time.Now()
+	r.at.zero = began
+	l.at.Store(r.at)
 	r.err = cmd.Run()
 	r.elapsed = time.Since(began)
 	r.at.mark("task_end")
@@ -565,7 +576,7 @@ func (l *loopback) receiver(t *testing.T, r *sandboxRun) (string, func()) {
 
 	socket := filepath.Join(l.shm, r.name+".events")
 	r.events = filepath.Join(r.dir, "seccheck.txt")
-	sink := create(t, r.events)
+	sink := create(t, r.events)[0]
 	cmd := exec.CommandContext(l.ctx, binary, socket)
 	cmd.Stdout, cmd.Stderr = sink, sink
 	if err := cmd.Start(); err != nil {
@@ -623,14 +634,6 @@ type stamps struct {
 	lines []string
 }
 
-func newStamps() *stamps { return &stamps{at: map[string]time.Duration{}} }
-
-func (s *stamps) begin() {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.zero = time.Now()
-}
-
 // mark records the first time something happened and ignores every later one.
 func (s *stamps) mark(name string) {
 	s.mu.Lock()
@@ -662,8 +665,16 @@ func (s *stamps) line(text string) {
 func (s *stamps) matching(prefix string) []string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	return containing(s.lines, prefix)
+}
+
+// containing is the search both this file and twohops_test.go do over a slice
+// of remembered log lines. It takes the lines rather than the thing that holds
+// them because the two holders lock differently and neither lock is this
+// function's business.
+func containing(lines []string, prefix string) []string {
 	var found []string
-	for _, line := range s.lines {
+	for _, line := range lines {
 		if strings.Contains(line, prefix) {
 			found = append(found, line)
 		}
@@ -874,25 +885,19 @@ func (l *loopback) said(path string) string {
 	return string(text)
 }
 
-func create(t *testing.T, path string) *os.File {
+// create opens every file a run captures into, in one call, so that a run
+// either has all of them or fails before it has started anything.
+func create(t *testing.T, paths ...string) []*os.File {
 	t.Helper()
-	f, err := os.Create(path)
-	if err != nil {
-		t.Fatalf("%s: %v", path, err)
+	files := make([]*os.File, 0, len(paths))
+	for _, path := range paths {
+		f, err := os.Create(path)
+		if err != nil {
+			t.Fatalf("%s: %v", path, err)
+		}
+		files = append(files, f)
 	}
-	return f
-}
-
-// goTool is the toolchain that builds the workload. It has to be on PATH, and
-// a tree without one skips rather than failing: there is nothing to prove
-// about the adapter if the thing that goes inside the sandbox cannot be built.
-func goTool(t *testing.T) string {
-	t.Helper()
-	path, err := exec.LookPath("go")
-	if err != nil {
-		t.Skipf("no go on PATH to build the workload with (try PATH=/usr/local/go/bin:$PATH): %v", err)
-	}
-	return path
+	return files
 }
 
 func present(on bool) string {

@@ -16,6 +16,8 @@ package sandbox
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -138,7 +140,31 @@ func (h *Host) Apply(ctx context.Context, policy []byte) error {
 			return err
 		}
 	}
+	h.said(policy)
 	return nil
+}
+
+// said writes the one console line a push is read off, in the shape [Null]
+// writes it and with the same four fields.
+//
+// It is the same line because it is the same claim, and a transcript that had
+// to know which sandbox was beside which tunneld before it could find the
+// digest would not be a transcript of the contract. It is written once per
+// push and not once per attachment: a push is acknowledged when every
+// attachment has taken it, so one line is one policy in force, whether one
+// sandbox answered or two.
+func (h *Host) said(policy []byte) {
+	if h.logf == nil {
+		return
+	}
+	e, err := ReadEnvelope(policy)
+	if err != nil {
+		// Unreachable through tunneld, which reads the envelope first. A
+		// sandbox that took something else has its own console.
+		return
+	}
+	sum := sha256.Sum256(policy)
+	h.log("SANDBOX applied format=%s version=%d bytes=%d sha256=%s", e.Format, e.Version, len(policy), hex.EncodeToString(sum[:]))
 }
 
 // watchInterval is how often a watch looks at what the attachments last said.

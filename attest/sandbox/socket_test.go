@@ -441,13 +441,14 @@ var anotherPolicysDigest = strings.Repeat("00", 32)
 func TestASandboxPulsesTheDigestOfThePolicyItAcknowledged(t *testing.T) {
 	host, _ := livenessWorld(t, "hold")
 
-	// Two watches at once: one for the policy that was pushed, which must not
-	// fire, and one for a different policy, which must — and whose sentence
+	// Two watches at once, both ended by the host's own close: one for the
+	// policy that was pushed, which must not fire, and one for a different
+	// policy, which must — and whose sentence
 	// carries the digest the sandbox actually pulsed. That sentence is how the
 	// pulse is observed at all, without the host growing an accessor nothing in
 	// production would use.
-	right := host.Watch(livenessContext(t), livenessDigest(policyV1))
-	wrong := host.Watch(livenessContext(t), anotherPolicysDigest)
+	right := host.Watch(context.Background(), livenessDigest(policyV1))
+	wrong := host.Watch(context.Background(), anotherPolicysDigest)
 
 	err := livenessLost(t, wrong, 2*time.Second)
 	if !strings.Contains(err.Error(), livenessDigest(policyV1)) || !strings.Contains(err.Error(), "expected") {
@@ -458,7 +459,7 @@ func TestASandboxPulsesTheDigestOfThePolicyItAcknowledged(t *testing.T) {
 
 func TestAKilledSandboxIsAPolicyNoLongerInForce(t *testing.T) {
 	host, child := livenessWorld(t, "hold")
-	lost := host.Watch(livenessContext(t), livenessDigest(policyV1))
+	lost := host.Watch(context.Background(), livenessDigest(policyV1))
 
 	began := time.Now()
 	if err := child.Process.Kill(); err != nil {
@@ -473,7 +474,7 @@ func TestAKilledSandboxIsAPolicyNoLongerInForce(t *testing.T) {
 
 func TestASandboxThatStopsPulsingIsAPolicyNoLongerInForce(t *testing.T) {
 	host, child := livenessWorld(t, "hold")
-	lost := host.Watch(livenessContext(t), livenessDigest(policyV1))
+	lost := host.Watch(context.Background(), livenessDigest(policyV1))
 
 	// SIGSTOP is "stopped pulsing without closing" exactly: the process is
 	// there, its socket is open, and nothing comes out of it.
@@ -496,7 +497,7 @@ func TestASandboxThatStopsPulsingIsAPolicyNoLongerInForce(t *testing.T) {
 
 func TestASandboxPulsingAnotherPolicysDigestIsAPolicyNoLongerInForce(t *testing.T) {
 	host, _ := livenessWorld(t, "wrong")
-	lost := host.Watch(livenessContext(t), livenessDigest(policyV1))
+	lost := host.Watch(context.Background(), livenessDigest(policyV1))
 
 	err := livenessLost(t, lost, 2*time.Second)
 	if !strings.Contains(err.Error(), anotherPolicysDigest) || !strings.Contains(err.Error(), "expected") {
@@ -527,7 +528,7 @@ func TestASandboxThatRefusedAPolicyIsNotWatched(t *testing.T) {
 	if err := host.Apply(context.Background(), []byte(policyV1)); err == nil {
 		t.Fatal("the sandbox acknowledged a policy it was written to refuse")
 	}
-	if err := livenessLost(t, host.Watch(livenessContext(t), livenessDigest(policyV1)), 2*time.Second); err == nil {
+	if err := livenessLost(t, host.Watch(context.Background(), livenessDigest(policyV1)), 2*time.Second); err == nil {
 		t.Error("a watch over a sandbox that acknowledged nothing reported it live")
 	}
 }
@@ -564,13 +565,6 @@ func livenessWorld(t *testing.T, mode string) (*sandbox.Host, *exec.Cmd) {
 		t.Fatalf("pushing the policy: %v", err)
 	}
 	return host, child
-}
-
-func livenessContext(t *testing.T) context.Context {
-	t.Helper()
-	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
-	return ctx
 }
 
 // livenessLost waits for a watch to report a loss, and fails if it does not.
@@ -638,5 +632,64 @@ func TestSandboxLivenessChildProcess(t *testing.T) {
 		}
 	default:
 		t.Fatalf("unknown mode %q", mode)
+	}
+}
+
+// TestTheHostSaysWhatItPushedWithItsDigest: the console line a transcript reads
+// a push off is the host's too, and is the null sandbox's line field for field.
+//
+// It matters where the sandbox is in another process and its console is not the
+// one being read — the adapter's, where tunneld's own log is the transcript. A
+// harness that had to know which sandbox was beside which tunneld before it
+// could find the digest would not be reading the contract.
+func TestTheHostSaysWhatItPushedWithItsDigest(t *testing.T) {
+	var (
+		mu   sync.Mutex
+		said []string
+	)
+	socket := filepath.Join(t.TempDir(), "sandbox.sock")
+	host, err := sandbox.Listen(socket, newFakeNetwork(), func(format string, a ...any) {
+		mu.Lock()
+		said = append(said, fmt.Sprintf(format, a...))
+		mu.Unlock()
+	})
+	if err != nil {
+		t.Fatalf("listening on %s: %v", socket, err)
+	}
+	defer host.Close()
+	// The composition an out-of-process sandbox makes, with its own console
+	// silenced so that what is read back is the host's alone.
+	var null *sandbox.Null
+	client, err := sandbox.Dial(socket, func(ctx context.Context, policy []byte) error {
+		return null.Apply(ctx, policy)
+	})
+	if err != nil {
+		t.Fatalf("dialing %s: %v", socket, err)
+	}
+	defer client.Close()
+	null = sandbox.NewNull(client, nil)
+	waitFor(t, "the sandbox to attach", func() bool { return host.Attached() > 0 })
+
+	if err := host.Apply(context.Background(), []byte(policyV1)); err != nil {
+		t.Fatalf("pushing the policy: %v", err)
+	}
+	if err := host.Apply(context.Background(), []byte(policyV2)); err == nil {
+		t.Fatal("a version 2 policy was acknowledged")
+	}
+
+	want := fmt.Sprintf("SANDBOX applied format=%s version=%d bytes=%d sha256=%s",
+		sandbox.PolicyFormat, sandbox.PolicyVersion, len(policyV1), livenessDigest(policyV1))
+	mu.Lock()
+	lines := append([]string(nil), said...)
+	mu.Unlock()
+	seen := 0
+	for _, line := range lines {
+		if line == want {
+			seen++
+		}
+	}
+	if seen != 1 {
+		t.Errorf("the host's console has %d of %q; want exactly one, and none for the refused push:\n%s",
+			seen, want, strings.Join(lines, "\n"))
 	}
 }

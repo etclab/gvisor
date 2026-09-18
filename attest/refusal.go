@@ -110,23 +110,16 @@ const (
 
 	// ReasonPolicyNotLive is an admitted peer that applied the policy pushed at
 	// it and is no longer enforcing it: its sandbox has stopped saying so, says
-	// it is enforcing a different one, or has gone (ticket 26,
-	// docs/sandbox-contract.md).
+	// it is enforcing a different one, or has gone (ticket 26, contract
+	// version 3, docs/sandbox-contract.md).
 	//
 	// It is the second reason reached after a handshake succeeded, and no
-	// [Verifier] can return it either. It exists because an acknowledgement is
-	// a claim about the past: ticket 23 measured a sandbox acknowledging a
-	// policy 1.9 ms after it started its workload and the workload dead 41 ms
-	// later, with the tunnel still up and still asserting something the sandbox
-	// no longer believed. Contract version 3 gives the sandbox a verb for
-	// saying it still believes it, once a second, and this is what the absence
-	// of that verb means.
-	//
-	// It is distinct from [ReasonPolicyNotApplied] because the two are answers
-	// to different questions asked at different times. That one is "did the
-	// policy land"; this one is "is it still in force". A peer refused for it
-	// did nothing wrong at the push, and an operator reading the two on one
-	// console should not have to guess which happened.
+	// [Verifier] can return it either. It is distinct from
+	// [ReasonPolicyNotApplied] because the two answer different questions asked
+	// at different times: that one is "did the policy land", this one is "is it
+	// still in force". An acknowledgement is a claim about the past, and ticket
+	// 23 measured how short a past — the ack at 1.9 ms, the workload dead at
+	// 43 ms, the tunnel still up.
 	ReasonPolicyNotLive
 )
 

@@ -16,6 +16,8 @@ package tunneld_test
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"os/exec"
@@ -28,6 +30,7 @@ import (
 
 	"gvisor.dev/gvisor/attest"
 	"gvisor.dev/gvisor/attest/sandbox"
+	"gvisor.dev/gvisor/attest/tunnel"
 )
 
 // The eleventh reason: a peer that applied the policy pushed at it and stopped
@@ -92,37 +95,26 @@ func TestASandboxThatStopsEnforcingAPushedPolicyClosesTheTunnel(t *testing.T) {
 	}
 }
 
-// runLivenessCase starts the pair with a sandbox in another process beside the
-// receiving one, pushes a policy over a tunnel that already carries a stream,
-// and then makes the sandbox stop enforcing it.
+// runLivenessCase puts a sandbox in another process beside the receiving
+// tunneld, pushes a policy over the tunnel, and then makes that sandbox stop
+// enforcing it.
 func runLivenessCase(t *testing.T, c livenessCase) {
 	t.Helper()
 	console := &eventLog{}
-	b := startPushNode(t, "sandbox-b", imageB, admitting(imageA), nil)
-	host, err := sandbox.Listen(filepath.Join(t.TempDir(), "sandbox.sock"), b.Tunneld,
-		func(format string, a ...any) { console.record(fmt.Sprintf(format, a...)) })
-	if err != nil {
-		t.Fatalf("listening for a sandbox: %v", err)
-	}
-	t.Cleanup(func() { host.Close() })
-	child := startLivenessSandbox(t, host.Path())
-	waitForAttachment(t, host)
-	b.Attach(host)
-
-	a := startPushNode(t, "sandbox-a", imageA, admitting(imageB), nil, toward("b", b), pushing(policyV1))
-	ch, err := a.Peer(ctx(t), "b")
-	if err != nil {
-		t.Fatalf("a.Peer(b): %v", err)
-	}
-	defer ch.Close()
-	// A stream on the tunnel before the sandbox fails, so that the test sees
-	// the tunnel end rather than infer it from a channel that would quietly
-	// re-dial.
-	stream, err := ch.OpenStream(ctx(t))
-	if err != nil {
-		t.Fatalf("opening a stream: %v", err)
-	}
-	defer stream.Close()
+	var child *exec.Cmd
+	pair := startLivenessPair(t, func(b *pushNode) {
+		host, err := sandbox.Listen(filepath.Join(t.TempDir(), "sandbox.sock"), b.Tunneld,
+			func(format string, a ...any) { console.record(fmt.Sprintf(format, a...)) })
+		if err != nil {
+			t.Fatalf("listening for a sandbox: %v", err)
+		}
+		t.Cleanup(func() { host.Close() })
+		child = startLivenessSandbox(t, host.Path())
+		for host.Attached() == 0 {
+			time.Sleep(time.Millisecond)
+		}
+		b.Attach(host)
+	})
 
 	// Two pulses, so that what is interrupted is the steady state rather than
 	// the acknowledgement.
@@ -131,10 +123,10 @@ func runLivenessCase(t *testing.T, c livenessCase) {
 		t.Fatalf("signalling the sandbox with %v: %v", c.signal, err)
 	}
 
-	if err := endsWithin(t, stream, c.within); err == nil {
+	if err := endsWithin(t, pair.stream, c.within); err == nil {
 		t.Errorf("the tunnel outlived the policy it was carrying: %s", c.explain)
 	}
-	r := b.refusals.next(t)
+	r := pair.b.refusals.next(t)
 	if got := r.Reason(); got != attest.ReasonPolicyNotLive {
 		t.Errorf("b refused with %v; want %v (log: %s)", got, attest.ReasonPolicyNotLive, r.LogString())
 	}
@@ -144,12 +136,22 @@ func runLivenessCase(t *testing.T, c livenessCase) {
 	if d := r.Detail(); !strings.Contains(d, c.says) {
 		t.Errorf("the refusal's detail is %q; want it to say %q", d, c.says)
 	}
-	if got := console.order(); !strings.Contains(got, "SANDBOX liveness lost: ") || !strings.Contains(got, c.says) {
-		t.Errorf("the sandbox console does not say what was lost: %q", got)
+
+	// The console a hardware transcript is read off: the digest that was pushed
+	// when it landed, and what was lost when it stopped.
+	sum := sha256.Sum256([]byte(policyV1))
+	applied := fmt.Sprintf("SANDBOX applied format=%s version=%d bytes=%d sha256=%s",
+		sandbox.PolicyFormat, sandbox.PolicyVersion, len(policyV1), hex.EncodeToString(sum[:]))
+	said := console.order()
+	if !strings.Contains(said, applied) {
+		t.Errorf("the sandbox console does not carry the digest that was pushed:\n%s", said)
+	}
+	if !strings.Contains(said, "SANDBOX liveness lost: ") || !strings.Contains(said, c.says) {
+		t.Errorf("the sandbox console does not say what was lost: %q", said)
 	}
 	// The pushing side is untouched by any of this. Its push was acknowledged,
 	// so makePush refused nothing; all it ever learns is that its stream ended.
-	if logged := a.refusals.none(); len(logged) != 0 {
+	if logged := pair.a.refusals.none(); len(logged) != 0 {
 		t.Errorf("the pushing side refused something too: %s", logged[0].LogString())
 	}
 }
@@ -158,29 +160,45 @@ func runLivenessCase(t *testing.T, c livenessCase) {
 // boundary has liveness to lose, so a tunneld with the null sandbox in its own
 // process carries its tunnel exactly as it did before contract v3.
 func TestASandboxInThisProcessIsNotWatched(t *testing.T) {
-	b := startPushNode(t, "sandbox-b", imageB, admitting(imageA), nil)
-	b.Attach(sandbox.NewNull(b.Tunneld, nil))
-	a := startPushNode(t, "sandbox-a", imageA, admitting(imageB), nil, toward("b", b), pushing(policyV1))
+	pair := startLivenessPair(t, func(b *pushNode) { b.Attach(sandbox.NewNull(b.Tunneld, nil)) })
 
+	// Five seconds is past three missed pulses twice over: a watch that had
+	// been started on a sandbox which never pulses would have fired by now.
+	if err := endsWithin(t, pair.stream, 5*time.Second); err != nil {
+		t.Errorf("the tunnel ended with %v; a sandbox in this process has no liveness to lose", err)
+	}
+	if logged := pair.b.refusals.none(); len(logged) != 0 {
+		t.Errorf("b refused a tunnel whose sandbox is in its own process: %s", logged[0].LogString())
+	}
+}
+
+// a livenessPair is what every test here is run over: a delegator, a receiver
+// with something beside it, and a stream held open on the tunnel between them.
+type livenessPair struct {
+	a, b   *pushNode
+	stream *tunnel.Stream
+}
+
+// startLivenessPair starts the two, puts beside's sandbox next to the receiving
+// one, and asks for the peer — which is what pushes the policy. The stream is
+// opened before anything else happens to the sandbox so that a test sees the
+// tunnel end rather than infer it from a channel that would quietly re-dial.
+func startLivenessPair(t *testing.T, beside func(*pushNode)) livenessPair {
+	t.Helper()
+	b := startPushNode(t, "sandbox-b", imageB, admitting(imageA), nil)
+	beside(b)
+	a := startPushNode(t, "sandbox-a", imageA, admitting(imageB), nil, toward("b", b), pushing(policyV1))
 	ch, err := a.Peer(ctx(t), "b")
 	if err != nil {
 		t.Fatalf("a.Peer(b): %v", err)
 	}
-	defer ch.Close()
+	t.Cleanup(func() { ch.Close() })
 	stream, err := ch.OpenStream(ctx(t))
 	if err != nil {
 		t.Fatalf("opening a stream: %v", err)
 	}
-	defer stream.Close()
-
-	// Five seconds is past three missed pulses twice over: a watch that had
-	// been started on a sandbox which never pulses would have fired by now.
-	if err := endsWithin(t, stream, 5*time.Second); err != nil {
-		t.Errorf("the tunnel ended with %v; a sandbox in this process has no liveness to lose", err)
-	}
-	if logged := b.refusals.none(); len(logged) != 0 {
-		t.Errorf("b refused a tunnel whose sandbox is in its own process: %s", logged[0].LogString())
-	}
+	t.Cleanup(func() { stream.Close() })
+	return livenessPair{a: a, b: b, stream: stream}
 }
 
 // startLivenessSandbox re-executes this test binary as the sandbox beside the
@@ -213,17 +231,6 @@ func startLivenessSandbox(t *testing.T, socket string) *exec.Cmd {
 		}
 	})
 	return child
-}
-
-func waitForAttachment(t *testing.T, host *sandbox.Host) {
-	t.Helper()
-	deadline := time.Now().Add(30 * time.Second)
-	for host.Attached() == 0 {
-		if time.Now().After(deadline) {
-			t.Fatal("the sandbox process never attached")
-		}
-		time.Sleep(time.Millisecond)
-	}
 }
 
 // TestTunneldLivenessChildProcess is the sandbox for the tests above, in the

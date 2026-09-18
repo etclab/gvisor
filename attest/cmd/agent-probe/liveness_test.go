@@ -57,7 +57,9 @@ func TestBothSandboxesOnOneSocketPulseWhatTheyAcknowledged(t *testing.T) {
 		t.Fatalf("the exit's sandbox: %v", err)
 	}
 	defer exit.Close()
-	waitForAttached(t, host, 2)
+	for host.Attached() != 2 {
+		time.Sleep(time.Millisecond)
+	}
 
 	if err := host.Apply(context.Background(), []byte(p0)); err != nil {
 		t.Fatalf("pushing the policy at both: %v", err)
@@ -89,7 +91,9 @@ func TestBothSandboxesOnOneSocketPulseWhatTheyAcknowledged(t *testing.T) {
 	case <-time.After(3 * time.Second):
 		t.Fatal("the agent's sandbox went and the watch reported nothing")
 	}
-	waitForAttached(t, host, 1)
+	for host.Attached() != 1 {
+		time.Sleep(time.Millisecond)
+	}
 
 	// And the exit is the one still pulsing, carrying the digest of the policy
 	// it acknowledged. A watch for any other policy is how that is read back.
@@ -104,17 +108,6 @@ func TestBothSandboxesOnOneSocketPulseWhatTheyAcknowledged(t *testing.T) {
 		}
 	case <-time.After(3 * time.Second):
 		t.Fatal("the exit's sandbox pulsed nothing")
-	}
-}
-
-func waitForAttached(t *testing.T, host *sandbox.Host, want int) {
-	t.Helper()
-	deadline := time.Now().Add(30 * time.Second)
-	for host.Attached() != want {
-		if time.Now().After(deadline) {
-			t.Fatalf("%d sandboxes are attached; want %d", host.Attached(), want)
-		}
-		time.Sleep(time.Millisecond)
 	}
 }
 

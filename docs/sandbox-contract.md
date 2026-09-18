@@ -368,6 +368,13 @@ ticket 22's other half that line is written when a peer pushes, beside the deleg
 `push policy … sha256=…` (`docs/policy-push.md`); the two numbers are the claim. It parses
 nothing beyond the envelope and never looks at `n`, `f` or `x`.
 
+`sandbox.Host` writes the **same line, field for field** (ticket 26, `host.go:167`), once per
+push it acknowledged rather than once per attachment, because a push is acknowledged when every
+attachment has taken it and one line is one policy in force. It is the same line because it is
+the same claim, and on the adapter path — where the sandbox is in another process and the
+console being read is tunneld's — a transcript that had to know which sandbox was beside which
+tunneld before it could find the digest would not be a transcript of the contract.
+
 It is not a placeholder for a sandbox that will do more. A sandbox is not where anything is
 enforced in this design — enforcement is the netfilter rule set the signed policy implies
 (`docs/policy-binding.md`) and the reference value set that admits a peer at all — so a sandbox
@@ -425,6 +432,7 @@ only diagnostic surface a measured guest has can carry it (spec, user story 48).
 | a sandbox **in another process** opens, accepts with the identity, round-trips bytes both ways through the received descriptor, and answers two pushes | `attest/sandbox/socket_test.go`, which re-executes the test binary as the sandbox |
 | the pump carries the end of the stream each way | same file |
 | a sandbox in another process pulses the digest of what it acknowledged, and a sandbox that refused is not watched | same file, the liveness tests |
+| the host writes the null sandbox's `SANDBOX applied` line, once per acknowledged push and none for a refused one | `TestTheHostSaysWhatItPushedWithItsDigest` (same file) |
 | a sandbox that is killed, that goes quiet, or that pulses another policy's digest is a policy no longer in force | same file, one test each |
 | a widening push is refused component-wise and the refusal names which of `n`, `f` and `x` widened | `attest/sandbox/policy_test.go` |
 | a tunnel whose sandbox stopped enforcing the pushed policy is closed, and one whose sandbox is in this process is not watched | `attest/tunneld/liveness_test.go` |

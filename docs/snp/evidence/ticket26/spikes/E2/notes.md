@@ -15,7 +15,7 @@ at all*. The third is the one with a surprise in it.
 
 | thing | value |
 |---|---|
-| runsc | `make runsc` `-c opt`, sha256 `7ae98c3f8915fc5a7f625196778be30ece69d0928b34d0cc0cb20d548de55aef` |
+| runsc | `make runsc` `-c opt`, sha256 `6019cbf49bc87c5c1ca21382ec069376661bfb56ab74eb3840d61378fbab7819` |
 | faketunneld | E1's stand-in, sha256 `872fd0889ad016e4750f3e45ac8fd9aaaa0052e046dc2430c238c81fc467bc50` |
 | seccheck-receiver | `../../tools/seccheck-receiver/`, sha256 `d7be04465f899c4af6f5c94de2307cde5bd220679497db2455ea085189d509dd` |
 | execbench | `execbench/`, static, sha256 `f4f6f8fb4f451802dfaf6d433f30939deabdc392093f80056dedddf5070f0e59` in the rootfs |
@@ -52,31 +52,34 @@ nothing, three rounds of 200 per run:
 
 | run | median of the three rounds | p95 of the three rounds |
 | --- | --- | --- |
-| `a-no-sink` | 18.203, 18.018, 18.025 ms | 21.98, 21.56, 22.85 ms |
-| `b-sink` | 18.475, 18.874, 19.109 ms | 22.91, 22.04, 22.10 ms |
-| `c-sink-trace` | 18.574, 19.176, 18.808 ms | 22.76, 23.24, 21.90 ms |
+| `a-no-sink` | 18.234, 18.515, 17.957 ms | 22.94, 22.56, 21.39 ms |
+| `b-sink` | 18.491, 18.599, 19.145 ms | 22.51, 22.15, 22.35 ms |
+| `c-sink-trace` | 18.101, 18.966, 19.036 ms | 22.00, 22.63, 22.58 ms |
 
-**Median `fork+execve+wait` goes from ~18.0 ms to ~18.9 ms, about +0.8 ms or
-+4%. The p95s are indistinguishable (21.6–22.9 ms in every configuration).**
+**Median `fork+execve+wait` goes from ~18.2 ms to ~18.8 ms, about +0.5 ms or
++3%. The p95s are indistinguishable (21.4–22.9 ms in every configuration), and
+the three rounds within one configuration spread by as much as the difference
+between configurations does — which is the honest bound on this number.**
 
 The sink's own share of that is small and is measured directly — it times
 itself and says so every hundred decisions:
 
-    exec sink: checked=600 refused=2 mean=4.847µs hash-cache hits=596 misses=4
+    exec sink: checked=600 refused=2 mean=4.342µs hash-cache hits=596 misses=4
 
-Six hundred decisions at a **mean of 4.6–5.3 µs** is 0.03% of an 18 ms
-process start. So the +0.8 ms is *not the decision*; it is the `sentry/execve`
+Six hundred decisions at a **mean of 4.3–5.4 µs** is 0.03% of an 18 ms
+process start. So the +0.5 ms is *not the decision*; it is the `sentry/execve`
 point the sink has to turn on — `execveSeccheckInfo` copying argv and the
 environment, `Stat`ing the binary and looking the hash up — plus everything a
 registered sink then does with the message. The honest summary is:
 
 - **the X decision itself: ~5 µs per exec, flat, cached;**
-- **turning the execve point on to get the identity it decides about: ~0.8 ms
-  per exec on this platform, or about 4% of a process start.**
+- **turning the execve point on to get the identity it decides about: under a
+  millisecond per exec on this platform, of the order of 3% of a process start
+  and at the edge of what this benchmark can separate from noise.**
 
 `fork+execve+wait` under systrap is ~18 ms, which dwarfs both. A workload that
-starts processes in a tight loop pays 4%; one that starts a handful pays
-nothing measurable.
+starts processes in a tight loop pays a few percent; one that starts a handful
+pays nothing measurable.
 
 ## 2. The hash cache: one miss per distinct file, and nothing else
 
@@ -110,6 +113,9 @@ and the whole run has exactly four distinct identities:
       3 execve path=/bin/execbench sha256=f4f6f8fb…f0e59
       1 execve path=/e2-script.sh  sha256=dad7d456…db581
       1 execve path=/bin/probe     sha256=72ec1b73…8eaae
+
+(616 execs against the sink's own count of 600: the sink starts counting at the
+first push, and the shell had already run before it.)
 
 **So an `x` that names `/bin/busybox` by path covers every applet symlink.**
 That answers, in the affirmative, the open question ticket 26's two-guest

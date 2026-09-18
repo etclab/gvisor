@@ -14,7 +14,7 @@ and the numbers below are what it costs.
 
 | thing | value |
 |---|---|
-| runsc | `make runsc` `-c opt`, sha256 `2083b906e8b4ad3231477ab1b9ffd06a992be02c54ac032081d19bed3790d986` |
+| runsc | `make runsc` `-c opt`, sha256 `6019cbf49bc87c5c1ca21382ec069376661bfb56ab74eb3840d61378fbab7819` |
 | faketunneld | `faketunneld/`, sha256 `872fd0889ad016e4750f3e45ac8fd9aaaa0052e046dc2430c238c81fc467bc50` |
 | seccheck-receiver | `../../tools/seccheck-receiver/`, sha256 `d7be04465f899c4af6f5c94de2307cde5bd220679497db2455ea085189d509dd` |
 | workload | `e1-workload.sh`, sha256 `9371cb27221a3a65dd9dfaeda66958f0a8d9c8beecb1f33ca201b0b8700f942a` |
@@ -62,18 +62,18 @@ the workload's two `nslookup` calls take about seven seconds each through the
 sentry's responder, so "under traffic" was not true of that run and its
 `LONG COMPLETE` proved nothing. The script now waits for the workload's
 `LONG STARTED` line and then lets the stream run for three seconds. In the
-recorded run the narrowing lands at 19:05:25 with the stream started at
-19:05:21 and finishing at 19:05:35.
+recorded run the narrowing lands at 19:30:25 with the stream started at
+19:30:21 and finishing at 19:30:35.
 
 ## 1. The open stream survives, and the byte counts are equal
 
-    narrow-other   workload: LONG STARTED pid=18 at 19:05:21
-                   (the narrowing lands at 19:05:25)
-                   workload: LONG COMPLETE bytes=16777216 expected=16777216 at 19:05:35
+    narrow-other   workload: LONG STARTED pid=18 at 19:30:21
+                   (the narrowing lands at 19:30:25)
+                   workload: LONG COMPLETE bytes=16777216 expected=16777216 at 19:30:35
 
-    narrow-self    workload: LONG STARTED pid=18 at 19:05:56
-                   (the narrowing that removes bulk.peer-a lands at 19:05:59)
-                   workload: LONG COMPLETE bytes=16777216 expected=16777216 at 19:06:09
+    narrow-self    workload: LONG STARTED pid=18 at 19:30:56
+                   (the narrowing that removes bulk.peer-a lands at 19:30:59)
+                   workload: LONG COMPLETE bytes=16777216 expected=16777216 at 19:31:09
 
 Both runs take the whole body. The second is the one that says something: the
 name the stream was **on** was removed from the policy in force, from the
@@ -91,7 +91,7 @@ progress would not stop it. What it stops is the next connection.
 
 The removed name, asked for by name:
 
-    workload: NARROWED drop.peer-a:9001 stopped resolving on attempt 3 at 19:05:25:
+    workload: NARROWED drop.peer-a:9001 stopped resolving on attempt 3 at 19:30:25:
               wget: bad address 'drop.peer-a:9001'
     workload: AFTER resolve drop.peer-a: … ** server can't find drop.peer-a: NXDOMAIN
     workload: AFTER GET http://drop.peer-a:9001/ rc=1 out='wget: bad address …'
@@ -103,10 +103,10 @@ and the same name's **old synthetic address**, dialled directly:
 
 Both halves are recorded, with the reason that decided each:
 
-    egress_refused protocol=dns name=drop.peer-a reason=unknown-name  time=2026-09-18T19:05:25…
-    egress_refused protocol=dns name=drop.peer-a reason=unknown-name  time=2026-09-18T19:05:25…
+    egress_refused protocol=dns name=drop.peer-a reason=unknown-name  time=2026-09-18T19:30:25…
+    egress_refused protocol=dns name=drop.peer-a reason=unknown-name  time=2026-09-18T19:30:25…
     egress_refused protocol=tcp address=100.64.1.1 port=9001 reason=not-in-table
-                   time=2026-09-18T19:05:25… container_id=t26-e1-narrow-other-… thread_id=30
+                   time=2026-09-18T19:30:25… container_id=t26-e1-narrow-other-… thread_id=30
 
 Two DNS events for one name because busybox asks AAAA and A; the TCP event
 carries a task's context and the DNS ones do not, which is ticket 25's finding
@@ -135,22 +135,21 @@ Three clocks, 24 narrowings each (12 per run), from
 
 | what is measured | n | min | median | p95 | max |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| the table swap inside the sentry (`NarrowTunnel` + the boot-side table) | 24 | 0.058 ms | **0.161 ms** | 0.643 ms | 0.718 ms |
-| the whole of `Policy.Narrow` in the sentry (parse, subset check, swap, record) | 24 | 0.233 ms | **0.616 ms** | 2.154 ms | 3.156 ms |
-| `Host.Apply` wall time, from the call to its return | 24 | 2.015 ms | **3.161 ms** | 23.385 ms | 30.018 ms |
+| the table swap inside the sentry (`NarrowTunnel` + the boot-side table) | 24 | 0.057 ms | **0.184 ms** | 0.382 ms | 1.292 ms |
+| the whole of `Policy.Narrow` in the sentry (parse, subset check, swap, record) | 24 | 0.229 ms | **0.676 ms** | 1.720 ms | 2.559 ms |
+| `Host.Apply` wall time, from the call to its return | 24 | 2.349 ms | **3.506 ms** | 6.425 ms | 42.656 ms |
 
 The first two are the sentry's own log lines (`tunnel narrow: applied in …, of
 which the table swap was …`); the third is the stand-in's, and it is everything:
 the contract's socket, the helper's callback goroutine, a fresh
 `client.ConnectTo` on the control socket, urpc, the sentry, and the same path
-back. **The gap between 0.6 ms and 3.2 ms is the boundary, not the enforcement.**
-The two samples above 20 ms are both the *first* push of a run — the control
-socket has never been dialled before, and the sandbox is still starting other
-things.
+back. **The gap between 0.7 ms and 3.5 ms is the boundary, not the enforcement.**
+The one sample at 42.7 ms is the *first* push of a run — the control socket has
+never been dialled before, and the sandbox is still starting other things.
 
-The largest single sentry-side sample, 3.156 ms, is also a first push: twelve
-names, twelve bindings built, and the Go allocator cold. Every later swap in the
-same sandbox is under a millisecond.
+The largest sentry-side samples are first pushes too: twelve names, twelve
+bindings built, and the Go allocator cold. Every later swap in the same sandbox
+is under a millisecond, and the median table swap is under two tenths of one.
 
 ## 5. What the workload observed
 
@@ -168,7 +167,7 @@ general disturbance of the adapter.
 
 The thirteenth push puts every name back:
 
-    APPLY p99-widen.json REFUSED elapsed=2.534217ms
+    APPLY p99-widen.json REFUSED elapsed=4.923318ms
       err=sandbox: policy refused: the sandbox refused it: policy refused:
           it widens n by [net:drop.peer-a:9001 net:fill01.peer-a:9002 … net:fill10.peer-a:9002]
 
@@ -205,8 +204,8 @@ responder has no opinion and answers NXDOMAIN. Nothing in the design depends on
 ## 8. Verdict
 
 Apply-without-restart is real. A policy pushed over the contract replaces the
-sentry's table in a running sandbox in a median of **0.16 ms** of swap and
-**3.2 ms** of end-to-end wall time, with the workload running throughout, a
+sentry's table in a running sandbox in a median of **0.18 ms** of swap and
+**3.5 ms** of end-to-end wall time, with the workload running throughout, a
 16 MiB transfer in flight delivering every byte, new connections to removed
 names refused at the resolver and at their old addresses with the reason
 recorded, and surviving names keeping the addresses they already had. The stop

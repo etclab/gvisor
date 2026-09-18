@@ -405,6 +405,14 @@ func policyExecAtoms(d *policyDocument) ([]string, error) {
 			if err := policyCheckPath("x", x.Path); err != nil {
 				return nil, err
 			}
+			// A path spelled "sha256:…" would produce the atom a digest entry
+			// produces, and two documents that mean different things would
+			// then compare equal in the subset check. Refused rather than
+			// escaped, because no real path looks like this and a policy that
+			// contains one is a policy somebody is testing the parser with.
+			if strings.HasPrefix(x.Path, "sha256:") {
+				return nil, policyRefuse("the x entry path %q begins with %q, which is how a digest is spelled in this sandbox's atoms", x.Path, "sha256:")
+			}
 			atoms = append(atoms, "run:"+x.Path)
 		}
 	}

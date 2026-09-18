@@ -10,7 +10,7 @@ worktree `/home/pniroula/Projects/gvisor-t26`, branch
 key and nothing paid** — the run is `env -u ANTHROPIC_API_KEY` and no bundle
 carries a credential of any kind.
 
-    runsc sha256           cf6b18f11871e2beb3e8c35e958b51ebc918ba6355b50ceebf15880e4d4b643b
+    runsc sha256           6019cbf49bc87c5c1ca21382ec069376661bfb56ab74eb3840d61378fbab7819
     faketunneld sha256     274233ee72562ca94e21201a665de8488cee0a35cd13a5cdb8a0054367db8efe
     seccheck-receiver      d7be04465f899c4af6f5c94de2307cde5bd220679497db2455ea085189d509dd
     workload sha256        08e9fe9a00bb27e766181c30fac0efde2ed56754936a1c2ab0639d3cefeccace
@@ -30,7 +30,7 @@ ticket owes:
 
 | # | the claim | what is in the transcript |
 | --- | --- | --- |
-| 1 | a pushed policy reaches the sentry and is applied to a running workload | `APPLY p0.json ACK elapsed=4.885661ms digest=86e8b283…7b3c` |
+| 1 | a pushed policy reaches the sentry and is applied to a running workload | `APPLY p0.json ACK elapsed=25.213417ms digest=86e8b283…7b3c` |
 | 2 | a narrowing removes a name while the workload runs | `APPLY p1.json ACK` and `tunnel narrow: gone.peer-a:9001 at 100.64.1.0 is gone` |
 | 3 | a widening is refused, naming the component | `APPLY p2.json REFUSED … it widens n by [net:gone.peer-a:9001]` |
 | 4 | N: the removed name is NXDOMAIN, its old address ENETUNREACH, both recorded | `wget: bad address`, `Network is unreachable`, three `egress_refused` |
@@ -46,9 +46,12 @@ the difference between an acknowledgement and a refusal.
 
 ## 1–3. The three pushes
 
-    P0  86e8b283aa251ba85e6e3be2c57a401d5590f3e6b021df2881a8e7b083a17b3c  ACK  4.886 ms
-    P1  3f5ed6490ad9c638b2af78f3e8679b6e6455e2e25fb848831a8995e4bea9e292  ACK 14.994 ms
-    P2  86e8b283aa251ba85e6e3be2c57a401d5590f3e6b021df2881a8e7b083a17b3c  REFUSED 2.701 ms
+    P0  86e8b283aa251ba85e6e3be2c57a401d5590f3e6b021df2881a8e7b083a17b3c  ACK 25.213 ms
+    P1  3f5ed6490ad9c638b2af78f3e8679b6e6455e2e25fb848831a8995e4bea9e292  ACK  4.207 ms
+    P2  86e8b283aa251ba85e6e3be2c57a401d5590f3e6b021df2881a8e7b083a17b3c  REFUSED 3.247 ms
+
+(P0's 25 ms is the first dial of the control socket in this sandbox's life; E1
+measured the same shape over twenty-four pushes.)
 
 P2 is byte-for-byte P0. It is accepted as a first push and refused as a third,
 which is the subset rule doing its job: what P2 widens is not the boot table but
@@ -60,10 +63,10 @@ carried back through the helper and the contract word for word. The sentry's own
 account of the two that landed:
 
     tunnel narrow: sha256=86e8b283…7b3c n=2 of 2 names kept x=1 f=1
-    tunnel narrow: applied in 2.202704ms, of which the table swap was 263.833µs
+    tunnel narrow: applied in 2.131737ms, of which the table swap was 134.06µs
     tunnel narrow: gone.peer-a:9001 at 100.64.1.0 is gone
     tunnel narrow: sha256=3f5ed649…e292 n=1 of 2 names kept x=1 f=1
-    tunnel narrow: applied in 428.669µs, of which the table swap was 123.404µs
+    tunnel narrow: applied in 811.429µs, of which the table swap was 200.679µs
 
 ## 4. N, in both places, with the reason recorded
 
@@ -72,10 +75,10 @@ account of the two that landed:
               out='wget: can't connect to remote host (100.64.1.0): Network is unreachable'
     workload: AFTER GET http://keep.peer-a:9000/ rc=0 out='this is keep.peer-a:9000'
 
-    egress_refused protocol=dns name=gone.peer-a reason=unknown-name time=…20.621908277Z
-    egress_refused protocol=dns name=gone.peer-a reason=unknown-name time=…20.622488872Z
+    egress_refused protocol=dns name=gone.peer-a reason=unknown-name time=…12.178…Z
+    egress_refused protocol=dns name=gone.peer-a reason=unknown-name time=…12.178…Z
     egress_refused protocol=tcp address=100.64.1.0 port=9001 reason=not-in-table
-                   time=…20.680319834Z container_id=t26-check-… thread_id=20
+                   time=…12.242…Z container_id=t26-check-… thread_id=20
 
 Two DNS events because busybox asks A and AAAA; the TCP event carries the task's
 context and the DNS ones do not, which is ticket 25's finding unchanged. The
@@ -89,7 +92,7 @@ stream.
 
     exec refused: path="/bin/probe" sha256=c4b9b606…2f6e reason=not-in-x
     exec_refused path=/bin/probe sha256=c4b9b606…2f6e reason=not-in-x
-                 time=…20.825511029Z container_id=t26-check-… thread_id=25
+                 time=…12.360…Z container_id=t26-check-… thread_id=25
 
 `/bin/probe` is a copy of the very busybox `x` permits, with a comment appended:
 a different file at a different path, so neither half of `x` matches it and the
@@ -123,9 +126,9 @@ pushes, and one on a digest nothing enforces. Four watches, four outcomes:
 
 | watch | lived | ended as |
 | --- | ---: | --- |
-| P0's digest | 5.501 s | **mismatch** — `it pulsed 3f5ed649…, expected 86e8b283…`, at the instant P1 landed |
-| P1's digest | 12.251 s | **closed** — `the sandbox closed its socket`, 0.244 s after the workload was killed |
-| all-zero digest | 0.251 s | **mismatch** — `it pulsed 3f5ed649…, expected 0000…` |
+| P0's digest | 5.250 s | **mismatch** — `it pulsed 3f5ed649…, expected 86e8b283…`, 10 ms after P1 landed |
+| P1's digest | 12.251 s | **closed** — `the sandbox closed its socket`, 0.232 s after the workload was killed |
+| all-zero digest | 0.250 s | **mismatch** — `it pulsed 3f5ed649…, expected 0000…` |
 
 P1's watch surviving 12.25 s is the heartbeat: at one pulse a second and three
 misses allowed, a sandbox that had stopped pulsing would have been lost in about

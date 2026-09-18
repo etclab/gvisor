@@ -100,6 +100,7 @@ func TestPolicyAtomsRefusals(t *testing.T) {
 		{"an x entry with neither", `{"format":"policy","version":1,"x":[{}]}`, "neither a path nor a digest"},
 		{"a short digest", `{"format":"policy","version":1,"x":[{"sha256":"abcd"}]}`, "64 hex characters"},
 		{"a digest that is not hex", `{"format":"policy","version":1,"x":[{"sha256":"zz112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"}]}`, "not hexadecimal"},
+		{"an x path that looks like a digest atom", `{"format":"policy","version":1,"x":[{"path":"sha256:aabb"}]}`, "begins with"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			_, err := policyAtoms([]byte(tc.policy))

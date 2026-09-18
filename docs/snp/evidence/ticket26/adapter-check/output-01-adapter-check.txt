@@ -1,9 +1,9 @@
-runsc sha256:          cf6b18f11871e2beb3e8c35e958b51ebc918ba6355b50ceebf15880e4d4b643b
+runsc sha256:          6019cbf49bc87c5c1ca21382ec069376661bfb56ab74eb3840d61378fbab7819
 faketunneld sha256:    274233ee72562ca94e21201a665de8488cee0a35cd13a5cdb8a0054367db8efe
 receiver sha256:       d7be04465f899c4af6f5c94de2307cde5bd220679497db2455ea085189d509dd
 workload sha256:       08e9fe9a00bb27e766181c30fac0efde2ed56754936a1c2ab0639d3cefeccace
 busybox sha256:        dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14
-date:                  2026-09-18T19:24:17Z
+date:                  2026-09-18T19:34:05Z
 ANTHROPIC_API_KEY is deliberately NOT passed into any bundle in this run.
 
 the rootfs:
@@ -19,10 +19,10 @@ the policies:
   p2  86e8b283aa251ba85e6e3be2c57a401d5590f3e6b021df2881a8e7b083a17b3c
       {"format":"policy","version":1,"n":[{"host":"keep.peer-a","ports":[9000]},{"host":"gone.peer-a","ports":[9001]}],"f":[{"path":"/noexec","modes":["r"]}],"x":[{"path":"/bin/busybox"}]}
 
-$ /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/runsc --root=/dev/shm/t26-check-1696181/state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new --tunnel-socket=/dev/shm/t26-check-1696181/tunneld.sock --tunnel-table=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/checkwork/table.json --pod-init-config=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/checkwork/pod-init.json --debug --debug-log=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/checkwork/logs/ run --bundle /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/checkwork/bundle t26-check-1696181
+$ /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/runsc --root=/dev/shm/t26-check-1726547/state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new --tunnel-socket=/dev/shm/t26-check-1726547/tunneld.sock --tunnel-table=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/checkwork/table.json --pod-init-config=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/checkwork/pod-init.json --debug --debug-log=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/checkwork/logs/ run --bundle /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/checkwork/bundle t26-check-1726547
 the adapter was installed: ready=1 after 4 tenths of a second
 the workload reached READY: flowing=1 after 3 tenths of a second
-the workload is being killed at 19:24:35.795546565
+the workload is being killed at 19:34:23.804525886
 RUNSC_EXIT=137
 
 ---- what the workload said ----
@@ -40,158 +40,159 @@ workload: READ /noexec/busybox rc=0 (noexec refuses the exec and not the read)
 workload: WRITE /noexec/written out='touch: /noexec/written: Read-only file system'
 workload: === controls done; standing still so that a kill is what ends this workload ===
 ---- what the stand-in said: the pushes, the watches and the losses ----
-faketunneld: 2026/09/18 19:24:18.073927 exit listening on 127.0.0.1:40955, allow=map[gone.peer-a:9001:true keep.peer-a:9000:true], slow="" (4194304 bytes, 65536 per 40ms)
-faketunneld: 2026/09/18 19:24:18.074608 serving the sandbox socket at /dev/shm/t26-check-1696181/tunneld.sock, peer="b"
-faketunneld: 2026/09/18 19:24:18.310252 SANDBOX attached on /dev/shm/t26-check-1696181/tunneld.sock
-faketunneld: 2026/09/18 19:24:18.501119 MARK ---- P0: both names, x names /bin/busybox ----
-faketunneld: 2026/09/18 19:24:18.506793 SANDBOX applied format=policy version=1 bytes=183 sha256=86e8b283aa251ba85e6e3be2c57a401d5590f3e6b021df2881a8e7b083a17b3c
-faketunneld: 2026/09/18 19:24:18.506855 APPLY /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/checkwork/p0.json ACK elapsed=4.885661ms bytes=183 digest=86e8b283aa251ba85e6e3be2c57a401d5590f3e6b021df2881a8e7b083a17b3c
-faketunneld: 2026/09/18 19:24:18.506893 WATCH p0.json digest=86e8b283aa251ba85e6e3be2c57a401d5590f3e6b021df2881a8e7b083a17b3c started (pulse 1s, 3 misses)
-faketunneld: 2026/09/18 19:24:18.566646 EXIT keep.peer-a:9000 served a short page for "GET / HTTP/1.1"
-faketunneld: 2026/09/18 19:24:18.635094 EXIT gone.peer-a:9001 served a short page for "GET / HTTP/1.1"
-faketunneld: 2026/09/18 19:24:18.737468 EXIT gone.peer-a:9001 served a short page for "GET / HTTP/1.1"
-faketunneld: 2026/09/18 19:24:19.791495 EXIT gone.peer-a:9001 served a short page for "GET / HTTP/1.1"
-faketunneld: 2026/09/18 19:24:20.863417 EXIT gone.peer-a:9001 served a short page for "GET / HTTP/1.1"
-faketunneld: 2026/09/18 19:24:21.942557 EXIT gone.peer-a:9001 served a short page for "GET / HTTP/1.1"
-faketunneld: 2026/09/18 19:24:23.015025 EXIT gone.peer-a:9001 served a short page for "GET / HTTP/1.1"
-faketunneld: 2026/09/18 19:24:23.766928 MARK ---- P1: one name, which must lose the P0 watch as a MISMATCH ----
-faketunneld: 2026/09/18 19:24:23.782373 SANDBOX applied format=policy version=1 bytes=145 sha256=3f5ed6490ad9c638b2af78f3e8679b6e6455e2e25fb848831a8995e4bea9e292
-faketunneld: 2026/09/18 19:24:23.782465 APPLY /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/checkwork/p1.json ACK elapsed=14.993846ms bytes=145 digest=3f5ed6490ad9c638b2af78f3e8679b6e6455e2e25fb848831a8995e4bea9e292
-faketunneld: 2026/09/18 19:24:23.782498 WATCH p1.json digest=3f5ed6490ad9c638b2af78f3e8679b6e6455e2e25fb848831a8995e4bea9e292 started (pulse 1s, 3 misses)
-faketunneld: 2026/09/18 19:24:24.007906 SANDBOX liveness lost: it pulsed 3f5ed6490ad9c638b2af78f3e8679b6e6455e2e25fb848831a8995e4bea9e292, expected 86e8b283aa251ba85e6e3be2c57a401d5590f3e6b021df2881a8e7b083a17b3c
-faketunneld: 2026/09/18 19:24:24.008006 WATCH p0.json digest=86e8b283aa251ba85e6e3be2c57a401d5590f3e6b021df2881a8e7b083a17b3c LOST after 5.501079885s: it pulsed 3f5ed6490ad9c638b2af78f3e8679b6e6455e2e25fb848831a8995e4bea9e292, expected 86e8b283aa251ba85e6e3be2c57a401d5590f3e6b021df2881a8e7b083a17b3c
-faketunneld: 2026/09/18 19:24:24.208606 EXIT keep.peer-a:9000 served a short page for "GET / HTTP/1.1"
-faketunneld: 2026/09/18 19:24:26.775554 MARK ---- P2: both names again ----
-faketunneld: 2026/09/18 19:24:26.778780 APPLY /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/checkwork/p2.json REFUSED elapsed=2.701386ms err=sandbox: policy refused: the sandbox refused it: policy refused: it widens n by [net:gone.peer-a:9001]
-faketunneld: 2026/09/18 19:24:27.781671 MARK ---- a watch on a digest nothing is enforcing ----
-faketunneld: 2026/09/18 19:24:27.782255 WATCH chosen digest=0000000000000000000000000000000000000000000000000000000000000000 started (pulse 1s, 3 misses)
-faketunneld: 2026/09/18 19:24:28.033620 SANDBOX liveness lost: it pulsed 3f5ed6490ad9c638b2af78f3e8679b6e6455e2e25fb848831a8995e4bea9e292, expected 0000000000000000000000000000000000000000000000000000000000000000
-faketunneld: 2026/09/18 19:24:28.033728 WATCH chosen digest=0000000000000000000000000000000000000000000000000000000000000000 LOST after 251.366085ms: it pulsed 3f5ed6490ad9c638b2af78f3e8679b6e6455e2e25fb848831a8995e4bea9e292, expected 0000000000000000000000000000000000000000000000000000000000000000
-faketunneld: 2026/09/18 19:24:35.789585 MARK ---- killing the workload ----
-faketunneld: 2026/09/18 19:24:36.033296 SANDBOX liveness lost: the sandbox closed its socket
-faketunneld: 2026/09/18 19:24:36.033426 WATCH p1.json digest=3f5ed6490ad9c638b2af78f3e8679b6e6455e2e25fb848831a8995e4bea9e292 LOST after 12.250905134s: the sandbox closed its socket
-faketunneld: 2026/09/18 19:24:37.950490 exiting on command
+faketunneld: 2026/09/18 19:34:06.067800 exit listening on 127.0.0.1:37889, allow=map[gone.peer-a:9001:true keep.peer-a:9000:true], slow="" (4194304 bytes, 65536 per 40ms)
+faketunneld: 2026/09/18 19:34:06.068477 serving the sandbox socket at /dev/shm/t26-check-1726547/tunneld.sock, peer="b"
+faketunneld: 2026/09/18 19:34:06.314481 SANDBOX attached on /dev/shm/t26-check-1726547/tunneld.sock
+faketunneld: 2026/09/18 19:34:06.512034 MARK ---- P0: both names, x names /bin/busybox ----
+faketunneld: 2026/09/18 19:34:06.537457 SANDBOX applied format=policy version=1 bytes=183 sha256=86e8b283aa251ba85e6e3be2c57a401d5590f3e6b021df2881a8e7b083a17b3c
+faketunneld: 2026/09/18 19:34:06.537547 APPLY /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/checkwork/p0.json ACK elapsed=25.213417ms bytes=183 digest=86e8b283aa251ba85e6e3be2c57a401d5590f3e6b021df2881a8e7b083a17b3c
+faketunneld: 2026/09/18 19:34:06.537589 WATCH p0.json digest=86e8b283aa251ba85e6e3be2c57a401d5590f3e6b021df2881a8e7b083a17b3c started (pulse 1s, 3 misses)
+faketunneld: 2026/09/18 19:34:06.603478 EXIT keep.peer-a:9000 served a short page for "GET / HTTP/1.1"
+faketunneld: 2026/09/18 19:34:06.683451 EXIT gone.peer-a:9001 served a short page for "GET / HTTP/1.1"
+faketunneld: 2026/09/18 19:34:06.795666 EXIT gone.peer-a:9001 served a short page for "GET / HTTP/1.1"
+faketunneld: 2026/09/18 19:34:07.882887 EXIT gone.peer-a:9001 served a short page for "GET / HTTP/1.1"
+faketunneld: 2026/09/18 19:34:08.954662 EXIT gone.peer-a:9001 served a short page for "GET / HTTP/1.1"
+faketunneld: 2026/09/18 19:34:10.028175 EXIT gone.peer-a:9001 served a short page for "GET / HTTP/1.1"
+faketunneld: 2026/09/18 19:34:11.114637 EXIT gone.peer-a:9001 served a short page for "GET / HTTP/1.1"
+faketunneld: 2026/09/18 19:34:11.773431 MARK ---- P1: one name, which must lose the P0 watch as a MISMATCH ----
+faketunneld: 2026/09/18 19:34:11.777812 SANDBOX applied format=policy version=1 bytes=145 sha256=3f5ed6490ad9c638b2af78f3e8679b6e6455e2e25fb848831a8995e4bea9e292
+faketunneld: 2026/09/18 19:34:11.777910 APPLY /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/checkwork/p1.json ACK elapsed=4.20679ms bytes=145 digest=3f5ed6490ad9c638b2af78f3e8679b6e6455e2e25fb848831a8995e4bea9e292
+faketunneld: 2026/09/18 19:34:11.777961 WATCH p1.json digest=3f5ed6490ad9c638b2af78f3e8679b6e6455e2e25fb848831a8995e4bea9e292 started (pulse 1s, 3 misses)
+faketunneld: 2026/09/18 19:34:11.787986 SANDBOX liveness lost: it pulsed 3f5ed6490ad9c638b2af78f3e8679b6e6455e2e25fb848831a8995e4bea9e292, expected 86e8b283aa251ba85e6e3be2c57a401d5590f3e6b021df2881a8e7b083a17b3c
+faketunneld: 2026/09/18 19:34:11.788064 WATCH p0.json digest=86e8b283aa251ba85e6e3be2c57a401d5590f3e6b021df2881a8e7b083a17b3c LOST after 5.250442773s: it pulsed 3f5ed6490ad9c638b2af78f3e8679b6e6455e2e25fb848831a8995e4bea9e292, expected 86e8b283aa251ba85e6e3be2c57a401d5590f3e6b021df2881a8e7b083a17b3c
+faketunneld: 2026/09/18 19:34:12.308060 EXIT keep.peer-a:9000 served a short page for "GET / HTTP/1.1"
+faketunneld: 2026/09/18 19:34:14.781250 MARK ---- P2: both names again ----
+faketunneld: 2026/09/18 19:34:14.784931 APPLY /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/checkwork/p2.json REFUSED elapsed=3.246909ms err=sandbox: policy refused: the sandbox refused it: policy refused: it widens n by [net:gone.peer-a:9001]
+faketunneld: 2026/09/18 19:34:15.789933 MARK ---- a watch on a digest nothing is enforcing ----
+faketunneld: 2026/09/18 19:34:15.790144 WATCH chosen digest=0000000000000000000000000000000000000000000000000000000000000000 started (pulse 1s, 3 misses)
+faketunneld: 2026/09/18 19:34:16.040501 SANDBOX liveness lost: it pulsed 3f5ed6490ad9c638b2af78f3e8679b6e6455e2e25fb848831a8995e4bea9e292, expected 0000000000000000000000000000000000000000000000000000000000000000
+faketunneld: 2026/09/18 19:34:16.040597 WATCH chosen digest=0000000000000000000000000000000000000000000000000000000000000000 LOST after 250.395975ms: it pulsed 3f5ed6490ad9c638b2af78f3e8679b6e6455e2e25fb848831a8995e4bea9e292, expected 0000000000000000000000000000000000000000000000000000000000000000
+faketunneld: 2026/09/18 19:34:23.797341 MARK ---- killing the workload ----
+faketunneld: 2026/09/18 19:34:24.028973 SANDBOX liveness lost: the sandbox closed its socket
+faketunneld: 2026/09/18 19:34:24.029192 WATCH p1.json digest=3f5ed6490ad9c638b2af78f3e8679b6e6455e2e25fb848831a8995e4bea9e292 LOST after 12.251191371s: the sandbox closed its socket
+faketunneld: 2026/09/18 19:34:25.959383 exiting on command
 ---- the sentry on the policy, the table and the exec sink ----
-I0918 15:24:18.321286       1 cli.go:278] Args: [runsc-sandbox --network=none --gofer-network-namespace=new --platform=systrap --ignore-cgroups=true --debug-log=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/checkwork/logs/ --rootless=true --pod-init-config=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/checkwork/pod-init.json --tunnel-socket=/dev/shm/t26-check-1696181/tunneld.sock --tunnel-table=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/checkwork/table.json --root=/dev/shm/t26-check-1696181/state --debug=true --debug-log-fd=3 boot --bundle=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/checkwork/bundle --gofer-mount-confs=lisafs:none,lisafs:none --apply-caps=true --setup-root --total-host-memory 807732506624 --total-memory 807732506624 --attached --io-fds=4 --io-fds=5 --dev-io-fd=-1 --mounts-fd=6 --start-sync-fd=7 --pin-ring-fd=8 --controller-fd=9 --spec-fd=10 --pod-init-config-fd=11 --sink-fds=12 --tunnel-table-fd=13 --tunnel-fd=14 --stdio-fds=15 --stdio-fds=16 --stdio-fds=17 t26-check-1696181]
-D0918 15:24:18.322108       1 config.go:596] Config.CharacterDevicePolicy (--character-device-policy): emulated-only
-D0918 15:24:18.322626       1 config.go:596] Config.SidecarReleaseEnforcementPolicy (--sidecar-release-enforcement-policy): NEVER
-D0918 15:24:18.324321       1 config.go:596] Config.TunnelSocket (--tunnel-socket): /dev/shm/t26-check-1696181/tunneld.sock
-D0918 15:24:18.324342       1 config.go:596] Config.TunnelTable (--tunnel-table): /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/checkwork/table.json
-I0918 15:24:18.401380       1 tunnel.go:227] Tunnel table read: 2 names, helper channel on fd 14
-D0918 15:24:18.401413       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint tunnel table read at 15:24:18.401410405 (unix nanos: 1789759458401410405)
-I0918 15:24:18.410960       1 tunnel.go:245] tunnel: gone.peer-a:9001 is 100.64.1.0, dialled by peer "b"
-I0918 15:24:18.411066       1 tunnel.go:245] tunnel: keep.peer-a:9000 is 100.64.1.1, dialled by peer "b"
-I0918 15:24:18.411213       1 tunnel.go:262] tunnel: installed with 2 names, resolver on 127.0.0.53:53
-I0918 15:24:18.411247       1 tunnel.go:246] Tunnel adapter installed with 2 names
-[15:24:18.401410]	   +813µs ▎           	├─ tunnel table read: 813µs          
-D0918 15:24:18.462903       1 timing.go:875] Timer for runsc boot: time 1789759458401410405 15:24:18.401410405 mid runsc boot = tunnel table read
-I0918 15:24:18.505207       1 tunnel.go:312] tunnel narrow: 2 of 2 names kept
-I0918 15:24:18.505383       1 policyx.go:306] policy x: the exec sink is installed; PointExecve is on with binary_sha256
-I0918 15:24:18.505418       1 policyx.go:193] exec sink: checked=0 refused=0 mean=0s hash-cache hits=0 misses=0
-I0918 15:24:18.505449       1 policy.go:225] tunnel narrow: sha256=86e8b283aa251ba85e6e3be2c57a401d5590f3e6b021df2881a8e7b083a17b3c n=2 of 2 names kept x=1 f=1
-I0918 15:24:18.505479       1 policy.go:230] tunnel narrow: applied in 657.139µs, of which the table swap was 64.265µs
-I0918 15:24:18.557851       1 tunnel_dns.go:203] tunnel dns: q="keep.peer-a" type=A answer=100.64.1.1
-I0918 15:24:18.558126       1 tunnel_dns.go:203] tunnel dns: q="keep.peer-a" type=AAAA answer=noerror-empty
-I0918 15:24:18.565308       1 tunnel.go:467] tunnel attach: keep.peer-a:9000 -> peer "b": ok in 3.721156ms, host fd 47, local 100.64.0.1:40001
-D0918 15:24:18.568712       1 tunnel_endpoint.go:211] tunnel: host fd 47 closed
-I0918 15:24:18.626981       1 tunnel_dns.go:203] tunnel dns: q="gone.peer-a" type=A answer=100.64.1.0
-I0918 15:24:18.627142       1 tunnel_dns.go:203] tunnel dns: q="gone.peer-a" type=AAAA answer=noerror-empty
-I0918 15:24:18.633878       1 tunnel.go:467] tunnel attach: gone.peer-a:9001 -> peer "b": ok in 3.362732ms, host fd 48, local 100.64.0.1:40002
-D0918 15:24:18.636713       1 tunnel_endpoint.go:211] tunnel: host fd 48 closed
-I0918 15:24:18.728201       1 tunnel_dns.go:203] tunnel dns: q="gone.peer-a" type=A answer=100.64.1.0
-I0918 15:24:18.728486       1 tunnel_dns.go:203] tunnel dns: q="gone.peer-a" type=AAAA answer=noerror-empty
-I0918 15:24:18.736071       1 tunnel.go:467] tunnel attach: gone.peer-a:9001 -> peer "b": ok in 3.694686ms, host fd 48, local 100.64.0.1:40003
-D0918 15:24:18.739015       1 tunnel_endpoint.go:211] tunnel: host fd 48 closed
-I0918 15:24:19.786791       1 tunnel_dns.go:203] tunnel dns: q="gone.peer-a" type=A answer=100.64.1.0
-I0918 15:24:19.786861       1 tunnel_dns.go:203] tunnel dns: q="gone.peer-a" type=AAAA answer=noerror-empty
-I0918 15:24:19.790881       1 tunnel.go:467] tunnel attach: gone.peer-a:9001 -> peer "b": ok in 1.983446ms, host fd 48, local 100.64.0.1:40004
-D0918 15:24:19.792213       1 tunnel_endpoint.go:211] tunnel: host fd 48 closed
-I0918 15:24:20.855022       1 tunnel_dns.go:203] tunnel dns: q="gone.peer-a" type=A answer=100.64.1.0
-I0918 15:24:20.855151       1 tunnel_dns.go:203] tunnel dns: q="gone.peer-a" type=AAAA answer=noerror-empty
-I0918 15:24:20.862309       1 tunnel.go:467] tunnel attach: gone.peer-a:9001 -> peer "b": ok in 3.39537ms, host fd 48, local 100.64.0.1:40005
-D0918 15:24:20.864842       1 tunnel_endpoint.go:211] tunnel: host fd 48 closed
-I0918 15:24:21.934048       1 tunnel_dns.go:203] tunnel dns: q="gone.peer-a" type=A answer=100.64.1.0
-I0918 15:24:21.934424       1 tunnel_dns.go:203] tunnel dns: q="gone.peer-a" type=AAAA answer=noerror-empty
-I0918 15:24:21.941528       1 tunnel.go:467] tunnel attach: gone.peer-a:9001 -> peer "b": ok in 2.938068ms, host fd 48, local 100.64.0.1:40006
-D0918 15:24:21.943893       1 tunnel_endpoint.go:211] tunnel: host fd 48 closed
-I0918 15:24:23.007393       1 tunnel_dns.go:203] tunnel dns: q="gone.peer-a" type=A answer=100.64.1.0
-I0918 15:24:23.007486       1 tunnel_dns.go:203] tunnel dns: q="gone.peer-a" type=AAAA answer=noerror-empty
-I0918 15:24:23.014064       1 tunnel.go:467] tunnel attach: gone.peer-a:9001 -> peer "b": ok in 3.283063ms, host fd 48, local 100.64.0.1:40007
-D0918 15:24:23.016278       1 tunnel_endpoint.go:211] tunnel: host fd 48 closed
-I0918 15:24:23.781169       1 tunnel.go:304] tunnel narrow: gone.peer-a:9001 at 100.64.1.0 is gone
-I0918 15:24:23.781250       1 tunnel.go:312] tunnel narrow: 1 of 2 names kept
-I0918 15:24:23.781303       1 policyx.go:193] exec sink: checked=15 refused=0 mean=4.544µs hash-cache hits=14 misses=1
-I0918 15:24:23.781352       1 policy.go:225] tunnel narrow: sha256=3f5ed6490ad9c638b2af78f3e8679b6e6455e2e25fb848831a8995e4bea9e292 n=1 of 2 names kept x=1 f=1
-I0918 15:24:23.781397       1 policy.go:230] tunnel narrow: applied in 587.225µs, of which the table swap was 145.847µs
-I0918 15:24:24.079536       1 tunnel_dns.go:203] tunnel dns: q="gone.peer-a" type=A answer=nxdomain
-I0918 15:24:24.079568       1 tunnel.go:574] tunnel: refused dns :0 name="gone.peer-a" reason=unknown-name
-I0918 15:24:24.079864       1 tunnel_dns.go:203] tunnel dns: q="gone.peer-a" type=AAAA answer=nxdomain
-I0918 15:24:24.079897       1 tunnel.go:574] tunnel: refused dns :0 name="gone.peer-a" reason=unknown-name
-I0918 15:24:24.136490       1 tunnel.go:574] tunnel: refused tcp 100.64.1.0:9001 name="" reason=not-in-table
-I0918 15:24:24.199644       1 tunnel_dns.go:203] tunnel dns: q="keep.peer-a" type=A answer=100.64.1.1
-I0918 15:24:24.199905       1 tunnel_dns.go:203] tunnel dns: q="keep.peer-a" type=AAAA answer=noerror-empty
-I0918 15:24:24.207388       1 tunnel.go:467] tunnel attach: keep.peer-a:9000 -> peer "b": ok in 4.216865ms, host fd 48, local 100.64.0.1:40008
-D0918 15:24:24.210031       1 tunnel_endpoint.go:211] tunnel: host fd 48 closed
-W0918 15:24:24.283922       1 policyx.go:228] exec refused: path="/bin/probe" sha256=c4b9b6061be8e1ce09f4650f306e30173a0413876da5e68c106fc691779f2f6e reason=not-in-x
-W0918 15:24:26.778166       1 urpc.go:368] urpc: RPC call for method Policy.Narrow failed: policy refused: it widens n by [net:gone.peer-a:9001]
-W0918 15:24:35.854068       1 tunnel_dns.go:122] tunnel resolver: read failed, the responder is going away: endpoint is closed for receive
+I0918 15:34:06.325324       1 cli.go:278] Args: [runsc-sandbox --rootless=true --ignore-cgroups=true --tunnel-socket=/dev/shm/t26-check-1726547/tunneld.sock --tunnel-table=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/checkwork/table.json --root=/dev/shm/t26-check-1726547/state --debug=true --network=none --platform=systrap --pod-init-config=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/checkwork/pod-init.json --debug-log=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/checkwork/logs/ --gofer-network-namespace=new --debug-log-fd=3 boot --bundle=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/checkwork/bundle --gofer-mount-confs=lisafs:none,lisafs:none --apply-caps=true --setup-root --total-host-memory 807732506624 --total-memory 807732506624 --attached --io-fds=4 --io-fds=5 --dev-io-fd=-1 --mounts-fd=6 --start-sync-fd=7 --pin-ring-fd=8 --controller-fd=9 --spec-fd=10 --pod-init-config-fd=11 --sink-fds=12 --tunnel-table-fd=13 --tunnel-fd=14 --stdio-fds=15 --stdio-fds=16 --stdio-fds=17 t26-check-1726547]
+D0918 15:34:06.334564       1 config.go:596] Config.CharacterDevicePolicy (--character-device-policy): emulated-only
+D0918 15:34:06.335393       1 config.go:596] Config.SidecarReleaseEnforcementPolicy (--sidecar-release-enforcement-policy): NEVER
+D0918 15:34:06.338143       1 config.go:596] Config.TunnelSocket (--tunnel-socket): /dev/shm/t26-check-1726547/tunneld.sock
+D0918 15:34:06.338177       1 config.go:596] Config.TunnelTable (--tunnel-table): /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/checkwork/table.json
+I0918 15:34:06.438466       1 tunnel.go:227] Tunnel table read: 2 names, helper channel on fd 14
+D0918 15:34:06.438533       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint tunnel table read at 15:34:06.438526262 (unix nanos: 1789760046438526262)
+I0918 15:34:06.449458       1 tunnel.go:245] tunnel: gone.peer-a:9001 is 100.64.1.0, dialled by peer "b"
+I0918 15:34:06.449518       1 tunnel.go:245] tunnel: keep.peer-a:9000 is 100.64.1.1, dialled by peer "b"
+I0918 15:34:06.449586       1 tunnel.go:262] tunnel: installed with 2 names, resolver on 127.0.0.53:53
+I0918 15:34:06.449603       1 tunnel.go:246] Tunnel adapter installed with 2 names
+[15:34:06.438526]	 +2 179µs ▉▎          	├─ tunnel table read: 2 179µs        
+D0918 15:34:06.500508       1 timing.go:875] Timer for runsc boot: time 1789760046438526262 15:34:06.438526262 mid runsc boot = tunnel table read
+I0918 15:34:06.516550       1 tunnel.go:312] tunnel narrow: 2 of 2 names kept
+I0918 15:34:06.517375       1 policyx.go:306] policy x: the exec sink is installed; PointExecve is on with binary_sha256
+I0918 15:34:06.517463       1 policyx.go:193] exec sink: checked=0 refused=0 mean=0s hash-cache hits=0 misses=0
+I0918 15:34:06.517547       1 policy.go:225] tunnel narrow: sha256=86e8b283aa251ba85e6e3be2c57a401d5590f3e6b021df2881a8e7b083a17b3c n=2 of 2 names kept x=1 f=1
+I0918 15:34:06.517646       1 policy.go:230] tunnel narrow: applied in 2.131737ms, of which the table swap was 134.06µs
+I0918 15:34:06.592812       1 tunnel_dns.go:203] tunnel dns: q="keep.peer-a" type=A answer=100.64.1.1
+I0918 15:34:06.593065       1 tunnel_dns.go:203] tunnel dns: q="keep.peer-a" type=AAAA answer=noerror-empty
+I0918 15:34:06.602236       1 tunnel.go:467] tunnel attach: keep.peer-a:9000 -> peer "b": ok in 5.425826ms, host fd 47, local 100.64.0.1:40001
+D0918 15:34:06.604782       1 tunnel_endpoint.go:211] tunnel: host fd 47 closed
+I0918 15:34:06.674096       1 tunnel_dns.go:203] tunnel dns: q="gone.peer-a" type=A answer=100.64.1.0
+I0918 15:34:06.674413       1 tunnel_dns.go:203] tunnel dns: q="gone.peer-a" type=AAAA answer=noerror-empty
+I0918 15:34:06.682228       1 tunnel.go:467] tunnel attach: gone.peer-a:9001 -> peer "b": ok in 3.940853ms, host fd 48, local 100.64.0.1:40002
+D0918 15:34:06.685175       1 tunnel_endpoint.go:211] tunnel: host fd 48 closed
+I0918 15:34:06.784390       1 tunnel_dns.go:203] tunnel dns: q="gone.peer-a" type=A answer=100.64.1.0
+I0918 15:34:06.784923       1 tunnel_dns.go:203] tunnel dns: q="gone.peer-a" type=AAAA answer=noerror-empty
+I0918 15:34:06.794340       1 tunnel.go:467] tunnel attach: gone.peer-a:9001 -> peer "b": ok in 3.930457ms, host fd 48, local 100.64.0.1:40003
+D0918 15:34:06.797498       1 tunnel_endpoint.go:211] tunnel: host fd 48 closed
+I0918 15:34:07.872472       1 tunnel_dns.go:203] tunnel dns: q="gone.peer-a" type=A answer=100.64.1.0
+I0918 15:34:07.872628       1 tunnel_dns.go:203] tunnel dns: q="gone.peer-a" type=AAAA answer=noerror-empty
+I0918 15:34:07.881553       1 tunnel.go:467] tunnel attach: gone.peer-a:9001 -> peer "b": ok in 4.200059ms, host fd 48, local 100.64.0.1:40004
+D0918 15:34:07.884540       1 tunnel_endpoint.go:211] tunnel: host fd 48 closed
+I0918 15:34:08.946690       1 tunnel_dns.go:203] tunnel dns: q="gone.peer-a" type=A answer=100.64.1.0
+I0918 15:34:08.946886       1 tunnel_dns.go:203] tunnel dns: q="gone.peer-a" type=AAAA answer=noerror-empty
+I0918 15:34:08.953637       1 tunnel.go:467] tunnel attach: gone.peer-a:9001 -> peer "b": ok in 3.629569ms, host fd 48, local 100.64.0.1:40005
+D0918 15:34:08.955629       1 tunnel_endpoint.go:211] tunnel: host fd 48 closed
+I0918 15:34:10.020476       1 tunnel_dns.go:203] tunnel dns: q="gone.peer-a" type=A answer=100.64.1.0
+I0918 15:34:10.020605       1 tunnel_dns.go:203] tunnel dns: q="gone.peer-a" type=AAAA answer=noerror-empty
+I0918 15:34:10.026710       1 tunnel.go:467] tunnel attach: gone.peer-a:9001 -> peer "b": ok in 3.297374ms, host fd 48, local 100.64.0.1:40006
+D0918 15:34:10.029623       1 tunnel_endpoint.go:211] tunnel: host fd 48 closed
+I0918 15:34:11.099120       1 tunnel_dns.go:203] tunnel dns: q="gone.peer-a" type=A answer=100.64.1.0
+I0918 15:34:11.099346       1 tunnel_dns.go:203] tunnel dns: q="gone.peer-a" type=AAAA answer=noerror-empty
+I0918 15:34:11.113451       1 tunnel.go:467] tunnel attach: gone.peer-a:9001 -> peer "b": ok in 5.305858ms, host fd 48, local 100.64.0.1:40007
+D0918 15:34:11.116118       1 tunnel_endpoint.go:211] tunnel: host fd 48 closed
+I0918 15:34:11.776091       1 tunnel.go:304] tunnel narrow: gone.peer-a:9001 at 100.64.1.0 is gone
+I0918 15:34:11.776205       1 tunnel.go:312] tunnel narrow: 1 of 2 names kept
+I0918 15:34:11.776284       1 policyx.go:193] exec sink: checked=16 refused=0 mean=4.573µs hash-cache hits=15 misses=1
+I0918 15:34:11.776384       1 policy.go:225] tunnel narrow: sha256=3f5ed6490ad9c638b2af78f3e8679b6e6455e2e25fb848831a8995e4bea9e292 n=1 of 2 names kept x=1 f=1
+I0918 15:34:11.776515       1 policy.go:230] tunnel narrow: applied in 811.429µs, of which the table swap was 200.679µs
+I0918 15:34:12.177847       1 tunnel_dns.go:203] tunnel dns: q="gone.peer-a" type=A answer=nxdomain
+I0918 15:34:12.177960       1 tunnel.go:574] tunnel: refused dns :0 name="gone.peer-a" reason=unknown-name
+I0918 15:34:12.178803       1 tunnel_dns.go:203] tunnel dns: q="gone.peer-a" type=AAAA answer=nxdomain
+I0918 15:34:12.178894       1 tunnel.go:574] tunnel: refused dns :0 name="gone.peer-a" reason=unknown-name
+I0918 15:34:12.242562       1 tunnel.go:574] tunnel: refused tcp 100.64.1.0:9001 name="" reason=not-in-table
+I0918 15:34:12.300103       1 tunnel_dns.go:203] tunnel dns: q="keep.peer-a" type=A answer=100.64.1.1
+I0918 15:34:12.300265       1 tunnel_dns.go:203] tunnel dns: q="keep.peer-a" type=AAAA answer=noerror-empty
+I0918 15:34:12.307041       1 tunnel.go:467] tunnel attach: keep.peer-a:9000 -> peer "b": ok in 3.62324ms, host fd 48, local 100.64.0.1:40008
+D0918 15:34:12.309371       1 tunnel_endpoint.go:211] tunnel: host fd 48 closed
+W0918 15:34:12.360584       1 policyx.go:228] exec refused: path="/bin/probe" sha256=c4b9b6061be8e1ce09f4650f306e30173a0413876da5e68c106fc691779f2f6e reason=not-in-x
+W0918 15:34:14.784113       1 urpc.go:368] urpc: RPC call for method Policy.Narrow failed: policy refused: it widens n by [net:gone.peer-a:9001]
+W0918 15:34:23.862435       1 tunnel_dns.go:122] tunnel resolver: read failed, the responder is going away: endpoint is closed for receive
 ---- what the helper said ----
-I0918 15:24:18.310224  1696351 tunnel_helper.go:104] Tunnel helper connected to tunneld at "/dev/shm/t26-check-1696181/tunneld.sock", control socket "/dev/shm/t26-check-1696181/state/runsc-t26-check-1696181.sock"
-I0918 15:24:18.506070  1696351 tunnel_helper.go:179] Tunnel helper: the sentry is enforcing a policy of 183 bytes, sha256=86e8b283aa251ba85e6e3be2c57a401d5590f3e6b021df2881a8e7b083a17b3c, in 2.486846ms
-I0918 15:24:18.564781  1696351 tunnel_helper.go:380] Tunnel helper opened keep.peer-a:9000
-I0918 15:24:18.633411  1696351 tunnel_helper.go:380] Tunnel helper opened gone.peer-a:9001
-I0918 15:24:18.735517  1696351 tunnel_helper.go:380] Tunnel helper opened gone.peer-a:9001
-I0918 15:24:19.790548  1696351 tunnel_helper.go:380] Tunnel helper opened gone.peer-a:9001
-I0918 15:24:20.861944  1696351 tunnel_helper.go:380] Tunnel helper opened gone.peer-a:9001
-I0918 15:24:21.941052  1696351 tunnel_helper.go:380] Tunnel helper opened gone.peer-a:9001
-I0918 15:24:23.013572  1696351 tunnel_helper.go:380] Tunnel helper opened gone.peer-a:9001
-I0918 15:24:23.781883  1696351 tunnel_helper.go:179] Tunnel helper: the sentry is enforcing a policy of 145 bytes, sha256=3f5ed6490ad9c638b2af78f3e8679b6e6455e2e25fb848831a8995e4bea9e292, in 2.313037ms
-I0918 15:24:24.206850  1696351 tunnel_helper.go:380] Tunnel helper opened keep.peer-a:9000
-W0918 15:24:26.778313  1696351 tunnel_helper.go:176] Tunnel helper: the sentry refused a policy push of 183 bytes after 1.815245ms: policy refused: it widens n by [net:gone.peer-a:9001]
-D0918 15:24:35.890375  1696351 tunnel_helper.go:120] Tunnel helper: the sentry channel ended: EOF
-I0918 15:24:35.890451  1696351 tunnel_helper.go:122] Tunnel helper exiting: the sentry closed the channel
-I0918 15:24:35.890557  1696351 tunnel_helper.go:254] Tunnel helper: the tunneld socket is gone, so the sandbox stops saying it is alive
+I0918 15:34:06.314429  1726683 tunnel_helper.go:104] Tunnel helper connected to tunneld at "/dev/shm/t26-check-1726547/tunneld.sock", control socket "/dev/shm/t26-check-1726547/state/runsc-t26-check-1726547.sock"
+I0918 15:34:06.536578  1726683 tunnel_helper.go:179] Tunnel helper: the sentry is enforcing a policy of 183 bytes, sha256=86e8b283aa251ba85e6e3be2c57a401d5590f3e6b021df2881a8e7b083a17b3c, in 23.017634ms
+I0918 15:34:06.601378  1726683 tunnel_helper.go:380] Tunnel helper opened keep.peer-a:9000
+I0918 15:34:06.681552  1726683 tunnel_helper.go:380] Tunnel helper opened gone.peer-a:9001
+I0918 15:34:06.793692  1726683 tunnel_helper.go:380] Tunnel helper opened gone.peer-a:9001
+I0918 15:34:07.880815  1726683 tunnel_helper.go:380] Tunnel helper opened gone.peer-a:9001
+I0918 15:34:08.952971  1726683 tunnel_helper.go:380] Tunnel helper opened gone.peer-a:9001
+I0918 15:34:10.026069  1726683 tunnel_helper.go:380] Tunnel helper opened gone.peer-a:9001
+I0918 15:34:11.112406  1726683 tunnel_helper.go:380] Tunnel helper opened gone.peer-a:9001
+I0918 15:34:11.777169  1726683 tunnel_helper.go:179] Tunnel helper: the sentry is enforcing a policy of 145 bytes, sha256=3f5ed6490ad9c638b2af78f3e8679b6e6455e2e25fb848831a8995e4bea9e292, in 2.886151ms
+I0918 15:34:12.306348  1726683 tunnel_helper.go:380] Tunnel helper opened keep.peer-a:9000
+W0918 15:34:14.784446  1726683 tunnel_helper.go:176] Tunnel helper: the sentry refused a policy push of 183 bytes after 2.108222ms: policy refused: it widens n by [net:gone.peer-a:9001]
+D0918 15:34:23.894896  1726683 tunnel_helper.go:120] Tunnel helper: the sentry channel ended: EOF
+I0918 15:34:23.895074  1726683 tunnel_helper.go:122] Tunnel helper exiting: the sentry closed the channel
+I0918 15:34:23.895214  1726683 tunnel_helper.go:254] Tunnel helper: the tunneld socket is gone, so the sandbox stops saying it is alive
 ---- the points the receiver got ----
-listening on /dev/shm/t26-check-1696181/check.events
+listening on /dev/shm/t26-check-1726547/check.events
 connected: the sentry speaks wire version 1
-execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:24:18.533397197Z container_id=t26-check-1696181 thread_id=3
-execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:24:18.581768025Z container_id=t26-check-1696181 thread_id=4
-execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:24:18.606264964Z container_id=t26-check-1696181 thread_id=5
-execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:24:18.648544393Z container_id=t26-check-1696181 thread_id=6
-execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:24:18.675840343Z container_id=t26-check-1696181 thread_id=7
-execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:24:18.703506825Z container_id=t26-check-1696181 thread_id=8
-execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:24:18.756299723Z container_id=t26-check-1696181 thread_id=9
-execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:24:19.776210162Z container_id=t26-check-1696181 thread_id=10
-execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:24:19.801505992Z container_id=t26-check-1696181 thread_id=11
-execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:24:20.834216097Z container_id=t26-check-1696181 thread_id=12
-execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:24:20.880300303Z container_id=t26-check-1696181 thread_id=13
-execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:24:21.91030983Z container_id=t26-check-1696181 thread_id=14
-execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:24:21.958646984Z container_id=t26-check-1696181 thread_id=15
-execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:24:22.989599096Z container_id=t26-check-1696181 thread_id=16
-execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:24:23.029302484Z container_id=t26-check-1696181 thread_id=17
-execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:24:24.062307247Z container_id=t26-check-1696181 thread_id=18
-egress_refused protocol=dns name=gone.peer-a reason=unknown-name time=2026-09-18T19:24:24.079588243Z
-egress_refused protocol=dns name=gone.peer-a reason=unknown-name time=2026-09-18T19:24:24.079913037Z
-execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:24:24.09617973Z container_id=t26-check-1696181 thread_id=19
-execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:24:24.123221912Z container_id=t26-check-1696181 thread_id=20
-egress_refused protocol=tcp address=100.64.1.0 port=9001 reason=not-in-table time=2026-09-18T19:24:24.136536246Z container_id=t26-check-1696181 thread_id=20
-execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:24:24.148876507Z container_id=t26-check-1696181 thread_id=21
-execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:24:24.177443142Z container_id=t26-check-1696181 thread_id=22
-execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:24:24.224292825Z container_id=t26-check-1696181 thread_id=23
-execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:24:24.281341369Z container_id=t26-check-1696181 thread_id=26
-execve path=/bin/probe sha256=c4b9b6061be8e1ce09f4650f306e30173a0413876da5e68c106fc691779f2f6e time=2026-09-18T19:24:24.283780384Z container_id=t26-check-1696181 thread_id=25
-exec_refused path=/bin/probe sha256=c4b9b6061be8e1ce09f4650f306e30173a0413876da5e68c106fc691779f2f6e reason=not-in-x time=2026-09-18T19:24:24.283780384Z container_id=t26-check-1696181 thread_id=25
-execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:24:24.311843037Z container_id=t26-check-1696181 thread_id=27
-execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:24:24.339359687Z container_id=t26-check-1696181 thread_id=28
-execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:24:24.366011788Z container_id=t26-check-1696181 thread_id=29
-execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:24:24.40762059Z container_id=t26-check-1696181 thread_id=31
-execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:24:24.445430157Z container_id=t26-check-1696181 thread_id=33
-execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:24:24.469817431Z container_id=t26-check-1696181 thread_id=32
-execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:24:24.49312052Z container_id=t26-check-1696181 thread_id=34
-execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:24:24.522252445Z container_id=t26-check-1696181 thread_id=35
-execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:24:24.549148998Z container_id=t26-check-1696181 thread_id=36
-execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:24:24.571425457Z container_id=t26-check-1696181 thread_id=37
-execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:24:24.594479814Z container_id=t26-check-1696181 thread_id=38
+execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:34:06.539892082Z container_id=t26-check-1726547 thread_id=2
+execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:34:06.568180471Z container_id=t26-check-1726547 thread_id=3
+execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:34:06.617568456Z container_id=t26-check-1726547 thread_id=4
+execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:34:06.645172816Z container_id=t26-check-1726547 thread_id=5
+execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:34:06.697954859Z container_id=t26-check-1726547 thread_id=6
+execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:34:06.726508093Z container_id=t26-check-1726547 thread_id=7
+execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:34:06.755341815Z container_id=t26-check-1726547 thread_id=8
+execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:34:06.813946716Z container_id=t26-check-1726547 thread_id=9
+execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:34:07.850809176Z container_id=t26-check-1726547 thread_id=10
+execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:34:07.899249397Z container_id=t26-check-1726547 thread_id=11
+execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:34:08.929537001Z container_id=t26-check-1726547 thread_id=12
+execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:34:08.968454721Z container_id=t26-check-1726547 thread_id=13
+execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:34:10.001838138Z container_id=t26-check-1726547 thread_id=14
+execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:34:10.042369442Z container_id=t26-check-1726547 thread_id=15
+execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:34:11.075013466Z container_id=t26-check-1726547 thread_id=16
+execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:34:11.12709045Z container_id=t26-check-1726547 thread_id=17
+execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:34:12.158017367Z container_id=t26-check-1726547 thread_id=18
+egress_refused protocol=dns name=gone.peer-a reason=unknown-name time=2026-09-18T19:34:12.178044854Z
+egress_refused protocol=dns name=gone.peer-a reason=unknown-name time=2026-09-18T19:34:12.178965596Z
+execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:34:12.194767916Z container_id=t26-check-1726547 thread_id=19
+execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:34:12.226591893Z container_id=t26-check-1726547 thread_id=20
+egress_refused protocol=tcp address=100.64.1.0 port=9001 reason=not-in-table time=2026-09-18T19:34:12.242603375Z container_id=t26-check-1726547 thread_id=20
+execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:34:12.254968393Z container_id=t26-check-1726547 thread_id=21
+execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:34:12.276630365Z container_id=t26-check-1726547 thread_id=22
+execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:34:12.320342259Z container_id=t26-check-1726547 thread_id=23
+execve path=/bin/probe sha256=c4b9b6061be8e1ce09f4650f306e30173a0413876da5e68c106fc691779f2f6e time=2026-09-18T19:34:12.360449951Z container_id=t26-check-1726547 thread_id=25
+execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:34:12.360759712Z container_id=t26-check-1726547 thread_id=26
+exec_refused path=/bin/probe sha256=c4b9b6061be8e1ce09f4650f306e30173a0413876da5e68c106fc691779f2f6e reason=not-in-x time=2026-09-18T19:34:12.360449951Z container_id=t26-check-1726547 thread_id=25
+execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:34:12.38807469Z container_id=t26-check-1726547 thread_id=27
+execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:34:12.413759487Z container_id=t26-check-1726547 thread_id=28
+execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:34:12.437967384Z container_id=t26-check-1726547 thread_id=29
+execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:34:12.48401545Z container_id=t26-check-1726547 thread_id=31
+execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:34:12.516966928Z container_id=t26-check-1726547 thread_id=33
+execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:34:12.538141575Z container_id=t26-check-1726547 thread_id=32
+execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:34:12.561602058Z container_id=t26-check-1726547 thread_id=34
+execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:34:12.592357694Z container_id=t26-check-1726547 thread_id=35
+execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:34:12.616484521Z container_id=t26-check-1726547 thread_id=36
+execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:34:12.639250169Z container_id=t26-check-1726547 thread_id=37
+execve path=/bin/busybox sha256=dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 time=2026-09-18T19:34:12.669522234Z container_id=t26-check-1726547 thread_id=38
 disconnected
 
 ===== the adapter check is complete =====

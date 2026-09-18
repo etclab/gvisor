@@ -1,0 +1,35 @@
+# Inputs of the two documents emitted beside this file (tickets 07 and 19).
+# The launch measurement in reference-values.json is a prediction from these
+# inputs. It was not read from any machine.
+
+reference-values.json sha256: bd2bd6256ed0fa8f188b0e381c8c49a513d199a9e539019d165f47b2e3bba193
+policy.json sha256:           5632db488fbcaa7597b5fd013d94bcc9a97af98a0eca3e130a7aca77a6460436
+egress ceiling digest:        197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973 (sha256 over attest/ceiling/ceiling.nft, compiled
+                              into the measured tunneld; this is what a guest presents and what
+                              a peer's policy_digest names since ticket 22)
+emitted policy digest:        04140f6fe05693bb4f8743bf767a34adc2f0d37271cab3846f9f55b5025db138 (sha256 over the signed policy bytes, not over
+                              the file; the document beside this one, pushed rather than delivered)
+admits peer policy:           197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973 (this image's own ceiling, so a guest booting it admits itself)
+forwards to:                  697bbdcd57b30d44c9ef8e287ad3641bf72f728a54080c418b42cd02a43f40afaa955928e6e86e9996397b06ef56186e
+signed by author key:         3f27c388b8c18afb53cce0214c3a9c7650290073d23ceffe09042c8d017dec72 (Ed25519; also at /etc/attested-tunnel/author.pub in rootfs.img)
+launch policy:                0x30000
+tcb floor (authoring choice): 9,0,23,72 (bootloader,tee,snp,microcode)
+
+# Predicted SEV-SNP launch measurement, computed offline from the inputs below.
+# Not read from any machine. Cross-checked once: docs/snp-measurement-prediction.md.
+launch_measurement: 697bbdcd57b30d44c9ef8e287ad3641bf72f728a54080c418b42cd02a43f40afaa955928e6e86e9996397b06ef56186e
+
+## Inputs (sha256 of each file as measured; cmdline is the -append string plus NUL)
+ffd6bfa8c76c460a4dba62c39b2c9cf5a7ac425148eede7fb610f4c3cd96a895  OVMF.fd
+c3b443dbdafbaf3cb92d119482143a76876a752c7335a61faa917361d9724b75  vmlinuz
+494d6c1f5e95da4aebb4e5f60cac6f203ba45e75c6bd95ef7646f4bcbd7a34cd  initrd.img
+50f33f2c72a55dc44849847c608bc95a2fa25c781902b53d27b520d524bade1c  cmdline (196 bytes + NUL)
+cmdline: console=ttyS0 earlyprintk=serial panic=-1 rdinit=/init verity.roothash=ffb5ac972d6b1035f01ef96b0fdbe4a0949717d4221e2facd75ddfc0cb67273f verity.salt=- verity.datablocks=21898 verity.hashstart=21898
+vcpus: 4
+vcpu_type: EPYC-v4
+vmm: QEMU (sev-snp-guest, kernel-hashes=on; firmware OvmfPkg/AmdSev/AmdSevX64 with BlobVerifierLibSevHashes)
+guest_features: 0x1 (sev-snp-measure default: SNPActive)
+tool: sev-snp-measure 0.0.13 (pip, virtualenv /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/sev-snp-measure-venv-ticket14)
+
+## The measured files' provenance is in manifest.txt; rootfs.img enters through
+## verity.roothash on the command line: ffb5ac972d6b1035f01ef96b0fdbe4a0949717d4221e2facd75ddfc0cb67273f

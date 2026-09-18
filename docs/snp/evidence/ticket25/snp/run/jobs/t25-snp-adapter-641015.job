@@ -1,0 +1,26 @@
+# Ticket 25, THE RUN: the adapter scenario on SEV-SNP hardware, two guests.
+#
+# Privileged because an SNP launch opens /dev/sev. Both guests come out of one
+# job, because they are two halves of one conversation.
+#
+# The image is $STACK/image-ticket25, carrying the adapter runsc
+# ab593dc254fe9617d8370ce77f81ae5abeb4483e4c980c4605247d441a1f4f70, predicted
+# launch measurement 697bbdcd…186e. The workload disk is one disk on both guests
+# and the two config devices differ only in tunnel-table.json and exit-allow.
+set -u
+export PATH=/usr/local/go/bin:$PATH
+export STACK=/home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack
+export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=safe.directory GIT_CONFIG_VALUE_0='*'
+bash /home/pniroula/Projects/gvisor-t25/docs/snp/tunnel-on-two-guests.sh \
+    -image $STACK/image-ticket25 \
+    -out $STACK/image-ticket25-run \
+    -scenario adapter -quick \
+    -workload /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/snp/workload.img \
+    -spool /home/pniroula/Projects/gvisor/docs/snp/root-spool \
+    -capture /home/pniroula/Projects/gvisor-t25/docs/snp/evidence/ticket25/snp/run/capture
+rc=$?
+echo "harness rc=$rc"
+chown -R 253477:253477 $STACK/image-ticket25-run \
+    /home/pniroula/Projects/gvisor-t25/docs/snp/evidence/ticket25/snp/run 2>/dev/null
+chmod -R a+rX $STACK/image-ticket25-run 2>/dev/null
+exit $rc

@@ -1,0 +1,45 @@
+=== two attested guests, from image-ticket25 ===
+date        : 2026-09-18T14:35:03Z
+repo        : 12d55d09ff9df71238367a394d5b4012dfe91f45 on ticket-25-the-adapter-intercept-and-handoff
+image       : /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket25
+mode        : SEV-SNP (privileged, through the spool)
+scenarios   : adapter
+workload    : /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/snp/workload.img (one OCI bundle on both guests, outside the launch measurement)
+
+predicted launch measurement of the image both guests boot:
+  697bbdcd57b30d44c9ef8e287ad3641bf72f728a54080c418b42cd02a43f40afaa955928e6e86e9996397b06ef56186e
+the reference value set on both config devices names exactly that, signed by the
+author key baked into the image at /etc/attested-tunnel/author.pub (ADR-0004),
+and the policy beside it is signed by the same key under its own domain.
+
+spool       : /home/pniroula/Projects/gvisor/docs/snp/root-spool
+
+### adapter: two sandboxes on the adapter, a page fetched each way, and the names that are not in the table
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config: tunnel-table.json  ({"default_exit":"guest-b", "names":{"web.peer-b":{"port":80}}})
+    config: exit-allow  (web.peer-a:80)
+    config device written to /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket25-run/adapter/config-a.img (08affcd3eb9d49a8…, not measured; every inode root-owned)
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config: tunnel-table.json  ({"default_exit":"guest-a", "names":{"web.peer-a":{"port":80}}})
+    config: exit-allow  (web.peer-b:80)
+    config device written to /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket25-run/adapter/config-b.img (51133c5f71ccc5b2…, not measured; every inode root-owned)
+spooled /home/pniroula/Projects/gvisor/docs/snp/root-spool/tunnel-641036-adapter.job; waiting up to 630s for the runner
+FAIL  the runner never ran adapter — is docs/snp/root-runner.sh up?
+relay:
+FAIL  adapter: one of the guests left no console
+
+=== latency, as the guests measured it ===
+  none recorded
+
+=== 0 passed, 2 failed ===
+captured the workload bundle's config.json out of workload.img (the disk is not measured and is not copied)
+captured into /home/pniroula/Projects/gvisor-t25/docs/snp/evidence/ticket25/snp/run/capture
+harness rc=1

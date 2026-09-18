@@ -1,0 +1,105 @@
+=== two attested guests, from image-ticket25 ===
+date        : 2026-09-18T14:50:46Z
+repo        : 12d55d09ff9df71238367a394d5b4012dfe91f45 on ticket-25-the-adapter-intercept-and-handoff
+image       : /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket25
+mode        : SEV-SNP (privileged, through the spool)
+scenarios   : adapter
+workload    : /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/snp/workload.img (one OCI bundle on both guests, outside the launch measurement)
+
+predicted launch measurement of the image both guests boot:
+  697bbdcd57b30d44c9ef8e287ad3641bf72f728a54080c418b42cd02a43f40afaa955928e6e86e9996397b06ef56186e
+the reference value set on both config devices names exactly that, signed by the
+author key baked into the image at /etc/attested-tunnel/author.pub (ADR-0004),
+and the policy beside it is signed by the same key under its own domain.
+
+spool       : /home/pniroula/Projects/gvisor/docs/snp/root-spool
+
+### adapter: two sandboxes on the adapter, a page fetched each way, and the names that are not in the table
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config: tunnel-table.json  ({"default_exit":"guest-b", "names":{"web.peer-b":{"port":80}}})
+    config: exit-allow  (web.peer-a:80)
+    config device written to /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket25-run2/adapter/config-a.img (c43ebc81882f6e49…, not measured; every inode root-owned)
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config: tunnel-table.json  ({"default_exit":"guest-a", "names":{"web.peer-a":{"port":80}}})
+    config: exit-allow  (web.peer-b:80)
+    config device written to /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket25-run2/adapter/config-b.img (47188fbfb32fde66…, not measured; every inode root-owned)
+spooled /home/pniroula/Projects/gvisor/docs/snp/root-spool/tunnel-662972-adapter.job; waiting up to 630s for the runner
+adapter finished, rc=0
+    | guest A qemu exited 0
+    | guest B qemu exited 0
+relay:
+    | l2relay: RELAYED a_to_b_frames=56 b_to_a_frames=52 a_to_b_bytes=40116 b_to_a_bytes=34054 tampered=0
+    | l2relay: MARKER not found hits=0 marker='served-by: guest-' in 108 frames carrying 74170 bytes
+    | l2relay: what was on the segment:
+    |   ethertypes : IPv4=104, ARP=4
+    |   ip protocols: UDP=104
+    |   arp targets : 10.14.0.2, 10.14.0.3
+    |   10.14.0.2 -> 10.14.0.3 proto=UDP frames=54
+    |   10.14.0.3 -> 10.14.0.2 proto=UDP frames=50
+PASS  guest-a: booted the measured image and ran the packaged tunneld
+PASS  guest-a: no writable path in the image is executable
+PASS  guest-a: read the author key from inside the launch measurement
+PASS  guest-a: read the reference value set and chain from the config device
+PASS  guest-b: booted the measured image and ran the packaged tunneld
+PASS  guest-b: no writable path in the image is executable
+PASS  guest-b: read the author key from inside the launch measurement
+PASS  guest-b: read the reference value set and chain from the config device
+PASS  guest-a: the config device's tunnel table put this guest on the adapter path
+PASS  guest-a: tunneld was started before the workload, not after it
+PASS  guest-a: runsc was launched with the adapter's two flags
+PASS  guest-a: busybox httpd is serving the page on its own loopback
+PASS  guest-a: and the page is really being served, fetched by init before any sandbox existed
+PASS  guest-a: the boot reached the end and powered off rather than being stopped
+PASS  guest-a: no writable executable path was ever found
+PASS  guest-b: the config device's tunnel table put this guest on the adapter path
+PASS  guest-b: tunneld was started before the workload, not after it
+PASS  guest-b: runsc was launched with the adapter's two flags
+PASS  guest-b: busybox httpd is serving the page on its own loopback
+PASS  guest-b: and the page is really being served, fetched by init before any sandbox existed
+PASS  guest-b: the boot reached the end and powered off rather than being stopped
+PASS  guest-b: no writable executable path was ever found
+PASS  guest-a: acquired its own evidence from the platform
+PASS  guest-a: bundled the chain provisioned on its config device, not the platform's
+PASS  guest-a: is listening
+PASS  guest-b: acquired its own evidence from the platform
+PASS  guest-b: bundled the chain provisioned on its config device, not the platform's
+PASS  guest-b: is listening
+PASS  guest-a: the sandbox socket came up for the adapter's helper to dial
+PASS  guest-a: tunneld handed the socket to a sandbox in another process and stopped answering itself
+PASS  guest-a: the exit attached and is holding the list its config device carries
+PASS  guest-a: admitted its peer's evidence
+PASS  guest-a: refused nobody
+PASS  guest-b: the sandbox socket came up for the adapter's helper to dial
+PASS  guest-b: tunneld handed the socket to a sandbox in another process and stopped answering itself
+PASS  guest-b: the exit attached and is holding the list its config device carries
+PASS  guest-b: admitted its peer's evidence
+PASS  guest-b: refused nobody
+PASS  guest-a's sandbox was served guest-b's page, through guest-b's exit
+PASS  guest-b's sandbox was served guest-a's page, through guest-a's exit
+FAIL  guest-b's exit accepted a stream from the peer that opened it
+PASS  guest-a's exit accepted a stream from the peer that opened it
+FAIL  guest-b's exit dialed the one destination its list permits
+PASS  guest-a's exit dialed the one destination its list permits
+PASS  guest-a: the name that is in nobody's table did not resolve inside the sandbox
+PASS  guest-b: the name that is in nobody's table did not resolve inside the sandbox
+PASS  guest-a: the peer name that is in guest-b's table and not in guest-a's did not resolve
+PASS  guest-b: the peer name that is in guest-a's table and not in guest-b's did not resolve
+PASS  guest-a: the fetching process was inside a gVisor sandbox
+PASS  guest-b: the fetching process was inside a gVisor sandbox
+PASS  the exchange went through the relay
+PASS  the relay could not find the page's text on the wire
+    addresses resolved on the segment: 10.14.0.2, 10.14.0.3
+PASS  no guest looked for a gateway or anything else off the segment
+
+=== latency, as the guests measured it ===
+  none recorded
+
+=== 51 passed, 2 failed ===

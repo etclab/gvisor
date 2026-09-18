@@ -495,6 +495,7 @@ type sandboxRun struct {
 	table   string
 	digest  string   // the page of what the strace log says, written after the run
 	comms   []string // the command names the sentry traced, which is what actually ran
+	tunnel  []string // the adapter's own lines: every query it answered and every attach
 	events  string   // the seccheck receiver's output, empty when there was none
 	args    []string
 	status  int
@@ -846,6 +847,12 @@ func (l *loopback) record(t *testing.T, notes string, runs ...*sandboxRun) {
 		} else {
 			fmt.Fprintf(&b, "The exit saw nothing: no stream reached it in this run.\n\n")
 		}
+		if len(r.tunnel) != 0 {
+			fmt.Fprintf(&b, "What the adapter inside the sentry did — every name it answered and every stream it "+
+				"asked for, in its own words:\n\n```\n%s\n```\n\n", strings.Join(r.tunnel, "\n"))
+		} else {
+			fmt.Fprintf(&b, "The adapter said nothing in this run's log.\n\n")
+		}
 		if r.events == "" {
 			fmt.Fprintf(&b, "No `sentry/egress_refused` event was recorded: `%s` was not set, so no receiver was "+
 				"listening on the remote sink. The refusal is asserted on the errno the workload reported.\n\n", receiverEnv)
@@ -981,6 +988,11 @@ func (l *loopback) digest(t *testing.T, r *sandboxRun) {
 	defer f.Close()
 
 	failed, families, unsupported, comms := map[string]int{}, map[string]int{}, map[string]int{}, map[string]int{}
+	// The three things the adapter says about itself, which are the only
+	// account anywhere of what the sandbox asked the network for: --strace
+	// cannot give it, because gVisor formats a sendto buffer as a pointer and
+	// a DNS query's payload never reaches the log.
+	marks := []string{"tunnel dns: ", "tunnel attach: ", "tunnel: refused "}
 	var execs, binds []string
 	resolver := 0
 	sc := bufio.NewScanner(f)
@@ -989,6 +1001,12 @@ func (l *loopback) digest(t *testing.T, r *sandboxRun) {
 	sc.Buffer(make([]byte, 0, 1<<16), 1<<22)
 	for sc.Scan() {
 		line := sc.Text()
+		for _, mark := range marks {
+			if i := strings.Index(line, mark); i >= 0 {
+				r.tunnel = append(r.tunnel, line[i:])
+				break
+			}
+		}
 		if i := strings.Index(line, "Unsupported syscall "); i >= 0 {
 			if name, _, ok := strings.Cut(line[i+len("Unsupported syscall "):], "("); ok {
 				unsupported[name]++
@@ -1043,6 +1061,7 @@ func (l *loopback) digest(t *testing.T, r *sandboxRun) {
 	var b strings.Builder
 	fmt.Fprintf(&b, "# what %s says\n\nThe sentry's debug log with --strace, read once. Counts are of exit\n"+
 		"lines, so an entry with no exit — a syscall the process was still in when it ended — is not here.\n", filepath.Base(boot))
+	fmt.Fprintf(&b, "\n## what the adapter said\n\n%s\n", strings.Join(r.tunnel, "\n"))
 	fmt.Fprintf(&b, "\n## what ran\n\n%s", tally(comms))
 	fmt.Fprintf(&b, "\n## syscalls that failed\n\n%s", tally(failed))
 	fmt.Fprintf(&b, "\n## syscalls the sentry does not implement\n\n%s", tally(unsupported))
@@ -1059,8 +1078,8 @@ func (l *loopback) digest(t *testing.T, r *sandboxRun) {
 	if err := os.WriteFile(r.digest, []byte(b.String()), 0o644); err != nil {
 		t.Errorf("%s: %v", r.digest, err)
 	}
-	l.out.logf("%s  %s: %d kinds of failure, %d unsupported, %d execs, %d resolver datagrams",
-		r.name, filepath.Base(r.digest), len(failed), len(unsupported), len(execs), resolver)
+	l.out.logf("%s  %s: %d kinds of failure, %d unsupported, %d execs, %d resolver datagrams, %d adapter lines",
+		r.name, filepath.Base(r.digest), len(failed), len(unsupported), len(execs), resolver, len(r.tunnel))
 }
 
 // firstWords is the first n space-separated words of a string, which is how a

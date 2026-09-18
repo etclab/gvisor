@@ -75,10 +75,11 @@ const (
 	smokeCap = 0.50
 )
 
-// The loader and the libraries `ldd` lists for the ELF, plus the two NSS
-// modules glibc may still dlopen. On glibc 2.34 and later files and dns are
-// compiled into libc, so the two are insurance and not a dependency; a rootfs
-// that has them cannot fail for want of them.
+// The loader and the libraries `ldd` lists for the ELF, plus what glibc's
+// resolver dlopens at run time. nss_files is insurance — on glibc 2.34 and
+// later it is compiled into libc — but nss_dns and libresolv are not: a glibc
+// workload in a rootfs without them cannot turn a name into an address at all,
+// which is the one thing this whole arrangement is about.
 var (
 	claudeLibs = []string{
 		"/lib/x86_64-linux-gnu/libc.so.6",
@@ -87,7 +88,11 @@ var (
 		"/lib/x86_64-linux-gnu/libdl.so.2",
 		"/lib/x86_64-linux-gnu/libm.so.6",
 		"/lib/x86_64-linux-gnu/libnss_files.so.2",
+		// libnss_dns and libresolv are not insurance for a glibc workload:
+		// nss_dns is what turns `hosts: files dns` into a query, and it is
+		// linked against libresolv. A rootfs without them resolves nothing.
 		"/lib/x86_64-linux-gnu/libnss_dns.so.2",
+		"/lib/x86_64-linux-gnu/libresolv.so.2",
 	}
 
 	// git is forked four times before the first model call, so it is worth the
@@ -311,6 +316,63 @@ func claudeJSON(said string) (claudeResult, bool) {
 	return res, found
 }
 
+// An askedName is one name the responder inside the sentry was asked for: how
+// often, as what, and what it answered. It is the list ticket 25 asks this run
+// to record, and the adapter's log is the only place it can be read.
+type askedName struct {
+	name    string
+	n       int
+	types   []string
+	answers []string
+}
+
+// askedFor reads the adapter's `tunnel dns:` lines into that list, in the order
+// the names were first asked for. The line is
+// `tunnel dns: q=<name> type=<A|AAAA> answer=<what>`, and it is parsed by its
+// fields rather than by position so that a field added beside them does not
+// move anything.
+func askedFor(lines []string) []askedName {
+	var order []askedName
+	at := map[string]int{}
+	for _, line := range lines {
+		if !strings.HasPrefix(line, "tunnel dns: ") {
+			continue
+		}
+		var name, kind, answer string
+		for _, field := range strings.Fields(strings.TrimPrefix(line, "tunnel dns: ")) {
+			switch key, value, _ := strings.Cut(field, "="); key {
+			case "q":
+				name = value
+			case "type":
+				kind = value
+			case "answer":
+				answer = value
+			}
+		}
+		if name == "" {
+			continue
+		}
+		i, seen := at[name]
+		if !seen {
+			at[name] = len(order)
+			order = append(order, askedName{name: name})
+			i = len(order) - 1
+		}
+		order[i].n++
+		order[i].types = addOnce(order[i].types, kind)
+		order[i].answers = addOnce(order[i].answers, answer)
+	}
+	return order
+}
+
+// addOnce keeps a short list of the distinct values a field took, in order.
+func addOnce(have []string, value string) []string {
+	if value == "" || slices.Contains(have, value) {
+		return have
+	}
+	return append(have, value)
+}
+
 // smokeNotes is this test's own section of the README the harness writes: what
 // started, what it asked the network for, what it cost, and the two things the
 // harness cannot see from outside.
@@ -323,21 +385,31 @@ func (l *loopback) smokeNotes(r *sandboxRun, res claudeResult, completed bool) s
 		"with every syscall that failed and every bind.\n\n", strings.Join(r.comms, "`, `"))
 
 	fmt.Fprintf(&b, "## The hosts it asked for\n\n")
+	asked := askedFor(r.tunnel)
+	if len(asked) == 0 {
+		fmt.Fprintf(&b, "The adapter answered no query in this run, so there is no asked-for list.\n\n")
+	} else {
+		fmt.Fprintf(&b, "Every name the responder inside the sentry was asked for, in the order it was first "+
+			"asked, with how many times and which record types. This is the **asked-for** list, and the sentry's "+
+			"own log is the only place it exists: gVisor's strace formats a `sendto` buffer as a pointer "+
+			"(`pkg/sentry/strace/linux64_amd64.go`: `makeSyscallInfo(\"sendto\", FD, Hex, Hex, Hex, SockAddr, "+
+			"Hex)`), so a DNS query's payload never reaches the syscall log.\n\n| name | queries | types | answers |\n"+
+			"|---|---|---|---|\n")
+		for _, a := range asked {
+			fmt.Fprintf(&b, "| `%s` | %d | %s | %s | \n", a.name, a.n, strings.Join(a.types, ", "), strings.Join(a.answers, ", "))
+		}
+		fmt.Fprintf(&b, "\n")
+	}
+
 	dialed := r.at.matching("EXIT dialed")
 	if len(dialed) == 0 {
-		fmt.Fprintf(&b, "No `CONNECT` reached the exit, so this run names no host through the tunnel.\n\n")
+		fmt.Fprintf(&b, "No `CONNECT` reached the exit, so this run connected to nothing through the tunnel.\n\n")
 	} else {
-		fmt.Fprintf(&b, "Every `CONNECT` the exit read, in order. This is the host list by **name**: the sandbox "+
-			"never had an address of its own to give, and the exit resolves what the stream named.\n\n```\n%s\n```\n\n",
-			strings.Join(dialed, "\n"))
+		fmt.Fprintf(&b, "And the **connect** list, which is a different question — every `CONNECT` the exit read, "+
+			"in order, by name, because the sandbox never had an address of its own to give:\n\n```\n%s\n```\n\n"+
+			"E4 measured three to four resolutions and seven to ten connections per name per run on a bare host; "+
+			"the two lists above are this run's answer to the same two counts.\n\n", strings.Join(dialed, "\n"))
 	}
-	fmt.Fprintf(&b, "**The names the resolver was asked for are not in `--strace`.** gVisor's strace formats "+
-		"`sendto`'s buffer argument as a pointer (`pkg/sentry/strace/linux64_amd64.go`: `makeSyscallInfo(\"sendto\", "+
-		"FD, Hex, Hex, Hex, SockAddr, Hex)`), so a DNS query's payload never reaches the log. What the log gives is "+
-		"the count of datagrams to `127.0.0.53:53`, which is in `strace-digest.txt`. The query names are visible only "+
-		"to the responder inside the sentry, so that responder has to log them — one line per query — or the "+
-		"asked-for list cannot be recorded at all. The list above is the **connect** list, which is a different "+
-		"question: E4 saw three to four resolutions and seven to ten connections per name per run.\n\n")
 
 	// The one thing about the rootfs that a prediction got wrong, taken from
 	// the run rather than from the prediction.

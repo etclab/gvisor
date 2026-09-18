@@ -36,13 +36,19 @@
 #      into tunneld and read back out of the kernel, then printed
 #   4. the config device, found and mounted read-only, noexec — it is outside
 #      the measurement and nothing on it may run
-#   5. the network, from the addressing the config device carries — the address
+#   5. the workload device, found and mounted read-only and exec-permitted at
+#      /workload — outside the measurement too, and the only mount in this guest
+#      that permits exec, which is the one interesting thing about it. Absent or
+#      unmountable is a line and the boot goes on (ticket 24)
+#   6. the network, from the addressing the config device carries — the address
 #      is outside the measurement for the reason ticket 14 gave: two guests that
 #      differed in a measured byte would be two images, and the claim this whole
 #      design rests on is that they ran the same one
-#   6. the egress proof: four or more attempts to reach what the ceiling
+#   7. the egress proof: four or more attempts to reach what the ceiling
 #      forbids, each one refused, on the console, before anything is trusted
-#   7. tunneld
+#   8. the workload the device carried, if it carried one, under runsc in a user
+#      namespace (ticket 24)
+#   9. tunneld
 #
 # Step 3 is where it is, and that is ticket 22's doing. It used to sit after the
 # network, because the rule set was generated from policy.json and could not be
@@ -52,12 +58,23 @@
 # running and unconstrained has length zero rather than "however long finding a
 # disk takes".
 #
-# Steps 3 and 6 come before step 7 for the same reason: a guest that started
+# Steps 3 and 7 come before step 9 for the same reason: a guest that started
 # tunneld first and constrained itself afterwards would be attested and
 # unconstrained for exactly as long as the slowest thing in startup.
+#
+# Step 8 is between them for a third reason. The ceiling is in the kernel by
+# then and the egress proof has just shown that it holds, so the workload runs
+# with the guest already constrained; and it runs before tunneld, so nothing it
+# does can be mistaken for something a peer was talking to.
 export PATH=/bin:/sbin:/usr/bin
 
 say() { echo "initrd: $*"; }
+# The boot clock, from /proc/uptime with the shell's own read: no applet, no
+# date(1), and the kernel's printk timestamps on the console lines around it say
+# the same thing independently. Printed at the egress proof, on either side of
+# the workload, and at tunneld — which is what a boot-time cost is measured from
+# (docs/snp/image/init.rootfs has the same helper for the same reason).
+uptime_say() { read UP _ < /proc/uptime; say "uptime ${UP}s"; }
 fail() {
 	say "FATAL: $*"
 	say "halting; nothing further runs in this guest"
@@ -205,7 +222,84 @@ find /config -type f | sort | while read -r f; do
 	say "  ${f#/config/}  $(stat -c %s "$f") bytes  $(sha256sum "$f" | cut -c1-16)…"
 done
 
-# ---- 5. the network -------------------------------------------------------
+# ---- 5. the workload device -----------------------------------------------
+# One OCI bundle: config.json and the rootfs it names, built by
+# mkworkloaddev-tdx.sh and attached as a third disk with --device-name
+# attested-workload. It is outside the measurement exactly as the config device
+# is, and unlike the config device this mount permits exec — which is the one
+# interesting thing about it. The gofer that serves the bundle to the sandbox
+# bind-mounts that rootfs and remounts it read-only without MS_NOEXEC, and a
+# mount made inside a user namespace has that flag locked, so a remount omitting
+# it is refused and a noexec source cannot be served at all
+# (docs/snp/evidence/spike-s1-runsc-in-guest/E2/notes.md). Read-only is what
+# keeps it harmless: it is not a writable executable path, so the rule
+# docs/snp/image/init.rootfs enforces would have nothing to say about it.
+#
+# So what the measurement covers here is the runsc in this initrd, the flag set
+# step 8 launches it with and these mount options. What the disk carries is not
+# measured and is not claimed to be.
+#
+# busybox mount takes `exec` as an option word, where it means the absence of
+# MS_NOEXEC, and it is passed literally so that the intent is on the console.
+# /proc/mounts will show this mount as ro,nosuid,nodev: there is no exec option
+# to show, only the noexec that is not there.
+#
+# A missing or unmountable disk is one line and the boot continues: no workload
+# is the ordinary case, and every guest booted before ticket 24 is that one.
+WORKLOAD_NAME=attested-workload
+# The label is the truncated form on purpose. ext4 stores sixteen bytes of label
+# and 'attested-workload' is seventeen characters, so mke2fs writes
+# 'attested-workloa' and mkworkloaddev-tdx.sh says so. The NVMe serial carries
+# the whole name, which is why it is tried first.
+WORKLOAD_LABEL=attested-workloa
+
+find_workload_dev() {
+	# (a) the device name, if the kernel exposes it as an NVMe serial. Same
+	#     shape as find_config_dev, and same reason: there is no udev here to
+	#     turn --device-name into a path.
+	for d in /sys/block/*; do
+		n=${d##*/}
+		case "$n" in loop*|ram*|dm-*) continue ;; esac
+		for f in "$d/serial" "$d/device/serial"; do
+			[ -r "$f" ] || continue
+			[ "$(tr -d ' \n' < "$f")" = "$WORKLOAD_NAME" ] && { WLDEV=/dev/$n; WLHOW="the NVMe serial"; return 0; }
+		done
+	done
+	# (b) the filesystem label, truncated to what ext4 could hold.
+	for d in /sys/block/*; do
+		n=${d##*/}
+		case "$n" in loop*|ram*|dm-*) continue ;; esac
+		l=$(ext4_label "/dev/$n") || continue
+		[ "$l" = "$WORKLOAD_LABEL" ] && { WLDEV=/dev/$n; WLHOW="the ext4 label"; return 0; }
+	done
+	return 1
+}
+
+# A short bounded wait and then a line, never a failure: the config device's own
+# loop has already waited for the kernel to enumerate its namespaces, so this
+# should find the disk on the first pass, and if it does not the guest has no
+# workload rather than a problem.
+WLDEV= WLHOW=
+i=0
+until find_workload_dev; do
+	i=$((i + 1))
+	[ $i -lt 15 ] || break
+	sleep 0.2
+done
+if [ -n "$WLDEV" ]; then
+	if mount -t ext4 -o ro,exec,nosuid,nodev "$WLDEV" /workload; then
+		say "workload device $WLDEV found by $WLHOW, mounted at /workload (ro,exec,nosuid,nodev; not measured); it holds:"
+		find /workload -type f | sort | while read -r f; do
+			say "  ${f#/workload/}  $(stat -c %s "$f") bytes  $(sha256sum "$f" | cut -c1-16)…"
+		done
+	else
+		say "WARNING: workload device $WLDEV present but would not mount; the boot continues without a workload"
+	fi
+else
+	say "no workload device (NVMe serial $WORKLOAD_NAME, ext4 label $WORKLOAD_LABEL); the boot continues without a workload"
+fi
+
+# ---- 6. the network -------------------------------------------------------
 # The addressing arrives on the config device, in a file this script parses
 # field by field rather than sources: nothing on that device may execute, and a
 # shell that ran it would be doing exactly that. Each field is checked against
@@ -270,7 +364,7 @@ say "link $NET_IF up: $NET_ADDR/$NET_PREFIX mtu $(cat "/sys/class/net/$NET_IF/mt
 ip -o addr show | sed 's/^/initrd: addr: /'
 ip route show | sed 's/^/initrd: route: /'
 
-# ---- 6. the proof that it holds ------------------------------------------
+# ---- 7. the proof that it holds ------------------------------------------
 # The ceiling went in at step 3, with no interface to filter; this is the first
 # moment there is one, so this is where the proof belongs. The probe reads
 # nothing either — the gateway is named on the command line because it is the
@@ -279,6 +373,49 @@ ip route show | sed 's/^/initrd: route: /'
 say "proving the egress ceiling holds, from inside the guest:"
 tunneld -egress probe -egress-probe "udp:$NET_GW:53,tcp:$NET_GW:80" \
 	|| fail "the egress probe reached something the ceiling forbids"
+uptime_say
+
+# ---- 8. the workload, under runsc (ticket 24) -----------------------------
+# Here and nowhere else. After the ceiling and after the proof that it holds,
+# because a workload that ran before them would run in a guest that could still
+# address a packet; and before tunneld, because tunneld is what this guest
+# presents itself to a peer with.
+#
+# The bundle comes off the workload device mounted at /workload
+# (ro,exec,nosuid,nodev) at step 5, which is outside the measurement. What is
+# measured is this binary, this flag set and that mount's options — never what
+# the disk carried.
+#
+# The namespace: runsc rootless wants a user namespace with a uid mapping it may
+# write, and inside one it needs no host capability at all (spike S1, README's
+# "Capabilities" section). busybox's unshare makes it — -U -r maps this init's
+# root to root inside it, -m -n -p are the namespaces runsc builds on, and -f is
+# needed because unsharing a PID namespace only takes effect for a child. The
+# fresh procfs is for that new PID namespace: runsc re-execs /proc/self/exe and
+# mounts by /proc/self/fd, and the /proc this init mounted belongs to the old
+# one, so writing a child's uid_map through it looks up a pid in the wrong
+# namespace and the gofer never starts (ticket 24, E1). It is mounted
+# nosuid,nodev,noexec like every other writable mount here, and inside the mount
+# namespace unshare made, so it is not in this init's table.
+#
+# --root is on /run, which is rw,noexec: the state directory holds a lock and
+# metadata, runsc creates it itself, and --gofer-network-namespace=new is what
+# keeps runsc from bind-mounting an nsfs rw into it (spike S1, E2 and E3).
+#
+# --network=none is what stands between this workload and a link that is, unlike
+# the SNP guest's at this point in its boot, already up.
+RUNSC_CMD="/usr/bin/runsc --root=/run/runsc-state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new run --bundle /workload workload"
+if [ -f /workload/config.json ]; then
+	say "the workload device carries a bundle at /workload/config.json"
+	say "running: unshare -Urmnpf sh -c 'mount -t proc -o nosuid,nodev,noexec proc /proc; exec $RUNSC_CMD'"
+	uptime_say
+	unshare -Urmnpf sh -c "mount -t proc -o nosuid,nodev,noexec proc /proc; exec $RUNSC_CMD"
+	wrc=$?
+	uptime_say
+	say "workload exited with status $wrc"
+else
+	say "no workload bundle at /workload/config.json; continuing to tunneld"
+fi
 
 # Every writable mount that is executable, listed rather than assumed, as
 # docs/snp/image/init.rootfs does. The initramfs itself is the honest
@@ -291,7 +428,8 @@ mount -o remount,ro / 2>/dev/null \
 	|| say "the initramfs could not be remounted read-only; it is measured whole either way"
 sed 's/^/initrd: mount: /' /proc/mounts
 
-# ---- 7. tunneld -----------------------------------------------------------
+# ---- 9. tunneld -----------------------------------------------------------
+uptime_say
 say "starting tunneld"
 tunneld -config /config -tdx-collateral-dir /config/collateral -self-check
 rc=$?

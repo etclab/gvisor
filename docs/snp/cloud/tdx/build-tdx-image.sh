@@ -144,19 +144,42 @@ INITRD_NAME="${INITRD_NAME:-initrd.img-attested}"
 # a reboot, so both are pinned.
 #
 # RTMR0 IS A FUNCTION OF THE MACHINE'S SHAPE, not only of the provider's
-# firmware, and this ticket found that out the hard way. Every RTMR0 recorded
+# firmware, and ticket 19 found that out the hard way. Every RTMR0 recorded
 # before it -- five boots across four VMs -- was c0b8b19c…896d, and every one of
 # those VMs had exactly one disk. The first guest with a config device attached
 # reported c2fc12a5…850a instead, and its reference value refused it.
 # docs/snp/cloud/tdx/probe-tdx-rtmr0.sh then changed one thing on one instance,
 # attaching a second disk and rebooting, and watched RTMR0 move
-# (docs/snp/evidence/ticket19/rtmr0/). The value below is therefore the one a
-# guest of THIS shape reports -- c3-standard-4, one 20GB boot disk and one 10GB
+# (docs/snp/evidence/ticket19/rtmr0/). The first value below is therefore the one
+# a guest of THAT shape reports -- c3-standard-4, one 20GB boot disk and one 10GB
 # config disk -- and an author who changes the shape has to observe it again.
 # It is a comma separated list, because a set may legitimately admit more than
 # one observed value the way it already does for RTMR1.
+#
+# TICKET 26 AUTHORS THE SECOND VALUE, AND AUTHORS IT DELIBERATELY. 8ee4fa36…b70a3f
+# is what a THREE-disk c3-standard-4 TDX guest reports -- a 20GB boot disk, a
+# 10GB config disk and a 10GB workload disk, with all three present when the
+# instance is created. It was observed twice by ticket 24, on two instances and
+# two images, and authored nowhere at the time: boot 2
+# (docs/snp/evidence/ticket24/spikes/E4/boot-2/, console.txt and quote.txt) and
+# boot 3 (docs/snp/evidence/ticket24/spikes/E4/boot-3/, the same two files),
+# where both the guest's own self-check and this workstation judging the same
+# quote refused on RTMR0 and on nothing else. The number written here was read
+# off neither of those machines by any script: it is typed into this file by an
+# author who read the two records and decided that a three-disk guest is a shape
+# this project builds for, which is the same act ticket 19 performed for the
+# two-disk value and the same act ADR-0004 requires -- a reference value is
+# authored, never harvested. docs/snp/evidence/ticket26/tdx/RTMR0-DECISION.md is
+# the decision and the argument for it; the short form is that the workload
+# bundle has to live on a mount of its own that is read-only and exec-permitted
+# (the 2026-09-18 decision), and that mount is a third disk.
+#
+# Both values are listed and neither replaces the other: a set that named only
+# the three-disk value would refuse every two-disk guest ticket 19 and ticket 22
+# recorded, and one that named only the two-disk value refuses every guest of
+# ticket 26's. What a set may not do is name a shape nobody has observed.
 MRTD="${MRTD:-c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5}"
-RTMR0="${RTMR0:-c2fc12a52db868515eff7c657e42ce04b0b7363fa6ddf7c1cca87aa8e6a061a11f9981924a600ad6d2232f75182a850a}"
+RTMR0="${RTMR0:-c2fc12a52db868515eff7c657e42ce04b0b7363fa6ddf7c1cca87aa8e6a061a11f9981924a600ad6d2232f75182a850a,8ee4fa3614e96b5c7cdacf52675c069e9de399a3688f83510a9bc3b4180e0e8f06c427eab69fcb4deff05203c0b70a3f}"
 RTMR1_FIRST="${RTMR1_FIRST:-02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b}"
 RTMR1_LATER="${RTMR1_LATER:-3a446943925fef7f1682fd54e1b6697df864692e28592ec373860d1868582ac14ca3029c48282eb964868a785bafd691}"
 TCB_STATUS="${TCB_STATUS:-UpToDate}"

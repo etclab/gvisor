@@ -32,6 +32,7 @@ package netstack
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 
 	"gvisor.dev/gvisor/pkg/log"
@@ -153,6 +154,7 @@ func (a *adapter) answerDNS(q []byte) []byte {
 	b, bound := a.lookupName(name)
 	switch {
 	case !bound || qclass != dnsClassIN:
+		a.logQuery(name, qtype, "nxdomain")
 		emitEgressRefused(nil, "dns", "", 0, name, tunnelReasonUnknownName)
 		return dnsReply(q, dnsRcodeNXDomain, qend, nil)
 	case qtype == dnsTypeA:
@@ -165,15 +167,38 @@ func (a *adapter) answerDNS(q []byte) []byte {
 			0x00, 0x04,
 			v4[0], v4[1], v4[2], v4[3],
 		}
+		a.logQuery(name, qtype, b.addr.String())
 		return dnsReply(q, dnsRcodeNoError, qend, answer)
 	case qtype == dnsTypeAAAA:
 		// The name exists and has no v6 address. NOERROR with no records is
 		// what says so; NXDOMAIN here would deny the name itself and make the
 		// A query that follows pointless.
+		a.logQuery(name, qtype, "noerror-empty")
 		return dnsReply(q, dnsRcodeNoError, qend, nil)
 	default:
+		a.logQuery(name, qtype, "nxdomain")
 		emitEgressRefused(nil, "dns", "", 0, name, tunnelReasonUnknownType)
 		return dnsReply(q, dnsRcodeNXDomain, qend, nil)
+	}
+}
+
+// logQuery writes the one line per query that makes the list of names a
+// workload asked for recoverable from the debug log. It has to be a line of
+// the sentry's own: --strace prints a sendto's buffer as a pointer, so the
+// query itself never appears there.
+func (a *adapter) logQuery(name string, qtype int, answer string) {
+	log.Infof("tunnel dns: q=%s type=%s answer=%s", name, dnsTypeName(qtype), answer)
+}
+
+// dnsTypeName names the two record types this responder has an opinion about.
+func dnsTypeName(qtype int) string {
+	switch qtype {
+	case dnsTypeA:
+		return "A"
+	case dnsTypeAAAA:
+		return "AAAA"
+	default:
+		return fmt.Sprintf("other(%d)", qtype)
 	}
 }
 

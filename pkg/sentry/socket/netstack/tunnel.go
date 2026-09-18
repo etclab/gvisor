@@ -362,29 +362,30 @@ func tunnelConnect(t *kernel.Task, s *sock, addr tcpip.FullAddress) (bool, *syse
 	}
 
 	hostPort := fmt.Sprintf("%s:%d", b.name, b.port)
+	start := time.Now()
 	fd, err := a.attacher.Attach(b.peer, hostPort)
 	if err != nil {
 		if errors.Is(err, ErrTunnelRefused) {
 			// The far exit's own list said no. That refusal is ticket 23's and
 			// is recorded there; this sentry refused nothing, so it records
 			// nothing and answers the way a closed port answers.
-			log.Infof("tunnel: %s was refused by the far exit: %v", hostPort, err)
+			log.Infof("tunnel attach: %s -> peer %q: refused by the far exit in %v (%v)", hostPort, b.peer, time.Since(start), err)
 			return true, syserr.ErrConnectionRefused
 		}
-		log.Warningf("tunnel: %s could not be attached: %v", hostPort, err)
+		log.Infof("tunnel attach: %s -> peer %q: unavailable in %v (%v)", hostPort, b.peer, time.Since(start), err)
 		return true, a.refuse(t, proto, addr, b.name, tunnelReasonUnavailable)
 	}
 
 	local := a.nextLocal()
 	ep, epErr := newTunnelEndpoint(fd, local, addr, s.Queue)
 	if epErr != nil {
-		log.Warningf("tunnel: %s attached but the endpoint would not start: %v", hostPort, epErr)
+		log.Infof("tunnel attach: %s -> peer %q: the endpoint would not start after %v (%v)", hostPort, b.peer, time.Since(start), epErr)
 		return true, a.refuse(t, proto, addr, b.name, tunnelReasonUnavailable)
 	}
 	old := s.Endpoint
 	s.Endpoint = ep
 	old.Close()
-	log.Infof("tunnel: %s is attached over host fd %d, local %s:%d", hostPort, fd, local.Addr.String(), local.Port)
+	log.Infof("tunnel attach: %s -> peer %q: ok in %v, host fd %d, local %s:%d", hostPort, b.peer, time.Since(start), fd, local.Addr.String(), local.Port)
 	// Synchronously successful: the stream is already up by the time connect
 	// returns, so there is nothing for the caller to wait for (spike E1b, §4).
 	return true, nil
@@ -399,19 +400,21 @@ func tunnelSendTo(t *kernel.Task, s *sock, addr tcpip.FullAddress) *syserr.Error
 	if a == nil || tunnelIsLoopback(addr.Addr) {
 		return nil
 	}
-	name := ""
+	// A name's address refused here is refused for being a datagram
+	// destination; anything else is refused for not being in the table at all,
+	// which is the same reason the connect path gives it.
 	if b, ok := a.lookupAddr(addr.Addr); ok {
-		name = b.name
+		return a.refuse(t, "udp", addr, b.name, tunnelReasonNotStream)
 	}
-	return a.refuse(t, "udp", addr, name, tunnelReasonNotStream)
+	return a.refuse(t, "udp", addr, "", tunnelReasonNotInTable)
 }
 
 // ===== the refusal event =====
 
 const (
-	tunnelReasonNotInTable = "not-in-table"
-	tunnelReasonWrongPort  = "wrong-port"
-	tunnelReasonNotStream  = "not-a-tcp-stream"
+	tunnelReasonNotInTable  = "not-in-table"
+	tunnelReasonWrongPort   = "wrong-port"
+	tunnelReasonNotStream   = "not-a-tcp-stream"
 	tunnelReasonUnavailable = "unavailable"
 	tunnelReasonUnknownName = "unknown-name"
 	tunnelReasonUnknownType = "unknown-type"

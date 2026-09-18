@@ -180,22 +180,38 @@ func (tn *Tunnel) permits(peer, hostPort string) error {
 	return nil
 }
 
-// setupTunnel builds the adapter and installs it in the sentry, and is the
-// second of the two places the ceiling is enforced: the first is runsc's own
-// flag validation, and this one holds even if the sentry were started by hand.
+// setupTunnel reads the table and takes the channel to the helper, at the time
+// the loader is built, so that a table that cannot be enforced fails the boot
+// rather than surfacing as a sandbox that quietly reaches nothing.
+//
+// It does not install the adapter in the sentry: the sandbox's loopback NIC is
+// created later, by a control message from runsc, and the ceiling check has
+// nothing to look at until it exists. installTunnel is the second half.
 func setupTunnel(l *Loader, tunnelFD, tableFD int) error {
 	tn, err := newTunnel(tunnelFD, tableFD)
 	if err != nil {
 		return err
 	}
+	l.tunnel = tn
+	log.Infof("Tunnel table read: %d names, helper channel on fd %d", len(tn.table.Names), tunnelFD)
+	return nil
+}
+
+// installTunnel puts the adapter in the sentry, once the stack is the one the
+// sandbox will actually run with. It is the second of the two places the
+// ceiling is enforced: the first is runsc's own flag validation, and this one
+// holds even if the sentry were started by hand.
+func (l *Loader) installTunnel() error {
+	if l.tunnel == nil {
+		return nil
+	}
 	st, ok := l.k.RootNetworkNamespace().Stack().(*netstack.Stack)
 	if !ok {
 		return fmt.Errorf("the tunnel adapter requires --network=none and this sandbox's stack is a %T", l.k.RootNetworkNamespace().Stack())
 	}
-	if err := netstack.InstallTunnel(st, tn.table, tunnelAttacher{tunnel: tn}); err != nil {
+	if err := netstack.InstallTunnel(st, l.tunnel.table, tunnelAttacher{tunnel: l.tunnel}); err != nil {
 		return err
 	}
-	l.tunnel = tn
-	log.Infof("Tunnel adapter installed: %d names, helper on fd %d", len(tn.table.Names), tunnelFD)
+	log.Infof("Tunnel adapter installed with %d names", len(l.tunnel.table.Names))
 	return nil
 }

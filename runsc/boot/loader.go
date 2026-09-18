@@ -935,7 +935,7 @@ func New(args Args) (*Loader, error) {
 		if err := setupTunnel(l, args.TunnelFD, args.TunnelTableFD); err != nil {
 			return nil, fmt.Errorf("setting up the tunnel adapter: %w", err)
 		}
-		args.StartupTimer.Reached("tunnel adapter installed")
+		args.StartupTimer.Reached("tunnel table read")
 	}
 
 	// Create the control server using the provided FD.
@@ -1280,6 +1280,14 @@ func (l *Loader) run() error {
 				return err
 			}
 			l.startupTimer.Reached("network configured")
+		}
+
+		// The tunnel adapter goes in once the stack is the one the sandbox
+		// will run with — its loopback NIC arrives with the message above —
+		// and before any user code, so that the resolver is bound and the
+		// intercept is live before the workload's first syscall.
+		if err := l.installTunnel(); err != nil {
+			return fmt.Errorf("installing the tunnel adapter: %w", err)
 		}
 
 		if err := l.pinRing.Finalize(); err != nil {

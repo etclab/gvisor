@@ -17,6 +17,27 @@
 #   certificate-chain.json      the chip identity and TCB the chain was
 #                               fetched for, so staleness is detectable
 #
+# Two more since ticket 25, and both optional, because their presence is what
+# /sbin/init reads as "this guest runs its workload as a sandbox on the adapter":
+#
+#   tunnel-table.json           the names the sandbox may reach, the one port
+#                               each, and the peer whose exit dials them. runsc
+#                               is given it as --tunnel-table and the sentry
+#                               enforces it; a name that is not in it does not
+#                               resolve. Not measured, which is the whole reason
+#                               two guests booted from one image can have
+#                               different ones.
+#   exit-allow                  one line, host:port comma separated: what THIS
+#                               guest's exit will dial on behalf of a peer that
+#                               opened a stream to it. It is a file rather than a
+#                               field in tunneld.json because the run
+#                               configuration refuses unknown fields
+#                               (attest/cmd/tunneld/runconfig.go:289-302), and
+#                               adding one would be a change to the measured
+#                               binary for something that is not tunneld's
+#                               business: the exit is another process and the
+#                               list is its flag.
+#
 # Ticket 15 writes the files; this script only packages a directory. Missing
 # files are reported, not invented: a device with the document alone is a
 # legitimate thing to build, because the loader must refuse it.
@@ -34,6 +55,11 @@ SIZE_MB="${SIZE_MB:-16}"
 
 for f in reference-values.json reference-values.json.sig peers.json certificate-chain.bin certificate-chain.json; do
   [ -f "$SRC/$f" ] && echo "config: $f" || echo "config: $f  (absent)"
+done
+# The adapter's two, reported only when they are there: absent is the ordinary
+# case and every scenario recorded before ticket 25 is that one.
+for f in tunnel-table.json exit-allow; do
+  [ -f "$SRC/$f" ] && echo "config: $f  ($(tr -d '\n' < "$SRC/$f" | cut -c1-120))"
 done
 # The image is populated from the whole of SRCDIR, so a policy left in there
 # would be on the device whatever this script printed. It is refused rather than

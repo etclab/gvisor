@@ -193,12 +193,13 @@ Both branches of the liveness rule, on hardware, on both guests. The five
 processes the kill names are why it works at all: they are matched by argv[0] out
 of `/proc/PID/cmdline`, because the sentry, the gofer and the tunnel helper are
 re-execs of `/proc/self/exe` and every one of their `comm`s is `exe`. The SEV-SNP
-run of this ticket is where that was found (`../snp/run-3/notes.md`).
+run of this ticket is where that was diagnosed (`../snp/run-3/notes.md` printed the
+table) and fixed (`../snp/run-4/notes.md`, the argv[0] match).
 
 **And the mount that makes a sandbox possible here at all:**
 
 ```
-initrd: workload device /dev/disk/by-id/google-attested-workload mounted at /workload (ro,exec,nosuid,nodev; not measured)
+initrd: workload device /dev/nvme0n3 found by the ext4 label, mounted at /workload (ro,exec,nosuid,nodev; not measured); it holds:
 ```
 
 the one mount in the guest that permits exec, and the reason there is a third

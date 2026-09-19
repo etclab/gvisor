@@ -251,3 +251,28 @@ inside the runs that made them; none was kept, because a ticket 26 image is a
 record of a run and not something a later run boots from. No firewall rule,
 network, IAM or org policy was created or changed, and none of the seven
 pre-existing instances was touched.
+
+### Boot pair 3, the confirming pair
+
+| created | name | type | purpose | state |
+|---|---|---|---|---|
+| 2026-09-18T23:48Z | t26-policy-a | c3-standard-4 TDX, us-central1-a, 20GB pd-balanced boot from custom image `attested-tdx-7f7c43153cab` + 10GB pd-balanced config disk from `attested-config-t26-a-20260918233949` + 10GB pd-balanced **workload** disk from `attested-workload-t26-20260918233949` (`device-name attested-workload`), `--private-network-ip 10.128.0.40`, `--labels purpose=attested-tunnel-t26` | ticket 26, boot pair 3, guest A: the same run as pair 2 with one assertion's wording corrected (`SELFCHECK VERDICT ADMITTED`), booted to confirm pair 2 and to give the RQ5 table a second sample. `=== 71 passed, 3 failed ===`: the two corrected assertions pass, and what remains is the console tail Compute Engine does not serve for a stopped instance and the long body arriving 45 bytes short | **deleted 2026-09-18T23:59Z** (~11 min) |
+| 2026-09-18T23:48Z | t26-policy-b | the same three-disk shape, config disk `attested-config-t26-b-20260918233949`, `--private-network-ip 10.128.0.41`, `--labels purpose=attested-tunnel-t26` | ticket 26, boot pair 3, guest B: the second pusher (narrow-after 40 s), killed at 210 s | **deleted 2026-09-18T23:59Z** (~11 min) |
+| 2026-09-18T23:40Z | attested-tdx-7f7c43153cab, attested-config-t26-{a,b}-20260918233949, attested-workload-t26-20260918233949 | custom images, 10 GiB + 1 GiB × 3, `purpose=attested-tunnel-t26` | ticket 26 boot pair 3: the guest image republished again, the two config devices and the workload device | **each deleted 2026-09-18T23:59Z, with the run** |
+| 2026-09-18T23:40Z … 23:46Z | `attested-tunnel-t19-20260918{234014,234327,234456,234632}`, four in all | Cloud Storage buckets, us-central1 | ticket 26 boot pair 3: staging for the four image publishes | **each created and deleted inside the publish that made it; none survives** |
+
+**State after boot pair 3, 2026-09-18T23:59Z**, confirmed at 2026-09-19T00:01Z
+(20:01 EDT on 2026-09-18, the same working day) by the four commands: no instance
+carries `purpose=attested-tunnel-t26`, no disk matches `name~t26`,
+`gcloud compute instances list --zones us-central1-a` shows only the seven
+pre-existing TERMINATED instances, and `gcloud compute images list
+--no-standard-images` shows only ticket 19's three kept images. **Nothing this
+ticket created survives.**
+
+**Ticket 26's whole cloud bill**: six `c3-standard-4` TDX instances, in three
+pairs — 21:06Z–21:17Z, 23:25Z–23:37Z and 23:48Z–23:59Z — each pair deleted inside
+the hour it was created and none living longer than about twelve minutes: about
+**68 TDX instance-minutes**. Twelve custom images and twelve Cloud Storage
+buckets were created and deleted inside the runs that made them; none was kept.
+No firewall rule, network, IAM or org policy was created or changed, and none of
+the seven pre-existing instances was touched.

@@ -103,6 +103,38 @@ func (h *TunnelHelperCmd) Execute(_ context.Context, f *flag.FlagSet, args ...an
 	applier.attach(client)
 	log.Infof("Tunnel helper connected to tunneld at %q, control socket %q", h.sandboxSocket, h.controlSocket)
 
+	if err := serveSentry(sock, client); err != nil {
+		// Non-zero and loud. The sandbox is already running by the time an
+		// attach is refused, and nothing outside this process is watching it:
+		// see serveSentry.
+		util.Fatalf("Tunnel helper: %v", err)
+	}
+	log.Infof("Tunnel helper exiting: the sentry closed the channel")
+	return subcommands.ExitSuccess
+}
+
+// serveSentry answers the sentry's calls until one of the two ends goes, and
+// reports the reason when the helper must not exit successfully.
+//
+// The ordinary end is the sentry's: the helper's life is the socketpair's, and
+// the socketpair ends when the sandbox does. A tunneld that merely goes away is
+// not the end of the helper either — every later Open answers "unavailable",
+// which the sandbox sees as ENETUNREACH and the sentry records.
+//
+// A tunneld that closes this client with a reason is the case that is neither.
+// The only reasons it has are an attach it would not accept — a role it does
+// not know, or a second enforcing client on a socket that permits one — and
+// they all mean the same thing for the sandbox behind this helper: no pushed
+// policy will ever reach it, and it will never say it is alive. Ignoring that
+// and going on serving Open calls would leave the sandbox running with the
+// policy it booted with and nobody told, so it ends the helper instead, with
+// the reason tunneld gave.
+//
+// Closing the sentry's end is what ends the wait: urpc's Handle blocks in a
+// read, and unet's reads poll the socket's event fd, which Close signals — so
+// this returns promptly rather than at the next call the sentry happens to
+// make.
+func serveSentry(sock *unet.Socket, client *tunneldClient) error {
 	// The server closes each descriptor it handed out as soon as the reply
 	// carrying it has gone: urpc does not do it, and a helper that kept a
 	// reference to every stream would keep the far exit's TCP connection open
@@ -111,16 +143,28 @@ func (h *TunnelHelperCmd) Execute(_ context.Context, f *flag.FlagSet, args ...an
 	helper := &TunnelHelper{client: client}
 	server := urpc.NewServerWithCallback(helper.handedOver)
 	server.Register(helper)
-	// Handle blocks: the helper's life is the socketpair's, and the
-	// socketpair's end is the sentry going away. A tunneld that goes away
-	// instead is not the end of the helper — every later Open simply answers
-	// "unavailable", which the sandbox sees as ENETUNREACH and the sentry
-	// records.
+
+	served := make(chan struct{})
+	defer close(served)
+	go func() {
+		select {
+		case <-client.Done():
+		case <-served:
+			return
+		}
+		if err := client.Err(); err != nil {
+			log.Warningf("Tunnel helper: tunneld closed this client: %v", err)
+			sock.Close()
+		}
+	}()
+
 	if err := server.Handle(sock); err != nil {
 		log.Debugf("Tunnel helper: the sentry channel ended: %v", err)
 	}
-	log.Infof("Tunnel helper exiting: the sentry closed the channel")
-	return subcommands.ExitSuccess
+	if err := client.Err(); err != nil {
+		return fmt.Errorf("tunneld closed this client, so no policy can reach this sandbox and it will never say it is alive: %w", err)
+	}
+	return nil
 }
 
 // tunneldPulse is how often a sandbox that has acknowledged a policy says it is

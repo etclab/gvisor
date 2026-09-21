@@ -117,6 +117,20 @@ func dialTunneld(path string, role string, apply func([]byte) error, logf func(s
 	if err != nil {
 		return nil, fmt.Errorf("dialing tunneld at %s: %w", path, err)
 	}
+	cl, err := attachTunneld(c, role, apply, logf)
+	if err != nil {
+		return nil, fmt.Errorf("attaching to tunneld at %s: %w", path, err)
+	}
+	return cl, nil
+}
+
+// attachTunneld declares this client's role on a socket already connected and
+// starts reading it. It takes ownership of c.
+//
+// dialTunneld is the only caller that has a path to dial; the attach and
+// everything that happens after it are here so that a test can drive them over
+// a socketpair, with tunneld's side of the wire in its own hands.
+func attachTunneld(c *net.UnixConn, role string, apply func([]byte) error, logf func(string, ...any)) (*tunneldClient, error) {
 	cl := &tunneldClient{
 		c:     c,
 		apply: apply,
@@ -126,7 +140,7 @@ func dialTunneld(path string, role string, apply func([]byte) error, logf func(s
 	}
 	if err := cl.send(tunneldMessage{Type: tunneldMsgAttach, Role: role}, -1); err != nil {
 		c.Close()
-		return nil, fmt.Errorf("attaching to tunneld at %s: %w", path, err)
+		return nil, err
 	}
 	go cl.serve()
 	return cl, nil

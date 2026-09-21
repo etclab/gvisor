@@ -64,12 +64,16 @@ type Host struct {
 
 	applySem chan struct{}
 
-	mu               sync.Mutex
-	closed           bool
-	conns            []*attached
-	inForce          []byte
-	enforcingWaiters []chan *attached
-	wg               sync.WaitGroup
+	mu      sync.Mutex
+	closed  bool
+	conns   []*attached
+	inForce []byte
+	// enforcingWaiter is where the one push that is waiting for an enforcing
+	// sandbox to attach is handed it, or nil while none is waiting. There is at
+	// most one because there is at most one push in flight (holdPush), so this
+	// is one channel and not a queue.
+	enforcingWaiter chan *attached
+	wg              sync.WaitGroup
 }
 
 // ErrHostClosed is returned once the host has been closed.
@@ -184,7 +188,12 @@ func (h *Host) Apply(ctx context.Context, policy []byte) error {
 	if err := a.apply(ctx, policy); err != nil {
 		return err
 	}
-	h.setInForce(policy)
+	// The policy in force is written here and nowhere else, which is what makes
+	// it by construction a policy a sandbox answered for.
+	h.mu.Lock()
+	h.inForce = policy
+	h.mu.Unlock()
+	h.said(policy)
 	return nil
 }
 
@@ -218,9 +227,8 @@ func (h *Host) enforcingOrWaiter(ctx context.Context) (*attached, chan *attached
 	if _, hasDeadline := ctx.Deadline(); !hasDeadline && ctx.Done() == nil {
 		return nil, nil, fmt.Errorf("%w to %s", ErrNoEnforcingSandbox, h.path)
 	}
-	waiter := make(chan *attached, 1)
-	h.enforcingWaiters = append(h.enforcingWaiters, waiter)
-	return nil, waiter, nil
+	h.enforcingWaiter = make(chan *attached, 1)
+	return nil, h.enforcingWaiter, nil
 }
 
 // enforcing is the attachment a policy is pushed to, or nil while there is
@@ -263,22 +271,15 @@ func (h *Host) awaitEnforcing(ctx context.Context, waiter chan *attached) (*atta
 	}
 }
 
-// dropWaiter takes a push's waiter out of the queue once that push has stopped
-// waiting on it.
+// dropWaiter gives up this push's waiter, once the push has stopped waiting on
+// it. It is compared rather than simply cleared, because an attachment handed to
+// it in the same moment leaves a newer waiter in its place.
 func (h *Host) dropWaiter(w chan *attached) {
 	h.mu.Lock()
-	h.enforcingWaiters = slices.DeleteFunc(h.enforcingWaiters, func(c chan *attached) bool { return c == w })
+	if h.enforcingWaiter == w {
+		h.enforcingWaiter = nil
+	}
 	h.mu.Unlock()
-}
-
-// setInForce records the policy the enforcing sandbox acknowledged and says so
-// on the console. Nothing else writes inForce, so the policy in force is by
-// construction one a sandbox answered for.
-func (h *Host) setInForce(policy []byte) {
-	h.mu.Lock()
-	h.inForce = policy
-	h.mu.Unlock()
-	h.said(policy)
 }
 
 // said writes the one console line a push is read off, in the shape [Null]
@@ -390,10 +391,10 @@ func (h *Host) Close() error {
 	conns := h.conns
 	h.conns = nil
 	h.inForce = nil
-	for _, w := range h.enforcingWaiters {
-		close(w)
+	if h.enforcingWaiter != nil {
+		close(h.enforcingWaiter)
+		h.enforcingWaiter = nil
 	}
-	h.enforcingWaiters = nil
 	h.mu.Unlock()
 	close(h.done)
 	err := h.ln.Close()
@@ -533,11 +534,11 @@ func (h *Host) admit(a *attached, role string) (string, chan *attached) {
 		return "a second enforcing client is not permitted on this socket", nil
 	}
 	a.role = role
-	if role != RoleEnforcing || len(h.enforcingWaiters) == 0 {
+	if role != RoleEnforcing {
 		return "", nil
 	}
-	waiting := h.enforcingWaiters[0]
-	h.enforcingWaiters = h.enforcingWaiters[1:]
+	waiting := h.enforcingWaiter
+	h.enforcingWaiter = nil
 	return "", waiting
 }
 

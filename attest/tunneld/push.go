@@ -211,6 +211,14 @@ func (t *Tunneld) applyOrRefuse(ctx context.Context, conn *tunnel.Conn, policy [
 		waitCtx, cancel = context.WithTimeout(ctx, t.cfg.PushTimeout)
 		defer cancel()
 	}
+	// One received push at a time, because the push and the watch it leaves
+	// behind are one step. Two peers pushing at once are two Apply calls the
+	// sandbox serialises anyway, but two watch starts in whichever order their
+	// goroutines reach this line — which can leave the watch over the older
+	// digest while the sandbox pulses the newer one, and that reads as a loss.
+	t.applyMu.Lock()
+	defer t.applyMu.Unlock()
+
 	// The watch on the policy in force is retired before the next policy is
 	// pushed, not after it has landed. A sandbox that takes a policy starts
 	// pulsing that policy's digest — which is the point of the heartbeat — so a

@@ -227,6 +227,10 @@ type Tunneld struct {
 	box sandbox.Sandbox
 	wg  sync.WaitGroup
 
+	// applyMu serialises received pushes, so that the watch a push starts is
+	// always the watch over the policy that ended up in force (push.go).
+	applyMu sync.Mutex
+
 	// liveness is the one watch running on the sandbox beside this tunneld, or
 	// nil while there is none (push.go).
 	livenessMu sync.Mutex

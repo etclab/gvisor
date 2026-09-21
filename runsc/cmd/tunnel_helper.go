@@ -95,7 +95,7 @@ func (h *TunnelHelperCmd) Execute(_ context.Context, f *flag.FlagSet, args ...an
 		util.Fatalf("Failed to construct unet.Socket on fd %d: %v", h.sockFD, err)
 	}
 	applier := newPolicyApplier(h.controlSocket)
-	client, err := dialTunneld(h.sandboxSocket, applier.apply, log.Warningf)
+	client, err := dialTunneld(h.sandboxSocket, tunneldRoleEnforcing, applier.apply, log.Warningf)
 	if err != nil {
 		util.Fatalf("%v", err)
 	}

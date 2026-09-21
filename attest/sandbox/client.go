@@ -46,11 +46,13 @@ import (
 type Client struct {
 	w     *wire
 	p     pending
+	role  string
 	apply func(context.Context, []byte) error
 
-	ctx  context.Context
-	stop context.CancelFunc
-	once sync.Once
+	ctx     context.Context
+	stop    context.CancelFunc
+	once    sync.Once
+	lastErr error
 
 	// The heartbeat (contract v3, live.go): the digest this client is saying
 	// it enforces, and the once that starts the ticker saying it. Both are
@@ -66,19 +68,40 @@ var ErrTunneldClosed = errors.New("sandbox: the tunneld socket closed")
 
 var _ Network = (*Client)(nil)
 
-// Dial connects to the socket tunneld listens on. apply answers a pushed
-// policy: a nil error acknowledges it and any error refuses it. A nil apply
-// refuses every push, which is the honest answer for a sandbox that takes no
-// policy.
-func Dial(path string, apply func(context.Context, []byte) error) (*Client, error) {
+// Dial connects to the socket tunneld listens on and sends an attach message
+// declaring its role (contract v4). apply answers a pushed policy: a nil error
+// acknowledges it and any error refuses it. A nil apply refuses every push,
+// which is the honest answer for a sandbox that takes no policy.
+func Dial(path string, role string, apply func(context.Context, []byte) error) (*Client, error) {
 	c, err := net.DialUnix("unix", nil, &net.UnixAddr{Name: path, Net: "unix"})
 	if err != nil {
 		return nil, fmt.Errorf("sandbox: dialing %s: %w", path, err)
 	}
 	ctx, stop := context.WithCancel(context.Background())
-	cl := &Client{w: &wire{c: c}, apply: apply, ctx: ctx, stop: stop}
+	cl := &Client{w: &wire{c: c}, role: role, apply: apply, ctx: ctx, stop: stop}
+	if err := cl.w.send(message{Type: msgAttach, Role: role}, -1); err != nil {
+		cl.Close()
+		return nil, fmt.Errorf("sandbox: attaching to %s: %w", path, err)
+	}
 	go cl.serve()
 	return cl, nil
+}
+
+// Done returns a channel that is closed when the socket to tunneld closes.
+func (c *Client) Done() <-chan struct{} {
+	return c.ctx.Done()
+}
+
+// Err returns the error that closed the connection, if any was recorded.
+func (c *Client) Err() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.lastErr
+}
+
+// Role reports the role declared by this client upon attaching (contract v4).
+func (c *Client) Role() string {
+	return c.role
 }
 
 // Open asks tunneld for a stream to the named peer.
@@ -175,6 +198,11 @@ func (c *Client) serve() {
 		}
 		switch m.Type {
 		case msgStream, msgError:
+			if m.ID == 0 && m.Error != "" {
+				c.mu.Lock()
+				c.lastErr = errors.New(m.Error)
+				c.mu.Unlock()
+			}
 			c.p.deliver(reply{m: m, f: f})
 		case msgApply:
 			if f != nil {

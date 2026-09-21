@@ -295,7 +295,7 @@ func socketSandbox(path string, logf func(string, ...any)) (*sandbox.Null, *sand
 		return nil, nil, errors.New("agent-probe: -sandbox-socket is the path tunneld serves the contract on, and it is empty")
 	}
 	var ready atomic.Pointer[sandbox.Null]
-	client, err := sandbox.Dial(path, func(ctx context.Context, policy []byte) error {
+	client, err := sandbox.Dial(path, sandbox.RoleNetwork, func(ctx context.Context, policy []byte) error {
 		box := ready.Load()
 		if box == nil {
 			return errors.New("agent-probe: a policy arrived before this sandbox was ready to record it")

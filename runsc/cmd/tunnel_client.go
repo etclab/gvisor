@@ -44,6 +44,7 @@ import (
 // The message types this helper uses. The sandbox side of the contract also
 // has accept, which a helper that only dials out never sends.
 const (
+	tunneldMsgAttach  = "attach"
 	tunneldMsgOpen    = "open"
 	tunneldMsgStream  = "stream"
 	tunneldMsgError   = "error"
@@ -57,6 +58,12 @@ const (
 	tunneldMsgAlive = "alive"
 )
 
+// Roles declared in an attach message (contract v4).
+const (
+	tunneldRoleEnforcing = "enforcing"
+	tunneldRoleNetwork   = "network"
+)
+
 const (
 	tunneldHeaderSize = 4
 	tunneldMaxMessage = 4 << 20
@@ -67,6 +74,7 @@ const (
 type tunneldMessage struct {
 	ID       uint64          `json:"id"`
 	Type     string          `json:"type"`
+	Role     string          `json:"role,omitempty"`
 	Peer     string          `json:"peer,omitempty"`
 	Attested json.RawMessage `json:"attested,omitempty"`
 	Policy   []byte          `json:"policy,omitempty"`
@@ -94,15 +102,17 @@ type tunneldClient struct {
 
 	sendMu sync.Mutex
 
-	mu     sync.Mutex
-	next   uint64
-	wait   map[uint64]chan tunneldReply
-	closed bool
-	done   chan struct{}
+	mu      sync.Mutex
+	next    uint64
+	wait    map[uint64]chan tunneldReply
+	lastErr error
+	closed  bool
+	done    chan struct{}
 }
 
-// dialTunneld connects to tunneld's socket and starts reading it.
-func dialTunneld(path string, apply func([]byte) error, logf func(string, ...any)) (*tunneldClient, error) {
+// dialTunneld connects to tunneld's socket, sends an attach message declaring
+// its role (contract v4), and starts reading it.
+func dialTunneld(path string, role string, apply func([]byte) error, logf func(string, ...any)) (*tunneldClient, error) {
 	c, err := net.DialUnix("unix", nil, &net.UnixAddr{Name: path, Net: "unix"})
 	if err != nil {
 		return nil, fmt.Errorf("dialing tunneld at %s: %w", path, err)
@@ -113,6 +123,10 @@ func dialTunneld(path string, apply func([]byte) error, logf func(string, ...any
 		logf:  logf,
 		wait:  map[uint64]chan tunneldReply{},
 		done:  make(chan struct{}),
+	}
+	if err := cl.send(tunneldMessage{Type: tunneldMsgAttach, Role: role}, -1); err != nil {
+		c.Close()
+		return nil, fmt.Errorf("attaching to tunneld at %s: %w", path, err)
 	}
 	go cl.serve()
 	return cl, nil
@@ -276,6 +290,11 @@ func (cl *tunneldClient) applied(m tunneldMessage) {
 }
 
 func (cl *tunneldClient) deliver(r tunneldReply) {
+	if r.m.ID == 0 && r.m.Error != "" {
+		cl.mu.Lock()
+		cl.lastErr = errors.New(r.m.Error)
+		cl.mu.Unlock()
+	}
 	cl.mu.Lock()
 	ch := cl.wait[r.m.ID]
 	delete(cl.wait, r.m.ID)
@@ -287,6 +306,18 @@ func (cl *tunneldClient) deliver(r tunneldReply) {
 		return
 	}
 	ch <- r
+}
+
+// Done returns a channel that is closed when the socket to tunneld closes.
+func (cl *tunneldClient) Done() <-chan struct{} {
+	return cl.done
+}
+
+// Err returns the error that closed the connection, if any was recorded.
+func (cl *tunneldClient) Err() error {
+	cl.mu.Lock()
+	defer cl.mu.Unlock()
+	return cl.lastErr
 }
 
 // receive reads one message and the descriptor it carried, if any.

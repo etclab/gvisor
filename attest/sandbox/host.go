@@ -60,10 +60,14 @@ type Host struct {
 	// attachment it just dropped as a sandbox that died.
 	done chan struct{}
 
-	mu     sync.Mutex
-	closed bool
-	conns  []*attached
-	wg     sync.WaitGroup
+	applySem chan struct{}
+
+	mu               sync.Mutex
+	closed           bool
+	conns            []*attached
+	inForce          []byte
+	enforcingWaiters []chan *attached
+	wg               sync.WaitGroup
 }
 
 // ErrHostClosed is returned once the host has been closed.
@@ -103,7 +107,7 @@ func Listen(path string, n Network, logf func(string, ...any)) (*Host, error) {
 		ln.Close()
 		return nil, fmt.Errorf("sandbox: %s: %w", path, err)
 	}
-	h := &Host{Network: n, ln: ln, path: path, logf: logf, done: make(chan struct{})}
+	h := &Host{Network: n, ln: ln, path: path, logf: logf, done: make(chan struct{}), applySem: make(chan struct{}, 1)}
 	h.wg.Add(1)
 	go h.accept()
 	return h, nil
@@ -112,47 +116,110 @@ func Listen(path string, n Network, logf func(string, ...any)) (*Host, error) {
 // Path is the socket a sandbox connects to.
 func (h *Host) Path() string { return h.path }
 
-// Attached is how many sandboxes are connected.
+// Attached is how many sandboxes are connected with a declared role.
 func (h *Host) Attached() int {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	return len(h.conns)
+	var n int
+	for _, c := range h.conns {
+		if c.role != "" && !c.gone {
+			n++
+		}
+	}
+	return n
 }
 
-// Apply pushes the policy to every attached sandbox and returns the first
-// refusal, or the fact that there is nobody to push to.
+// Apply pushes the policy to the enforcing sandbox and returns its
+// acknowledgement or refusal.
 //
-// A tunneld with no sandbox attached refusing the push is the honest answer: an
-// acknowledgement means a sandbox has the policy, and there is no sandbox. The
-// peer that pushed it learns that its push did not land, which is what it asked.
+// If no enforcing sandbox has attached yet, Apply waits up to the caller's
+// deadline for one to attach. A push that lands before the enforcing sandbox
+// attaches is acknowledged only when the enforcing sandbox has received it.
 func (h *Host) Apply(ctx context.Context, policy []byte) error {
-	h.mu.Lock()
-	closed, conns := h.closed, append([]*attached(nil), h.conns...)
-	h.mu.Unlock()
-	if closed {
+	select {
+	case h.applySem <- struct{}{}:
+		defer func() { <-h.applySem }()
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-h.done:
 		return ErrHostClosed
 	}
-	if len(conns) == 0 {
-		return fmt.Errorf("%w: no sandbox is attached to %s", ErrPolicyRefused, h.path)
+
+	h.mu.Lock()
+	if h.closed {
+		h.mu.Unlock()
+		return ErrHostClosed
 	}
-	for _, a := range conns {
+	var enforcing *attached
+	for _, c := range h.conns {
+		if c.role == RoleEnforcing && !c.gone {
+			enforcing = c
+			break
+		}
+	}
+	if enforcing != nil {
+		h.mu.Unlock()
+		if err := enforcing.apply(ctx, policy); err != nil {
+			return err
+		}
+		h.mu.Lock()
+		h.inForce = policy
+		h.mu.Unlock()
+		h.said(policy)
+		return nil
+	}
+
+	_, hasDeadline := ctx.Deadline()
+	if !hasDeadline && ctx.Done() == nil {
+		h.mu.Unlock()
+		return fmt.Errorf("%w: no enforcing sandbox is attached to %s", ErrPolicyRefused, h.path)
+	}
+
+	waiter := make(chan *attached, 1)
+	h.enforcingWaiters = append(h.enforcingWaiters, waiter)
+	h.mu.Unlock()
+
+	select {
+	case <-ctx.Done():
+		h.mu.Lock()
+		h.removeEnforcingWaiter(waiter)
+		h.mu.Unlock()
+		return fmt.Errorf("%w: no enforcing sandbox is attached to %s", ErrPolicyRefused, h.path)
+	case <-h.done:
+		h.mu.Lock()
+		h.removeEnforcingWaiter(waiter)
+		h.mu.Unlock()
+		return ErrHostClosed
+	case a, ok := <-waiter:
+		if !ok || a == nil {
+			return ErrHostClosed
+		}
 		if err := a.apply(ctx, policy); err != nil {
 			return err
 		}
+		h.mu.Lock()
+		h.inForce = policy
+		h.mu.Unlock()
+		h.said(policy)
+		return nil
 	}
-	h.said(policy)
-	return nil
+}
+
+func (h *Host) removeEnforcingWaiter(w chan *attached) {
+	kept := h.enforcingWaiters[:0]
+	for _, waiter := range h.enforcingWaiters {
+		if waiter != w {
+			kept = append(kept, waiter)
+		}
+	}
+	h.enforcingWaiters = kept
 }
 
 // said writes the one console line a push is read off, in the shape [Null]
 // writes it and with the same four fields.
 //
-// It is the same line because it is the same claim, and a transcript that had
-// to know which sandbox was beside which tunneld before it could find the
-// digest would not be a transcript of the contract. It is written once per
-// push and not once per attachment: a push is acknowledged when every
-// attachment has taken it, so one line is one policy in force, whether one
-// sandbox answered or two.
+// The SANDBOX applied line is written only when the enforcing sandbox has
+// acknowledged.
 func (h *Host) said(policy []byte) {
 	if h.logf == nil {
 		return
@@ -175,29 +242,15 @@ func (h *Host) said(policy []byte) {
 const watchInterval = DefaultPulse / 4
 
 // Watch reports the loss of liveness for the policy with the given digest
-// (live.go). It watches every sandbox attached here that has acknowledged a
-// policy, which is the same set [Host.Apply] pushed to and got an
-// acknowledgement from, and a sandbox that refused is not among them: there is
-// nothing it claimed that it could stop claiming.
-//
-// Every one of them must be live, for the reason Apply returns the first
-// refusal rather than the last: two sandboxes on one socket are two things
-// enforcing the policy, and one of them stopping is the policy no longer being
-// enforced. The exit sandbox and the agent sandbox in one guest are exactly
-// that pair (attest/cmd/agent-probe).
-//
-// The digest is the caller's, not this host's. A watch compares what a sandbox
-// says it is enforcing against what the caller pushed, so two peers that pushed
-// two different policies to one sandbox produce two watches and at most one of
-// them can match — which is the honest answer to a question the contract never
-// promised: one sandbox enforces one policy.
+// (live.go). It watches the enforcing sandbox attached here that has
+// acknowledged a policy.
 func (h *Host) Watch(ctx context.Context, digest string) <-chan error {
 	lost := make(chan error, 1)
 	h.mu.Lock()
 	closed := h.closed
 	var watched []*attached
 	for _, a := range h.conns {
-		if a.acknowledgedPolicy() {
+		if a.role == RoleEnforcing && a.acknowledgedPolicy() {
 			watched = append(watched, a)
 		}
 	}
@@ -237,6 +290,23 @@ func (h *Host) watch(ctx context.Context, digest string, watched []*attached, lo
 	}
 }
 
+// DropEnforcing closes any active enforcing attachment and marks the policy
+// state not-live.
+func (h *Host) DropEnforcing() {
+	h.mu.Lock()
+	h.inForce = nil
+	var toClose []*attached
+	for _, c := range h.conns {
+		if c.role == RoleEnforcing && !c.gone {
+			toClose = append(toClose, c)
+		}
+	}
+	h.mu.Unlock()
+	for _, c := range toClose {
+		c.close()
+	}
+}
+
 // reportLost writes the one error a watch carries, logs the line an operator
 // reads it off, and closes the channel behind it.
 func (h *Host) reportLost(lost chan error, why string) {
@@ -257,6 +327,11 @@ func (h *Host) Close() error {
 	h.closed = true
 	conns := h.conns
 	h.conns = nil
+	h.inForce = nil
+	for _, w := range h.enforcingWaiters {
+		close(w)
+	}
+	h.enforcingWaiters = nil
 	h.mu.Unlock()
 	close(h.done)
 	err := h.ln.Close()
@@ -322,6 +397,9 @@ type attached struct {
 
 	once sync.Once
 
+	// role is set by the attach message (contract v4).
+	role string
+
 	// The heartbeat, under mu: whether this sandbox ever acknowledged a policy,
 	// when it last said anything about one, what it said, and whether the
 	// socket has gone. A sandbox that never acknowledged is not watched, so the
@@ -336,6 +414,54 @@ type attached struct {
 func newAttached(h *Host, c *net.UnixConn) *attached {
 	ctx, stop := context.WithCancel(context.Background())
 	return &attached{h: h, w: &wire{c: c}, ctx: ctx, stop: stop}
+}
+
+func (h *Host) recordAttach(a *attached, role string) bool {
+	h.mu.Lock()
+	if h.closed {
+		h.mu.Unlock()
+		a.close()
+		return false
+	}
+	if role != RoleEnforcing && role != RoleNetwork {
+		h.mu.Unlock()
+		a.w.send(message{Type: msgError, Error: fmt.Sprintf("unknown role %q", role)}, -1)
+		a.close()
+		return false
+	}
+	if role == RoleEnforcing {
+		for _, c := range h.conns {
+			if c != a && c.role == RoleEnforcing && !c.gone {
+				const why = "a second enforcing client is not permitted on this socket"
+				h.mu.Unlock()
+				a.w.send(message{Type: msgError, Error: why}, -1)
+				h.log("SANDBOX attach refused on %s: %s", h.path, why)
+				a.close()
+				return false
+			}
+		}
+	}
+	a.role = role
+	h.log("SANDBOX attached on %s role=%s", h.path, role)
+	if role == RoleEnforcing {
+		if len(h.enforcingWaiters) > 0 {
+			w := h.enforcingWaiters[0]
+			h.enforcingWaiters = h.enforcingWaiters[1:]
+			w <- a
+		} else if h.inForce != nil {
+			go a.replay(h.inForce)
+		}
+	}
+	h.mu.Unlock()
+	return true
+}
+
+func (a *attached) replay(policy []byte) {
+	if err := a.apply(a.ctx, policy); err != nil {
+		a.h.log("SANDBOX late enforcing client refused policy in force: %v", err)
+		a.close()
+		return
+	}
 }
 
 // acknowledgedPolicy reports whether this sandbox has ever acknowledged one,
@@ -397,6 +523,10 @@ func (a *attached) serve() {
 			f.Close()
 		}
 		switch m.Type {
+		case msgAttach:
+			if !a.h.recordAttach(a, m.Role) {
+				return
+			}
 		case msgOpen, msgAccept:
 			go a.stream(m)
 		case msgAck, msgRefusal:

@@ -148,7 +148,7 @@ func TestSandboxChildProcess(t *testing.T) {
 		null    *sandbox.Null
 		applied = make(chan error, 4)
 	)
-	client, err := sandbox.Dial(socket, func(ctx context.Context, policy []byte) error {
+	client, err := sandbox.Dial(socket, sandbox.RoleEnforcing, func(ctx context.Context, policy []byte) error {
 		err := null.Apply(ctx, policy)
 		applied <- err
 		return err
@@ -379,7 +379,7 @@ func TestThePumpCarriesTheEndOfTheStreamEachWay(t *testing.T) {
 		t.Fatalf("listening: %v", err)
 	}
 	defer host.Close()
-	client, err := sandbox.Dial(socket, nil)
+	client, err := sandbox.Dial(socket, sandbox.RoleNetwork, nil)
 	if err != nil {
 		t.Fatalf("dialing: %v", err)
 	}
@@ -517,7 +517,7 @@ func TestASandboxThatRefusedAPolicyIsNotWatched(t *testing.T) {
 		t.Fatalf("listening on %s: %v", socket, err)
 	}
 	defer host.Close()
-	client, err := sandbox.Dial(socket, func(context.Context, []byte) error {
+	client, err := sandbox.Dial(socket, sandbox.RoleEnforcing, func(context.Context, []byte) error {
 		return errors.New("this sandbox will not have it")
 	})
 	if err != nil {
@@ -606,7 +606,7 @@ func TestSandboxLivenessChildProcess(t *testing.T) {
 		t.Skip("not the sandbox process; " + livenessSocketEnv + " is unset")
 	}
 	acknowledged := make(chan struct{}, 1)
-	client, err := sandbox.Dial(socket, func(context.Context, []byte) error {
+	client, err := sandbox.Dial(socket, sandbox.RoleEnforcing, func(context.Context, []byte) error {
 		acknowledged <- struct{}{}
 		return nil
 	})
@@ -661,7 +661,7 @@ func TestTheHostSaysWhatItPushedWithItsDigest(t *testing.T) {
 	// is the whole of what the null one does with an envelope — and which says
 	// so without composing a Null around the client this test does not need,
 	// and so without that composition's knot (socketSandbox, cmd/agent-probe).
-	client, err := sandbox.Dial(socket, func(_ context.Context, policy []byte) error {
+	client, err := sandbox.Dial(socket, sandbox.RoleEnforcing, func(_ context.Context, policy []byte) error {
 		_, err := sandbox.ReadEnvelope(policy)
 		return err
 	})
@@ -692,5 +692,157 @@ func TestTheHostSaysWhatItPushedWithItsDigest(t *testing.T) {
 	if seen != 1 {
 		t.Errorf("the host's console has %d of %q; want exactly one, and none for the refused push:\n%s",
 			seen, want, strings.Join(lines, "\n"))
+	}
+}
+
+func TestAPushThatArrivesBeforeTheEnforcingSandboxHasAttachedIsNotAcknowledgedUntilTheEnforcingSandboxHasIt(t *testing.T) {
+	socket := filepath.Join(t.TempDir(), "sandbox.sock")
+	host, err := sandbox.Listen(socket, newFakeNetwork(), nil)
+	if err != nil {
+		t.Fatalf("listening on %s: %v", socket, err)
+	}
+	defer host.Close()
+
+	// Attach a network-only client first (simulating the exit client).
+	netClient, err := sandbox.Dial(socket, sandbox.RoleNetwork, nil)
+	if err != nil {
+		t.Fatalf("dialing network client: %v", err)
+	}
+	defer netClient.Close()
+	waitFor(t, "network client attached", func() bool { return host.Attached() > 0 })
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	appliedBytes := make(chan []byte, 1)
+	pushResult := make(chan error, 1)
+	go func() {
+		pushResult <- host.Apply(ctx, []byte(policyV1))
+	}()
+
+	// Assert that Apply does not return while only the network client is attached.
+	select {
+	case err := <-pushResult:
+		t.Fatalf("Apply returned before an enforcing sandbox attached: %v", err)
+	case <-time.After(100 * time.Millisecond):
+	}
+
+	// Attach the enforcing sandbox client.
+	enfClient, err := sandbox.Dial(socket, sandbox.RoleEnforcing, func(_ context.Context, p []byte) error {
+		appliedBytes <- p
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("dialing enforcing client: %v", err)
+	}
+	defer enfClient.Close()
+
+	// Assert that the sandbox received the exact bytes pushed.
+	select {
+	case got := <-appliedBytes:
+		if string(got) != policyV1 {
+			t.Fatalf("enforcing sandbox received %q; want %q", string(got), policyV1)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("enforcing sandbox did not receive the policy")
+	}
+
+	// Assert that Apply now succeeds.
+	select {
+	case err := <-pushResult:
+		if err != nil {
+			t.Fatalf("Apply failed: %v", err)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("Apply did not return after enforcing sandbox acknowledged")
+	}
+}
+
+func TestAnEnforcingSandboxThatAttachesAfterAPushReceivesThePolicyInForce(t *testing.T) {
+	socket := filepath.Join(t.TempDir(), "sandbox.sock")
+	host, err := sandbox.Listen(socket, newFakeNetwork(), nil)
+	if err != nil {
+		t.Fatalf("listening on %s: %v", socket, err)
+	}
+	defer host.Close()
+
+	// Connect an enforcing client, push a policy to it, then close it.
+	enf1, err := sandbox.Dial(socket, sandbox.RoleEnforcing, func(_ context.Context, p []byte) error {
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("dialing enforcing client 1: %v", err)
+	}
+	waitFor(t, "enforcing client 1 attached", func() bool { return host.Attached() > 0 })
+
+	if err := host.Apply(context.Background(), []byte(policyV1)); err != nil {
+		t.Fatalf("Apply failed: %v", err)
+	}
+	enf1.Close()
+	waitFor(t, "enforcing client 1 gone", func() bool { return host.Attached() == 0 })
+
+	// Connect a late enforcing sandbox. It must receive the policy in force via replay.
+	replayed := make(chan []byte, 1)
+	enf2, err := sandbox.Dial(socket, sandbox.RoleEnforcing, func(_ context.Context, p []byte) error {
+		replayed <- p
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("dialing late enforcing client: %v", err)
+	}
+	defer enf2.Close()
+
+	select {
+	case got := <-replayed:
+		if string(got) != policyV1 {
+			t.Fatalf("late enforcing sandbox received %q; want %q", string(got), policyV1)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("late enforcing sandbox did not receive the policy in force")
+	}
+}
+
+func TestASecondEnforcingClientOnOneSocketIsRefusedAndANonEnforcingClientIsNot(t *testing.T) {
+	socket := filepath.Join(t.TempDir(), "sandbox.sock")
+	host, err := sandbox.Listen(socket, newFakeNetwork(), nil)
+	if err != nil {
+		t.Fatalf("listening on %s: %v", socket, err)
+	}
+	defer host.Close()
+
+	// First enforcing client connects.
+	enf1, err := sandbox.Dial(socket, sandbox.RoleEnforcing, func(context.Context, []byte) error { return nil })
+	if err != nil {
+		t.Fatalf("dialing first enforcing client: %v", err)
+	}
+	defer enf1.Close()
+	waitFor(t, "first enforcing client attached", func() bool { return host.Attached() == 1 })
+
+	// Second enforcing client tries to connect. It must be refused and its socket closed.
+	enf2, err := sandbox.Dial(socket, sandbox.RoleEnforcing, func(context.Context, []byte) error { return nil })
+	if err == nil {
+		defer enf2.Close()
+		select {
+		case <-enf2.Done():
+			if enf2.Err() == nil || !strings.Contains(enf2.Err().Error(), "a second enforcing client is not permitted on this socket") {
+				t.Fatalf("second enforcing client closed with error %v; want reason saying second enforcing client is not permitted", enf2.Err())
+			}
+		case <-time.After(3 * time.Second):
+			t.Fatal("second enforcing client was not closed")
+		}
+	}
+
+	// A non-enforcing (network) client connects on the same socket. It must succeed.
+	netClient, err := sandbox.Dial(socket, sandbox.RoleNetwork, nil)
+	if err != nil {
+		t.Fatalf("dialing network client: %v", err)
+	}
+	defer netClient.Close()
+	waitFor(t, "network client attached", func() bool { return host.Attached() == 2 })
+
+	select {
+	case <-netClient.Done():
+		t.Fatalf("network client was unexpectedly closed: %v", netClient.Err())
+	case <-time.After(200 * time.Millisecond):
 	}
 }

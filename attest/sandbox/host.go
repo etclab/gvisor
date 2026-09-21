@@ -437,13 +437,7 @@ func (h *Host) log(format string, a ...any) {
 
 func (h *Host) drop(a *attached) {
 	h.mu.Lock()
-	kept := h.conns[:0]
-	for _, c := range h.conns {
-		if c != a {
-			kept = append(kept, c)
-		}
-	}
-	h.conns = kept
+	h.conns = slices.DeleteFunc(h.conns, func(c *attached) bool { return c == a })
 	h.mu.Unlock()
 }
 

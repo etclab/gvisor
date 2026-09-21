@@ -99,11 +99,6 @@ func (c *Client) Err() error {
 	return c.lastErr
 }
 
-// Role reports the role declared by this client upon attaching (contract v4).
-func (c *Client) Role() string {
-	return c.role
-}
-
 // Open asks tunneld for a stream to the named peer.
 func (c *Client) Open(ctx context.Context, peer string) (Stream, error) {
 	r, err := c.request(ctx, message{Type: msgOpen, Peer: peer})

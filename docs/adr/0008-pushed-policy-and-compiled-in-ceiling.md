@@ -153,6 +153,14 @@ the sandbox on the far end records and acks. Until a sandbox does something with
 `x`, the pushed policy is a statement delivered and acknowledged, not a control, and this
 record should not be read as claiming otherwise. The ceiling is the control that exists today.
 
+*Status note, 2026-09-21: that paragraph is what was true when this decision was taken and is left
+as it was. A sandbox does something with a pushed policy now. Ticket 26 put enforcement in the
+sentry — `n` narrows the name table in place while the workload runs, `x` refuses an `execve`
+outside the grant, and `f` is read for the subset check and still approximated by read-only, locked,
+noexec mounts (`docs/policy-in-the-sentry.md`) — and ticket 27 made an acknowledgement mean that the
+sandbox which will enforce the policy has it (`docs/the-ack-means-the-sandbox.md`). The decision
+this ADR records is unchanged, and the ceiling is still the control under all of it.*
+
 **Cross-references.** ADR-0002 is amended: the digest slot it reserved and ticket 18 spent now
 names the ceiling rather than a signed document on the config device, and its status line says
 so. ADR-0004 and ADR-0006 are unchanged and are what this decision leans on — the reference

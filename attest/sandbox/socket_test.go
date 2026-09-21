@@ -17,6 +17,7 @@ package sandbox_test
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -849,6 +850,122 @@ func TestAnEnforcingSandboxThatAttachesAfterAPushReceivesThePolicyInForce(t *tes
 		}
 	case <-time.After(3 * time.Second):
 		t.Fatal("late enforcing sandbox did not receive the policy in force")
+	}
+}
+
+// TestASecondAttachMessageOnOneConnectionIsRefused pins the one rule the client
+// on the other side of this socket cannot be held to by the compiler, because
+// one of them (runsc/cmd/tunnel_client.go) is written by hand: attach once. A
+// second declaration on one connection would be a second role, and — with a
+// push waiting for an enforcing sandbox — a second delivery of it.
+func TestASecondAttachMessageOnOneConnectionIsRefused(t *testing.T) {
+	socket := filepath.Join(t.TempDir(), "sandbox.sock")
+	host, err := sandbox.Listen(socket, newFakeNetwork(), nil)
+	if err != nil {
+		t.Fatalf("listening on %s: %v", socket, err)
+	}
+	defer host.Close()
+
+	c, err := net.DialUnix("unix", nil, &net.UnixAddr{Name: socket, Net: "unix"})
+	if err != nil {
+		t.Fatalf("dialing %s: %v", socket, err)
+	}
+	defer c.Close()
+	msg := []byte(`{"id":0,"type":"attach","role":"enforcing"}`)
+	frame := make([]byte, 4+len(msg))
+	binary.BigEndian.PutUint32(frame[:4], uint32(len(msg)))
+	copy(frame[4:], msg)
+	for i := range 2 {
+		if _, err := c.Write(frame); err != nil {
+			t.Fatalf("sending attach message %d: %v", i+1, err)
+		}
+	}
+	c.SetReadDeadline(time.Now().Add(5 * time.Second))
+	var header [4]byte
+	if _, err := io.ReadFull(c, header[:]); err != nil {
+		t.Fatalf("reading the answer to the second attach: %v", err)
+	}
+	body := make([]byte, binary.BigEndian.Uint32(header[:]))
+	if _, err := io.ReadFull(c, body); err != nil {
+		t.Fatalf("reading the answer to the second attach: %v", err)
+	}
+	if !strings.Contains(string(body), "already attached") {
+		t.Errorf("the host answered a second attach with %s; want a refusal saying this client has already attached", body)
+	}
+}
+
+// TestALateEnforcingSandboxThatRefusesThePolicyInForceIsDropped is the replay's
+// failure, which the host has to answer for itself: the sandbox that had the
+// policy is gone and the one that arrived will not have it, so there is nothing
+// enforcing it and the host stops saying there is. What it does not say is
+// anything about a tunnel, which is the watcher's to close or not.
+func TestALateEnforcingSandboxThatRefusesThePolicyInForceIsDropped(t *testing.T) {
+	var (
+		mu   sync.Mutex
+		says strings.Builder
+	)
+	socket := filepath.Join(t.TempDir(), "sandbox.sock")
+	host, err := sandbox.Listen(socket, newFakeNetwork(), func(format string, a ...any) {
+		mu.Lock()
+		fmt.Fprintf(&says, format+"\n", a...)
+		mu.Unlock()
+	})
+	if err != nil {
+		t.Fatalf("listening on %s: %v", socket, err)
+	}
+	defer host.Close()
+
+	enf1, err := sandbox.Dial(socket, sandbox.RoleEnforcing, func(context.Context, []byte) error { return nil })
+	if err != nil {
+		t.Fatalf("dialing the first enforcing client: %v", err)
+	}
+	waitFor(t, "the first enforcing client to attach", func() bool { return host.Attached() == 1 })
+	if err := host.Apply(context.Background(), []byte(policyV1)); err != nil {
+		t.Fatalf("pushing the policy: %v", err)
+	}
+	enf1.Close()
+	waitFor(t, "the first enforcing client to go", func() bool { return host.Attached() == 0 })
+
+	// The late one will not have it.
+	enf2, err := sandbox.Dial(socket, sandbox.RoleEnforcing, func(context.Context, []byte) error {
+		return errors.New("this sandbox will not have it")
+	})
+	if err != nil {
+		t.Fatalf("dialing the late enforcing client: %v", err)
+	}
+	defer enf2.Close()
+	select {
+	case <-enf2.Done():
+	case <-time.After(5 * time.Second):
+		t.Fatal("the late enforcing client that refused the policy in force was not dropped")
+	}
+	waitFor(t, "the late enforcing client to go", func() bool { return host.Attached() == 0 })
+
+	mu.Lock()
+	console := says.String()
+	mu.Unlock()
+	if !strings.Contains(console, "refused the policy in force") {
+		t.Errorf("the host's console does not say the policy in force was refused:\n%s", console)
+	}
+	if strings.Contains(console, "no tunnel was closed") {
+		t.Errorf("the host said something about a tunnel, which it knows nothing about:\n%s", console)
+	}
+
+	// Nothing is in force now, so the next enforcing sandbox is offered nothing.
+	pushed := make(chan []byte, 1)
+	enf3, err := sandbox.Dial(socket, sandbox.RoleEnforcing, func(_ context.Context, p []byte) error {
+		pushed <- p
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("dialing the third enforcing client: %v", err)
+	}
+	defer enf3.Close()
+	waitFor(t, "the third enforcing client to attach", func() bool { return host.Attached() == 1 })
+	select {
+	case p := <-pushed:
+		t.Errorf("a sandbox attaching after the refusal was pushed %q; want nothing in force", p)
+	case <-time.After(500 * time.Millisecond):
 	}
 }
 

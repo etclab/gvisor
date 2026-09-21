@@ -493,51 +493,93 @@ func newAttached(h *Host, c *net.UnixConn) *attached {
 	return &attached{h: h, w: &wire{c: c}, ctx: ctx, stop: stop}
 }
 
+// recordAttach takes one attach message (contract v4) and reports whether this
+// attachment goes on being served.
+//
+// The decision is made under the lock and everything that talks — the console,
+// the socket, the push that was waiting — happens outside it, because a logf
+// this host was handed is somebody else's code and holding h.mu across it is a
+// deadlock waiting for the one caller that asks the host a question from inside
+// its own log.
 func (h *Host) recordAttach(a *attached, role string) bool {
-	h.mu.Lock()
-	if h.closed {
-		h.mu.Unlock()
+	refused, waiting := h.admit(a, role)
+	if refused != "" {
+		a.w.send(message{Type: msgError, Error: refused}, -1)
+		h.log("SANDBOX attach refused on %s: %s", h.path, refused)
 		a.close()
 		return false
 	}
-	if role != RoleEnforcing && role != RoleNetwork {
-		h.mu.Unlock()
-		a.w.send(message{Type: msgError, Error: fmt.Sprintf("unknown role %q", role)}, -1)
-		a.close()
-		return false
-	}
-	if role == RoleEnforcing {
-		for _, c := range h.conns {
-			if c != a && c.role == RoleEnforcing && !c.isGone() {
-				const why = "a second enforcing client is not permitted on this socket"
-				h.mu.Unlock()
-				a.w.send(message{Type: msgError, Error: why}, -1)
-				h.log("SANDBOX attach refused on %s: %s", h.path, why)
-				a.close()
-				return false
-			}
-		}
-	}
-	a.role = role
 	h.log("SANDBOX attached on %s role=%s", h.path, role)
 	if role == RoleEnforcing {
-		if len(h.enforcingWaiters) > 0 {
-			w := h.enforcingWaiters[0]
-			h.enforcingWaiters = h.enforcingWaiters[1:]
-			w <- a
-		} else if h.inForce != nil {
-			go a.replay(h.inForce)
+		if waiting != nil {
+			// Buffered, and nobody else holds it: this cannot block.
+			waiting <- a
 		}
+		go h.replayInForce(a)
 	}
-	h.mu.Unlock()
 	return true
 }
 
-func (a *attached) replay(policy []byte) {
-	if err := a.apply(a.ctx, policy); err != nil {
-		a.h.log("SANDBOX late enforcing client refused policy in force: %v", err)
-		a.close()
+// admit is the attach decision: the sentence this attachment is refused with, or
+// "" and the push that has been waiting for an enforcing sandbox to arrive.
+func (h *Host) admit(a *attached, role string) (string, chan *attached) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	switch {
+	case h.closed:
+		return "this host is closed", nil
+	case role != RoleEnforcing && role != RoleNetwork:
+		return fmt.Sprintf("unknown role %q", role), nil
+	case a.role != "":
+		// One attach message per connection. A second would be a second
+		// declaration on a socket whose whole point is that there is one.
+		return "this client has already attached", nil
+	case role == RoleEnforcing && h.enforcing() != nil:
+		return "a second enforcing client is not permitted on this socket", nil
+	}
+	a.role = role
+	if role != RoleEnforcing || len(h.enforcingWaiters) == 0 {
+		return "", nil
+	}
+	waiting := h.enforcingWaiters[0]
+	h.enforcingWaiters = h.enforcingWaiters[1:]
+	return "", waiting
+}
+
+// replayInForce offers a freshly attached enforcing sandbox the policy in force,
+// so that a sandbox which arrives after a push was acknowledged is enforcing the
+// policy the pushing peer was told about.
+//
+// It is started for every enforcing attachment and is usually nothing: there is
+// no policy in force, or a push was waiting for this attachment and handed it a
+// newer one. Starting it unconditionally is what closes the gap between the two
+// — a push that gave up in the same moment its attachment arrived leaves an
+// attachment with nothing, and this is what hands it the policy anyway.
+//
+// It takes the push slot, so it cannot cross the push that a caller is making;
+// and it reads the policy in force after taking it, so what it replays is the
+// latest and never the one that was in force when the sandbox knocked.
+func (h *Host) replayInForce(a *attached) {
+	if err := h.holdPush(a.ctx); err != nil {
 		return
+	}
+	defer h.releasePush()
+
+	h.mu.Lock()
+	policy := h.inForce
+	h.mu.Unlock()
+	if policy == nil || a.isGone() || a.acknowledgedPolicy() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(a.ctx, DefaultApplyWait)
+	defer cancel()
+	if err := a.apply(ctx, policy); err != nil {
+		// The only sandbox that had this policy has gone and the one that
+		// arrived will not have it, so nothing here is enforcing it any more.
+		// Saying so is this host's business; whether a tunnel should go for it
+		// is the watcher's, and there may well be one open.
+		h.log("SANDBOX the enforcing sandbox that attached to %s refused the policy in force: %v; it has been dropped and no policy is in force", h.path, err)
+		h.DropEnforcing()
 	}
 }
 

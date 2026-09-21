@@ -33,6 +33,15 @@
 # the flag set /sbin/init launches it with and that mount's options; what it
 # runs is not.
 #
+# Ticket 25: it carries three things more, and all three are measured. agent-probe
+# beside tunneld, which is the exit a peer's stream is answered by; busybox's
+# httpd and wget applets and an /srv/index.html for the page that exit serves;
+# and /etc/hosts, which is what makes the two peer names resolve to this guest's
+# own loopback when the exit dials them. The per-guest half of all of it — which
+# names the sandbox may reach, through which peer, and which destinations this
+# guest's exit will dial — is on the config device and is not measured, exactly
+# as the reference value set is not.
+#
 # Rebuildable and auditable, not bit-reproducible: every input is pinned by
 # hash or version, every tool version is recorded, and the manifest lists
 # every file that went in. Nothing here needs root.
@@ -94,6 +103,16 @@
 #                   is: the root filesystem carries no dynamic loader, and an
 #                   exec that fails inside the guest fails after the measurement
 #                   is fixed. There is no default.
+#   AGENT_PROBE     required. Static agent-probe to embed as /usr/bin/agent-probe
+#                   (ticket 25). /sbin/init runs it in its `-exit` role when the
+#                   config device carries a tunnel table: it accepts the streams
+#                   a peer opens over the tunnel, reads the destination off the
+#                   first line of each and dials it if the list the config device
+#                   carries permits it (attest/cmd/agent-probe/exit.go). Like
+#                   TUNNELD it is built by package-tunneld.sh with CGO_ENABLED=0
+#                   and refused unless it is static, for the same reason: the root
+#                   filesystem carries no dynamic loader. There is no default —
+#                   a build names every binary it measures.
 #   BUSYBOX         static busybox (default /bin/busybox from busybox-static)
 set -euo pipefail
 HERE="$(dirname "$(readlink -f "$0")")"
@@ -106,6 +125,7 @@ TCB_FLOOR="${TCB_FLOOR:-9,0,23,72}"
 : "${AUTHOR_KEY:?set AUTHOR_KEY to the reference value author Ed25519 private key, PKCS8 PEM}"
 : "${TUNNELD:?set TUNNELD to the static binary to embed as /usr/bin/tunneld; docs/snp/image/package-tunneld.sh builds it and sets this}"
 : "${RUNSC:?set RUNSC to the static runsc to embed as /usr/bin/runsc; make runsc builds it into bazel-bin/runsc/runsc_/runsc}"
+: "${AGENT_PROBE:?set AGENT_PROBE to the static agent-probe to embed as /usr/bin/agent-probe; docs/snp/image/package-tunneld.sh builds it and sets this}"
 export PATH="/usr/local/go/bin:$PATH"
 command -v go >/dev/null || { echo "go not found; attest/README.md says how" >&2; exit 1; }
 
@@ -158,6 +178,11 @@ RUNSC_SHA256=$(sha256sum "$RUNSC" | cut -d' ' -f1)
 RUNSC_BYTES=$(stat -c %s "$RUNSC")
 echo "runsc sha256: $RUNSC_SHA256"
 echo "runsc bytes : $RUNSC_BYTES"
+file "$AGENT_PROBE" | grep -q 'statically linked' || { echo "AGENT_PROBE $AGENT_PROBE is not static" >&2; exit 1; }
+AGENT_PROBE_SHA256=$(sha256sum "$AGENT_PROBE" | cut -d' ' -f1)
+AGENT_PROBE_BYTES=$(stat -c %s "$AGENT_PROBE")
+echo "agent-probe sha256: $AGENT_PROBE_SHA256"
+echo "agent-probe bytes : $AGENT_PROBE_BYTES"
 
 # The document emitter: the author-side half of attest/refvalsfile.go and
 # attest/policyfile.go, built from source so the documents shipped are the ones
@@ -182,18 +207,54 @@ printf '%s\n' "$KEYHEX" > author.pub
 R="$B/rootfs"
 # /workload is empty here and stays empty in the image: the initrd mounts the
 # workload device over it, and a guest booted without that disk finds nothing.
-mkdir -p "$R"/{bin,sbin,usr/bin,etc/attested-tunnel,lib/modules,config,proc,sys,dev,run,tmp,workload}
+mkdir -p "$R"/{bin,sbin,usr/bin,etc/attested-tunnel,lib/modules,config,proc,sys,dev,run,tmp,workload,srv}
 install -m 755 "$BUSYBOX" "$R/bin/busybox"
 # unshare is ticket 24's one addition: init enters a user namespace with it
 # before launching runsc, which inside one needs no host capability at all
 # (docs/snp/evidence/spike-s1-runsc-in-guest/README.md). The driver's other two
 # applets, sh and mount, are already here.
-ROOT_APPLETS="sh mount umount insmod cat echo sleep ls dmesg grep sed poweroff sync ip unshare"
+#
+# Ticket 25 adds six, and each is one line of /sbin/init's adapter branch:
+# mkdir for the directory the page is written into, httpd to serve it on
+# loopback, wget for the one fetch init makes of its own page so that "not
+# served" and "not carried" are told apart, and kill, which ash has as a builtin
+# and which is here so that the poll for the sandbox socket does not depend on
+# that; and tail and wc, which put the sentry's own account of the adapter on the
+# console afterwards and say how big the log it came out of was. Six applets of a
+# busybox that is already measured in whole; the file count changes and no byte
+# of the binary does.
+ROOT_APPLETS="sh mount umount insmod cat echo sleep ls dmesg grep sed poweroff sync ip unshare mkdir httpd wget kill tail wc"
 for a in $ROOT_APPLETS; do ln -s busybox "$R/bin/$a"; done
 install -m 755 "$HERE/init.rootfs" "$R/sbin/init"
 install -m 755 "$TUNNELD" "$R/usr/bin/tunneld"
 install -m 755 "$RUNSC" "$R/usr/bin/runsc"
+install -m 755 "$AGENT_PROBE" "$R/usr/bin/agent-probe"
 install -m 444 author.pub "$R/etc/attested-tunnel/author.pub"
+# The page this guest's exit serves, and the names that reach it (ticket 25).
+#
+# Both are measured and both are the same in every guest booted from this image,
+# which is the point: the image says what a peer may be served and the config
+# device says who this guest is. /srv/index.html is the body; /sbin/init appends
+# one line naming the sandbox id it read off the run configuration, into a copy
+# on /run, because one image boots both guests and a page that could not say
+# which guest served it would prove nothing about where a fetch went.
+#
+# /etc/hosts carries BOTH peer names and points both at this guest's own
+# loopback. It is not a resolver for the sandbox — the sandbox resolves through
+# the sentry, which answers only what the tunnel table names — it is what the
+# *exit* uses when it dials the destination a stream asked for. Both lines are in
+# both guests because the image is one image: guest A's exit is asked for
+# web.peer-a and guest B's for web.peer-b, and which of the two a guest is ever
+# asked for is decided by the other guest's table and by this guest's own
+# exit-allow list, neither of which is in here.
+install -m 444 "$HERE/index.html" "$R/srv/index.html"
+cat > "$R/etc/hosts" <<HOSTS
+127.0.0.1	localhost
+127.0.0.1	web.peer-a
+127.0.0.1	web.peer-b
+::1	localhost ip6-localhost ip6-loopback
+HOSTS
+chmod 444 "$R/etc/hosts"
 install -m 444 "$MODDIR/drivers/virt/coco/guest/tsm_report.ko"   "$R/lib/modules/"
 install -m 444 "$MODDIR/drivers/virt/coco/sev-guest/sev-guest.ko" "$R/lib/modules/"
 # The netfilter modules the egress ceiling needs (ticket 22). This kernel builds
@@ -381,6 +442,8 @@ EMITTED_POLICY_DIGEST=$(printf '%s\n' "$EMITTED_POLICY" | sed -n 's/^policy dige
   echo "tunneld:  $TUNNELD"
   echo "runsc:    $RUNSC"
   echo "          sha256 $RUNSC_SHA256, $RUNSC_BYTES bytes (make runsc, bazel; installed as /usr/bin/runsc)"
+  echo "agent-probe: $AGENT_PROBE"
+  echo "          sha256 $AGENT_PROBE_SHA256, $AGENT_PROBE_BYTES bytes (CGO_ENABLED=0; installed as /usr/bin/agent-probe)"
   echo "author key: $KEYHEX"
   echo
   echo "## Toolchain"
@@ -407,7 +470,7 @@ EMITTED_POLICY_DIGEST=$(printf '%s\n' "$EMITTED_POLICY" | sed -n 's/^policy dige
   done
 } > "$OUT/manifest.txt"
 
-cp "$HERE"/{build-image.sh,predict-measurement.sh,init.initrd,init.rootfs,veritymap.c} "$B/" 2>/dev/null || true
+cp "$HERE"/{build-image.sh,predict-measurement.sh,init.initrd,init.rootfs,index.html,veritymap.c} "$B/" 2>/dev/null || true
 echo
 echo "image in $OUT:"
 ls -l "$OUT" | grep -v '^d\|^total'

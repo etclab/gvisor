@@ -1,0 +1,297 @@
+diff --git a/runsc/boot/BUILD b/runsc/boot/BUILD
+index 85fa18e73..8a27a30a4 100644
+--- a/runsc/boot/BUILD
++++ b/runsc/boot/BUILD
+@@ -24,6 +24,7 @@ go_library(
+         "restore.go",
+         "seccheck.go",
+         "seccomp.go",
++        "spike_e3.go",
+         "strace.go",
+         "tpuproxy.go",
+         "vfs.go",
+diff --git a/runsc/boot/controller.go b/runsc/boot/controller.go
+index ae644c4f5..289767fee 100644
+--- a/runsc/boot/controller.go
++++ b/runsc/boot/controller.go
+@@ -246,6 +246,7 @@ func (c *controller) registerHandlers() {
+ 	c.srv.Register(&control.Usage{Kernel: l.k})
+ 	c.srv.Register(&control.Metrics{})
+ 	c.srv.Register(&debug{})
++	c.srv.Register(&Spike{}) // SPIKE-E3 (ticket 25), temporary
+ 
+ 	if eps, ok := l.k.RootNetworkNamespace().Stack().(*netstack.Stack); ok {
+ 		c.srv.Register(&Network{
+diff --git a/runsc/boot/spike_e3.go b/runsc/boot/spike_e3.go
+new file mode 100644
+index 000000000..2c3569c01
+--- /dev/null
++++ b/runsc/boot/spike_e3.go
+@@ -0,0 +1,267 @@
++// Copyright 2018 The gVisor Authors.
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++
++// SPIKE-E3 (ticket 25) — temporary, reverted before commit.
++//
++// A throwaway urpc object on the sandbox's control server. The host-side
++// supervisor calls Spike.Attach with one end of a socketpair in a FilePayload;
++// the sentry keeps the other end and becomes a urpc CLIENT on it, so calls run
++// sentry -> helper. Everything after that is the measurement.
++
++package boot
++
++import (
++	"fmt"
++	"time"
++
++	"golang.org/x/sys/unix"
++	"gvisor.dev/gvisor/pkg/log"
++	"gvisor.dev/gvisor/pkg/unet"
++	"gvisor.dev/gvisor/pkg/urpc"
++)
++
++// Spike is the throwaway control object.
++type Spike struct{}
++
++type spikeAttachArgs struct {
++	urpc.FilePayload
++	EchoAddr string
++	Mode     string
++}
++
++type spikeOpenArg struct {
++	Addr string
++}
++
++type spikeOpenResult struct {
++	urpc.FilePayload
++	ID     int64
++	Mapped string
++}
++
++type spikeCloseArg struct {
++	ID   int64
++	Half int
++}
++
++// Attach receives the helper channel.
++func (*Spike) Attach(args *spikeAttachArgs, _ *struct{}) error {
++	if len(args.Files) != 1 {
++		return fmt.Errorf("Spike.Attach: want 1 file, got %d", len(args.Files))
++	}
++	// urpc closes the received files when the call returns, so take our own.
++	fd, err := unix.Dup(int(args.Files[0].Fd()))
++	if err != nil {
++		return fmt.Errorf("Spike.Attach: dup: %w", err)
++	}
++	log.Infof("SPIKE-E3 Attach: received one FD, duped to %d, echo=%q mode=%q", fd, args.EchoAddr, args.Mode)
++	go spikeRun(fd, args.EchoAddr)
++	return nil
++}
++
++func spikeRun(fd int, echo string) {
++	defer func() {
++		if r := recover(); r != nil {
++			log.Infof("SPIKE-E3 PANIC: %v", r)
++		}
++	}()
++	sock, err := unet.NewSocket(fd)
++	if err != nil {
++		log.Infof("SPIKE-E3 unet.NewSocket(%d) failed: %v", fd, err)
++		return
++	}
++	c := urpc.NewClient(sock)
++	log.Infof("SPIKE-E3 begin: urpc client built on the donated socketpair, under the sentry's seccomp filter")
++
++	// 0. Does a plain call cross at all?
++	var pong struct{ Pong string }
++	t0 := time.Now()
++	err = c.Call("Helper.Ping", &struct{ Hello string }{"from-the-sentry"}, &pong)
++	log.Infof("SPIKE-E3 step0 Ping: err=%v rtt=%v pong=%q", err, time.Since(t0), pong.Pong)
++	if err != nil {
++		return
++	}
++
++	// 1. Open a stream to the helper's local echo and exercise it.
++	fd1, id1, ok := spikeOpen(c, echo, "stream1")
++	if ok {
++		spikeHello(fd1)
++		spikeBulk(fd1, 64*1024)
++		spikeBulk(fd1, 1024*1024)
++		spikeAfterClose(c, fd1, id1)
++	}
++
++	// 2. A second stream, to find where a non-blocking write hits EAGAIN.
++	fd2, _, ok := spikeOpen(c, echo, "stream2")
++	if ok {
++		spikeNonblock(fd2)
++		unix.Close(fd2)
++	}
++
++	// 3. What happens to the urpc client when the helper exits.
++	t0 = time.Now()
++	err = c.Call("Helper.Exit", &struct{}{}, &struct{}{})
++	log.Infof("SPIKE-E3 step3 Exit: err=%v rtt=%v", err, time.Since(t0))
++	time.Sleep(1500 * time.Millisecond)
++	t0 = time.Now()
++	err = c.Call("Helper.Ping", &struct{ Hello string }{"after-exit"}, &pong)
++	log.Infof("SPIKE-E3 step3 Ping after the helper exited: err=%v (%T) rtt=%v", err, err, time.Since(t0))
++	var r spikeOpenResult
++	t0 = time.Now()
++	err = c.Call("Helper.Open", &spikeOpenArg{Addr: echo}, &r)
++	log.Infof("SPIKE-E3 step3 Open after the helper exited: err=%v (%T) rtt=%v files=%d", err, err, time.Since(t0), len(r.Files))
++	log.Infof("SPIKE-E3 done")
++}
++
++func spikeOpen(c *urpc.Client, addr, tag string) (int, int64, bool) {
++	var r spikeOpenResult
++	t0 := time.Now()
++	err := c.Call("Helper.Open", &spikeOpenArg{Addr: addr}, &r)
++	if err != nil {
++		log.Infof("SPIKE-E3 Open(%s) %s: err=%v rtt=%v", addr, tag, err, time.Since(t0))
++		return -1, 0, false
++	}
++	if len(r.Files) != 1 {
++		log.Infof("SPIKE-E3 Open(%s) %s: want 1 file, got %d", addr, tag, len(r.Files))
++		return -1, 0, false
++	}
++	fd, derr := unix.Dup(int(r.Files[0].Fd()))
++	r.Files[0].Close()
++	log.Infof("SPIKE-E3 Open(%s) %s: OK rtt=%v id=%d mapped=%s fd=%d duperr=%v", addr, tag, time.Since(t0), r.ID, r.Mapped, fd, derr)
++	if derr != nil {
++		return -1, 0, false
++	}
++	return fd, r.ID, true
++}
++
++func spikeHello(fd int) {
++	t0 := time.Now()
++	n, werr := unix.Write(fd, []byte("hello\n"))
++	buf := make([]byte, 64)
++	m, rerr := unix.Read(fd, buf)
++	got := ""
++	if m > 0 {
++		got = string(buf[:m])
++	}
++	log.Infof("SPIKE-E3 hello: write n=%d err=%v; read n=%d err=%v data=%q; round trip %v", n, werr, m, rerr, got, time.Since(t0))
++}
++
++func spikeBulk(fd, size int) {
++	payload := make([]byte, size)
++	for i := range payload {
++		payload[i] = byte(i)
++	}
++	done := make(chan int, 1)
++	go func() {
++		got := 0
++		buf := make([]byte, 64*1024)
++		for got < size {
++			n, err := unix.Read(fd, buf)
++			if n > 0 {
++				got += n
++			}
++			if err != nil {
++				log.Infof("SPIKE-E3 bulk %d: read error after %d bytes: %v", size, got, err)
++				break
++			}
++			if n == 0 {
++				log.Infof("SPIKE-E3 bulk %d: EOF after %d bytes", size, got)
++				break
++			}
++		}
++		done <- got
++	}()
++	t0 := time.Now()
++	off, eagain, shortw := 0, 0, 0
++	for off < size {
++		n, err := unix.Write(fd, payload[off:])
++		if err == unix.EAGAIN {
++			eagain++
++			continue
++		}
++		if err != nil {
++			log.Infof("SPIKE-E3 bulk %d: write error after %d bytes: %v", size, off, err)
++			break
++		}
++		if n < size-off {
++			shortw++
++		}
++		off += n
++	}
++	wdur := time.Since(t0)
++	got := <-done
++	total := time.Since(t0)
++	log.Infof("SPIKE-E3 bulk %d bytes: wrote %d in %v (%.1f MiB/s), echoed %d back, full round trip %v (%.1f MiB/s), EAGAIN=%d shortWrites=%d",
++		size, off, wdur, mib(off, wdur), got, total, mib(got, total), eagain, shortw)
++}
++
++func mib(n int, d time.Duration) float64 {
++	if d <= 0 {
++		return 0
++	}
++	return float64(n) / (1024 * 1024) / d.Seconds()
++}
++
++func spikeNonblock(fd int) {
++	flags, err := unix.FcntlInt(uintptr(fd), unix.F_GETFL, 0)
++	log.Infof("SPIKE-E3 nonblock: F_GETFL=%#x err=%v (O_NONBLOCK=%#x)", flags, err, unix.O_NONBLOCK)
++	_, serr := unix.FcntlInt(uintptr(fd), unix.F_SETFL, flags|unix.O_NONBLOCK)
++	log.Infof("SPIKE-E3 nonblock: F_SETFL O_NONBLOCK err=%v", serr)
++	// Nothing drains, so this finds the pipeline's real capacity.
++	big := make([]byte, 256*1024)
++	written, iters := 0, 0
++	t0 := time.Now()
++	for iters < 4096 {
++		iters++
++		n, err := unix.Write(fd, big)
++		if err == unix.EAGAIN {
++			log.Infof("SPIKE-E3 nonblock: write returned EAGAIN after %d bytes buffered in %d calls (%v)", written, iters-1, time.Since(t0))
++			break
++		}
++		if err != nil {
++			log.Infof("SPIKE-E3 nonblock: write error after %d bytes: %v", written, err)
++			break
++		}
++		written += n
++		if written > 64*1024*1024 {
++			log.Infof("SPIKE-E3 nonblock: no EAGAIN after %d bytes, giving up", written)
++			break
++		}
++	}
++	n, rerr := unix.Read(fd, big)
++	log.Infof("SPIKE-E3 nonblock: a non-blocking read returned n=%d err=%v", n, rerr)
++}
++
++func spikeAfterClose(c *urpc.Client, fd int, id int64) {
++	err := c.Call("Helper.Close", &spikeCloseArg{ID: id, Half: 0}, &struct{}{})
++	log.Infof("SPIKE-E3 close: asked the helper to close its end of stream %d: err=%v", id, err)
++	time.Sleep(300 * time.Millisecond)
++	buf := make([]byte, 4096)
++	for i := 0; i < 8; i++ {
++		n, rerr := unix.Read(fd, buf)
++		log.Infof("SPIKE-E3 close: read #%d after the helper closed: n=%d err=%v", i, n, rerr)
++		if n == 0 || rerr != nil {
++			break
++		}
++	}
++	for i := 0; i < 3; i++ {
++		n, werr := unix.Write(fd, []byte("after-close"))
++		log.Infof("SPIKE-E3 close: write #%d after the helper closed: n=%d err=%v", i, n, werr)
++		if werr != nil {
++			break
++		}
++		time.Sleep(50 * time.Millisecond)
++	}
++	unix.Close(fd)
++}

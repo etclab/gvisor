@@ -1,0 +1,76 @@
+udpprobe: ticket 25 E2, pid 1
+DNS A query for example.com, 29 bytes: 12 34 01 00 00 01 00 00 00 00 00 00 07 65 78 61 6d 70 6c 65 03 63 6f 6d 00 00 01 00 01
+iface 1 lo       flags=up|loopback|running addrs=[127.0.0.1/8 ::1/128] mtu=65522
+
+######## part 1: unconnected sendto
+
+== UDP 127.0.0.53:53  sendto/recvfrom (unconnected)
+   sendto:   OK  (1.7 ms)
+   recv:     n=-1 errno=11 EAGAIN ("resource temporarily unavailable")  (2002 ms) from=<nil>
+
+== UDP 127.0.0.1:53  sendto/recvfrom (unconnected)
+   sendto:   OK  (1.2 ms)
+   recv:     n=-1 errno=11 EAGAIN ("resource temporarily unavailable")  (2002 ms) from=<nil>
+
+== UDP 8.8.8.8:53  sendto/recvfrom (unconnected)
+   sendto:   errno=101 ENETUNREACH ("network is unreachable")  (0.8 ms)
+
+== UDP 10.0.0.1:53  sendto/recvfrom (unconnected)
+   sendto:   errno=101 ENETUNREACH ("nRUNSC_EXIT=0
+eachable")  (0.6 ms)
+
+######## part 2: connected UDP (connect + write)
+
+== UDP 127.0.0.53:53  connect+write/read (connected)
+   connect:  OK  (0.3 ms)
+   write:    n=29 OK  (0.7 ms)
+   recv:     n=-1 errno=111 ECONNREFUSED ("connection refused")  (0 ms) from=<nil>
+   recv#2:   n=-1 errno=11 EAGAIN ("resource temporarily unavailable")  (2002 ms)
+
+== UDP 127.0.0.1:53  connect+write/read (connected)
+   connect:  OK  (0.6 ms)
+   write:    n=29 OK  (0.8 ms)
+   recv:     n=-1 errno=111 ECONNREFUSED ("connection refused")  (0 ms) from=<nil>
+   recv#2:   n=-1 errno=11 EAGAIN ("resource temporarily unavailable")  (2002 ms)
+
+== UDP 8.8.8.8:53  connect+write/read (connected)
+   connect:  errno=101 ENETUNREACH ("network is unreachable")  (0.5 ms)
+
+== UDP 10.0.0.1:53  connect+write/read (connected)
+   connect:  errno=101 ENETUNREACH ("network is unreachable")  (0.5 ms)
+
+######## part 3: Go's net.DialUDP
+
+== UDP 127.0.0.53:53  net.DialUDP
+   DialUDP:  OK  (3.2 ms)
+   local:    127.0.0.53:58709  remote: 127.0.0.53:53
+   Write:    n=29 OK
+   Read:     n=0 err=read udp4 127.0.0.53:58709->127.0.0.53:53: read: connection refused (*net.OpError)  (1 ms)
+
+== UDP 127.0.0.1:53  net.DialUDP
+   DialUDP:  OK  (2.0 ms)
+   local:    127.0.0.1:40472  remote: 127.0.0.1:53
+   Write:    n=29 OK
+   Read:     n=0 err=read udp4 127.0.0.1:40472->127.0.0.1:53: read: connection refused (*net.OpError)  (0 ms)
+
+== UDP 8.8.8.8:53  net.DialUDP
+   DialUDP:  err=dial udp4 8.8.8.8:53: connect: network is unreachable (*net.OpError)  (1.2 ms)
+
+== UDP 10.0.0.1:53  net.DialUDP
+   DialUDP:  err=dial udp4 10.0.0.1:53: connect: network is unreachable (*net.OpError)  (1.3 ms)
+
+######## part 4: the TCP baseline — every other connect fails
+
+== TCP 127.0.0.1:9  socket+connect (blocking)
+   connect:  errno=111 ECONNREFUSED ("connection refused")  (1 ms)
+
+== TCP 8.8.8.8:53  socket+connect (blocking)
+   connect:  errno=101 ENETUNREACH ("network is unreachable")  (0 ms)
+
+== TCP 127.0.0.1:9  net.DialTimeout 3s
+   Dial:     err=dial tcp4 127.0.0.1:9: connect: connection refused (*net.OpError)  (4 ms)
+
+== TCP 8.8.8.8:53  net.DialTimeout 3s
+   Dial:     err=dial tcp4 8.8.8.8:53: connect: network is unreachable (*net.OpError)  (1 ms)
+
+udpprobe: done

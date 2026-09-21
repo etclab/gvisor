@@ -1,0 +1,25 @@
+# Launch the two guests of adapter.
+#
+# Privileged only because an SNP launch opens /dev/sev. Both guests are started
+# from this one job and waited for together: they are two halves of one
+# conversation, and a runner that ran them one after another would have each
+# talking to nobody.
+set -u
+# The launcher takes QEMU and the non-verifying firmware from the host stack,
+# and the stack is not inside this checkout when the harness runs from a
+# worktree. The runner starts every job in an environment of its own, so the
+# stack is named here rather than left to tunnel-guest.sh's default, which
+# would look for it beside whichever tree this script was read from.
+export STACK="/home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack"
+A_LOG="/home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket25-run2/adapter/console-a.txt"
+B_LOG="/home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket25-run2/adapter/console-b.txt"
+timeout 390 bash "/home/pniroula/Projects/gvisor-t25/docs/snp/tunnel-guest.sh" -image "/home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket25" -config "/home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket25-run2/adapter/config-a.img" \
+    -relay 127.0.0.1:15801 -console "$A_LOG" -mac 52:54:00:14:00:0a  -workload /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/snp/workload.img &
+A=$!
+timeout 390 bash "/home/pniroula/Projects/gvisor-t25/docs/snp/tunnel-guest.sh" -image "/home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket25" -config "/home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket25-run2/adapter/config-b.img" \
+    -relay 127.0.0.1:15802 -console "$B_LOG" -mac 52:54:00:14:00:0b   -workload /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/snp/workload.img &
+B=$!
+wait $A; echo "guest A qemu exited $?"
+wait $B; echo "guest B qemu exited $?"
+chown -R 253477:253477 "/home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket25-run2/adapter" 2>/dev/null
+chmod -R a+rX "/home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket25-run2/adapter" 2>/dev/null

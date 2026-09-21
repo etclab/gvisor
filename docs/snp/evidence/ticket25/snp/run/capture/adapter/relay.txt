@@ -1,0 +1,8 @@
+l2relay: RELAYED a_to_b_frames=56 b_to_a_frames=52 a_to_b_bytes=40116 b_to_a_bytes=34054 tampered=0
+l2relay: MARKER not found hits=0 marker='served-by: guest-' in 108 frames carrying 74170 bytes
+l2relay: what was on the segment:
+  ethertypes : IPv4=104, ARP=4
+  ip protocols: UDP=104
+  arp targets : 10.14.0.2, 10.14.0.3
+  10.14.0.2 -> 10.14.0.3 proto=UDP frames=54
+  10.14.0.3 -> 10.14.0.2 proto=UDP frames=50

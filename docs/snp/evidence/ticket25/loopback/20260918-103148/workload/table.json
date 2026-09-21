@@ -1,0 +1,11 @@
+{
+	"default_exit": "b",
+	"names": {
+		"api.anthropic.com": {
+			"port": 443
+		},
+		"www.rfc-editor.org": {
+			"port": 443
+		}
+	}
+}

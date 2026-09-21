@@ -1,0 +1,26 @@
+runsc sha256:      ec1d47fa1bd3b521c53dccf5b31d9a286a8babbafd64357849b408e651bf085b
+supervisor sha256: f8d54e721e3704122d3909f608afb85d6128ef3a5a244d359557845df8b5b335
+$ /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/spikes/e3/runsc --root=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/spikes/e3/run2/state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new --debug --debug-log=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/spikes/e3/run2/logs/ run --bundle /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/spikes/e3/run2/bundle e3 &
+control socket: /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/spikes/e3/run2/state/runsc-e3.sock
+srwx------ 1 pniroula 253477 0 Sep 18 07:57 /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/spikes/e3/run2/state/runsc-e3.sock
+$ /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/spikes/e3/supervisor -ctrl /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/spikes/e3/run2/state/runsc-e3.sock -mode e3 -hold 35s
+[sup] 07:57:07.802452 supervisor: echo server on 127.0.0.1:35299
+[sup] 07:57:07.803253 supervisor: address map 100.64.0.2:7777 -> 127.0.0.1:35299
+[sup] 07:57:07.803289 supervisor: address map __echo__ -> 127.0.0.1:35299
+[sup] 07:57:07.803382 supervisor: control socket path too long, connecting via /proc/self/fd/4
+[sup] 07:57:07.803585 supervisor: connected to control socket /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/spikes/e3/run2/state/runsc-e3.sock
+[sup] 07:57:07.805657 supervisor: Spike.Attach returned in 1.953012ms
+[sup] 07:57:07.807002 supervisor: Helper.Ping {"Hello":"from-the-sentry"}
+[sup] 07:57:07.807194 supervisor: served Helper.Ping -> success=true err="" fds_out=0
+[sup] 07:57:07.808878 supervisor: Helper.Open 127.0.0.1:35299 -> 127.0.0.1:35299 connected in 809.346µs, stream 1, sentry fd will be 12
+[sup] 07:57:07.809186 supervisor: served Helper.Open -> success=true err="" fds_out=1
+[sup] 07:57:07.840570 supervisor: Helper.Close stream 1: close() of our end, and of the host conn
+[sup] 07:57:07.840944 supervisor: stream 1 host->sentry ended after 1114118 bytes: read tcp 127.0.0.1:36660->127.0.0.1:35299: use of closed network connection
+[sup] 07:57:07.840980 supervisor: echo connection closed after 1114118 bytes
+[sup] 07:57:07.841602 supervisor: served Helper.Close -> success=true err="" fds_out=0
+[sup] 07:57:42.840270 supervisor: exiting on -hold timeout
+SUPERVISOR_EXIT=0
+RUNSC_EXIT=0
+---- workload stdout ----
+workload-up
+workload-done

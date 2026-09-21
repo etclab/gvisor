@@ -188,3 +188,31 @@ message MmapInfo {
   // copied up to the upper layer).
   bool overlayfs_lower = 10;
 }
+
+// EgressRefused is emitted when the sentry refuses to let a datagram or a
+// connection leave the sandbox: an address that is neither loopback nor a
+// name the tunnel table carries, a name's one permitted port missed, or a
+// resolver asking for a name the table does not name.
+message EgressRefused {
+  gvisor.common.ContextData context_data = 1;
+
+  // Protocol is "tcp", "udp" or "dns": which of the three refusal points this
+  // came from.
+  string protocol = 2;
+
+  // Address is the destination address in its presentation form, empty for a
+  // DNS refusal, which has a name and no address.
+  string address = 3;
+
+  // Port is the destination port, 0 for a DNS refusal.
+  uint32 port = 4;
+
+  // Name is the host name the address belongs to when the sentry knows it: the
+  // name asked for at a DNS refusal, or the name a synthetic address was
+  // allocated for. Empty when the destination was never a name.
+  string name = 5;
+
+  // Reason says which rule refused it, e.g. "not-in-table", "wrong-port",
+  // "not-loopback", "unavailable".
+  string reason = 6;
+}

@@ -271,6 +271,12 @@ func (r *remote) Mmap(_ context.Context, _ seccheck.FieldSet, info *pb.MmapInfo)
 	return nil
 }
 
+// EgressRefused implements seccheck.Sink.
+func (r *remote) EgressRefused(_ context.Context, _ seccheck.FieldSet, info *pb.EgressRefused) error {
+	r.write(info, pb.MessageType_MESSAGE_SENTRY_EGRESS_REFUSED)
+	return nil
+}
+
 // ContainerStart implements seccheck.Sink.
 func (r *remote) ContainerStart(_ context.Context, _ seccheck.FieldSet, info *pb.Start) error {
 	r.write(info, pb.MessageType_MESSAGE_CONTAINER_START)

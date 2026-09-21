@@ -1,0 +1,110 @@
+# what runsc.log.20260918-110445.806170.boot.txt says
+
+The sentry's debug log with --strace, read once. Counts are of exit
+lines, so an entry with no exit — a syscall the process was still in when it ended — is not here.
+
+## what the adapter said
+
+tunnel dns: q="api.anthropic.com" type=A answer=100.64.1.0
+tunnel dns: q="api.anthropic.com" type=AAAA answer=noerror-empty
+tunnel attach: api.anthropic.com:443 -> peer "b": ok in 67.213201ms, host fd 69, local 100.64.0.1:40001
+tunnel dns: q="api.anthropic.com" type=A answer=100.64.1.0
+tunnel dns: q="api.anthropic.com" type=AAAA answer=noerror-empty
+tunnel attach: api.anthropic.com:443 -> peer "b": ok in 16.600966ms, host fd 71, local 100.64.0.1:40002
+tunnel attach: api.anthropic.com:443 -> peer "b": ok in 14.258033ms, host fd 72, local 100.64.0.1:40003
+tunnel dns: q="api.anthropic.com" type=A answer=100.64.1.0
+tunnel dns: q="api.anthropic.com" type=AAAA answer=noerror-empty
+tunnel attach: api.anthropic.com:443 -> peer "b": ok in 15.135101ms, host fd 80, local 100.64.0.1:40004
+tunnel dns: q="api.anthropic.com" type=A answer=100.64.1.0
+tunnel dns: q="api.anthropic.com" type=AAAA answer=noerror-empty
+tunnel attach: api.anthropic.com:443 -> peer "b": ok in 18.160441ms, host fd 83, local 100.64.0.1:40005
+tunnel attach: api.anthropic.com:443 -> peer "b": ok in 15.071416ms, host fd 84, local 100.64.0.1:40006
+tunnel attach: api.anthropic.com:443 -> peer "b": ok in 13.746041ms, host fd 85, local 100.64.0.1:40007
+tunnel attach: api.anthropic.com:443 -> peer "b": ok in 15.989965ms, host fd 86, local 100.64.0.1:40008
+tunnel dns: q="http-intake.logs.us5.datadoghq.com" type=A answer=100.64.1.1
+tunnel dns: q="http-intake.logs.us5.datadoghq.com" type=AAAA answer=noerror-empty
+tunnel attach: http-intake.logs.us5.datadoghq.com:443 -> peer "b": ok in 18.711982ms, host fd 87, local 100.64.0.1:40009
+
+## what ran
+
+    9141  claude
+    7445  HeapHelper
+    1227  mi-scavenger
+     773  1
+     763  2
+     679  0
+     558  JITWorker
+     390  3
+     295  JSCWarmUp
+     286  git
+     199  4
+     157  Client
+     130  5
+       9  fs.watch
+
+## syscalls that failed
+
+     278  openat errno=2 (no such file or directory)
+     261  statx errno=2 (no such file or directory)
+     141  futex errno=110 (connection timed out)
+     138  futex errno=11 (try again)
+      52  newfstatat errno=2 (no such file or directory)
+      43  access errno=2 (no such file or directory)
+      26  mkdir errno=17 (file exists)
+      22  ioctl errno=25 (not a typewriter)
+      21  stat errno=2 (no such file or directory)
+      16  futex errno=512 (to be restarted if SA_RESTART is set)
+      14  readlink errno=22 (invalid argument)
+      14  recvfrom errno=11 (request would block)
+      14  rt_sigaction errno=22 (invalid argument)
+       8  rseq errno=38 (invalid system call number)
+       4  mkdir errno=2 (no such file or directory)
+       4  open errno=2 (no such file or directory)
+       4  unlink errno=2 (no such file or directory)
+       3  readlink errno=2 (no such file or directory)
+       2  connect errno=2 (no such file or directory)
+       2  futex errno=516 (interrupted by signal)
+       2  madvise errno=22 (invalid argument)
+       1  copy_file_range errno=38 (invalid system call number)
+       1  epoll_pwait errno=4 (request was interrupted)
+       1  ioctl errno=95 (operation not supported on transport endpoint)
+       1  openat errno=20 (not a directory)
+       1  read errno=512 (to be restarted if SA_RESTART is set)
+       1  rename errno=2 (no such file or directory)
+       1  statx errno=14 (bad address)
+       1  unlinkat errno=21 (is a directory)
+
+## syscalls the sentry does not implement
+
+       1  copy_file_range
+       1  rseq
+
+## socket families
+
+      14  AF_INET
+       5  AF_NETLINK
+       3  AF_UNIX
+
+## datagrams and connects to 127.0.0.53:53
+
+15
+
+## every execve
+
+execve(0x2d9501f3850 /usr/bin/git, 0x2d94ef7af70 ["git", "-c", "core.hooksPath=/dev/null", "-c", "core.fsmonitor=", "-C", "/work", "ls-files", "--error-unmatch", "--", ":(icase).claude/settings.local.json"] <env>)
+execve(0x2d9501f5c40 /usr/bin/git, 0x2d944f77d40 ["/usr/bin/git", "-c", "core.askPass=", "-c", "protocol.ext.allow=never", "-c", "submodule.recurse=false", "-c", "log.showSignature=false", "-c", "gc.auto=0", "-c", "maintenance.auto=false", "-c", "core.hooksPath=/dev/null", "-c", "core.fsmonitor=", "remote", "get-url", "origin"] <env>)
+execve(0x2d9501f8510 /usr/bin/git, 0x2d94e7b9420 ["/usr/bin/git", "-c", "core.askPass=", "-c", "protocol.ext.allow=never", "-c", "submodule.recurse=false", "-c", "log.showSignature=false", "-c", "gc.auto=0", "-c", "maintenance.auto=false", "-c", "core.hooksPath=/dev/null", "-c", "core.fsmonitor=", "remote"] <env>)
+execve(0x2d9505d68a0 /usr/local/bin/claude, 0x2d9505d6880 ["rg", "--version"] <env>)
+execve(0x2d9505d6aa0 /usr/local/bin/claude, 0x2d94b174800 ["rg", "--no-config", "--files", "--hidden", "--no-ignore", "--max-depth", "4", "--glob", ".orphaned_at", "/home/agent/.claude/plugins/cache"] <env>)
+execve(0x2d9505d9da0 /usr/local/bin/claude, 0x2d94c041000 ["rg", "--no-config", "--files", "--hidden", "/work"] <env>)
+execve(0x2d95031eef0 /usr/bin/git, 0x2d94f42d740 ["git", "-c", "core.hooksPath=/dev/null", "-c", "core.fsmonitor=", "-C", "/work", "ls-files", "--error-unmatch", "--", ":(icase).claude/settings.local.json"] <env>)
+
+## every bind and listen
+
+bind(0xb socket:[1], 0x7fadae3c7018 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (58.617µs)
+bind(0xc socket:[6], 0x7fadaef4ff58 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (12.429µs)
+bind(0x10 socket:[26], 0x7fadae3c6f58 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (10.976µs)
+bind(0x11 socket:[29], 0x7f7bc4650f72 {Family: AF_UNIX, Addr: "/tmp/cc-socks/1.sock"}, 0x6e) = 0 (0x0) (40.62µs)
+listen(0x11 socket:[29], 0x200) = 0 (0x0) (11.417µs)
+bind(0x12 socket:[30], 0x7fadaef4ff58 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (11.377µs)
+bind(0x11 socket:[50], 0x7fadaeb4ef58 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (11.798µs)

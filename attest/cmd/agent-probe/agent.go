@@ -192,8 +192,8 @@ type Result struct {
 // Run runs one task to completion over client, printing the transcript to out
 // as it goes.
 //
-// The client is the only thing that differs between -network direct, null and
-// socket, and the loop cannot tell which it was given. That is deliberate and
+// The client is the only thing that differs between -network direct, plain,
+// null and socket, and the loop cannot tell which it was given. That is deliberate and
 // it is what E2 established: an agent behind the contract is an agent with a
 // different DialContext and no other change at all.
 func Run(ctx context.Context, client *http.Client, task Task, tools Tools, out io.Writer) (Result, error) {

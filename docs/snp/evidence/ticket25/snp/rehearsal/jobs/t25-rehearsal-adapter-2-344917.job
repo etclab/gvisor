@@ -1,0 +1,32 @@
+# Ticket 25, the rehearsal: the adapter scenario as a CONTROL BOOT (-no-snp), on
+# an image carrying the STOCK runsc of ticket 24 (sha256 8070bcdf0b78…c72518),
+# which does not know --tunnel-socket or --tunnel-table.
+#
+# Nothing here needs root — a control boot opens /dev/kvm and not /dev/sev — and
+# it goes through the spool anyway, because the real run will and a rehearsal
+# that took a different path would rehearse a different thing.
+#
+# What it is checking is the init flow and nothing about the adapter: that
+# tunneld is started before the workload, that init waits for the sandbox socket
+# rather than sleeping, that it does not start an exit into nothing when tunneld
+# refused to start, that httpd serves the page and init can fetch it, that the
+# workload launch failing on two unknown flags is survivable, and that the guest
+# reaches "powering off" instead of the writable-executable poweroff.
+set -u
+export PATH=/usr/local/go/bin:$PATH
+export STACK=/home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack
+# The runner is root and the worktree is not root's, so git would call it
+# dubious and the harness's own banner (git rev-parse) would end the script.
+export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=safe.directory GIT_CONFIG_VALUE_0='*'
+bash /home/pniroula/Projects/gvisor-t25/docs/snp/tunnel-on-two-guests.sh \
+    -image $STACK/image-ticket25-rehearsal \
+    -out $STACK/image-ticket25-rehearsal-run \
+    -scenario adapter -quick -no-snp \
+    -workload /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/snp/workload.img \
+    -capture /home/pniroula/Projects/gvisor-t25/docs/snp/evidence/ticket25/snp/rehearsal/capture
+rc=$?
+echo "harness rc=$rc"
+chown -R 253477:253477 $STACK/image-ticket25-rehearsal-run \
+    /home/pniroula/Projects/gvisor-t25/docs/snp/evidence/ticket25/snp/rehearsal 2>/dev/null
+chmod -R a+rX $STACK/image-ticket25-rehearsal-run 2>/dev/null
+exit $rc

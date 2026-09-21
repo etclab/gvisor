@@ -24,6 +24,9 @@ go_library(
         "socketopt_custom.go",
         "stack.go",
         "tun.go",
+        "tunnel.go",
+        "tunnel_dns.go",
+        "tunnel_endpoint.go",
     ],
     imports = [
         "gvisor.dev/gvisor/pkg/tcpip/stack",
@@ -38,6 +41,7 @@ go_library(
         "//pkg/context",
         "//pkg/errors/linuxerr",
         "//pkg/eventchannel",
+        "//pkg/fdnotifier",
         "//pkg/hostarch",
         "//pkg/log",
         "//pkg/marshal",
@@ -51,6 +55,8 @@ go_library(
         "//pkg/sentry/kernel/auth",
         "//pkg/sentry/ktime",
         "//pkg/sentry/memmap",
+        "//pkg/sentry/seccheck",
+        "//pkg/sentry/seccheck/points:points_go_proto",
         "//pkg/sentry/socket",
         "//pkg/sentry/socket/netfilter",
         "//pkg/sentry/socket/netlink/nlmsg",
@@ -83,6 +89,22 @@ go_test(
     name = "netstack_test",
     srcs = ["stack_test.go"],
     deps = [":netstack"],
+)
+
+go_test(
+    name = "tunnel_test",
+    size = "small",
+    srcs = [
+        "tunnel_dns_test.go",
+        "tunnel_test.go",
+    ],
+    library = ":netstack",
+    deps = [
+        "//pkg/abi/linux",
+        "//pkg/tcpip",
+        "//pkg/waiter",
+        "@org_golang_x_sys//unix:go_default_library",
+    ],
 )
 
 proto_library(

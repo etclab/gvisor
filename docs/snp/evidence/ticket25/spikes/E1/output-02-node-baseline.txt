@@ -1,0 +1,190 @@
+### E1a run 02: node-baseline
+### date: 2026-09-18T07:51:22-04:00
+### runtime: node
+### command:  strace -f -yy -s 128 -e trace=%network,poll,ppoll,epoll_ctl,epoll_wait,epoll_pwait,epoll_pwait2,fcntl,ioctl,shutdown,close  -o <strace> /usr/bin/node /home/pniroula/Projects/gvisor-t25/docs/snp/evidence/ticket25/spikes/E1/nodeclient.js 127.0.0.1 42057 https://www.rfc-editor.org/
+### echo server: 127.0.0.1:42057   phase-2 url: https://www.rfc-editor.org/   pinned: 0 104.18.20.81
+### exit status: 0   wall: 1.21s
+### outcome: completed
+
+########## CLIENT STDOUT+STDERR ##########
+=== PHASE 1: plain TCP ===
+PHASE1 connect: local=127.0.0.1:37266 remote=127.0.0.1:42057 family=IPv4
+PHASE1 read="echo: hello-from-node\n"
+PHASE1 close hadError=false
+=== PHASE 2: https.get + TLS ===
+PHASE2 status=200
+PHASE2 bodyprefix="<!DOCTYPE html><html  lang=\"en\"><head><meta charset=\"utf-8\"><met"
+PHASE2 OK bytes=179553
+
+########## STRACE (untrimmed) ##########
+4130887 close(3</etc/ld.so.cache>)      = 0
+4130887 close(3</usr/lib/x86_64-linux-gnu/libnode.so.109>) = 0
+4130887 close(3</usr/lib/x86_64-linux-gnu/libc.so.6>) = 0
+4130887 close(3</usr/lib/x86_64-linux-gnu/libz.so.1.3>) = 0
+4130887 close(3</usr/lib/x86_64-linux-gnu/libuv.so.1.0.0>) = 0
+4130887 close(3</usr/lib/x86_64-linux-gnu/libbrotlidec.so.1.1.0>) = 0
+4130887 close(3</usr/lib/x86_64-linux-gnu/libbrotlienc.so.1.1.0>) = 0
+4130887 close(3</usr/lib/x86_64-linux-gnu/libcares.so.2.12.0>) = 0
+4130887 close(3</usr/lib/x86_64-linux-gnu/libnghttp2.so.14.26.0>) = 0
+4130887 close(3</usr/lib/x86_64-linux-gnu/libcrypto.so.3>) = 0
+4130887 close(3</usr/lib/x86_64-linux-gnu/libssl.so.3>) = 0
+4130887 close(3</usr/lib/x86_64-linux-gnu/libicui18n.so.74.2>) = 0
+4130887 close(3</usr/lib/x86_64-linux-gnu/libicuuc.so.74.2>) = 0
+4130887 close(3</usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33>) = 0
+4130887 close(3</usr/lib/x86_64-linux-gnu/libm.so.6>) = 0
+4130887 close(3</usr/lib/x86_64-linux-gnu/libgcc_s.so.1>) = 0
+4130887 close(3</usr/lib/x86_64-linux-gnu/libbrotlicommon.so.1.1.0>) = 0
+4130887 close(3</usr/lib/x86_64-linux-gnu/libicudata.so.74.2>) = 0
+4130887 fcntl(0</dev/null<char 1:3>>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4130887 ioctl(0</dev/null<char 1:3>>, TCGETS, 0x7fffba6b2f90) = -1 ENOTTY (Inappropriate ioctl for device)
+4130887 fcntl(1</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/02.stdout>, F_GETFL) = 0x8001 (flags O_WRONLY|O_LARGEFILE)
+4130887 ioctl(1</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/02.stdout>, TCGETS, 0x7fffba6b2f90) = -1 ENOTTY (Inappropriate ioctl for device)
+4130887 fcntl(2</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/02.stdout>, F_GETFL) = 0x8001 (flags O_WRONLY|O_LARGEFILE)
+4130887 ioctl(2</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/02.stdout>, TCGETS, 0x7fffba6b2f90) = -1 ENOTTY (Inappropriate ioctl for device)
+4130887 fcntl(0</dev/null<char 1:3>>, F_SETFD, FD_CLOEXEC) = 0
+4130887 fcntl(1</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/02.stdout>, F_SETFD, FD_CLOEXEC) = 0
+4130887 fcntl(2</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/02.stdout>, F_SETFD, FD_CLOEXEC) = 0
+4130887 fcntl(3, F_SETFD, FD_CLOEXEC)   = -1 EBADF (Bad file descriptor)
+4130887 fcntl(4, F_SETFD, FD_CLOEXEC)   = -1 EBADF (Bad file descriptor)
+4130887 fcntl(5, F_SETFD, FD_CLOEXEC)   = -1 EBADF (Bad file descriptor)
+4130887 fcntl(6, F_SETFD, FD_CLOEXEC)   = -1 EBADF (Bad file descriptor)
+4130887 fcntl(7, F_SETFD, FD_CLOEXEC)   = -1 EBADF (Bad file descriptor)
+4130887 fcntl(8, F_SETFD, FD_CLOEXEC)   = -1 EBADF (Bad file descriptor)
+4130887 fcntl(9, F_SETFD, FD_CLOEXEC)   = -1 EBADF (Bad file descriptor)
+4130887 fcntl(10, F_SETFD, FD_CLOEXEC)  = -1 EBADF (Bad file descriptor)
+4130887 fcntl(11, F_SETFD, FD_CLOEXEC)  = -1 EBADF (Bad file descriptor)
+4130887 fcntl(12, F_SETFD, FD_CLOEXEC)  = -1 EBADF (Bad file descriptor)
+4130887 fcntl(13, F_SETFD, FD_CLOEXEC)  = -1 EBADF (Bad file descriptor)
+4130887 fcntl(14, F_SETFD, FD_CLOEXEC)  = -1 EBADF (Bad file descriptor)
+4130887 fcntl(15, F_SETFD, FD_CLOEXEC)  = -1 EBADF (Bad file descriptor)
+4130887 fcntl(16, F_SETFD, FD_CLOEXEC)  = -1 EBADF (Bad file descriptor)
+4130887 close(3</etc/ssl/openssl.cnf>)  = 0
+4130887 epoll_ctl(3<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 4<anon_inode:[io_uring]>, {events=EPOLLIN, data={u32=4, u64=4}}) = 0
+4130889 epoll_ctl(11<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 12<anon_inode:[io_uring]>, {events=EPOLLIN, data={u32=12, u64=12}}) = 0
+4130889 epoll_pwait(11<anon_inode:[eventpoll]>,  <unfinished ...>
+4130887 epoll_ctl(17<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 18<anon_inode:[io_uring]>, {events=EPOLLIN, data={u32=18, u64=18}}) = 0
+4130887 close(23</proc/4130887/cgroup>) = 0
+4130887 close(23</sys/fs/cgroup/user.slice/user-253477.slice/session-5.scope/memory.max>) = 0
+4130887 close(23</sys/fs/cgroup/user.slice/user-253477.slice/session-5.scope/memory.high>) = 0
+4130887 close(23</proc/meminfo>)        = 0
+4130887 close(23</proc/4130887/maps>)   = 0
+4130887 close(23</usr/share/nodejs/cjs-module-lexer/lexer.js>) = 0
+4130887 close(23</usr/share/nodejs/cjs-module-lexer/dist/lexer.js>) = 0
+4130887 close(23</usr/share/nodejs/undici/undici-fetch.js>) = 0
+4130887 close(23</usr/share/nodejs/acorn/dist/acorn.js>) = 0
+4130887 close(23</usr/share/nodejs/acorn-walk/dist/walk.js>) = 0
+4130887 close(23</home/pniroula/Projects/gvisor-t25/docs/snp/evidence/ticket25/spikes/E1/nodeclient.js>) = 0
+4130887 ioctl(1</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/02.stdout>, TCGETS, 0x7fffba6af4d0) = -1 ENOTTY (Inappropriate ioctl for device)
+4130887 ioctl(2</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/02.stdout>, TCGETS, 0x7fffba6af310) = -1 ENOTTY (Inappropriate ioctl for device)
+4130887 socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 24<TCP:[30422055]>
+4130887 connect(24<TCP:[30422055]>, {sa_family=AF_INET, sin_port=htons(42057), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+4130887 epoll_pwait(17<anon_inode:[eventpoll]>, [{events=EPOLLIN, data={u32=22, u64=22}}, {events=EPOLLOUT, data={u32=24, u64=24}}], 1024, 0, NULL, 8) = 2
+4130887 getsockopt(24<TCP:[127.0.0.1:37266->127.0.0.1:42057]>, SOL_SOCKET, SO_ERROR, [0], [4]) = 0
+4130887 getsockname(24<TCP:[127.0.0.1:37266->127.0.0.1:42057]>, {sa_family=AF_INET, sin_port=htons(37266), sin_addr=inet_addr("127.0.0.1")}, [128 => 16]) = 0
+4130887 getpeername(24<TCP:[127.0.0.1:37266->127.0.0.1:42057]>, {sa_family=AF_INET, sin_port=htons(42057), sin_addr=inet_addr("127.0.0.1")}, [128 => 16]) = 0
+4130887 epoll_pwait(17<anon_inode:[eventpoll]>, [{events=EPOLLIN, data={u32=24, u64=24}}], 1024, 0, NULL, 8) = 1
+4130887 shutdown(24<TCP:[127.0.0.1:37266->127.0.0.1:42057]>, SHUT_WR) = 0
+4130887 epoll_pwait(17<anon_inode:[eventpoll]>, [{events=EPOLLIN|EPOLLHUP, data={u32=24, u64=24}}], 1024, 0, NULL, 8) = 1
+4130887 close(24<TCP:[127.0.0.1:37266->127.0.0.1:42057]>) = 0
+4130887 close(24</etc/ssl/certs/ca-certificates.crt>) = 0
+4130887 close(24</run/systemd/resolve/stub-resolv.conf>) = 0
+4130887 close(24</etc/nsswitch.conf>)   = 0
+4130887 close(24</etc/host.conf>)       = 0
+4130934 socket(AF_UNIX, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, 0) = 24<UNIX-STREAM:[30395943]>
+4130934 connect(24<UNIX-STREAM:[30395943]>, {sa_family=AF_UNIX, sun_path="/var/run/nscd/socket"}, 110) = -1 ENOENT (No such file or directory)
+4130934 close(24<UNIX-STREAM:[30395943]>) = 0
+4130934 socket(AF_UNIX, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, 0) = 24<UNIX-STREAM:[30395944]>
+4130934 connect(24<UNIX-STREAM:[30395944]>, {sa_family=AF_UNIX, sun_path="/var/run/nscd/socket"}, 110) = -1 ENOENT (No such file or directory)
+4130934 close(24<UNIX-STREAM:[30395944]>) = 0
+4130934 close(24</etc/nsswitch.conf>)   = 0
+4130934 close(24</etc/host.conf>)       = 0
+4130934 close(24</run/systemd/resolve/stub-resolv.conf>) = 0
+4130887 epoll_pwait(17<anon_inode:[eventpoll]>, [], 1024, 0, NULL, 8) = 0
+4130887 epoll_pwait(17<anon_inode:[eventpoll]>,  <unfinished ...>
+4130934 close(24</etc/hosts>)           = 0
+4130934 socket(AF_INET, SOCK_DGRAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 24<UDP:[30409984]>
+4130934 setsockopt(24<UDP:[30409984]>, SOL_IP, IP_RECVERR, [1], 4) = 0
+4130934 connect(24<UDP:[30409984]>, {sa_family=AF_INET, sin_port=htons(53), sin_addr=inet_addr("127.0.0.53")}, 16) = 0
+4130934 poll([{fd=24<UDP:[127.0.0.1:44261->127.0.0.53:53]>, events=POLLOUT}], 1, 0) = 1 ([{fd=24, revents=POLLOUT}])
+4130934 sendmmsg(24<UDP:[127.0.0.1:44261->127.0.0.53:53]>, [{msg_hdr={msg_name=NULL, msg_namelen=0, msg_iov=[{iov_base="\273\207\1 \0\1\0\0\0\0\0\1\3www\nrfc-editor\3org\0\0\1\0\1\0\0)\4\260\0\0\0\0\0\0", iov_len=47}], msg_iovlen=1, msg_controllen=0, msg_flags=0}, msg_len=47}, {msg_hdr={msg_name=NULL, msg_namelen=0, msg_iov=[{iov_base="\367\216\1 \0\1\0\0\0\0\0\1\3www\nrfc-editor\3org\0\0\34\0\1\0\0)\4\260\0\0\0\0\0\0", iov_len=47}], msg_iovlen=1, msg_controllen=0, msg_flags=0}, msg_len=47}], 2, MSG_NOSIGNAL) = 2
+4130934 poll([{fd=24<UDP:[127.0.0.1:44261->127.0.0.53:53]>, events=POLLIN}], 1, 5000) = 1 ([{fd=24, revents=POLLIN}])
+4130934 ioctl(24<UDP:[127.0.0.1:44261->127.0.0.53:53]>, FIONREAD, [79]) = 0
+4130934 recvfrom(24<UDP:[127.0.0.1:44261->127.0.0.53:53]>, "\273\207\201\200\0\1\0\2\0\0\0\1\3www\nrfc-editor\3org\0\0\1\0\1\300\f\0\1\0\1\0\0\1*\0\4h\22\25Q\300\f\0\1\0\1\0\0\1*\0\4h\22\24Q\0\0)\377\326\0\0\0\0\0\0", 2048, 0, {sa_family=AF_INET, sin_port=htons(53), sin_addr=inet_addr("127.0.0.53")}, [28 => 16]) = 79
+4130934 poll([{fd=24<UDP:[127.0.0.1:44261->127.0.0.53:53]>, events=POLLIN}], 1, 4994) = 1 ([{fd=24, revents=POLLIN}])
+4130934 ioctl(24<UDP:[127.0.0.1:44261->127.0.0.53:53]>, FIONREAD, [103]) = 0
+4130934 recvfrom(24<UDP:[127.0.0.1:44261->127.0.0.53:53]>, "\367\216\201\200\0\1\0\2\0\0\0\1\3www\nrfc-editor\3org\0\0\34\0\1\300\f\0\34\0\1\0\0\1*\0\20&\6G\0\0\0\0\0\0\0\0\0h\22\25Q\300\f\0\34\0\1\0\0\1*\0\20&\6G\0\0\0\0\0\0\0\0\0h\22\24Q\0\0)\377\326\0\0\0\0\0\0", 65536, 0, {sa_family=AF_INET, sin_port=htons(53), sin_addr=inet_addr("127.0.0.53")}, [28 => 16]) = 103
+4130934 close(24<UDP:[127.0.0.1:44261->127.0.0.53:53]>) = 0
+4130934 close(24</etc/gai.conf>)        = 0
+4130934 socket(AF_NETLINK, SOCK_RAW|SOCK_CLOEXEC, NETLINK_ROUTE) = 24<NETLINK:[30387685]>
+4130934 bind(24<NETLINK:[30387685]>, {sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, 12) = 0
+4130934 getsockname(24<NETLINK:[ROUTE:4130887]>, {sa_family=AF_NETLINK, nl_pid=4130887, nl_groups=00000000}, [12]) = 0
+4130934 sendto(24<NETLINK:[ROUTE:4130887]>, [{nlmsg_len=20, nlmsg_type=RTM_GETADDR, nlmsg_flags=NLM_F_REQUEST|NLM_F_DUMP, nlmsg_seq=1789732282, nlmsg_pid=0}, {ifa_family=AF_UNSPEC, ...}], 20, 0, {sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, 12) = 20
+4130934 recvmsg(24<NETLINK:[ROUTE:4130887]>, {msg_name={sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, msg_namelen=12, msg_iov=[{iov_base=[[{nlmsg_len=76, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732282, nlmsg_pid=4130887}, {ifa_family=AF_INET, ifa_prefixlen=8, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_HOST, ifa_index=if_nametoindex("lo")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("127.0.0.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("127.0.0.1")], [{nla_len=7, nla_type=IFA_LABEL}, "lo"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=1012, tstamp=1012}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732282, nlmsg_pid=4130887}, {ifa_family=AF_INET, ifa_prefixlen=12, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("enp129s0f0np0")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("172.16.24.11")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("172.16.24.11")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("172.31.255.255")], [{nla_len=18, nla_type=IFA_LABEL}, "enp129s0f0np0"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=1762, tstamp=23980116}]]], [{nlmsg_len=88, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732282, nlmsg_pid=4130887}, {ifa_family=AF_INET, ifa_prefixlen=24, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("virbr1")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.50.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.50.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.50.255")], [{nla_len=11, nla_type=IFA_LABEL}, "virbr1"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2224, tstamp=2224}]]], [{nlmsg_len=88, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732282, nlmsg_pid=4130887}, {ifa_family=AF_INET, ifa_prefixlen=24, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("virbr2")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.61.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.61.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.61.255")], [{nla_len=11, nla_type=IFA_LABEL}, "virbr2"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2245, tstamp=2245}]]], [{nlmsg_len=88, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732282, nlmsg_pid=4130887}, {ifa_family=AF_INET, ifa_prefixlen=24, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("virbr0")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.122.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.122.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.122.255")], [{nla_len=11, nla_type=IFA_LABEL}, "virbr0"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2273, tstamp=2273}]]], [{nlmsg_len=88, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732282, nlmsg_pid=4130887}, {ifa_family=AF_INET, ifa_prefixlen=24, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("virbr4")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.83.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.83.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.83.255")], [{nla_len=11, nla_type=IFA_LABEL}, "virbr4"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2291, tstamp=2291}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732282, nlmsg_pid=4130887}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("br-d564a52702f6")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.64.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.64.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.79.255")], [{nla_len=20, nla_type=IFA_LABEL}, "br-d564a52702f6"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2517, tstamp=2517}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732282, nlmsg_pid=4130887}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("docker_gwbridge")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.16.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.16.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.31.255")], [{nla_len=20, nla_type=IFA_LABEL}, "docker_gwbridge"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2533, tstamp=2533}]]], [{nlmsg_len=88, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732282, nlmsg_pid=4130887}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("docker0")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.0.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.0.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.15.255")], [{nla_len=12, nla_type=IFA_LABEL}, "docker0"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2550, tstamp=2550}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732282, nlmsg_pid=4130887}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("br-5140c59d6152")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.144.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.144.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.159.255")], [{nla_len=20, nla_type=IFA_LABEL}, "br-5140c59d6152"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2563, tstamp=2563}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732282, nlmsg_pid=4130887}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("br-5d6342ce11bf")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.32.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.32.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.47.255")], [{nla_len=20, nla_type=IFA_LABEL}, "br-5d6342ce11bf"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2579, tstamp=2579}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732282, nlmsg_pid=4130887}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("br-7ba450de6007")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.96.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.96.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.111.255")], [{nla_len=20, nla_type=IFA_LABEL}, "br-7ba450de6007"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2616, tstamp=2616}]]], [{nlmsg_len=96, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732282, nlmsg_pid=4130887}, {ifa_family=AF_INET, ifa_prefixlen=20, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("br-92a829545622")}, [[{nla_len=8, nla_type=IFA_ADDRESS}, inet_addr("192.168.128.1")], [{nla_len=8, nla_type=IFA_LOCAL}, inet_addr("192.168.128.1")], [{nla_len=8, nla_type=IFA_BROADCAST}, inet_addr("192.168.143.255")], [{nla_len=20, nla_type=IFA_LABEL}, "br-92a829545622"], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2629, tstamp=2629}]]], [{nlmsg_len=72, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732282, nlmsg_pid=4130887}, {ifa_family=AF_INET6, ifa_prefixlen=128, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_HOST, ifa_index=if_nametoindex("lo")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "::1")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=1013, tstamp=1013}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT|IFA_F_NOPREFIXROUTE]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732282, nlmsg_pid=4130887}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("enp129s0f0np0")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::7ec2:55ff:fe46:292c")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=1755, tstamp=1755}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732282, nlmsg_pid=4130887}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("docker_gwbridge")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::c86d:3bff:fe57:cd8f")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=3089, tstamp=3089}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732282, nlmsg_pid=4130887}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("docker0")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::e03e:ff:fe35:4604")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2829, tstamp=2829}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=72, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732282, nlmsg_pid=4130887}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_NODAD|IFA_F_PERMANENT, ifa_scope=RT_SCOPE_UNIVERSE, ifa_index=if_nametoindex("br-5d6342ce11bf")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fc00:f853:ccd:e793::1")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2579, tstamp=2579}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_NODAD|IFA_F_PERMANENT]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732282, nlmsg_pid=4130887}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("br-5d6342ce11bf")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::8847:eaff:fe57:996f")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2861, tstamp=2861}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732282, nlmsg_pid=4130887}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("veth49d7c3e")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::e439:25ff:feca:3a1a")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2829, tstamp=2829}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732282, nlmsg_pid=4130887}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("vethf821cfb")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::1c3d:17ff:fe2a:b0df")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2861, tstamp=2861}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732282, nlmsg_pid=4130887}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("veth99b1031")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::9461:b1ff:fe27:cfeb")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2861, tstamp=2861}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732282, nlmsg_pid=4130887}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("veth0c2737a")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::e881:8cff:fe4d:9773")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2869, tstamp=2869}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732282, nlmsg_pid=4130887}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("veth22c136c")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::e861:dcff:feba:584e")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=2864, tstamp=2864}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732282, nlmsg_pid=4130887}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("veth83d5692")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::442f:62ff:fe2f:6038")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=3089, tstamp=3089}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732282, nlmsg_pid=4130887}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("veth6889e45")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::e046:73ff:fe42:963d")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=83713535, tstamp=83713535}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]], [{nlmsg_len=80, nlmsg_type=RTM_NEWADDR, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732282, nlmsg_pid=4130887}, {ifa_family=AF_INET6, ifa_prefixlen=64, ifa_flags=IFA_F_PERMANENT, ifa_scope=RT_SCOPE_LINK, ifa_index=if_nametoindex("veth19c5420")}, [[{nla_len=20, nla_type=IFA_ADDRESS}, inet_pton(AF_INET6, "fe80::2455:4dff:fe4b:d3ae")], [{nla_len=20, nla_type=IFA_CACHEINFO}, {ifa_prefered=4294967295, ifa_valid=4294967295, cstamp=84814357, tstamp=84814357}], [{nla_len=8, nla_type=IFA_FLAGS}, IFA_F_PERMANENT], [{nla_len=5, nla_type=IFA_PROTO}, "\x03"]]]], iov_len=4096}], msg_iovlen=1, msg_controllen=0, msg_flags=0}, 0) = 2292
+4130934 recvmsg(24<NETLINK:[ROUTE:4130887]>, {msg_name={sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, msg_namelen=12, msg_iov=[{iov_base=[{nlmsg_len=20, nlmsg_type=NLMSG_DONE, nlmsg_flags=NLM_F_MULTI, nlmsg_seq=1789732282, nlmsg_pid=4130887}, 0], iov_len=4096}], msg_iovlen=1, msg_controllen=0, msg_flags=0}, 0) = 20
+4130934 close(24<NETLINK:[ROUTE:4130887]>) = 0
+4130934 socket(AF_INET, SOCK_DGRAM|SOCK_CLOEXEC, IPPROTO_IP) = 24<UDP:[30387686]>
+4130934 connect(24<UDP:[30387686]>, {sa_family=AF_INET, sin_port=htons(0), sin_addr=inet_addr("104.18.21.81")}, 16) = 0
+4130934 getsockname(24<UDP:[172.16.24.11:57556->104.18.21.81:0]>, {sa_family=AF_INET, sin_port=htons(57556), sin_addr=inet_addr("172.16.24.11")}, [28 => 16]) = 0
+4130934 connect(24<UDP:[172.16.24.11:57556->104.18.21.81:0]>, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16) = 0
+4130934 connect(24<UDP:[172.16.24.11:57556->104.18.21.81:0]>, {sa_family=AF_INET, sin_port=htons(0), sin_addr=inet_addr("104.18.20.81")}, 16) = 0
+4130934 getsockname(24<UDP:[172.16.24.11:57556->104.18.21.81:0]>, {sa_family=AF_INET, sin_port=htons(47156), sin_addr=inet_addr("172.16.24.11")}, [28 => 16]) = 0
+4130934 close(24<UDP:[172.16.24.11:57556->104.18.21.81:0]>) = 0
+4130934 socket(AF_INET6, SOCK_DGRAM|SOCK_CLOEXEC, IPPROTO_IP) = 24<UDPv6:[30395977]>
+4130934 connect(24<UDPv6:[30395977]>, {sa_family=AF_INET6, sin6_port=htons(0), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:4700::6812:1551", &sin6_addr), sin6_scope_id=0}, 28) = -1 ENETUNREACH (Network is unreachable)
+4130934 connect(24<UDPv6:[[::]:56045]>, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16) = 0
+4130934 connect(24<UDPv6:[[::]:56045]>, {sa_family=AF_INET6, sin6_port=htons(0), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:4700::6812:1451", &sin6_addr), sin6_scope_id=0}, 28) = -1 ENETUNREACH (Network is unreachable)
+4130934 close(24<UDPv6:[[::]:56045]>)   = 0
+4130887 <... epoll_pwait resumed>[{events=EPOLLIN, data={u32=22, u64=22}}], 1024, 4645, NULL, 8) = 1
+4130887 socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 24<TCP:[30369735]>
+4130887 connect(24<TCP:[30369735]>, {sa_family=AF_INET, sin_port=htons(443), sin_addr=inet_addr("104.18.21.81")}, 16) = -1 EINPROGRESS (Operation now in progress)
+4130887 epoll_pwait(17<anon_inode:[eventpoll]>, [], 1024, 0, NULL, 8) = 0
+4130887 epoll_pwait(17<anon_inode:[eventpoll]>, [{events=EPOLLOUT, data={u32=24, u64=24}}], 1024, 4492, NULL, 8) = 1
+4130887 getsockopt(24<TCP:[172.16.24.11:44920->104.18.21.81:443]>, SOL_SOCKET, SO_ERROR, [0], [4]) = 0
+4130887 epoll_pwait(17<anon_inode:[eventpoll]>, [], 1024, 0, NULL, 8) = 0
+4130887 epoll_pwait(17<anon_inode:[eventpoll]>, [{events=EPOLLIN, data={u32=24, u64=24}}], 1024, 4433, NULL, 8) = 1
+4130887 close(25</etc/ssl/certs>)       = 0
+4130887 close(25</usr/share/zoneinfo/America/New_York>) = 0
+4130887 close(25</etc/ssl/certs>)       = 0
+4130887 epoll_pwait(17<anon_inode:[eventpoll]>, [], 1024, 0, NULL, 8) = 0
+4130887 epoll_pwait(17<anon_inode:[eventpoll]>, [{events=EPOLLIN, data={u32=24, u64=24}}], 1024, 4396, NULL, 8) = 1
+4130887 epoll_pwait(17<anon_inode:[eventpoll]>, [{events=EPOLLIN, data={u32=24, u64=24}}], 1024, 0, NULL, 8) = 1
+4130887 shutdown(24<TCP:[172.16.24.11:44920->104.18.21.81:443]>, SHUT_WR) = 0
+4130887 epoll_ctl(17<anon_inode:[eventpoll]>, EPOLL_CTL_DEL, 24<TCP:[172.16.24.11:44920->104.18.21.81:443]>, 0x7fffba6b205c) = 0
+4130887 close(24<TCP:[172.16.24.11:44920->104.18.21.81:443]>) = 0
+4130887 epoll_pwait(17<anon_inode:[eventpoll]>, [], 1024, 0, NULL, 8) = 0
+4130887 epoll_pwait(17<anon_inode:[eventpoll]>, [], 1024, 0, NULL, 8) = 0
+4130887 epoll_pwait(17<anon_inode:[eventpoll]>, [], 1024, 0, NULL, 8) = 0
+4130887 fcntl(0</dev/null<char 1:3>>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4130887 fcntl(1</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/02.stdout>, F_GETFL) = 0x8001 (flags O_WRONLY|O_LARGEFILE)
+4130887 fcntl(2</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/02.stdout>, F_GETFL) = 0x8001 (flags O_WRONLY|O_LARGEFILE)
+4130889 <... epoll_pwait resumed>[{events=EPOLLIN, data={u32=16, u64=16}}], 1024, -1, NULL, 8) = 1
+4130889 close(14<pipe:[30420026]>)      = 0
+4130889 close(15<pipe:[30420026]> <unfinished ...>
+4130891 +++ exited with 0 +++
+4130889 <... close resumed>)            = 0
+4130893 +++ exited with 0 +++
+4130892 +++ exited with 0 +++
+4130894 +++ exited with 0 +++
+4130889 close(13<anon_inode:[io_uring]>) = 0
+4130889 close(12<anon_inode:[io_uring]>) = 0
+4130889 close(16<anon_inode:[eventfd]>) = 0
+4130889 close(11<anon_inode:[eventpoll]>) = 0
+4130889 +++ exited with 0 +++
+4130887 epoll_pwait(3<anon_inode:[eventpoll]>, [], 1024, 0, NULL, 8) = 0
+4130887 close(8<pipe:[30382799]>)       = 0
+4130887 close(9<pipe:[30382799]>)       = 0
+4130887 close(5<anon_inode:[io_uring]>) = 0
+4130887 close(4<anon_inode:[io_uring]>) = 0
+4130887 close(10<anon_inode:[eventfd]>) = 0
+4130887 close(3<anon_inode:[eventpoll]>) = 0
+4130887 fcntl(0</dev/null<char 1:3>>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4130887 fcntl(1</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/02.stdout>, F_GETFL) = 0x8001 (flags O_WRONLY|O_LARGEFILE)
+4130887 fcntl(2</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/02.stdout>, F_GETFL) = 0x8001 (flags O_WRONLY|O_LARGEFILE)
+4130887 close(6<pipe:[30382798]>)       = 0
+4130887 close(7<pipe:[30382798]>)       = 0
+4130932 +++ exited with 0 +++
+4130933 +++ exited with 0 +++
+4130934 +++ exited with 0 +++
+4130931 +++ exited with 0 +++
+4130896 +++ exited with 0 +++
+4130887 +++ exited with 0 +++

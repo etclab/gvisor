@@ -1,0 +1,19 @@
+bundle:
+  ./config.json  70db745d68fc04c1…  635 bytes
+  ./rootfs/adapter-probe.sh  9dd4f96fec30db60…  3152 bytes
+  ./rootfs/bin/busybox  dbac288c29ba5684…  2124608 bytes
+  ./rootfs/bin/cat -> busybox
+  ./rootfs/bin/echo -> busybox
+  ./rootfs/bin/sh -> busybox
+  ./rootfs/bin/sleep -> busybox
+  ./rootfs/bin/uname -> busybox
+  ./rootfs/bin/wget -> busybox
+  ./rootfs/etc/hosts  5b482934e8156847…  34 bytes
+  ./rootfs/etc/nsswitch.conf  2ad90a00ddc40e29…  17 bytes
+  ./rootfs/etc/resolv.conf  192a7dd1559c24eb…  22 bytes
+workload: config.json
+workload: rootfs/  (11 files, 2108 KiB)
+Warning: label too long; will be truncated to 'attested-workloa'
+
+workload device written to /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/snp/workload.img (root-owned, ext4 without a journal)
+workload device sha256: 59570b7819c6e12683555ec2b39d435cfe0ad3d6436a33622f209810e535c691  (not measured)

@@ -1,0 +1,123 @@
+diff --git a/runsc/boot/BUILD b/runsc/boot/BUILD
+index 85fa18e73..7354da4a1 100644
+--- a/runsc/boot/BUILD
++++ b/runsc/boot/BUILD
+@@ -24,6 +24,7 @@ go_library(
+         "restore.go",
+         "seccheck.go",
+         "seccomp.go",
++        "spike_e1b.go",
+         "strace.go",
+         "tpuproxy.go",
+         "vfs.go",
+diff --git a/runsc/boot/controller.go b/runsc/boot/controller.go
+index ae644c4f5..bf256768f 100644
+--- a/runsc/boot/controller.go
++++ b/runsc/boot/controller.go
+@@ -246,6 +246,7 @@ func (c *controller) registerHandlers() {
+ 	c.srv.Register(&control.Usage{Kernel: l.k})
+ 	c.srv.Register(&control.Metrics{})
+ 	c.srv.Register(&debug{})
++	c.srv.Register(&Spike{}) // SPIKE-E1B (ticket 25), temporary
+ 
+ 	if eps, ok := l.k.RootNetworkNamespace().Stack().(*netstack.Stack); ok {
+ 		c.srv.Register(&Network{
+diff --git a/runsc/boot/spike_e1b.go b/runsc/boot/spike_e1b.go
+new file mode 100644
+index 000000000..75d772452
+--- /dev/null
++++ b/runsc/boot/spike_e1b.go
+@@ -0,0 +1,93 @@
++// Copyright 2018 The gVisor Authors.
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++
++// SPIKE-E1B (ticket 25) — temporary. E3's Spike object again, with the urpc
++// client handed to the netstack package instead of being exercised in place.
++
++package boot
++
++import (
++	"fmt"
++	"sync"
++
++	"golang.org/x/sys/unix"
++	"gvisor.dev/gvisor/pkg/log"
++	"gvisor.dev/gvisor/pkg/sentry/socket/netstack"
++	"gvisor.dev/gvisor/pkg/unet"
++	"gvisor.dev/gvisor/pkg/urpc"
++)
++
++// Spike is the throwaway control object.
++type Spike struct{}
++
++type spikeAttachArgs struct {
++	urpc.FilePayload
++	EchoAddr string
++	Mode     string
++}
++
++type spikeOpenArg struct {
++	Addr string
++}
++
++type spikeOpenResult struct {
++	urpc.FilePayload
++	ID     int64
++	Mapped string
++}
++
++// spikeHelperClient implements netstack.SpikeHelper over the urpc channel.
++type spikeHelperClient struct {
++	mu sync.Mutex
++	c  *urpc.Client
++}
++
++// Open implements netstack.SpikeHelper.Open.
++func (h *spikeHelperClient) Open(addr string) (int, error) {
++	h.mu.Lock()
++	defer h.mu.Unlock()
++	var r spikeOpenResult
++	if err := h.c.Call("Helper.Open", &spikeOpenArg{Addr: addr}, &r); err != nil {
++		return -1, err
++	}
++	if len(r.Files) != 1 {
++		return -1, fmt.Errorf("Helper.Open(%s): want 1 file, got %d", addr, len(r.Files))
++	}
++	fd, err := unix.Dup(int(r.Files[0].Fd()))
++	r.Files[0].Close()
++	if err != nil {
++		return -1, err
++	}
++	log.Infof("SPIKE-E1B Helper.Open(%s) -> stream %d mapped %s, host fd %d", addr, r.ID, r.Mapped, fd)
++	return fd, nil
++}
++
++// Attach receives the helper channel.
++func (*Spike) Attach(args *spikeAttachArgs, _ *struct{}) error {
++	if len(args.Files) != 1 {
++		return fmt.Errorf("Spike.Attach: want 1 file, got %d", len(args.Files))
++	}
++	fd, err := unix.Dup(int(args.Files[0].Fd()))
++	if err != nil {
++		return fmt.Errorf("Spike.Attach: dup: %w", err)
++	}
++	sock, err := unet.NewSocket(fd)
++	if err != nil {
++		unix.Close(fd)
++		return fmt.Errorf("Spike.Attach: unet.NewSocket: %w", err)
++	}
++	log.Infof("SPIKE-E1B Attach: received one FD, duped to %d, echo=%q mode=%q", fd, args.EchoAddr, args.Mode)
++	netstack.SpikeSetHelper(&spikeHelperClient{c: urpc.NewClient(sock)}, args.Mode == "e1b-started")
++	return nil
++}

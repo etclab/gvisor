@@ -1,0 +1,119 @@
+--- a/pkg/sentry/socket/netstack/netstack.go
++++ b/pkg/sentry/socket/netstack/netstack.go
+@@ -61,9 +61,11 @@
+ 	"gvisor.dev/gvisor/pkg/syserr"
+ 	"gvisor.dev/gvisor/pkg/tcpip"
+ 	"gvisor.dev/gvisor/pkg/tcpip/header"
++	"gvisor.dev/gvisor/pkg/tcpip/network/ipv4"
+ 	"gvisor.dev/gvisor/pkg/tcpip/stack"
+ 	"gvisor.dev/gvisor/pkg/tcpip/transport"
+ 	"gvisor.dev/gvisor/pkg/tcpip/transport/tcp"
++	"gvisor.dev/gvisor/pkg/tcpip/transport/udp"
+ 	"gvisor.dev/gvisor/pkg/usermem"
+ 	"gvisor.dev/gvisor/pkg/waiter"
+ )
+@@ -806,6 +808,88 @@
+ 
+ // ---- SPIKE-E2 (ticket 25) BEGIN — temporary, reverted before commit ----
+ 
++// spikeRespOnce guards the one-shot start of the in-sentry loopback responder.
++var spikeRespOnce sync.Once
++
++// spikeStartResponder binds a UDP endpoint on the sandbox's own netstack at
++// 127.0.0.53:53 and answers every query with a fixed A record for 100.64.0.1.
++// This is the E2 question "would a tiny in-sentry UDP responder on the loopback
++// stack be reachable?", asked of the running stack instead of reasoned about.
++func spikeStartResponder(ns *inet.Namespace) {
++	spikeRespOnce.Do(func() {
++		if ns == nil {
++			log.Infof("SPIKE-E2 responder: no namespace")
++			return
++		}
++		st, ok := ns.Stack().(*Stack)
++		if !ok {
++			log.Infof("SPIKE-E2 responder: namespace stack is %T, not *netstack.Stack", ns.Stack())
++			return
++		}
++		var wq waiter.Queue
++		ep, terr := st.Stack.NewEndpoint(udp.ProtocolNumber, ipv4.ProtocolNumber, &wq)
++		if terr != nil {
++			log.Infof("SPIKE-E2 responder: NewEndpoint failed: %v", terr)
++			return
++		}
++		bindAddr := tcpip.FullAddress{Addr: tcpip.AddrFrom4([4]byte{127, 0, 0, 53}), Port: 53}
++		if terr := ep.Bind(bindAddr); terr != nil {
++			log.Infof("SPIKE-E2 responder: Bind(127.0.0.53:53) failed: %v", terr)
++			ep.Close()
++			return
++		}
++		la, _ := ep.GetLocalAddress()
++		log.Infof("SPIKE-E2 responder: bound on %s:%d", la.Addr.String(), la.Port)
++		go func() {
++			e, ch := waiter.NewChannelEntry(waiter.ReadableEvents)
++			wq.EventRegister(&e)
++			defer wq.EventUnregister(&e)
++			for {
++				var buf bytes.Buffer
++				res, terr := ep.Read(&buf, tcpip.ReadOptions{NeedRemoteAddr: true})
++				if terr != nil {
++					if _, ok := terr.(*tcpip.ErrWouldBlock); ok {
++						<-ch
++						continue
++					}
++					log.Infof("SPIKE-E2 responder: Read failed: %v", terr)
++					return
++				}
++				q := buf.Bytes()
++				log.Infof("SPIKE-E2 responder: got %d bytes (total %d) from %s:%d: % x",
++					res.Count, res.Total, res.RemoteAddr.Addr.String(), res.RemoteAddr.Port, q)
++				ans := spikeDNSAnswer(q)
++				to := res.RemoteAddr
++				n, terr := ep.Write(bytes.NewReader(ans), tcpip.WriteOptions{To: &to})
++				log.Infof("SPIKE-E2 responder: answered %d bytes to %s:%d -> n=%d err=%v",
++					len(ans), to.Addr.String(), to.Port, n, terr)
++			}
++		}()
++	})
++}
++
++// spikeDNSAnswer turns a DNS query into a response carrying one A record for
++// 100.64.0.1 — E1b's first synthetic address.
++func spikeDNSAnswer(q []byte) []byte {
++	if len(q) < 12 {
++		return nil
++	}
++	out := make([]byte, len(q))
++	copy(out, q)
++	out[2] = 0x81 // QR=1, RD=1
++	out[3] = 0x80 // RA=1, rcode 0
++	out[6], out[7] = 0x00, 0x01 // ancount = 1
++	out = append(out,
++		0xc0, 0x0c, // name: pointer to the question
++		0x00, 0x01, // type A
++		0x00, 0x01, // class IN
++		0x00, 0x00, 0x00, 0x3c, // ttl 60
++		0x00, 0x04, // rdlength
++		100, 64, 0, 1, // 100.64.0.1
++	)
++	return out
++}
++
+ // spikeAddrString renders a raw sockaddr the way sock.Connect/sock.SendMsg
+ // parse it, for the spike's log lines.
+ func spikeAddrString(to []byte) string {
+@@ -828,6 +912,7 @@
+ // Connect implements the linux syscall connect(2) for sockets backed by
+ // tpcip.Endpoint.
+ func (s *sock) Connect(t *kernel.Task, sockaddr []byte, blocking bool) *syserr.Error {
++	spikeStartResponder(s.namespace)
+ 	err := s.connectSpike(t, sockaddr, blocking)
+ 	log.Infof("SPIKE-E2 Connect: sockFamily=%d skType=%d proto=%d blocking=%t to{%s} -> err=%v", s.family, s.skType, s.protocol, blocking, spikeAddrString(sockaddr), err)
+ 	return err
+@@ -3424,6 +3509,7 @@
+ // SendMsg implements the linux syscall sendmsg(2) for sockets backed by
+ // tcpip.Endpoint.
+ func (s *sock) SendMsg(t *kernel.Task, src usermem.IOSequence, to []byte, flags int, haveDeadline bool, deadline ktime.Time, controlMessages socket.ControlMessages) (int, *syserr.Error) {
++	spikeStartResponder(s.namespace)
+ 	n, err := s.sendMsgSpike(t, src, to, flags, haveDeadline, deadline, controlMessages)
+ 	log.Infof("SPIKE-E2 SendMsg: sockFamily=%d skType=%d proto=%d nbytes=%d flags=%#x to{%s} %s -> n=%d err=%v", s.family, s.skType, s.protocol, src.NumBytes(), flags, spikeAddrString(to), spikeEps(s), n, err)
+ 	return n, err

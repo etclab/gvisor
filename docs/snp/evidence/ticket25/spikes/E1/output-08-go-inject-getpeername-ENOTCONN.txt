@@ -1,0 +1,47 @@
+### E1a run 08: go-inject-getpeername-ENOTCONN
+### date: 2026-09-18T07:51:54-04:00
+### runtime: go
+### command: env E1_DIAL_IP=104.18.20.81 strace -f -yy -s 128 -e trace=%network,poll,ppoll,epoll_ctl,epoll_wait,epoll_pwait,epoll_pwait2,fcntl,ioctl,shutdown,close -e inject=getpeername:error=ENOTCONN -o <strace> /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/goclient 127.0.0.1:42057 https://www.rfc-editor.org/
+### echo server: 127.0.0.1:42057   phase-2 url: https://www.rfc-editor.org/   pinned: 1 104.18.20.81
+### exit status: 124   wall: 25.03s
+### outcome: TIMED OUT after 25s (the runtime blocked; see the tail of the strace)
+
+########## CLIENT STDOUT+STDERR ##########
+=== PHASE 1: plain TCP ===
+
+########## STRACE (untrimmed) ##########
+4131265 close(3</etc/ld.so.cache>)      = 0
+4131265 close(3</usr/lib/x86_64-linux-gnu/libc.so.6>) = 0
+4131265 close(3</proc/4131265/maps>)    = 0
+4131265 close(3</sys/kernel/mm/transparent_hugepage/hpage_pmd_size>) = 0
+4131265 fcntl(0</dev/null<char 1:3>>, F_GETFD) = 0
+4131265 fcntl(1</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/08.stdout>, F_GETFD) = 0
+4131265 fcntl(2</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/08.stdout>, F_GETFD) = 0
+4131265 close(3</proc/4131265/cgroup>)  = 0
+4131265 close(3</proc/4131265/mountinfo>) = 0
+4131265 fcntl(0</dev/null<char 1:3>>, F_GETFL) = 0x8000 (flags O_RDONLY|O_LARGEFILE)
+4131265 fcntl(1</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/08.stdout>, F_GETFL) = 0x8001 (flags O_WRONLY|O_LARGEFILE)
+4131265 fcntl(2</tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/e1a/build/08.stdout>, F_GETFL) = 0x8001 (flags O_WRONLY|O_LARGEFILE)
+4131265 socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 4<TCP:[30399816]>
+4131265 connect(4<TCP:[30399816]>, {sa_family=AF_INET, sin_port=htons(42057), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (Operation now in progress)
+4131265 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 6<anon_inode:[eventfd]>, {events=EPOLLIN, data={u32=10303392, u64=10303392}}) = 0
+4131265 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131265, si_uid=253477} ---
+4131265 epoll_ctl(5<anon_inode:[eventpoll]>, EPOLL_CTL_ADD, 4<TCP:[127.0.0.1:38124->127.0.0.1:42057]>, {events=EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET, data={u32=2650800129, u64=4338572293425856513}}) = 0
+4131265 --- SIGURG {si_signo=SIGURG, si_code=SI_TKILL, si_pid=4131265, si_uid=253477} ---
+4131267 epoll_pwait(5<anon_inode:[eventpoll]>,  <unfinished ...>
+4131265 epoll_pwait(5<anon_inode:[eventpoll]>, [], 128, 0, NULL, 0) = 0
+4131267 <... epoll_pwait resumed>[{events=EPOLLOUT, data={u32=2650800129, u64=4338572293425856513}}], 128, 0, NULL, 0) = 1
+4131265 epoll_pwait(5<anon_inode:[eventpoll]>,  <unfinished ...>
+4131268 getsockopt(4<TCP:[127.0.0.1:38124->127.0.0.1:42057]>, SOL_SOCKET, SO_ERROR, [0], [4]) = 0
+4131268 getpeername(4<TCP:[127.0.0.1:38124->127.0.0.1:42057]>, 0x3f3af3c2719c, [112]) = -1 ENOTCONN (Transport endpoint is not connected) (INJECTED)
+4131265 <... epoll_pwait resumed>0x7fffa498499c, 128, -1, NULL, 0) = -1 EINTR (Interrupted system call)
+4131265 --- SIGTERM {si_signo=SIGTERM, si_code=SI_USER, si_pid=4131261, si_uid=253477} ---
+4131271 --- SIGCONT {si_signo=SIGCONT, si_code=SI_USER, si_pid=4131261, si_uid=253477} ---
+4131265 --- SIGTERM {si_signo=SIGTERM, si_code=SI_TKILL, si_pid=4131265, si_uid=253477} ---
+4131265 --- SIGTERM {si_signo=SIGTERM, si_code=SI_TKILL, si_pid=4131265, si_uid=253477} ---
+4131270 +++ killed by SIGTERM +++
+4131269 +++ killed by SIGTERM +++
+4131268 +++ killed by SIGTERM +++
+4131267 +++ killed by SIGTERM +++
+4131271 +++ killed by SIGTERM +++
+4131265 +++ killed by SIGTERM +++

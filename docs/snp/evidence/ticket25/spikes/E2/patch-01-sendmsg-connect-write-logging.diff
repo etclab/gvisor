@@ -1,0 +1,78 @@
+diff --git a/pkg/sentry/socket/netstack/netstack.go b/pkg/sentry/socket/netstack/netstack.go
+index de5092ee5..dd1e6b422 100644
+--- a/pkg/sentry/socket/netstack/netstack.go
++++ b/pkg/sentry/socket/netstack/netstack.go
+@@ -545,6 +545,14 @@ func (s *sock) Read(ctx context.Context, dst usermem.IOSequence, opts vfs.ReadOp
+ 
+ // Write implements vfs.FileDescriptionImpl.
+ func (s *sock) Write(ctx context.Context, src usermem.IOSequence, opts vfs.WriteOptions) (int64, error) {
++	n, err := s.writeSpike(ctx, src, opts)
++	if s.family == linux.AF_INET || s.family == linux.AF_INET6 {
++		log.Infof("SPIKE-E2 Write: sockFamily=%d skType=%d proto=%d nbytes=%d %s -> n=%d err=%v", s.family, s.skType, s.protocol, src.NumBytes(), spikeEps(s), n, err)
++	}
++	return n, err
++}
++
++func (s *sock) writeSpike(ctx context.Context, src usermem.IOSequence, opts vfs.WriteOptions) (int64, error) {
+ 	// All flags other than RWF_NOWAIT should be ignored.
+ 	// TODO(gvisor.dev/issue/2601): Support RWF_NOWAIT.
+ 	if opts.Flags != 0 {
+@@ -796,9 +804,36 @@ func (s *sock) mapFamily(addr tcpip.FullAddress, family uint16) tcpip.FullAddres
+ 	return addr
+ }
+ 
++// ---- SPIKE-E2 (ticket 25) BEGIN — temporary, reverted before commit ----
++
++// spikeAddrString renders a raw sockaddr the way sock.Connect/sock.SendMsg
++// parse it, for the spike's log lines.
++func spikeAddrString(to []byte) string {
++	if len(to) == 0 {
++		return "<no-addr>"
++	}
++	addr, family, err := socket.AddressAndFamily(to)
++	if err != nil {
++		return fmt.Sprintf("<unparsable err=%v raw=%x>", err, to)
++	}
++	return fmt.Sprintf("family=%d addr=%s port=%d", family, addr.Addr.String(), addr.Port)
++}
++
++func spikeEps(s *sock) string {
++	la, lerr := s.Endpoint.GetLocalAddress()
++	ra, rerr := s.Endpoint.GetRemoteAddress()
++	return fmt.Sprintf("local=%s:%d(%v) remote=%s:%d(%v)", la.Addr.String(), la.Port, lerr, ra.Addr.String(), ra.Port, rerr)
++}
++
+ // Connect implements the linux syscall connect(2) for sockets backed by
+ // tpcip.Endpoint.
+ func (s *sock) Connect(t *kernel.Task, sockaddr []byte, blocking bool) *syserr.Error {
++	err := s.connectSpike(t, sockaddr, blocking)
++	log.Infof("SPIKE-E2 Connect: sockFamily=%d skType=%d proto=%d blocking=%t to{%s} -> err=%v", s.family, s.skType, s.protocol, blocking, spikeAddrString(sockaddr), err)
++	return err
++}
++
++func (s *sock) connectSpike(t *kernel.Task, sockaddr []byte, blocking bool) *syserr.Error {
+ 	addr, family, err := socket.AddressAndFamily(sockaddr)
+ 	if err != nil {
+ 		return err
+@@ -3389,6 +3424,12 @@ func (s *sock) RecvMsg(t *kernel.Task, dst usermem.IOSequence, flags int, haveDe
+ // SendMsg implements the linux syscall sendmsg(2) for sockets backed by
+ // tcpip.Endpoint.
+ func (s *sock) SendMsg(t *kernel.Task, src usermem.IOSequence, to []byte, flags int, haveDeadline bool, deadline ktime.Time, controlMessages socket.ControlMessages) (int, *syserr.Error) {
++	n, err := s.sendMsgSpike(t, src, to, flags, haveDeadline, deadline, controlMessages)
++	log.Infof("SPIKE-E2 SendMsg: sockFamily=%d skType=%d proto=%d nbytes=%d flags=%#x to{%s} %s -> n=%d err=%v", s.family, s.skType, s.protocol, src.NumBytes(), flags, spikeAddrString(to), spikeEps(s), n, err)
++	return n, err
++}
++
++func (s *sock) sendMsgSpike(t *kernel.Task, src usermem.IOSequence, to []byte, flags int, haveDeadline bool, deadline ktime.Time, controlMessages socket.ControlMessages) (int, *syserr.Error) {
+ 	// Reject Unix control messages.
+ 	if !controlMessages.Unix.Empty() {
+ 		return 0, syserr.ErrInvalidArgument
+@@ -3461,6 +3502,8 @@ func (s *sock) SendMsg(t *kernel.Task, src usermem.IOSequence, to []byte, flags
+ }
+ 
+ // Ioctl implements vfs.FileDescriptionImpl.
++// ---- SPIKE-E2 (ticket 25) END ----
++
+ func (s *sock) Ioctl(ctx context.Context, uio usermem.IO, sysno uintptr, args arch.SyscallArguments) (uintptr, error) {
+ 	t := kernel.TaskFromContext(ctx)
+ 	if t == nil {

@@ -165,6 +165,11 @@ type Boot struct {
 
 	podInitConfigFD int
 
+	// tunnelFD is a socket connected to the tunnel helper, and tunnelTableFD
+	// is the file holding the tunnel table. Both or neither.
+	tunnelFD      int
+	tunnelTableFD int
+
 	sinkFDs sandboxsetup.IntFlags
 
 	saveFDs             sandboxsetup.IntFlags
@@ -289,6 +294,8 @@ func (b *Boot) SetFlags(f *flag.FlagSet) {
 	f.IntVar(&b.startSyncFD, "start-sync-fd", -1, "required FD to used to synchronize sandbox startup")
 	f.IntVar(&b.mountsFD, "mounts-fd", -1, "mountsFD is an optional file descriptor to read list of mounts after they have been resolved (direct paths, no symlinks).")
 	f.IntVar(&b.podInitConfigFD, "pod-init-config-fd", -1, "file descriptor to the pod init configuration file.")
+	f.IntVar(&b.tunnelFD, "tunnel-fd", -1, "FD of a socket connected to the tunnel helper, over which the sentry asks for the streams the tunnel table permits.")
+	f.IntVar(&b.tunnelTableFD, "tunnel-table-fd", -1, "FD of the file holding the tunnel table, which says which host names the sandbox may reach and on which port.")
 	f.Var(&b.sinkFDs, "sink-fds", "ordered list of file descriptors to be used by the sinks defined in --pod-init-config.")
 	f.Var(&b.saveFDs, "save-fds", "ordered list of file descriptors to be used save checkpoints. Order: kernel state, page metadata, page file")
 	f.BoolVar(&b.saveCheckpointGofer, "save-checkpoint-gofer", false, "if true, -save-fds is a socket connected to checkpoint gofer")
@@ -701,6 +708,8 @@ func (b *Boot) Execute(_ context.Context, f *flag.FlagSet, args ...any) subcomma
 		FSRestoreFDs:             b.fsRestoreFDs.GetFDs(),
 		FSRestoreCheckpointGofer: b.fsRestoreCheckpointGofer,
 		RootfsUpperTarFD:         b.rootfsUpperTarFD,
+		TunnelFD:                 b.tunnelFD,
+		TunnelTableFD:            b.tunnelTableFD,
 		StartupTimer:             timer,
 	}
 	l, err := boot.New(bootArgs)

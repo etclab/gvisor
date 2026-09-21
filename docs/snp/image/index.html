@@ -1,0 +1,11 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>attested tunnel: the page behind an exit</title>
+<h1>attested-tunnel ticket 25</h1>
+<p>This page is served by busybox httpd on 127.0.0.1:80 inside a measured
+SEV-SNP guest. It is bound to loopback and to nothing else, so the ethernet
+segment between the two guests cannot reach it: the only route to it is this
+guest's own exit, at the far end of a tunnel a peer was admitted on.</p>
+<p>This file is inside the launch measurement. The line below it is not: it is
+written by /sbin/init out of the sandbox_id on the config device, which is what
+tells one guest from the other when both booted the same image.</p>

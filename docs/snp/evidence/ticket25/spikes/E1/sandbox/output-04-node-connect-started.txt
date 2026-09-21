@@ -1,0 +1,44 @@
+runsc sha256:      11005df8c5191970592b1e28e3b59837c918d3d42a447e1865202b9a8f80ac30
+supervisor sha256: a0c231bf87d32009611240365172f92a397185f004988793f8690b60e9553ab9
+client:            node, connect mode: started
+$ /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/spikes/e1b/runsc --root=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/spikes/e1b/node-started/state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new --debug --debug-log=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/spikes/e1b/node-started/logs/ --strace run --bundle /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/spikes/e1b/node-started/bundle e1b-node-started &
+control socket: /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/spikes/e1b/node-started/state/runsc-e1b-node-started.sock
+[sup] 09:32:57.769637 supervisor: echo server on 127.0.0.1:39741
+[sup] 09:32:57.770819 supervisor: address map __echo__ -> 127.0.0.1:39741
+[sup] 09:32:57.770865 supervisor: address map 100.64.0.1:443 -> www.rfc-editor.org:443
+[sup] 09:32:57.770888 supervisor: address map 100.64.0.2:7777 -> 127.0.0.1:39741
+[sup] 09:32:57.770966 supervisor: control socket path too long, connecting via /proc/self/fd/4
+[sup] 09:32:57.771142 supervisor: connected to control socket /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t25/77e098ee-da53-4677-85ec-c450ded9db44/scratchpad/spikes/e1b/node-started/state/runsc-e1b-node-started.sock
+[sup] 09:32:57.773279 supervisor: Spike.Attach returned in 2.022905ms
+[sup] 09:33:03.661318 supervisor: Helper.Open 100.64.0.2:7777 -> 127.0.0.1:39741 connected in 665.612µs, stream 1, sentry fd will be 12
+[sup] 09:33:03.661616 supervisor: served Helper.Open -> success=true err="" fds_out=1
+[sup] 09:33:03.704974 supervisor: stream 1 sentry->host ended after 262160 bytes (n=0 err=<nil>)
+[sup] 09:33:03.705704 supervisor: echo connection closed after 262160 bytes
+[sup] 09:33:03.706077 supervisor: stream 1 host->sentry ended after 262160 bytes: EOF
+[sup] 09:33:03.926063 supervisor: Helper.Open 100.64.0.1:443 -> www.rfc-editor.org:443 connected in 13.837085ms, stream 2, sentry fd will be 15
+[sup] 09:33:03.926256 supervisor: served Helper.Open -> success=true err="" fds_out=1
+[sup] 09:33:04.050304 supervisor: stream 2 host->sentry ended after 185188 bytes: EOF
+[sup] 09:33:04.136181 supervisor: stream 2 sentry->host ended after 565 bytes (n=0 err=<nil>)
+[sup] 09:33:19.184916 supervisor: urpc server read: EOF (stream over)
+RUNSC_EXIT=0
+---- workload stdout ----
+nodeclient: node v18.19.1 pid 1
+
+== net.connect tcp echo.spike.test:7777
+   connect:     ok (82 ms)
+   localAddress:  100.127.255.254:40001
+   remoteAddress: 100.64.0.2:7777
+   echo:        "hello from node\n" (94 ms)
+   bulk:        wrote 262144, echoed 262144 back in 23 ms
+   end():       half-closing (shutdown SHUT_WR)
+   end event:   peer sent FIN (EOF seen)
+   close:       hadError=false
+
+== https.get https://www.rfc-editor.org/
+   status:      200 OK in 320 ms
+   httpVersion: 1.1
+   cert CN:     "rfc-editor.org"
+   tls:         TLSv1.3
+   body:        179558 bytes, first 120: "<!DOCTYPE html><html  lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-s"
+
+nodeclient: done

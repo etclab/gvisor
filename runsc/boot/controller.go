@@ -247,6 +247,10 @@ func (c *controller) registerHandlers() {
 	c.srv.Register(&control.Metrics{})
 	c.srv.Register(&debug{})
 
+	if l.tunnel != nil {
+		c.srv.Register(l.tunnel)
+	}
+
 	if eps, ok := l.k.RootNetworkNamespace().Stack().(*netstack.Stack); ok {
 		c.srv.Register(&Network{
 			Stack:  eps.Stack,

@@ -267,23 +267,10 @@ type bSide struct {
 	timed    *timedSandbox
 	accepted chan struct{}
 
-	mu    sync.Mutex
-	lines []string
-}
-
-// matching is the lines of b's console that carry prefix: which policies the
-// sandbox applied, which it refused, and what its tunneld refused, all of which
-// are assertions a case makes after the fact.
-func (b *bSide) matching(prefix string) []string {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	var found []string
-	for _, line := range b.lines {
-		if strings.Contains(line, prefix) {
-			found = append(found, line)
-		}
-	}
-	return found
+	// lineLog is b's console, and matching over it is which policies the
+	// sandbox applied, which it refused and what its tunneld refused — all
+	// assertions a case makes after the fact.
+	lineLog
 }
 
 // startB brings up the far side and the goroutine that answers a's stream.
@@ -294,11 +281,7 @@ func (w *hopWorld) startB(t *testing.T, name string) *bSide {
 	// through here: it goes to a file, because the sandbox hands its process's
 	// stdout to whatever io.Writer it was configured with and an *os.File is the
 	// one writer two goroutines and a child process can share without a lock.
-	keep := func(format string, a ...any) {
-		b.mu.Lock()
-		b.lines = append(b.lines, fmt.Sprintf(format, a...))
-		b.mu.Unlock()
-	}
+	keep := func(format string, a ...any) { b.add(fmt.Sprintf(format, a...)) }
 	b.td = w.start(t, "b-"+name, bImage, nil, "", func(r *attest.Refusal) { keep("REFUSAL %s", r.LogString()) })
 	script, err := filepath.Abs("deno/agent.ts")
 	if err != nil {

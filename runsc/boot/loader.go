@@ -254,6 +254,9 @@ type Loader struct {
 	// apply to the entire pod.
 	mountHints *PodMountHints
 
+	// tunnel is the egress adapter, or nil when runsc passed no --tunnel-*.
+	tunnel *Tunnel
+
 	// productName is the value to show in
 	// /sys/devices/virtual/dmi/id/product_name.
 	productName string
@@ -492,6 +495,15 @@ type Args struct {
 	// RootfsUpperTarFD is the file descriptor to the tar file containing the rootfs
 	// upper layer changes.
 	RootfsUpperTarFD int
+
+	// TunnelFD is a socket connected to the tunnel helper, over which the
+	// sentry asks for the streams the tunnel table permits. -1 when runsc was
+	// given no --tunnel-socket.
+	TunnelFD int
+	// TunnelTableFD is the file holding the tunnel table, the one document
+	// that says which names may be reached and on which port. -1 when runsc
+	// was given no --tunnel-table.
+	TunnelTableFD int
 
 	// StartupTimer tracks overall sandbox startup.
 	// The `Loader` records midpoints on it as it goes through loader creation
@@ -913,6 +925,19 @@ func New(args Args) (*Loader, error) {
 
 	metric.SentryEntryPointMetric.Increment(&metric.EntryPointTypeRunsc)
 
+	// The tunnel adapter, when runsc was given one. This is before the control
+	// server so that a table that cannot be enforced, or a stack that is not
+	// the loopback-only one, fails the boot rather than leaving a sandbox
+	// running with an adapter that did not install.
+	// Both descriptors are donated, so both are above stdio; a zero here is
+	// an Args that never set them rather than a request to use stdin.
+	if args.TunnelFD > 0 && args.TunnelTableFD > 0 {
+		if err := setupTunnel(l, args.TunnelFD, args.TunnelTableFD); err != nil {
+			return nil, fmt.Errorf("setting up the tunnel adapter: %w", err)
+		}
+		args.StartupTimer.Reached("tunnel table read")
+	}
+
 	// Create the control server using the provided FD.
 	//
 	// This must be done *after* we have initialized the kernel since the
@@ -1255,6 +1280,14 @@ func (l *Loader) run() error {
 				return err
 			}
 			l.startupTimer.Reached("network configured")
+		}
+
+		// The tunnel adapter goes in once the stack is the one the sandbox
+		// will run with — its loopback NIC arrives with the message above —
+		// and before any user code, so that the resolver is bound and the
+		// intercept is live before the workload's first syscall.
+		if err := l.installTunnel(); err != nil {
+			return fmt.Errorf("installing the tunnel adapter: %w", err)
 		}
 
 		if err := l.pinRing.Finalize(); err != nil {

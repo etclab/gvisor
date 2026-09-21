@@ -87,8 +87,8 @@ type Sandbox interface {
 `Network` (`sandbox.go:188`) is tunneld's half and `*tunneld.Tunneld` implements it
 (`attest/tunneld/sandbox.go:62`, `:84`). `Sandbox` (`sandbox.go:206`) is the whole contract;
 `*sandbox.Null` implements it in process (`null.go:46`) and `*sandbox.Host` implements it with a
-process boundary in the middle (`host.go:49`). A `context.Context` is on each method because
-`Accept` blocks and Go has one way of saying so; nothing else was added to the three verbs.
+process boundary in the middle (`type Host` in `host.go`). A `context.Context` is on each method
+because `Accept` blocks and Go has one way of saying so; nothing else was added to the three verbs.
 
 `Apply` returns `nil` for an acknowledgement and an error for a refusal. Refusals of the
 envelope wrap `sandbox.ErrPolicyRefused` (`policy.go:54`). Its caller is a peer: a delegator
@@ -201,7 +201,7 @@ what changed is that it says so.
 ## The local socket protocol
 
 For a sandbox in another process. Tunneld listens on an `AF_UNIX SOCK_STREAM` socket
-(`sandbox.Listen`, `host.go:85`, mode 0600, the directory created if missing, a socket left by a
+(`sandbox.Listen` in `host.go`, mode 0600, the directory created if missing, a socket left by a
 previous run replaced and anything else at the path refused). Every message is a four-byte
 big-endian length and that many bytes of JSON — the same framing package tunnel uses on a
 stream, and deliberately the dullest thing that works.

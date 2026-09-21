@@ -249,6 +249,102 @@ func TestALivenessWatchSurvivesThePushingTunnelBeingClosedAndStillReportsTheLoss
 	}
 }
 
+// policyNarrower is a second version 1 policy, narrower than policyV1 by the
+// letters it leaves empty. What makes it the case this test is about is only
+// that its bytes — and so its digest — are not policyV1's; tunneld reads the
+// envelope and never n, f or x, so which of the two is the narrower one is the
+// sentry's reading and not this one's.
+const policyNarrower = `{"format":"policy","version":1,"n":["one"],"f":[],"x":[]}`
+
+// aSlowInstall is longer than the quarter-pulse a watch looks at the heartbeat
+// on (watchInterval, attest/sandbox/host.go), so a sandbox that spends this long
+// answering a push is certain to be looked at while it is answering.
+const aSlowInstall = sandbox.DefaultPulse / 2
+
+// TestASecondPushOfANarrowerPolicyIsNotAMismatch is the lawful case a mismatch
+// must not be read as: a second peer pushes a narrower policy, the sandbox takes
+// it, and from then on it pulses that policy's digest — which is not the digest
+// the watch over the first policy was started with.
+//
+// Reading that as a lost claim would close the tunnel and drop the enforcing
+// attachment for a narrowing the peer was entitled to make, and with the helper
+// exiting when tunneld closes its client, dropping it tears the sandbox down. So
+// the watch over the old policy is retired before the new one is pushed, and the
+// only thing a mismatch can still mean is a sandbox pulsing a digest nobody
+// applied.
+func TestASecondPushOfANarrowerPolicyIsNotAMismatch(t *testing.T) {
+	if os.Getenv(livenessSocketEnv) != "" {
+		t.Skip("this process is the sandbox")
+	}
+	console := &eventLog{}
+	var host *sandbox.Host
+	pair := startLivenessPair(t, func(b *pushNode) {
+		var err error
+		host, err = sandbox.Listen(filepath.Join(t.TempDir(), "sandbox.sock"), b.Tunneld,
+			func(format string, a ...any) { console.record(fmt.Sprintf(format, a...)) })
+		if err != nil {
+			t.Fatalf("listening for a sandbox: %v", err)
+		}
+		t.Cleanup(func() { host.Close() })
+
+		// A sandbox that says which policy it is enforcing as it installs it and
+		// only then answers, which is what a sentry handed a policy does and is
+		// the window a watch left over from the previous policy would look into.
+		// The client reaches its own callback through a channel, because the
+		// callback runs on the goroutine Dial starts and the variable would
+		// otherwise be written and read with nothing ordering the two.
+		dialed := make(chan *sandbox.Client, 1)
+		client, err := sandbox.Dial(host.Path(), sandbox.RoleEnforcing, func(_ context.Context, policy []byte) error {
+			c := <-dialed
+			dialed <- c
+			sum := sha256.Sum256(policy)
+			if err := c.Alive(hex.EncodeToString(sum[:])); err != nil {
+				return err
+			}
+			time.Sleep(aSlowInstall)
+			return nil
+		})
+		if err != nil {
+			t.Fatalf("dialing %s: %v", host.Path(), err)
+		}
+		dialed <- client
+		t.Cleanup(func() { client.Close() })
+		for host.Attached() == 0 {
+			time.Sleep(time.Millisecond)
+		}
+		b.Attach(host)
+	})
+
+	// Two pulses of the first policy, so that what the narrowing interrupts is
+	// the steady state and not the acknowledgement.
+	time.Sleep(2 * sandbox.DefaultPulse)
+
+	ch, err := pair.a.Peer(ctx(t), "b")
+	if err != nil {
+		t.Fatalf("a.Peer(b): %v", err)
+	}
+	defer ch.Close()
+	if answer := pushed(t, ch, policyNarrower); !answer.OK {
+		t.Fatalf("the narrowing was refused: %s", answer.Reason)
+	}
+
+	// Past every look a watch left over from the first policy would have taken.
+	time.Sleep(4 * aSlowInstall)
+
+	if logged := pair.b.refusals.none(); len(logged) != 0 {
+		t.Errorf("b refused a lawful narrowing: %s", logged[0].LogString())
+	}
+	if n := host.Attached(); n != 1 {
+		t.Errorf("%d sandboxes are attached after the narrowing; want the enforcing one still there", n)
+	}
+	if err := endsWithin(t, pair.stream, 500*time.Millisecond); err != nil {
+		t.Errorf("the tunnel the first policy arrived on ended with %v; a narrowing closes no tunnel", err)
+	}
+	if said := console.order(); strings.Contains(said, "liveness lost") {
+		t.Errorf("the host reported a lost claim for a policy the sandbox had just taken:\n%s", said)
+	}
+}
+
 // a livenessPair is what every test here is run over: a delegator, a receiver
 // with something beside it, and a stream held open on the tunnel between them.
 type livenessPair struct {

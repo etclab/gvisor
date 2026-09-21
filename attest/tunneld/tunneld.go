@@ -227,8 +227,10 @@ type Tunneld struct {
 	box sandbox.Sandbox
 	wg  sync.WaitGroup
 
-	livenessMu     sync.Mutex
-	livenessCancel context.CancelFunc
+	// liveness is the one watch running on the sandbox beside this tunneld, or
+	// nil while there is none (push.go).
+	livenessMu sync.Mutex
+	liveness   *livenessWatch
 }
 
 // New starts a tunneld: loads and checks the reference value set, generates the
@@ -448,12 +450,7 @@ func (t *Tunneld) Close() error {
 		close(t.done)
 	}
 	err := t.listener.Close()
-	t.livenessMu.Lock()
-	if t.livenessCancel != nil {
-		t.livenessCancel()
-		t.livenessCancel = nil
-	}
-	t.livenessMu.Unlock()
+	t.retireWatch()
 	t.dialed.Close()
 	for _, c := range accepted {
 		c.Close()

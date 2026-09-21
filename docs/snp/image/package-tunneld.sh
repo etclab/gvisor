@@ -21,10 +21,14 @@
 #                              again here with file(1), because the guard runs
 #                              on a build of its own and this is the file that
 #                              is actually installed.
-#   3. build-image.sh          with TUNNELD set and nothing else set. Every
-#                              byte of the image is a byte in the measurement,
-#                              so the build is the one ticket 06 wrote and the
-#                              only parameter ticket 14 touches is this one.
+#   3. build-image.sh          with TUNNELD and RUNSC set and nothing else set.
+#                              Every byte of the image is a byte in the
+#                              measurement, so the build is the one ticket 06
+#                              wrote and the only parameters set here are those
+#                              two. runsc is not built here — `make runsc` is
+#                              the only thing that builds it on this branch —
+#                              so it is named, hashed and passed through, and
+#                              the build refuses one that is not static.
 #
 # It emits, in OUT: the image (OVMF.fd, vmlinuz, initrd.img, cmdline.txt,
 # rootfs.img), the predicted launch measurement, the signed reference value set
@@ -36,6 +40,10 @@
 #   AUTHOR_KEY  the reference value author's Ed25519 private key, PKCS#8 PEM.
 #               Generated into OUT/author.key if unset — a throwaway, which is
 #               what every run so far has used (spec, Out of Scope: key custody).
+#   RUNSC       required. The static runsc the image carries at /usr/bin/runsc
+#               (ticket 24), from `make runsc`: bazel-bin/runsc/runsc_/runsc.
+#               Passed through to build-image.sh untouched; its sha256 and size
+#               are recorded here beside tunneld's.
 #   STACK       ticket 01's host stack
 #   Anything else build-image.sh reads (VCPUS, VCPU_TYPE, POLICY, TCB_FLOOR) is
 #   passed through untouched.
@@ -44,6 +52,7 @@ HERE="$(dirname "$(readlink -f "$0")")"
 REPO="$(git -C "$HERE" rev-parse --show-toplevel)"
 STACK="${STACK:-$REPO/.scratch/attested-secure-tunnel/host-stack}"
 OUT="${OUT:-$STACK/image-ticket14}"
+: "${RUNSC:?set RUNSC to the static runsc the image carries as /usr/bin/runsc; make runsc builds it into bazel-bin/runsc/runsc_/runsc}"
 # A virtualenv's scripts carry an absolute shebang, so the one ticket 07 built
 # names a worktree that no longer exists and cannot be run from here. Each
 # ticket therefore gets its own; predict-measurement.sh creates it if it is
@@ -93,16 +102,22 @@ file "$BIN" | grep -q 'statically linked' || {
 }
 echo "tunneld sha256: $(sha256sum "$BIN" | cut -d' ' -f1)"
 echo "tunneld bytes : $(stat -c %s "$BIN")"
+# And the binary this script does not build. runsc comes from `make runsc` and a
+# bazel tree, so there is nothing here to check an import graph of; what this
+# record owes is which file went in, so the two numbers sit beside tunneld's.
+echo "runsc path    : $RUNSC"
+echo "runsc sha256  : $(sha256sum "$RUNSC" | cut -d' ' -f1)"
+echo "runsc bytes   : $(stat -c %s "$RUNSC")"
 echo
 
-echo "=== 3. the image, with TUNNELD set and nothing else"
+echo "=== 3. the image, with TUNNELD and RUNSC set and nothing else"
 if [ -z "${AUTHOR_KEY:-}" ]; then
   AUTHOR_KEY="$WORK/author.key"
   openssl genpkey -algorithm ed25519 -out "$AUTHOR_KEY" 2>/dev/null
   chmod 600 "$AUTHOR_KEY"
   echo "generated a throwaway reference value author key at $AUTHOR_KEY"
 fi
-export AUTHOR_KEY OUT STACK
+export AUTHOR_KEY OUT STACK RUNSC
 TUNNELD="$BIN" bash "$HERE/build-image.sh"
 
 cp "$LOG" "$OUT/packaging.txt" 2>/dev/null || true
@@ -119,4 +134,5 @@ echo "emitted policy digest:        $(sed -n 's/^emitted_policy_digest: //p' "$O
 echo "author public key:            $(cat "$OUT/build/author.pub" 2>/dev/null || echo '?')"
 echo "author key:                   $AUTHOR_KEY (keep it: re-signing a set needs it)"
 echo "packaged binary:              $OUT/tunneld (the copy inside rootfs.img is what is measured)"
+echo "runsc:                        $RUNSC (the copy inside rootfs.img is what is measured)"
 echo "packaging record:             $LOG, copied to $OUT/packaging.txt"

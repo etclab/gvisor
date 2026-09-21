@@ -1,0 +1,271 @@
+=== TDX smoke boot (ticket 24): 2026-09-18T10:52:45Z ===
+project nsf-2348130-428843 zone us-central1-a
+repo    69eaf51a1de9a3765057d88be5a56aa5d6e1af15
+image   /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t24/46c42ff5-b5e8-48d6-a8bb-ba92dda85a78/scratchpad/tdx-image-t24b (predicted RTMR2 038e7905a2853bf89285a1e967388a9a8cb5a996830f1eee63d036af532cb25f3d6c7636e071e01663a876dc64ca0b78)
+ceiling digest 197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973 (what the guest presents; attest-tool ceiling -digest)
+out     /home/pniroula/Projects/gvisor-t24/docs/snp/evidence/ticket24/spikes/E4/boot-3
+
+############ the config device ############
+config: reference-values.json  509af89d7298670199d9a361e4abbb32b36d3be2e881f7eb27408fe6f437cb2f  1070 bytes
+config: reference-values.json.sig  7b9375a2c7ef844c22fb96509ca0633788dd1527fd453d7c4984bd2c3f828c78  129 bytes
+config: peers.json  70a510fb39471b2891d0a2288766cd6d5c647eb1c6a12482ca958b9bfb3b814c  111 bytes
+config: tunneld.json  76d0a6344b845f5cdde1b0fa13c0fde8c5d3bcd5d2504cde01ee1817bea1d47c  312 bytes
+config: network.conf  f62ce12ab98cfaf4583c1150344bd1160c00201a1a707c52216156a2f222c6a6  290 bytes
+config: collateral/  10 files
+config:   collateral.txt  393d55678e7634c27cfc4518a9606df61d845b4d599b86245e1e7aab448e8fe0
+config:   FETCH.txt  8db3d7e1f4ac78b24c8f4e7e7b2eccb81bcdac41b399df02fb9a6d22771b8109
+config:   pckcrl-platform.body  30bf6088a96d6e785511e7c327702c5b3b29e084f021ef251e3eb64ca298b3ae
+config:   pckcrl-platform.headers  75c84e97bb08f04070db43ac664dfa1f1563848c0b6eaf2d32f96a8d7377be50
+config:   qeidentity.body  9c39b097f5317eb8a15ca118bc7cf25741cb8d616fc4c7a4946d987b48e3dfc6
+config:   qeidentity.headers  83db5a646b9e44bc9c182f70390fcaf1376d90daf8141d589f18a7622e4ac183
+config:   rootcrl.body  c114be5d5ca7aab2d37817eca55aa8a2353853809904ff3695b31c26bcb7465b
+config:   rootcrl.headers  2a0b164e9747239e3c280aa1222ab1c57c7719b86d7e71a6f591f6cb6e7ae4bf
+config:   tcbinfo-00806f050000.body  6bc653ddc0e1a101377b5dc08349b4c3fed0a323d77c50a032e5193c01a5063e
+config:   tcbinfo-00806f050000.headers  25da33ff37c3c25e5825eed414501df3fb930423242f28fc9f8144bf0c17c69f
+config device written to /home/pniroula/Projects/gvisor-t24/docs/snp/evidence/ticket24/spikes/E4/boot-3/config.raw
+  size   1073741824 bytes, label attested-config
+  sha256 66ee4641515b1e484db97e94200b88cd83503540a1615ecf546f4de6d3c7aa50  (not measured, and nothing on it is trusted)
+
+############ publishing the images ############
+=== publish-tdx-image 2026-09-18T10:52:51Z
+raw    /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t24/46c42ff5-b5e8-48d6-a8bb-ba92dda85a78/scratchpad/tdx-image-t24b/disk.raw (10737418240 bytes, sha256 b4ca16943e239acae98e3159bd477b169cb14a9cb618aebae031cbbcfbac8621)
+image  attested-tdx-038e7905a285
+packing /tmp/pniroula/tmp.KJgahas2hg/disk.tar.gz (sparse, old GNU format)
+  1161717374 bytes
+creating gs://attested-tunnel-t19-20260918105251 in us-central1
+Creating gs://attested-tunnel-t19-20260918105251/...
+  
+Updating gs://attested-tunnel-t19-20260918105251/...
+.
+WARNING: Parallel composite upload was turned ON to get the best performance on
+uploading large objects. If you would like to opt-out and instead
+perform a normal upload, run:
+`gcloud config set storage/parallel_composite_upload_enabled False`
+If you would like to disable this warning, run:
+`gcloud config set storage/parallel_composite_upload_enabled True`
+Note that with parallel composite uploads, your object might be
+uploaded as a composite object
+(https://cloud.google.com/storage/docs/composite-objects), which means
+that any user who downloads your object will need to use crc32c
+checksums to verify data integrity. gcloud storage is capable of
+computing crc32c checksums, but this might pose a problem for other
+clients.
+
+Copying file:///tmp/pniroula/tmp.KJgahas2hg/disk.tar.gz to gs://attested-tunnel-t19-20260918105251/attested-tdx-038e7905a285.tar.gz
+  
+...................................
+
+Average throughput: 288.4MiB/s
+creating the image
+Created [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/global/images/attested-tdx-038e7905a285].
+attested-tdx-038e7905a285	READY	10
+diskSizeGb: '10'
+guestOsFeatures:
+- type: UEFI_COMPATIBLE
+- type: TDX_CAPABLE
+- type: GVNIC
+- type: VIRTIO_SCSI_MULTIQUEUE
+- type: SEV_CAPABLE
+- type: SEV_SNP_CAPABLE
+labels:
+  purpose: attested-tunnel-t24
+name: attested-tdx-038e7905a285
+status: READY
+published attested-tdx-038e7905a285
+staged through gs://attested-tunnel-t19-20260918105251 (created and deleted inside this run)
+deleting gs://attested-tunnel-t19-20260918105251
+Removing objects:
+  
+Removing gs://attested-tunnel-t19-20260918105251/attested-tdx-038e7905a285.tar.gz#1789728835775930...
+.
+Removing buckets:
+  
+Removing gs://attested-tunnel-t19-20260918105251/...
+..
+=== publish-tdx-image 2026-09-18T10:55:54Z
+raw    /home/pniroula/Projects/gvisor-t24/docs/snp/evidence/ticket24/spikes/E4/boot-3/config.raw (1073741824 bytes, sha256 66ee4641515b1e484db97e94200b88cd83503540a1615ecf546f4de6d3c7aa50)
+image  attested-config-tdx-t24-b-20260918105245
+packing /tmp/pniroula/tmp.w0qVJyE6Of/disk.tar.gz (sparse, old GNU format)
+  15269 bytes
+creating gs://attested-tunnel-t19-20260918105554 in us-central1
+Creating gs://attested-tunnel-t19-20260918105554/...
+  
+Updating gs://attested-tunnel-t19-20260918105554/...
+.
+Copying file:///tmp/pniroula/tmp.w0qVJyE6Of/disk.tar.gz to gs://attested-tunnel-t19-20260918105554/attested-config-tdx-t24-b-20260918105245.tar.gz
+  
+.
+creating the image
+Created [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/global/images/attested-config-tdx-t24-b-20260918105245].
+attested-config-tdx-t24-b-20260918105245	READY	1
+diskSizeGb: '1'
+guestOsFeatures:
+- type: UEFI_COMPATIBLE
+- type: TDX_CAPABLE
+- type: GVNIC
+- type: VIRTIO_SCSI_MULTIQUEUE
+- type: SEV_CAPABLE
+- type: SEV_SNP_CAPABLE
+labels:
+  purpose: attested-tunnel-t24
+name: attested-config-tdx-t24-b-20260918105245
+status: READY
+published attested-config-tdx-t24-b-20260918105245
+staged through gs://attested-tunnel-t19-20260918105554 (created and deleted inside this run)
+deleting gs://attested-tunnel-t19-20260918105554
+Removing objects:
+  
+Removing gs://attested-tunnel-t19-20260918105554/attested-config-tdx-t24-b-20260918105245.tar.gz#1789728966498200...
+.
+Removing buckets:
+  
+Removing gs://attested-tunnel-t19-20260918105554/...
+..
+=== publish-tdx-image 2026-09-18T10:57:28Z
+raw    /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t24/46c42ff5-b5e8-48d6-a8bb-ba92dda85a78/scratchpad/workload.raw (1073741824 bytes, sha256 ae7e62087eee7b73be89493e79fdbd9afceea0f91f3948e1108ec43eb4da8406)
+image  attested-workload-tdx-t24-b-20260918105245
+packing /tmp/pniroula/tmp.XSI9EkKTPe/disk.tar.gz (sparse, old GNU format)
+  1114539 bytes
+creating gs://attested-tunnel-t19-20260918105728 in us-central1
+Creating gs://attested-tunnel-t19-20260918105728/...
+  
+Updating gs://attested-tunnel-t19-20260918105728/...
+.
+Copying file:///tmp/pniroula/tmp.XSI9EkKTPe/disk.tar.gz to gs://attested-tunnel-t19-20260918105728/attested-workload-tdx-t24-b-20260918105245.tar.gz
+  
+..
+creating the image
+Created [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/global/images/attested-workload-tdx-t24-b-20260918105245].
+attested-workload-tdx-t24-b-20260918105245	READY	1
+diskSizeGb: '1'
+guestOsFeatures:
+- type: UEFI_COMPATIBLE
+- type: TDX_CAPABLE
+- type: GVNIC
+- type: VIRTIO_SCSI_MULTIQUEUE
+- type: SEV_CAPABLE
+- type: SEV_SNP_CAPABLE
+labels:
+  purpose: attested-tunnel-t24
+name: attested-workload-tdx-t24-b-20260918105245
+status: READY
+published attested-workload-tdx-t24-b-20260918105245
+staged through gs://attested-tunnel-t19-20260918105728 (created and deleted inside this run)
+deleting gs://attested-tunnel-t19-20260918105728
+Removing objects:
+  
+Removing gs://attested-tunnel-t19-20260918105728/attested-workload-tdx-t24-b-20260918105245.tar.gz#1789729060883146...
+.
+Removing buckets:
+  
+Removing gs://attested-tunnel-t19-20260918105728/...
+...
+
+############ creating tdx-t24-b at 2026-09-18T10:59Z ############
+Created [https://www.googleapis.com/compute/beta/projects/nsf-2348130-428843/zones/us-central1-a/instances/tdx-t24-b].
+WARNING: Some requests generated warnings:
+ - Disk size: '10 GB' is larger than image size: '1 GB'. You might need to resize the root repartition manually if the operating system does not support automatic resizing. See https://cloud.google.com/compute/docs/disks/add-persistent-disk#resize_pd for details.
+ - Disk size: '20 GB' is larger than image size: '10 GB'. You might need to resize the root repartition manually if the operating system does not support automatic resizing. See https://cloud.google.com/compute/docs/disks/add-persistent-disk#resize_pd for details.
+
+tdx-t24-b	us-central1-a	c3-standard-4	RUNNING	10.128.0.40
+
+############ watching the serial console ############
+the instance is STOPPING; the guest powered itself off
+console: 777 lines in /home/pniroula/Projects/gvisor-t24/docs/snp/evidence/ticket24/spikes/E4/boot-3/console.txt
+
+---- the lines that matter ----
+initrd: loaded tdx-guest
+initrd: loaded gve
+initrd: loaded nf_tables
+initrd: loaded nf_reject_ipv4
+initrd: loaded nf_reject_ipv6
+initrd: loaded nft_reject
+initrd: loaded nft_reject_inet
+initrd: report interface present at /sys/kernel/config/tsm/report
+tunneld: EGRESS CEILING 197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973 (sha256 over the compiled-in ceiling; eth0, udp/4433)
+tunneld: EGRESS CEILING as this image carries it:
+tunneld: EGRESS CEILING INSTALLED; as the kernel holds it:
+tunneld: EXIT status=0
+initrd: config device /dev/nvme0n2 found by the ext4 label
+initrd: config device mounted at /config (ro,noexec,nosuid,nodev); it holds:
+initrd: workload device /dev/nvme0n3 found by the ext4 label, mounted at /workload (ro,exec,nosuid,nodev; not measured); it holds:
+initrd: loopback up (the kernel delivers a rule's refusal to the local socket over it)
+initrd: link eth0 up: 10.128.0.40/32 mtu 1460, gateway 10.128.0.1
+tunneld: EGRESS PROBE: 6 attempt(s) at addresses the ceiling permits nothing to reach
+tunneld: EGRESS REFUSED tcp/169.254.169.254:80: dial tcp 169.254.169.254:80: connect: connection refused (the provider's metadata server) — the netfilter rule refused it
+tunneld: EGRESS REFUSED tcp/8.8.8.8:53: dial tcp 8.8.8.8:53: connect: connection refused (a public resolver, over TCP) — the netfilter rule refused it
+tunneld: EGRESS REFUSED udp/8.8.8.8:53: write udp 10.128.0.40:41239->8.8.8.8:53: write: operation not permitted (a public resolver, over UDP) — the netfilter rule refused it
+tunneld: EGRESS REFUSED udp/169.254.169.254:4433: write udp 10.128.0.40:35447->169.254.169.254:4433: write: operation not permitted (the metadata server, on the one port the ceiling grants) — the netfilter rule refused it
+tunneld: EGRESS REFUSED udp/10.128.0.1:53: write udp 10.128.0.40:53359->10.128.0.1:53: write: operation not permitted (named by -egress-probe) — the netfilter rule refused it
+tunneld: EGRESS REFUSED tcp/10.128.0.1:80: dial tcp 10.128.0.1:80: connect: connection refused (named by -egress-probe) — the netfilter rule refused it
+tunneld: EGRESS PROBE PASSED: every attempt was refused before it left
+tunneld: EXIT status=0
+initrd: uptime 1.96s
+initrd: running: unshare -Urmnpf sh -c "busybox mkdir -p /run/root; mount --rbind / /run/root; cd /run/root; mount --move . /; exec busybox chroot . sh -c 'mount -t proc -o nosuid,nodev,noexec proc /proc; exec /usr/bin/runsc --root=/run/runsc-state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new run --bundle /workload workload'"
+initrd: uptime 1.96s
+Linux workload 4.19.0-gvisor #1 SMP Sun Jan 10 15:06:54 PST 2016 x86_64 GNU/Linux
+initrd: uptime 2.04s
+initrd: workload exited with status 0
+initrd: uptime 2.06s
+tunneld: policy digest 197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973 (sha256 over the compiled-in egress ceiling; put it in a peer's policy_digest)
+tunneld: listening on 10.128.0.40:4433 as "tdx-t24-b"; idle 1m0s, maximum age 15m0s
+tunneld: SELFCHECK VERDICT REFUSED reason=launch measurement not in the reference value set: attest: verification failed
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's observed RTMR0 is 8ee4fa3614e96b5c7cdacf52675c069e9de399a3688f83510a9bc3b4180e0e8f06c427eab69fcb4deff05203c0b70a3f, which is none of the 1 values this reference value lists
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's observed RTMR0 is 8ee4fa3614e96b5c7cdacf52675c069e9de399a3688f83510a9bc3b4180e0e8f06c427eab69fcb4deff05203c0b70a3f, which is none of the 1 values this reference value lists
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's observed RTMR0 is 8ee4fa3614e96b5c7cdacf52675c069e9de399a3688f83510a9bc3b4180e0e8f06c427eab69fcb4deff05203c0b70a3f, which is none of the 1 values this reference value lists
+tunneld: REFUSED verification refused: launch measurement not in the reference value set: the TD's observed RTMR0 is 8ee4fa3614e96b5c7cdacf52675c069e9de399a3688f83510a9bc3b4180e0e8f06c427eab69fcb4deff05203c0b70a3f, which is none of the 1 values this reference value lists
+
+############ the guest's own quote, verified on this workstation ############
+quote: 8000 bytes, sha256 972d794f5e4e9fc763ab00030ffb2789c23d028ebe9661eb613b5e1d13673013
+  td_attributes       : 0000001000000000
+  mrtd                : c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+  rtmr0               : 8ee4fa3614e96b5c7cdacf52675c069e9de399a3688f83510a9bc3b4180e0e8f06c427eab69fcb4deff05203c0b70a3f
+  rtmr1               : 02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b
+  rtmr2               : 038e7905a2853bf89285a1e967388a9a8cb5a996830f1eee63d036af532cb25f3d6c7636e071e01663a876dc64ca0b78
+evidence            : /home/pniroula/Projects/gvisor-t24/docs/snp/evidence/ticket24/spikes/E4/boot-3/quote.bin, 8000 bytes
+vendor              : intel-tdx
+certificate chain   : carried inside the quote
+public key (SPKI)   : /home/pniroula/Projects/gvisor-t24/docs/snp/evidence/ticket24/spikes/E4/boot-3/public-key.der, 44 bytes, 302a300506032b6570032100601dba3f53a4081ca88eee5ed23f2e8277145fda4d20ec40d6a35acb33a8cb2f
+binding context     : v2, 02000000000000000000000000000000
+policy digest       : 197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+intel collateral    : /home/pniroula/Projects/gvisor-t24/docs/snp/evidence/tdx/collateral (provisioned, ADR-0005)
+intel root          : the Intel root embedded in the verification library — no fetch, no file
+reference value set : /home/pniroula/Projects/gvisor-t24/docs/snp/evidence/ticket24/spikes/E4/boot-3/reference-values.json, 1 value(s), author 665053d10032f5b9a46394a65b022c0bd7007392b8f445fe4ace5b0e5ed4c5a2
+  [0] intel-tdx predicted RTMR2 038e7905a2853bf89285a1e967388a9a8cb5a996830f1eee63d036af532cb25f3d6c7636e071e01663a876dc64ca0b78
+      observed MRTD      c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+      observed RTMR0     c2fc12a52db868515eff7c657e42ce04b0b7363fa6ddf7c1cca87aa8e6a061a11f9981924a600ad6d2232f75182a850a
+      observed RTMR1     02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b | 3a446943925fef7f1682fd54e1b6697df864692e28592ec373860d1868582ac14ca3029c48282eb964868a785bafd691
+      minimum TCB        status=UpToDate evaluation_data_number=20
+      TD policy          debug=false
+      admits policy      197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+WARN : 2026/09/18 07:02:35.276041 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/18 07:02:35.278970 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/18 07:02:35.281057 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+
+REFUSED
+  reason            : launch measurement not in the reference value set
+  operator log      : verification refused: launch measurement not in the reference value set: the TD's observed RTMR0 is 8ee4fa3614e96b5c7cdacf52675c069e9de399a3688f83510a9bc3b4180e0e8f06c427eab69fcb4deff05203c0b70a3f, which is none of the 1 values this reference value lists
+  a caller learns   : attest: verification failed
+exit status 2
+verify-evidence admitted the guest: no
+predicted RTMR2 (from the image, before the boot): 038e7905a2853bf89285a1e967388a9a8cb5a996830f1eee63d036af532cb25f3d6c7636e071e01663a876dc64ca0b78
+RTMR2 in the guest's quote:                        038e7905a2853bf89285a1e967388a9a8cb5a996830f1eee63d036af532cb25f3d6c7636e071e01663a876dc64ca0b78
+RTMR1 in the guest's quote:                        02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b
+MRTD  in the guest's quote:                        c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+RTMR0 in the guest's quote:                        8ee4fa3614e96b5c7cdacf52675c069e9de399a3688f83510a9bc3b4180e0e8f06c427eab69fcb4deff05203c0b70a3f
+
+INCOMPLETE: see /home/pniroula/Projects/gvisor-t24/docs/snp/evidence/ticket24/spikes/E4/boot-3/console.txt
+
+deleting tdx-t24-b
+Deleted [https://www.googleapis.com/compute/v1/projects/nsf-2348130-428843/zones/us-central1-a/instances/tdx-t24-b].
+
+############ for docs/snp/cloud/tdx/RESOURCES.md ############
+| created | name | type | purpose | state |
+|---|---|---|---|---|
+| 2026-09-18T10:59Z | tdx-t24-b | c3-standard-4 TDX, us-central1-a, 20GB pd-balanced boot from custom image `attested-tdx-038e7905a285` + 10GB pd-balanced config disk from `attested-config-tdx-t24-b-20260918105245` + 10GB pd-balanced workload disk from `attested-workload-tdx-t24-b-20260918105245` (device-name attested-workload), `--private-network-ip 10.128.0.40` | ticket 24 smoke boot: one guest from the built image, egress rule set installed and probed, tunneld self-check; a third disk carries the OCI bundle /init runs under runsc, so this is a THREE-disk shape and RTMR0 is a function of the shape | **deleted 2026-09-18T11:02Z** |
+| 2026-09-18T10:59Z | attested-tdx-038e7905a285 | custom image, 10GiB, label `purpose=attested-tunnel-t24` | ticket 24: the attested tunnel guest image, predicted RTMR2 `038e7905…a0b78` | **kept for the scenario runs** |
+| 2026-09-18T10:59Z | attested-config-tdx-t24-b-20260918105245 | custom image, 1GiB, label `purpose=attested-tunnel-t24` | ticket 24: tdx-t24-b config device (set, peers, run config, addressing, Intel collateral) | **kept for the scenario runs** |
+| 2026-09-18T10:59Z | attested-workload-tdx-t24-b-20260918105245 | custom image, 1GiB, label `purpose=attested-tunnel-t24` | ticket 24: tdx-t24-b workload device, one OCI bundle, mounted ro,exec at /workload and OUTSIDE the measurement | **kept for the scenario runs** |
+
+verdict: INCOMPLETE: see /home/pniroula/Projects/gvisor-t24/docs/snp/evidence/ticket24/spikes/E4/boot-3/console.txt
+=== done 2026-09-18T11:02:44Z, exit 0 ===

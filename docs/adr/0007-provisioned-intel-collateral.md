@@ -1,6 +1,6 @@
 # Intel collateral is provisioned onto the config device, and expires on a calendar
 
-Status: accepted; collateral on disk fetched 2026-09-15, valid until 2026-10-15T17:59:38Z (the PCK CRL's nextUpdate, the earliest of the four).
+Status: accepted; collateral on disk fetched 2026-09-18, valid until 2026-10-18T07:56:25Z (the TCB info's nextUpdate, the earliest of the four).
 
 Verifying a TDX quote needs three documents the quote does not carry: Intel's TCB info for the
 platform's FMSPC, the quoting enclave's identity, and the revocation lists for the PCK chain.

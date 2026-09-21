@@ -1,0 +1,5 @@
+predicted RTMR2 (from the image, before the boot): cd68e874bbfb15b746ba0679fb4a0bc3fe967b5b616a635fbd47f48538135af0ab229810fb3d293273a8c4e1438f6e25
+RTMR2 in the guest's quote:                        
+RTMR1 in the guest's quote:                        
+MRTD  in the guest's quote:                        
+RTMR0 in the guest's quote:                        

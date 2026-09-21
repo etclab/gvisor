@@ -3,8 +3,9 @@
 #
 # Job: find the root filesystem image, map it through dm-verity with the
 # parameters the (measured) kernel command line carries, mount it read-only,
-# mount the config device (outside the measurement) read-only and noexec, and
-# hand over to the root filesystem's /sbin/init. Nothing else.
+# mount the config device (outside the measurement) read-only and noexec, mount
+# the workload device (also outside it) read-only and exec-permitted, and hand
+# over to the root filesystem's /sbin/init. Nothing else.
 #
 # Everything this script says goes to the serial console: it is the only
 # place a guest with no general-purpose userspace can put diagnostics, and it
@@ -73,6 +74,38 @@ if CFGDEV=$(find_disk attested-config); then
   fi
 else
   say "WARNING: no config device (virtio-blk serial attested-config)"
+fi
+
+# The workload device carries one OCI bundle: config.json and the rootfs it
+# names. It is outside the launch measurement exactly as the config device is,
+# and unlike the config device this mount permits exec — which is the one
+# interesting thing about it. The gofer that serves the bundle to the sandbox
+# bind-mounts that rootfs and remounts it read-only without MS_NOEXEC, and a
+# mount made inside a user namespace has that flag locked, so a remount omitting
+# it is refused and a noexec source cannot be served at all
+# (docs/snp/evidence/spike-s1-runsc-in-guest/E2/notes.md). Read-only is what
+# keeps the root filesystem's rule satisfied with no exception: that rule
+# constrains writable mounts, and this one is not writable.
+#
+# So what the measurement covers here is that runsc, the flag set /sbin/init
+# launches it with and these mount options are in the image. What the disk
+# carries is not measured and is not claimed to be.
+#
+# busybox mount takes `exec` as an option word, where it means the absence of
+# MS_NOEXEC, and it is passed literally so that the intent is on the console.
+# /proc/mounts will show this mount as ro,nosuid,nodev: there is no exec option
+# to show, only the noexec that is not there.
+#
+# A missing or unmountable disk is one line and the boot continues: no workload
+# is the ordinary case, and every scenario recorded before ticket 24 is that one.
+if WLDEV=$(find_disk attested-workload); then
+  if mount -t ext4 -o ro,exec,nosuid,nodev "$WLDEV" /newroot/workload; then
+    say "workload device $WLDEV mounted at /workload (ro,exec,nosuid,nodev; not measured)"
+  else
+    say "WARNING: workload device present but would not mount; the boot continues without a workload"
+  fi
+else
+  say "no workload device (virtio-blk serial attested-workload); the boot continues without a workload"
 fi
 
 mount --move /dev /newroot/dev || fail "move /dev"

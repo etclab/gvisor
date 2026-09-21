@@ -1,0 +1,81 @@
+# ticket 24 E1: init-mount-check.sh is S1's byte for byte, and still carries
+# the guest init's loop. S1 verified this with
+#   diff <(sed -n '32,39p' docs/snp/image/init.rootfs) \
+#        <(sed -n '/^bad=0/,/^  esac$/p' init-mount-check.sh)
+# and got no output. Re-done here, twice, because init.rootfs is being edited
+# in this worktree by ticket 24 itself: the loop has MOVED from lines 30-44 to
+# lines 36-51, so the fixed line numbers no longer select it in the working
+# tree. Both the committed file (tip a06ba786b, where S1's numbers hold) and
+# the working tree (anchored on content) are checked.
+# date: 2026-09-18T05:15:31-04:00
+
+$ sha256sum docs/snp/evidence/spike-s1-runsc-in-guest/E2/init-mount-check.sh $S/e1/init-mount-check.sh
+e896f7083e928fe6caea6881cb87c1761ec52b6d871232b89cab7dd5796287fb  docs/snp/evidence/spike-s1-runsc-in-guest/E2/init-mount-check.sh
+e896f7083e928fe6caea6881cb87c1761ec52b6d871232b89cab7dd5796287fb  /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t24/46c42ff5-b5e8-48d6-a8bb-ba92dda85a78/scratchpad/e1/init-mount-check.sh
+(identical: the copy is S1's file, not a retyping)
+
+================ 1. against the COMMITTED init.rootfs, S1's exact command ================
+$ git show HEAD:docs/snp/image/init.rootfs > $S/e1/init.rootfs.HEAD
+$ diff <(sed -n '32,39p' $S/e1/init.rootfs.HEAD) <(sed -n '/^bad=0/,/^  esac$/p' $S/e1/init-mount-check.sh)
+DIFF_EXIT=0   (0 with no output above: byte for byte, as S1 verified it)
+
+================ 2. against the WORKING TREE's init.rootfs, anchored on content ================
+$ git status --porcelain -- docs/snp/image/init.rootfs
+ M docs/snp/image/init.rootfs
+$ grep -n '^bad=0' docs/snp/image/init.rootfs
+38:bad=0
+$ diff <(sed -n '/^bad=0/,/^  esac$/p' docs/snp/image/init.rootfs) <(sed -n '/^bad=0/,/^  esac$/p' $S/e1/init-mount-check.sh)
+DIFF_EXIT=0   (0 with no output above: the loop is unchanged by ticket 24's edits)
+
+================ 3. the loop as the working tree now has it ================
+$ sed -n '36,51p' docs/snp/image/init.rootfs
+
+# Every mount that is writable must be noexec. Listed, not assumed.
+bad=0
+while read -r dev mnt type opts rest; do
+  case ",$opts," in
+    *,rw,*) case ",$opts," in
+              *,noexec,*) ;;
+              *) say "WRITABLE AND EXECUTABLE: $mnt ($type,$opts)"; bad=1 ;;
+            esac ;;
+  esac
+done < /proc/mounts
+sed 's/^/init: mount: /' /proc/mounts
+if [ $bad != 0 ]; then
+  # A guest that could diverge from what was measured must not run tunneld.
+  say "FATAL: writable executable path present; powering off without running tunneld"
+  sync
+
+================ 4. the workstation baseline, for contrast (S1 E2/output-03) ================
+$ sh $S/e1/init-mount-check.sh /proc/mounts
+WRITABLE AND EXECUTABLE: /dev (devtmpfs,rw,nosuid,relatime,size=394359704k,nr_inodes=98589926,mode=755,inode64)
+WRITABLE AND EXECUTABLE: / (ext4,rw,relatime,stripe=64)
+WRITABLE AND EXECUTABLE: /dev/shm (tmpfs,rw,nosuid,nodev,inode64)
+WRITABLE AND EXECUTABLE: /proc/sys/fs/binfmt_misc (autofs,rw,relatime,fd=33,pgrp=1,timeout=0,minproto=5,maxproto=5,direct,pipe_ino=3115)
+WRITABLE AND EXECUTABLE: /dev/hugepages (hugetlbfs,rw,nosuid,nodev,relatime,pagesize=2M)
+WRITABLE AND EXECUTABLE: /run/qemu (tmpfs,rw,nosuid,nodev,relatime,mode=755,inode64)
+WRITABLE AND EXECUTABLE: /boot/efi (vfat,rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=iso8859-1,shortname=mixed,errors=remount-ro)
+WRITABLE AND EXECUTABLE: /scratch (ext4,rw,noatime)
+WRITABLE AND EXECUTABLE: /run/rpc_pipefs (rpc_pipefs,rw,relatime)
+WRITABLE AND EXECUTABLE: /run/tetragon/cgroup2 (cgroup2,rw,relatime)
+WRITABLE AND EXECUTABLE: /run/user/261168 (tmpfs,rw,nosuid,nodev,relatime,size=78880124k,nr_inodes=19720031,mode=700,uid=261168,gid=261168,inode64)
+WRITABLE AND EXECUTABLE: /run/snapd/ns/cups.mnt (nsfs,rw)
+WRITABLE AND EXECUTABLE: /var/lib/docker/overlay2/8bc60a70d8acbbc1919ba2d0114ca62b9a076c019988c402ee49c5f4c606b82b/merged (overlay,rw,relatime,lowerdir=/var/lib/docker/overlay2/l/CXFB3YGQFY3P2ANN3WUQ76LYCG:/var/lib/docker/overlay2/l/4D5HFWXZPPNSEBWZALZJAA6L23:/var/lib/docker/overlay2/l/DPGMO73YJSBVI67TCEUNQJOQPS,upperdir=/var/lib/docker/overlay2/8bc60a70d8acbbc1919ba2d0114ca62b9a076c019988c402ee49c5f4c606b82b/diff,workdir=/var/lib/docker/overlay2/8bc60a70d8acbbc1919ba2d0114ca62b9a076c019988c402ee49c5f4c606b82b/work)
+WRITABLE AND EXECUTABLE: /var/lib/docker/overlay2/5a6bfc17e43c1eed4183bc982690aa23c05bd2f420dcdc485f490f631f3e4a5c/merged (overlay,rw,relatime,lowerdir=/var/lib/docker/overlay2/l/H3MHAZWYYMVTYONEBQIQBJXJ7R:/var/lib/docker/overlay2/l/D33DU5NDL6LYDPIEKKF25WO2U7:/var/lib/docker/overlay2/l/QZ4Q63GNI2YNWZZ4PQJYUQKVP5:/var/lib/docker/overlay2/l/SNE3X3JQBOWA3XQL5HIW7ZRAWB:/var/lib/docker/overlay2/l/U6CEED3G34ZH6AQYXD6QHSXFYV,upperdir=/var/lib/docker/overlay2/5a6bfc17e43c1eed4183bc982690aa23c05bd2f420dcdc485f490f631f3e4a5c/diff,workdir=/var/lib/docker/overlay2/5a6bfc17e43c1eed4183bc982690aa23c05bd2f420dcdc485f490f631f3e4a5c/work)
+WRITABLE AND EXECUTABLE: /var/lib/docker/overlay2/5c3b3fb2748ef0eb9ad25fd04587dba6dfcdda3381bdb3aed28c1736dbfef385/merged (overlay,rw,relatime,lowerdir=/var/lib/docker/overlay2/l/RT2K43AZ6WXMU7RPAFKSOZKKOS:/var/lib/docker/overlay2/l/PVUFIXSHT6CX6OBYBDUCQ23NK6:/var/lib/docker/overlay2/l/BHSWMKJPIL5WO7ZTEAZ2POFUTG:/var/lib/docker/overlay2/l/YSWPCYPSVBCFOBQJY7ICU7B4AC:/var/lib/docker/overlay2/l/U6CEED3G34ZH6AQYXD6QHSXFYV,upperdir=/var/lib/docker/overlay2/5c3b3fb2748ef0eb9ad25fd04587dba6dfcdda3381bdb3aed28c1736dbfef385/diff,workdir=/var/lib/docker/overlay2/5c3b3fb2748ef0eb9ad25fd04587dba6dfcdda3381bdb3aed28c1736dbfef385/work)
+WRITABLE AND EXECUTABLE: /var/lib/docker/overlay2/3b9508aeb934ad3060a0b66a9a6f8eeea84311a82c4e5eddef308a3f773c6ce9/merged (overlay,rw,relatime,lowerdir=/var/lib/docker/overlay2/l/TK4YUKDUEX72EF27MWUDOEG7ZD:/var/lib/docker/overlay2/l/2VF2QVCLP6TJNBNOQMLSOH2CVT:/var/lib/docker/overlay2/l/LP35FMLW6BLTCV423ZJMTQLCGY:/var/lib/docker/overlay2/l/CKL5FAJIMVBVOAVQ2TVRGDBC4O:/var/lib/docker/overlay2/l/K5LG6K3YF6N52ZBS53XB6KW6IT:/var/lib/docker/overlay2/l/2A6HKUAB4AKTBMBIDTNALQLREZ,upperdir=/var/lib/docker/overlay2/3b9508aeb934ad3060a0b66a9a6f8eeea84311a82c4e5eddef308a3f773c6ce9/diff,workdir=/var/lib/docker/overlay2/3b9508aeb934ad3060a0b66a9a6f8eeea84311a82c4e5eddef308a3f773c6ce9/work)
+WRITABLE AND EXECUTABLE: /run/docker/netns/ef8ca46e2e99 (nsfs,rw)
+WRITABLE AND EXECUTABLE: /run/docker/netns/a50fafc06fdb (nsfs,rw)
+WRITABLE AND EXECUTABLE: /run/docker/netns/79b108765e4e (nsfs,rw)
+WRITABLE AND EXECUTABLE: /run/docker/netns/4e7354f226bc (nsfs,rw)
+WRITABLE AND EXECUTABLE: /run/docker/netns/ingress_sbox (nsfs,rw)
+WRITABLE AND EXECUTABLE: /run/docker/netns/1-j71ovr2q1j (nsfs,rw)
+WRITABLE AND EXECUTABLE: /run/user/253477 (tmpfs,rw,nosuid,nodev,relatime,size=78880124k,nr_inodes=19720031,mode=700,uid=253477,gid=253477,inode64)
+WRITABLE AND EXECUTABLE: /nfs (autofs,rw,relatime,fd=7,pgrp=1602245,timeout=120,minproto=5,maxproto=5,indirect,pipe_ino=9039303)
+WRITABLE AND EXECUTABLE: /run/snapd/ns/chromium.mnt (nsfs,rw)
+WRITABLE AND EXECUTABLE: /var/lib/docker/overlay2/d3db8dbcc3fbb335a1c503a25bc992d41ad689f2eaa74d9e74a7132f0d06011b/merged (overlay,rw,relatime,lowerdir=/var/lib/docker/overlay2/l/DJYYIUO5T6JKU3Y66WYOAEYO72:/var/lib/docker/overlay2/l/7JAJJDK5EXUT6QGUES77CQGICU:/var/lib/docker/overlay2/l/MMVXJ4TPGGOYBCME7DDXISSCGZ:/var/lib/docker/overlay2/l/JB7YTWXQXTSCR4U4NGC63AZCRE:/var/lib/docker/overlay2/l/IEBCMM74BYM7NAG5RSJ7E44GWU:/var/lib/docker/overlay2/l/HU5KDXYQXKRIEL6VTEJOKUPYXB:/var/lib/docker/overlay2/l/AV7H2ENJFKEVBHFZ3XRMOFWLTC:/var/lib/docker/overlay2/l/R3MX6BRMBI2LFYAGH7HQ2DYSUM:/var/lib/docker/overlay2/l/OSFOAUY3DZVU325TGWHHFYHMW6:/var/lib/docker/overlay2/l/MAW447RO3REL34MMM2EF4PMVR7:/var/lib/docker/overlay2/l/4CLBRWFGAYSXN3ZSFL6O3JCZB5:/var/lib/docker/overlay2/l/V2XLDQQVEIMTN3AT24ELT5XI2N:/var/lib/docker/overlay2/l/W5V4HPH2PXHPLUMELKVVDMDZRS,upperdir=/var/lib/docker/overlay2/d3db8dbcc3fbb335a1c503a25bc992d41ad689f2eaa74d9e74a7132f0d06011b/diff,workdir=/var/lib/docker/overlay2/d3db8dbcc3fbb335a1c503a25bc992d41ad689f2eaa74d9e74a7132f0d06011b/work)
+WRITABLE AND EXECUTABLE: /run/docker/netns/dead6ee012fd (nsfs,rw)
+FATAL: writable executable path present; powering off without running tunneld
+CHECK_EXIT=1
+$ wc -l /proc/mounts
+57 /proc/mounts

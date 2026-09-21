@@ -1,0 +1,227 @@
+Ticket 24: the Intel collateral this branch's E4 TDX boot is judged against
+==========================================================================
+
+Fresh Intel collateral before E4 and on the same day, fetched 2026-09-18T08:51:43Z into
+docs/snp/evidence/tdx/collateral/ (transcript of the four requests: that directory's FETCH.txt,
+section "Intel PCS collateral re-fetch, 2026-09-18T08:51:43Z"). This file is the check on the
+result: the test suite, a verify against the refreshed directory, and the byte-level verdict
+replay.
+
+Ticket 22's deviation, carried forward
+--------------------------------------
+The definition of done says "with attest-tool provision fetch". It was curl, as on 2026-09-08
+and 2026-09-15, because `attest-tool provision fetch` is the AMD chain tool and only that:
+
+    attest/cmd/attest-tool/provision.go
+      usage:
+        attest-tool provision fetch -report REPORT.bin -out DIR
+        attest-tool provision check -report REPORT.bin -dir DIR
+
+`fetch` takes exactly two flags, reads -report as an SEV-SNP attestation report in ABI form and
+calls provision.Fetch to pull the VCEK chain for the platform that report names (ADR-0005). It
+has no vendor flag and no Intel mode, so it cannot be asked for a TCB info, a QE identity or a
+CRL; the Intel half of provisioning has always been four curl requests, and ADR-0005/ADR-0007
+require the documents to be on disk ahead of use, not that one binary put them there. What is
+checked is therefore the result rather than the fetch: `attest-tool verify -vendor intel-tdx`
+against the refreshed directory, plus the ticket 21 replay. Both are below.
+
+The window this fetch bought
+----------------------------
+    tcbinfo-00806f050000  issueDate  2026-09-18T07:56:25Z  nextUpdate  2026-10-18T07:56:25Z
+    qeidentity            issueDate  2026-09-18T08:30:58Z  nextUpdate  2026-10-18T08:30:58Z
+    pckcrl-platform       thisUpdate 2026-09-18T08:00:58Z  nextUpdate  2026-10-18T08:00:58Z
+    rootcrl               thisUpdate 2026-02-26T13:04:00Z  nextUpdate  2027-02-26T13:04:00Z
+
+Earliest of the four, and so the instant this directory has to be re-provisioned before:
+2026-10-18T07:56:25Z, the TCB info's. On the 2026-09-15 copy the PCK CRL went first; this time
+Intel issued the TCB info about four and a half minutes ahead of the CRL. ADR-0007's status line
+now reads "fetched 2026-09-18, valid until 2026-10-18T07:56:25Z (the TCB info's nextUpdate, the
+earliest of the four)".
+
+    sha256 6bc653ddc0e1a101377b5dc08349b4c3fed0a323d77c50a032e5193c01a5063e  tcbinfo-00806f050000.body
+    sha256 9c39b097f5317eb8a15ca118bc7cf25741cb8d616fc4c7a4946d987b48e3dfc6  qeidentity.body
+    sha256 30bf6088a96d6e785511e7c327702c5b3b29e084f021ef251e3eb64ca298b3ae  pckcrl-platform.body
+    sha256 c114be5d5ca7aab2d37817eca55aa8a2353853809904ff3695b31c26bcb7465b  rootcrl.body
+
+No TCB moved. tcbEvaluationDataNumber is still 20; tcbInfo is identical to the 2026-09-15 copy
+in every field but issueDate, nextUpdate and the signature over them, including the same six TCB
+levels; qeidentity still holds one level, isvsvn 4, UpToDate, and is otherwise identical apart
+from its dates; pckcrl-platform has the same issuer, the same CRL number 1 and the same 57
+revoked serials, and differs only in thisUpdate, nextUpdate and a signature that encodes two
+bytes shorter (3354 bytes against 3356); rootcrl.body is byte-identical. The three
+issuer-chain headers are byte-identical. So no reference value's minimum_tcb floor has to move
+for E4.
+
+    $ git diff --stat -- docs/snp/evidence/tdx/collateral/
+     docs/snp/evidence/tdx/collateral/FETCH.txt         |  99 +++++++++++++++++++++
+     docs/snp/evidence/tdx/collateral/collateral.txt    |  11 +--
+     .../evidence/tdx/collateral/pckcrl-platform.body   | Bin 3356 -> 3354 bytes
+     .../tdx/collateral/pckcrl-platform.headers         |   6 +-
+     docs/snp/evidence/tdx/collateral/qeidentity.body   |   2 +-
+     .../snp/evidence/tdx/collateral/qeidentity.headers |   4 +-
+     docs/snp/evidence/tdx/collateral/rootcrl.headers   |   9 +-
+     .../tdx/collateral/tcbinfo-00806f050000.body       |   2 +-
+     .../tdx/collateral/tcbinfo-00806f050000.headers    |   4 +-
+     9 files changed, 118 insertions(+), 19 deletions(-)
+
+(a) the test suite
+------------------
+    $ cd attest && GOPROXY=off go test ./... -count=1
+    ok  	gvisor.dev/gvisor/attest	25.918s
+    ok  	gvisor.dev/gvisor/attest/ceiling	0.020s
+    ok  	gvisor.dev/gvisor/attest/cmd/agent-probe	0.176s
+    ?   	gvisor.dev/gvisor/attest/cmd/attest-tool	[no test files]
+    ok  	gvisor.dev/gvisor/attest/cmd/tunneld	4.844s
+    ?   	gvisor.dev/gvisor/attest/internal/fixture	[no test files]
+    ?   	gvisor.dev/gvisor/attest/internal/snpfake	[no test files]
+    ?   	gvisor.dev/gvisor/attest/internal/tdxfake	[no test files]
+    ok  	gvisor.dev/gvisor/attest/provision	5.546s
+    ?   	gvisor.dev/gvisor/attest/ratls	[no test files]
+    ok  	gvisor.dev/gvisor/attest/sandbox	0.080s
+    ok  	gvisor.dev/gvisor/attest/sandbox/deno	0.685s
+    ok  	gvisor.dev/gvisor/attest/tsm	6.078s
+    ?   	gvisor.dev/gvisor/attest/tunnel	[no test files]
+    ok  	gvisor.dev/gvisor/attest/tunneld	99.993s
+    ok  	gvisor.dev/gvisor/attest/verify	0.055s
+    exit 0
+
+(b) verify against the refreshed directory
+------------------------------------------
+The ticket 19 smoke record (docs/snp/evidence/ticket19/smoke/) replayed with the flag set the
+smoke script used (docs/snp/cloud/tdx/smoke-tdx-guest.sh, the `attest-tool verify` invocation),
+changing nothing but -tdx-collateral-dir, which points at the refreshed directory.
+
+Two runs, because the ceiling moved since ticket 19 and the collateral did not. The smoke script
+passes `-policy-digest $(attest-tool ceiling -digest)`; that digest is now
+
+    $ cd attest && GOPROXY=off go run ./cmd/attest-tool ceiling -digest
+    197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+
+where ticket 19 recorded d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b -- the
+compiled-in ceiling has changed under tickets 22 and 23, and ticket 19's signed reference value
+set admits only the old digest. Run b1 (today's ceiling digest) is therefore REFUSED, for a
+reason that has nothing to do with collateral: the reference value does not list that policy
+digest. Run b2 passes the digest the recorded set admits and reproduces ticket 19's verdict
+exactly. Both are shown.
+
+--- b1: -policy-digest 197d4aae... (today's ceiling), REFUSED on the policy digest
+    evidence            : /home/pniroula/Projects/gvisor-t24/docs/snp/evidence/ticket19/smoke/quote.bin, 8000 bytes
+    vendor              : intel-tdx
+    certificate chain   : carried inside the quote
+    public key (SPKI)   : /home/pniroula/Projects/gvisor-t24/docs/snp/evidence/ticket19/smoke/public-key.der, 44 bytes, 302a300506032b6570032100aeffd1ef2df597ef7aedbaa4d6f154be09540132d5d138c0d51600a72d2838b4
+    binding context     : v2, 02000000000000000000000000000000
+    policy digest       : 197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+    intel collateral    : /home/pniroula/Projects/gvisor-t24/docs/snp/evidence/tdx/collateral (provisioned, ADR-0005)
+    intel root          : the Intel root embedded in the verification library — no fetch, no file
+    reference value set : /home/pniroula/Projects/gvisor-t24/docs/snp/evidence/ticket19/smoke/reference-values.json, 1 value(s), author 665053d10032f5b9a46394a65b022c0bd7007392b8f445fe4ace5b0e5ed4c5a2
+      [0] intel-tdx predicted RTMR2 d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+          observed MRTD      c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+          observed RTMR0     c2fc12a52db868515eff7c657e42ce04b0b7363fa6ddf7c1cca87aa8e6a061a11f9981924a600ad6d2232f75182a850a
+          observed RTMR1     02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b | 3a446943925fef7f1682fd54e1b6697df864692e28592ec373860d1868582ac14ca3029c48282eb964868a785bafd691
+          minimum TCB        status=UpToDate evaluation_data_number=20
+          TD policy          debug=false
+          admits policy      d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b
+    WARN : 2026/09/18 04:54:58.395074 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+    WARN : 2026/09/18 04:54:58.398022 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+    WARN : 2026/09/18 04:54:58.400233 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+    
+    REFUSED
+      reason            : guest policy or policy digest not permitted by the reference value
+      operator log      : verification refused: guest policy or policy digest not permitted by the reference value: peer presents policy digest 197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973; no reference value for the measurement it is running lists that policy
+      a caller learns   : attest: verification failed
+    exit status 2
+    exit 1 (go run; the tool exits 2)
+
+--- b2: -policy-digest d47dce59... (the digest ticket 19's reference value set admits), ACCEPTED
+    evidence            : /home/pniroula/Projects/gvisor-t24/docs/snp/evidence/ticket19/smoke/quote.bin, 8000 bytes
+    vendor              : intel-tdx
+    certificate chain   : carried inside the quote
+    public key (SPKI)   : /home/pniroula/Projects/gvisor-t24/docs/snp/evidence/ticket19/smoke/public-key.der, 44 bytes, 302a300506032b6570032100aeffd1ef2df597ef7aedbaa4d6f154be09540132d5d138c0d51600a72d2838b4
+    binding context     : v2, 02000000000000000000000000000000
+    policy digest       : d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b
+    intel collateral    : /home/pniroula/Projects/gvisor-t24/docs/snp/evidence/tdx/collateral (provisioned, ADR-0005)
+    intel root          : the Intel root embedded in the verification library — no fetch, no file
+    reference value set : /home/pniroula/Projects/gvisor-t24/docs/snp/evidence/ticket19/smoke/reference-values.json, 1 value(s), author 665053d10032f5b9a46394a65b022c0bd7007392b8f445fe4ace5b0e5ed4c5a2
+      [0] intel-tdx predicted RTMR2 d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+          observed MRTD      c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+          observed RTMR0     c2fc12a52db868515eff7c657e42ce04b0b7363fa6ddf7c1cca87aa8e6a061a11f9981924a600ad6d2232f75182a850a
+          observed RTMR1     02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b | 3a446943925fef7f1682fd54e1b6697df864692e28592ec373860d1868582ac14ca3029c48282eb964868a785bafd691
+          minimum TCB        status=UpToDate evaluation_data_number=20
+          TD policy          debug=false
+          admits policy      d47dce59f26635e9b4cd0c375cc73f32a39ef85d55223143cad438a075aee92b
+    WARN : 2026/09/18 04:55:15.782809 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+    WARN : 2026/09/18 04:55:15.784975 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+    WARN : 2026/09/18 04:55:15.786517 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+    
+    ACCEPTED
+      vendor            : intel-tdx
+      RTMR2             : d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+      MRTD              : c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+      RTMR0             : c2fc12a52db868515eff7c657e42ce04b0b7363fa6ddf7c1cca87aa8e6a061a11f9981924a600ad6d2232f75182a850a
+      RTMR1             : 02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b
+      TD attributes     : 0000001000000000 (debug=false)
+      Intel TCB         : status=UpToDate evaluation_data_number=20 fmspc=00806f050000
+      caller-supplied   : 7ecf137de827af7aeca385829aaa05f96a9398648f4e9bf62372727a2712e1d251fd3b26704d2f42f7e70608122ed2d33e0cb1fb8238682449b35b790bac487d
+        = SHA-512(public key ‖ binding context ‖ policy digest), recomputed from the key above (ADR-0002, v2)
+      satisfied         : reference value with predicted RTMR2 d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+    exit 0
+
+b2 is ACCEPTED with every field the same as docs/snp/evidence/ticket19/smoke/verify-evidence.txt
+-- same RTMR2, MRTD, RTMR0, RTMR1, TD attributes, same Intel TCB line (status=UpToDate
+evaluation_data_number=20 fmspc=00806f050000), same caller-supplied 7ecf137d..., same satisfied
+reference value. The only differences against that file are the worktree path in the echoed file
+names and the WARN timestamps. So the refreshed collateral admits the recorded TDX quote exactly
+as the 2026-09-08 and 2026-09-15 copies did.
+
+(c) the byte-level verdict replay
+---------------------------------
+docs/snp/evidence/ticket21/harness/, run the way its README documents, once with the 2026-09-15
+collateral still in place and once after the fetch, with one built binary so nothing but the
+collateral differs between the two:
+
+    $ cd attest && GOPROXY=off go build -o /tmp/attest-tool ./cmd/attest-tool
+    $ cd docs/snp/evidence/ticket21/harness
+    $ REPLAY_REPO=<this worktree> \
+      REPLAY_LIST=$PWD/verdict-invocations-v2.txt \
+      REPLAY_AUTHORED=$PWD/authored \
+        ./replay-verdicts.sh /tmp/before /tmp/attest-tool verify     # before the fetch
+        ./replay-verdicts.sh /tmp/after  /tmp/attest-tool verify     # after the fetch
+    $ for f in /tmp/after/*.txt; do
+        diff -q <(tail -n +2 "/tmp/before/${f##*/}") <(tail -n +2 "$f") >/dev/null || echo "DIFF ${f##*/}"
+      done
+    DIFF 023-tdx-smoke-future.txt
+
+(the three /tmp paths above are this session's scratch directory, spelled /tmp here as the
+harness README spells it; nothing was written under the repository.)
+
+All 64 live invocations replayed on both sides; the exit-status histogram is identical
+(exit 0: 8, exit 1: 15, exit 2: 37, exit 3: 4). Exactly one transcript differs, and only inside
+a quoted date:
+
+    023-tdx-smoke-future
+    21c21
+    <   operator log      : verification refused: evidence does not chain to the vendor root: the
+        provisioned Intel collateral is not valid at 2030-01-01T00:00:00Z: the TCB info expired at
+        2026-10-15T18:50:02Z, and it is now 2030-01-01T00:00:00Z - the peer may be fine;
+        re-provision the collateral directory (ADR-0007)
+    ---
+    >   operator log      : verification refused: evidence does not chain to the vendor root: the
+        provisioned Intel collateral is not valid at 2030-01-01T00:00:00Z: the TCB info expired at
+        2026-10-18T07:56:25Z, and it is now 2030-01-01T00:00:00Z - the peer may be fine;
+        re-provision the collateral directory (ADR-0007)
+
+That is the invocation that pins -now 2030-01-01 and is refused for expired collateral either
+way; the date it quotes is the new TCB info's nextUpdate. This is the same single-transcript,
+date-only change the 2026-09-15 refresh produced. Every other verdict, reason, detail and exit
+status is byte identical.
+
+Files this refresh touched
+--------------------------
+    docs/snp/evidence/tdx/collateral/tcbinfo-00806f050000.body|.headers   (re-fetched)
+    docs/snp/evidence/tdx/collateral/qeidentity.body|.headers             (re-fetched)
+    docs/snp/evidence/tdx/collateral/pckcrl-platform.body|.headers        (re-fetched)
+    docs/snp/evidence/tdx/collateral/rootcrl.body|.headers                (body unchanged)
+    docs/snp/evidence/tdx/collateral/FETCH.txt                            (new section)
+    docs/snp/evidence/tdx/collateral/collateral.txt                       (the three dates)
+    docs/adr/0007-provisioned-intel-collateral.md                         (status line)
+    docs/snp/evidence/ticket24/collateral-refresh.txt                     (this file)

@@ -2,8 +2,8 @@
 # Launch one guest of a ticket-14 two-guest run.
 #
 #   tunnel-guest.sh -image DIR -config IMG -relay HOST:PORT -console FILE
-#                   [-mac MAC] [-mem MB] [-smp N] [-no-snp] [-firmware FILE]
-#                   [-print]
+#                   [-workload IMG] [-mac MAC] [-mem MB] [-smp N] [-no-snp]
+#                   [-firmware FILE] [-print]
 #
 # It is docs/snp/image/launch-measured-guest.sh with one thing changed, and the
 # change is the only interesting thing about this script: the guest's network
@@ -24,6 +24,12 @@
 # predict-measurement.sh was given, the guest reports a measurement no peer
 # admits, which is a confusing way to discover a typo.
 #
+# -workload is optional and is the one disk this script does not require: the
+# read-only OCI bundle mkworkloaddev.sh builds, which the initrd mounts at
+# /workload and init runs under runsc before tunneld (ticket 24). It is outside
+# the launch measurement, like the config device, so it changes nothing this
+# script passes to the measurement.
+#
 # SNP needs root for /dev/sev, so this is what a spooled .job file runs.
 # -no-snp is a control boot and needs only /dev/kvm; like the launch script's,
 # it cannot use the image's own firmware, because AmdSevX64 refuses every
@@ -33,12 +39,13 @@ HERE="$(dirname "$(readlink -f "$0")")"
 REPO="$(git -C "$HERE" rev-parse --show-toplevel 2>/dev/null || echo "$HERE/../..")"
 STACK="${STACK:-$REPO/.scratch/attested-secure-tunnel/host-stack}"
 QEMU="${QEMU:-$STACK/usr/local/bin/qemu-system-x86_64}"
-IMAGE=""; CONFIG=""; RELAY=""; CONSOLE=""; MAC="52:54:00:14:00:0a"
+IMAGE=""; CONFIG=""; WORKLOAD=""; RELAY=""; CONSOLE=""; MAC="52:54:00:14:00:0a"
 MEM=2048; SMP=4; SNP=1; FIRMWARE=""; PRINT=0
 while [ -n "${1:-}" ]; do
   case "$1" in
     -image)    IMAGE="$2"; shift 2 ;;
     -config)   CONFIG="$2"; shift 2 ;;
+    -workload) WORKLOAD="$2"; shift 2 ;;
     -relay)    RELAY="$2"; shift 2 ;;
     -console)  CONSOLE="$2"; shift 2 ;;
     -mac)      MAC="$2"; shift 2 ;;
@@ -55,6 +62,7 @@ for f in OVMF.fd vmlinuz initrd.img cmdline.txt rootfs.img; do
   [ -f "$IMAGE/$f" ] || { echo "missing $IMAGE/$f" >&2; exit 1; }
 done
 [ -f "$CONFIG" ] || { echo "missing config device $CONFIG" >&2; exit 1; }
+[ -z "$WORKLOAD" ] || [ -f "$WORKLOAD" ] || { echo "missing workload device $WORKLOAD" >&2; exit 1; }
 [ -x "$QEMU" ] || { echo "missing QEMU at $QEMU" >&2; exit 1; }
 CMDLINE="$(cat "$IMAGE/cmdline.txt")"
 if [ -z "$FIRMWARE" ]; then
@@ -84,6 +92,10 @@ ARGS=(
   -netdev "socket,id=net0,connect=$RELAY"
   -device "virtio-net-pci,netdev=net0,mac=$MAC,disable-legacy=on,iommu_platform=true,romfile="
 )
+if [ -n "$WORKLOAD" ]; then
+  ARGS+=( -drive "file=$WORKLOAD,if=none,id=workload,format=raw,readonly=on"
+          -device "virtio-blk-pci,drive=workload,serial=attested-workload,disable-legacy=on,iommu_platform=true" )
+fi
 if [ -n "$CONSOLE" ]; then ARGS+=( -serial "file:$CONSOLE" ); else ARGS+=( -serial stdio ); fi
 if [ "$SNP" = 1 ]; then
   [ "$(id -u)" -eq 0 ] || { echo "SNP launch must run as root (opens /dev/sev); -no-snp is the control" >&2; exit 1; }

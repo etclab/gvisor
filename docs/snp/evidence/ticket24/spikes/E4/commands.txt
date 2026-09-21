@@ -1,0 +1,248 @@
+E4 — TDX: runsc inside the measured initramfs, and RTMR2 still predicted offline.
+Ticket 24, worktree /home/pniroula/Projects/gvisor-t24 on
+ticket-24-runsc-in-the-measured-guest, tip fa0d3b6e1, 2026-09-18. No sudo was
+typed; the only thing that ran as root was the guest, and it ran on Google's
+hardware. Nothing under pkg/ or runsc/ changed.
+
+SCRATCH      = <this session's scratch directory>   (the 10 GiB disk.raw, the
+                                                     workload device and the
+                                                     build tree live there: none
+                                                     of it is evidence and the
+                                                     large files are deleted)
+BASE_SCRATCH = <the ticket 19 session's scratch>     (it still holds the pinned
+                                                     Ubuntu base disk; this run
+                                                     read it and wrote nothing
+                                                     to it)
+KEY          = /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/
+               host-stack/image-ticket24-tdx/author.key
+               — ticket 19 image-a's throwaway author key, reused byte for byte
+               so that the only thing that moved between that image and this one
+               is the initrd. Its public half is
+               665053d10032f5b9a46394a65b022c0bd7007392b8f445fe4ace5b0e5ed4c5a2,
+               checked with openssl before the build, and it is inside RTMR2 at
+               /etc/attested-tunnel/author.pub. It is NOT in the tree.
+
+0. the key, into the host stack (2026-09-18T09:50:34Z)
+
+     cp $BASE_SCRATCH/keys/author.key \
+        /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket24-tdx/author.key
+     openssl pkey -in .../author.key -pubout -outform DER | tail -c 32 | xxd -p
+     -> 665053d10032f5b9a46394a65b022c0bd7007392b8f445fe4ace5b0e5ed4c5a2
+
+1. the image, built offline (2026-09-18T09:50:42Z -> 09:53:24Z, 2m42s)
+
+     AUTHOR_KEY=$KEY \
+     BASE_IMAGE=$BASE_SCRATCH/img/base-disk.raw \
+     OUT=$SCRATCH/tdx-image-t24 \
+     RUNSC=/home/pniroula/Projects/gvisor-t24/bazel-bin/runsc/runsc_/runsc \
+     IMAGE_LABEL=t24 \
+     bash docs/snp/cloud/tdx/build-tdx-image.sh
+
+   TUNNELD was left unset on purpose, so the build ran the packaging guard
+   (`go test ./cmd/tunneld`) and built tunneld itself, exactly as ticket 19 did.
+   The base disk was checked against BASE_SHA256 d0b2b2c2…5474f and matched.
+
+     runsc    8070bcdf0b7889d8ed3710f5920f06cf909682434b21437eb9df8d7fb6c72518  108668311 bytes
+     tunneld  57d56c404a0fa5a12186af3b93c046f4ad47bf543866e27d071680f45cdea24c   17573981 bytes
+     initrd   c409a79cfbcd20a9f0fca7662c0423474d0c53c641a3b6b1572a8d23239b8e53   86550953 bytes (52 entries)
+     disk.raw e369a6d51a32f44846ad4bdc40e60dd08305b673206a22923452000a576970b4  10737418240 bytes
+
+   image/ holds everything about that image except its ten gibibytes.
+
+2. the prediction, run a second time and by hand, still before any boot
+   (2026-09-18T09:53:36Z -> 09:53:38Z)
+
+     python3 docs/snp/cloud/tdx/predict-rtmr2.py --raw $SCRATCH/tdx-image-t24/disk.raw
+
+   -> image/predict-rtmr2-output.txt, which is byte for byte the
+   predicted-measurement.txt the build had already written at 09:53:2xZ. Both
+   precede the first instance create (10:02Z) by nine minutes.
+
+     RTMR2 predicted   cd68e874bbfb15b746ba0679fb4a0bc3fe967b5b616a635fbd47f48538135af0ab229810fb3d293273a8c4e1438f6e25
+     records           25
+
+3. the bundle and the workload device (2026-09-18T09:55:30Z)
+
+   The bundle is E3's, built by E3's own script so that the two vendors ran the
+   same bytes; only the device image differs, because a GCE image must be a
+   whole number of gibibytes.
+
+     bash docs/snp/evidence/ticket24/spikes/E3/make-bundle.sh \
+          $SCRATCH/workload-src-e4 $SCRATCH/throwaway-snp-sized.img
+     bash docs/snp/cloud/tdx/mkworkloaddev-tdx.sh \
+          $SCRATCH/workload-src-e4 $SCRATCH/workload.raw
+
+   The throwaway 64 MiB image E3's script writes on the way was deleted at once;
+   the TDX device is workload.raw, 1073741824 bytes,
+   sha256 ae7e62087eee7b73be89493e79fdbd9afceea0f91f3948e1108ec43eb4da8406,
+   ext4 label 'attested-workloa' (mke2fs truncates the seventeen-character name
+   to ext4's sixteen bytes and says so). mkworkloaddev-tdx-output.txt is its
+   untrimmed output.
+
+4. boot 1 (2026-09-18T09:56:09Z -> 10:06:35Z; instance created 10:02Z, deleted
+   10:06Z). INCONCLUSIVE, and not the design's fault.
+
+     IMAGE_DIR=$SCRATCH/tdx-image-t24 VM=tdx-t24-a \
+     WORKLOAD_RAW=$SCRATCH/workload.raw \
+     LABEL=purpose=attested-tunnel-t24 TICKET=24 \
+     OUT=docs/snp/evidence/ticket24/spikes/E4/boot-1 \
+     bash docs/snp/cloud/tdx/smoke-tdx-guest.sh
+
+   The new LABEL knob — the Compute Engine resource label — reached
+   mkconfigdev-tdx.sh, whose own LABEL is the ext4 volume label, and the config
+   device went out labelled 'purpose=attested' (truncated). The guest halted
+   after thirty seconds looking for 'attested-config'. Nothing about runsc, the
+   workload disk or the measurement was reached. boot-1/ is kept whole because
+   the ledger names it and because the fix is one line:
+   smoke-tdx-guest.sh now runs that one call under `env -u LABEL`.
+
+     rm boot-1/config.raw          # 1 GiB, not evidence, gitignored
+     gcloud compute images delete attested-config-tdx-t24-a-20260918095609 \
+                                  attested-workload-tdx-t24-a-20260918095609 --quiet
+
+5. boot 2, the run that counts (2026-09-18T10:08:27Z -> 10:15:55Z; instance
+   created 10:11Z, deleted 10:15Z).
+
+     IMAGE_DIR=$SCRATCH/tdx-image-t24 VM=tdx-t24-a \
+     WORKLOAD_RAW=$SCRATCH/workload.raw \
+     LABEL=purpose=attested-tunnel-t24 TICKET=24 \
+     OUT=docs/snp/evidence/ticket24/spikes/E4/boot-2 \
+     bash docs/snp/cloud/tdx/smoke-tdx-guest.sh
+
+   Same image, same workload device, same everything else; the boot image
+   attested-tdx-cd68e874bbfb was already published and was reused rather than
+   uploaded again. The script publishes the two device images, creates the
+   instance with three disks, follows the serial console by byte offset, takes
+   the quote off it, judges it here with attest-tool verify, deletes the
+   instance and prints the rows for RESOURCES.md.
+
+6. teardown (2026-09-18T10:16Z; teardown.txt is the untrimmed output, and
+   RESOURCES.md carries the rows)
+
+     gcloud compute images delete attested-tdx-cd68e874bbfb \
+            attested-config-tdx-t24-a-20260918100827 \
+            attested-workload-tdx-t24-a-20260918100827 --quiet
+     gcloud compute images list --no-standard-images
+     gcloud compute instances list --zones us-central1-a
+     gcloud compute disks list --filter="name~t24"
+     gcloud compute instances list --filter="labels.purpose=attested-tunnel-t24"
+     gcloud compute images list --no-standard-images --filter="labels.purpose=attested-tunnel-t24"
+     gcloud storage buckets list
+
+   -> only ticket 19's three kept images remain, only the seven pre-existing
+   TERMINATED instances, no t24 disk, no t24 instance or image, and the only
+   bucket is the unrelated pre-existing `bucket-sep-25`.
+
+     rm $SCRATCH/tdx-image-t24/disk.raw              # 2026-09-18T10:18:51Z
+     rm boot-2/config.raw                            # 1 GiB, gitignored, not evidence
+
+   Nothing else of this ticket's ten gibibytes is kept anywhere: the image is
+   reproducible from image/manifest.txt and the pinned base disk.
+
+Files here
+   image/                    everything about the built image except its ten
+                             gibibytes: manifest.txt, packaging.txt (the build's
+                             own untrimmed transcript), grub.cfg, initrd.list,
+                             predicted-measurement.txt, predict-rtmr2-output.txt
+                             (the second, by-hand run), sizes.txt, and the two
+                             signed documents with their signatures
+   mkworkloaddev-tdx-output.txt  the workload device's build, untrimmed
+   boot-1/                   the inconclusive boot: its console, its smoke-run
+                             transcript and the config-src the run built
+   boot-2/                   the boot that counts, the same files plus quote.bin,
+                             quote.txt, verify-evidence.txt and measurements.txt
+   teardown.txt              the four inventory commands after the deletes, untrimmed
+   notes.md                  what the console said and what it means
+
+Neither boot-1/ nor boot-2/ holds a config.raw or a workload.raw: they are a
+gibibyte each, they are not measured, and .gitignore refuses them.
+
+----------------------------------------------------------------------------
+Added after E5, 2026-09-18. Steps 0-6 above are boot 1 and boot 2 and are
+unchanged. What follows is the second image and boot 3, the run that has the
+fix in it. SCRATCH and KEY mean what they mean above.
+
+7. image-b, built offline from the fixed init.tdx (2026-09-18T10:46:45Z ->
+   10:49:30Z, 2m45s)
+
+     AUTHOR_KEY=$KEY \
+     BASE_IMAGE=$BASE_SCRATCH/img/base-disk.raw \
+     OUT=$SCRATCH/tdx-image-t24b \
+     RUNSC=/home/pniroula/Projects/gvisor-t24/bazel-bin/runsc/runsc_/runsc \
+     IMAGE_LABEL=t24b \
+     bash docs/snp/cloud/tdx/build-tdx-image.sh
+
+   TUNNELD left unset again, so the build ran the packaging guard and built
+   tunneld itself; the base disk matched BASE_SHA256 d0b2b2c2…5474f.
+
+     runsc    8070bcdf0b7889d8ed3710f5920f06cf909682434b21437eb9df8d7fb6c72518  108668311 bytes (unchanged)
+     tunneld  57d56c404a0fa5a12186af3b93c046f4ad47bf543866e27d071680f45cdea24c   17573981 bytes (unchanged)
+     initrd   54334d67eba23d92ff4e0ca8fa0ed5e684915bb1210baf621646f6b446361286   86551997 bytes (52 entries)
+     disk.raw b4ca16943e239acae98e3159bd477b169cb14a9cb618aebae031cbbcfbac8621  10737418240 bytes
+
+   The initrd is byte for byte the one E5 booted locally and passed with
+   (../E5/commands.txt step 7), which is worth saying plainly: the bytes the
+   hardware measured are the bytes the local boot proved.
+
+8. the prediction, a second time and by hand, still before any instance
+   (2026-09-18T10:50:41Z -> 10:50:42Z)
+
+     python3 docs/snp/cloud/tdx/predict-rtmr2.py --raw $SCRATCH/tdx-image-t24b/disk.raw
+
+   -> image-b/predict-rtmr2-output.txt, byte for byte the
+   predicted-measurement.txt the build wrote at 10:49:27Z. Both precede the
+   instance create (10:59Z) by eight minutes.
+
+     RTMR2 predicted   038e7905a2853bf89285a1e967388a9a8cb5a996830f1eee63d036af532cb25f3d6c7636e071e01663a876dc64ca0b78
+     records           25
+
+9. boot 3 (2026-09-18T10:52:45Z -> 11:02:44Z; instance created 10:59Z, deleted
+   11:02Z). The run that has the fix in it.
+
+     IMAGE_DIR=$SCRATCH/tdx-image-t24b VM=tdx-t24-b \
+     WORKLOAD_RAW=$SCRATCH/workload.raw \
+     LABEL=purpose=attested-tunnel-t24 TICKET=24 \
+     OUT=docs/snp/evidence/ticket24/spikes/E4/boot-3 \
+     bash docs/snp/cloud/tdx/smoke-tdx-guest.sh
+
+   The workload device is boot 2's file unchanged,
+   sha256 ae7e62087eee7b73be89493e79fdbd9afceea0f91f3948e1108ec43eb4da8406, so
+   the bundle is the same bytes on all three boots and on both vendors. The
+   config device came out labelled `attested-config` — the `env -u LABEL` fix
+   from boot 1 holds.
+
+10. teardown (2026-09-18T11:02Z and 11:03:36Z; teardown.txt carries both sets of
+    confirmations and RESOURCES.md the rows)
+
+     # the instance: deleted by the run itself
+     gcloud compute images delete attested-tdx-038e7905a285 \
+            attested-config-tdx-t24-b-20260918105245 \
+            attested-workload-tdx-t24-b-20260918105245 --quiet
+     gcloud compute images list --no-standard-images
+     gcloud compute instances list --zones us-central1-a
+     gcloud compute disks list --filter="name~t24"
+     gcloud compute instances list --filter="labels.purpose=attested-tunnel-t24"
+     gcloud compute images list --no-standard-images --filter="labels.purpose=attested-tunnel-t24"
+     gcloud storage buckets list
+
+   -> again only ticket 19's three kept images, only the seven pre-existing
+   TERMINATED instances, no t24 disk, both t24 label filters empty, and the only
+   bucket the unrelated pre-existing `bucket-sep-25`.
+
+     rm $SCRATCH/tdx-image-t24b/disk.raw              # 2026-09-18T11:04:27Z
+     rm boot-3/config.raw                             # 1 GiB, gitignored, not evidence
+
+Files added here
+   image-b/                  everything about the second image except its ten
+                             gibibytes: manifest.txt, packaging.txt,
+                             build-stdout.txt (the build's own transcript),
+                             grub.cfg, initrd.list, predicted-measurement.txt,
+                             predict-rtmr2-output.txt (the by-hand run),
+                             sizes.txt, and the two signed documents with their
+                             signatures
+   boot-3/                   the boot with the fix in it: console.txt,
+                             smoke-run.txt, config-src/, quote.bin, quote.txt,
+                             verify-evidence.txt, measurements.txt, author.pub,
+                             public-key.der, reference-values.json(+.sig)
+   teardown.txt              a second section, appended
+   notes.md                  a "boot-3" section at the end, appended

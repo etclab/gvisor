@@ -1,0 +1,183 @@
+E1 — exact commands, in the order they were run.
+
+$S stands for the session scratch directory
+  /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t24/46c42ff5-b5e8-48d6-a8bb-ba92dda85a78/scratchpad
+The runsc binary and the read-only image live there, not in the repo. Everything
+ran as the unprivileged user pniroula (uid 253477), from the worktree
+/home/pniroula/Projects/gvisor-t24, branch ticket-24-runsc-in-the-measured-guest,
+tip a06ba786b, no sudo, no hardware. Nothing under pkg/ or runsc/ was modified.
+
+Every driver invocation was run with an explicit PATH, because guest-like-ns.sh
+calls mount(8), pivot_root(8) and mkdir(1) from PATH before it pivots:
+
+  PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+The DRIVER, in every command below, is busybox's applet and nothing else:
+`/bin/busybox unshare`. util-linux's /usr/bin/unshare exists on this workstation
+(spike S1 used it) and is not invoked anywhere in E1.
+
+--- 0. the runsc binary -----------------------------------------------------
+
+`make runsc` was already running when E1 started; its log is $S/make-runsc.log.
+
+$ grep -n 'EXIT=' $S/make-runsc.log
+  387:EXIT=0
+$ ls -la bazel-bin/runsc/runsc_/runsc
+$ cp bazel-bin/runsc/runsc_/runsc $S/bin/runsc && chmod 755 $S/bin/runsc
+$ sha256sum $S/bin/runsc
+  8070bcdf0b7889d8ed3710f5920f06cf909682434b21437eb9df8d7fb6c72518
+$ stat -c '%s bytes' $S/bin/runsc
+  108668311 bytes
+$ $S/bin/runsc --version
+  -> output-04-driver-and-tooling.txt, section 5
+`go build ./runsc` was not attempted (S1 E1 records why it cannot work here).
+
+--- 1. the check, and that it is still S1's ---------------------------------
+
+init-mount-check.sh in this directory is S1's E2 file copied byte for byte
+(sha256 e896f708…6287fb for both). S1 verified it against the guest init with
+
+$ diff <(sed -n '32,39p' docs/snp/image/init.rootfs) \
+       <(sed -n '/^bad=0/,/^  esac$/p' init-mount-check.sh)
+
+Re-done here twice, because docs/snp/image/init.rootfs is being edited in this
+worktree by ticket 24 itself and the loop has moved from lines 30-44 to 36-51:
+
+$ git show HEAD:docs/snp/image/init.rootfs > $S/e1/init.rootfs.HEAD
+$ diff <(sed -n '32,39p' $S/e1/init.rootfs.HEAD) \
+       <(sed -n '/^bad=0/,/^  esac$/p' $S/e1/init-mount-check.sh)
+(no output)
+$ diff <(sed -n '/^bad=0/,/^  esac$/p' docs/snp/image/init.rootfs) \
+       <(sed -n '/^bad=0/,/^  esac$/p' $S/e1/init-mount-check.sh)
+(no output)
+  -> output-07-the-check-is-still-S1s.txt
+
+--- 2. the driver's own identity --------------------------------------------
+
+$ ls -la /bin/busybox /usr/bin/busybox ; readlink -f /bin/busybox
+$ sha256sum /bin/busybox /usr/bin/busybox
+  dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14  (both: one inode)
+$ dpkg-query -W busybox-static
+  busybox-static	1:1.36.1-6ubuntu3.1
+$ /bin/busybox --list | grep -x unshare
+$ /bin/busybox unshare --help                 # recorded verbatim
+  -> output-04-driver-and-tooling.txt, sections 1-4
+
+--- 3. the harness ----------------------------------------------------------
+
+The image ($S/e1/img) plays the part of the guest's read-only squashfs root: it
+carries runsc, busybox, the scripts and five OCI bundles, and it is mounted
+read-only, so nothing is written into it during a run.
+
+  bundle-true    ["/bin/busybox","true"]                          (S1 E1/E2)
+  bundle-mounts  ["/bin/busybox","sh","-c","cat /proc/mounts; sleep 1"]  (S1 E2)
+  bundle-sleep   ["/bin/busybox","sleep","25"]   (S1 E2's was 60; shortened, five
+                 variants run it, and the live captures happen within 2 s)
+  bundle-hi      ["/bin/busybox","sh","-c","echo hi; ls /"]        (S1 E4)
+  bundle-uname   ["/bin/sh","-c","uname -a"]                       (new, E1)
+
+$ $S/e1/build-img.sh
+  116M	$S/e1/img
+
+guest-like-ns.sh is S1's E2 file byte for byte (sha256 ed32c2e1…b74aa).
+guest-like-ns-procbind.sh is that file with three marked hunks; see its header
+and notes.md.
+
+--- 4. item 1: S1's E2 configuration under the busybox applet ---------------
+
+FLAGS, inside, are S1 E2's plus S1 E3's answer:
+  --platform=systrap --network=none --ignore-cgroups --rootless \
+  --gofer-network-namespace=new
+with --root=/run/runsc-state (rw,noexec tmpfs), TMPDIR=/tmp (rw,noexec tmpfs),
+`root.readonly: true` in every bundle, and the bundle on the read-only,
+exec-permitted image.
+
+$ /bin/busybox unshare -Urmnpf $S/e1/guest-like-ns.sh $S/e1/img \
+      /busybox sh /run-inside.sh
+
+  -U -r  user namespace, this caller mapped to uid 0
+  -m     mount namespace
+  -n     network namespace   (the harness mounts a fresh sysfs, which needs the
+                              netns to be owned by the current userns)
+  -p -f  PID namespace       (the harness mounts a fresh procfs, which needs the
+                              pidns to be owned by the current userns; and runsc
+                              needs that procfs — see variant b)
+  -> output-01-e2-under-busybox-unshare.txt
+
+--- 5. item 2: the five driver variants -------------------------------------
+
+Each writes the caller's uid_map, gid_map, setgroups and Cap* sets, /proc/mounts
+and the check's verdict, then runs bundle-true, bundle-hi and a live bundle-sleep
+whose sandbox and gofer are read while they live.
+
+a. $ /bin/busybox unshare -Urmnpf $S/e1/guest-like-ns.sh $S/e1/img \
+        /busybox sh /variant-inside.sh
+   -> output-02a-Urmnpf-fresh-proc.txt        (= item 1's configuration, compact)
+
+b. $ /bin/busybox unshare -Urmnpf $S/e1/guest-like-ns-procbind.sh $S/e1/img \
+        /busybox sh /variant-inside.sh
+   -> output-02b-Urmnpf-parent-proc.txt       (no fresh procfs: the driver's one)
+
+c. $ /bin/busybox unshare -Urm $S/e1/guest-like-ns-procbind.sh $S/e1/img \
+        /busybox sh /variant-inside.sh
+   -> output-02c-Urm-parent-proc.txt          (no pid, no net namespace)
+
+d. $ PFX=$S/e1/img STATE=$S/e1/state-d TMPD=$S/e1/tmp-d \
+     /bin/busybox unshare -Ur /bin/busybox sh $S/e1/variant-inside.sh
+   -> output-02d-Ur-no-mount-namespace.txt
+   This one CANNOT run in the guest-like image: building that image needs a mount
+   namespace and -Ur gives none, so every mount(2) is EPERM. It runs on the
+   workstation's own root, as S1 E4 case (c) did, and the check there is the
+   workstation baseline (53 and then 27 offending mounts), not a verdict on runsc.
+
+e. $ /bin/busybox unshare -Urmnpf --mount-proc $S/e1/guest-like-ns-procbind.sh \
+        $S/e1/img /busybox sh /variant-inside.sh
+   -> output-02e-Urmnpf-mount-proc.txt        (busybox's own procfs mount)
+
+--- 6. item 3: uname -a under the recommended driver ------------------------
+
+3a, the recommendation, busybox's own --mount-proc doing the remount:
+$ MODE=mountproc /bin/busybox unshare -Urmnpf --mount-proc \
+      $S/e1/guest-like-ns-procbind.sh $S/e1/img /busybox sh /uname-inside.sh
+
+3b, the equivalent with the remount spelled out in the sh -c body, which is what
+docs/snp/image/init.rootfs already has:
+$ MODE=explicit /bin/busybox unshare -Urmnpf \
+      $S/e1/guest-like-ns-procbind.sh $S/e1/img /busybox sh /uname-inside.sh
+  (inside: /busybox mount -t proc -o nosuid,nodev,noexec proc /proc, then runsc)
+  -> output-03-uname-under-the-recommended-driver.txt
+
+--- 7. the diagnostics for variant b ----------------------------------------
+
+$ /bin/busybox unshare -Urmnpf <each of the four namespaces above> \
+      $S/e1/img /busybox sh /probe-procself.sh
+  -> output-05-proc-self-exe-probe.txt   (does /proc/self resolve, can
+                                          /proc/self/exe be read and executed)
+
+$ /bin/busybox unshare -Urmnpf $S/e1/guest-like-ns-procbind.sh $S/e1/img \
+      /busybox sh /debug-b-inside.sh
+  (inside: the same runsc command with --debug --debug-log=/tmp/dbg/)
+  -> output-06-variant-b-under-debug.txt
+
+--- 8. propagation, visibility and the workstation's mount table ------------
+
+$ grep -E ' / / ' /proc/self/mountinfo
+$ /bin/busybox unshare -Urm /bin/busybox sh -c 'grep -E " / / " /proc/self/mountinfo'
+$ /bin/busybox unshare -Urm --propagation unchanged /bin/busybox sh -c '…'
+$ /bin/busybox unshare -Urm /bin/busybox sh -c 'mount -t tmpfs t $S/e1/vis; grep vis /proc/mounts'
+$ grep -c 'e1/vis' /proc/mounts        # back outside
+$ grep -n 'nsfs\|runsc' /proc/mounts ; grep -c claude-253477 /proc/mounts ; wc -l /proc/mounts
+  -> output-08-propagation-and-visibility.txt
+
+--- 9. runsc source read (read-only, nothing modified) ----------------------
+
+$ grep -rn 'cannot create gofer process' runsc/
+$ grep -rn 'proc/self/exe' runsc/container/container.go runsc/sandbox/sandbox.go runsc/specutils/*.go
+$ grep -rn 'UidMappings\|GidMappings\|Unshareflags\|Cloneflags' \
+      runsc/container/container.go runsc/sandbox/sandbox.go runsc/specutils/namespace.go
+$ sed -n '1460,1485p;1630,1700p' runsc/container/container.go
+$ sed -n '160,230p' runsc/specutils/namespace.go
+$ sed -n '90,110p' runsc/specutils/specutils.go
+$ grep -n 'uid_map\|gid_map\|setgroups\|func writeUidGidMappings' /usr/local/go/src/syscall/exec_linux.go
+$ grep -n 'fork/exec' /usr/local/go/src/os/exec_posix.go
+  (the citations are in notes.md)

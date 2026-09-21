@@ -1,0 +1,65 @@
+What E5's fix costs the Google Cloud TDX image, byte for byte.
+
+This is E4's second image, built after E5 found why the sandbox died and put the
+answer in docs/snp/cloud/tdx/init.tdx. The comparison that matters here is not
+against ticket 19 — ../image/sizes.txt already did that — but against E4's own
+first image, because **/init is the only thing that moved**.
+
+file            image-a (E4)   image-b (E5's fix)     delta   what it is
+initrd.img         86550953           86551997       +1044   measured WHOLE into RTMR2 by grub
+disk.raw       10737418240        10737418240           +0   10 GiB, unchanged in size
+vmlinuz            16775240           16775240           +0   the provider's own kernel, untouched
+grub.cfg                272                272           +0   byte for byte identical (diff)
+init.tdx              22416              24513       +2097   the fix and the paragraph explaining it
+entries in the cpio      52                 52          +0   no file added, none removed
+
+  initrd.img  image-a  c409a79cfbcd20a9f0fca7662c0423474d0c53c641a3b6b1572a8d23239b8e53
+              image-b  54334d67eba23d92ff4e0ca8fa0ed5e684915bb1210baf621646f6b446361286
+  disk.raw    image-a  e369a6d51a32f44846ad4bdc40e60dd08305b673206a22923452000a576970b4
+              image-b  b4ca16943e239acae98e3159bd477b169cb14a9cb618aebae031cbbcfbac8621
+  runsc       both     8070bcdf0b7889d8ed3710f5920f06cf909682434b21437eb9df8d7fb6c72518
+                       108668311 bytes — the same binary spike S1, E1, E2, E3 and
+                       E4 used, bit for bit. The fix is shell, not sentry, and
+                       nothing under pkg/ or runsc/ changed.
+  tunneld     both     57d56c404a0fa5a12186af3b93c046f4ad47bf543866e27d071680f45cdea24c
+
+2,097 bytes of shell and comment become 1,044 bytes of gzipped initrd, and that
+is the whole of the difference between the image the hardware refused to run a
+workload on and this one. The cpio entry list is identical but for the build
+directory's name in it: mkdir and chroot are reached through /bin/busybox rather
+than through applet symlinks precisely so that no entry has to be added
+(build-tdx-image.sh's APPLETS is untouched).
+
+The prediction, from the image and from nothing else, before any instance existed:
+
+  RTMR2 predicted   : 038e7905a2853bf89285a1e967388a9a8cb5a996830f1eee63d036af532cb25f
+                      3d6c7636e071e01663a876dc64ca0b78
+  records predicted : 25
+
+  the build's own run  2026-09-18T10:49:27Z -> predicted-measurement.txt
+  a second run by hand 2026-09-18T10:50:41Z -> 10:50:42Z -> predict-rtmr2-output.txt
+
+and the two are byte for byte the same file (diff). Both precede the first
+instance create.
+
+Against image-a's 25 records, **exactly one moved, and it is record 24, the
+initrd's own digest**:
+
+  image-a   24  a 15e1b5a3203f557735024f7d106da35c8ef4d7e38ebbb50d122cae27d125acb8
+                  700de18398e4c15efccd96dac5e67fd9  /initrd.img-attested
+  image-b   24  a b2049fc9f7ff74a89a8e07319e8fd6e9d2449483dc85e932298303e88e705f75
+                  e8c0e7e653b3b94a02b2a78858f619b9  /initrd.img-attested
+
+which is the same statement E4 made about ticket 19's image: the vmlinuz, the
+grub.cfg, the GPT, the partition contents grub reads on the way and every other
+record are the provider's constants and this ticket's initrd is the only thing
+in RTMR2 that this ticket authored.
+
+  image-a (E4 boot 1 and 2): cd68e874bbfb15b746ba0679fb4a0bc3fe967b5b616a635fb
+                             d47f48538135af0ab229810fb3d293273a8c4e1438f6e25
+  ticket 19 image-a:         d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477
+                             f113007379dbf0fc7601cac8fa69bb48a4efd4322c73e0d
+
+The 10 GiB disk.raw is not here and is not kept: it is reproducible from
+manifest.txt, the pinned base disk and this initrd, and it was deleted after the
+boot (../commands.txt).

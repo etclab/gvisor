@@ -1,0 +1,39 @@
+What a 108 MB runsc costs the Google Cloud TDX image, byte for byte.
+
+Ticket 19's image-a (docs/snp/evidence/ticket19/images/image-a/manifest.txt)
+against this one. Same pinned base disk, same kernel 6.17.0-1022-gcp, same
+busybox, same build script but for ticket 24's additions: /usr/bin/runsc, the
+unshare applet symlink, the empty /workload directory, and init.tdx's new text.
+
+file            ticket 19    ticket 24        delta    ratio  what it is
+initrd.img       10446197     86550953    +76104756    8.29x  measured WHOLE into RTMR2 by grub
+disk.raw     10737418240  10737418240           +0     1.00x  10 GiB, unchanged: two files rewritten on /boot
+vmlinuz          16775240     16775240           +0     1.00x  the provider's own kernel, untouched
+grub.cfg              272          272           +0     1.00x  the same nine lines, the same bytes
+
+runsc                   0    108668311   +108668311       -    /usr/bin/runsc, from `make runsc`
+             sha256 8070bcdf0b7889d8ed3710f5920f06cf909682434b21437eb9df8d7fb6c72518
+             (the same binary spike S1 and E1-E3 used, bit for bit)
+
+The whole cost is in the initrd, and it is smaller than the binary that caused
+it: gzip -9 over the cpio turns 108668311 bytes of runsc into 76104756 bytes
+of image, 70.0% of the binary. There is no verity root here to hide it in --
+on SEV-SNP runsc went into the squashfs and the initrd grew by 849 bytes
+(docs/snp/evidence/ticket24/spikes/E2/sizes.txt); here the initramfs IS the root,
+grub measures it whole, and so every one of those bytes is inside RTMR2.
+
+The initrd's entry count went 49 -> 52: /usr/bin/runsc, dir /workload, and the
+unshare applet symlink.
+
+The prediction, from the image and from nothing else, before any boot:
+
+  RTMR2 predicted   : cd68e874bbfb15b746ba0679fb4a0bc3fe967b5b616a635fbd47f48538135af0
+                      ab229810fb3d293273a8c4e1438f6e25
+  records predicted : 25   (the same 25 grub takes on any image of this shape;
+                            ticket 19's image-a was 25 too, and only record 24 --
+                            the initrd's own digest -- moved)
+
+Ticket 19 image-a, for the comparison:
+  RTMR2 predicted   : d5ddcc423b1aed530237a6c43b3005d317464a94217dd9477f113007379dbf0f
+                      c7601cac8fa69bb48a4efd4322c73e0d
+  records predicted : 25

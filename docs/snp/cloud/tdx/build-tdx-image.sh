@@ -80,6 +80,24 @@
 #   TUNNELD       a prebuilt static tunneld; default is to build it here, after
 #                 running its guards, exactly as docs/snp/image/package-tunneld.sh
 #                 does and in the same order: check, build, then measure.
+#   RUNSC         REQUIRED. The static runsc to carry as /usr/bin/runsc, which
+#                 /init launches under a user namespace with spike S1's flag set
+#                 (ticket 24). `make runsc` is the only thing that builds it on
+#                 this branch (bazel, 108 MB). Refused unless it is statically
+#                 linked, for the same reason TUNNELD is: this initrd carries no
+#                 dynamic loader, and an exec that fails inside the guest fails
+#                 after the measurement is fixed. There is no default.
+#
+#                 On SEV-SNP runsc goes into the dm-verity root; here it goes
+#                 into the initrd, because there is no second filesystem to put
+#                 it on — the initramfs IS the root, grub measures it whole, and
+#                 so a 108 MB binary is 108 MB of RTMR2. That is the asymmetry,
+#                 and it is the reason this build's initrd grows by an order of
+#                 magnitude. Together with the `unshare` applet and the empty
+#                 /workload the initrd carries, what the measurement covers is
+#                 runsc, the flag set /init launches it with and the options the
+#                 workload device is mounted with; what that device carries is
+#                 outside the measurement and is never claimed to be in it.
 #   IMAGE_LABEL   a word that goes in the image's name and the manifest
 #                 (default "a"); scenario three builds a second image and needs
 #                 the two to be distinguishable by name.
@@ -138,6 +156,7 @@ TCB_EVALUATION="${TCB_EVALUATION:-20}"
 
 : "${AUTHOR_KEY:?set AUTHOR_KEY to the reference value author Ed25519 private key, PKCS#8 PEM}"
 : "${BASE_IMAGE:?set BASE_IMAGE to the pinned Ubuntu raw disk image}"
+: "${RUNSC:?set RUNSC to the static runsc to carry as /usr/bin/runsc; make runsc builds it into bazel-bin/runsc/runsc_/runsc}"
 BASE_IMAGE="$(readlink -f "$BASE_IMAGE")"
 export PATH="/usr/local/go/bin:$PATH"
 command -v go >/dev/null || { echo "go not found; attest/README.md says how" >&2; exit 1; }
@@ -286,6 +305,18 @@ file "$TUNNELD" | grep -q 'statically linked' || {
 }
 TUNNELD_SHA=$(sha256sum "$TUNNELD" | cut -d' ' -f1)
 echo "tunneld $TUNNELD_SHA ($(stat -c %s "$TUNNELD") bytes)"
+# runsc, the same demand for the same reason, and its hash and size printed here
+# beside tunneld's rather than only in the manifest: it is the largest thing in
+# this measurement by two orders of magnitude and the number belongs in the
+# build's own output. It is not built here — `make runsc` is bazel and takes
+# minutes — so it is named, checked and measured, never produced.
+file "$RUNSC" | grep -qE 'statically linked|static-pie linked' || {
+  echo "REFUSING: $RUNSC is not statically linked; the initrd carries no dynamic loader" >&2
+  exit 1
+}
+RUNSC_SHA=$(sha256sum "$RUNSC" | cut -d' ' -f1)
+RUNSC_BYTES=$(stat -c %s "$RUNSC")
+echo "runsc   $RUNSC_SHA ($RUNSC_BYTES bytes, from $RUNSC)"
 file "$BUSYBOX" | grep -q 'statically linked' || { echo "$BUSYBOX is not static" >&2; exit 1; }
 BUSYBOX_PKG=$(dpkg-query -W busybox-static 2>/dev/null | cut -f2 || echo unknown)
 echo "busybox $BUSYBOX $(sha256sum "$BUSYBOX" | cut -d' ' -f1) (busybox-static $BUSYBOX_PKG)"
@@ -304,10 +335,17 @@ I="$B/initrd"
 install -m 755 "$BUSYBOX" "$I/busybox"
 install -m 755 "$HERE/init.tdx" "$I/init"
 install -m 755 "$TUNNELD" "$I/tunneld"
+install -m 755 "$RUNSC" "$I/runsc"
 # Exactly the applets init.tdx uses. A guest with more applets than its init
 # needs is a guest with more that a foothold could reach, and every byte is in
 # the measurement anyway.
-APPLETS="sh mount insmod cat echo printf sleep sync uname dmesg grep sed cut sort tr dd od find stat sha256sum ip poweroff"
+#
+# unshare is ticket 24's one addition to this list: /init enters a user
+# namespace with it before launching runsc, which inside one needs no host
+# capability at all (docs/snp/evidence/spike-s1-runsc-in-guest/README.md, and
+# docs/snp/evidence/ticket24/spikes/E1/notes.md for the applet being enough).
+# The driver line's other two applets, sh and mount, were already here.
+APPLETS="sh mount insmod cat echo printf sleep sync uname dmesg grep sed cut sort tr dd od find stat sha256sum ip poweroff unshare"
 {
   echo "# initrd of the attested tunnel guest, $KERNEL_RELEASE, label $IMAGE_LABEL"
   echo "dir /dev 0755 0 0"
@@ -317,6 +355,11 @@ APPLETS="sh mount insmod cat echo printf sleep sync uname dmesg grep sed cut sor
   echo "dir /run 0755 0 0"
   echo "dir /tmp 1777 0 0"
   echo "dir /config 0755 0 0"
+  # Empty here and empty in the image: /init mounts the workload device over it,
+  # and a guest booted without that disk finds a mount point with nothing on it
+  # rather than a missing path. runsc's own state directory is not listed — it
+  # goes on /run, which is a tmpfs, and runsc creates it itself.
+  echo "dir /workload 0755 0 0"
   echo "dir /bin 0755 0 0"
   echo "dir /sbin 0755 0 0"
   echo "dir /usr 0755 0 0"
@@ -329,6 +372,7 @@ APPLETS="sh mount insmod cat echo printf sleep sync uname dmesg grep sed cut sor
   echo "file /bin/busybox $I/busybox 0755 0 0"
   for a in $APPLETS; do echo "slink /bin/$a busybox 0777 0 0"; done
   echo "file /usr/bin/tunneld $I/tunneld 0755 0 0"
+  echo "file /usr/bin/runsc $I/runsc 0755 0 0"
   echo "file /etc/attested-tunnel/author.pub $B/author.pub 0444 0 0"
   for m in "$B"/modules/*.ko; do
     [ -e "$m" ] || continue
@@ -536,6 +580,11 @@ fi
   echo "grub.cfg:        $GRUBCFG_SHA ($(stat -c %s "$B/grub.cfg") bytes), installed at /boot/grub/grub.cfg, immutable flag set"
   echo "kernel:          vmlinuz-$KERNEL_RELEASE $KERNEL_SHA ${KERNEL_SOURCE:+(installed from the package unpacked at $KERNEL_SOURCE)}"
   echo "initrd:          /$INITRD_NAME $INITRD_SHA ($(stat -c %s "$OUT/initrd.img") bytes)"
+  echo "runsc:           $RUNSC"
+  echo "                 sha256 $RUNSC_SHA, $RUNSC_BYTES bytes (make runsc, bazel; carried as /usr/bin/runsc"
+  echo "                 inside the initrd above, so it is inside RTMR2). What the measurement covers is"
+  echo "                 this binary, the flag set /init launches it with and the options the workload"
+  echo "                 device is mounted with; the workload device's contents are outside it."
   echo "kernel cmdline:  $CMDLINE"
   echo "boot fs uuid:    $BOOT_UUID"
   echo
@@ -556,6 +605,7 @@ fi
   echo "/init            $(sha256sum "$I/init" | cut -d' ' -f1) 0755 $(stat -c %s "$I/init")"
   echo "/bin/busybox     $(sha256sum "$I/busybox" | cut -d' ' -f1) 0755 $(stat -c %s "$I/busybox")  (busybox-static $BUSYBOX_PKG)"
   echo "/usr/bin/tunneld $TUNNELD_SHA 0755 $(stat -c %s "$TUNNELD")"
+  echo "/usr/bin/runsc   $RUNSC_SHA 0755 $RUNSC_BYTES"
   echo "/etc/attested-tunnel/author.pub $(sha256sum "$B/author.pub" | cut -d' ' -f1) 0444 $(stat -c %s "$B/author.pub")"
   for m in "$B"/modules/*.ko; do
     [ -e "$m" ] || continue

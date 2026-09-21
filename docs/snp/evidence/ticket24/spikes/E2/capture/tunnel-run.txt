@@ -1,0 +1,94 @@
+=== two attested guests, from image-ticket24 ===
+date        : 2026-09-18T09:21:38Z
+repo        : 233658709375bbadc46f8c07ec4c250559512504 on ticket-24-runsc-in-the-measured-guest
+image       : /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket24
+mode        : SEV-SNP (privileged, through the spool)
+scenarios   : live
+
+predicted launch measurement of the image both guests boot:
+  423b7bcfbf3922af7c7faa65607dff6d86f6c0508ac6aaf0a9aff684d39313318364fd3ba2e15fe491b7f32077c84b3c
+the reference value set on both config devices names exactly that, signed by the
+author key baked into the image at /etc/attested-tunnel/author.pub (ADR-0004),
+and the policy beside it is signed by the same key under its own domain.
+
+spool       : /home/pniroula/Projects/gvisor/docs/snp/root-spool
+
+### live: two attested guests, an exchange, and the latency table
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config device written to /home/pniroula/Projects/gvisor-t24/.scratch/attested-secure-tunnel/host-stack/image-ticket24-run/live/config-a.img (563b773d285deed3…, not measured)
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config device written to /home/pniroula/Projects/gvisor-t24/.scratch/attested-secure-tunnel/host-stack/image-ticket24-run/live/config-b.img (b06639e3b570895c…, not measured)
+spooled /home/pniroula/Projects/gvisor/docs/snp/root-spool/tunnel-3536072-live.job; waiting up to 630s for the runner
+live finished, rc=0
+    | guest A qemu exited 0
+    | guest B qemu exited 0
+relay:
+    | l2relay: RELAYED a_to_b_frames=400 b_to_a_frames=402 a_to_b_bytes=52832 b_to_a_bytes=59015 tampered=0
+    | l2relay: MARKER not found hits=0 marker='attested-tunnel-plaintext-marker' in 802 frames carrying 111847 bytes
+    | l2relay: what was on the segment:
+    |   ethertypes : IPv4=790, ARP=12
+    |   ip protocols: UDP=790
+    |   arp targets : 10.14.0.2, 10.14.0.3
+    |   10.14.0.3 -> 10.14.0.2 proto=UDP frames=397
+    |   10.14.0.2 -> 10.14.0.3 proto=UDP frames=393
+PASS  guest-a: booted the measured image and ran the packaged tunneld
+PASS  guest-a: no writable path in the image is executable
+PASS  guest-a: read the author key from inside the launch measurement
+PASS  guest-a: read the reference value set and chain from the config device
+PASS  guest-b: booted the measured image and ran the packaged tunneld
+PASS  guest-b: no writable path in the image is executable
+PASS  guest-b: read the author key from inside the launch measurement
+PASS  guest-b: read the reference value set and chain from the config device
+PASS  guest-a: acquired its own evidence from the platform
+PASS  guest-a: bundled the chain provisioned on its config device, not the platform's
+PASS  guest-a: is listening
+PASS  guest-b: acquired its own evidence from the platform
+PASS  guest-b: bundled the chain provisioned on its config device, not the platform's
+PASS  guest-b: is listening
+PASS  guest-a admitted its peer's evidence
+PASS  guest-b admitted its peer's evidence
+PASS  guest-b established a tunnel
+PASS  guest-b exchanged over it, warm
+PASS  guest-b ran concurrent exchanges on one tunnel
+PASS  guest-a answered guest-b's exchanges
+PASS  guest-b's exercise completed
+PASS  neither guest refused the other
+    guest-a presented key 4cd8c2ac522b0fbde63ce40997166e3e1273dec425fee8d59ac6f59fd6df173318123f7b47b81a3f4170151f836148bd2c05cbb5d41819c9c0b581d52dbcf36e
+    guest-b presented key 676c7ad4e126ad8e8116fcc592941dd7439505ac938a2d65ece1cb3d4b8ddac4e7e2a6e99ef9d2bf7609b6c1d041e268bb9df0281a7897e5282fed89a314e7a8
+    both presented chain  0957b4aa0678b511c89d6f9b49742ab114043b662408b13e9f7b43d1033d5a81 / 0957b4aa0678b511c89d6f9b49742ab114043b662408b13e9f7b43d1033d5a81
+PASS  the two guests presented distinct keys
+PASS  the two guests presented the same chain, which is what one chip means
+PASS  each guest reported the measurement predicted offline for the image both booted
+PASS  the exchange went through the relay
+PASS  the relay found no plaintext on the wire
+    addresses resolved on the segment: 10.14.0.2, 10.14.0.3
+PASS  no guest looked for a gateway or anything else off the segment
+    passes: 5, of which cost a verification: 1 (maximum age 15m, run 150s)
+PASS  asking for a warm peer again cost no handshake
+
+=== latency, as the guests measured it ===
+  LATENCY pass=1 peer=guest-a kind=establish ms=1171.672 attempts=1 verifier_calls=1
+  LATENCY pass=1 peer=guest-a kind=warm_exchange n=20 min_ms=2.775 p50_ms=3.418 p90_ms=3.631 max_ms=3.981 mean_ms=3.351 answered_by="guest-a"
+  LATENCY pass=1 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=38.423 min_ms=4.234 p50_ms=6.079 p90_ms=23.728 max_ms=24.222 mean_ms=11.343
+  LATENCY pass=2 peer=guest-a kind=establish ms=0.072 attempts=1 verifier_calls=0
+  LATENCY pass=2 peer=guest-a kind=warm_exchange n=20 min_ms=3.106 p50_ms=3.622 p90_ms=5.707 max_ms=8.458 mean_ms=3.885 answered_by="guest-a"
+  LATENCY pass=2 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=26.298 min_ms=4.037 p50_ms=7.485 p90_ms=9.457 max_ms=9.593 mean_ms=7.047
+  LATENCY pass=3 peer=guest-a kind=establish ms=0.075 attempts=1 verifier_calls=0
+  LATENCY pass=3 peer=guest-a kind=warm_exchange n=20 min_ms=3.501 p50_ms=4.005 p90_ms=4.447 max_ms=4.721 mean_ms=3.961 answered_by="guest-a"
+  LATENCY pass=3 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=41.269 min_ms=3.982 p50_ms=5.740 p90_ms=26.038 max_ms=26.521 mean_ms=11.956
+  LATENCY pass=4 peer=guest-a kind=establish ms=0.081 attempts=1 verifier_calls=0
+  LATENCY pass=4 peer=guest-a kind=warm_exchange n=20 min_ms=3.039 p50_ms=3.797 p90_ms=4.830 max_ms=4.948 mean_ms=3.881 answered_by="guest-a"
+  LATENCY pass=4 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=50.684 min_ms=3.418 p50_ms=7.420 p90_ms=33.686 max_ms=33.995 mean_ms=14.924
+  LATENCY pass=5 peer=guest-a kind=establish ms=0.146 attempts=1 verifier_calls=0
+  LATENCY pass=5 peer=guest-a kind=warm_exchange n=20 min_ms=3.366 p50_ms=4.250 p90_ms=5.155 max_ms=5.647 mean_ms=4.267 answered_by="guest-a"
+  LATENCY pass=5 peer=guest-a kind=concurrent streams=8 rounds=3 n=24 wall_ms=29.491 min_ms=4.191 p50_ms=7.567 p90_ms=11.253 max_ms=11.904 mean_ms=7.616
+
+=== 29 passed, 0 failed ===

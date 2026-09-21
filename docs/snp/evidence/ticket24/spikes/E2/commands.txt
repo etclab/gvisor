@@ -1,0 +1,46 @@
+E2 — the SNP image with runsc in it, and one boot with no workload disk.
+Ticket 24, worktree /home/pniroula/Projects/gvisor-t24 on
+ticket-24-runsc-in-the-measured-guest. Nothing here ran as root except the two
+QEMUs, which ran through the job spool; no sudo was typed.
+
+STACK=/home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack
+
+1. the runsc binary the image carries (the only way to build it on this branch)
+
+     make runsc
+     # -> bazel-bin/runsc/runsc_/runsc
+     #    sha256 8070bcdf0b7889d8ed3710f5920f06cf909682434b21437eb9df8d7fb6c72518
+     #    108668311 bytes, ELF x86-64 statically linked
+
+2. the image, built and measured offline (build-stdout.txt is this run's output)
+
+     STACK=$STACK \
+     OUT=$STACK/image-ticket24 \
+     AUTHOR_KEY=$STACK/image-ticket14-packaging/author.key \
+     RUNSC=/home/pniroula/Projects/gvisor-t24/bazel-bin/runsc/runsc_/runsc \
+       bash docs/snp/image/package-tunneld.sh
+
+   AUTHOR_KEY is the key ticket 22's image was signed with
+   ($STACK/image-ticket22-packaging/packaging.txt names it): its public half is
+   inside the measurement, so the harness can re-sign a set for this image.
+
+3. the boot, with NO workload disk, through the job spool
+
+     docs/snp/tunnel-on-two-guests.sh -image $STACK/image-ticket24 \
+         -scenario live -quick \
+         -spool /home/pniroula/Projects/gvisor/docs/snp/root-spool \
+         -capture docs/snp/evidence/ticket24/spikes/E2/capture
+
+   The root runner was already up as root in tmux session root-runner-m4,
+   watching the primary checkout's spool; the job file names absolute paths, so
+   it ran this worktree's scripts.
+
+Files here
+   build-stdout.txt            the build's own output, untrimmed
+   packaging.txt               package-tunneld.sh's record (the guard, the two binaries)
+   manifest.txt                every measured input, the rootfs file by file, the digests
+   predicted-measurement.txt   how the launch measurement was predicted, offline
+   reference-values.inputs.txt the inputs of the two signed documents
+   sizes.txt                   this image against ticket 22's, byte for byte
+   capture/                    the harness's own capture of the run
+   notes.md                    what the boot said

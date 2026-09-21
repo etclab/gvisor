@@ -27,6 +27,12 @@
 # key and no boot — and that is the number in policy_digest below and the number
 # a peer's own policy_digest names (attest/ceiling, ADR-0008).
 #
+# Ticket 24: the root filesystem also carries the bazel-built static runsc and
+# busybox's unshare applet, and an empty /workload for the bundle the initrd
+# mounts there off a disk outside the measurement. What is measured is runsc,
+# the flag set /sbin/init launches it with and that mount's options; what it
+# runs is not.
+#
 # Rebuildable and auditable, not bit-reproducible: every input is pinned by
 # hash or version, every tool version is recorded, and the manifest lists
 # every file that went in. Nothing here needs root.
@@ -79,6 +85,15 @@
 #                   computes it. There is no default: ticket 21 removed the
 #                   placeholder this script used to build when TUNNELD was
 #                   empty, so a build now names the binary it measures.
+#   RUNSC           required. Static runsc to embed as /usr/bin/runsc, which
+#                   /sbin/init launches under a user namespace with spike S1's
+#                   flag set. `make runsc` is the only thing that builds it on
+#                   this branch (bazel, 108 MB); package-tunneld.sh passes it
+#                   through and records its sha256 beside tunneld's. Refused
+#                   unless it is statically linked, for the same reason TUNNELD
+#                   is: the root filesystem carries no dynamic loader, and an
+#                   exec that fails inside the guest fails after the measurement
+#                   is fixed. There is no default.
 #   BUSYBOX         static busybox (default /bin/busybox from busybox-static)
 set -euo pipefail
 HERE="$(dirname "$(readlink -f "$0")")"
@@ -90,6 +105,7 @@ VCPUS="${VCPUS:-4}"; VCPU_TYPE="${VCPU_TYPE:-EPYC-v4}"; POLICY="${POLICY:-0x3000
 TCB_FLOOR="${TCB_FLOOR:-9,0,23,72}"
 : "${AUTHOR_KEY:?set AUTHOR_KEY to the reference value author Ed25519 private key, PKCS8 PEM}"
 : "${TUNNELD:?set TUNNELD to the static binary to embed as /usr/bin/tunneld; docs/snp/image/package-tunneld.sh builds it and sets this}"
+: "${RUNSC:?set RUNSC to the static runsc to embed as /usr/bin/runsc; make runsc builds it into bazel-bin/runsc/runsc_/runsc}"
 export PATH="/usr/local/go/bin:$PATH"
 command -v go >/dev/null || { echo "go not found; attest/README.md says how" >&2; exit 1; }
 
@@ -134,6 +150,14 @@ gcc -O2 -static -Wall -o veritymap "$HERE/veritymap.c"
 gcc -O2 -static -Wall -o gen_init_cpio "$GEN_INIT_CPIO_SRC"
 
 file "$TUNNELD" | grep -q 'statically linked' || { echo "TUNNELD $TUNNELD is not static" >&2; exit 1; }
+# runsc, the same demand for the same reason, and its hash and size printed here
+# rather than only in the manifest: it is the largest thing in the measurement by
+# two orders of magnitude and the number belongs in the build's own output.
+file "$RUNSC" | grep -qE 'statically linked|static-pie linked' || { echo "RUNSC $RUNSC is not static" >&2; exit 1; }
+RUNSC_SHA256=$(sha256sum "$RUNSC" | cut -d' ' -f1)
+RUNSC_BYTES=$(stat -c %s "$RUNSC")
+echo "runsc sha256: $RUNSC_SHA256"
+echo "runsc bytes : $RUNSC_BYTES"
 
 # The document emitter: the author-side half of attest/refvalsfile.go and
 # attest/policyfile.go, built from source so the documents shipped are the ones
@@ -156,12 +180,19 @@ printf '%s\n' "$KEYHEX" > author.pub
 # ---- root filesystem -------------------------------------------------------
 # Enumerated by hand. Applets are the ones /sbin/init uses, no more.
 R="$B/rootfs"
-mkdir -p "$R"/{bin,sbin,usr/bin,etc/attested-tunnel,lib/modules,config,proc,sys,dev,run,tmp}
+# /workload is empty here and stays empty in the image: the initrd mounts the
+# workload device over it, and a guest booted without that disk finds nothing.
+mkdir -p "$R"/{bin,sbin,usr/bin,etc/attested-tunnel,lib/modules,config,proc,sys,dev,run,tmp,workload}
 install -m 755 "$BUSYBOX" "$R/bin/busybox"
-ROOT_APPLETS="sh mount umount insmod cat echo sleep ls dmesg grep sed poweroff sync ip"
+# unshare is ticket 24's one addition: init enters a user namespace with it
+# before launching runsc, which inside one needs no host capability at all
+# (docs/snp/evidence/spike-s1-runsc-in-guest/README.md). The driver's other two
+# applets, sh and mount, are already here.
+ROOT_APPLETS="sh mount umount insmod cat echo sleep ls dmesg grep sed poweroff sync ip unshare"
 for a in $ROOT_APPLETS; do ln -s busybox "$R/bin/$a"; done
 install -m 755 "$HERE/init.rootfs" "$R/sbin/init"
 install -m 755 "$TUNNELD" "$R/usr/bin/tunneld"
+install -m 755 "$RUNSC" "$R/usr/bin/runsc"
 install -m 444 author.pub "$R/etc/attested-tunnel/author.pub"
 install -m 444 "$MODDIR/drivers/virt/coco/guest/tsm_report.ko"   "$R/lib/modules/"
 install -m 444 "$MODDIR/drivers/virt/coco/sev-guest/sev-guest.ko" "$R/lib/modules/"
@@ -348,6 +379,8 @@ EMITTED_POLICY_DIGEST=$(printf '%s\n' "$EMITTED_POLICY" | sed -n 's/^policy dige
   echo "kernel:   AMDESE/linux snp-guest-latest $KERNEL_COMMIT, release $KERNEL_RELEASE"
   echo "busybox:  $BUSYBOX  busybox-static $BUSYBOX_PKG"
   echo "tunneld:  $TUNNELD"
+  echo "runsc:    $RUNSC"
+  echo "          sha256 $RUNSC_SHA256, $RUNSC_BYTES bytes (make runsc, bazel; installed as /usr/bin/runsc)"
   echo "author key: $KEYHEX"
   echo
   echo "## Toolchain"

@@ -1,0 +1,7 @@
+workload: config.json  193382ad2dfce082768b777e0b3a8d017a761b51eb97024872bef9a41180b741  632 bytes
+workload: rootfs/  (3 files, 2088 KiB)
+Warning: label too long; will be truncated to 'attested-workloa'
+
+workload device written to $SCRATCH/workload.raw (root-owned, ext4 without a journal)
+  size   1073741824 bytes, label attested-workload (ext4 stores the first 16 bytes of it)
+  sha256 ae7e62087eee7b73be89493e79fdbd9afceea0f91f3948e1108ec43eb4da8406  (not measured, and nothing on it is trusted)

@@ -1,0 +1,82 @@
+BUILD START 2026-09-18T10:46:45Z
+=== build-tdx-image: 2026-09-18T10:46:45Z on shs1
+repo 69eaf51a1de9a3765057d88be5a56aa5d6e1af15 on ticket-24-runsc-in-the-measured-guest
+go   go version go1.26.3 linux/amd64
+out  $SCRATCH/tdx-image-t24b
+
+=== 0. the base image, pinned by hash
+/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-tdx-work/c555559c-f76b-4220-8c97-490f1962a496/scratchpad/img/base-disk.raw d0b2b2c29a0bcc42c9dc414706b2b45af99fabf375150afaabcd59cd0785474f (10737418240 bytes)
+GPT PMBR size mismatch (8388607 != 20971519) will be corrected by write.
+The backup GPT table is not on the end of the device.
+partitions: root at byte 1074790400, ESP at byte 5242880, /boot at byte 116391936
+/boot filesystem UUID b4f9057b-66e6-4f5a-bbba-a8086989e88f (what grub's `search --fs-uuid` will resolve)
+
+=== 1. the kernel and the modules, taken out of the image itself
+kernel release 6.17.0-1022-gcp, the one the provider's image carries
+vmlinuz-6.17.0-1022-gcp ddd8198f9bdca634295d6a35b6135ca9a30db8b5e3f8e91cf08b776bfd11e6be (16775240 bytes)
+  tdx-guest.ko 808e90f676fed82d040190b0aca2cb78192043e227d1e1f86ba9d9ac18f779d6 25673 bytes from kernel/drivers/virt/coco/tdx-guest/tdx-guest.ko.zst
+  gve.ko 710a1fd65e546d0895b1b8890f284a5e1048b75d06a7e53e2e9c843ebe25b3fa 357145 bytes from kernel/drivers/net/ethernet/google/gve/gve.ko.zst
+  nf_tables.ko 9da74ffdf3ef28deabb5b174f42ab9a602809d1cbcbf58c6c5024b11001dd896 759657 bytes from kernel/net/netfilter/nf_tables.ko.zst
+  nf_reject_ipv4.ko 5cd0952662e88bf04ada0160c732d9f25238cd07e776f369d8f9c90b3842dc01 21265 bytes from kernel/net/ipv4/netfilter/nf_reject_ipv4.ko.zst
+  nf_reject_ipv6.ko 4aec3e8b0c915a85b0c3fbedff60e5ef8fcbee540bb912ab9bd659fa93e61367 26137 bytes from kernel/net/ipv6/netfilter/nf_reject_ipv6.ko.zst
+  nft_reject.ko 53cee8e9549260ca39e322ebcbfce5c19841db3b36336348e7a3d45ba8bf59fb 16729 bytes from kernel/net/netfilter/nft_reject.ko.zst
+  nft_reject_inet.ko 8f570d2e50250862406faad7c93e15d5542a8e16e524461f6e003bb3cfb6e43b 15777 bytes from kernel/net/netfilter/nft_reject_inet.ko.zst
+
+=== 2. tunneld, checked before it is built and built before it is measured
+$ go test ./cmd/tunneld
+ok  	gvisor.dev/gvisor/attest/cmd/tunneld	2.800s
+guard passed: the packaged graph reaches no fake platform and no test support
+$ CGO_ENABLED=0 go build -trimpath -buildvcs=false -o $SCRATCH/tdx-image-t24b/build/tunneld ./cmd/tunneld
+$SCRATCH/tdx-image-t24b/build/tunneld: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, Go BuildID=0UTZqRt9pzx8mAinq7nT/GS6v1pCk0E71AJp2Dlxm/sRGzHXwdzCfbyVauZV5W/ObvV90bKdFROHbNoftKA, BuildID[sha1]=e2a33c11b25554349de79ac0608d00fd39855a1b, with debug_info, not stripped
+tunneld 57d56c404a0fa5a12186af3b93c046f4ad47bf543866e27d071680f45cdea24c (17573981 bytes)
+runsc   8070bcdf0b7889d8ed3710f5920f06cf909682434b21437eb9df8d7fb6c72518 (108668311 bytes, from /home/pniroula/Projects/gvisor-t24/bazel-bin/runsc/runsc_/runsc)
+busybox /usr/bin/busybox dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14 (busybox-static 1:1.36.1-6ubuntu3.1)
+
+=== 3. author public key 665053d10032f5b9a46394a65b022c0bd7007392b8f445fe4ace5b0e5ed4c5a2 (goes into the initrd, and therefore into RTMR2)
+
+=== 4. the initrd: the whole guest, in one file grub measures
+initrd.img 54334d67eba23d92ff4e0ca8fa0ed5e684915bb1210baf621646f6b446361286 (86551997 bytes, from 52 entries)
+
+=== 5. the fixed boot configuration
+  set default=0
+  set timeout=0
+  menuentry 'attested-tunnel' {
+  	insmod part_gpt
+  	insmod ext2
+  	search --no-floppy --fs-uuid --set=root b4f9057b-66e6-4f5a-bbba-a8086989e88f
+  	linux	/vmlinuz-6.17.0-1022-gcp console=ttyS0,115200 panic=-1 rdinit=/init
+  	initrd	/initrd.img-attested
+  }
+grub.cfg aacf982e03961d45266db8c79df10495fe36e2fc06167a2eb11535d8e79731b1 (272 bytes)
+
+=== 6. the image: two files changed on the /boot partition, nothing else
+grub.cfg inode flags 0x80000 -> 0x80010 (immutable set)
+Pass 5: Checking group summary information
+BOOT: 601/58496 files (0.3% non-contiguous), 46297/233728 blocks
+disk.raw b4ca16943e239acae98e3159bd477b169cb14a9cb618aebae031cbbcfbac8621 (10737418240 bytes)
+ESP unchanged (917fa42848b63601d35ca66a75e49c32e42b8515e2b0e0ff949415c5750c5323); Ubuntu's root partition unchanged (e8fd5d72634f58d772b4b85d04608173e1ee7937518d4fd987dcca80f1c7de03)
+GPT unchanged (a5fb8e097e42ade5161b074b8dd0fc953d090b7844d4895175c21a4866a36163); RTMR1 keeps the two values the reference value pins
+
+=== 7. RTMR2, predicted from the image just built and from nothing else
+predicted RTMR2 038e7905a2853bf89285a1e967388a9a8cb5a996830f1eee63d036af532cb25f3d6c7636e071e01663a876dc64ca0b78 over 25 records
+
+=== 8. the policy and the reference value set
+author public key: 665053d10032f5b9a46394a65b022c0bd7007392b8f445fe4ace5b0e5ed4c5a2
+wrote $SCRATCH/tdx-image-t24b/policy.json and $SCRATCH/tdx-image-t24b/policy.json.sig (loads back through attest.LoadPolicyFile)
+forwards to: 038e7905a2853bf89285a1e967388a9a8cb5a996830f1eee63d036af532cb25f3d6c7636e071e01663a876dc64ca0b78
+policy digest: 3f541d9a15231fb233804c59f4ce18a3e328cfe265254963315c26a4a759e5c4
+egress ceiling digest: 197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973 (what a guest from this image presents)
+author public key: 665053d10032f5b9a46394a65b022c0bd7007392b8f445fe4ace5b0e5ed4c5a2
+admits peer policy: 197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+wrote $SCRATCH/tdx-image-t24b/reference-values.json and $SCRATCH/tdx-image-t24b/reference-values.json.sig (loads back through attest.LoadReferenceValueSetFile)
+
+=== built
+image:                   $SCRATCH/tdx-image-t24b/disk.raw (b4ca16943e239acae98e3159bd477b169cb14a9cb618aebae031cbbcfbac8621)
+predicted RTMR2:         038e7905a2853bf89285a1e967388a9a8cb5a996830f1eee63d036af532cb25f3d6c7636e071e01663a876dc64ca0b78
+ceiling digest:          197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973 (what a guest presents; attest-tool ceiling -digest)
+emitted policy digest:   3f541d9a15231fb233804c59f4ce18a3e328cfe265254963315c26a4a759e5c4 (policy.json beside the image; pushed, not delivered)
+reference value set:     $SCRATCH/tdx-image-t24b/reference-values.json (+ .sig)
+policy:                  $SCRATCH/tdx-image-t24b/policy.json (+ .sig)
+manifest:                $SCRATCH/tdx-image-t24b/manifest.txt
+packaging record:        $SCRATCH/tdx-image-t24b/packaging.txt
+BUILD RC=0 END 2026-09-18T10:49:30Z

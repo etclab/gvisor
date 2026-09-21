@@ -1,0 +1,25 @@
+evidence            : /home/pniroula/Projects/gvisor-t24/docs/snp/evidence/ticket24/spikes/E4/boot-2/quote.bin, 8000 bytes
+vendor              : intel-tdx
+certificate chain   : carried inside the quote
+public key (SPKI)   : /home/pniroula/Projects/gvisor-t24/docs/snp/evidence/ticket24/spikes/E4/boot-2/public-key.der, 44 bytes, 302a300506032b6570032100dc3576514f1783e03499b9c9da9871ec9e742e75ffd8b8a5580076bc12fadd17
+binding context     : v2, 02000000000000000000000000000000
+policy digest       : 197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+intel collateral    : /home/pniroula/Projects/gvisor-t24/docs/snp/evidence/tdx/collateral (provisioned, ADR-0005)
+intel root          : the Intel root embedded in the verification library — no fetch, no file
+reference value set : /home/pniroula/Projects/gvisor-t24/docs/snp/evidence/ticket24/spikes/E4/boot-2/reference-values.json, 1 value(s), author 665053d10032f5b9a46394a65b022c0bd7007392b8f445fe4ace5b0e5ed4c5a2
+  [0] intel-tdx predicted RTMR2 cd68e874bbfb15b746ba0679fb4a0bc3fe967b5b616a635fbd47f48538135af0ab229810fb3d293273a8c4e1438f6e25
+      observed MRTD      c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+      observed RTMR0     c2fc12a52db868515eff7c657e42ce04b0b7363fa6ddf7c1cca87aa8e6a061a11f9981924a600ad6d2232f75182a850a
+      observed RTMR1     02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b | 3a446943925fef7f1682fd54e1b6697df864692e28592ec373860d1868582ac14ca3029c48282eb964868a785bafd691
+      minimum TCB        status=UpToDate evaluation_data_number=20
+      TD policy          debug=false
+      admits policy      197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+WARN : 2026/09/18 06:15:46.138546 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/18 06:15:46.140885 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+WARN : 2026/09/18 06:15:46.142454 verify.go:840: Using embedded Intel certificate for TDX attestation root of trust
+
+REFUSED
+  reason            : launch measurement not in the reference value set
+  operator log      : verification refused: launch measurement not in the reference value set: the TD's observed RTMR0 is 8ee4fa3614e96b5c7cdacf52675c069e9de399a3688f83510a9bc3b4180e0e8f06c427eab69fcb4deff05203c0b70a3f, which is none of the 1 values this reference value lists
+  a caller learns   : attest: verification failed
+exit status 2

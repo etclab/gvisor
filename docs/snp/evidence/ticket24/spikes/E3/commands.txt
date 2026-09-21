@@ -1,0 +1,62 @@
+E3 — the workload disk: one boot with it and one without, same image.
+Ticket 24, worktree /home/pniroula/Projects/gvisor-t24 on
+ticket-24-runsc-in-the-measured-guest, 2026-09-18. Nothing ran as root but the
+four QEMUs, through the job spool; no sudo was typed.
+
+STACK=/home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack
+SCRATCH=<this session's scratch directory>   # the bundle source and the disk
+                                             # image live outside the repo: they
+                                             # are not measured and not evidence
+
+The image is E2's, unrebuilt and unmodified:
+  $STACK/image-ticket24, launch measurement
+  423b7bcfbf3922af7c7faa65607dff6d86f6c0508ac6aaf0a9aff684d39313318364fd3ba2e15fe491b7f32077c84b3c
+
+1. the bundle and the disk (make-bundle.sh here is the script as run;
+   mkworkloaddev-output.txt is its untrimmed output)
+
+     bash docs/snp/evidence/ticket24/spikes/E3/make-bundle.sh \
+          $SCRATCH/workload-src $SCRATCH/workload.img
+
+   which installs the pinned static busybox with sh and uname symlinks under
+   rootfs/bin, copies config.json (this directory's copy, byte for byte), and
+   calls docs/snp/image/mkworkloaddev.sh. The disk that booted was
+
+     sha256 e725de60c4a8a8ba3f961180acc951c0e2546594932fb154b5bdd0f51fade118
+
+   Running the script again gives the same tree, the same modes and the same
+   root ownership but a different sha256: mke2fs writes a fresh filesystem UUID
+   and fresh timestamps each time. The bundle is reproducible; the image file is
+   not bit-reproducible, and nothing depends on it being — it is not measured.
+
+2. with the disk
+
+     docs/snp/tunnel-on-two-guests.sh -image $STACK/image-ticket24 \
+         -out $STACK/image-ticket24-run-e3-with \
+         -scenario live -quick -workload $SCRATCH/workload.img \
+         -spool /home/pniroula/Projects/gvisor/docs/snp/root-spool \
+         -capture docs/snp/evidence/ticket24/spikes/E3/with-disk
+
+3. without it, same image, same everything else
+
+     docs/snp/tunnel-on-two-guests.sh -image $STACK/image-ticket24 \
+         -out $STACK/image-ticket24-run-e3-without \
+         -scenario live -quick \
+         -spool /home/pniroula/Projects/gvisor/docs/snp/root-spool \
+         -capture docs/snp/evidence/ticket24/spikes/E3/without-disk
+
+   -out differs only so that one run's consoles are not read into the other's
+   latency table; the two -capture directories are the record.
+
+Files here
+   config.json               the bundle's configuration, byte for byte as it
+                             went onto the disk. S1 E4's file with two changes:
+                             process.args is ["/bin/sh","-c","uname -a"] and
+                             hostname is "workload" (so the nodename in the
+                             output says which namespace printed it).
+   make-bundle.sh            the bundle and the disk, as built
+   mkworkloaddev-output.txt  mkworkloaddev.sh's untrimmed output
+   with-disk/                the harness's capture of run 2, including
+                             workload-config.json read back out of the disk
+   without-disk/             the harness's capture of run 3
+   notes.md                  what the two consoles said

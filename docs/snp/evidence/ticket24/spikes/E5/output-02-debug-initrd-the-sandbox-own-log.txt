@@ -1,0 +1,842 @@
+[    0.000000] Linux version 6.17.0-1022-gcp (buildd@lcy02-amd64-073) (x86_64-linux-gnu-gcc-13 (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, GNU ld (GNU Binutils for Ubuntu) 2.42) #25-Ubuntu SMP Sat Jul 25 01:12:40 UTC 2026 (Ubuntu 6.17.0-1022.25-gcp 6.17.13)
+[    0.000000] Command line: console=ttyS0,115200 panic=-1 rdinit=/init
+[    0.000000] KERNEL supported cpus:
+[    0.000000]   Intel GenuineIntel
+[    0.000000]   AMD AuthenticAMD
+[    0.000000]   Hygon HygonGenuine
+[    0.000000]   Centaur CentaurHauls
+[    0.000000]   zhaoxin   Shanghai  
+[    0.000000] BIOS-provided physical RAM map:
+[    0.000000] BIOS-e820: [mem 0x0000000000000000-0x000000000009fbff] usable
+[    0.000000] BIOS-e820: [mem 0x000000000009fc00-0x000000000009ffff] reserved
+[    0.000000] BIOS-e820: [mem 0x00000000000f0000-0x00000000000fffff] reserved
+[    0.000000] BIOS-e820: [mem 0x0000000000100000-0x000000007ffd9fff] usable
+[    0.000000] BIOS-e820: [mem 0x000000007ffda000-0x000000007fffffff] reserved
+[    0.000000] BIOS-e820: [mem 0x00000000feffc000-0x00000000feffffff] reserved
+[    0.000000] BIOS-e820: [mem 0x00000000fffc0000-0x00000000ffffffff] reserved
+[    0.000000] BIOS-e820: [mem 0x000000fd00000000-0x000000ffffffffff] reserved
+[    0.000000] NX (Execute Disable) protection: active
+[    0.000000] APIC: Static calls initialized
+[    0.000000] SMBIOS 2.8 present.
+[    0.000000] DMI: QEMU Standard PC (i440FX + PIIX, 1996), BIOS rel-1.16.3-0-ga6ed6b701f0a-prebuilt.qemu.org 04/01/2014
+[    0.000000] DMI: Memory slots populated: 1/1
+[    0.000000] Hypervisor detected: KVM
+[    0.000000] last_pfn = 0x7ffda max_arch_pfn = 0x10000000000
+[    0.000000] kvm-clock: Using msrs 4b564d01 and 4b564d00
+[    0.000003] kvm-clock: using sched offset of 650043483 cycles
+[    0.000011] clocksource: kvm-clock: mask: 0xffffffffffffffff max_cycles: 0x1cd42e4dffb, max_idle_ns: 881590591483 ns
+[    0.000025] tsc: Detected 3245.122 MHz processor
+[    0.002183] last_pfn = 0x7ffda max_arch_pfn = 0x10000000000
+[    0.002313] MTRR map: 4 entries (3 fixed + 1 variable; max 19), built from 8 variable MTRRs
+[    0.002326] x86/PAT: Configuration [0-7]: WB  WC  UC- UC  WB  WP  UC- WT  
+[    0.007412] found SMP MP-table at [mem 0x000f5470-0x000f547f]
+[    0.007450] Using GB pages for direct mapping
+[    0.007882] RAMDISK: [mem 0x7ad45000-0x7ffcffff]
+[    0.007897] ACPI: Early table checksum verification disabled
+[    0.007904] ACPI: RSDP 0x00000000000F5290 000014 (v00 BOCHS )
+[    0.007915] ACPI: RSDT 0x000000007FFE2373 000034 (v01 BOCHS  BXPC     00000001 BXPC 00000001)
+[    0.007929] ACPI: FACP 0x000000007FFE221F 000074 (v01 BOCHS  BXPC     00000001 BXPC 00000001)
+[    0.007942] ACPI: DSDT 0x000000007FFE0040 0021DF (v01 BOCHS  BXPC     00000001 BXPC 00000001)
+[    0.007948] ACPI: FACS 0x000000007FFE0000 000040
+[    0.007954] ACPI: APIC 0x000000007FFE2293 000080 (v03 BOCHS  BXPC     00000001 BXPC 00000001)
+[    0.007960] ACPI: HPET 0x000000007FFE2313 000038 (v01 BOCHS  BXPC     00000001 BXPC 00000001)
+[    0.007965] ACPI: WAET 0x000000007FFE234B 000028 (v01 BOCHS  BXPC     00000001 BXPC 00000001)
+[    0.007970] ACPI: Reserving FACP table memory at [mem 0x7ffe221f-0x7ffe2292]
+[    0.007975] ACPI: Reserving DSDT table memory at [mem 0x7ffe0040-0x7ffe221e]
+[    0.007978] ACPI: Reserving FACS table memory at [mem 0x7ffe0000-0x7ffe003f]
+[    0.007979] ACPI: Reserving APIC table memory at [mem 0x7ffe2293-0x7ffe2312]
+[    0.007981] ACPI: Reserving HPET table memory at [mem 0x7ffe2313-0x7ffe234a]
+[    0.007983] ACPI: Reserving WAET table memory at [mem 0x7ffe234b-0x7ffe2372]
+[    0.008785] No NUMA configuration found
+[    0.008789] Faking a node at [mem 0x0000000000000000-0x000000007ffd9fff]
+[    0.008816] NODE_DATA(0) allocated [mem 0x7ad1a2c0-0x7ad44fff]
+[    0.009491] Zone ranges:
+[    0.009493]   DMA      [mem 0x0000000000001000-0x0000000000ffffff]
+[    0.009512]   DMA32    [mem 0x0000000001000000-0x000000007ffd9fff]
+[    0.009516]   Normal   empty
+[    0.009518]   Device   empty
+[    0.009520] Movable zone start for each node
+[    0.009525] Early memory node ranges
+[    0.009526]   node   0: [mem 0x0000000000001000-0x000000000009efff]
+[    0.009530]   node   0: [mem 0x0000000000100000-0x000000007ffd9fff]
+[    0.009534] Initmem setup node 0 [mem 0x0000000000001000-0x000000007ffd9fff]
+[    0.010078] On node 0, zone DMA: 1 pages in unavailable ranges
+[    0.010123] On node 0, zone DMA: 97 pages in unavailable ranges
+[    0.025741] On node 0, zone DMA32: 38 pages in unavailable ranges
+[    0.026450] ACPI: PM-Timer IO Port: 0x608
+[    0.026478] ACPI: LAPIC_NMI (acpi_id[0xff] dfl dfl lint[0x1])
+[    0.026557] IOAPIC[0]: apic_id 0, version 17, address 0xfec00000, GSI 0-23
+[    0.026567] ACPI: INT_SRC_OVR (bus 0 bus_irq 0 global_irq 2 dfl dfl)
+[    0.026573] ACPI: INT_SRC_OVR (bus 0 bus_irq 5 global_irq 5 high level)
+[    0.026576] ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 9 high level)
+[    0.026579] ACPI: INT_SRC_OVR (bus 0 bus_irq 10 global_irq 10 high level)
+[    0.026582] ACPI: INT_SRC_OVR (bus 0 bus_irq 11 global_irq 11 high level)
+[    0.026591] ACPI: Using ACPI (MADT) for SMP configuration information
+[    0.026594] ACPI: HPET id: 0x8086a201 base: 0xfed00000
+[    0.026602] TSC deadline timer available
+[    0.026614] CPU topo: Max. logical packages:   1
+[    0.026617] CPU topo: Max. logical dies:       1
+[    0.026618] CPU topo: Max. dies per package:   1
+[    0.026630] CPU topo: Max. threads per core:   1
+[    0.026632] CPU topo: Num. cores per package:     2
+[    0.026634] CPU topo: Num. threads per package:   2
+[    0.026635] CPU topo: Allowing 2 present CPUs plus 0 hotplug CPUs
+[    0.026668] kvm-guest: APIC: eoi() replaced with kvm_guest_apic_eoi_write()
+[    0.026696] kvm-guest: KVM setup pv remote TLB flush
+[    0.026704] kvm-guest: setup PV sched yield
+[    0.026721] PM: hibernation: Registered nosave memory: [mem 0x00000000-0x00000fff]
+[    0.026726] PM: hibernation: Registered nosave memory: [mem 0x0009f000-0x000fffff]
+[    0.026731] [mem 0x80000000-0xfeffbfff] available for PCI devices
+[    0.026734] Booting paravirtualized kernel on KVM
+[    0.026738] clocksource: refined-jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 1910969940391419 ns
+[    0.026754] setup_percpu: NR_CPUS:8192 nr_cpumask_bits:2 nr_cpu_ids:2 nr_node_ids:1
+[    0.027839] percpu: Embedded 84 pages/cpu s221184 r8192 d114688 u1048576
+[    0.027936] kvm-guest: PV spinlocks enabled
+[    0.027941] PV qspinlock hash table entries: 256 (order: 0, 4096 bytes, linear)
+[    0.027951] Kernel command line: console=ttyS0,115200 panic=-1 rdinit=/init
+[    0.028050] random: crng init done
+[    0.028053] printk: log buffer data + meta data: 262144 + 917504 = 1179648 bytes
+[    0.028955] Dentry cache hash table entries: 262144 (order: 9, 2097152 bytes, linear)
+[    0.029709] Inode-cache hash table entries: 131072 (order: 8, 1048576 bytes, linear)
+[    0.029779] Fallback order for Node 0: 0 
+[    0.029786] Built 1 zonelists, mobility grouping on.  Total pages: 524152
+[    0.029789] Policy zone: DMA32
+[    0.029804] mem auto-init: stack:all(zero), heap alloc:on, heap free:off
+[    0.043886] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=2, Nodes=1
+[    0.062416] ftrace: allocating 62261 entries in 244 pages
+[    0.062422] ftrace: allocated 244 pages with 5 groups
+[    0.063322] rcu: Hierarchical RCU implementation.
+[    0.063325] rcu: 	RCU restricting CPUs from NR_CPUS=8192 to nr_cpu_ids=2.
+[    0.063330] 	Rude variant of Tasks RCU enabled.
+[    0.063331] 	Tracing variant of Tasks RCU enabled.
+[    0.063332] rcu: RCU calculated value of scheduler-enlistment delay is 100 jiffies.
+[    0.063334] rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=2
+[    0.063351] RCU Tasks Rude: Setting shift to 1 and lim to 1 rcu_task_cb_adjust=1 rcu_task_cpu_ids=2.
+[    0.063357] RCU Tasks Trace: Setting shift to 1 and lim to 1 rcu_task_cb_adjust=1 rcu_task_cpu_ids=2.
+[    0.073734] NR_IRQS: 524544, nr_irqs: 440, preallocated irqs: 16
+[    0.074057] rcu: srcu_init: Setting srcu_struct sizes based on contention.
+[    0.074332] Console: colour *CGA 80x25
+[    0.074424] printk: legacy console [ttyS0] enabled
+[    0.341184] ACPI: Core revision 20250404
+[    0.342969] clocksource: hpet: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 19112604467 ns
+[    0.346863] APIC: Switch to symmetric I/O mode setup
+[    0.350664] x2apic enabled
+[    0.353930] APIC: Switched APIC routing to: physical x2apic
+[    0.358177] kvm-guest: APIC: send_IPI_mask() replaced with kvm_send_ipi_mask()
+[    0.361881] kvm-guest: APIC: send_IPI_mask_allbutself() replaced with kvm_send_ipi_mask_allbutself()
+[    0.367016] kvm-guest: setup PV IPIs
+[    0.373722] ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
+[    0.378464] clocksource: tsc-early: mask: 0xffffffffffffffff max_cycles: 0x2ec6cb58771, max_idle_ns: 440795340214 ns
+[    0.386716] Calibrating delay loop (skipped) preset value.. 6490.24 BogoMIPS (lpj=3245122)
+[    0.389046] x86/cpu: User Mode Instruction Prevention (UMIP) activated
+[    0.390805] Last level iTLB entries: 4KB 512, 2MB 255, 4MB 127
+[    0.391714] Last level dTLB entries: 4KB 512, 2MB 255, 4MB 127, 1GB 0
+[    0.392748] mitigations: Enabled attack vectors: user_kernel, user_user, guest_host, guest_guest, SMT mitigations: auto
+[    0.393717] Speculative Store Bypass: Mitigation: Speculative Store Bypass disabled via prctl
+[    0.394724] Transient Scheduler Attacks: Vulnerable: No microcode
+[    0.395708] Spectre V2 : Mitigation: Enhanced / Automatic IBRS
+[    0.396708] Speculative Return Stack Overflow: Mitigation: Safe RET
+[    0.397708] Spectre V1 : Mitigation: usercopy/swapgs barriers and __user pointer sanitization
+[    0.398729] Spectre V2 : mitigation: Enabling conditional Indirect Branch Prediction Barrier
+[    0.399716] active return thunk: srso_alias_return_thunk
+[    0.401709] x86/fpu: Supporting XSAVE feature 0x001: 'x87 floating point registers'
+[    0.402706] x86/fpu: Supporting XSAVE feature 0x002: 'SSE registers'
+[    0.403710] x86/fpu: Supporting XSAVE feature 0x004: 'AVX registers'
+[    0.405707] x86/fpu: Supporting XSAVE feature 0x020: 'AVX-512 opmask'
+[    0.406704] x86/fpu: Supporting XSAVE feature 0x040: 'AVX-512 Hi256'
+[    0.407715] x86/fpu: Supporting XSAVE feature 0x080: 'AVX-512 ZMM_Hi256'
+[    0.408706] x86/fpu: Supporting XSAVE feature 0x200: 'Protection Keys User registers'
+[    0.409710] x86/fpu: xstate_offset[2]:  576, xstate_sizes[2]:  256
+[    0.410707] x86/fpu: xstate_offset[5]:  832, xstate_sizes[5]:   64
+[    0.411727] x86/fpu: xstate_offset[6]:  896, xstate_sizes[6]:  512
+[    0.412715] x86/fpu: xstate_offset[7]: 1408, xstate_sizes[7]: 1024
+[    0.413708] x86/fpu: xstate_offset[9]: 2432, xstate_sizes[9]:    8
+[    0.414707] x86/fpu: Enabled xstate features 0x2e7, context size is 2440 bytes, using 'compacted' format.
+[    0.524423] Freeing SMP alternatives memory: 52K
+[    0.524709] pid_max: default: 32768 minimum: 301
+[    0.525860] LSM: initializing lsm=lockdown,capability,landlock,yama,apparmor,ima,evm
+[    0.527727] landlock: Up and running.
+[    0.528703] Yama: becoming mindful.
+[    0.529806] AppArmor: AppArmor initialized
+[    0.530855] Mount-cache hash table entries: 4096 (order: 3, 32768 bytes, linear)
+[    0.531711] Mountpoint-cache hash table entries: 4096 (order: 3, 32768 bytes, linear)
+[    0.534356] smpboot: CPU0: AMD EPYC 9354P 32-Core Processor (family: 0x19, model: 0x11, stepping: 0x1)
+[    0.536066] Performance Events: Fam17h+ core perfctr, AMD PMU driver.
+[    0.536715] ... version:                2
+[    0.537709] ... bit width:              48
+[    0.538708] ... generic registers:      6
+[    0.539708] ... value mask:             0000ffffffffffff
+[    0.540708] ... max period:             00007fffffffffff
+[    0.541708] ... fixed-purpose events:   0
+[    0.542708] ... event mask:             000000000000003f
+[    0.544005] signal: max sigframe size: 3376
+[    0.544826] rcu: Hierarchical SRCU implementation.
+[    0.545710] rcu: 	Max phase no-delay instances is 400.
+[    0.546938] Timer migration: 1 hierarchy levels; 8 children per group; 1 crossnode level
+[    0.554636] smp: Bringing up secondary CPUs ...
+[    0.555212] smpboot: x86: Booting SMP configuration:
+[    0.555717] .... node  #0, CPUs:      #1
+[    0.557799] smp: Brought up 1 node, 2 CPUs
+[    0.559710] smpboot: Total of 2 processors activated (12980.48 BogoMIPS)
+[    0.561408] Memory: 1912072K/2096608K available (22310K kernel code, 4681K rwdata, 15692K rodata, 5416K init, 6080K bss, 178236K reserved, 0K cma-reserved)
+[    0.563718] devtmpfs: initialized
+[    0.564923] x86/mm: Memory block size: 128MB
+[    0.568799] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 1911260446275000 ns
+[    0.569759] posixtimers hash table entries: 1024 (order: 2, 16384 bytes, linear)
+[    0.570760] futex hash table entries: 512 (32768 bytes on 1 NUMA nodes, total 32 KiB, linear).
+[    0.572078] pinctrl core: initialized pinctrl subsystem
+[    0.573415] PM: RTC time: 10:34:31, date: 2026-09-18
+[    0.577396] NET: Registered PF_NETLINK/PF_ROUTE protocol family
+[    0.578171] DMA: preallocated 256 KiB GFP_KERNEL pool for atomic allocations
+[    0.578750] DMA: preallocated 256 KiB GFP_KERNEL|GFP_DMA pool for atomic allocations
+[    0.579746] DMA: preallocated 256 KiB GFP_KERNEL|GFP_DMA32 pool for atomic allocations
+[    0.580736] audit: initializing netlink subsys (disabled)
+[    0.581894] audit: type=2000 audit(1789727671.276:1): state=initialized audit_enabled=0 res=1
+[    0.581990] thermal_sys: Registered thermal governor 'fair_share'
+[    0.582682] thermal_sys: Registered thermal governor 'bang_bang'
+[    0.589751] thermal_sys: Registered thermal governor 'step_wise'
+[    0.594756] thermal_sys: Registered thermal governor 'user_space'
+[    0.599727] thermal_sys: Registered thermal governor 'power_allocator'
+[    0.604811] cpuidle: using governor ladder
+[    0.613826] cpuidle: using governor menu
+[    0.619274] acpiphp: ACPI Hot Plug PCI Controller Driver version: 0.5
+[    0.624685] PCI: Using configuration type 1 for base access
+[    0.628761] PCI: Using configuration type 1 for extended access
+[    0.631837] kprobes: kprobe jump-optimization is enabled. All kprobes are optimized if possible.
+[    0.774860] HugeTLB: registered 1.00 GiB page size, pre-allocated 0 pages
+[    0.775751] HugeTLB: 16380 KiB vmemmap can be freed for a 1.00 GiB page
+[    0.776731] HugeTLB: registered 2.00 MiB page size, pre-allocated 0 pages
+[    0.777724] HugeTLB: 28 KiB vmemmap can be freed for a 2.00 MiB page
+[    0.783009] ACPI: Added _OSI(Module Device)
+[    0.783716] ACPI: Added _OSI(Processor Device)
+[    0.784715] ACPI: Added _OSI(Processor Aggregator Device)
+[    0.797508] ACPI: 1 ACPI AML tables successfully acquired and loaded
+[    0.802486] ACPI: Interpreter enabled
+[    0.802790] ACPI: PM: (supports S0 S3 S4 S5)
+[    0.803712] ACPI: Using IOAPIC for interrupt routing
+[    0.806330] PCI: Using host bridge windows from ACPI; if necessary, use "pci=nocrs" and report a bug
+[    0.806713] PCI: Using E820 reservations for host bridge windows
+[    0.808505] ACPI: Enabled 2 GPEs in block 00 to 0F
+[    0.833185] ACPI: PCI Root Bridge [PCI0] (domain 0000 [bus 00-ff])
+[    0.833730] acpi PNP0A03:00: _OSC: OS supports [ExtendedConfig ASPM ClockPM Segments MSI EDR HPX-Type3]
+[    0.837547] acpiphp: Slot [2] registered
+[    0.837802] acpiphp: Slot [3] registered
+[    0.838808] acpiphp: Slot [4] registered
+[    0.839869] acpiphp: Slot [5] registered
+[    0.840796] acpiphp: Slot [6] registered
+[    0.841797] acpiphp: Slot [7] registered
+[    0.842826] acpiphp: Slot [8] registered
+[    0.843820] acpiphp: Slot [9] registered
+[    0.844847] acpiphp: Slot [10] registered
+[    0.845796] acpiphp: Slot [11] registered
+[    0.846794] acpiphp: Slot [12] registered
+[    0.847831] acpiphp: Slot [13] registered
+[    0.848885] acpiphp: Slot [14] registered
+[    0.849809] acpiphp: Slot [15] registered
+[    0.850816] acpiphp: Slot [16] registered
+[    0.851800] acpiphp: Slot [17] registered
+[    0.852865] acpiphp: Slot [18] registered
+[    0.853897] acpiphp: Slot [19] registered
+[    0.854898] acpiphp: Slot [20] registered
+[    0.855898] acpiphp: Slot [21] registered
+[    0.856817] acpiphp: Slot [22] registered
+[    0.857939] acpiphp: Slot [23] registered
+[    0.858819] acpiphp: Slot [24] registered
+[    0.860039] acpiphp: Slot [25] registered
+[    0.860873] acpiphp: Slot [26] registered
+[    0.861846] acpiphp: Slot [27] registered
+[    0.862801] acpiphp: Slot [28] registered
+[    0.863787] acpiphp: Slot [29] registered
+[    0.864786] acpiphp: Slot [30] registered
+[    0.865780] acpiphp: Slot [31] registered
+[    0.866750] PCI host bridge to bus 0000:00
+[    0.867728] pci_bus 0000:00: root bus resource [io  0x0000-0x0cf7 window]
+[    0.868724] pci_bus 0000:00: root bus resource [io  0x0d00-0xffff window]
+[    0.869711] pci_bus 0000:00: root bus resource [mem 0x000a0000-0x000bffff window]
+[    0.870722] pci_bus 0000:00: root bus resource [mem 0x80000000-0xfebfffff window]
+[    0.871714] pci_bus 0000:00: root bus resource [mem 0x100000000-0x17fffffff window]
+[    0.872752] pci_bus 0000:00: root bus resource [bus 00-ff]
+[    0.874112] pci 0000:00:00.0: [8086:1237] type 00 class 0x060000 conventional PCI endpoint
+[    0.876139] pci 0000:00:01.0: [8086:7000] type 00 class 0x060100 conventional PCI endpoint
+[    0.878072] pci 0000:00:01.1: [8086:7010] type 00 class 0x010180 conventional PCI endpoint
+[    0.880740] pci 0000:00:01.1: BAR 4 [io  0xc120-0xc12f]
+[    0.881787] pci 0000:00:01.1: BAR 0 [io  0x01f0-0x01f7]: legacy IDE quirk
+[    0.882716] pci 0000:00:01.1: BAR 1 [io  0x03f6]: legacy IDE quirk
+[    0.883715] pci 0000:00:01.1: BAR 2 [io  0x0170-0x0177]: legacy IDE quirk
+[    0.884715] pci 0000:00:01.1: BAR 3 [io  0x0376]: legacy IDE quirk
+[    0.886398] pci 0000:00:01.3: [8086:7113] type 00 class 0x068000 conventional PCI endpoint
+[    0.887599] pci 0000:00:01.3: quirk: [io  0x0600-0x063f] claimed by PIIX4 ACPI
+[    0.887791] pci 0000:00:01.3: quirk: [io  0x0700-0x070f] claimed by PIIX4 SMB
+[    0.890698] pci 0000:00:02.0: [1af4:1001] type 00 class 0x010000 conventional PCI endpoint
+[    0.894791] pci 0000:00:02.0: BAR 0 [io  0xc000-0xc07f]
+[    0.895781] pci 0000:00:02.0: BAR 1 [mem 0xfebc0000-0xfebc0fff]
+[    0.896856] pci 0000:00:02.0: BAR 4 [mem 0xfebf4000-0xfebf7fff 64bit pref]
+[    0.907219] pci 0000:00:03.0: [1af4:1001] type 00 class 0x010000 conventional PCI endpoint
+[    0.909771] pci 0000:00:03.0: BAR 0 [io  0xc080-0xc0ff]
+[    0.910728] pci 0000:00:03.0: BAR 1 [mem 0xfebc1000-0xfebc1fff]
+[    0.911830] pci 0000:00:03.0: BAR 4 [mem 0xfebf8000-0xfebfbfff 64bit pref]
+[    0.918947] pci 0000:00:04.0: [1af4:1000] type 00 class 0x020000 conventional PCI endpoint
+[    0.921734] pci 0000:00:04.0: BAR 0 [io  0xc100-0xc11f]
+[    0.922778] pci 0000:00:04.0: BAR 1 [mem 0xfebc2000-0xfebc2fff]
+[    0.923780] pci 0000:00:04.0: BAR 4 [mem 0xfebfc000-0xfebfffff 64bit pref]
+[    0.924730] pci 0000:00:04.0: ROM [mem 0xfeb80000-0xfebbffff pref]
+[    0.946062] ACPI: PCI: Interrupt link LNKA configured for IRQ 10
+[    0.947287] ACPI: PCI: Interrupt link LNKB configured for IRQ 10
+[    0.948214] ACPI: PCI: Interrupt link LNKC configured for IRQ 11
+[    0.949380] ACPI: PCI: Interrupt link LNKD configured for IRQ 11
+[    0.950008] ACPI: PCI: Interrupt link LNKS configured for IRQ 9
+[    0.952737] iommu: Default domain type: Translated
+[    0.956731] iommu: DMA domain TLB invalidation policy: lazy mode
+[    0.963280] SCSI subsystem initialized
+[    0.965951] ACPI: bus type USB registered
+[    0.966879] usbcore: registered new interface driver usbfs
+[    0.967829] usbcore: registered new interface driver hub
+[    0.968771] usbcore: registered new device driver usb
+[    0.969963] pps_core: LinuxPPS API ver. 1 registered
+[    0.970721] pps_core: Software ver. 5.3.6 - Copyright 2005-2007 Rodolfo Giometti <giometti@linux.it>
+[    0.971746] PTP clock support registered
+[    0.972883] EDAC MC: Ver: 3.0.0
+[    0.976979] NetLabel: Initializing
+[    0.977718] NetLabel:  domain hash size = 128
+[    0.978723] NetLabel:  protocols = UNLABELED CIPSOv4 CALIPSO
+[    0.979851] NetLabel:  unlabeled traffic allowed by default
+[    0.980855] mctp: management component transport protocol core
+[    0.981721] NET: Registered PF_MCTP protocol family
+[    0.982773] PCI: Using ACPI for IRQ routing
+[    0.984580] vgaarb: loaded
+[    0.984980] hpet0: at MMIO 0xfed00000, IRQs 2, 8, 0
+[    0.987720] hpet0: 3 comparators, 64-bit 100.000000 MHz counter
+[    1.000709] clocksource: Switched to clocksource kvm-clock
+[    1.009785] VFS: Disk quotas dquot_6.6.0
+[    1.013024] VFS: Dquot-cache hash table entries: 512 (order 0, 4096 bytes)
+[    1.019289] AppArmor: AppArmor Filesystem Enabled
+[    1.022810] pnp: PnP ACPI init
+[    1.028070] pnp: PnP ACPI: found 5 devices
+[    1.052829] clocksource: acpi_pm: mask: 0xffffff max_cycles: 0xffffff, max_idle_ns: 2085701024 ns
+[    1.059474] NET: Registered PF_INET protocol family
+[    1.063148] IP idents hash table entries: 32768 (order: 6, 262144 bytes, linear)
+[    1.140550] tcp_listen_portaddr_hash hash table entries: 1024 (order: 2, 16384 bytes, linear)
+[    1.144085] Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+[    1.147286] TCP established hash table entries: 16384 (order: 5, 131072 bytes, linear)
+[    1.150853] TCP bind hash table entries: 16384 (order: 7, 524288 bytes, linear)
+[    1.153958] TCP: Hash tables configured (established 16384 bind 16384)
+[    1.156797] MPTCP token hash table entries: 2048 (order: 4, 49152 bytes, linear)
+[    1.159839] UDP hash table entries: 1024 (order: 4, 65536 bytes, linear)
+[    1.162656] UDP-Lite hash table entries: 1024 (order: 4, 65536 bytes, linear)
+[    1.165684] NET: Registered PF_UNIX/PF_LOCAL protocol family
+[    1.167954] NET: Registered PF_XDP protocol family
+[    1.169913] pci_bus 0000:00: resource 4 [io  0x0000-0x0cf7 window]
+[    1.172414] pci_bus 0000:00: resource 5 [io  0x0d00-0xffff window]
+[    1.174861] pci_bus 0000:00: resource 6 [mem 0x000a0000-0x000bffff window]
+[    1.177663] pci_bus 0000:00: resource 7 [mem 0x80000000-0xfebfffff window]
+[    1.180393] pci_bus 0000:00: resource 8 [mem 0x100000000-0x17fffffff window]
+[    1.183419] pci 0000:00:01.0: PIIX3: Enabling Passive Release
+[    1.185707] pci 0000:00:00.0: Limiting direct PCI/PCI transfers
+[    1.188242] PCI: CLS 0 bytes, default 64
+[    1.190082] clocksource: tsc: mask: 0xffffffffffffffff max_cycles: 0x2ec6cb58771, max_idle_ns: 440795340214 ns
+[    1.190241] Trying to unpack rootfs image as initramfs...
+[    1.235603] Initialise system trusted keyrings
+[    1.237503] Key type blacklist registered
+[    1.239355] workingset: timestamp_bits=36 max_order=19 bucket_order=0
+[    1.243056] squashfs: version 4.0 (2009/01/31) Phillip Lougher
+[    1.246443] fuse: init (API version 7.44)
+[    1.248562] integrity: Platform Keyring initialized
+[    1.250648] integrity: Machine keyring initialized
+[    1.289487] Key type asymmetric registered
+[    1.291155] Asymmetric key parser 'x509' registered
+[    1.293194] Block layer SCSI generic (bsg) driver version 0.4 loaded (major 242)
+[    1.296759] io scheduler mq-deadline registered
+[    1.299539] ledtrig-cpu: registered to indicate activity on CPUs
+[    1.302838] input: Power Button as /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
+[    1.306064] ACPI: button: Power Button [PWRF]
+[    1.316856] ACPI: \_SB_.LNKB: Enabled at IRQ 10
+[    1.326884] ACPI: \_SB_.LNKC: Enabled at IRQ 11
+[    1.336715] ACPI: \_SB_.LNKD: Enabled at IRQ 11
+[    1.341229] Serial: 8250/16550 driver, 32 ports, IRQ sharing enabled
+[    1.372974] 00:03: ttyS0 at I/O 0x3f8 (irq = 4, base_baud = 115200) is a 16550A
+[    1.386195] Linux agpgart interface v0.103
+[    1.395489] loop: module loaded
+[    1.397192] virtio_blk virtio0: 2/0/0 default/read/poll queues
+[    1.401586] virtio_blk virtio0: [vda] 131072 512-byte logical blocks (67.1 MB/64.0 MiB)
+[    1.407796] virtio_blk virtio1: 2/0/0 default/read/poll queues
+[    1.412126] virtio_blk virtio1: [vdb] 131072 512-byte logical blocks (67.1 MB/64.0 MiB)
+[    1.418537] Key type psk registered
+[    1.423401] scsi host0: ata_piix
+[    1.425348] scsi host1: ata_piix
+[    1.426860] ata1: PATA max MWDMA2 cmd 0x1f0 ctl 0x3f6 bmdma 0xc120 irq 14 lpm-pol 0
+[    1.430068] ata2: PATA max MWDMA2 cmd 0x170 ctl 0x376 bmdma 0xc128 irq 15 lpm-pol 0
+[    1.433339] ACPI: bus type drm_connector registered
+[    1.437352] tun: Universal TUN/TAP device driver, 1.6
+[    1.443472] PPP generic driver version 2.4.2
+[    1.445944] i8042: PNP: PS/2 Controller [PNP0303:KBD,PNP0f13:MOU] at 0x60,0x64 irq 1,12
+[    1.450846] serio: i8042 KBD port at 0x60,0x64 irq 1
+[    1.452896] serio: i8042 AUX port at 0x60,0x64 irq 12
+[    1.455431] mousedev: PS/2 mouse device common for all mice
+[    1.458661] input: AT Translated Set 2 keyboard as /devices/platform/i8042/serio0/input/input1
+[    1.462334] rtc_cmos 00:04: RTC can wake from S4
+[    1.466059] rtc_cmos 00:04: registered as rtc0
+[    1.468396] rtc_cmos 00:04: setting system clock to 2026-09-18T10:34:32 UTC (1789727672)
+[    1.472190] rtc_cmos 00:04: alarms up to one day, y3k, 242 bytes nvram, hpet irqs
+[    1.475692] i2c_dev: i2c /dev entries driver
+[    1.477658] device-mapper: core: CONFIG_IMA_DISABLE_HTABLE is disabled. Duplicate IMA measurements will not be recorded in the IMA log.
+[    1.483058] device-mapper: uevent: version 1.0.3
+[    1.485337] device-mapper: ioctl: 4.50.0-ioctl (2025-04-28) initialised: dm-devel@lists.linux.dev
+[    1.489199] amd_pstate: The CPPC feature is supported but currently disabled by the BIOS.
+[    1.489199] Please enable it if your BIOS has the CPPC option.
+[    1.495672] amd_pstate: the _CPC object is not present in SBIOS or ACPI disabled
+[    1.501154] drop_monitor: Initializing network drop monitor service
+[    1.507678] NET: Registered PF_INET6 protocol family
+[    1.514377] Segment Routing with IPv6
+[    1.516975] In-situ OAM (IOAM) with IPv6
+[    1.519889] NET: Registered PF_PACKET protocol family
+[    1.522477] Key type dns_resolver registered
+[    1.525288] IPI shorthand broadcast: enabled
+[    1.536836] sched_clock: Marking stable (1234009788, 302628942)->(2055174158, -518535428)
+[    1.540572] registered taskstats version 1
+[    1.545322] Loading compiled-in X.509 certificates
+[    1.549058] Loaded X.509 cert 'Build time autogenerated kernel key: 8bf700b70a5c57ec8a5f67210ff11e5fa3a44628'
+[    1.554166] Loaded X.509 cert 'Canonical Ltd. Live Patch Signing 2025 Kmod: d541cef61dc7e793b7eb7e899970a2eef0b5dc8c'
+[    1.560091] Loaded X.509 cert 'Canonical Ltd. Live Patch Signing: 14df34d1a87cf37625abec039ef2bf521249b969'
+[    1.565385] Loaded X.509 cert 'Canonical Ltd. Kernel Module Signing 2025 Kmod: 4627603d2357a2a3f81006370894c221175893e9'
+[    1.571455] Loaded X.509 cert 'Canonical Ltd. Kernel Module Signing: 88f752e560a1e0737e31163a466ad7b70a850c19'
+[    1.575654] blacklist: Loading compiled-in revocation X.509 certificates
+[    1.578581] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing: 61482aa2830d0ab2ad5af10b7250da9033ddcef0'
+[    1.582900] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (2017): 242ade75ac4a15e50d50c84b0d45ff3eae707a03'
+[    1.587082] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (ESM 2018): 365188c1d374d6b07c3c8f240f8ef722433d6a8b'
+[    1.591826] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (2019): c0746fd6c5da3ae827864651ad66ae47fe24b3e8'
+[    1.596722] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (2021 v1): a8d54bbb3825cfb94fa13c9f8a594a195c107b8d'
+[    1.601730] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (2021 v2): 4cf046892d6fd3c9a5b03f98d845f90851dc6a8c'
+[    1.606543] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (2021 v3): 100437bb6de6e469b581e61cd66bce3ef4ed53af'
+[    1.611244] Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (Ubuntu Core 2019): c1d57b8f6b743f23ee41f4f7ee292f06eecadfb9'
+[    1.644964] Demotion targets for Node 0: null
+[    1.647229] Key type .fscrypt registered
+[    1.649230] Key type fscrypt-provisioning registered
+[    1.652006] Key type big_key registered
+[    2.615399] Freeing initrd memory: 84524K
+[    2.619319] Key type encrypted registered
+[    2.620904] AppArmor: AppArmor sha256 policy hashing enabled
+[    2.623184] ima: No TPM chip found, activating TPM-bypass!
+[    2.625349] Loading compiled-in module X.509 certificates
+[    2.628889] Loaded X.509 cert 'Build time autogenerated kernel key: 8bf700b70a5c57ec8a5f67210ff11e5fa3a44628'
+[    2.632804] ima: Allocated hash algorithm: sha256
+[    2.634807] ima: No architecture policies found
+[    2.636719] evm: Initialising EVM extended attributes:
+[    2.638805] evm: security.selinux
+[    2.640109] evm: security.SMACK64
+[    2.641479] evm: security.SMACK64EXEC
+[    2.642893] evm: security.SMACK64TRANSMUTE
+[    2.644562] evm: security.SMACK64MMAP
+[    2.646048] evm: security.apparmor
+[    2.647466] evm: security.ima
+[    2.648651] evm: security.capability
+[    2.650131] evm: HMAC attrs: 0x1
+[    2.652467] PM:   Magic number: 10:460:578
+[    2.654187] platform pcspkr: hash matches
+[    2.662583] RAS: Correctable Errors collector initialized.
+[    2.755333] clk: Disabling unused clocks
+[    2.756950] PM: genpd: Disabling unused power domains
+[    2.765128] Freeing unused decrypted memory: 2028K
+[    2.768835] Freeing unused kernel image (initmem) memory: 5416K
+[    2.771172] Write protecting the kernel read-only data: 38912k
+[    2.774584] Freeing unused kernel image (text/rodata gap) memory: 216K
+[    2.777479] Freeing unused kernel image (rodata/data gap) memory: 692K
+[    3.098979] x86/mm: Checked W+X mappings: passed, no W+X pages found.
+[    3.101150] Run /init as init process
+initrd: ======== attested tunnel guest, in the initrd grub measured ========
+initrd: kernel  6.17.0-1022-gcp x86_64
+initrd: cmdline console=ttyS0,115200 panic=-1 rdinit=/init
+insmod: can't insert '/lib/modules/tdx-guest.ko': No such device
+initrd: WARNING: tdx-guest did not load
+initrd: loaded gve
+initrd: loaded nf_tables
+initrd: loaded nf_reject_ipv4
+initrd: loaded nf_reject_ipv6
+initrd: loaded nft_reject
+initrd: loaded nft_reject_inet
+initrd: modules now resident: gve nf_reject_ipv4 nf_reject_ipv6 nf_tables nft_reject nft_reject_inet 
+initrd: report interface present at /sys/kernel/config/tsm/report
+initrd: installing the egress ceiling this image carries, before the link is up:
+tunneld: EGRESS CEILING 197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973 (sha256 over the compiled-in ceiling; eth0, udp/4433)
+tunneld: EGRESS CEILING as this image carries it:
+table inet attested_tunnel {
+	chain input {
+		type filter hook input priority 0; policy drop;
+		iifname "lo" accept
+		meta nfproto ipv4 iifname "eth0" meta l4proto udp udp sport 4433 accept   # a peer answering a dial of ours
+		meta nfproto ipv4 iifname "eth0" meta l4proto udp udp dport 4433 accept   # a peer dialing this sandbox's listener
+	}
+	chain output {
+		type filter hook output priority 0; policy drop;
+		oifname "lo" accept
+		meta l4proto tcp reject with tcp reset        # so that connect() fails now rather than in a minute, and says a rule did it
+		meta nfproto ipv4 ip daddr 169.254.0.0/16 reject with icmpx admin-prohibited   # the provider's metadata server is an address, and the grant below says "any"
+		meta nfproto ipv4 oifname "eth0" meta l4proto udp udp dport 4433 accept   # dialing a peer
+		meta nfproto ipv4 oifname "eth0" meta l4proto udp udp sport 4433 accept   # answering a peer from this sandbox's listener
+		reject with icmpx admin-prohibited            # everything the ceiling does not permit
+	}
+	chain forward {
+		type filter hook forward priority 0; policy drop;
+	}
+}
+tunneld: EGRESS CEILING INSTALLED; as the kernel holds it:
+table inet attested_tunnel {
+	chain forward {
+		type filter hook forward priority 0; policy drop;
+	}
+	chain input {
+		type filter hook input priority 0; policy drop;
+		iifname "lo" accept   # handle 2
+		meta nfproto ipv4 iifname "eth0" meta l4proto udp sport 4433 accept   # handle 3
+		meta nfproto ipv4 iifname "eth0" meta l4proto udp dport 4433 accept   # handle 4
+	}
+	chain output {
+		type filter hook output priority 0; policy drop;
+		oifname "lo" accept   # handle 6
+		meta l4proto tcp reject with tcp reset   # handle 7
+		meta nfproto ipv4 ip daddr 169.254.0.0/16 reject with icmpx code 3   # handle 8
+		meta nfproto ipv4 oifname "eth0" meta l4proto udp dport 4433 accept   # handle 9
+		meta nfproto ipv4 oifname "eth0" meta l4proto udp sport 4433 accept   # handle 10
+		reject with icmpx code 3   # handle 11
+	}
+}
+tunneld: EXIT status=0
+initrd: block devices, as this kernel presents them with no udev running:
+initrd:   /dev/vda sectors=131072 serial='' wwid=''
+initrd:   /dev/vdb sectors=131072 serial='' wwid=''
+initrd: config device /dev/vda found by the ext4 label
+[    3.469780] EXT4-fs (vda): mounted filesystem 72f8b55c-8ee8-4c2e-9a1e-d58ca69c9890 ro without journal. Quota mode: none.
+initrd: config device mounted at /config (ro,noexec,nosuid,nodev); it holds:
+initrd:   collateral/FETCH.txt  12271 bytes  8db3d7e1f4ac78b2…
+initrd:   collateral/collateral.txt  2598 bytes  393d55678e7634c2…
+initrd:   collateral/pckcrl-platform.body  3354 bytes  30bf6088a96d6e78…
+initrd:   collateral/pckcrl-platform.headers  2200 bytes  75c84e97bb08f040…
+initrd:   collateral/qeidentity.body  624 bytes  9c39b097f5317eb8…
+initrd:   collateral/qeidentity.headers  2186 bytes  83db5a646b9e44bc…
+initrd:   collateral/rootcrl.body  294 bytes  c114be5d5ca7aab2…
+initrd:   collateral/rootcrl.headers  529 bytes  2a0b164e9747239e…
+initrd:   collateral/tcbinfo-00806f050000.body  7953 bytes  6bc653ddc0e1a101…
+initrd:   collateral/tcbinfo-00806f050000.headers  2175 bytes  25da33ff37c3c25e…
+initrd:   network.conf  365 bytes  e70a440427371b3a…
+initrd:   peers.json  109 bytes  05604bc74f474a07…
+initrd:   reference-values.json  1070 bytes  7186aeda2a6b0e6b…
+initrd:   reference-values.json.sig  129 bytes  9e0c0af867250941…
+initrd:   tunneld.json  308 bytes  0f789bfb8ae77a98…
+[    3.592545] EXT4-fs (vdb): mounted filesystem c8a26d1f-f66e-46c0-9f03-71e96abf2f6b ro without journal. Quota mode: none.
+initrd: workload device /dev/vdb found by the ext4 label, mounted at /workload (ro,exec,nosuid,nodev; not measured); it holds:
+initrd:   config.json  632 bytes  193382ad2dfce082…
+initrd:   rootfs/bin/busybox  2124608 bytes  dbac288c29ba5684…
+initrd: loopback up (the kernel delivers a rule's refusal to the local socket over it)
+initrd: link eth0 up: 10.0.2.15/24 mtu 1500, gateway 10.0.2.2
+initrd: addr: 1: lo    inet 127.0.0.1/8 scope host lo\       valid_lft forever preferred_lft forever
+initrd: addr: 1: lo    inet6 ::1/128 scope host \       valid_lft forever preferred_lft forever
+initrd: addr: 2: eth0    inet 10.0.2.15/24 scope global eth0\       valid_lft forever preferred_lft forever
+initrd: addr: 2: eth0    inet6 fe80::5054:ff:fe12:3456/64 scope link tentative \       valid_lft forever preferred_lft forever
+initrd: route: default via 10.0.2.2 dev eth0 
+initrd: route: 10.0.2.0/24 dev eth0 scope link  src 10.0.2.15 
+initrd: route: 10.0.2.2 dev eth0 scope link 
+initrd: proving the egress ceiling holds, from inside the guest:
+tunneld: EGRESS PROBE: 6 attempt(s) at addresses the ceiling permits nothing to reach
+tunneld: EGRESS REFUSED tcp/169.254.169.254:80: dial tcp 169.254.169.254:80: connect: connection refused (the provider's metadata server) — the netfilter rule refused it
+tunneld: EGRESS REFUSED tcp/8.8.8.8:53: dial tcp 8.8.8.8:53: connect: connection refused (a public resolver, over TCP) — the netfilter rule refused it
+tunneld: EGRESS REFUSED udp/8.8.8.8:53: write udp 10.0.2.15:47173->8.8.8.8:53: write: operation not permitted (a public resolver, over UDP) — the netfilter rule refused it
+tunneld: EGRESS REFUSED udp/169.254.169.254:4433: write udp 10.0.2.15:37484->169.254.169.254:4433: write: operation not permitted (the metadata server, on the one port the ceiling grants) — the netfilter rule refused it
+tunneld: EGRESS REFUSED udp/10.0.2.2:53: write udp 10.0.2.15:46117->10.0.2.2:53: write: operation not permitted (named by -egress-probe) — the netfilter rule refused it
+tunneld: EGRESS REFUSED tcp/10.0.2.2:80: dial tcp 10.0.2.2:80: connect: connection refused (named by -egress-probe) — the netfilter rule refused it
+tunneld: EGRESS PROBE PASSED: every attempt was refused before it left
+tunneld: EXIT status=0
+initrd: uptime 3.44s
+initrd: the workload device carries a bundle at /workload/config.json
+initrd: running: unshare -Urmnpf sh -c 'mount -t proc -o nosuid,nodev,noexec proc /proc; exec /usr/bin/runsc --debug --debug-log=/run/runsc-debug/ --root=/run/runsc-state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new run --bundle /workload workload'
+initrd: uptime 3.45s
+running container: creating container: cannot create sandbox: cannot read client sync file: waiting for sandbox to start: EOF
+initrd: uptime 3.57s
+initrd: workload exited with status 128
+initrd: ======== runsc --debug logs, the reason this initrd exists ========
+initrd: ---- /run/runsc-debug/runsc.log.20260918-103434.832000.boot.txt  14401 bytes, last 80 lines ----
+initrd: dbg: D0918 10:34:34.889576       1 config.go:579] Config.DisableSeccomp: false
+initrd: dbg: D0918 10:34:34.889863       1 config.go:577] Config.EnableCoreTags (--enable-core-tags): false
+initrd: dbg: D0918 10:34:34.889878       1 config.go:577] Config.WatchdogAction (--watchdog-action): log
+initrd: dbg: D0918 10:34:34.889891       1 config.go:577] Config.PanicSignal (--panic-signal): -1
+initrd: dbg: D0918 10:34:34.889904       1 config.go:577] Config.ProfileEnable (--profile): false
+initrd: dbg: D0918 10:34:34.889915       1 config.go:577] Config.ProfileBlock (--profile-block): (empty)
+initrd: dbg: D0918 10:34:34.889927       1 config.go:577] Config.ProfileCPU (--profile-cpu): (empty)
+initrd: dbg: D0918 10:34:34.889941       1 config.go:577] Config.ProfileGCInterval (--profile-gc-interval): 0s
+initrd: dbg: D0918 10:34:34.889957       1 config.go:577] Config.ProfileHeap (--profile-heap): (empty)
+initrd: dbg: D0918 10:34:34.889987       1 config.go:577] Config.ProfileMutex (--profile-mutex): (empty)
+initrd: dbg: D0918 10:34:34.890000       1 config.go:577] Config.TraceFile (--trace): (empty)
+initrd: dbg: D0918 10:34:34.890011       1 config.go:577] Config.NumNetworkChannels (--num-network-channels): 1
+initrd: dbg: D0918 10:34:34.890025       1 config.go:577] Config.NetworkProcessorsPerChannel (--network-processors-per-channel): 0
+initrd: dbg: D0918 10:34:34.890037       1 config.go:577] Config.Rootless (--rootless): true
+initrd: dbg: D0918 10:34:34.890052       1 config.go:577] Config.AlsoLogToStderr (--alsologtostderr): false
+initrd: dbg: D0918 10:34:34.890063       1 config.go:577] Config.ReferenceLeak (--ref-leak-mode): disabled
+initrd: dbg: D0918 10:34:34.890078       1 config.go:577] Config.CPUNumFromQuota (--cpu-num-from-quota): true
+initrd: dbg: D0918 10:34:34.890089       1 config.go:577] Config.AllowFlagOverride (--allow-flag-override): false
+initrd: dbg: D0918 10:34:34.890099       1 config.go:577] Config.OCISeccomp (--oci-seccomp): false
+initrd: dbg: D0918 10:34:34.890110       1 config.go:577] Config.IgnoreCgroups (--ignore-cgroups): true
+initrd: dbg: D0918 10:34:34.890124       1 config.go:577] Config.MountCgroupV2 (--mount-cgroup-v2): false
+initrd: dbg: D0918 10:34:34.890136       1 config.go:577] Config.SystemdCgroup (--systemd-cgroup): false
+initrd: dbg: D0918 10:34:34.890150       1 config.go:577] Config.PodInitConfig (--pod-init-config): (empty)
+initrd: dbg: D0918 10:34:34.890162       1 config.go:577] Config.XDP (--EXPERIMENTAL-xdp): {0 }
+initrd: dbg: D0918 10:34:34.890180       1 config.go:577] Config.AFXDPUseNeedWakeup (--EXPERIMENTAL-xdp-need-wakeup): true
+initrd: dbg: D0918 10:34:34.890191       1 config.go:577] Config.FDLimit (--fdlimit): -1
+initrd: dbg: D0918 10:34:34.890204       1 config.go:577] Config.DCache (--dcache): -1
+initrd: dbg: D0918 10:34:34.890216       1 config.go:577] Config.IOUring (--iouring): false
+initrd: dbg: D0918 10:34:34.890234       1 config.go:577] Config.DirectFS (--directfs): true
+initrd: dbg: D0918 10:34:34.890485       1 config.go:577] Config.AppHugePages (--app-huge-pages): true
+initrd: dbg: D0918 10:34:34.890503       1 config.go:577] Config.NVProxy (--nvproxy): false
+initrd: dbg: D0918 10:34:34.890516       1 config.go:577] Config.NVProxyDocker (--nvproxy-docker): false
+initrd: dbg: D0918 10:34:34.890528       1 config.go:577] Config.NVProxyDriverVersion (--nvproxy-driver-version): (empty)
+initrd: dbg: D0918 10:34:34.890540       1 config.go:577] Config.NVProxyAllowedDriverCapabilities (--nvproxy-allowed-driver-capabilities): utility,compute
+initrd: dbg: D0918 10:34:34.890554       1 config.go:577] Config.NVProxyAllowUnsupportedDriver (--nvproxy-allow-unsupported-driver): false
+initrd: dbg: D0918 10:34:34.890571       1 config.go:577] Config.TPUProxy (--tpuproxy): false
+initrd: dbg: D0918 10:34:34.890582       1 config.go:577] Config.RDMAProxy (--rdmaproxy): false
+initrd: dbg: D0918 10:34:34.890595       1 config.go:577] Config.TestOnlyAllowRunAsCurrentUserWithoutChroot (--TESTONLY-unsafe-nonroot): false
+initrd: dbg: D0918 10:34:34.890610       1 config.go:577] Config.TestOnlyTestNameEnv (--TESTONLY-test-name-env): (empty)
+initrd: dbg: D0918 10:34:34.890637       1 config.go:577] Config.TestOnlyAFSSyscallPanic (--TESTONLY-afs-syscall-panic): false
+initrd: dbg: D0918 10:34:34.890650       1 config.go:579] Config.explicitlySet: <map[string]struct {} Value> (unexported)
+initrd: dbg: D0918 10:34:34.890664       1 config.go:577] Config.ReproduceNAT (--reproduce-nat): false
+initrd: dbg: D0918 10:34:34.890688       1 config.go:577] Config.ReproduceNftables (--reproduce-nftables): false
+initrd: dbg: D0918 10:34:34.890699       1 config.go:577] Config.NetDisconnectOk (--net-disconnect-ok): true
+initrd: dbg: D0918 10:34:34.890712       1 config.go:577] Config.TestOnlyAutosaveImagePath (--TESTONLY-autosave-image-path): (empty)
+initrd: dbg: D0918 10:34:34.890725       1 config.go:577] Config.TestOnlyAutosaveResume (--TESTONLY-autosave-resume): false
+initrd: dbg: D0918 10:34:34.890738       1 config.go:577] Config.RestoreSpecValidation (--restore-spec-validation): enforce
+initrd: dbg: D0918 10:34:34.890763       1 config.go:577] Config.GVisorMarkerFile (--gvisor-marker-file): false
+initrd: dbg: D0918 10:34:34.890777       1 config.go:577] Config.OverrideProcs (--override-procs): (empty)
+initrd: dbg: D0918 10:34:34.890788       1 config.go:577] Config.SystrapDisableSyscallPatching (--systrap-disable-syscall-patching): false
+initrd: dbg: D0918 10:34:34.890799       1 config.go:577] Config.SystrapDisableFastPath (--systrap-disable-fast-path): false
+initrd: dbg: D0918 10:34:34.890810       1 config.go:577] Config.Nftables (--TESTONLY-nftables): false
+initrd: dbg: D0918 10:34:34.890822       1 config.go:577] Config.AllowSUID (--allow-suid): false
+initrd: dbg: D0918 10:34:34.890833       1 config.go:577] Config.UseCPUNums (--kvm-use-cpu-nums): false
+initrd: dbg: D0918 10:34:34.890844       1 config.go:577] Config.PauseExternalNetworking (--pause-external-networking): false
+initrd: dbg: D0918 10:34:34.890856       1 config.go:577] Config.AllowConnectedOnSave (--allow-connected-on-save): false
+initrd: dbg: D0918 10:34:34.890869       1 config.go:577] Config.AllowRootfsTarAnnotation (--allow-rootfs-tar-annotation): false
+initrd: dbg: D0918 10:34:34.890882       1 config.go:577] Config.ControlRPCStopTimeout (--control-rpc-stop-timeout): 15s
+initrd: dbg: D0918 10:34:34.890895       1 config.go:577] Config.SharedRootDir (--shared-root): (empty)
+initrd: dbg: D0918 10:34:34.890914       1 cli.go:284] runsc process spawned at 10:34:34.886000, Go started execution at 10:34:34.886983. Startup overhead: 983.668µs
+initrd: dbg: I0918 10:34:34.890944       1 cli.go:287] **************** gVisor ****************
+initrd: dbg: I0918 10:34:34.890970       1 timing.go:439] Timer for runsc boot: Starting.
+initrd: dbg: D0918 10:34:34.891007       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint Go code running at 10:34:34.886983668 (unix nanos: 1789727674886983668)
+initrd: dbg: D0918 10:34:34.891033       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint boot subcommand dispatched at 10:34:34.891031905 (unix nanos: 1789727674891031905)
+initrd: dbg: D0918 10:34:34.892041       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint CPUID initialized at 10:34:34.892038445 (unix nanos: 1789727674892038445)
+initrd: dbg: D0918 10:34:34.892070       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint ring0 initialized at 10:34:34.892069161 (unix nanos: 1789727674892069161)
+initrd: dbg: I0918 10:34:34.892155       1 boot.go:367] Setting product_name: "Standard PC (i440FX + PIIX, 1996)"
+initrd: dbg: I0918 10:34:34.892359       1 boot.go:378] Setting host-thp-shmem-enabled: "never"
+initrd: dbg: I0918 10:34:34.892444       1 boot.go:388] Setting host-thp-defrag: "madvise"
+initrd: dbg: D0918 10:34:34.892463       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint host info read at 10:34:34.892460409 (unix nanos: 1789727674892460409)
+initrd: dbg: D0918 10:34:34.894073       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint spec read at 10:34:34.894070174 (unix nanos: 1789727674894070174)
+initrd: dbg: I0918 10:34:34.894096       1 chroot.go:142] Setting up sandbox chroot in "/tmp"
+initrd: dbg: W0918 10:34:34.894314       1 chroot.go:159] Failed to copy /etc/localtime: open /etc/localtime: no such file or directory. UTC timezone will be used.
+initrd: dbg: D0918 10:34:34.894355       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint chroot base mounted at 10:34:34.894352779 (unix nanos: 1789727674894352779)
+initrd: dbg: I0918 10:34:34.894470       1 chroot.go:41] Mounting "proc" at "/tmp/proc/sandbox-proc"
+initrd: dbg: D0918 10:34:34.894589       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint chroot proc mounted at 10:34:34.894587651 (unix nanos: 1789727674894587651)
+initrd: dbg: D0918 10:34:34.895069       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint chroot procfs set up at 10:34:34.895057346 (unix nanos: 1789727674895057346)
+initrd: dbg: D0918 10:34:34.895127       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint chroot sealed read-only at 10:34:34.895125268 (unix nanos: 1789727674895125268)
+initrd: dbg: W0918 10:34:34.895156       1 util.go:107] FATAL ERROR: error setting up chroot: pivot_root failed, make sure that the root mount has a parent: invalid argument
+initrd: dbg: error setting up chroot: pivot_root failed, make sure that the root mount has a parent: invalid argument
+initrd: ---- /run/runsc-debug/runsc.log.20260918-103434.832000.gofer.txt  12233 bytes, last 80 lines ----
+initrd: dbg: D0918 10:34:34.874205       1 config.go:577] Config.PCAP (--pcap-log): (empty)
+initrd: dbg: D0918 10:34:34.874232       1 config.go:577] Config.Platform (--platform): systrap
+initrd: dbg: D0918 10:34:34.874294       1 config.go:577] Config.PlatformDevicePath (--platform_device_path): (empty)
+initrd: dbg: D0918 10:34:34.874306       1 config.go:577] Config.MetricServer (--metric-server): (empty)
+initrd: dbg: D0918 10:34:34.874323       1 config.go:577] Config.SidecarReleaseEnforcementPolicy (--sidecar-release-enforcement-policy): NEVER
+initrd: dbg: D0918 10:34:34.874342       1 config.go:577] Config.FinalMetricsLog (--final-metrics-log): (empty)
+initrd: dbg: D0918 10:34:34.874397       1 config.go:577] Config.ProfilingMetrics (--profiling-metrics): (empty)
+initrd: dbg: D0918 10:34:34.874409       1 config.go:577] Config.ProfilingMetricsLog (--profiling-metrics-log): (empty)
+initrd: dbg: D0918 10:34:34.874425       1 config.go:577] Config.ProfilingMetricsRate (--profiling-metrics-rate-us): 1000
+initrd: dbg: D0918 10:34:34.874438       1 config.go:577] Config.Strace (--strace): false
+initrd: dbg: D0918 10:34:34.874505       1 config.go:577] Config.StraceSyscalls (--strace-syscalls): (empty)
+initrd: dbg: D0918 10:34:34.874522       1 config.go:577] Config.StraceLogSize (--strace-log-size): 1024
+initrd: dbg: D0918 10:34:34.874534       1 config.go:577] Config.StraceEvent (--strace-event): false
+initrd: dbg: D0918 10:34:34.874587       1 config.go:579] Config.DisableSeccomp: false
+initrd: dbg: D0918 10:34:34.874619       1 config.go:577] Config.EnableCoreTags (--enable-core-tags): false
+initrd: dbg: D0918 10:34:34.874698       1 config.go:577] Config.WatchdogAction (--watchdog-action): log
+initrd: dbg: D0918 10:34:34.874713       1 config.go:577] Config.PanicSignal (--panic-signal): -1
+initrd: dbg: D0918 10:34:34.874728       1 config.go:577] Config.ProfileEnable (--profile): false
+initrd: dbg: D0918 10:34:34.874786       1 config.go:577] Config.ProfileBlock (--profile-block): (empty)
+initrd: dbg: D0918 10:34:34.874800       1 config.go:577] Config.ProfileCPU (--profile-cpu): (empty)
+initrd: dbg: D0918 10:34:34.874814       1 config.go:577] Config.ProfileGCInterval (--profile-gc-interval): 0s
+initrd: dbg: D0918 10:34:34.874873       1 config.go:577] Config.ProfileHeap (--profile-heap): (empty)
+initrd: dbg: D0918 10:34:34.874886       1 config.go:577] Config.ProfileMutex (--profile-mutex): (empty)
+initrd: dbg: D0918 10:34:34.874897       1 config.go:577] Config.TraceFile (--trace): (empty)
+initrd: dbg: D0918 10:34:34.874910       1 config.go:577] Config.NumNetworkChannels (--num-network-channels): 1
+initrd: dbg: D0918 10:34:34.874975       1 config.go:577] Config.NetworkProcessorsPerChannel (--network-processors-per-channel): 0
+initrd: dbg: D0918 10:34:34.874991       1 config.go:577] Config.Rootless (--rootless): true
+initrd: dbg: D0918 10:34:34.875006       1 config.go:577] Config.AlsoLogToStderr (--alsologtostderr): false
+initrd: dbg: D0918 10:34:34.875061       1 config.go:577] Config.ReferenceLeak (--ref-leak-mode): disabled
+initrd: dbg: D0918 10:34:34.875080       1 config.go:577] Config.CPUNumFromQuota (--cpu-num-from-quota): true
+initrd: dbg: D0918 10:34:34.875094       1 config.go:577] Config.AllowFlagOverride (--allow-flag-override): false
+initrd: dbg: D0918 10:34:34.875106       1 config.go:577] Config.OCISeccomp (--oci-seccomp): false
+initrd: dbg: D0918 10:34:34.875158       1 config.go:577] Config.IgnoreCgroups (--ignore-cgroups): true
+initrd: dbg: D0918 10:34:34.875172       1 config.go:577] Config.MountCgroupV2 (--mount-cgroup-v2): false
+initrd: dbg: D0918 10:34:34.875185       1 config.go:577] Config.SystemdCgroup (--systemd-cgroup): false
+initrd: dbg: D0918 10:34:34.875199       1 config.go:577] Config.PodInitConfig (--pod-init-config): (empty)
+initrd: dbg: D0918 10:34:34.875269       1 config.go:577] Config.XDP (--EXPERIMENTAL-xdp): {0 }
+initrd: dbg: D0918 10:34:34.875293       1 config.go:577] Config.AFXDPUseNeedWakeup (--EXPERIMENTAL-xdp-need-wakeup): true
+initrd: dbg: D0918 10:34:34.875373       1 config.go:577] Config.FDLimit (--fdlimit): -1
+initrd: dbg: D0918 10:34:34.875388       1 config.go:577] Config.DCache (--dcache): -1
+initrd: dbg: D0918 10:34:34.875403       1 config.go:577] Config.IOUring (--iouring): false
+initrd: dbg: D0918 10:34:34.875415       1 config.go:577] Config.DirectFS (--directfs): true
+initrd: dbg: D0918 10:34:34.875472       1 config.go:577] Config.AppHugePages (--app-huge-pages): true
+initrd: dbg: D0918 10:34:34.875492       1 config.go:577] Config.NVProxy (--nvproxy): false
+initrd: dbg: D0918 10:34:34.875507       1 config.go:577] Config.NVProxyDocker (--nvproxy-docker): false
+initrd: dbg: D0918 10:34:34.875559       1 config.go:577] Config.NVProxyDriverVersion (--nvproxy-driver-version): (empty)
+initrd: dbg: D0918 10:34:34.875574       1 config.go:577] Config.NVProxyAllowedDriverCapabilities (--nvproxy-allowed-driver-capabilities): utility,compute
+initrd: dbg: D0918 10:34:34.875602       1 config.go:577] Config.NVProxyAllowUnsupportedDriver (--nvproxy-allow-unsupported-driver): false
+initrd: dbg: D0918 10:34:34.875667       1 config.go:577] Config.TPUProxy (--tpuproxy): false
+initrd: dbg: D0918 10:34:34.875681       1 config.go:577] Config.RDMAProxy (--rdmaproxy): false
+initrd: dbg: D0918 10:34:34.875693       1 config.go:577] Config.TestOnlyAllowRunAsCurrentUserWithoutChroot (--TESTONLY-unsafe-nonroot): false
+initrd: dbg: D0918 10:34:34.875707       1 config.go:577] Config.TestOnlyTestNameEnv (--TESTONLY-test-name-env): (empty)
+initrd: dbg: D0918 10:34:34.875764       1 config.go:577] Config.TestOnlyAFSSyscallPanic (--TESTONLY-afs-syscall-panic): false
+initrd: dbg: D0918 10:34:34.875779       1 config.go:579] Config.explicitlySet: <map[string]struct {} Value> (unexported)
+initrd: dbg: D0918 10:34:34.875794       1 config.go:577] Config.ReproduceNAT (--reproduce-nat): false
+initrd: dbg: D0918 10:34:34.875808       1 config.go:577] Config.ReproduceNftables (--reproduce-nftables): false
+initrd: dbg: D0918 10:34:34.875863       1 config.go:577] Config.NetDisconnectOk (--net-disconnect-ok): true
+initrd: dbg: D0918 10:34:34.875879       1 config.go:577] Config.TestOnlyAutosaveImagePath (--TESTONLY-autosave-image-path): (empty)
+initrd: dbg: D0918 10:34:34.875892       1 config.go:577] Config.TestOnlyAutosaveResume (--TESTONLY-autosave-resume): false
+initrd: dbg: D0918 10:34:34.875907       1 config.go:577] Config.RestoreSpecValidation (--restore-spec-validation): enforce
+initrd: dbg: D0918 10:34:34.875963       1 config.go:577] Config.GVisorMarkerFile (--gvisor-marker-file): false
+initrd: dbg: D0918 10:34:34.875976       1 config.go:577] Config.OverrideProcs (--override-procs): (empty)
+initrd: dbg: D0918 10:34:34.875993       1 config.go:577] Config.SystrapDisableSyscallPatching (--systrap-disable-syscall-patching): false
+initrd: dbg: D0918 10:34:34.876044       1 config.go:577] Config.SystrapDisableFastPath (--systrap-disable-fast-path): false
+initrd: dbg: D0918 10:34:34.876060       1 config.go:577] Config.Nftables (--TESTONLY-nftables): false
+initrd: dbg: D0918 10:34:34.876076       1 config.go:577] Config.AllowSUID (--allow-suid): false
+initrd: dbg: D0918 10:34:34.876089       1 config.go:577] Config.UseCPUNums (--kvm-use-cpu-nums): false
+initrd: dbg: D0918 10:34:34.876142       1 config.go:577] Config.PauseExternalNetworking (--pause-external-networking): false
+initrd: dbg: D0918 10:34:34.876155       1 config.go:577] Config.AllowConnectedOnSave (--allow-connected-on-save): false
+initrd: dbg: D0918 10:34:34.876168       1 config.go:577] Config.AllowRootfsTarAnnotation (--allow-rootfs-tar-annotation): false
+initrd: dbg: D0918 10:34:34.876182       1 config.go:577] Config.ControlRPCStopTimeout (--control-rpc-stop-timeout): 15s
+initrd: dbg: D0918 10:34:34.876195       1 config.go:577] Config.SharedRootDir (--shared-root): (empty)
+initrd: dbg: D0918 10:34:34.876300       1 cli.go:284] runsc process spawned at 10:34:34.870000, Go started execution at 10:34:34.870981. Startup overhead: 981.26µs
+initrd: dbg: I0918 10:34:34.876408       1 cli.go:287] **************** gVisor ****************
+initrd: dbg: D0918 10:34:34.879103       1 fs.go:156] Waiting on chroot sync FD 10...
+initrd: dbg: D0918 10:34:34.879191       1 fs.go:163] Synced on chroot sync FD 10.
+initrd: dbg: W0918 10:34:34.879764       1 gofer_mount.go:168] Failed to copy /etc/localtime: open /etc/localtime: no such file or directory. UTC timezone will be used.
+initrd: dbg: I0918 10:34:34.879924       1 gofer_mount.go:249] Remounting root as readonly: "/proc/fs/root"
+initrd: dbg: W0918 10:34:34.880015       1 util.go:107] FATAL ERROR: failed to change the root file system: pivot_root failed, make sure that the root mount has a parent: invalid argument
+initrd: dbg: failed to change the root file system: pivot_root failed, make sure that the root mount has a parent: invalid argument
+initrd: ---- /run/runsc-debug/runsc.log.20260918-103434.832000.run.txt  18901 bytes, last 80 lines ----
+initrd: dbg:   },
+initrd: dbg:   "hostname": "workload",
+initrd: dbg:   "mounts": [
+initrd: dbg:     {
+initrd: dbg:       "destination": "/proc",
+initrd: dbg:       "type": "proc",
+initrd: dbg:       "source": "/workload/proc"
+initrd: dbg:     }
+initrd: dbg:   ],
+initrd: dbg:   "linux": {
+initrd: dbg:     "namespaces": [
+initrd: dbg:       {
+initrd: dbg:         "type": "pid"
+initrd: dbg:       },
+initrd: dbg:       {
+initrd: dbg:         "type": "mount"
+initrd: dbg:       },
+initrd: dbg:       {
+initrd: dbg:         "type": "ipc"
+initrd: dbg:       },
+initrd: dbg:       {
+initrd: dbg:         "type": "uts"
+initrd: dbg:       }
+initrd: dbg:     ]
+initrd: dbg:   }
+initrd: dbg: }
+initrd: dbg: D0918 10:34:34.842071       1 container.go:570] Run container, cid: workload, rootDir: "/run/runsc-state"
+initrd: dbg: D0918 10:34:34.842432       1 container.go:217] Create container, cid: workload, rootDir: "/run/runsc-state"
+initrd: dbg: D0918 10:34:34.842779       1 container.go:2134] Configuring container with a new userns with identity user mappings into current userns
+initrd: dbg: D0918 10:34:34.842983       1 container.go:2190] UID Mappings:
+initrd: dbg: D0918 10:34:34.843009       1 container.go:2192] 	Container ID: 0, Host ID: 0, Range Length: 1
+initrd: dbg: D0918 10:34:34.843167       1 container.go:2190] GID Mappings:
+initrd: dbg: D0918 10:34:34.843188       1 container.go:2192] 	Container ID: 0, Host ID: 0, Range Length: 1
+initrd: dbg: D0918 10:34:34.843392       1 container.go:345] Creating new sandbox for container, cid: workload
+initrd: dbg: I0918 10:34:34.844846       1 namespace.go:201] Mapping host uid 0 to container uid 0 (size=1)
+initrd: dbg: I0918 10:34:34.844927       1 namespace.go:209] Mapping host gid 0 to container gid 0 (size=1)
+initrd: dbg: I0918 10:34:34.845005       1 container.go:1681] Starting gofer with command: [runsc-gofer --debug-log=/run/runsc-debug/ --network=none --gofer-network-namespace=new --platform=systrap --rootless=true --ignore-cgroups=true --root=/run/runsc-state --debug=true --debug-log-fd=3 gofer --bundle /workload --gofer-mount-confs=lisafs:none --spec-fd=4 --mounts-fd=5 --rpc-fd=6 --pin-ring-fd=7 --sync-sentry-exit-fd=8 --io-fds=9 --sync-chroot-fd=10 workload]
+initrd: dbg: D0918 10:34:34.845177       1 donation.go:31] Donating FD 3: "/run/runsc-debug/runsc.log.20260918-103434.832000.gofer.txt"
+initrd: dbg: D0918 10:34:34.845450       1 donation.go:31] Donating FD 4: "/workload/config.json"
+initrd: dbg: D0918 10:34:34.845468       1 donation.go:31] Donating FD 5: "|1"
+initrd: dbg: D0918 10:34:34.845486       1 donation.go:31] Donating FD 6: "gofer-rpc"
+initrd: dbg: D0918 10:34:34.845503       1 donation.go:31] Donating FD 7: "pin ring"
+initrd: dbg: D0918 10:34:34.845519       1 donation.go:31] Donating FD 8: "sentry exit sync gofer FD"
+initrd: dbg: D0918 10:34:34.845537       1 donation.go:31] Donating FD 9: "gofer IO FD"
+initrd: dbg: D0918 10:34:34.845553       1 donation.go:31] Donating FD 10: "chroot sync gofer FD"
+initrd: dbg: D0918 10:34:34.845570       1 container.go:1686] Starting gofer: /proc/self/exe [runsc-gofer --debug-log=/run/runsc-debug/ --network=none --gofer-network-namespace=new --platform=systrap --rootless=true --ignore-cgroups=true --root=/run/runsc-state --debug=true --debug-log-fd=3 gofer --bundle /workload --gofer-mount-confs=lisafs:none --spec-fd=4 --mounts-fd=5 --rpc-fd=6 --pin-ring-fd=7 --sync-sentry-exit-fd=8 --io-fds=9 --sync-chroot-fd=10 workload]
+initrd: dbg: I0918 10:34:34.852579       1 container.go:1690] Gofer started, PID: 8
+initrd: dbg: I0918 10:34:34.852966       1 sandbox.go:913] Failed to set RLIMIT_MEMLOCK: operation not permitted
+initrd: dbg: D0918 10:34:34.853136       1 urpc.go:422] urpc: registering client with FD 13
+initrd: dbg: W0918 10:34:34.853456       1 sandbox.go:964] Sidecar "gvisor_sentry" not usable (stat /usr/bin/gvisor-bin/gvisor_sentry: no such file or directory): booting sandbox with runsc itself
+initrd: dbg: W0918 10:34:34.854353       1 sandbox.go:989] Sidecar "gvisor-sentry-prewarmer" not found or usable (stat /usr/bin/gvisor-bin/gvisor-sentry-prewarmer: no such file or directory). This slows down gVisor startup significantly.
+initrd: dbg: D0918 10:34:34.854491       1 sandbox.go:104] Attempting to create socket file "/run/runsc-state/runsc-workload.sock"
+initrd: dbg: D0918 10:34:34.854671       1 sandbox.go:107] Using socket file "/run/runsc-state/runsc-workload.sock"
+initrd: dbg: I0918 10:34:34.854698       1 sandbox.go:1047] Control socket path: "/run/runsc-state/runsc-workload.sock"
+initrd: dbg: I0918 10:34:34.854828       1 sandbox.go:1109] Sandbox will be started in new mount, IPC and UTS namespaces
+initrd: dbg: I0918 10:34:34.854895       1 sandbox.go:1134] Sandbox will be started in new network namespace
+initrd: dbg: I0918 10:34:34.854979       1 sandbox.go:1151] Sandbox will be started in container's user namespace: {Type:user Path:}
+initrd: dbg: I0918 10:34:34.855162       1 namespace.go:201] Mapping host uid 0 to container uid 0 (size=1)
+initrd: dbg: I0918 10:34:34.855191       1 namespace.go:209] Mapping host gid 0 to container gid 0 (size=1)
+initrd: dbg: I0918 10:34:34.855552       1 sandbox.go:1193] Sandbox will be started in minimal chroot
+initrd: dbg: D0918 10:34:34.855960       1 donation.go:31] Donating FD 3: "/run/runsc-debug/runsc.log.20260918-103434.832000.boot.txt"
+initrd: dbg: D0918 10:34:34.856006       1 donation.go:31] Donating FD 4: "sandbox IO FD"
+initrd: dbg: D0918 10:34:34.856025       1 donation.go:31] Donating FD 5: "|0"
+initrd: dbg: D0918 10:34:34.856042       1 donation.go:31] Donating FD 6: "|1"
+initrd: dbg: D0918 10:34:34.856058       1 donation.go:31] Donating FD 7: "pin ring"
+initrd: dbg: D0918 10:34:34.856075       1 donation.go:31] Donating FD 8: "control_server_socket"
+initrd: dbg: D0918 10:34:34.856092       1 donation.go:31] Donating FD 9: "/workload/config.json"
+initrd: dbg: D0918 10:34:34.856109       1 donation.go:31] Donating FD 10: "/dev/stdin"
+initrd: dbg: D0918 10:34:34.856126       1 donation.go:31] Donating FD 11: "/dev/stdout"
+initrd: dbg: D0918 10:34:34.856142       1 donation.go:31] Donating FD 12: "/dev/stderr"
+initrd: dbg: D0918 10:34:34.856159       1 sandbox.go:1403] Starting sandbox: /proc/self/exe [runsc-sandbox --ignore-cgroups=true --root=/run/runsc-state --debug=true --debug-log=/run/runsc-debug/ --network=none --gofer-network-namespace=new --platform=systrap --rootless=true --debug-log-fd=3 boot --bundle=/workload --gofer-mount-confs=lisafs:none --apply-caps=true --setup-root --total-host-memory 2059517952 --total-memory 2059517952 --attached --io-fds=4 --dev-io-fd=-1 --mounts-fd=5 --start-sync-fd=6 --pin-ring-fd=7 --controller-fd=8 --spec-fd=9 --stdio-fds=10 --stdio-fds=11 --stdio-fds=12 workload]
+initrd: dbg: D0918 10:34:34.856391       1 sandbox.go:1404] SysProcAttr: &{Chroot: Credential:0x1cc527ca8510 Ptrace:false Setsid:true Setpgid:false Setctty:false Noctty:false Ctty:0 Foreground:false Pgid:0 Pdeathsig:killed Cloneflags:0 Unshareflags:0 UidMappings:[{ContainerID:0 HostID:0 Size:1}] GidMappings:[{ContainerID:0 HostID:0 Size:1}] GidMappingsEnableSetgroups:false AmbientCaps:[] UseCgroupFD:false CgroupFD:0 PidFD:<nil>}
+initrd: dbg: I0918 10:34:34.866513       1 sandbox.go:1432] Sandbox started, PID: 13
+initrd: dbg: D0918 10:34:34.883693       1 urpc.go:433] urpc: unregistering client with FD 13
+initrd: dbg: D0918 10:34:34.898892       1 sandbox.go:1567] Destroying sandbox "workload"
+initrd: dbg: D0918 10:34:34.898945       1 sandbox.go:1577] Killing sandbox "workload"
+initrd: dbg: D0918 10:34:34.899099       1 container.go:929] Destroy container, cid: workload
+initrd: dbg: D0918 10:34:34.899165       1 container.go:1292] Killing gofer for container, cid: workload, PID: 8
+initrd: dbg: W0918 10:34:34.899315       1 util.go:107] FATAL ERROR: running container: creating container: cannot create sandbox: cannot read client sync file: waiting for sandbox to start: EOF
+initrd: dbg: W0918 10:34:34.903501       1 cli.go:325] Failure to execute command, err: 1
+initrd: ---- every line in every log that mentions pivot_root or chroot ----
+initrd: dbg: /run/runsc-debug/runsc.log.20260918-103434.832000.boot.txt:96:D0918 10:34:34.890595       1 config.go:577] Config.TestOnlyAllowRunAsCurrentUserWithoutChroot (--TESTONLY-unsafe-nonroot): false
+initrd: dbg: /run/runsc-debug/runsc.log.20260918-103434.832000.boot.txt:130:I0918 10:34:34.894096       1 chroot.go:142] Setting up sandbox chroot in "/tmp"
+initrd: dbg: /run/runsc-debug/runsc.log.20260918-103434.832000.boot.txt:131:W0918 10:34:34.894314       1 chroot.go:159] Failed to copy /etc/localtime: open /etc/localtime: no such file or directory. UTC timezone will be used.
+initrd: dbg: /run/runsc-debug/runsc.log.20260918-103434.832000.boot.txt:132:D0918 10:34:34.894355       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint chroot base mounted at 10:34:34.894352779 (unix nanos: 1789727674894352779)
+initrd: dbg: /run/runsc-debug/runsc.log.20260918-103434.832000.boot.txt:133:I0918 10:34:34.894470       1 chroot.go:41] Mounting "proc" at "/tmp/proc/sandbox-proc"
+initrd: dbg: /run/runsc-debug/runsc.log.20260918-103434.832000.boot.txt:134:D0918 10:34:34.894589       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint chroot proc mounted at 10:34:34.894587651 (unix nanos: 1789727674894587651)
+initrd: dbg: /run/runsc-debug/runsc.log.20260918-103434.832000.boot.txt:135:D0918 10:34:34.895069       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint chroot procfs set up at 10:34:34.895057346 (unix nanos: 1789727674895057346)
+initrd: dbg: /run/runsc-debug/runsc.log.20260918-103434.832000.boot.txt:136:D0918 10:34:34.895127       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint chroot sealed read-only at 10:34:34.895125268 (unix nanos: 1789727674895125268)
+initrd: dbg: /run/runsc-debug/runsc.log.20260918-103434.832000.boot.txt:137:W0918 10:34:34.895156       1 util.go:107] FATAL ERROR: error setting up chroot: pivot_root failed, make sure that the root mount has a parent: invalid argument
+initrd: dbg: /run/runsc-debug/runsc.log.20260918-103434.832000.boot.txt:138:error setting up chroot: pivot_root failed, make sure that the root mount has a parent: invalid argument
+initrd: dbg: /run/runsc-debug/runsc.log.20260918-103434.832000.gofer.txt:4:I0918 10:34:34.872925       1 cli.go:278] Args: [runsc-gofer --debug-log=/run/runsc-debug/ --network=none --gofer-network-namespace=new --platform=systrap --rootless=true --ignore-cgroups=true --root=/run/runsc-state --debug=true --debug-log-fd=3 gofer --bundle /workload --gofer-mount-confs=lisafs:none --spec-fd=4 --mounts-fd=5 --rpc-fd=6 --pin-ring-fd=7 --sync-sentry-exit-fd=8 --io-fds=9 --sync-chroot-fd=10 workload]
+initrd: dbg: /run/runsc-debug/runsc.log.20260918-103434.832000.gofer.txt:96:D0918 10:34:34.875693       1 config.go:577] Config.TestOnlyAllowRunAsCurrentUserWithoutChroot (--TESTONLY-unsafe-nonroot): false
+initrd: dbg: /run/runsc-debug/runsc.log.20260918-103434.832000.gofer.txt:120:D0918 10:34:34.879103       1 fs.go:156] Waiting on chroot sync FD 10...
+initrd: dbg: /run/runsc-debug/runsc.log.20260918-103434.832000.gofer.txt:121:D0918 10:34:34.879191       1 fs.go:163] Synced on chroot sync FD 10.
+initrd: dbg: /run/runsc-debug/runsc.log.20260918-103434.832000.gofer.txt:124:W0918 10:34:34.880015       1 util.go:107] FATAL ERROR: failed to change the root file system: pivot_root failed, make sure that the root mount has a parent: invalid argument
+initrd: dbg: /run/runsc-debug/runsc.log.20260918-103434.832000.gofer.txt:125:failed to change the root file system: pivot_root failed, make sure that the root mount has a parent: invalid argument
+initrd: dbg: /run/runsc-debug/runsc.log.20260918-103434.832000.run.txt:96:D0918 10:34:34.840232       1 config.go:577] Config.TestOnlyAllowRunAsCurrentUserWithoutChroot (--TESTONLY-unsafe-nonroot): false
+initrd: dbg: /run/runsc-debug/runsc.log.20260918-103434.832000.run.txt:186:I0918 10:34:34.845005       1 container.go:1681] Starting gofer with command: [runsc-gofer --debug-log=/run/runsc-debug/ --network=none --gofer-network-namespace=new --platform=systrap --rootless=true --ignore-cgroups=true --root=/run/runsc-state --debug=true --debug-log-fd=3 gofer --bundle /workload --gofer-mount-confs=lisafs:none --spec-fd=4 --mounts-fd=5 --rpc-fd=6 --pin-ring-fd=7 --sync-sentry-exit-fd=8 --io-fds=9 --sync-chroot-fd=10 workload]
+initrd: dbg: /run/runsc-debug/runsc.log.20260918-103434.832000.run.txt:194:D0918 10:34:34.845553       1 donation.go:31] Donating FD 10: "chroot sync gofer FD"
+initrd: dbg: /run/runsc-debug/runsc.log.20260918-103434.832000.run.txt:195:D0918 10:34:34.845570       1 container.go:1686] Starting gofer: /proc/self/exe [runsc-gofer --debug-log=/run/runsc-debug/ --network=none --gofer-network-namespace=new --platform=systrap --rootless=true --ignore-cgroups=true --root=/run/runsc-state --debug=true --debug-log-fd=3 gofer --bundle /workload --gofer-mount-confs=lisafs:none --spec-fd=4 --mounts-fd=5 --rpc-fd=6 --pin-ring-fd=7 --sync-sentry-exit-fd=8 --io-fds=9 --sync-chroot-fd=10 workload]
+initrd: dbg: /run/runsc-debug/runsc.log.20260918-103434.832000.run.txt:209:I0918 10:34:34.855552       1 sandbox.go:1193] Sandbox will be started in minimal chroot
+initrd: dbg: /run/runsc-debug/runsc.log.20260918-103434.832000.run.txt:221:D0918 10:34:34.856391       1 sandbox.go:1404] SysProcAttr: &{Chroot: Credential:0x1cc527ca8510 Ptrace:false Setsid:true Setpgid:false Setctty:false Noctty:false Ctty:0 Foreground:false Pgid:0 Pdeathsig:killed Cloneflags:0 Unshareflags:0 UidMappings:[{ContainerID:0 HostID:0 Size:1}] GidMappings:[{ContainerID:0 HostID:0 Size:1}] GidMappingsEnableSetgroups:false AmbientCaps:[] UseCgroupFD:false CgroupFD:0 PidFD:<nil>}
+initrd: ======== end of the runsc --debug logs ========
+initrd: the initramfs is remounted read-only
+initrd: mount: rootfs / rootfs ro,size=959184k,nr_inodes=239796,inode64 0 0
+initrd: mount: devtmpfs /dev devtmpfs rw,nosuid,noexec,relatime,size=959184k,nr_inodes=239796,mode=755,inode64 0 0
+initrd: mount: proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+initrd: mount: sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+initrd: mount: tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,inode64 0 0
+initrd: mount: tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,inode64 0 0
+initrd: mount: configfs /sys/kernel/config configfs rw,nosuid,nodev,noexec,relatime 0 0
+initrd: mount: /dev/vda /config ext4 ro,nosuid,nodev,noexec,relatime 0 0
+initrd: mount: /dev/vdb /workload ext4 ro,nosuid,nodev,relatime 0 0
+initrd: uptime 5.09s
+initrd: starting tunneld
+tunneld: sandbox "e5-local"
+tunneld: author key 665053d10032f5b9… (/etc/attested-tunnel/author.pub, inside the launch measurement)
+tunneld: peer table: self = 10.0.2.15:4433
+tunneld: report interface /sys/kernel/config/tsm/report: present, 0 request(s) outstanding; a platform driver that does not answer it is what a non-confidential VM looks like from inside
+tunneld: refusing to start: tsm: creating the request /sys/kernel/config/tsm/report/tunneld-296-0: mkdir /sys/kernel/config/tsm/report/tunneld-296-0: no such device or address
+tunneld: EXIT status=1
+initrd: EXIT status=1
+[    5.451456] ACPI: PM: Preparing to enter system sleep state S5
+[    5.456940] reboot: Power down

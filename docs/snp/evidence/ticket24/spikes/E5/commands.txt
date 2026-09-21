@@ -1,0 +1,167 @@
+E5 — the TDX guest's kernel and initrd under plain KVM, why runsc's sandbox died
+there, and the fix. Ticket 24, worktree /home/pniroula/Projects/gvisor-t24 on
+ticket-24-runsc-in-the-measured-guest, tip 69eaf51a1, 2026-09-18. No sudo was
+typed and no cloud instance was created by anything in this file: E5 is eight
+local boots on this workstation, under an unprivileged QEMU with /dev/kvm (the
+user is in group kvm). Nothing under pkg/ or runsc/ changed. The one file E5
+edited is docs/snp/cloud/tdx/init.tdx.
+
+SCRATCH = <this session's scratch directory>   (the initrds, the two device
+                                                images and the variant inits live
+                                                there; the initrds are 86 MB each
+                                                and are not evidence)
+BUILD   = $SCRATCH/tdx-image-t24/build         (E4's build directory, still
+                                                holding the staged busybox,
+                                                runsc, tunneld, author.pub, the
+                                                decompressed modules, initrd.list
+                                                and the vmlinuz the build took
+                                                out of the pinned Ubuntu image)
+QEMU    = /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/
+          host-stack/usr/local/bin/qemu-system-x86_64   (QEMU 10.0.0)
+
+0. the two devices (2026-09-18T10:28:13Z -> 10:28:14Z)
+
+     IMAGE_DIR=$SCRATCH/tdx-image-t24 \
+     bash docs/snp/evidence/ticket24/spikes/E5/make-devices.sh $SCRATCH/e5/dev
+
+   The config device is the smoke script's config-src with QEMU's addressing
+   (10.0.2.15/24, gateway 10.0.2.2, mtu 1500) instead of the VPC's /32, and
+   SIZE_MB=64 instead of 1024; everything else on it — the reference value set,
+   its signature, the Intel collateral, the peer table, the run configuration —
+   is what boot 2 was given. The workload device is E3's bundle built by E3's own
+   script, so all three vendors ran the same bytes.
+
+     config.raw    67108864 bytes  2d798eb6369fd6a0…  label attested-config
+     workload.raw  67108864 bytes  7d0e3372d3594565…  label attested-workloa
+     config.json   193382ad2dfce082…  632 bytes   (boot 2's, byte for byte)
+
+   -> make-devices-output.txt
+
+1. boot 1: the measured initrd, unmodified, as the hardware booted it
+   (2026-09-18T10:28:48Z -> 10:28:53Z)
+
+     KERNEL=$BUILD/vmlinuz INITRD=$SCRATCH/tdx-image-t24/initrd.img \
+     DEV=$SCRATCH/e5/dev OUT=.../output-01-…txt \
+     bash docs/snp/evidence/ticket24/spikes/E5/boot-local.sh
+
+     initrd c409a79cfbcd20a9f0fca7662c0423474d0c53c641a3b6b1572a8d23239b8e53
+            86550953 bytes — the initrd of E4 boot 2, unaltered
+     vmlinuz ddd8198f9bdca634295d6a35b6135ca9a30db8b5e3f8e91cf08b776bfd11e6be
+
+   -> output-01. The failure reproduced on the first attempt, identically:
+
+        running container: creating container: cannot create sandbox: cannot read
+        client sync file: waiting for sandbox to start: EOF
+        initrd: workload exited with status 128
+
+   and everything before it behaved: six modules loaded (tdx-guest did not, and
+   cannot here), the ceiling installed, both devices found by their ext4 label,
+   eth0 up, EGRESS PROBE PASSED. tunneld then refused to start for want of a TSM
+   report, which is what a non-confidential VM looks like from inside and is two
+   steps after the one E5 is about.
+
+2. the harness's own check (2026-09-18T10:32:00Z)
+
+     BUILD=$BUILD INIT=docs/snp/cloud/tdx/init.tdx \
+     OUT=$SCRATCH/e5/initrd-roundtrip.img \
+     bash docs/snp/evidence/ticket24/spikes/E5/mkinitrd-local.sh
+
+   -> c409a79cfbcd20a9f0fca7662c0423474d0c53c641a3b6b1572a8d23239b8e53,
+      86550953 bytes: byte for byte the initrd grub measured into RTMR2 on the
+      hardware. So every other initrd below differs from the measured one by
+      exactly its /init and nothing else, and the staged init in E4's build
+      directory is the tree's init.tdx (both 3999f409cb2575e3…).
+
+3. boot 2: the same initrd plus runsc's own --debug log (10:34:29Z -> 10:34:37Z)
+
+     BUILD=$BUILD INIT=$SCRATCH/e5/variants/init-debug.tdx \
+     OUT=$SCRATCH/e5/initrd-debug.img EXTRA_APPLETS="mkdir tail" mkinitrd-local.sh
+     KERNEL=$BUILD/vmlinuz INITRD=$SCRATCH/e5/initrd-debug.img … boot-local.sh
+
+     initrd-debug.img 6e8d50ece722d680… 86551760 bytes, 54 entries
+       A DEBUGGING BUILD. Never measured, never booted on TDX. init.tdx plus
+       `--debug --debug-log=/run/runsc-debug/` on the runsc line and a dump of
+       the logs afterwards; `mkdir` and `tail` were added as applets for the dump
+       alone. init-debug.tdx beside these notes is that file.
+
+   -> output-02, which names the cause twice, in the sandbox's log and in the
+      gofer's. See notes.md.
+
+4. boots 3, 4 and 5: three fix variants, each a copy of init.tdx differing only
+   in the driver line (10:36:19Z -> 10:38:05Z)
+
+     for v in v1-bind-root-onto-root v2-rbind-chroot-run-root v3-bind-chroot-run-root; do
+       BUILD=$BUILD INIT=$SCRATCH/e5/variants/init-$v.tdx \
+         OUT=$SCRATCH/e5/initrd-$v.img bash …/mkinitrd-local.sh
+       KERNEL=$BUILD/vmlinuz INITRD=$SCRATCH/e5/initrd-$v.img \
+         DEV=$SCRATCH/e5/dev OUT=…/output-0N-$v.txt bash …/boot-local.sh
+     done
+
+   -> output-03 (V1, unchanged failure), output-04 (V2, a different failure) and
+      output-05 (V3, the bind itself refused). The three inits are here as
+      init-v1-…tdx, init-v2-…tdx and init-v3-…tdx.
+
+5. boot 6: V2 with --debug, to find out why the gofer would not start
+   (2026-09-18T10:39:37Z, by the guest's own clock in the runsc log)
+
+     BUILD=$BUILD INIT=$SCRATCH/e5/variants/init-v2-debug.tdx \
+       OUT=$SCRATCH/e5/initrd-v2-debug.img …
+     … boot-local.sh          -> output-06
+
+   Also a debugging build, never measured, never booted on TDX.
+
+6. boot 7: the probe — eight arrangements of the mount namespace in one boot,
+   each in a fresh namespace, each running the identical runsc command out of
+   /run/probe.sh, each preceded by `busybox unshare -U true` so that the kernel
+   says whether it considers the process chrooted (2026-09-18T10:43:33Z)
+
+     BUILD=$BUILD INIT=$SCRATCH/e5/variants/init-probe.tdx \
+       OUT=$SCRATCH/e5/initrd-probe.img … ; … boot-local.sh
+                                            -> output-07
+
+   init-probe.tdx is here. It is not a fix candidate and was never measured.
+   Arrangement D is the one that printed the workload's line; notes.md has the
+   table.
+
+7. the fix, in docs/snp/cloud/tdx/init.tdx itself, and boot 8 (10:45:11Z ->
+   10:45:46Z)
+
+     bash -n docs/snp/cloud/tdx/init.tdx
+     BUILD=$BUILD INIT=docs/snp/cloud/tdx/init.tdx \
+       OUT=$SCRATCH/e5/initrd-fixed.img bash …/mkinitrd-local.sh
+     KERNEL=$BUILD/vmlinuz INITRD=$SCRATCH/e5/initrd-fixed.img \
+       DEV=$SCRATCH/e5/dev OUT=…/output-08-the-fix-in-init-tdx.txt \
+       bash …/boot-local.sh
+
+     initrd-fixed.img 54334d67eba23d92ff4e0ca8fa0ed5e684915bb1210baf621646f6b446361286
+                      86551997 bytes, 52 entries — the same 52 entries as the
+                      measured initrd; only /init's bytes moved
+     /init 657f667f6b1b9ecb58cf0f0124883f3b39889d8622ef3f2dcf66d952806f4b3e
+
+   -> output-08:
+
+        Linux workload 4.19.0-gvisor #1 SMP Sun Jan 10 15:06:54 PST 2016 x86_64 GNU/Linux
+        initrd: workload exited with status 0
+
+   and the mount table init prints is identical, line for line, to the one the
+   unfixed initrd printed in output-01 (checked with diff).
+
+What is not here
+   The initrds and the two device images: 86 MB and 64 MB each, not measured, not
+   evidence, and .gitignore refuses *.raw and initrd.img under ticket24. Every
+   one of them is reproducible from this file, from mkinitrd-local.sh and from
+   E4's build directory. The vmlinuz is the pinned Ubuntu image's own.
+
+Files here
+   make-devices.sh        the two local device images, from the same sources the
+                          smoke script uses
+   boot-local.sh          the QEMU invocation, one boot per call
+   mkinitrd-local.sh      an initrd from E4's initrd.list with a different /init;
+                          it reproduces the measured initrd exactly when given
+                          the tree's init.tdx, which is step 2 above
+   init-debug.tdx         the debugging build of step 3 (never measured)
+   init-v1-…, init-v2-…, init-v3-…, init-v2-debug.tdx, init-probe.tdx
+                          the variants of steps 4, 5 and 6 (none measured)
+   output-01 … output-08  the eight consoles, untrimmed
+   make-devices-output.txt  the device build, untrimmed
+   notes.md               the cause, the fix, the variants and what is still true

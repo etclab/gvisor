@@ -24,6 +24,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"slices"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -73,6 +74,27 @@ type Host struct {
 
 // ErrHostClosed is returned once the host has been closed.
 var ErrHostClosed = errors.New("sandbox: host closed")
+
+// ErrNoEnforcingSandbox is what a push meets when there is no enforcing sandbox
+// to hand it to and none arrived inside the wait.
+//
+// It wraps [ErrPolicyRefused], because that is what it is to the caller, and it
+// is its own sentinel because tunneld answers a pushing peer a different
+// sentence for it — "no sandbox is attached to this tunneld" rather than "the
+// sandbox beside this tunneld did not apply it" — and telling the two apart by
+// the text of an error would be a contract neither side declared.
+var ErrNoEnforcingSandbox = fmt.Errorf("%w: no enforcing sandbox is attached", ErrPolicyRefused)
+
+// DefaultApplyWait bounds the waits this package makes with no caller deadline
+// behind them: a push whose context can be cancelled but carries no deadline,
+// and the replay of the policy in force at an enforcing sandbox that has just
+// attached.
+//
+// It is the ten seconds tunneld's DefaultPushTimeout is, and it is written again
+// here rather than imported because package sandbox imports nothing of tunneld —
+// that is the contract's shape and not an oversight. Nothing rests on the two
+// being equal; what rests on this existing is that no wait here is unbounded.
+const DefaultApplyWait = 10 * time.Second
 
 var (
 	_ Sandbox = (*Host)(nil)
@@ -133,87 +155,130 @@ func (h *Host) Attached() int {
 // Apply pushes the policy to the enforcing sandbox and returns its
 // acknowledgement or refusal.
 //
-// If no enforcing sandbox has attached yet, Apply waits up to the caller's
-// deadline for one to attach. A push that lands before the enforcing sandbox
-// attaches is acknowledged only when the enforcing sandbox has received it.
+// If no enforcing sandbox has attached yet, Apply waits for one inside the
+// caller's deadline: a push that lands before the enforcing sandbox attaches is
+// acknowledged only once that sandbox has it, which is the whole of what an
+// acknowledgement on this socket means. A caller that gave neither a deadline
+// nor a way to cancel is refused at once instead, because nothing could ever end
+// that wait; a caller that gave a cancellation and no deadline waits at most
+// [DefaultApplyWait], and one that gave a deadline keeps it, however long.
+//
+// One push is in flight at a time. That is what keeps two pushes — or a push and
+// the replay a freshly attached sandbox is offered — from crossing on the socket
+// and leaving the sandbox enforcing the older of the two.
 func (h *Host) Apply(ctx context.Context, policy []byte) error {
+	if err := h.holdPush(ctx); err != nil {
+		return err
+	}
+	defer h.releasePush()
+
+	a, waiter, err := h.enforcingOrWaiter(ctx)
+	if err != nil {
+		return err
+	}
+	if a == nil {
+		if a, err = h.awaitEnforcing(ctx, waiter); err != nil {
+			return err
+		}
+	}
+	if err := a.apply(ctx, policy); err != nil {
+		return err
+	}
+	h.setInForce(policy)
+	return nil
+}
+
+// holdPush takes the one push slot this host has, and releasePush gives it
+// back.
+func (h *Host) holdPush(ctx context.Context) error {
 	select {
 	case h.applySem <- struct{}{}:
-		defer func() { <-h.applySem }()
+		return nil
 	case <-ctx.Done():
 		return ctx.Err()
 	case <-h.done:
 		return ErrHostClosed
 	}
+}
 
+func (h *Host) releasePush() { <-h.applySem }
+
+// enforcingOrWaiter is the enforcing attachment if one is here, or the channel
+// the next one to attach will be handed down. Exactly one of the two is non-nil
+// when the error is nil.
+func (h *Host) enforcingOrWaiter(ctx context.Context) (*attached, chan *attached, error) {
 	h.mu.Lock()
+	defer h.mu.Unlock()
 	if h.closed {
-		h.mu.Unlock()
-		return ErrHostClosed
+		return nil, nil, ErrHostClosed
 	}
-	var enforcing *attached
-	for _, c := range h.conns {
-		if c.role == RoleEnforcing && !c.isGone() {
-			enforcing = c
-			break
-		}
+	if a := h.enforcing(); a != nil {
+		return a, nil, nil
 	}
-	if enforcing != nil {
-		h.mu.Unlock()
-		if err := enforcing.apply(ctx, policy); err != nil {
-			return err
-		}
-		h.mu.Lock()
-		h.inForce = policy
-		h.mu.Unlock()
-		h.said(policy)
-		return nil
+	if _, hasDeadline := ctx.Deadline(); !hasDeadline && ctx.Done() == nil {
+		return nil, nil, fmt.Errorf("%w to %s", ErrNoEnforcingSandbox, h.path)
 	}
-
-	_, hasDeadline := ctx.Deadline()
-	if !hasDeadline && ctx.Done() == nil {
-		h.mu.Unlock()
-		return fmt.Errorf("%w: no enforcing sandbox is attached to %s", ErrPolicyRefused, h.path)
-	}
-
 	waiter := make(chan *attached, 1)
 	h.enforcingWaiters = append(h.enforcingWaiters, waiter)
-	h.mu.Unlock()
+	return nil, waiter, nil
+}
 
+// enforcing is the attachment a policy is pushed to, or nil while there is
+// none. It is called under h.mu, and there is at most one of them: a second
+// enforcing client on this socket is refused as it attaches.
+func (h *Host) enforcing() *attached {
+	for _, c := range h.conns {
+		if c.role == RoleEnforcing && !c.isGone() {
+			return c
+		}
+	}
+	return nil
+}
+
+// awaitEnforcing waits for the enforcing sandbox to attach and to be handed this
+// push.
+//
+// The caller's context is the bound, with [DefaultApplyWait] over the top so
+// that a context which can be cancelled but never is cannot hold the push slot
+// for ever. A caller whose own deadline is longer keeps it: the ceiling is for
+// where there is no deadline at all.
+func (h *Host) awaitEnforcing(ctx context.Context, waiter chan *attached) (*attached, error) {
+	if _, hasDeadline := ctx.Deadline(); !hasDeadline {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, DefaultApplyWait)
+		defer cancel()
+	}
 	select {
-	case <-ctx.Done():
-		h.mu.Lock()
-		h.removeEnforcingWaiter(waiter)
-		h.mu.Unlock()
-		return fmt.Errorf("%w: no enforcing sandbox is attached to %s", ErrPolicyRefused, h.path)
-	case <-h.done:
-		h.mu.Lock()
-		h.removeEnforcingWaiter(waiter)
-		h.mu.Unlock()
-		return ErrHostClosed
 	case a, ok := <-waiter:
 		if !ok || a == nil {
-			return ErrHostClosed
+			return nil, ErrHostClosed
 		}
-		if err := a.apply(ctx, policy); err != nil {
-			return err
-		}
-		h.mu.Lock()
-		h.inForce = policy
-		h.mu.Unlock()
-		h.said(policy)
-		return nil
+		return a, nil
+	case <-ctx.Done():
+		h.dropWaiter(waiter)
+		return nil, fmt.Errorf("%w to %s", ErrNoEnforcingSandbox, h.path)
+	case <-h.done:
+		h.dropWaiter(waiter)
+		return nil, ErrHostClosed
 	}
 }
 
-func (h *Host) removeEnforcingWaiter(w chan *attached) {
-	kept := h.enforcingWaiters[:0]
-	for _, waiter := range h.enforcingWaiters {
-		if waiter != w {
-			kept = append(kept, waiter)
-		}
-	}
-	h.enforcingWaiters = kept
+// dropWaiter takes a push's waiter out of the queue once that push has stopped
+// waiting on it.
+func (h *Host) dropWaiter(w chan *attached) {
+	h.mu.Lock()
+	h.enforcingWaiters = slices.DeleteFunc(h.enforcingWaiters, func(c chan *attached) bool { return c == w })
+	h.mu.Unlock()
+}
+
+// setInForce records the policy the enforcing sandbox acknowledged and says so
+// on the console. Nothing else writes inForce, so the policy in force is by
+// construction one a sandbox answered for.
+func (h *Host) setInForce(policy []byte) {
+	h.mu.Lock()
+	h.inForce = policy
+	h.mu.Unlock()
+	h.said(policy)
 }
 
 // said writes the one console line a push is read off, in the shape [Null]
@@ -296,15 +361,10 @@ func (h *Host) watch(ctx context.Context, digest string, watched []*attached, lo
 func (h *Host) DropEnforcing() {
 	h.mu.Lock()
 	h.inForce = nil
-	var toClose []*attached
-	for _, c := range h.conns {
-		if c.role == RoleEnforcing && !c.isGone() {
-			toClose = append(toClose, c)
-		}
-	}
+	a := h.enforcing()
 	h.mu.Unlock()
-	for _, c := range toClose {
-		c.close()
+	if a != nil {
+		a.close()
 	}
 }
 

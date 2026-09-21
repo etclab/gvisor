@@ -232,8 +232,18 @@ func TestTheHostRefusesAPushWithNoSandboxAttached(t *testing.T) {
 		t.Fatalf("listening: %v", err)
 	}
 	defer host.Close()
-	if err := host.Apply(context.Background(), []byte(policyV1)); !errors.Is(err, sandbox.ErrPolicyRefused) {
+	began := time.Now()
+	err = host.Apply(context.Background(), []byte(policyV1))
+	if !errors.Is(err, sandbox.ErrPolicyRefused) {
 		t.Errorf("pushing at nobody returned %v; want a refusal", err)
+	}
+	if !errors.Is(err, sandbox.ErrNoEnforcingSandbox) {
+		t.Errorf("the refusal is %v; want it to carry the sentinel tunneld tells a peer there is nobody here by", err)
+	}
+	// A caller that gave neither a deadline nor a cancellation is answered at
+	// once, because nothing it supplied could ever end a wait.
+	if took := time.Since(began); took > time.Second {
+		t.Errorf("pushing at nobody took %v; want the refusal at once", took)
 	}
 	host.Close()
 	if err := host.Apply(context.Background(), []byte(policyV1)); !errors.Is(err, sandbox.ErrHostClosed) {
@@ -755,6 +765,46 @@ func TestAPushThatArrivesBeforeTheEnforcingSandboxHasAttachedIsNotAcknowledgedUn
 		}
 	case <-time.After(3 * time.Second):
 		t.Fatal("Apply did not return after enforcing sandbox acknowledged")
+	}
+}
+
+// TestAPushWaitingForAnEnforcingSandboxEndsWhenItsCallerGivesUp is the other
+// half of the wait above. A push held open for an enforcing sandbox that has not
+// arrived is the caller's wait and not the host's: cancelling the caller ends it,
+// and what comes back is the refusal that says what was missing.
+func TestAPushWaitingForAnEnforcingSandboxEndsWhenItsCallerGivesUp(t *testing.T) {
+	socket := filepath.Join(t.TempDir(), "sandbox.sock")
+	host, err := sandbox.Listen(socket, newFakeNetwork(), nil)
+	if err != nil {
+		t.Fatalf("listening on %s: %v", socket, err)
+	}
+	defer host.Close()
+
+	// A network client, so that what is waited for is an enforcing sandbox and
+	// not anybody at all.
+	netClient, err := sandbox.Dial(socket, sandbox.RoleNetwork, nil)
+	if err != nil {
+		t.Fatalf("dialing the network client: %v", err)
+	}
+	defer netClient.Close()
+	waitFor(t, "the network client to attach", func() bool { return host.Attached() > 0 })
+
+	ctx, cancel := context.WithCancel(context.Background())
+	pushed := make(chan error, 1)
+	go func() { pushed <- host.Apply(ctx, []byte(policyV1)) }()
+	select {
+	case err := <-pushed:
+		t.Fatalf("Apply returned %v with only a network client attached; want it still waiting", err)
+	case <-time.After(100 * time.Millisecond):
+	}
+	cancel()
+	select {
+	case err := <-pushed:
+		if !errors.Is(err, sandbox.ErrNoEnforcingSandbox) && !errors.Is(err, context.Canceled) {
+			t.Errorf("the cancelled push returned %v; want the refusal or the cancellation", err)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("cancelling the caller did not end the wait")
 	}
 }
 

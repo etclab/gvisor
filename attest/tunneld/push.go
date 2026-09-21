@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
@@ -215,8 +214,11 @@ func (t *Tunneld) applyOrRefuse(ctx context.Context, conn *tunnel.Conn, policy [
 		defer cancel()
 	}
 	if err := box.Apply(waitCtx, policy); err != nil {
+		// Which of the two sentences the peer is told is the difference between
+		// "there is nobody here to take it" and "the sandbox here would not
+		// have it", and the sandbox says which by the sentinel it wraps.
 		sentence := ackRefused
-		if strings.Contains(err.Error(), "no enforcing sandbox is attached") || strings.Contains(err.Error(), "no sandbox is attached") {
+		if errors.Is(err, sandbox.ErrNoEnforcingSandbox) {
 			sentence = ackNoSandbox
 		}
 		return t.refusePush(conn, sentence, err)

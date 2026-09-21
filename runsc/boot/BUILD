@@ -189,6 +189,7 @@ go_test(
         "//pkg/log",
         "//pkg/sentry/fsimpl/erofs",
         "//pkg/sentry/kernel/auth",
+        "//pkg/sentry/policyx",
         "//pkg/sentry/seccheck",
         "//pkg/sentry/socket/netstack",
         "//pkg/sentry/vfs",

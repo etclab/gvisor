@@ -134,9 +134,11 @@ type policyState struct {
 	// +checklocks:mu
 	digest string
 
-	// xsink is the exec sink, installed at the first push that carries an x
-	// and never removed: seccheck's only way of taking a sink back takes every
-	// sink back, and the remote sink the refusal events go to is one of them.
+	// xsink is the exec sink, installed at the first push that carries an x —
+	// an empty one included, because an empty x is a grant of nothing and is
+	// the push that most needs enforcing — and never removed: seccheck's only
+	// way of taking a sink back takes every sink back, and the remote sink the
+	// refusal events go to is one of them.
 	// +checklocks:mu
 	xsink *policyx.Sink
 }
@@ -207,13 +209,22 @@ func (tn *Tunnel) narrow(policy []byte) (string, error) {
 	tn.tableMu.Unlock()
 	swap := time.Since(swapStart)
 
-	paths, digests := execAllow(pushed.x)
-	if pushed.x != nil || tn.policy.xsink != nil {
+	if policyNeedsSink(pushed.x, tn.policy.xsink != nil) {
+		allow := policyx.NewAllow(execAllow(pushed.x))
 		if tn.policy.xsink == nil {
-			tn.policy.xsink = policyx.NewSink()
-			policyx.Install(tn.policy.xsink)
+			// The set goes in before the sink is registered, not after. A
+			// sink seccheck can reach while its allow list is still nil
+			// permits every exec, so installing first and narrowing second
+			// would leave a window — short, but real, and on the wrong side
+			// of the line — in which the policy this call has just accepted
+			// is not the policy in force.
+			sink := policyx.NewSink()
+			sink.Narrow(allow)
+			policyx.Install(sink)
+			tn.policy.xsink = sink
+		} else {
+			tn.policy.xsink.Narrow(allow)
 		}
-		tn.policy.xsink.Narrow(policyx.NewAllow(paths, digests))
 		// One line per narrowing about what the sink has cost so far, so that
 		// a run of any length carries the number spike E2 measured rather than
 		// only a run long enough to trip the sink's own counter.
@@ -393,8 +404,14 @@ func policyFileAtoms(d *policyDocument) ([]string, error) {
 // the hash of the binary is already computed at the execve point, so an x entry
 // may name a path, a sha256, or both.
 //
-// An absent x key returns nil, indicating unconstrained exec.
-// An empty x list returns a non-nil empty slice, indicating a grant of nothing.
+// The three spellings a document can use are three different policies, and the
+// nil-ness of the slice returned here is how the rest of the file tells them
+// apart: an absent key is nil and leaves exec unconstrained, `"x":[]` is a
+// non-nil empty slice and grants nothing, and `"x":[…]` is the binaries it
+// names. `"x":null` is read as the absent key, which is the one spelling that
+// resolves towards the wider policy; no producer on either side of the
+// contract writes it, and it is pinned by a test so that a change of mind
+// about it is a change somebody makes on purpose.
 func policyExecAtoms(d *policyDocument) ([]string, error) {
 	if d.X == nil {
 		return nil, nil
@@ -450,6 +467,12 @@ func policyCheckPath(field, path string) error {
 // policySubset is P1 ⊑ P0, component by component, over sorted deduplicated
 // atoms. The refusal names the component that widened and the atoms that did
 // it, because "refused" without them is a message nobody can act on.
+//
+// n and f have two states, an atom is in the set or it is not, and nil is the
+// empty set. x has three, and they are ordered: an absent key is unconstrained
+// exec, a present key is the binaries it names, and an empty list is a grant
+// of nothing. Absent is therefore wider than empty rather than equal to it,
+// which is why x is checked below the loop and not inside it.
 func policySubset(pushed, base *policySets) error {
 	for _, c := range []struct {
 		name string
@@ -463,11 +486,17 @@ func policySubset(pushed, base *policySets) error {
 			return policyRefuse("it widens %s by %v", c.name, extra)
 		}
 	}
-	if base.x != nil && pushed.x == nil {
-		return policyRefuse("it widens x by unconstraining exec")
-	}
-	if extra := notIn(pushed.x, base.x); len(extra) > 0 {
-		return policyRefuse("it widens x by %v", extra)
+	// Nothing constrained exec under a base with no x, so every x a push can
+	// spell is a narrowing of it: naming binaries where none were named, or
+	// naming none at all. From a base that has one, only a subset narrows,
+	// and dropping the key would hand exec back.
+	if base.x != nil {
+		if pushed.x == nil {
+			return policyRefuse("it widens x by unconstraining exec")
+		}
+		if extra := notIn(pushed.x, base.x); len(extra) > 0 {
+			return policyRefuse("it widens x by %v", extra)
+		}
 	}
 	return nil
 }
@@ -539,6 +568,22 @@ func netAtomHostPort(atom string) (string, int, bool) {
 		return "", 0, false
 	}
 	return rest[:i], port, true
+}
+
+// policyNeedsSink reports whether the exec sink has to be enforcing once this
+// push is applied, which is the difference between an absent x and an empty
+// one stated where narrow acts on it.
+//
+// A present x needs the sink whether or not it names anything: an empty list
+// grants nothing, so it is the push the sink is most needed for, and a sandbox
+// that read it as "no x here" would run the strictest policy there is with
+// exec wide open. An absent x needs the sink only when one is already
+// installed, which policySubset refuses to let a push reach — but the sink,
+// once installed, is never taken back, so the test is here rather than left to
+// that refusal alone: whatever else happens, no path through narrow leaves an
+// installed sink permitting everything.
+func policyNeedsSink(x []string, installed bool) bool {
+	return x != nil || installed
 }
 
 // execAllow splits the x atoms into the two things the sink matches on.

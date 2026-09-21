@@ -470,10 +470,11 @@ no reference value's floor had to move.
     name on tunneld's console and `readAuthorKey` duplicated between `cmd/tunneld` and
     `cmd/attest-tool` — were **already fixed by ticket 22**, not left for this rebuild:
     `attest/cmd/tunneld/selfcheck.go:132` says `attest-tool verify` and `attest/refvalsfile.go:339`
-    is the one `attest.ReadAuthorKey`. Nothing was owed here and nothing was done. What remains of
+    is the one `attest.ReadAuthorKey`. Nothing was owed here and nothing was done. ~~What remains of
     that set is the third string ticket 21 named and ticket 22 did not take:
     `attest/tsm/tsm.go:116` still credits `cmd/provision-chain`, a program that stopped existing in
-    ticket 21. `docs/shrink.md:234-244` still reads as though both tunneld items were open.
+    ticket 21. `docs/shrink.md:234-244` still reads as though both tunneld items were open.~~ Closed
+    by ticket 27: that comment credits `attest-tool provision fetch`, and `docs/shrink.md` says so.
 
 ## The cloud, and what it cost
 

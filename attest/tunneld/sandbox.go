@@ -139,17 +139,22 @@ type checkedLive struct {
 	sandbox.Live
 }
 
+// The two wrappers say what they are, at compile time. Nothing else does: what
+// [PolicyChecked] returns is asserted back to [sandbox.Live] at run time, and a
+// method promoted at the same depth from both embedded members would be
+// ambiguous rather than an error — it would leave this silently not Live, and
+// the watch that would not start is the one thing here nothing else notices.
+var (
+	_ sandbox.Sandbox = checked{}
+	_ sandbox.Sandbox = checkedLive{}
+	_ sandbox.Live    = checkedLive{}
+)
+
 func (c checked) Apply(ctx context.Context, policy []byte) error {
 	if _, err := sandbox.ReadEnvelope(policy); err != nil {
 		return fmt.Errorf("tunneld: refusing to push it at the sandbox: %w", err)
 	}
 	return c.Sandbox.Apply(ctx, policy)
-}
-
-func (c checked) DropEnforcing() {
-	if d, ok := c.Sandbox.(interface{ DropEnforcing() }); ok {
-		d.DropEnforcing()
-	}
 }
 
 // accepted is one incoming stream with the identity of the tunnel it arrived

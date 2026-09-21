@@ -356,8 +356,9 @@ func (h *Host) watch(ctx context.Context, digest string, watched []*attached, lo
 	}
 }
 
-// DropEnforcing closes any active enforcing attachment and marks the policy
-// state not-live.
+// DropEnforcing closes the enforcing attachment, if there is one, and leaves no
+// policy in force (live.go). It is what a watcher that has been told the claim
+// is lost calls to stop the claim being made.
 func (h *Host) DropEnforcing() {
 	h.mu.Lock()
 	h.inForce = nil

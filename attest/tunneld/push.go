@@ -255,19 +255,24 @@ func (t *Tunneld) watchPolicy(conn *tunnel.Conn, box sandbox.Sandbox, policy []b
 	t.livenessCancel = cancel
 	t.livenessMu.Unlock()
 
-	go t.watchLiveness(ctx, conn, digest, box, live)
+	go t.watchLiveness(ctx, conn, digest, live)
 }
 
-// watchLiveness watches the policy in force on the sandbox. It is owned per
-// sandbox attachment and outlives the tunnel the policy arrived on.
+// watchLiveness watches the policy in force on the sandbox beside this tunneld.
+// It belongs to the sandbox attachment and not to the tunnel the policy arrived
+// on, and it outlives that tunnel: ticket 26's watch returned as soon as the
+// tunnel idled out, so a sandbox that stopped enforcing a minute later was
+// something nobody noticed and a later dial found a dead sandbox. It is still not
+// a goroutine per dead connection, which is what that shape was avoiding: there
+// is one watch per attachment and the previous one is cancelled before a new one
+// starts (watchPolicy).
 //
-// When liveness is lost:
-// - If the pushing tunnel is still open, it is closed and ReasonPolicyNotLive is logged.
-// - If no tunnel is open, ReasonPolicyNotLive is logged with a sentence stating
-//   that no tunnel was closed because none was open.
-// In both cases, the enforcing attachment is dropped and the host's policy state
-// becomes not-live.
-func (t *Tunneld) watchLiveness(ctx context.Context, conn *tunnel.Conn, digest string, box sandbox.Sandbox, live sandbox.Live) {
+// A loss is refused under [attest.ReasonPolicyNotLive] either way, and the two
+// sentences differ only in whether there was a tunnel to close: one names the
+// peer whose tunnel went, the other says that none was open. In both cases the
+// enforcing attachment is dropped and no policy is left in force, so the next
+// stream or push is answered by a sandbox that is not claiming one.
+func (t *Tunneld) watchLiveness(ctx context.Context, conn *tunnel.Conn, digest string, live sandbox.Live) {
 	lost := live.Watch(ctx, digest)
 	select {
 	case err, ok := <-lost:
@@ -282,9 +287,7 @@ func (t *Tunneld) watchLiveness(ctx context.Context, conn *tunnel.Conn, digest s
 			t.refuse(attest.Refuse(attest.ReasonPolicyNotLive,
 				"the policy pushed to this sandbox is no longer live: %v; no tunnel was closed because none was open", err))
 		}
-		if d, ok := box.(interface{ DropEnforcing() }); ok {
-			d.DropEnforcing()
-		}
+		live.DropEnforcing()
 		return
 	case <-ctx.Done():
 		return

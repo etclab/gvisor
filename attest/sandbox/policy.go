@@ -245,13 +245,18 @@ func fileAtoms(d *policyDocument) ([]string, error) {
 // it contains, or by both — and both is two atoms, because either of them
 // admitting an exec makes it two grants and not one.
 //
-// An absent x key returns nil, indicating unconstrained exec.
-// An empty x list returns a non-nil empty slice, indicating a grant of nothing.
+// An absent `x` and an empty `x` are the same thing here, and deliberately so.
+// The format does tell them apart — an omitted key leaves exec unpoliced, an
+// empty list refuses every execve — but that is a statement about enforcement,
+// and it is drawn where exec is enforced, in the sentry (runsc/boot/policy.go,
+// which reads the document itself and tells a nil `X` from a non-nil empty one).
+// An atom set cannot carry it: there is no atom for "unconstrained", and this
+// package's rule is that a fixed set of nothing is a grant and not an absence
+// (TestAnEmptyGrantIsAGrantAndNotAnAbsence). Spelling "unconstrained" as an
+// absence of atoms would make [Widening] wave through the one push that widens
+// from nothing, which is the trap that test exists to keep it out of.
 func execAtoms(d *policyDocument) ([]string, error) {
-	if d.X == nil {
-		return nil, nil
-	}
-	atoms := []string{}
+	var atoms []string
 	for _, x := range d.X {
 		if x.Path == "" && x.SHA256 == "" {
 			return nil, refusePolicy("an x entry names neither a path nor a digest")

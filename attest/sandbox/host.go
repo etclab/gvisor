@@ -272,8 +272,9 @@ func (h *Host) awaitEnforcing(ctx context.Context, waiter chan *attached) (*atta
 }
 
 // dropWaiter gives up this push's waiter, once the push has stopped waiting on
-// it. It is compared rather than simply cleared, because an attachment handed to
-// it in the same moment leaves a newer waiter in its place.
+// it. It clears only its own: the push slot is still held here, so nothing can
+// have put another waiter in its place, and comparing says so rather than
+// leaving it to be relied on.
 func (h *Host) dropWaiter(w chan *attached) {
 	h.mu.Lock()
 	if h.enforcingWaiter == w {

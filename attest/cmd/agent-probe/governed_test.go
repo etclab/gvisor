@@ -128,14 +128,14 @@ func TestGovernedLoopback(t *testing.T) {
 	defer cancel()
 	l := newLoopback(t, ctx, out, runsc, proof{
 		title: "A pushed policy inside the sandbox, over loopback",
-		preamble: "Four runsc sandboxes, one after the other, sharing a rootfs, a bundle shape, an exit, an " +
+		preamble: "Five runsc sandboxes, one after the other, sharing a rootfs, a bundle shape, an exit, an " +
 			"allow list and a `--tunnel-table` that names both destinations. What differs is the policy a third " +
-			"tunneld pushes at `a` once the sandbox has attached to its socket, and when a second and a third " +
+			"tunneld pushes at `a` once the sandbox has attached to its socket (or before it attaches, in early-push), and when a second and a third " +
 			"peer arrive. The workload is this package built with `CGO_ENABLED=0` and run as " +
 			"`/agent-probe -network plain -task summarize -dir /tmp`: no contract, no dialer of its own, Go's own " +
 			"resolver, and nothing in it knows a policy exists.",
 		allow: modelHost + ":443," + docHost + ":443",
-		under: "ticket26/loopback",
+		under: "ticket27/loopback",
 	})
 	l.console = &timeline{}
 	// Short, because a pushed policy is delivered over --root/runsc-<id>.sock
@@ -230,11 +230,22 @@ func TestGovernedLoopback(t *testing.T) {
 	})
 	l.tellKilled(t, &notes, killed, kRoot, killedAt)
 
+	// ===== (e) early-push: the push lands BEFORE the helper attaches.
+	// Host.Apply must wait inside the deadline for the enforcing attachment,
+	// deliver the policy to the sentry, and only acknowledge after the sentry
+	// applies it. The workload runs governed under P0 and completes.
+	var earlyRoot *pusher
+	early := l.govern(t, "early-push", table, probe, func(stop <-chan struct{}) {
+		root := l.pusherFor(t, "root-early", governedP0)
+		earlyRoot = root.push(l, stop)
+	})
+	l.tellEarly(t, &notes, early, earlyRoot)
+
 	fmt.Fprintf(&notes, "## a's console, in full\n\nEvery line `a` wrote, with the second it was written in. "+
 		"`SANDBOX applied` is one per acknowledged push, `PUSH` is a pusher's own account of its round trip, "+
 		"and `REFUSED` is `a`'s refusal log.\n\n```\n%s\n```\n\n", strings.Join(l.console.all(), "\n"))
 
-	l.record(t, notes.String(), off, on, narrowed, killed)
+	l.record(t, notes.String(), off, on, narrowed, killed, early)
 }
 
 // ===== what each run is asserted and recorded to have been =====
@@ -394,6 +405,37 @@ func (l *loopback) tellKilled(t *testing.T, notes *strings.Builder, r *sandboxRu
 	l.tellPush(notes, r, root)
 	l.tellWindow(notes, r)
 	l.tellTeardown(t, notes, r, "`runsc kill`")
+	l.tellEvents(notes, r)
+}
+
+// tellEarly is ticket 27's scenario: the push arrives before the sandbox helper
+// has attached. Host.Apply waits up to the deadline for the enforcing attachment,
+// delivers the policy, and acknowledges only when the enforcing sandbox has it.
+func (l *loopback) tellEarly(t *testing.T, notes *strings.Builder, r *sandboxRun, root *pusher) {
+	t.Helper()
+	fmt.Fprintf(notes, "## early-push — the push arrives before the sandbox attaches\n\n")
+	if root == nil || root.err != nil {
+		t.Errorf("early-push: P0 was not pushed: %v", root.errOr())
+		fmt.Fprintf(notes, "The push did not land: %v\n\n", root.errOr())
+		return
+	}
+	if r.err != nil {
+		t.Errorf("early-push: the sandbox ended with %v; the policy in force names both destinations", r.err)
+	}
+	if said := l.said(r.stdout); !strings.Contains(said, "DONE") {
+		t.Errorf("early-push: the transcript does not end in the model's last word:\n%s", said)
+	}
+	if dialed := r.at.matching("EXIT dialed " + modelHost + ":443"); len(dialed) == 0 {
+		t.Errorf("early-push: the exit never dialed %s:443, so the model request did not travel over the tunnel", modelHost)
+	}
+	fmt.Fprintf(notes, "The push was initiated before the sandbox's helper attached to `a.sock`. "+
+		"`Host.Apply` waited for the enforcing attachment, delivered the policy to the sentry, and only "+
+		"acknowledged after the sentry applied it. The task completed under the policy: runsc ended with "+
+		"status %d after %s, `%s`.\n\n", r.status, r.elapsed.Round(time.Millisecond),
+		firstLineWith(l.said(r.stdout), "DONE"))
+	l.tellPush(notes, r, root)
+	l.tellWindow(notes, r)
+	l.tellTeardown(t, notes, r, "the workload exiting")
 	l.tellEvents(notes, r)
 }
 

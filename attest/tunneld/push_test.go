@@ -615,7 +615,7 @@ func TestAPushReachesASandboxInAnotherProcess(t *testing.T) {
 	b.Attach(host)
 
 	applied := &eventLog{}
-	client, err := sandbox.Dial(host.Path(), func(_ context.Context, policy []byte) error {
+	client, err := sandbox.Dial(host.Path(), sandbox.RoleEnforcing, func(_ context.Context, policy []byte) error {
 		applied.record(string(policy))
 		return nil
 	})

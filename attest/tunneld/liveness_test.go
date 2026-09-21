@@ -172,6 +172,83 @@ func TestASandboxInThisProcessIsNotWatched(t *testing.T) {
 	}
 }
 
+func TestALivenessWatchSurvivesThePushingTunnelBeingClosedAndStillReportsTheLoss(t *testing.T) {
+	for _, c := range []struct {
+		name   string
+		signal syscall.Signal
+		says   string
+	}{
+		{
+			name:   "on a miss",
+			signal: syscall.SIGSTOP,
+			says:   "missed 3 pulses",
+		},
+		{
+			name:   "on a mismatch",
+			signal: syscall.SIGUSR1,
+			says:   "expected",
+		},
+		{
+			name:   "on a close",
+			signal: syscall.SIGUSR2,
+			says:   "closed its socket",
+		},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			console := &eventLog{}
+			var child *exec.Cmd
+			var host *sandbox.Host
+			pair := startLivenessPair(t, func(b *pushNode) {
+				var err error
+				host, err = sandbox.Listen(filepath.Join(t.TempDir(), "sandbox.sock"), b.Tunneld,
+					func(format string, a ...any) { console.record(fmt.Sprintf(format, a...)) })
+				if err != nil {
+					t.Fatalf("listening for a sandbox: %v", err)
+				}
+				t.Cleanup(func() { host.Close() })
+				child = startLivenessSandbox(t, host.Path())
+				for host.Attached() == 0 {
+					time.Sleep(time.Millisecond)
+				}
+				b.Attach(host)
+			})
+
+			// Steady state.
+			time.Sleep(2 * sandbox.DefaultPulse)
+
+			// Close the stream and the pushing tunnel.
+			pair.stream.Close()
+			pair.a.Close()
+
+			time.Sleep(100 * time.Millisecond)
+
+			if err := child.Process.Signal(c.signal); err != nil {
+				t.Fatalf("signalling the sandbox with %v: %v", c.signal, err)
+			}
+
+			r := pair.b.refusals.next(t)
+			if got := r.Reason(); got != attest.ReasonPolicyNotLive {
+				t.Errorf("b refused with %v; want %v (log: %s)", got, attest.ReasonPolicyNotLive, r.LogString())
+			}
+			if d := r.Detail(); !strings.Contains(d, c.says) {
+				t.Errorf("the refusal detail is %q; want it to say %q", d, c.says)
+			}
+			if d := r.Detail(); !strings.Contains(d, "no tunnel was closed because none was open") {
+				t.Errorf("the refusal detail %q does not say no tunnel was closed because none was open", d)
+			}
+
+			// The enforcing attachment must have been dropped.
+			deadline := time.Now().Add(5 * time.Second)
+			for host.Attached() != 0 {
+				if time.Now().After(deadline) {
+					t.Fatalf("timed out waiting for enforcing attachment to drop")
+				}
+				time.Sleep(5 * time.Millisecond)
+			}
+		})
+	}
+}
+
 // a livenessPair is what every test here is run over: a delegator, a receiver
 // with something beside it, and a stream held open on the tunnel between them.
 type livenessPair struct {
@@ -245,7 +322,7 @@ func TestTunneldLivenessChildProcess(t *testing.T) {
 	if socket == "" {
 		t.Skip("not the sandbox process; " + livenessSocketEnv + " is unset")
 	}
-	client, err := sandbox.Dial(socket, func(context.Context, []byte) error { return nil })
+	client, err := sandbox.Dial(socket, sandbox.RoleEnforcing, func(context.Context, []byte) error { return nil })
 	if err != nil {
 		t.Fatalf("dialing %s: %v", socket, err)
 	}

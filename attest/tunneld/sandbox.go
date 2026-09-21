@@ -146,6 +146,12 @@ func (c checked) Apply(ctx context.Context, policy []byte) error {
 	return c.Sandbox.Apply(ctx, policy)
 }
 
+func (c checked) DropEnforcing() {
+	if d, ok := c.Sandbox.(interface{ DropEnforcing() }); ok {
+		d.DropEnforcing()
+	}
+}
+
 // accepted is one incoming stream with the identity of the tunnel it arrived
 // on, on its way to whoever is in [Tunneld.Accept].
 type accepted struct {

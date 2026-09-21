@@ -261,7 +261,7 @@ func TestAReadDeadlineOnAStreamExpires(t *testing.T) {
 		t.Fatalf("listening for a sandbox: %v", err)
 	}
 	defer host.Close()
-	client, err := sandbox.Dial(host.Path(), nil)
+	client, err := sandbox.Dial(host.Path(), sandbox.RoleNetwork, nil)
 	if err != nil {
 		t.Fatalf("dialing %s: %v", host.Path(), err)
 	}

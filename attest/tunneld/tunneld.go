@@ -226,6 +226,9 @@ type Tunneld struct {
 	// and nil until it is (push.go).
 	box sandbox.Sandbox
 	wg  sync.WaitGroup
+
+	livenessMu     sync.Mutex
+	livenessCancel context.CancelFunc
 }
 
 // New starts a tunneld: loads and checks the reference value set, generates the
@@ -445,6 +448,12 @@ func (t *Tunneld) Close() error {
 		close(t.done)
 	}
 	err := t.listener.Close()
+	t.livenessMu.Lock()
+	if t.livenessCancel != nil {
+		t.livenessCancel()
+		t.livenessCancel = nil
+	}
+	t.livenessMu.Unlock()
 	t.dialed.Close()
 	for _, c := range accepted {
 		c.Close()

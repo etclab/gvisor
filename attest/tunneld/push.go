@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -130,6 +131,12 @@ type policyAck struct {
 func (t *Tunneld) Attach(box sandbox.Sandbox) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
+	t.livenessMu.Lock()
+	if t.livenessCancel != nil {
+		t.livenessCancel()
+		t.livenessCancel = nil
+	}
+	t.livenessMu.Unlock()
 	if box == nil {
 		t.box = nil
 		return
@@ -201,8 +208,18 @@ func (t *Tunneld) applyOrRefuse(ctx context.Context, conn *tunnel.Conn, policy [
 	if box == nil {
 		return t.refusePush(conn, ackNoSandbox, errors.New("no sandbox is beside this tunneld"))
 	}
-	if err := box.Apply(ctx, policy); err != nil {
-		return t.refusePush(conn, ackRefused, err)
+	waitCtx := ctx
+	if _, hasDeadline := ctx.Deadline(); !hasDeadline {
+		var cancel context.CancelFunc
+		waitCtx, cancel = context.WithTimeout(ctx, t.cfg.PushTimeout)
+		defer cancel()
+	}
+	if err := box.Apply(waitCtx, policy); err != nil {
+		sentence := ackRefused
+		if strings.Contains(err.Error(), "no enforcing sandbox is attached") || strings.Contains(err.Error(), "no sandbox is attached") {
+			sentence = ackNoSandbox
+		}
+		return t.refusePush(conn, sentence, err)
 	}
 	t.watchPolicy(conn, box, policy)
 	return ""
@@ -226,44 +243,51 @@ func (t *Tunneld) watchPolicy(conn *tunnel.Conn, box sandbox.Sandbox, policy []b
 		return
 	}
 	sum := sha256.Sum256(policy)
-	go t.watchLiveness(conn, hex.EncodeToString(sum[:]), live)
+	digest := hex.EncodeToString(sum[:])
+
+	t.livenessMu.Lock()
+	if t.livenessCancel != nil {
+		t.livenessCancel()
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	t.livenessCancel = cancel
+	t.livenessMu.Unlock()
+
+	go t.watchLiveness(ctx, conn, digest, box, live)
 }
 
-// watchLiveness ends the tunnel a policy arrived on when the sandbox stops
-// enforcing it, and ends itself when the tunnel goes first.
+// watchLiveness watches the policy in force on the sandbox. It is owned per
+// sandbox attachment and outlives the tunnel the policy arrived on.
 //
-// The refusal is this side's alone. Nothing is sent to the peer for it — there
-// is no message on the wire that says "your policy lapsed", and adding one
-// would be telling a peer about the inside of this guest — so what the peer
-// sees is what it sees for every other refusal after admission: its tunnel
-// went, and its next stream fails.
-//
-// The tunnel is polled rather than subscribed to because [tunnel.Conn] has no
-// channel to wait on and a watch that outlived its tunnel would be a goroutine
-// per dead connection, counting pulses for a peer that is gone.
-func (t *Tunneld) watchLiveness(conn *tunnel.Conn, digest string, live sandbox.Live) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+// When liveness is lost:
+// - If the pushing tunnel is still open, it is closed and ReasonPolicyNotLive is logged.
+// - If no tunnel is open, ReasonPolicyNotLive is logged with a sentence stating
+//   that no tunnel was closed because none was open.
+// In both cases, the enforcing attachment is dropped and the host's policy state
+// becomes not-live.
+func (t *Tunneld) watchLiveness(ctx context.Context, conn *tunnel.Conn, digest string, box sandbox.Sandbox, live sandbox.Live) {
 	lost := live.Watch(ctx, digest)
-	tick := time.NewTicker(sandbox.DefaultPulse)
-	defer tick.Stop()
-	for {
-		select {
-		case err, ok := <-lost:
-			if !ok {
-				return
-			}
+	select {
+	case err, ok := <-lost:
+		if !ok {
+			return
+		}
+		if conn != nil && conn.Live() {
 			t.refuse(attest.Refuse(attest.ReasonPolicyNotLive,
 				"a peer at %s pushed a policy this sandbox no longer enforces: %v", conn.RemoteAddr(), err))
 			conn.Close()
-			return
-		case <-t.done:
-			return
-		case <-tick.C:
-			if !conn.Live() {
-				return
-			}
+		} else {
+			t.refuse(attest.Refuse(attest.ReasonPolicyNotLive,
+				"the policy pushed to this sandbox is no longer live: %v; no tunnel was closed because none was open", err))
 		}
+		if d, ok := box.(interface{ DropEnforcing() }); ok {
+			d.DropEnforcing()
+		}
+		return
+	case <-ctx.Done():
+		return
+	case <-t.done:
+		return
 	}
 }
 

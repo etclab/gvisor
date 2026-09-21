@@ -1689,21 +1689,13 @@ scenario_policy() {
   # below are derived from the files a reader can open.
   hold=$((last + 150))
   boot=$((last + 330))
-  # And the third derived number, which the first run of this scenario did not
-  # have. A liveness watch is polled against the tunnel the policy arrived on and
-  # ends the moment that tunnel is not live — without a line, because a watch
-  # whose tunnel is gone has nothing left to tear down. With the sixty seconds
-  # every other scenario uses, both tunnels here idle out about a minute after
-  # the last fetch and a hundred seconds before the first kill, so a kill has
-  # nothing to say to anybody. The idle timeout is therefore set to outlive this
-  # scenario's own hold: the tunnels stay up until the guests power off, and what
-  # ends a watch is the sandbox and not the clock.
-  local IDLE_TIMEOUT="${POLICY_IDLE_TIMEOUT:-$((hold + 60))s}"
+  # A liveness watch is tied to the sandbox attachment and outlives the tunnel
+  # the policy arrived on, so an idle-closed tunnel does not end the watch.
+  local IDLE_TIMEOUT="${POLICY_IDLE_TIMEOUT:-60s}"
   echo "    kill-after   : guest A ${kill_a}s, guest B ${kill_b}s (seconds after each guest starts its workload)"
   echo "    narrow-after : guest B ${narrow_b}s — the second tunneld that pushes the narrower policy at guest A"
   echo "    tunneld hold : ${hold}s, boot timeout ${boot}s, both derived from the knobs and not from -run-for"
-  echo "    idle timeout : $IDLE_TIMEOUT on every tunnel of this scenario, so that no tunnel a policy"
-  echo "                   arrived on idles out before the kill that is supposed to end it"
+  echo "    idle timeout : $IDLE_TIMEOUT on every tunnel of this scenario"
 
   local p0a p0b p1b
   p0a=$(sha256sum "$POLICY_INPUTS/a/push-policy.json" | cut -d' ' -f1)

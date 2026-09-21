@@ -329,6 +329,13 @@ enforced. In a guest that pair is the agent and the exit — ticket 25's leftove
 `SANDBOX attached` lines per guest, is exactly this — and `agent-probe` runs them as two clients on
 one socket with a test that watches both acknowledge and both pulse.
 
+**Ticket 27 changed two of those sentences**, and the record for it is
+`docs/the-ack-means-the-sandbox.md`. A push now reaches only the client that attached as
+`enforcing`, so the enforcing attachment is the one thing that must be live and the exit attaches as
+`network` and is pushed nothing; and the watch belongs to that attachment rather than to the tunnel
+the policy arrived on, so it outlives a tunnel that idled out and closes a tunnel only if one is
+still open. Everything cited in this section is the line it was on when ticket 26 was recorded.
+
 **Nothing crosses the wire for it.** There is no message that says "your policy lapsed", and adding
 one would be telling a peer about the inside of this guest. The refusal is the receiver's alone; the
 peer sees what it sees for every refusal after admission, which is that its tunnel went.
@@ -1562,7 +1569,8 @@ Deno's), and the liveness tests named in `docs/sandbox-contract.md` — `attest/
 for a sandbox in another process that pulses, is killed, goes quiet or pulses something else;
 `attest/tunneld/liveness_test.go` for the tunnel that is closed when it does; and
 `attest/cmd/agent-probe/liveness_test.go` for the agent's sandbox and the exit's, two clients on one
-socket, both acknowledging and both pulsing.
+socket, both acknowledging and both pulsing — which ticket 27 rewrote for contract v4, where the
+enforcing client is the one a push reaches and the one that pulses.
 
 `ripwire attest --quality-delta=6dfa00a1d..HEAD`, run from this worktree against the two committed
 trees:

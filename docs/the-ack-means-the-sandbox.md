@@ -62,15 +62,13 @@ When a push arrives at `tunneld` before any enforcing client has attached, `Host
 - (A) Wait up to the push deadline for the enforcing client to attach; or
 - (B) Refuse immediately with `no sandbox is attached` and close the tunnel.
 
-Spike E1 (`docs/snp/evidence/ticket27/spikes/E1/`) measured the startup window across 25 loopback runs:
-- The exit client attaches in **1.48 ms** (median 1.43 ms).
-- The `runsc` helper attaches in **266 ms to 482 ms** (median **297 ms**, mean 311 ms).
-- The window between the two is **264 ms to 480 ms** (median 296 ms).
+Spike E1 (`docs/snp/evidence/ticket27/spikes/E1/output.txt`, `notes.md`) measured the startup window across 25 loopback runs:
+- The exit client attaches almost immediately: between 276 µs and 961 µs (median ~520 µs, mean ~500 µs; typical ~200–650 µs) after socket listen.
+- The `runsc` helper attaches in **97.273 ms to 186.040 ms** from container start (`runsc run`), with **p50 = 135.495 ms**, **mean = 140.228 ms**, and **p90 = 167.541 ms**.
+- In 100% of runs (25 of 25), the early push landing at 1.4–3.0 ms was answered by the non-enforcing exit client with `ack`, and **0 of 25** pushes were received or enforced by the helper.
 - Even the historical outlier observed in ticket 26 leftover 19 was **2.138 s**.
 
-Because `DefaultPushTimeout` is 10 s, the attach window (under 500 ms typical, ~2.1 s worst case) fits comfortably
-inside the push deadline. Refusing immediately would burn a tunnel handshake and force a retry for a client that is
-reliably only ~300 ms away.
+Because `DefaultPushTimeout` is 10 s (`10,000 ms`), the attach window (under 187 ms observed, ~2.1 s worst case) fits comfortably inside the push deadline with an 80%+ safety margin. Refusing immediately would burn a tunnel handshake and force retries for a client that is reliably only ~100–186 ms away.
 
 Therefore, the recommended decision (A) was implemented:
 - In `Host.Apply`: if `h.enforcing == nil`, a waiter channel is enqueued in `h.enforcingWaiters`.
@@ -96,13 +94,17 @@ attached enforcing client:
 - If the sentry refuses the policy, the attachment is closed.
 
 ### E2: a policy delivered twice
-Spike E2 (`docs/snp/evidence/ticket27/spikes/E2/`) evaluated the cost and semantics of delivering the same policy
-twice:
-- Delivering identical policy bytes to a running sentry that already holds that policy took **130 µs** (median
-  128 µs, p99 152 µs).
-- The subset check (`runsc/boot/policy.go:policySubset`) treats an identical document as a valid non-widening
-  narrowing (`P ⊑ P`), preserving the exact digest and table bindings.
-- Delivering the policy to a freshly attached sentry installs the policy cleanly in under 200 µs.
+Spike E2 (`docs/snp/evidence/ticket27/spikes/E2/output.txt`, `notes.md`) evaluated the cost and semantics of delivering the same policy twice:
+- Initial delivery to a fresh sentry (sentry B with no policy in force) took **3.182 ms** (`3.181803ms`), while delivery 1 to sentry A took **4.861 ms** (first delivery range **3.2–4.8 ms**).
+- Across a 50-trial benchmark of replaying the policy in force to running sentry A:
+  - **Min**: 906 µs
+  - **p50**: **1.252 ms**
+  - **Mean**: **1.867 ms**
+  - **p90**: 2.838 ms
+  - **Max**: 18.148 ms
+- Single replay (delivery 2) to sentry A took **2.264 ms**.
+- The subset check (`runsc/boot/policy.go:policySubset`) treats an identical document as a valid non-widening narrowing (`P ⊑ P`), returning `err=<nil>` and the identical SHA-256 digest (`e1a4ddd603e1edfba4479099c174dd815534b9174c4c74ea32a08f88ad7ce3e8`).
+- Late-attach delivery is completely available at low marginal latency (~1.25 ms p50, ~1.87 ms mean).
 
 ---
 
@@ -127,15 +129,14 @@ s (`tunnel-on-two-guests.sh:1690-1701`).
      request or push is refused.
 
 ### E3: liveness after the tunnel is gone
-Spike E3 (`docs/snp/evidence/ticket27/spikes/E3/`) tested this behavior:
-- Idle timeout was left at its default 60 s; the pushing tunnel idled out and closed cleanly at t = 60.1 s.
-- At t = 75.0 s, the workload was killed:
-  - Socket close was detected in **250 ms** (at the next 250 ms tick).
-  - Tunneld logged `ReasonPolicyNotLive` with `"no tunnel was closed because none was open"`.
-  - A subsequent stream request was refused with `no sandbox is attached`.
-- At t = 75.0 s, the workload was paused (SIGSTOP, three-miss path):
-  - Liveness loss was detected after **3.25 s** (3 × 1 s pulse + 250 ms tick).
-- The `hold + 60` workaround in `docs/snp/tunnel-on-two-guests.sh` was deleted, reverting to 60 s.
+Spike E3 (`docs/snp/evidence/ticket27/spikes/E3/output.txt`, `notes.md`) tested this behavior:
+- Tunnel idle timeout was left at its default 60 s (`tunnel.DefaultIdleTimeout` = 1m0s); the test waited 62 s for the tunnel to idle out cleanly.
+- After the tunnel was idle, the failure was triggered in two ways:
+  - **Kill failure** (workload process killed with `SIGKILL`, closing socket): host watch observed loss after **250.404 ms** (`250.403818ms`, on the first 250 ms tick of `watchInterval`).
+  - **Stop failure** (workload paused with `SIGSTOP`, socket open but pulses cease): host watch observed loss after **3.000 s** (`3.000303968s`, exactly `DefaultMisses * DefaultPulse` = 3 × 1 s).
+- In the baseline (ticket 26), tunneld logged **0 new refusals** (silent) because `watchLiveness` had returned when the tunnel closed.
+- In ticket 27, the watch outlives the tunnel: tunneld logs `ReasonPolicyNotLive` stating `"no tunnel was closed because none was open"`, drops the enforcing connection via `DropEnforcing()`, and clears `inForce`.
+- The `hold + 60` workaround in `docs/snp/tunnel-on-two-guests.sh:1690-1701` was deleted, reverting to 60 s.
 
 ---
 

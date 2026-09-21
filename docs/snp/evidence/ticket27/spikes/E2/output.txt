@@ -1,0 +1,38 @@
+=== Running Ticket 27 Spike E2: Policy Delivered Twice ===
+Date:   2026-09-21T19:05:15Z
+Runsc:  /home/pniroula/Projects/gvisor-t27/bazel-bin/runsc/runsc_/runsc
+
+Policy to test: {"format":"policy","version":1,"n":[{"host":"test.example","ports":[80]}],"f":[],"x":[{"path":"/bin/busybox"}]}
+Expected digest: e1a4ddd603e1edfba4479099c174dd815534b9174c4c74ea32a08f88ad7ce3e8
+
+--- Scenario A: Delivery and Replay to the Same Sentry ---
+Waiting for sandbox A to reach 'started' state...
+Delivery 1 (first push to sentry A):
+  Answer: err=<nil>
+  Digest: e1a4ddd603e1edfba4479099c174dd815534b9174c4c74ea32a08f88ad7ce3e8
+  Cost:   4.860595ms
+
+Delivery 2 (replay of policy in force to same sentry A):
+  Answer: err=<nil>
+  Digest: e1a4ddd603e1edfba4479099c174dd815534b9174c4c74ea32a08f88ad7ce3e8
+  Cost:   2.263784ms
+
+Benchmarking 50 replays of policy in force to sentry A...
+Replay Cost Statistics (over 50 trials):
+  Min:   906µs
+  p50:   1.252ms
+  Mean:  1.867ms
+  p90:   2.838ms
+  Max:   18.148ms
+
+--- Scenario B: Delivery to a Fresh Sentry With No Policy In Force ---
+Delivery to fresh sentry B:
+  Answer: err=<nil>
+  Digest: e1a4ddd603e1edfba4479099c174dd815534b9174c4c74ea32a08f88ad7ce3e8
+  Cost:   3.181803ms
+
+=== Conclusions for E2 ===
+1. Subset check on replay: The subset check reads a replay of the policy in force as a narrowing of itself without error (err=<nil>).
+2. Digest match: Sentry returns the exact expected digest on first delivery and on all replays.
+3. Replay cost: Median replay latency is 1.252ms (mean 1.867ms), well within any push budget.
+4. Late-attach delivery: Completely available. Replaying the policy in force to a late-attaching enforcing sandbox succeeds cleanly and idempotently.

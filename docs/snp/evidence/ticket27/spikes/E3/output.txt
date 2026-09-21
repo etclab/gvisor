@@ -1,0 +1,35 @@
+=== RUN   TestE3LivenessAfterTunnelGone
+=== RUN   TestE3LivenessAfterTunnelGone/kill
+2026/09/21 15:06:13 failed to sufficiently increase receive buffer size (was: 208 kiB, wanted: 7168 kiB, got: 416 kiB). See https://github.com/quic-go/quic-go/wiki/UDP-Buffer-Sizes for details.
+    e3_ticket27_spike_test.go:63: host: SANDBOX attached on /tmp/pniroula/TestE3LivenessAfterTunnelGonekill502251747/002/sandbox.sock
+    e3_ticket27_spike_test.go:63: host: SANDBOX applied format=policy version=1 bytes=69 sha256=8c1062e8310ede7c8b9c0ff20057b17681fa6d6f6e8b236535ae2bc75978cea4
+    e3_ticket27_spike_test.go:63: host: SANDBOX applied format=policy version=1 bytes=69 sha256=8c1062e8310ede7c8b9c0ff20057b17681fa6d6f6e8b236535ae2bc75978cea4
+    e3_ticket27_spike_test.go:91: Policy pushed (digest 8c1062e8310ede7c8b9c0ff20057b17681fa6d6f6e8b236535ae2bc75978cea4). IdleTimeout=1m0s.
+    e3_ticket27_spike_test.go:92: Closing connection ch and letting tunnel idle out...
+    e3_ticket27_spike_test.go:96: Waiting 62s for tunnel to idle out...
+    e3_ticket27_spike_test.go:106: Tunnel is now idle. Triggering failure via kill...
+    e3_ticket27_spike_test.go:63: host: SANDBOX liveness lost: the sandbox closed its socket
+    e3_ticket27_spike_test.go:122: Host watch observed loss after 250.403818ms: the sandbox closed its socket
+    e3_ticket27_spike_test.go:131: Tunneld logged 0 new refusal(s).
+    e3_ticket27_spike_test.go:137: Tunneld logged NOTHING: watchLiveness exited silently when tunnel idled out.
+    e3_ticket27_spike_test.go:141: Attempting to open a stream through host...
+    e3_ticket27_spike_test.go:146: host.Open returned error: tunneld: unknown peer: "b" is not in the peer table
+=== RUN   TestE3LivenessAfterTunnelGone/stop
+    e3_ticket27_spike_test.go:63: host: SANDBOX attached on /tmp/pniroula/TestE3LivenessAfterTunnelGonestop1092475358/002/sandbox.sock
+    e3_ticket27_spike_test.go:63: host: SANDBOX applied format=policy version=1 bytes=69 sha256=8c1062e8310ede7c8b9c0ff20057b17681fa6d6f6e8b236535ae2bc75978cea4
+    e3_ticket27_spike_test.go:63: host: SANDBOX applied format=policy version=1 bytes=69 sha256=8c1062e8310ede7c8b9c0ff20057b17681fa6d6f6e8b236535ae2bc75978cea4
+    e3_ticket27_spike_test.go:91: Policy pushed (digest 8c1062e8310ede7c8b9c0ff20057b17681fa6d6f6e8b236535ae2bc75978cea4). IdleTimeout=1m0s.
+    e3_ticket27_spike_test.go:92: Closing connection ch and letting tunnel idle out...
+    e3_ticket27_spike_test.go:96: Waiting 62s for tunnel to idle out...
+    e3_ticket27_spike_test.go:106: Tunnel is now idle. Triggering failure via stop...
+    e3_ticket27_spike_test.go:63: host: SANDBOX liveness lost: it missed 3 pulses
+    e3_ticket27_spike_test.go:122: Host watch observed loss after 3.000303968s: it missed 3 pulses
+    e3_ticket27_spike_test.go:131: Tunneld logged 0 new refusal(s).
+    e3_ticket27_spike_test.go:137: Tunneld logged NOTHING: watchLiveness exited silently when tunnel idled out.
+    e3_ticket27_spike_test.go:141: Attempting to open a stream through host...
+    e3_ticket27_spike_test.go:146: host.Open returned error: tunneld: unknown peer: "b" is not in the peer table
+--- PASS: TestE3LivenessAfterTunnelGone (129.11s)
+    --- PASS: TestE3LivenessAfterTunnelGone/kill (63.17s)
+    --- PASS: TestE3LivenessAfterTunnelGone/stop (65.93s)
+PASS
+ok  	gvisor.dev/gvisor/attest/tunneld	129.158s

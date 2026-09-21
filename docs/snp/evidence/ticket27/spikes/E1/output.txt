@@ -1,0 +1,77 @@
+Starting E1: 25 runs of loopback attachment window measurement
+Host: 2026-09-21T19:04:35Z
+Runsc binary: /home/pniroula/Projects/gvisor-t27/bazel-bin/runsc/runsc_/runsc
+
+Run 01: exit=+961µs, runsc_start=+1.284ms, push=+2.338ms (ans by exit with ack), helper=+119.863ms (from runsc: 118.579ms), helper_got_policy=false
+Run 02: exit=+520µs, runsc_start=+639µs, push=+1.814ms (ans by exit with ack), helper=+114.315ms (from runsc: 113.677ms), helper_got_policy=false
+Run 03: exit=+580µs, runsc_start=+799µs, push=+2.149ms (ans by exit with ack), helper=+127.696ms (from runsc: 126.897ms), helper_got_policy=false
+Run 04: exit=+331µs, runsc_start=+470µs, push=+1.488ms (ans by exit with ack), helper=+144.194ms (from runsc: 143.724ms), helper_got_policy=false
+Run 05: exit=+294µs, runsc_start=+387µs, push=+1.436ms (ans by exit with ack), helper=+147.329ms (from runsc: 146.943ms), helper_got_policy=false
+Run 06: exit=+477µs, runsc_start=+710µs, push=+2.065ms (ans by exit with ack), helper=+163.345ms (from runsc: 162.636ms), helper_got_policy=false
+Run 07: exit=+464µs, runsc_start=+752µs, push=+2.401ms (ans by exit with ack), helper=+138.079ms (from runsc: 137.327ms), helper_got_policy=false
+Run 08: exit=+580µs, runsc_start=+938µs, push=+2.057ms (ans by exit with ack), helper=+98.211ms (from runsc: 97.273ms), helper_got_policy=false
+Run 09: exit=+461µs, runsc_start=+983µs, push=+2.971ms (ans by exit with ack), helper=+133.713ms (from runsc: 132.731ms), helper_got_policy=false
+Run 10: exit=+538µs, runsc_start=+729µs, push=+2.171ms (ans by exit with ack), helper=+134.756ms (from runsc: 134.027ms), helper_got_policy=false
+Run 11: exit=+610µs, runsc_start=+887µs, push=+2.678ms (ans by exit with ack), helper=+186.926ms (from runsc: 186.04ms), helper_got_policy=false
+Run 12: exit=+521µs, runsc_start=+684µs, push=+1.736ms (ans by exit with ack), helper=+168.224ms (from runsc: 167.541ms), helper_got_policy=false
+Run 13: exit=+599µs, runsc_start=+744µs, push=+2.306ms (ans by exit with ack), helper=+173.542ms (from runsc: 172.798ms), helper_got_policy=false
+Run 14: exit=+863µs, runsc_start=+1.189ms, push=+2.58ms (ans by exit with ack), helper=+131.222ms (from runsc: 130.034ms), helper_got_policy=false
+Run 15: exit=+354µs, runsc_start=+671µs, push=+1.782ms (ans by exit with ack), helper=+141.908ms (from runsc: 141.237ms), helper_got_policy=false
+Run 16: exit=+557µs, runsc_start=+1.072ms, push=+2.387ms (ans by exit with ack), helper=+154.141ms (from runsc: 153.068ms), helper_got_policy=false
+Run 17: exit=+403µs, runsc_start=+594µs, push=+2.704ms (ans by exit with ack), helper=+162.52ms (from runsc: 161.926ms), helper_got_policy=false
+Run 18: exit=+409µs, runsc_start=+650µs, push=+1.892ms (ans by exit with ack), helper=+129.639ms (from runsc: 128.989ms), helper_got_policy=false
+Run 19: exit=+452µs, runsc_start=+795µs, push=+2.378ms (ans by exit with ack), helper=+136.291ms (from runsc: 135.495ms), helper_got_policy=false
+Run 20: exit=+276µs, runsc_start=+479µs, push=+1.444ms (ans by exit with ack), helper=+118.099ms (from runsc: 117.62ms), helper_got_policy=false
+Run 21: exit=+426µs, runsc_start=+820µs, push=+2.259ms (ans by exit with ack), helper=+159.87ms (from runsc: 159.051ms), helper_got_policy=false
+Run 22: exit=+329µs, runsc_start=+497µs, push=+1.594ms (ans by exit with ack), helper=+151.553ms (from runsc: 151.056ms), helper_got_policy=false
+Run 23: exit=+655µs, runsc_start=+998µs, push=+2.424ms (ans by exit with ack), helper=+128.901ms (from runsc: 127.903ms), helper_got_policy=false
+Run 24: exit=+412µs, runsc_start=+569µs, push=+1.64ms (ans by exit with ack), helper=+125.137ms (from runsc: 124.568ms), helper_got_policy=false
+Run 25: exit=+642µs, runsc_start=+845µs, push=+1.9ms (ans by exit with ack), helper=+135.417ms (from runsc: 134.572ms), helper_got_policy=false
+
+===== E1 SUMMARY (25 Runs) =====
+
+| Run | Exit Attach | Runsc Start | Push Time | Helper Attach | From Runsc Start | Answered By | Answer | Helper Enforcing? |
+|---|---|---|---|---|---|---|---|---|
+| 01 | 961µs | 1.284ms | 2.338ms | 119.863ms | 118.579ms | exit | ack | false |
+| 02 | 520µs | 639µs | 1.814ms | 114.315ms | 113.677ms | exit | ack | false |
+| 03 | 580µs | 799µs | 2.149ms | 127.696ms | 126.897ms | exit | ack | false |
+| 04 | 331µs | 470µs | 1.488ms | 144.194ms | 143.724ms | exit | ack | false |
+| 05 | 294µs | 387µs | 1.436ms | 147.329ms | 146.943ms | exit | ack | false |
+| 06 | 477µs | 710µs | 2.065ms | 163.345ms | 162.636ms | exit | ack | false |
+| 07 | 464µs | 752µs | 2.401ms | 138.079ms | 137.327ms | exit | ack | false |
+| 08 | 580µs | 938µs | 2.057ms | 98.211ms | 97.273ms | exit | ack | false |
+| 09 | 461µs | 983µs | 2.971ms | 133.713ms | 132.731ms | exit | ack | false |
+| 10 | 538µs | 729µs | 2.171ms | 134.756ms | 134.027ms | exit | ack | false |
+| 11 | 610µs | 887µs | 2.678ms | 186.926ms | 186.04ms | exit | ack | false |
+| 12 | 521µs | 684µs | 1.736ms | 168.224ms | 167.541ms | exit | ack | false |
+| 13 | 599µs | 744µs | 2.306ms | 173.542ms | 172.798ms | exit | ack | false |
+| 14 | 863µs | 1.189ms | 2.58ms | 131.222ms | 130.034ms | exit | ack | false |
+| 15 | 354µs | 671µs | 1.782ms | 141.908ms | 141.237ms | exit | ack | false |
+| 16 | 557µs | 1.072ms | 2.387ms | 154.141ms | 153.068ms | exit | ack | false |
+| 17 | 403µs | 594µs | 2.704ms | 162.52ms | 161.926ms | exit | ack | false |
+| 18 | 409µs | 650µs | 1.892ms | 129.639ms | 128.989ms | exit | ack | false |
+| 19 | 452µs | 795µs | 2.378ms | 136.291ms | 135.495ms | exit | ack | false |
+| 20 | 276µs | 479µs | 1.444ms | 118.099ms | 117.62ms | exit | ack | false |
+| 21 | 426µs | 820µs | 2.259ms | 159.87ms | 159.051ms | exit | ack | false |
+| 22 | 329µs | 497µs | 1.594ms | 151.553ms | 151.056ms | exit | ack | false |
+| 23 | 655µs | 998µs | 2.424ms | 128.901ms | 127.903ms | exit | ack | false |
+| 24 | 412µs | 569µs | 1.64ms | 125.137ms | 124.568ms | exit | ack | false |
+| 25 | 642µs | 845µs | 1.9ms | 135.417ms | 134.572ms | exit | ack | false |
+
+Attachment Statistics (Runsc Start -> Helper On Socket):
+  Min:    97.273ms
+  p50:    135.495ms
+  Mean:   140.228ms
+  p90:    167.541ms
+  Max:    186.04ms
+
+Push Outcome:
+  Answered by Exit:   25 / 25 (100.0%)
+  Answered by Helper: 0 / 25 (0.0%)
+  Enforced by Helper: 0 / 25 (0.0%)
+
+Key Findings:
+1. The exit attaches almost instantaneously (~200-500µs after tunneld starts).
+2. An early push landing before runsc finishes starting (within ~1-5ms) is answered immediately by the exit client with 'ack'.
+3. The runsc helper attaches ~100-250ms later (well within DefaultPushTimeout=10s, but after Host.Apply has completed).
+4. As a result, in 100% of runs where push arrives early, the policy is acknowledged by the non-enforcing exit, and the enforcing sandbox NEVER receives the policy.

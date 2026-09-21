@@ -1000,7 +1000,9 @@ about the harness.
    had nobody watching — three of that pair's four failures. `watchLiveness` returns silently, with no
    line and no refusal, the moment `conn.Live()` is false (`attest/tunneld/push.go:263`). Nothing is
    wrong with a watch whose tunnel is gone having nothing left to tear down; what is wrong is that a
-   scenario must now derive its idle timeout from its own hold (420 s = hold + 60), which is leftover 22.
+   scenario had to derive its idle timeout from its own hold (420 s = hold + 60), which is
+   leftover 22. Ticket 27 closed it: the watch is the sandbox attachment's and outlives the tunnel,
+   so the scenario is back on the 60 s every other one uses.
 2. **`kill_later` could not see the sandbox.** It matched `comm`, and the sentry, the gofer and the
    tunnel helper are all re-execs of `/proc/self/exe` with `Args[0]` set afterwards, so every one of
    their `comm`s is `exe` (`runsc/container/container.go:1486`). Pair 3 printed the table it was matching
@@ -1278,16 +1280,17 @@ asks for.
    line these runs assert on survived in all three pairs, but it is the same hazard leftover 23 states.
 
 **Everything that changed between pairs, on both vendors, was harness, config or `/sbin/init`.** The
-list in one place, because a reader owed a defect list is also owed the boundary of it: the tunnel idle
-timeout 60 s → 420 s, derived as `hold + 60` and printed before the boot; the exec control asking once
-before anything else; `kill_later` reading the whole process table and then matching argv[0] out of
-`/proc/PID/cmdline`; the sentry's `tunnel narrow:` lines picked onto the console for the pair that
-measures them; the TDX config device's inodes chowned to root, with a check that refuses a device
-without it; the two reference value sets authored to admit the ceiling digest a guest of this image
-presents; the `local g="$1" … d="$W/$g"` expansion bug; and one assertion's wording, `ACCEPTED` →
-`ADMITTED`. **Nothing under `pkg/`, `runsc/` or `attest/` was touched by any of them** — the enforcement
-path the first SEV-SNP pair ran is the one the fifth ran and the one all three TDX pairs ran, and the
-sentry's own numbers agree across every pair that printed them.
+list in one place, because a reader owed a defect list is also owed the boundary of it: the tunnel
+idle timeout 60 s → 420 s, derived as `hold + 60` and printed before the boot, which ticket 27 put
+back at 60 s; the exec control asking once before anything else; `kill_later` reading the whole
+process table and then matching argv[0] out of `/proc/PID/cmdline`; the sentry's `tunnel narrow:`
+lines picked onto the console for the pair that measures them; the TDX config device's inodes
+chowned to root, with a check that refuses a device without it; the two reference value sets
+authored to admit the ceiling digest a guest of this image presents; the `local g="$1" … d="$W/$g"`
+expansion bug; and one assertion's wording, `ACCEPTED` → `ADMITTED`. **Nothing under `pkg/`,
+`runsc/` or `attest/` was touched by any of them** — the enforcement path the first SEV-SNP pair ran
+is the one the fifth ran and the one all three TDX pairs ran, and the sentry's own numbers agree
+across every pair that printed them.
 
 ## What a hop costs, and the six RQ5 components
 
@@ -1415,7 +1418,8 @@ the next two the loopback proof's, and the last five the hardware runs'.
 16. ~~**`attest/sandbox/live.go:47-48` understates E3.** It says the send was measured at "well under
     ten microseconds"; E3 measured a p50 of 17.015 µs and a mean of 30.174 µs, and only the minimum
     was under ten. `docs/sandbox-contract.md` carries the right number. The comment, not the
-    constant, is what is wrong.~~ Closed by commit `23504fe75`, which updated the comment to quote E3's 17 µs median and 30 µs mean.
+    constant, is what is wrong.~~ Closed by commit `23504fe75`, which put E3's 17 µs median and
+    30 µs mean in the comment.
 17. **`--debug` is how every number in the spikes was read**, and it is not free. E1's and E2's
     sandboxes ran with it; a production sandbox would not, and the swap and decision costs would be
     the same or smaller. On hardware it is worse than a cost: `--debug --debug-log=/run/runsc-debug/`
@@ -1454,7 +1458,10 @@ the next two the loopback proof's, and the last five the hardware runs'.
     none of it**, and on a vendor whose only diagnostic is the console that is the difference between
     a claim and a fact. This is ticket 25's leftover 14 — two clients on one socket — in its sharpest
     form, and it is **the first thing the next ticket must close**: an acknowledgement has to mean
-    *this policy reached the sandbox that will enforce it*, which today it does not.~~ Closed by ticket 27: contract v4 tracks roles, `Host.Apply` waits for the enforcing attachment and replays the policy in force to a late enforcing attachment. See `docs/the-ack-means-the-sandbox.md`.
+    *this policy reached the sandbox that will enforce it*, which today it does not.~~ Closed by
+    ticket 27: an attachment declares whether it is the enforcing one, `Host.Apply` pushes to that
+    one and waits for it inside the push deadline, and an enforcing sandbox that attaches after a
+    push is replayed the policy in force. The record is `docs/the-ack-means-the-sandbox.md`.
 22. ~~**A liveness watch lives exactly as long as the tunnel the policy arrived on.**
     `watchLiveness` polls `conn.Live()` once a second and returns the moment it is false — silently,
     with no line and no refusal (`attest/tunneld/push.go:243-267`, the return at `:263`). An
@@ -1462,7 +1469,10 @@ the next two the loopback proof's, and the last five the hardware runs'.
     the tunnel it would have torn down is already gone — but it means a scenario must derive its idle
     timeout from its own hold. SEV-SNP pair 1 lost three assertions to a 60 s idle timeout a hundred
     seconds before its kill; the harness now uses `hold + 60` and prints it before the boot. **Worked
-    around, not fixed.**~~ Closed by ticket 27: liveness watch is owned per sandbox attachment, outlives the tunnel, and marks the policy not-live on miss or close even when no tunnel is open. See `docs/the-ack-means-the-sandbox.md`.
+    around, not fixed.**~~ Closed by ticket 27: the watch is the sandbox attachment's rather than
+    the pushing tunnel's, so it outlives a tunnel that idles out, and a miss drops the enforcing
+    attachment and marks the policy not-live whether or not there was a tunnel to close. The record
+    is `docs/the-ack-means-the-sandbox.md`, and the harness is back on the 60 s idle timeout.
 23. **The teardown line is lost to console contention on some boots.** Over the SEV-SNP pairs with a
     working kill, guest A reported the socket close twice and guest B once; in `run-5/` B's console
     carries neither the loss nor the refusal, and in `run-4/` both survived *interleaved with three

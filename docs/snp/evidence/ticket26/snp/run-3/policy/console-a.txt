@@ -1,0 +1,723 @@
+[2J[01;01H[=3h[2J[01;01H[2J[01;01H[=3h[2J[01;01HEFI stub: Loaded initrd from LINUX_EFI_INITRD_MEDIA_GUID device path
+[    0.000000] Linux version 6.16.0-snp-guest-038d61fd6422 (pniroula@shs1) (gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, GNU ld (GNU Binutils for Ubuntu) 2.42) #1 SMP Mon Aug 24 23:03:37 EDT 2026
+[    0.000000] Command line: console=ttyS0 earlyprintk=serial panic=-1 rdinit=/init verity.roothash=494553da207dbf0622cede04e67adbcbc4dfa1d39272f329fefd4a3eda08ba9b verity.salt=- verity.datablocks=21916 verity.hashstart=21916 initrd=initrd
+[    0.000000] KERNEL supported cpus:
+[    0.000000]   Intel GenuineIntel
+[    0.000000]   AMD AuthenticAMD
+[    0.000000]   Hygon HygonGenuine
+[    0.000000]   Centaur CentaurHauls
+[    0.000000]   zhaoxin   Shanghai  
+[    0.000000] BIOS-provided physical RAM map:
+[    0.000000] BIOS-e820: [mem 0x0000000000000000-0x000000000009ffff] usable
+[    0.000000] BIOS-e820: [mem 0x0000000000100000-0x00000000007fffff] usable
+[    0.000000] BIOS-e820: [mem 0x0000000000800000-0x000000000080cfff] ACPI NVS
+[    0.000000] BIOS-e820: [mem 0x000000000080d000-0x0000000000810fff] reserved
+[    0.000000] BIOS-e820: [mem 0x0000000000811000-0x0000000000811fff] usable
+[    0.000000] BIOS-e820: [mem 0x0000000000812000-0x00000000008fffff] ACPI NVS
+[    0.000000] BIOS-e820: [mem 0x0000000000900000-0x000000007f0eefff] usable
+[    0.000000] BIOS-e820: [mem 0x000000007f0ef000-0x000000007f36efff] reserved
+[    0.000000] BIOS-e820: [mem 0x000000007f36f000-0x000000007f37efff] ACPI data
+[    0.000000] BIOS-e820: [mem 0x000000007f37f000-0x000000007f3fefff] ACPI NVS
+[    0.000000] BIOS-e820: [mem 0x000000007f3ff000-0x000000007fb16fff] usable
+[    0.000000] BIOS-e820: [mem 0x000000007fb17000-0x000000007fb1afff] reserved
+[    0.000000] BIOS-e820: [mem 0x000000007fb1b000-0x000000007fb1cfff] ACPI NVS
+[    0.000000] BIOS-e820: [mem 0x000000007fb1d000-0x000000007fb1ffff] reserved
+[    0.000000] BIOS-e820: [mem 0x000000007fb20000-0x000000007fb76fff] usable
+[    0.000000] BIOS-e820: [mem 0x000000007fb77000-0x000000007fbfafff] reserved
+[    0.000000] BIOS-e820: [mem 0x000000007fbfb000-0x000000007ff56fff] usable
+[    0.000000] BIOS-e820: [mem 0x000000007ff57000-0x000000007ff5ffff] reserved
+[    0.000000] BIOS-e820: [mem 0x000000007ff60000-0x000000007fffffff] ACPI NVS
+[    0.000000] BIOS-e820: [mem 0x00000000e0000000-0x00000000efffffff] reserved
+[    0.000000] BIOS-e820: [mem 0x00000000feffc000-0x00000000feffffff] reserved
+[    0.000000] BIOS-e820: [mem 0x000000fd00000000-0x000000ffffffffff] reserved
+[    0.000000] printk: legacy bootconsole [earlyser0] enabled
+[    0.000000] NX (Execute Disable) protection: active
+[    0.000000] APIC: Static calls initialized
+[    0.000000] efi: EFI v2.7 by EDK II
+[    0.000000] efi: CocoSecret=0x7f37ef18 SMBIOS=0x7f141000 ACPI=0x7f37d000 ACPI 2.0=0x7f37d014 MEMATTR=0x7de01298 INITRD=0x7cd49f18 RNG=0x7f37ef98 
+[    0.000000] random: crng init done
+[    0.000000] SMBIOS 2.8 present.
+[    0.000000] DMI: QEMU Standard PC (Q35 + ICH9, 2009), BIOS unknown 02/02/2022
+[    0.000000] DMI: Memory slots populated: 1/1
+[    0.000000] Hypervisor detected: KVM
+[    0.000000] kvm-clock: Using msrs 4b564d01 and 4b564d00
+[    0.000003] kvm-clock: using sched offset of 16962889078 cycles
+[    0.002021] clocksource: kvm-clock: mask: 0xffffffffffffffff max_cycles: 0x1cd42e4dffb, max_idle_ns: 881590591483 ns
+[    0.008321] tsc: Detected 3245.122 MHz processor
+[    0.010160] last_pfn = 0x7ff57 max_arch_pfn = 0x10000000000
+[    0.012268] MTRR map: 0 entries (0 fixed + 0 variable; max 0), built from 0 variable MTRRs
+[    0.015529] MTRRs set to read-only
+[    0.016824] x86/PAT: Configuration [0-7]: WB  WC  UC- UC  WB  WP  UC- WT  
+Memory KASLR using RDRAND RDTSC...
+[    0.020725] software IO TLB: SWIOTLB bounce buffer size adjusted to 122MB
+[    0.020765] Using GB pages for direct mapping
+[    0.025989] Secure boot disabled
+[    0.027220] RAMDISK: [mem 0x7cbd6000-0x7cd46fff]
+[    0.028991] ACPI: Early table checksum verification disabled
+[    0.031147] ACPI: RSDP 0x000000007F37D014 000024 (v02 BOCHS )
+[    0.033402] ACPI: XSDT 0x000000007F37C0E8 00004C (v01 BOCHS  BXPC     00000001      01000013)
+[    0.036667] ACPI: FACP 0x000000007F378000 0000F4 (v03 BOCHS  BXPC     00000001 BXPC 00000001)
+[    0.039926] ACPI: DSDT 0x000000007F379000 0021DB (v01 BOCHS  BXPC     00000001 BXPC 00000001)
+[    0.043188] ACPI: FACS 0x000000007F3DD000 000040
+[    0.044970] ACPI: APIC 0x000000007F377000 000090 (v03 BOCHS  BXPC     00000001 BXPC 00000001)
+[    0.048213] ACPI: HPET 0x000000007F376000 000038 (v01 BOCHS  BXPC     00000001 BXPC 00000001)
+[    0.051466] ACPI: MCFG 0x000000007F375000 00003C (v01 BOCHS  BXPC     00000001 BXPC 00000001)
+[    0.055562] ACPI: WAET 0x000000007F374000 000028 (v01 BOCHS  BXPC     00000001 BXPC 00000001)
+[    0.058836] ACPI: Reserving FACP table memory at [mem 0x7f378000-0x7f3780f3]
+[    0.061595] ACPI: Reserving DSDT table memory at [mem 0x7f379000-0x7f37b1da]
+[    0.064746] ACPI: Reserving FACS table memory at [mem 0x7f3dd000-0x7f3dd03f]
+[    0.067609] ACPI: Reserving APIC table memory at [mem 0x7f377000-0x7f37708f]
+[    0.070282] ACPI: Reserving HPET table memory at [mem 0x7f376000-0x7f376037]
+[    0.072980] ACPI: Reserving MCFG table memory at [mem 0x7f375000-0x7f37503b]
+[    0.075671] ACPI: Reserving WAET table memory at [mem 0x7f374000-0x7f374027]
+[    0.079170] No NUMA configuration found
+[    0.080666] Faking a node at [mem 0x0000000000000000-0x000000007ff56fff]
+[    0.083246] NODE_DATA(0) allocated [mem 0x7ff2c500-0x7ff56fff]
+[    0.086563] Zone ranges:
+[    0.087898]   DMA      [mem 0x0000000000001000-0x0000000000ffffff]
+[    0.090293]   DMA32    [mem 0x0000000001000000-0x000000007ff56fff]
+[    0.092674]   Normal   empty
+[    0.093777]   Device   empty
+[    0.094886] Movable zone start for each node
+[    0.096509] Early memory node ranges
+[    0.097941]   node   0: [mem 0x0000000000001000-0x000000000009ffff]
+[    0.100513]   node   0: [mem 0x0000000000100000-0x00000000007fffff]
+[    0.102895]   node   0: [mem 0x0000000000811000-0x0000000000811fff]
+[    0.105292]   node   0: [mem 0x0000000000900000-0x000000007f0eefff]
+[    0.107704]   node   0: [mem 0x000000007f3ff000-0x000000007fb16fff]
+[    0.110090]   node   0: [mem 0x000000007fb20000-0x000000007fb76fff]
+[    0.112477]   node   0: [mem 0x000000007fbfb000-0x000000007ff56fff]
+[    0.114865] Initmem setup node 0 [mem 0x0000000000001000-0x000000007ff56fff]
+[    0.117569] On node 0, zone DMA: 1 pages in unavailable ranges
+[    0.119836] On node 0, zone DMA: 96 pages in unavailable ranges
+[    0.122097] On node 0, zone DMA: 17 pages in unavailable ranges
+[    0.124405] On node 0, zone DMA: 238 pages in unavailable ranges
+[    0.133929] On node 0, zone DMA32: 784 pages in unavailable ranges
+[    0.136386] On node 0, zone DMA32: 9 pages in unavailable ranges
+[    0.138734] On node 0, zone DMA32: 132 pages in unavailable ranges
+[    0.141127] On node 0, zone DMA32: 169 pages in unavailable ranges
+[    0.144658] ACPI: PM-Timer IO Port: 0x608
+[    0.146251] ACPI: LAPIC_NMI (acpi_id[0xff] dfl dfl lint[0x1])
+[    0.148550] IOAPIC[0]: apic_id 0, version 17, address 0xfec00000, GSI 0-23
+[    0.151203] ACPI: INT_SRC_OVR (bus 0 bus_irq 0 global_irq 2 dfl dfl)
+[    0.153660] ACPI: INT_SRC_OVR (bus 0 bus_irq 5 global_irq 5 high level)
+[    0.156181] ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 9 high level)
+[    0.158731] ACPI: INT_SRC_OVR (bus 0 bus_irq 10 global_irq 10 high level)
+[    0.161324] ACPI: INT_SRC_OVR (bus 0 bus_irq 11 global_irq 11 high level)
+[    0.163982] ACPI: Using ACPI (MADT) for SMP configuration information
+[    0.166461] ACPI: HPET id: 0x8086a201 base: 0xfed00000
+[    0.168440] CPU topo: Max. logical packages:   1
+[    0.170178] CPU topo: Max. logical dies:       1
+[    0.171941] CPU topo: Max. dies per package:   1
+[    0.173700] CPU topo: Max. threads per core:   1
+[    0.175480] CPU topo: Num. cores per package:     4
+[    0.177312] CPU topo: Num. threads per package:   4
+[    0.179193] CPU topo: Allowing 4 present CPUs plus 0 hotplug CPUs
+[    0.181634] kvm-guest: APIC: eoi() replaced with kvm_guest_apic_eoi_write()
+[    0.184368] PM: hibernation: Registered nosave memory: [mem 0x00000000-0x00000fff]
+[    0.187264] PM: hibernation: Registered nosave memory: [mem 0x000a0000-0x000fffff]
+[    0.190177] PM: hibernation: Registered nosave memory: [mem 0x00800000-0x00810fff]
+[    0.193074] PM: hibernation: Registered nosave memory: [mem 0x00812000-0x008fffff]
+[    0.196066] PM: hibernation: Registered nosave memory: [mem 0x7f0ef000-0x7f3fefff]
+[    0.198960] PM: hibernation: Registered nosave memory: [mem 0x7fb17000-0x7fb1ffff]
+[    0.201850] PM: hibernation: Registered nosave memory: [mem 0x7fb77000-0x7fbfafff]
+[    0.205395] [mem 0x80000000-0xdfffffff] available for PCI devices
+[    0.208831] Booting paravirtualized kernel on KVM
+[    0.211418] clocksource: refined-jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 1910969940391419 ns
+[    0.217368] setup_percpu: NR_CPUS:8192 nr_cpumask_bits:4 nr_cpu_ids:4 nr_node_ids:1
+[    0.221677] percpu: Embedded 83 pages/cpu s217088 r8192 d114688 u524288
+[    0.225551] kvm-guest: PV spinlocks disabled, no host support
+[    0.227892] Kernel command line: console=ttyS0 earlyprintk=serial panic=-1 rdinit=/init verity.roothash=494553da207dbf0622cede04e67adbcbc4dfa1d39272f329fefd4a3eda08ba9b verity.salt=- verity.datablocks=21916 verity.hashstart=21916 initrd=initrd
+[    0.236508] printk: log buffer data + meta data: 262144 + 917504 = 1179648 bytes
+[    0.239723] Dentry cache hash table entries: 262144 (order: 9, 2097152 bytes, linear)
+[    0.242948] Inode-cache hash table entries: 131072 (order: 8, 1048576 bytes, linear)
+[    0.247086] software IO TLB: area num 4.
+[    0.248650] software IO TLB: SWIOTLB bounce buffer size roundup to 128MB
+[    0.299226] Fallback order for Node 0: 0 
+[    0.299240] Built 1 zonelists, mobility grouping on.  Total pages: 522842
+[    0.306220] Policy zone: DMA32
+[    0.307492] mem auto-init: stack:all(zero), heap alloc:on, heap free:off
+[    0.323558] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=4, Nodes=1
+Poking KASLR using RDRAND RDTSC...
+[    0.344037] ftrace: allocating 56527 entries in 224 pages
+[    0.346492] ftrace: allocated 224 pages with 3 groups
+[    0.349015] rcu: Hierarchical RCU implementation.
+[    0.351268] rcu: 	RCU restricting CPUs from NR_CPUS=8192 to nr_cpu_ids=4.
+[    0.354560] 	Rude variant of Tasks RCU enabled.
+[    0.357970] 	Tracing variant of Tasks RCU enabled.
+[    0.360556] rcu: RCU calculated value of scheduler-enlistment delay is 100 jiffies.
+[    0.363573] rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=4
+[    0.367154] RCU Tasks Rude: Setting shift to 2 and lim to 1 rcu_task_cb_adjust=1 rcu_task_cpu_ids=4.
+[    0.374257] RCU Tasks Trace: Setting shift to 2 and lim to 1 rcu_task_cb_adjust=1 rcu_task_cpu_ids=4.
+[    0.390850] NR_IRQS: 524544, nr_irqs: 456, preallocated irqs: 16
+[    0.394049] rcu: srcu_init: Setting srcu_struct sizes based on contention.
+[    0.396976] Console: colour dummy device 80x25
+[    0.399210] printk: legacy console [ttyS0] enabled
+[    0.399210] printk: legacy console [ttyS0] enabled
+[    0.404117] printk: legacy bootconsole [earlyser0] disabled
+[    0.404117] printk: legacy bootconsole [earlyser0] disabled
+[    0.410037] ACPI: Core revision 20250404
+[    0.412270] clocksource: hpet: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 19112604467 ns
+[    0.416475] APIC: Switch to symmetric I/O mode setup
+[    0.419878] x2apic enabled
+[    0.422293] APIC: Switched APIC routing to: physical x2apic
+[    0.429782] ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
+[    0.433268] clocksource: tsc-early: mask: 0xffffffffffffffff max_cycles: 0x2ec6cb58771, max_idle_ns: 440795340214 ns
+[    0.439014] Calibrating delay loop (skipped) preset value.. 6490.24 BogoMIPS (lpj=3245122)
+[    0.440216] AMD Zen1 DIV0 bug detected. Disable SMT for full protection.
+[    0.442546] Last level iTLB entries: 4KB 512, 2MB 255, 4MB 127
+[    0.443012] Last level dTLB entries: 4KB 512, 2MB 255, 4MB 127, 1GB 0
+[    0.444023] Speculative Store Bypass: Vulnerable
+[    0.445010] Speculative Return Stack Overflow: IBPB-extending microcode not applied!
+[    0.446010] Speculative Return Stack Overflow: WARNING: See https://kernel.org/doc/html/latest/admin-guide/hw-vuln/srso.html for mitigation options.
+[    0.446013] Spectre V2 : Mitigation: Retpolines
+[    0.448010] RETBleed: Mitigation: untrained return thunk
+[    0.449009] Speculative Return Stack Overflow: Vulnerable: Safe RET, no microcode
+[    0.450010] Spectre V1 : Mitigation: usercopy/swapgs barriers and __user pointer sanitization
+[    0.451009] Spectre V2 : Spectre v2 / SpectreRSB: Filling RSB on context switch and VMEXIT
+[    0.452009] Spectre V2 : Enabling Speculation Barrier for firmware calls
+[    0.453013] Spectre V2 : mitigation: Enabling conditional Indirect Branch Prediction Barrier
+[    0.454011] x86/bugs: return thunk changed
+[    0.455037] x86/fpu: Supporting XSAVE feature 0x001: 'x87 floating point registers'
+[    0.456009] x86/fpu: Supporting XSAVE feature 0x002: 'SSE registers'
+[    0.457009] x86/fpu: Supporting XSAVE feature 0x004: 'AVX registers'
+[    0.458010] x86/fpu: xstate_offset[2]:  576, xstate_sizes[2]:  256
+[    0.459010] x86/fpu: Enabled xstate features 0x7, context size is 832 bytes, using 'compacted' format.
+[    0.561123] Freeing SMP alternatives memory: 52K
+[    0.574071] Memory Encryption Features active: AMD SEV SEV-ES SEV-SNP
+[    0.575012] SEV: Status: SEV SEV-ES SEV-SNP 
+[    0.576013] pid_max: default: 32768 minimum: 301
+[    0.587857] LSM: initializing lsm=lockdown,capability,landlock,yama,apparmor,ima,evm
+[    0.588203] landlock: Up and running.
+[    0.589012] Yama: becoming mindful.
+[    0.590331] AppArmor: AppArmor initialized
+[    0.591238] Mount-cache hash table entries: 4096 (order: 3, 32768 bytes, linear)
+[    0.592019] Mountpoint-cache hash table entries: 4096 (order: 3, 32768 bytes, linear)
+[    0.697006] smpboot: CPU0: AMD EPYC-v4 Processor (family: 0x17, model: 0x1, stepping: 0x2)
+[    0.697037] SEV: APIC: wakeup_secondary_cpu() replaced with wakeup_cpu_via_vmgexit()
+[    0.699738] Performance Events: Fam17h+ core perfctr, AMD PMU driver.
+[    0.700023] ... version:                0
+[    0.701012] ... bit width:              48
+[    0.702011] ... generic registers:      6
+[    0.703011] ... value mask:             0000ffffffffffff
+[    0.704011] ... max period:             00007fffffffffff
+[    0.705011] ... fixed-purpose events:   0
+[    0.706013] ... event mask:             000000000000003f
+[    0.708063] signal: max sigframe size: 1776
+[    0.710033] rcu: Hierarchical SRCU implementation.
+[    0.711012] rcu: 	Max phase no-delay instances is 400.
+[    0.712213] Timer migration: 1 hierarchy levels; 8 children per group; 1 crossnode level
+[    0.729823] smp: Bringing up secondary CPUs ...
+[    0.730018] smpboot: Parallel CPU startup disabled by the platform
+[    0.731511] smpboot: x86: Booting SMP configuration:
+[    0.733011] .... node  #0, CPUs:      #1 #2 #3
+[    0.750391] smp: Brought up 1 node, 4 CPUs
+[    0.752013] smpboot: Total of 4 processors activated (25960.97 BogoMIPS)
+[    0.754035] Memory: 1865572K/2091368K available (19929K kernel code, 3410K rwdata, 8324K rodata, 4984K init, 5740K bss, 218276K reserved, 0K cma-reserved)
+[    0.756025] devtmpfs: initialized
+[    0.757228] x86/mm: Memory block size: 128MB
+[    0.761457] ACPI: PM: Registering ACPI NVS region [mem 0x00800000-0x0080cfff] (53248 bytes)
+[    0.762017] ACPI: PM: Registering ACPI NVS region [mem 0x00812000-0x008fffff] (974848 bytes)
+[    0.763061] ACPI: PM: Registering ACPI NVS region [mem 0x7f37f000-0x7f3fefff] (524288 bytes)
+[    0.764039] ACPI: PM: Registering ACPI NVS region [mem 0x7fb1b000-0x7fb1cfff] (8192 bytes)
+[    0.765011] ACPI: PM: Registering ACPI NVS region [mem 0x7ff60000-0x7fffffff] (655360 bytes)
+[    0.767028] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 1911260446275000 ns
+[    0.768031] posixtimers hash table entries: 2048 (order: 3, 32768 bytes, linear)
+[    0.769036] futex hash table entries: 1024 (65536 bytes on 1 NUMA nodes, total 64 KiB, linear).
+[    0.770252] pinctrl core: initialized pinctrl subsystem
+[    0.771565] PM: RTC time: 20:09:58, date: 2026-09-18
+[    0.774798] NET: Registered PF_NETLINK/PF_ROUTE protocol family
+[    0.777015] DMA: preallocated 256 KiB GFP_KERNEL pool for atomic allocations
+[    0.778726] DMA: preallocated 256 KiB GFP_KERNEL|GFP_DMA pool for atomic allocations
+[    0.780057] DMA: preallocated 256 KiB GFP_KERNEL|GFP_DMA32 pool for atomic allocations
+[    0.781044] audit: initializing netlink subsys (disabled)
+[    0.783191] audit: type=2000 audit(1789762200.120:1): state=initialized audit_enabled=0 res=1
+[    0.784112] thermal_sys: Registered thermal governor 'fair_share'
+[    0.785014] thermal_sys: Registered thermal governor 'bang_bang'
+[    0.786011] thermal_sys: Registered thermal governor 'step_wise'
+[    0.787011] thermal_sys: Registered thermal governor 'user_space'
+[    0.788012] thermal_sys: Registered thermal governor 'power_allocator'
+[    0.790016] cpuidle: using governor ladder
+[    0.792034] cpuidle: using governor menu
+[    0.796236] SEV: Using SNP CPUID table, 28 entries present.
+[    0.797013] SEV: SNP running at VMPL0.
+[    0.798372] acpiphp: ACPI Hot Plug PCI Controller Driver version: 0.5
+[    0.800016] PCI: ECAM [mem 0xe0000000-0xefffffff] (base 0xe0000000) for domain 0000 [bus 00-ff]
+[    0.801049] PCI: Using configuration type 1 for base access
+[    0.803152] kprobes: kprobe jump-optimization is enabled. All kprobes are optimized if possible.
+[    0.806072] HugeTLB: allocation took 0ms with hugepage_allocation_threads=1
+[    0.807115] HugeTLB: registered 1.00 GiB page size, pre-allocated 0 pages
+[    0.808011] HugeTLB: 16380 KiB vmemmap can be freed for a 1.00 GiB page
+[    0.809013] HugeTLB: registered 2.00 MiB page size, pre-allocated 0 pages
+[    0.810011] HugeTLB: 28 KiB vmemmap can be freed for a 2.00 MiB page
+[    0.817159] ACPI: Added _OSI(Module Device)
+[    0.818013] ACPI: Added _OSI(Processor Device)
+[    0.819013] ACPI: Added _OSI(Processor Aggregator Device)
+[    0.830093] ACPI: 1 ACPI AML tables successfully acquired and loaded
+[    0.880865] ACPI: Interpreter enabled
+[    0.881109] ACPI: PM: (supports S0 S3 S4 S5)
+[    0.882023] ACPI: Using IOAPIC for interrupt routing
+[    0.884606] PCI: Using host bridge windows from ACPI; if necessary, use "pci=nocrs" and report a bug
+[    0.885015] PCI: Using E820 reservations for host bridge windows
+[    0.887578] ACPI: Enabled 2 GPEs in block 00 to 3F
+[    0.903810] ACPI: PCI Root Bridge [PCI0] (domain 0000 [bus 00-ff])
+[    0.904024] acpi PNP0A08:00: _OSC: OS supports [ExtendedConfig ASPM ClockPM Segments MSI EDR HPX-Type3]
+[    0.906012] acpi PNP0A08:00: _OSC: platform does not support [PCIeHotplug LTR DPC]
+[    0.907521] acpi PNP0A08:00: _OSC: OS now controls [SHPCHotplug PME AER PCIeCapability]
+[    0.909100] PCI host bridge to bus 0000:00
+[    0.910023] pci_bus 0000:00: root bus resource [io  0x0000-0x0cf7 window]
+[    0.911015] pci_bus 0000:00: root bus resource [io  0x0d00-0xffff window]
+[    0.912012] pci_bus 0000:00: root bus resource [mem 0x000a0000-0x000bffff window]
+[    0.913012] pci_bus 0000:00: root bus resource [mem 0x80000000-0xdfffffff window]
+[    0.914012] pci_bus 0000:00: root bus resource [mem 0xf0000000-0xfebfffff window]
+[    0.915012] pci_bus 0000:00: root bus resource [mem 0xc000000000-0xc7ffffffff window]
+[    0.916013] pci_bus 0000:00: root bus resource [bus 00-ff]
+[    0.918015] pci 0000:00:00.0: [8086:29c0] type 00 class 0x060000 conventional PCI endpoint
+[    0.921674] pci 0000:00:01.0: [1af4:1042] type 00 class 0x010000 conventional PCI endpoint
+[    0.925065] pci 0000:00:01.0: BAR 1 [mem 0x80004000-0x80004fff]
+[    0.926212] pci 0000:00:01.0: BAR 4 [mem 0xc000000000-0xc000003fff 64bit pref]
+[    0.932079] pci 0000:00:02.0: [1af4:1042] type 00 class 0x010000 conventional PCI endpoint
+[    0.938111] pci 0000:00:02.0: BAR 1 [mem 0x80003000-0x80003fff]
+[    0.939252] pci 0000:00:02.0: BAR 4 [mem 0xc000004000-0xc000007fff 64bit pref]
+[    0.946087] pci 0000:00:03.0: [1af4:1041] type 00 class 0x020000 conventional PCI endpoint
+[    0.952044] pci 0000:00:03.0: BAR 1 [mem 0x80002000-0x80002fff]
+[    0.953218] pci 0000:00:03.0: BAR 4 [mem 0xc000008000-0xc00000bfff 64bit pref]
+[    0.959391] pci 0000:00:04.0: [1af4:1042] type 00 class 0x010000 conventional PCI endpoint
+[    0.964082] pci 0000:00:04.0: BAR 1 [mem 0x80001000-0x80001fff]
+[    0.965232] pci 0000:00:04.0: BAR 4 [mem 0xc00000c000-0xc00000ffff 64bit pref]
+[    0.998868] pci 0000:00:1f.0: [8086:2918] type 00 class 0x060100 conventional PCI endpoint
+[    1.002016] pci 0000:00:1f.0: quirk: [io  0x0600-0x067f] claimed by ICH6 ACPI/GPIO/TCO
+[    1.005410] pci 0000:00:1f.2: [8086:2922] type 00 class 0x010601 conventional PCI endpoint
+[    1.011013] pci 0000:00:1f.2: BAR 4 [io  0x6040-0x605f]
+[    1.012063] pci 0000:00:1f.2: BAR 5 [mem 0x80000000-0x80000fff]
+[    1.015659] pci 0000:00:1f.3: [8086:2930] type 00 class 0x0c0500 conventional PCI endpoint
+[    1.020281] pci 0000:00:1f.3: BAR 4 [io  0x6000-0x603f]
+[    1.024474] ACPI: PCI: Interrupt link LNKA configured for IRQ 10
+[    1.026788] ACPI: PCI: Interrupt link LNKB configured for IRQ 10
+[    1.028495] ACPI: PCI: Interrupt link LNKC configured for IRQ 11
+[    1.029707] ACPI: PCI: Interrupt link LNKD configured for IRQ 11
+[    1.031590] ACPI: PCI: Interrupt link LNKE configured for IRQ 10
+[    1.033643] ACPI: PCI: Interrupt link LNKF configured for IRQ 10
+[    1.035256] ACPI: PCI: Interrupt link LNKG configured for IRQ 11
+[    1.037119] ACPI: PCI: Interrupt link LNKH configured for IRQ 11
+[    1.038149] ACPI: PCI: Interrupt link GSIA configured for IRQ 16
+[    1.039056] ACPI: PCI: Interrupt link GSIB configured for IRQ 17
+[    1.040056] ACPI: PCI: Interrupt link GSIC configured for IRQ 18
+[    1.041056] ACPI: PCI: Interrupt link GSID configured for IRQ 19
+[    1.042057] ACPI: PCI: Interrupt link GSIE configured for IRQ 20
+[    1.043055] ACPI: PCI: Interrupt link GSIF configured for IRQ 21
+[    1.044057] ACPI: PCI: Interrupt link GSIG configured for IRQ 22
+[    1.045057] ACPI: PCI: Interrupt link GSIH configured for IRQ 23
+[    1.049185] iommu: Default domain type: Translated
+[    1.050012] iommu: DMA domain TLB invalidation policy: lazy mode
+[    1.052746] SCSI subsystem initialized
+[    1.054158] ACPI: bus type USB registered
+[    1.055078] usbcore: registered new interface driver usbfs
+[    1.056040] usbcore: registered new interface driver hub
+[    1.057076] usbcore: registered new device driver usb
+[    1.058102] pps_core: LinuxPPS API ver. 1 registered
+[    1.059011] pps_core: Software ver. 5.3.6 - Copyright 2005-2007 Rodolfo Giometti <giometti@linux.it>
+[    1.060020] PTP clock support registered
+[    1.061183] EDAC MC: Ver: 3.0.0
+[    1.063220] efivars: Registered efivars operations
+[    1.066480] NetLabel: Initializing
+[    1.067013] NetLabel:  domain hash size = 128
+[    1.068011] NetLabel:  protocols = UNLABELED CIPSOv4 CALIPSO
+[    1.069079] NetLabel:  unlabeled traffic allowed by default
+[    1.071148] mctp: management component transport protocol core
+[    1.072013] NET: Registered PF_MCTP protocol family
+[    1.073046] PCI: Using ACPI for IRQ routing
+[    1.363267] vgaarb: loaded
+[    1.365484] hpet0: at MMIO 0xfed00000, IRQs 2, 8, 0
+[    1.366014] hpet0: 3 comparators, 64-bit 100.000000 MHz counter
+[    1.370216] clocksource: Switched to clocksource kvm-clock
+[    1.373284] VFS: Disk quotas dquot_6.6.0
+[    1.375085] VFS: Dquot-cache hash table entries: 512 (order 0, 4096 bytes)
+[    1.379015] AppArmor: AppArmor Filesystem Enabled
+[    1.381268] pnp: PnP ACPI init
+[    1.383356] system 00:04: [mem 0xe0000000-0xefffffff window] has been reserved
+[    1.387848] pnp: PnP ACPI: found 5 devices
+[    1.412526] clocksource: acpi_pm: mask: 0xffffff max_cycles: 0xffffff, max_idle_ns: 2085701024 ns
+[    1.416636] NET: Registered PF_INET protocol family
+[    1.418930] IP idents hash table entries: 32768 (order: 6, 262144 bytes, linear)
+[    1.423504] tcp_listen_portaddr_hash hash table entries: 1024 (order: 2, 16384 bytes, linear)
+[    1.427320] Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+[    1.430793] TCP established hash table entries: 16384 (order: 5, 131072 bytes, linear)
+[    1.434354] TCP bind hash table entries: 16384 (order: 7, 524288 bytes, linear)
+[    1.437666] TCP: Hash tables configured (established 16384 bind 16384)
+[    1.440688] MPTCP token hash table entries: 2048 (order: 3, 49152 bytes, linear)
+[    1.443994] UDP hash table entries: 1024 (order: 4, 65536 bytes, linear)
+[    1.446963] UDP-Lite hash table entries: 1024 (order: 4, 65536 bytes, linear)
+[    1.450255] NET: Registered PF_UNIX/PF_LOCAL protocol family
+[    1.452792] NET: Registered PF_XDP protocol family
+[    1.454943] pci_bus 0000:00: resource 4 [io  0x0000-0x0cf7 window]
+[    1.457668] pci_bus 0000:00: resource 5 [io  0x0d00-0xffff window]
+[    1.460379] pci_bus 0000:00: resource 6 [mem 0x000a0000-0x000bffff window]
+[    1.463371] pci_bus 0000:00: resource 7 [mem 0x80000000-0xdfffffff window]
+[    1.466385] pci_bus 0000:00: resource 8 [mem 0xf0000000-0xfebfffff window]
+[    1.469383] pci_bus 0000:00: resource 9 [mem 0xc000000000-0xc7ffffffff window]
+[    1.472876] PCI: CLS 0 bytes, default 64
+[    1.474777] PCI-DMA: Using software bounce buffering for IO (SWIOTLB)
+[    1.475451] Trying to unpack rootfs image as initramfs...
+[    1.477619] software IO TLB: mapped [mem 0x0000000071a00000-0x0000000079a00000] (128MB)
+[    1.478084] SEV: SNP guest platform devices initialized.
+[    1.495740] clocksource: tsc: mask: 0xffffffffffffffff max_cycles: 0x2ec6cb58771, max_idle_ns: 440795340214 ns
+[    1.501843] Initialise system trusted keyrings
+[    1.503889] Key type blacklist registered
+[    1.506441] workingset: timestamp_bits=36 max_order=19 bucket_order=0
+[    1.510578] squashfs: version 4.0 (2009/01/31) Phillip Lougher
+[    1.514197] fuse: init (API version 7.44)
+[    1.516934] integrity: Platform Keyring initialized
+[    1.519127] integrity: Machine keyring initialized
+[    1.555841] Key type asymmetric registered
+[    1.557688] Asymmetric key parser 'x509' registered
+[    1.559907] Block layer SCSI generic (bsg) driver version 0.4 loaded (major 243)
+[    1.563804] io scheduler mq-deadline registered
+[    1.572506] ledtrig-cpu: registered to indicate activity on CPUs
+[    1.581202] input: Power Button as /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
+[    1.589767] Freeing initrd memory: 1476K
+[    1.589802] ACPI: button: Power Button [PWRF]
+[    1.602093] ACPI: \_SB_.GSIF: Enabled at IRQ 21
+[    1.613243] ACPI: \_SB_.GSIG: Enabled at IRQ 22
+[    1.618988] ACPI: \_SB_.GSIH: Enabled at IRQ 23
+[    1.626817] ACPI: \_SB_.GSIE: Enabled at IRQ 20
+[    1.633814] Serial: 8250/16550 driver, 32 ports, IRQ sharing enabled
+[    1.671992] 00:02: ttyS0 at I/O 0x3f8 (irq = 4, base_baud = 115200) is a 16550A
+[    1.692532] Linux agpgart interface v0.103
+[    1.694860] ACPI: bus type drm_connector registered
+[    1.706791] loop: module loaded
+[    1.708668] virtio_blk virtio0: 4/0/0 default/read/poll queues
+[    1.715914] virtio_blk virtio0: [vda] 176728 512-byte logical blocks (90.5 MB/86.3 MiB)
+[    1.722152] software IO TLB: Memory encryption is active and system is using DMA bounce buffers
+[    1.727517] virtio_blk virtio1: 4/0/0 default/read/poll queues
+[    1.734822] virtio_blk virtio1: [vdb] 32768 512-byte logical blocks (16.8 MB/16.0 MiB)
+[    1.742109] virtio_blk virtio3: 4/0/0 default/read/poll queues
+[    1.749508] virtio_blk virtio3: [vdc] 131072 512-byte logical blocks (67.1 MB/64.0 MiB)
+[    1.758133] tun: Universal TUN/TAP device driver, 1.6
+[    1.765677] PPP generic driver version 2.4.2
+[    1.768562] i8042: PNP: PS/2 Controller [PNP0303:KBD,PNP0f13:MOU] at 0x60,0x64 irq 1,12
+[    1.774409] serio: i8042 KBD port at 0x60,0x64 irq 1
+[    1.776753] serio: i8042 AUX port at 0x60,0x64 irq 12
+[    1.779819] mousedev: PS/2 mouse device common for all mice
+[    1.783550] input: AT Raw Set 2 keyboard as /devices/platform/i8042/serio0/input/input1
+[    1.784451] rtc_cmos 00:03: RTC can wake from S4
+[    1.797430] rtc_cmos 00:03: registered as rtc0
+[    1.802266] rtc_cmos 00:03: setting system clock to 2026-09-18T20:10:00 UTC (1789762200)
+[    1.809335] rtc_cmos 00:03: alarms up to one day, y3k, 242 bytes nvram
+[    1.817258] i2c_dev: i2c /dev entries driver
+[    1.820467] device-mapper: core: CONFIG_IMA_DISABLE_HTABLE is disabled. Duplicate IMA measurements will not be recorded in the IMA log.
+[    1.827731] device-mapper: uevent: version 1.0.3
+[    1.831439] device-mapper: ioctl: 4.50.0-ioctl (2025-04-28) initialised: dm-devel@lists.linux.dev
+[    1.837987] drop_monitor: Initializing network drop monitor service
+[    1.842922] NET: Registered PF_INET6 protocol family
+[    1.852872] Segment Routing with IPv6
+[    1.855321] In-situ OAM (IOAM) with IPv6
+[    1.858092] NET: Registered PF_PACKET protocol family
+[    1.860958] Key type dns_resolver registered
+[    1.866989] IPI shorthand broadcast: enabled
+[    1.880308] sched_clock: Marking stable (1844020617, 36192968)->(2483952070, -603738485)
+[    1.887436] registered taskstats version 1
+[    1.893081] Loading compiled-in X.509 certificates
+[    1.906812] Loaded X.509 cert 'Build time autogenerated kernel key: fb5d162b3187ec806ac50ebe42580f942e7e4cf4'
+[    1.951788] Demotion targets for Node 0: null
+[    1.954860] Key type .fscrypt registered
+[    1.956778] Key type fscrypt-provisioning registered
+[    1.965994] Key type encrypted registered
+[    1.968157] AppArmor: AppArmor sha256 policy hashing enabled
+[    1.972028] ima: No TPM chip found, activating TPM-bypass!
+[    1.975090] Loading compiled-in module X.509 certificates
+[    1.978916] Loaded X.509 cert 'Build time autogenerated kernel key: fb5d162b3187ec806ac50ebe42580f942e7e4cf4'
+[    1.983611] ima: Allocated hash algorithm: sha256
+[    1.985919] ima: No architecture policies found
+[    1.988048] evm: Initialising EVM extended attributes:
+[    1.990379] evm: security.selinux
+[    1.992160] evm: security.SMACK64
+[    1.993722] evm: security.SMACK64EXEC
+[    1.995387] evm: security.SMACK64TRANSMUTE
+[    1.997270] evm: security.SMACK64MMAP
+[    1.998985] evm: security.apparmor
+[    2.000531] evm: security.ima
+[    2.002090] evm: security.capability
+[    2.003846] evm: HMAC attrs: 0x1
+[    2.006602] PM:   Magic number: 10:111:195
+[    2.009391] RAS: Correctable Errors collector initialized.
+[    2.012284] clk: Disabling unused clocks
+[    2.014205] PM: genpd: Disabling unused power domains
+[    2.042194] Freeing unused decrypted memory: 2028K
+[    2.046003] Freeing unused kernel image (initmem) memory: 4984K
+[    2.048088] Write protecting the kernel read-only data: 30720k
+[    2.051875] Freeing unused kernel image (text/rodata gap) memory: 548K
+[    2.055670] Freeing unused kernel image (rodata/data gap) memory: 1916K
+[    2.387896] x86/mm: Checked W+X mappings: passed, no W+X pages found.
+[    2.390509] Run /init as init process
+initrd: verity root hash 494553da207dbf0622cede04e67adbcbc4dfa1d39272f329fefd4a3eda08ba9b
+initrd: root filesystem image on /dev/vda
+[    2.458710] device-mapper: verity: sha256 using shash "sha256-x86"
+initrd: dm-verity mapping /dev/dm-0 active (panic_on_corruption)
+initrd: root filesystem mounted read-only
+[    2.487420] EXT4-fs (vdb): mounted filesystem 090a884a-0b68-4dda-8ae5-d9d8ad75f4f5 ro without journal. Quota mode: none.
+initrd: config device /dev/vdb mounted at /config (ro,noexec,nosuid,nodev)
+[    2.529337] EXT4-fs (vdc): mounted filesystem 54224b79-7161-46a9-83d1-310b117528e5 ro without journal. Quota mode: none.
+initrd: workload device /dev/vdc mounted at /workload (ro,exec,nosuid,nodev; not measured)
+initrd: switching root
+init: kernel 6.16.0-snp-guest-038d61fd6422
+init: dmesg: [    0.574071] Memory Encryption Features active: AMD SEV SEV-ES SEV-SNP
+init: dmesg: [    0.575012] SEV: Status: SEV SEV-ES SEV-SNP 
+init: dmesg: [    0.697037] SEV: APIC: wakeup_secondary_cpu() replaced with wakeup_cpu_via_vmgexit()
+init: dmesg: [    0.796236] SEV: Using SNP CPUID table, 28 entries present.
+init: dmesg: [    0.797013] SEV: SNP running at VMPL0.
+init: dmesg: [    1.478084] SEV: SNP guest platform devices initialized.
+[    2.726394] sev-guest sev-guest: Initialized SEV guest driver (using VMPCK0 communication key)
+init: sev-guest loaded: report interface at /sys/kernel/config/tsm/report
+init: mount: devtmpfs /dev devtmpfs rw,nosuid,noexec,relatime,size=936544k,nr_inodes=234136,mode=755,inode64 0 0
+init: mount: /dev/dm-0 / squashfs ro,relatime,errors=continue,threads=single 0 0
+init: mount: /dev/vdb /config ext4 ro,nosuid,nodev,noexec,relatime 0 0
+init: mount: /dev/vdc /workload ext4 ro,nosuid,nodev,relatime 0 0
+init: mount: proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+init: mount: sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+init: mount: tmpfs /run tmpfs rw,nosuid,nodev,noexec,relatime,mode=755,inode64 0 0
+init: mount: tmpfs /tmp tmpfs rw,nosuid,nodev,noexec,relatime,inode64 0 0
+init: mount: configfs /sys/kernel/config configfs rw,nosuid,nodev,noexec,relatime 0 0
+init: no writable path is executable
+init: uptime 2.70s
+init: netfilter loaded: nf_tables, and the reject expressions the ceiling's output chain ends in
+init: bringing loopback up (the kernel delivers a rule's refusal to the local socket over it)
+init: installing the egress ceiling this image carries
+tunneld: EGRESS CEILING 197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973 (sha256 over the compiled-in ceiling; eth0, udp/4433)
+tunneld: EGRESS CEILING as this image carries it:
+table inet attested_tunnel {
+	chain input {
+		type filter hook input priority 0; policy drop;
+		iifname "lo" accept
+		meta nfproto ipv4 iifname "eth0" meta l4proto udp udp sport 4433 accept   # a peer answering a dial of ours
+		meta nfproto ipv4 iifname "eth0" meta l4proto udp udp dport 4433 accept   # a peer dialing this sandbox's listener
+	}
+	chain output {
+		type filter hook output priority 0; policy drop;
+		oifname "lo" accept
+		meta l4proto tcp reject with tcp reset        # so that connect() fails now rather than in a minute, and says a rule did it
+		meta nfproto ipv4 ip daddr 169.254.0.0/16 reject with icmpx admin-prohibited   # the provider's metadata server is an address, and the grant below says "any"
+		meta nfproto ipv4 oifname "eth0" meta l4proto udp udp dport 4433 accept   # dialing a peer
+		meta nfproto ipv4 oifname "eth0" meta l4proto udp udp sport 4433 accept   # answering a peer from this sandbox's listener
+		reject with icmpx admin-prohibited            # everything the ceiling does not permit
+	}
+	chain forward {
+		type filter hook forward priority 0; policy drop;
+	}
+}
+tunneld: EGRESS CEILING INSTALLED; as the kernel holds it:
+table inet attested_tunnel {
+	chain forward {
+		type filter hook forward priority 0; policy drop;
+	}
+	chain input {
+		type filter hook input priority 0; policy drop;
+		iifname "lo" accept   # handle 2
+		meta nfproto ipv4 iifname "eth0" meta l4proto udp sport 4433 accept   # handle 3
+		meta nfproto ipv4 iifname "eth0" meta l4proto udp dport 4433 accept   # handle 4
+	}
+	chain output {
+		type filter hook output priority 0; policy drop;
+		oifname "lo" accept   # handle 6
+		meta l4proto tcp reject with tcp reset   # handle 7
+		meta nfproto ipv4 ip daddr 169.254.0.0/16 reject with icmpx code 3   # handle 8
+		meta nfproto ipv4 oifname "eth0" meta l4proto udp dport 4433 accept   # handle 9
+		meta nfproto ipv4 oifname "eth0" meta l4proto udp sport 4433 accept   # handle 10
+		reject with icmpx code 3   # handle 11
+	}
+}
+tunneld: EXIT status=0
+init: the config device carries a policy to push: /config/push-policy.json
+init: the config device carries a tunnel table; the workload is a sandbox on the adapter (ticket 25)
+init: tunnel-table: {"default_exit":"guest-b",
+init: tunnel-table:  "names":{"web.peer-b":{"port":80}}}
+init: uptime 3.19s
+init: running /usr/bin/tunneld -push-policy /config/push-policy.json -sandbox-socket /run/tunneld/sandbox.sock in the background, ahead of the workload
+tunneld: sandbox "guest-a"
+tunneld: author key 3f27c388b8c18afb… (/etc/attested-tunnel/author.pub, inside the launch measurement)
+tunneld: peer table: guest-b = 10.14.0.3:4433
+tunneld: link eth0 up with 10.14.0.2/24
+tunneld: report interface /sys/kernel/config/tsm/report: present, 0 request(s) outstanding; a platform driver that does not answer it is what a non-confidential VM looks like from inside
+tunneld: verifying evidence from amd-sev-snp
+tunneld: push policy /config/push-policy.json: format=policy version=1 bytes=110 sha256=b23887d06a044f0752371ed8899c752ce0023a2aeaec56424e0cc3b747381268
+tunneld: tsm: provider "sev_guest" (amd-sev-snp) returned 1184 bytes of evidence over 1 write(s); its own certificate table is empty (auxblob, 0 bytes), which is the expected state on this host and not an error; bundled the 4759-byte chain provisioned in /config for chip 9b3716…5243 at bootloader=9 tee=0 snp=23 microcode=72 (ADR-0005)
+tunneld: policy digest 197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973 (sha256 over the compiled-in egress ceiling; put it in a peer's policy_digest)
+tunneld: egress ceiling eth0 on udp/4433; `tunneld -egress print` writes the text this names
+tunneld: listening on 10.14.0.2:4433 as "guest-a"; idle 7m0s, maximum age 15m0s
+tunneld: sandbox socket /run/tunneld/sandbox.sock: a sandbox in another process opens and accepts streams here; this tunneld answers none itself, and a pushed policy is passed to it
+tunneld: holding for 6m0s so that peers still dialing can finish
+init: the sandbox socket is up at /run/tunneld/sandbox.sock
+init: uptime 3.70s
+init: running /usr/bin/agent-probe -exit -network socket -sandbox-socket /run/tunneld/sandbox.sock -allow web.peer-a:80
+init: (an empty list refuses every destination, which is the honest default for the place a destination is checked)
+init: the exit is pid 162 (its own lines below say EXIT; it is torn down with the guest)
+EXIT serving, allow=web.peer-a:80
+tunneld: SANDBOX attached on /run/tunneld/sandbox.sock
+init: httpd large: /run/httpd/large is 8388608 bytes of zeros, generated here and in no measurement
+init: busybox httpd is serving /run/httpd on 127.0.0.1:80 (loopback only: the segment cannot reach it)
+init: httpd says: <!doctype html>
+init: httpd says: <meta charset="utf-8">
+init: httpd says: <title>attested tunnel: the page behind an exit</title>
+init: httpd says: <h1>attested-tunnel ticket 25</h1>
+init: httpd says: <p>This page is served by busybox httpd on 127.0.0.1:80 inside a measured
+init: httpd says: SEV-SNP guest. It is bound to loopback and to nothing else, so the ethernet
+init: httpd says: segment between the two guests cannot reach it: the only route to it is this
+init: httpd says: guest's own exit, at the far end of a tunnel a peer was admitted on.</p>
+init: httpd says: <p>This file is inside the launch measurement. The line below it is not: it is
+init: httpd says: written by /sbin/init out of the sandbox_id on the config device, which is what
+init: httpd says: tells one guest from the other when both booted the same image.</p>
+init: httpd says: served-by: guest-a
+init: no second pusher on this guest (narrow-after, push-policy-narrow.json and tunneld-narrow.json are not all on the config device)
+init: kill-after: 150s from now, the sandbox is killed and its liveness ends
+init: the workload device carries a bundle at /workload/config.json
+init: running: unshare -Urmnpf sh -c 'mount -t proc -o nosuid,nodev,noexec proc /proc; exec /usr/bin/runsc --root=/run/runsc-state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new --tunnel-socket=/run/tunneld/sandbox.sock --tunnel-table=/config/tunnel-table.json --debug --debug-log=/run/runsc-debug/ run --bundle /workload workload'
+init: uptime 3.93s
+tunneld: SANDBOX attached on /run/tunneld/sandbox.sock
+workload: === ticket 26: a sandbox that honours a pushed policy ===
+workload: this process has no interface of its own; its only way out is the adapter
+workload: exec /bin/probe attempt 0: it ran (rc=127); no policy carrying an x is in force in this sandbox yet
+tunneld: PEER key=6b5121edd4a8aaa3… chain=0957b4aa0678b511… measurement=5dad2470be175440… vendor=amd-sev-snp tcb=bootloader=9,tee=0,snp=23,microcode=72
+tunneld: REFUSED verification refused: the policy pushed to the peer was not applied: "guest-b" at 10.14.0.3:4433 did not apply the policy pushed to it: the peer refused it: the sandbox beside this tunneld did not apply it
+workload: ROLE=a peer-page=web.peer-b
+workload: --- GET http://web.peer-b/ (attempt 1)
+<!doctype html>
+<meta charset="utf-8">
+<title>attested tunnel: the page behind an exit</title>
+<h1>attested-tunnel ticket 25</h1>
+<p>This page is served by busybox httpd on 127.0.0.1:80 inside a measured
+SEV-SNP guest. It is bound to loopback and to nothing else, so the ethernet
+segment between the two guests cannot reach it: the only route to it is this
+guest's own exit, at the far end of a tunnel a peer was admitted on.</p>
+<p>This file is inside the launch measurement. The line below it is not: it is
+written by /sbin/init out of the sandbox_id on the config device, which is what
+tells one guest from the other when both booted the same image.</p>
+served-by: guest-b
+workload: wget exit 0 for http://web.peer-b/
+workload: the long stream is pid 5; the controls below run while it is open
+workload: --- GET http://not-in-the-table.example/ (attempt 1)
+workload: LONG start http://web.peer-b/large, 131072 bytes every 1s until 8388608 arrive
+wget: bad address 'not-in-the-table.example'
+workload: wget exit 1 for http://not-in-the-table.example/: the name did not resolve, so this sandbox's policy does not carry it; not retrying
+workload: exec /bin/probe attempt 1: it ran (rc=127); no policy carrying an x is in force in this sandbox yet
+SANDBOX applied format=policy version=1 bytes=110 sha256=681331c69aedad34d51e9e1f325889ff81863885d1067055bf005ca9e33b785d
+tunneld: SANDBOX applied format=policy version=1 bytes=110 sha256=681331c69aedad34d51e9e1f325889ff81863885d1067055bf005ca9e33b785d
+EXIT accepted a stream from peer="guest-b" vendor=amd-sev-snp measurement=5dad2470be1754403c9b6e475607ae5db92d5f82c8f3efaf297b4ec57c80d2d70ce46fa7a119939f68eddd2b15dec5fb policy_digest=197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+EXIT dialed web.peer-a:80 -> 127.0.0.1:80
+EXIT web.peer-a:80 ended
+EXIT accepted a stream from peer="guest-b" vendor=amd-sev-snp measurement=5dad2470be1754403c9b6e475607ae5db92d5f82c8f3efaf297b4ec57c80d2d70ce46fa7a119939f68eddd2b15dec5fb policy_digest=197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+EXIT dialed web.peer-a:80 -> 127.0.0.1:80
+EXIT web.peer-a:80 ended
+workload: EXEC REFUSED /bin/probe on attempt 2: /policy-probe.sh: line 150: /bin/probe: Permission denied
+workload: (a path the pushed x does not name and a digest it does not name; /bin/busybox is the only identity in x)
+workload: OBSERVE exec /bin/uname (a symlink to busybox): rc=0 out='Linux workload 4.19.0-gvisor #1 SMP Sun Jan 10 15:06:54 PST 2016 x86_64 GNU/Linux'
+workload: OBSERVE exec /bin/sh (a symlink to busybox): rc=0 out='ran'
+Linux workload 4.19.0-gvisor #1 SMP Sun Jan 10 15:06:54 PST 2016 x86_64 GNU/Linux
+workload: LONG reading bytes=2097152
+workload: LONG reading bytes=4194304
+tunneld: PEER key=3a940e72a583a1db… chain=0957b4aa0678b511… measurement=5dad2470be175440… vendor=amd-sev-snp tcb=bootloader=9,tee=0,snp=23,microcode=72
+SANDBOX applied format=policy version=1 bytes=76 sha256=92fb0e17644f61d44d0fa7c8ed10d2c5af5b9ccf75911a4d106463ba2967248e
+tunneld: SANDBOX applied format=policy version=1 bytes=76 sha256=92fb0e17644f61d44d0fa7c8ed10d2c5af5b9ccf75911a4d106463ba2967248e
+EXIT accepted a stream from peer="guest-b" vendor=amd-sev-snp measurement=5dad2470be1754403c9b6e475607ae5db92d5f82c8f3efaf297b4ec57c80d2d70ce46fa7a119939f68eddd2b15dec5fb policy_digest=197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+EXIT could not read the destination: EOF
+EXIT accepted a stream from peer="guest-b" vendor=amd-sev-snp measurement=5dad2470be1754403c9b6e475607ae5db92d5f82c8f3efaf297b4ec57c80d2d70ce46fa7a119939f68eddd2b15dec5fb policy_digest=197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+EXIT could not read the destination: EOF
+tunneld: SANDBOX liveness lost: it pulsed 92fb0e17644f61d44d0fa7c8ed10d2c5af5b9ccf75911a4d106463ba2967248e, expected 681331c69aedad34d51e9e1f325889ff81863885d1067055bf005ca9e33b785d
+tunneld: REFUSED verification refused: the policy pushed to the peer is no longer live: a peer at 10.14.0.3:44904 pushed a policy this sandbox no longer enforces: it pulsed 92fb0e17644f61d44d0fa7c8ed10d2c5af5b9ccf75911a4d106463ba2967248e, expected 681331c69aedad34d51e9e1f325889ff81863885d1067055bf005ca9e33b785d
+workload: NARROWED web.peer-b stopped resolving on attempt 14: wget: bad address 'web.peer-b'
+workload: (the second push dropped it from n; the sentry's responder answers NXDOMAIN for a name the policy in force does not carry)
+workload: waiting for the long stream (pid 5)
+workload: LONG reading bytes=6291456
+SANDBOX applied format=policy version=1 bytes=110 sha256=681331c69aedad34d51e9e1f325889ff81863885d1067055bf005ca9e33b785d
+tunneld: REFUSED verification refused: the policy pushed to the peer was not applied: a peer at 10.14.0.3:41551 pushed a policy this sandbox did not apply: sandbox: policy refused: the sandbox refused it: policy refused: it widens n by [net:web.peer-b:80]
+tunneld: SANDBOX liveness lost: it pulsed 681331c69aedad34d51e9e1f325889ff81863885d1067055bf005ca9e33b785d, expected 92fb0e17644f61d44d0fa7c8ed10d2c5af5b9ccf75911a4d106463ba2967248e
+tunneld: REFUSED verification refused: the policy pushed to the peer is no longer live: a peer at 10.14.0.3:56336 pushed a policy this sandbox no longer enforces: it pulsed 681331c69aedad34d51e9e1f325889ff81863885d1067055bf005ca9e33b785d, expected 92fb0e17644f61d44d0fa7c8ed10d2c5af5b9ccf75911a4d106463ba2967248e
+workload: LONG reading bytes=8388608
+workload: LONG COMPLETE bytes=8388608 (the whole body arrived, and the stream outlived whatever happened to the policy under it)
+workload: === controls done; standing still so that a kill is what ends this workload ===
+init: kill-after: 150s elapsed; killing the sandbox, so that nothing inside it gets to say goodbye
+init: uptime 153.93s
+init: kill-after: round 1, the sandbox in this table is unshare(183) runsc(184)
+init: kill-after: round 1 killed 2 processes
+init: uptime 154.42s
+init: sentry: I0918 20:10:03.709613       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=A answer=100.64.1.0
+init: sentry: I0918 20:10:03.709955       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=AAAA answer=noerror-empty
+init: sentry: I0918 20:10:03.854248       1 tunnel.go:455] tunnel attach: web.peer-b:80 -> peer "guest-b": unavailable in 142.295024ms (TunnelHelper.Open(web.peer-b:80): unavailable: asking tunneld for a stream to peer "guest-b": attest: verification failed)
+init: sentry: I0918 20:10:03.910600       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=A answer=100.64.1.0
+init: sentry: I0918 20:10:03.910741       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=AAAA answer=noerror-empty
+init: sentry: I0918 20:10:04.029855       1 tunnel.go:467] tunnel attach: web.peer-b:80 -> peer "guest-b": ok in 114.348499ms, host fd 41, local 100.64.0.1:40001
+init: sentry: I0918 20:10:04.145969       1 tunnel_dns.go:203] tunnel dns: q="not-in-the-table.example" type=A answer=nxdomain
+init: sentry: I0918 20:10:04.146097       1 tunnel_dns.go:203] tunnel dns: q="not-in-the-table.example" type=AAAA answer=nxdomain
+init: sentry: I0918 20:10:04.164815       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=A answer=100.64.1.0
+init: sentry: I0918 20:10:04.164889       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=AAAA answer=noerror-empty
+init: sentry: I0918 20:10:04.174608       1 tunnel.go:467] tunnel attach: web.peer-b:80 -> peer "guest-b": ok in 7.487318ms, host fd 48, local 100.64.0.1:40002
+init: sentry: W0918 20:10:06.317196       1 policyx.go:228] exec refused: path="/bin/probe" sha256=75dfb7becbff66f9083b1fa955bef2d0c6de178a8892bbfaff82fa26515d00b9 reason=not-in-x
+init: sentry: I0918 20:10:06.503428       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=A answer=100.64.1.0
+init: sentry: I0918 20:10:06.503545       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=AAAA answer=noerror-empty
+init: sentry: I0918 20:10:06.539975       1 tunnel.go:467] tunnel attach: web.peer-b:80 -> peer "guest-b": ok in 30.271585ms, host fd 51, local 100.64.0.1:40003
+init: sentry: I0918 20:10:09.633571       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=A answer=100.64.1.0
+init: sentry: I0918 20:10:09.633712       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=AAAA answer=noerror-empty
+init: sentry: I0918 20:10:09.673681       1 tunnel.go:467] tunnel attach: web.peer-b:80 -> peer "guest-b": ok in 35.539953ms, host fd 51, local 100.64.0.1:40004
+init: sentry: I0918 20:10:12.771856       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=A answer=100.64.1.0
+init: sentry: I0918 20:10:12.771975       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=AAAA answer=noerror-empty
+init: sentry: I0918 20:10:12.800684       1 tunnel.go:467] tunnel attach: web.peer-b:80 -> peer "guest-b": ok in 23.053741ms, host fd 51, local 100.64.0.1:40005
+init: sentry: I0918 20:10:15.932440       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=A answer=100.64.1.0
+init: sentry: I0918 20:10:15.932761       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=AAAA answer=noerror-empty
+init: sentry: I0918 20:10:15.982108       1 tunnel.go:467] tunnel attach: web.peer-b:80 -> peer "guest-b": ok in 41.391314ms, host fd 51, local 100.64.0.1:40006
+init: sentry: I0918 20:10:19.069972       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=A answer=100.64.1.0
+init: sentry: I0918 20:10:19.070526       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=AAAA answer=noerror-empty
+init: sentry: I0918 20:10:19.114658       1 tunnel.go:467] tunnel attach: web.peer-b:80 -> peer "guest-b": ok in 39.443291ms, host fd 51, local 100.64.0.1:40007
+init: sentry: I0918 20:10:22.210402       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=A answer=100.64.1.0
+init: sentry: I0918 20:10:22.210587       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=AAAA answer=noerror-empty
+init: sentry: I0918 20:10:22.229330       1 tunnel.go:467] tunnel attach: web.peer-b:80 -> peer "guest-b": ok in 12.489166ms, host fd 51, local 100.64.0.1:40008
+init: sentry: I0918 20:10:25.333618       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=A answer=100.64.1.0
+init: sentry: I0918 20:10:25.333747       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=AAAA answer=noerror-empty
+init: sentry: I0918 20:10:25.381561       1 tunnel.go:467] tunnel attach: web.peer-b:80 -> peer "guest-b": ok in 43.403816ms, host fd 51, local 100.64.0.1:40009
+init: sentry: I0918 20:10:28.468272       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=A answer=100.64.1.0
+init: sentry: I0918 20:10:28.468357       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=AAAA answer=noerror-empty
+init: sentry: I0918 20:10:28.504922       1 tunnel.go:467] tunnel attach: web.peer-b:80 -> peer "guest-b": ok in 32.569715ms, host fd 51, local 100.64.0.1:40010
+init: sentry: I0918 20:10:31.601603       1 tunnel_dns.go:203] tunnel dns: q="web.peer-b" type=A answesed: write errorinit: no tunnel lines in the debug log
+init: debug log /run/runsc-debug/runsc.log.20260918-201003.214000.boot.txt: 1302659 bytes, 10781 lines
+init: debug log /run/runsc-debug/runsc.log.20260918-201003.214000.gofer.txt: 26308 bytes, 458 lines
+init: debug log /run/runsc-debug/runsc.log.20260918-201003.214000.run.txt: 24146 bytes, 263 lines
+init: debug log /run/runsc-debug/runsc.log.20260918-201003.214000.tunnel-helper.txt: 20003 bytes, 211 lines
+init: runsc exited 137; the tail of each debug log follows
+init: --- tail of /run/runsc-debug/runsc.log.20260918-201003.214000.boot.txt
+init: debug: D0918 20:11:14.739976       1 usertrap_amd64.go:238] [ 300: 300] Apply the binary patch addr 462a84 trap addr 6a280 ([184 5 0 0 0 15 5] -> [255 36 37 128 162 6 0])
+init: debug: D0918 20:11:14.743683       1 usertrap_amd64.go:225] [ 300: 300] Found the pattern at ip 46430d:sysno 1
+init: debug: D0918 20:11:14.743798       1 usertrap_amd64.go:122] [ 300: 300] Allocate a new trap: 0x2b4e5e2cb9e0 9
+init: debug: D0918 20:11:14.743901       1 usertrap_amd64.go:238] [ 300: 300] Apply the binary patch addr 46430d trap addr 6a2d0 ([184 1 0 0 0 15 5] -> [255 36 37 208 162 6 0])
+init: debug: D0918 20:11:14.745613       1 task_exit.go:226] [ 300: 300] Transitioning from exit state TaskExitNone to TaskExitInitiated
+init: debug: D0918 20:11:14.748558       1 task_exit.go:226] [ 300: 300] Transitioning from exit state TaskExitInitiated to TaskExitZombie
+init: debug: D0918 20:11:14.748778       1 task_signals.go:464] [ 298: 298] Notified of signal 17
+init: debug: D0918 20:11:14.748986       1 task_signals.go:172] [ 298: 298] Not restarting syscall 61 after error to be restarted if SA_RESTART is set: interrupted by signal 17
+init: debug: D0918 20:11:14.749158       1 task_signals.go:216] [ 298: 298] Signal 17: delivering to handler
+init: debug: D0918 20:11:14.749802       1 task_exit.go:226] [ 300: 300] Transitioning from exit state TaskExitZombie to TaskExitDead
+init: debug: D0918 20:11:14.753494       1 task_exit.go:226] [ 298: 298] Transitioning from exit state TaskExitNone to TaskExitInitiated
+init: debug: D0918 20:11:14.754560       1 task_exit.go:226] [ 298: 298] Transitioning from exit state Tsed: write errorinit: --- tail of /run/runsc-debug/runsc.log.20260918-201003.214000.gofer.txt
+init: debug: 152: pc += (A > 18) ? 12 [165] : 54 [207]
+init: debug: 153: pc += (A >= 11) ? 0 [154] : 1 [155]
+init: debug: 154: pc += (A > 11) ?sed: write error
+init: --- tail of /run/runsc-debug/runsc.log.20260918-201003.214000.run.txt
+init: debug: I0918 20:10:03.257936       1 sandbox.go:1047] Control socket path: "/run/runsc-state/runsc-workload.sock"
+init: debug: D0918 20:10:03.258360       1 sandbox.go:2000] Starting tunnel helper: /proc/self/exe [runsc-tunnel-helper --tunnel-socket=/run/tunneld/sandbox.sock --debug=true --debug-log=/run/runsc-debug/ --network=none --gofer-network-namespace=nesed: write error
+init: --- tail of /run/runsc-debug/runsc.log.2sh: write error: Resource temporarily unavailable
+init: debug: D0918 20:10:12.777926      10 urpc.go:302] urpc: handling RPC call for method Tuinit: waiting fosh: write error: Resource temporarily unavailable
+init: kill-after: nothing of the sandbox is left in this init's process table
+init: uptime 155.76s
+tunneld: PEERS verifier_calls=5 accepted=5 refused=0 distinct_keys=2 distinct_chains=1
+tunneld: PEER SEEN key=3a940e72a583a1db891f0abf8a080e4d34b556fc871658b9fccccf48c29772a620b792e5cc0e9f8664bc25aa7085103ee927ff2f8c248b787ca6385cef1f409d chain=0957b4aa0678b511c89d6f9b49742ab114043b662408b13e9f7b43d1033d5a81 measurement=5dad2470be1754403c9b6e475607ae5db92d5f82c8f3efaf297b4ec57c80d2d70ce46fa7a119939f68eddd2b15dec5fb times=1
+tunneld: PEER SEEN key=6b5121edd4a8aaa3d334ef052a0127eb4638cdd73bfdf4ef41883d80fab79abc6f89d40315643e6f331c358183cfbcd5e7f6c9ef4a903e660b28aec34232283e chain=0957b4aa0678b511c89d6f9b49742ab114043b662408b13e9f7b43d1033d5a81 measurement=5dad2470be1754403c9b6e475607ae5db92d5f82c8f3efaf297b4ec57c80d2d70ce46fa7a119939f68eddd2b15dec5fb times=4
+sandbox: the tunneld socket closed
+tunneld: EXIT status=0
+init: tunneld exited with status 0
+init: proving the egress ceiling held, from inside the guest:
+tunneld: EGRESS PROBE: 4 attempt(s) at addresses the ceiling permits nothing to reach
+tunneld: EGRESS REFUSED tcp/169.254.169.254:80: dial tcp 169.254.169.254:80: connect: connection refused (the provider's metadata server) — the netfilter rule refused it
+tunneld: EGRESS REFUSED tcp/8.8.8.8:53: dial tcp 8.8.8.8:53: connect: connection refused (a public resolver, over TCP) — the netfilter rule refused it
+tunneld: EGRESS REFUSED udp/8.8.8.8:53: write udp 10.14.0.2:38793->8.8.8.8:53: write: operation not permitted (a public resolver, over UDP) — the netfilter rule refused it
+tunneld: EGRESS REFUSED udp/169.254.169.254:4433: write udp 10.14.0.2:58313->169.254.169.254:4433: write: operation not permitted (the metadata server, on the one port the ceiling grants) — the netfilter rule refused it
+tunneld: EGRESS PROBE PASSED: every attempt was refused before it left
+tunneld: EXIT status=0
+init: powering off
+[  363.524857] ACPI: PM: Preparing to enter system sleep state S5
+[  363.528346] reboot: Power down

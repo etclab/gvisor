@@ -1,0 +1,137 @@
+=== two attested guests, from image-ticket26 ===
+date        : 2026-09-18T19:43:25Z
+repo        : 3acfe11b5206b9f230594bd61e008d5b12e1fb37 on ticket-26-the-sandbox-honors-a-pushed-policy
+image       : /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket26
+mode        : SEV-SNP (privileged, through the spool)
+scenarios   : policy
+workload    : /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/workload.img (one OCI bundle on both guests, outside the launch measurement)
+
+predicted launch measurement of the image both guests boot:
+  f8b60b78e1b9c405af6f7bf6993ca8bfb87abe6137c5fbbf580bf5157d8d71a3a4318ea07f12a07a5d83e1c37fa2ef31
+the reference value set on both config devices names exactly that, signed by the
+author key baked into the image at /etc/attested-tunnel/author.pub (ADR-0004),
+and the policy beside it is signed by the same key under its own domain.
+
+spool       : /home/pniroula/Projects/gvisor/docs/snp/root-spool
+
+### policy: two sandboxes under a pushed policy, one of them narrowed while it is fetching
+    kill-after   : guest A 150s, guest B 210s (seconds after each guest starts its workload)
+    narrow-after : guest B 40s — the second tunneld that pushes the narrower policy at guest A
+    tunneld hold : 360s, boot timeout 540s, both derived from the knobs and not from -run-for
+    the three documents this run turns on, and what each governs:
+      A pushes at B : b23887d06a044f0752371ed8899c752ce0023a2aeaec56424e0cc3b747381268  {"format":"policy","version":1,"n":[{"host":"web.peer-a","ports":[80]}],"f":[],"x":[{"path":"/bin/busybox"}]}
+      B pushes at A : 681331c69aedad34d51e9e1f325889ff81863885d1067055bf005ca9e33b785d  {"format":"policy","version":1,"n":[{"host":"web.peer-b","ports":[80]}],"f":[],"x":[{"path":"/bin/busybox"}]}
+      B pushes at A : 92fb0e17644f61d44d0fa7c8ed10d2c5af5b9ccf75911a4d106463ba2967248e  {"format":"policy","version":1,"n":[],"f":[],"x":[{"path":"/bin/busybox"}]}   (second, narrower)
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config: tunnel-table.json  ({"default_exit":"guest-b", "names":{"web.peer-b":{"port":80}}})
+    config: exit-allow  (web.peer-a:80)
+    config device written to /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket26-run/policy/config-a.img (471b6d7ad4c43f4c…, not measured; every inode root-owned)
+    config: reference-values.json
+    config: reference-values.json.sig
+    config: peers.json
+    config: certificate-chain.bin
+    config: certificate-chain.json
+    config: tunnel-table.json  ({"default_exit":"guest-a", "names":{"web.peer-a":{"port":80}}})
+    config: exit-allow  (web.peer-b:80)
+    config device written to /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket26-run/policy/config-b.img (eccc02eab134e04b…, not measured; every inode root-owned)
+spooled /home/pniroula/Projects/gvisor/docs/snp/root-spool/tunnel-1755705-policy.job; waiting up to 780s for the runner
+policy finished, rc=0
+    | guest A qemu exited 0
+    | guest B qemu exited 0
+relay:
+    | l2relay: RELAYED a_to_b_frames=8323 b_to_a_frames=8260 a_to_b_bytes=9008184 b_to_a_bytes=9016546 tampered=0
+    | l2relay: MARKER not found hits=0 marker='served-by: guest-' in 16583 frames carrying 18024730 bytes
+    | l2relay: what was on the segment:
+    |   ethertypes : IPv4=16573, ARP=10
+    |   ip protocols: UDP=16573
+    |   arp targets : 10.14.0.2, 10.14.0.3
+    |   10.14.0.2 -> 10.14.0.3 proto=UDP frames=8318
+    |   10.14.0.3 -> 10.14.0.2 proto=UDP frames=8255
+PASS  guest-a: booted the measured image and ran the packaged tunneld
+PASS  guest-a: no writable path in the image is executable
+PASS  guest-a: read the author key from inside the launch measurement
+PASS  guest-a: read the reference value set and chain from the config device
+PASS  guest-b: booted the measured image and ran the packaged tunneld
+PASS  guest-b: no writable path in the image is executable
+PASS  guest-b: read the author key from inside the launch measurement
+PASS  guest-b: read the reference value set and chain from the config device
+PASS  guest-a: the config device's tunnel table put this guest on the adapter path
+PASS  guest-a: tunneld was started before the workload, not after it
+PASS  guest-a: runsc was launched with the adapter's two flags
+PASS  guest-a: the config device carried a policy for this guest to push
+PASS  guest-a: busybox httpd is serving the page on its own loopback
+PASS  guest-a: and the long body beside it is the size both ends agree on
+PASS  guest-a: the page is really being served, fetched by init before any sandbox existed
+PASS  guest-a: no writable executable path was ever found
+PASS  guest-b: the config device's tunnel table put this guest on the adapter path
+PASS  guest-b: tunneld was started before the workload, not after it
+PASS  guest-b: runsc was launched with the adapter's two flags
+PASS  guest-b: the config device carried a policy for this guest to push
+PASS  guest-b: busybox httpd is serving the page on its own loopback
+PASS  guest-b: and the long body beside it is the size both ends agree on
+PASS  guest-b: the page is really being served, fetched by init before any sandbox existed
+PASS  guest-b: no writable executable path was ever found
+PASS  guest-a: acquired its own evidence from the platform
+PASS  guest-a: bundled the chain provisioned on its config device, not the platform's
+PASS  guest-a: is listening
+PASS  guest-b: acquired its own evidence from the platform
+PASS  guest-b: bundled the chain provisioned on its config device, not the platform's
+PASS  guest-b: is listening
+PASS  guest-a: the sandbox socket came up for the adapter's helper to dial
+PASS  guest-a: a sandbox in another process attached to it
+PASS  guest-a: the exit attached and is holding the list its config device carries
+PASS  guest-a: admitted its peer's evidence
+PASS  guest-a: said what it was about to push, out of the file on its own config device
+PASS  guest-b: the sandbox socket came up for the adapter's helper to dial
+PASS  guest-b: a sandbox in another process attached to it
+PASS  guest-b: the exit attached and is holding the list its config device carries
+PASS  guest-b: admitted its peer's evidence
+PASS  guest-b: said what it was about to push, out of the file on its own config device
+PASS  guest-a's sandbox was given the policy guest-b pushed, and the digest is that document's
+PASS  guest-b's sandbox was given the policy guest-a pushed, and the digest is that document's
+PASS  guest-a's sandbox was served guest-b's page, through guest-b's exit, under that policy
+PASS  guest-b's sandbox was served guest-a's page, through guest-a's exit, under that policy
+PASS  guest-b's exit served a stream a peer opened and dialed the one destination its list permits
+PASS  guest-a's exit served a stream a peer opened and dialed the one destination its list permits
+PASS  an exit recorded the attested identity of the peer whose stream it served
+PASS  guest-a: the fetching process was inside a gVisor sandbox
+PASS  guest-b: the fetching process was inside a gVisor sandbox
+PASS  guest-a: the name that is in nobody's policy did not resolve inside the sandbox
+PASS  guest-b: the name that is in nobody's policy did not resolve inside the sandbox
+PASS  guest-a: an exec outside the policy's x was refused inside the sandbox
+PASS  guest-b: an exec outside the policy's x was refused inside the sandbox
+FAIL  guest-a: and it was allowed before the policy landed, so the control is a transition and not a constant
+PASS  guest-a's sandbox was given a second policy without being restarted
+PASS  and the second one is the narrower document guest-b pushed, by digest
+PASS  guest-b started a second tunneld to push it, rather than restarting the first
+PASS  guest-b's own sandbox was never narrowed: one policy, one digest
+PASS  guest-a's sandbox stopped resolving the name the narrower policy dropped
+PASS  and the stream that was already open when that happened arrived whole
+PASS  guest-b took the same body in one read from the other side, so the bytes are not the finding
+PASS  guest-a's tunneld noticed its sandbox pulsing a digest it was not watching for
+PASS  and refused, naming liveness rather than inferring it from a tunnel that went quiet
+PASS  guest-a: init killed the sandbox after the seconds its config device asked for
+PASS  guest-b: and the same on the other guest, later
+FAIL  guest-a: the sandbox's socket closing is what its tunneld saw, immediately and not after three misses
+FAIL  guest-b: the same on the other guest
+FAIL  guest-b's tunneld refused the tunnel it had applied a policy on, naming liveness
+PASS  guest-a: the workload was killed rather than running out of work
+PASS  guest-b: the same
+PASS  the exchange went through the relay
+PASS  the relay could not find the page's text on the wire
+    addresses resolved on the segment: 10.14.0.2, 10.14.0.3
+PASS  no guest looked for a gateway or anything else off the segment
+    what the sentry did with an exec through a symlink, from both guests:
+      workload: OBSERVE exec /bin/uname (a symlink to busybox): rc=0 out='Linux workload 4.19.0-gvisor #1 SMP Sun Jan 10 15:06:54 PST 2016 x86_64 GNU/Linux'
+      workload: OBSERVE exec /bin/sh (a symlink to busybox): rc=0 out='ran'
+      workload: OBSERVE exec /bin/uname (a symlink to busybox): rc=0 out='Linux workload 4.19.0-gvisor #1 SMP Sun Jan 10 15:06:54 PST 2016 x86_64 GNU/Linux'
+      workload: OBSERVE exec /bin/sh (a symlink to busybox): rc=0 out='ran'
+
+=== latency, as the guests measured it ===
+  LATENCY pass=1 peer=guest-a kind=establish ms=117.780 attempts=1 verifier_calls=1
+
+=== 69 passed, 4 failed ===

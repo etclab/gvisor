@@ -185,10 +185,10 @@ func testAdapter(t *testing.T, text string) *adapter {
 		t.Fatalf("ParseTunnelTable: %v", err)
 	}
 	a := &adapter{
-		table:     table,
-		byName:    map[string]*tunnelBinding{},
-		byAddr:    map[tcpip.Address]*tunnelBinding{},
-		localPort: 40000,
+		table:  table,
+		byName: map[string]*tunnelBinding{},
+		byAddr: map[tcpip.Address]*tunnelBinding{},
+		ports:  &tunnelPorts{next: 40000},
 	}
 	names := make([]string, 0, len(table.Names))
 	for name := range table.Names {

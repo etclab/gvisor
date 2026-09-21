@@ -1,0 +1,541 @@
+runsc sha256:          6019cbf49bc87c5c1ca21382ec069376661bfb56ab74eb3840d61378fbab7819
+faketunneld sha256:    872fd0889ad016e4750f3e45ac8fd9aaaa0052e046dc2430c238c81fc467bc50
+receiver sha256:       d7be04465f899c4af6f5c94de2307cde5bd220679497db2455ea085189d509dd
+workload sha256:       9371cb27221a3a65dd9dfaeda66958f0a8d9c8beecb1f33ca201b0b8700f942a
+busybox sha256:        dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14
+date:                  2026-09-18T19:30:07Z
+slow body:             16777216 bytes, 65536 per 50ms
+
+
+===== narrow-other =====
+table: {"default_exit":"b","names":{"bulk.peer-a":{"port":9000},"drop.peer-a":{"port":9001},"fill01.peer-a":{"port":9002},"fill02.peer-a":{"port":9002},"fill03.peer-a":{"port":9002},"fill04.peer-a":{"port":9002},"fill05.peer-a":{"port":9002},"fill06.peer-a":{"port":9002},"fill07.peer-a":{"port":9002},"fill08.peer-a":{"port":9002},"fill09.peer-a":{"port":9002},"fill10.peer-a":{"port":9002}}} 
+$ /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/runsc --root=/dev/shm/t26-e1-1719031/narrow-other-state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new --tunnel-socket=/dev/shm/t26-e1-1719031/narrow-other.sock --tunnel-table=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-other/table.json --pod-init-config=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-other/pod-init.json --debug --debug-log=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-other/logs/ run --bundle /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-other/bundle t26-e1-narrow-other-1719031
+the adapter was installed: ready=1 after 4 tenths of a second
+the workload's long stream is running: flowing=1 after 126 tenths of a second
+RUNSC_EXIT=0
+---- what the workload said ----
+/e1-workload.sh: line 13: /bin/busybox: File name too long
+/e1-workload.sh: line 13: /bin/busybox: File name too long
+r-a: Server:		127.0.0.53 Address:	127.0.0.53:53  Name:	bulk.peer-a Address: 100.64.1.0   
+workload: BEFORE resolve drop.peer-a: Server:		127.0.0.53 Address:	127.0.0.53:53  Name:	drop.peer-a Address: 100.64.1.1   
+workload: BEFORE GET http://drop.peer-a:9001/ rc=0 out='this is drop.peer-a:9001'
+workload: LONG STARTED pid=18 at 19:30:22
+workload: NARROWED drop.peer-a:9001 stopped resolving on attempt 3 at 19:30:25: wget: bad address 'drop.peer-a:9001'
+workload: AFTER GET the removed name's old address http://100.64.1.1:9001/ rc=1 out='wget: can't connect to remote host (100.64.1.1): Network is unreachable'
+workload: AFTER resolve bulk.peer-a: Server:		127.0.0.53 Address:	127.0.0.53:53  Name:	bulk.peer-a Address: 100.64.1.0   
+workload: AFTER resolve drop.peer-a: Server:		127.0.0.53 Address:	127.0.0.53:53  ** server can't find drop.peer-a: NXDOMAIN  ** server can't find drop.peer-a: NXDOMAIN  
+workload: LONG COMPLETE bytes=16777216 expected=16777216 at 19:30:35
+workload: AFTER GET http://drop.peer-a:9001/ rc=1 out='wget: bad address 'drop.peer-a:9001''
+workload: waiting for the long stream (pid 18) at 19:30:39
+workload: === done 19:30:40 ===
+---- what the stand-in said ----
+faketunneld: 2026/09/18 19:30:07.534236 exit listening on 127.0.0.1:43631, allow=map[bulk.peer-a:9000:true drop.peer-a:9001:true fill01.peer-a:9002:true], slow="bulk.peer-a:9000" (16777216 bytes, 65536 per 50ms)
+faketunneld: 2026/09/18 19:30:07.534782 serving the sandbox socket at /dev/shm/t26-e1-1719031/narrow-other.sock, peer="b"
+faketunneld: 2026/09/18 19:30:07.765817 SANDBOX attached on /dev/shm/t26-e1-1719031/narrow-other.sock
+faketunneld: 2026/09/18 19:30:07.986276 SANDBOX applied format=policy version=1 bytes=557 sha256=bf87b393abd236e24af5a38296693ece0367373dba3cfe34c45c3e9c1011f3b7
+faketunneld: 2026/09/18 19:30:07.986383 APPLY /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-other/policies/p00-all.json ACK elapsed=6.341751ms bytes=557
+faketunneld: 2026/09/18 19:30:08.273894 EXIT drop.peer-a:9001 served a short page for "GET / HTTP/1.1"
+faketunneld: 2026/09/18 19:30:08.341103 EXIT bulk.peer-a:9000 serving 16777216 bytes slowly for "GET / HTTP/1.1"
+faketunneld: 2026/09/18 19:30:21.399146 EXIT bulk.peer-a:9000 finished after 16777216 of 16777216 bytes
+faketunneld: 2026/09/18 19:30:22.383649 EXIT bulk.peer-a:9000 serving 16777216 bytes slowly for "GET /big HTTP/1.1"
+faketunneld: 2026/09/18 19:30:23.455807 EXIT drop.peer-a:9001 served a short page for "GET / HTTP/1.1"
+faketunneld: 2026/09/18 19:30:24.539812 EXIT drop.peer-a:9001 served a short page for "GET / HTTP/1.1"
+faketunneld: 2026/09/18 19:30:25.473461 MARK ---- the narrowing goes in now, with the stream in flight ----
+faketunneld: 2026/09/18 19:30:25.476429 SANDBOX applied format=policy version=1 bytes=519 sha256=3e8943258b5a10729ab029921dd09be78c61ca8d3e0abd960b0c3ee538dc80ec
+faketunneld: 2026/09/18 19:30:25.476487 APPLY /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-other/policies/p01-narrow.json ACK elapsed=2.651591ms bytes=519
+faketunneld: 2026/09/18 19:30:25.922656 EXIT bulk.peer-a:9000 serving 16777216 bytes slowly for "GET / HTTP/1.1"
+faketunneld: 2026/09/18 19:30:26.486624 SANDBOX applied format=policy version=1 bytes=479 sha256=ae8cf7963a0c00401acf3319fc1b355060a4d1cdcdb6b5116457c230765d72ed
+faketunneld: 2026/09/18 19:30:26.486710 APPLY /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-other/policies/p02-drop-fill10.json ACK elapsed=4.073291ms bytes=479
+faketunneld: 2026/09/18 19:30:26.894909 SANDBOX applied format=policy version=1 bytes=439 sha256=28110addb511da82f4c682fca0dc44e32a4214a9f42a88a31f07ca712d8cea67
+faketunneld: 2026/09/18 19:30:26.895043 APPLY /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-other/policies/p03-drop-fill09.json ACK elapsed=6.424795ms bytes=439
+faketunneld: 2026/09/18 19:30:27.300156 SANDBOX applied format=policy version=1 bytes=399 sha256=370642596f8ac655178e6f5cb55604d55263ec05d2a2153108dd0977e8487e3c
+faketunneld: 2026/09/18 19:30:27.300240 APPLY /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-other/policies/p04-drop-fill08.json ACK elapsed=3.935004ms bytes=399
+faketunneld: 2026/09/18 19:30:27.705596 SANDBOX applied format=policy version=1 bytes=359 sha256=b2ab3493900c5a150163ff11db10e8292fb30c5a0b9c4457f1124d5a48b5e61d
+faketunneld: 2026/09/18 19:30:27.705683 APPLY /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-other/policies/p05-drop-fill07.json ACK elapsed=3.427559ms bytes=359
+faketunneld: 2026/09/18 19:30:28.114103 SANDBOX applied format=policy version=1 bytes=319 sha256=306d047b3d023b22ed227a923dcd5a07a4903662d33b48c4f3796f4854ac947f
+faketunneld: 2026/09/18 19:30:28.114189 APPLY /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-other/policies/p06-drop-fill06.json ACK elapsed=3.919591ms bytes=319
+faketunneld: 2026/09/18 19:30:28.521354 SANDBOX applied format=policy version=1 bytes=279 sha256=e847df8a9f742351182a0aa652f6670d3fc0937ca7a48cddcd5c1e7c312286e4
+faketunneld: 2026/09/18 19:30:28.521437 APPLY /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-other/policies/p07-drop-fill05.json ACK elapsed=3.468399ms bytes=279
+faketunneld: 2026/09/18 19:30:28.928525 SANDBOX applied format=policy version=1 bytes=239 sha256=7798226221d33eb420400884d0f3c1f0533b41a326c0200ab877c39eccca551f
+faketunneld: 2026/09/18 19:30:28.928592 APPLY /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-other/policies/p08-drop-fill04.json ACK elapsed=2.496761ms bytes=239
+faketunneld: 2026/09/18 19:30:29.337042 SANDBOX applied format=policy version=1 bytes=199 sha256=388165d9b99f0a934e7b6ac14ccad959a8b7c001bddfeff7a1fa9adb924280df
+faketunneld: 2026/09/18 19:30:29.337109 APPLY /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-other/policies/p09-drop-fill03.json ACK elapsed=3.192308ms bytes=199
+faketunneld: 2026/09/18 19:30:29.746018 SANDBOX applied format=policy version=1 bytes=159 sha256=c7d003500e449f89ba21de6a7eadb2670ba81ae2f5411f591a3b545dbabdfced
+faketunneld: 2026/09/18 19:30:29.746115 APPLY /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-other/policies/p10-drop-fill02.json ACK elapsed=4.041213ms bytes=159
+faketunneld: 2026/09/18 19:30:30.153685 SANDBOX applied format=policy version=1 bytes=119 sha256=1d58fd76365f344adb629e066e1efbe2972742afbf981792ec8b3e354773c1c2
+faketunneld: 2026/09/18 19:30:30.153823 APPLY /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-other/policies/p11-drop-fill01.json ACK elapsed=3.640686ms bytes=119
+faketunneld: 2026/09/18 19:30:30.560170 MARK ---- and one that widens ----
+faketunneld: 2026/09/18 19:30:30.565394 APPLY /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-other/policies/p99-widen.json REFUSED elapsed=4.923318ms err=sandbox: policy refused: the sandbox refused it: policy refused: it widens n by [net:drop.peer-a:9001 net:fill01.peer-a:9002 net:fill02.peer-a:9002 net:fill03.peer-a:9002 net:fill04.peer-a:9002 net:fill05.peer-a:9002 net:fill06.peer-a:9002 net:fill07.peer-a:9002 net:fill08.peer-a:9002 net:fill09.peer-a:9002 net:fill10.peer-a:9002]
+faketunneld: 2026/09/18 19:30:35.432141 EXIT bulk.peer-a:9000 finished after 16777216 of 16777216 bytes
+faketunneld: 2026/09/18 19:30:38.961224 EXIT bulk.peer-a:9000 finished after 16777216 of 16777216 bytes
+faketunneld: 2026/09/18 19:30:40.109368 exiting on command
+---- the sentry on the tunnel and the narrowings ----
+I0918 15:30:07.770954       1 cli.go:278] Args: [runsc-sandbox --ignore-cgroups=true --pod-init-config=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-other/pod-init.json --tunnel-socket=/dev/shm/t26-e1-1719031/narrow-other.sock --root=/dev/shm/t26-e1-1719031/narrow-other-state --rootless=true --tunnel-table=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-other/table.json --debug=true --debug-log=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-other/logs/ --network=none --gofer-network-namespace=new --platform=systrap --debug-log-fd=3 boot --bundle=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-other/bundle --gofer-mount-confs=lisafs:none --apply-caps=true --setup-root --total-host-memory 807732506624 --total-memory 807732506624 --attached --io-fds=4 --dev-io-fd=-1 --mounts-fd=5 --start-sync-fd=6 --pin-ring-fd=7 --controller-fd=8 --spec-fd=9 --pod-init-config-fd=10 --sink-fds=11 --tunnel-table-fd=12 --tunnel-fd=13 --stdio-fds=14 --stdio-fds=15 --stdio-fds=16 t26-e1-narrow-other-1719031]
+D0918 15:30:07.771910       1 config.go:596] Config.CharacterDevicePolicy (--character-device-policy): emulated-only
+D0918 15:30:07.772489       1 config.go:596] Config.SidecarReleaseEnforcementPolicy (--sidecar-release-enforcement-policy): NEVER
+D0918 15:30:07.774524       1 config.go:596] Config.TunnelSocket (--tunnel-socket): /dev/shm/t26-e1-1719031/narrow-other.sock
+D0918 15:30:07.774545       1 config.go:596] Config.TunnelTable (--tunnel-table): /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-other/table.json
+I0918 15:30:07.882559       1 tunnel.go:227] Tunnel table read: 12 names, helper channel on fd 13
+D0918 15:30:07.882597       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint tunnel table read at 15:30:07.882594310 (unix nanos: 1789759807882594310)
+I0918 15:30:07.894367       1 tunnel.go:245] tunnel: bulk.peer-a:9000 is 100.64.1.0, dialled by peer "b"
+I0918 15:30:07.894473       1 tunnel.go:245] tunnel: drop.peer-a:9001 is 100.64.1.1, dialled by peer "b"
+I0918 15:30:07.894495       1 tunnel.go:245] tunnel: fill01.peer-a:9002 is 100.64.1.2, dialled by peer "b"
+I0918 15:30:07.894514       1 tunnel.go:245] tunnel: fill02.peer-a:9002 is 100.64.1.3, dialled by peer "b"
+I0918 15:30:07.894533       1 tunnel.go:245] tunnel: fill03.peer-a:9002 is 100.64.1.4, dialled by peer "b"
+I0918 15:30:07.894552       1 tunnel.go:245] tunnel: fill04.peer-a:9002 is 100.64.1.5, dialled by peer "b"
+I0918 15:30:07.894573       1 tunnel.go:245] tunnel: fill05.peer-a:9002 is 100.64.1.6, dialled by peer "b"
+I0918 15:30:07.894591       1 tunnel.go:245] tunnel: fill06.peer-a:9002 is 100.64.1.7, dialled by peer "b"
+I0918 15:30:07.894611       1 tunnel.go:245] tunnel: fill07.peer-a:9002 is 100.64.1.8, dialled by peer "b"
+I0918 15:30:07.894631       1 tunnel.go:245] tunnel: fill08.peer-a:9002 is 100.64.1.9, dialled by peer "b"
+I0918 15:30:07.894653       1 tunnel.go:245] tunnel: fill09.peer-a:9002 is 100.64.1.10, dialled by peer "b"
+I0918 15:30:07.894671       1 tunnel.go:245] tunnel: fill10.peer-a:9002 is 100.64.1.11, dialled by peer "b"
+I0918 15:30:07.894854       1 tunnel.go:262] tunnel: installed with 12 names, resolver on 127.0.0.53:53
+I0918 15:30:07.894895       1 tunnel.go:246] Tunnel adapter installed with 12 names
+[15:30:07.882594]	   +680µs ▎           	├─ tunnel table read: 680µs          
+D0918 15:30:07.961191       1 timing.go:875] Timer for runsc boot: time 1789759807882594310 15:30:07.882594310 mid runsc boot = tunnel table read
+D0918 15:30:07.983246       1 urpc.go:302] urpc: handling RPC call for method Policy.Narrow
+I0918 15:30:07.984501       1 tunnel.go:312] tunnel narrow: 12 of 12 names kept
+I0918 15:30:07.984587       1 policy.go:225] tunnel narrow: sha256=bf87b393abd236e24af5a38296693ece0367373dba3cfe34c45c3e9c1011f3b7 n=12 of 12 names kept x=0 f=1
+I0918 15:30:07.984672       1 policy.go:230] tunnel narrow: applied in 1.166328ms, of which the table swap was 126.329µs
+D0918 15:30:07.985120       1 urpc.go:372] urpc: RPC call for method Policy.Narrow succeeded.
+I0918 15:30:08.132923       1 tunnel_dns.go:203] tunnel dns: q="bulk.peer-a" type=A answer=100.64.1.0
+I0918 15:30:08.133538       1 tunnel_dns.go:203] tunnel dns: q="bulk.peer-a" type=AAAA answer=noerror-empty
+I0918 15:30:08.207004       1 tunnel_dns.go:203] tunnel dns: q="drop.peer-a" type=A answer=100.64.1.1
+I0918 15:30:08.207473       1 tunnel_dns.go:203] tunnel dns: q="drop.peer-a" type=AAAA answer=noerror-empty
+I0918 15:30:08.263880       1 tunnel_dns.go:203] tunnel dns: q="drop.peer-a" type=A answer=100.64.1.1
+I0918 15:30:08.264041       1 tunnel_dns.go:203] tunnel dns: q="drop.peer-a" type=AAAA answer=noerror-empty
+I0918 15:30:08.272724       1 tunnel.go:467] tunnel attach: drop.peer-a:9001 -> peer "b": ok in 5.655509ms, host fd 45, local 100.64.0.1:40001
+D0918 15:30:08.274983       1 tunnel_endpoint.go:211] tunnel: host fd 45 closed
+I0918 15:30:08.332278       1 tunnel_dns.go:203] tunnel dns: q="bulk.peer-a" type=A answer=100.64.1.0
+I0918 15:30:08.332453       1 tunnel_dns.go:203] tunnel dns: q="bulk.peer-a" type=AAAA answer=noerror-empty
+I0918 15:30:08.339781       1 tunnel.go:467] tunnel attach: bulk.peer-a:9000 -> peer "b": ok in 3.84483ms, host fd 46, local 100.64.0.1:40002
+D0918 15:30:21.350412       1 tunnel_endpoint.go:211] tunnel: host fd 46 closed
+I0918 15:30:22.374569       1 tunnel_dns.go:203] tunnel dns: q="bulk.peer-a" type=A answer=100.64.1.0
+I0918 15:30:22.375089       1 tunnel_dns.go:203] tunnel dns: q="bulk.peer-a" type=AAAA answer=noerror-empty
+I0918 15:30:22.382568       1 tunnel.go:467] tunnel attach: bulk.peer-a:9000 -> peer "b": ok in 3.894864ms, host fd 49, local 100.64.0.1:40003
+I0918 15:30:23.446570       1 tunnel_dns.go:203] tunnel dns: q="drop.peer-a" type=A answer=100.64.1.1
+I0918 15:30:23.446703       1 tunnel_dns.go:203] tunnel dns: q="drop.peer-a" type=AAAA answer=noerror-empty
+I0918 15:30:23.454481       1 tunnel.go:467] tunnel attach: drop.peer-a:9001 -> peer "b": ok in 3.933903ms, host fd 50, local 100.64.0.1:40004
+D0918 15:30:23.457690       1 tunnel_endpoint.go:211] tunnel: host fd 50 closed
+I0918 15:30:24.529802       1 tunnel_dns.go:203] tunnel dns: q="drop.peer-a" type=A answer=100.64.1.1
+I0918 15:30:24.530183       1 tunnel_dns.go:203] tunnel dns: q="drop.peer-a" type=AAAA answer=noerror-empty
+I0918 15:30:24.538276       1 tunnel.go:467] tunnel attach: drop.peer-a:9001 -> peer "b": ok in 4.088273ms, host fd 50, local 100.64.0.1:40005
+D0918 15:30:24.540922       1 tunnel_endpoint.go:211] tunnel: host fd 50 closed
+D0918 15:30:25.475168       1 urpc.go:302] urpc: handling RPC call for method Policy.Narrow
+I0918 15:30:25.475579       1 tunnel.go:304] tunnel narrow: drop.peer-a:9001 at 100.64.1.1 is gone
+I0918 15:30:25.475632       1 tunnel.go:312] tunnel narrow: 11 of 12 names kept
+I0918 15:30:25.475666       1 policy.go:225] tunnel narrow: sha256=3e8943258b5a10729ab029921dd09be78c61ca8d3e0abd960b0c3ee538dc80ec n=11 of 12 names kept x=0 f=1
+I0918 15:30:25.475700       1 policy.go:230] tunnel narrow: applied in 438.153µs, of which the table swap was 108.131µs
+D0918 15:30:25.475910       1 urpc.go:372] urpc: RPC call for method Policy.Narrow succeeded.
+I0918 15:30:25.594391       1 tunnel_dns.go:203] tunnel dns: q="drop.peer-a" type=A answer=nxdomain
+I0918 15:30:25.594429       1 tunnel.go:574] tunnel: refused dns :0 name="drop.peer-a" reason=unknown-name
+I0918 15:30:25.595225       1 tunnel_dns.go:203] tunnel dns: q="drop.peer-a" type=AAAA answer=nxdomain
+I0918 15:30:25.595263       1 tunnel.go:574] tunnel: refused dns :0 name="drop.peer-a" reason=unknown-name
+I0918 15:30:25.691175       1 tunnel.go:574] tunnel: refused tcp 100.64.1.1:9001 name="" reason=not-in-table
+I0918 15:30:25.762888       1 tunnel_dns.go:203] tunnel dns: q="bulk.peer-a" type=A answer=100.64.1.0
+I0918 15:30:25.763564       1 tunnel_dns.go:203] tunnel dns: q="bulk.peer-a" type=AAAA answer=noerror-empty
+I0918 15:30:25.841131       1 tunnel_dns.go:203] tunnel dns: q="drop.peer-a" type=A answer=nxdomain
+I0918 15:30:25.841181       1 tunnel.go:574] tunnel: refused dns :0 name="drop.peer-a" reason=unknown-name
+I0918 15:30:25.841465       1 tunnel_dns.go:203] tunnel dns: q="drop.peer-a" type=AAAA answer=nxdomain
+I0918 15:30:25.841584       1 tunnel.go:574] tunnel: refused dns :0 name="drop.peer-a" reason=unknown-name
+I0918 15:30:25.914968       1 tunnel_dns.go:203] tunnel dns: q="bulk.peer-a" type=A answer=100.64.1.0
+I0918 15:30:25.915177       1 tunnel_dns.go:203] tunnel dns: q="bulk.peer-a" type=AAAA answer=noerror-empty
+I0918 15:30:25.921669       1 tunnel.go:467] tunnel attach: bulk.peer-a:9000 -> peer "b": ok in 3.502239ms, host fd 51, local 100.64.0.1:40006
+D0918 15:30:26.484072       1 urpc.go:302] urpc: handling RPC call for method Policy.Narrow
+I0918 15:30:26.484697       1 tunnel.go:304] tunnel narrow: fill10.peer-a:9002 at 100.64.1.11 is gone
+I0918 15:30:26.484835       1 tunnel.go:312] tunnel narrow: 10 of 11 names kept
+I0918 15:30:26.484879       1 policy.go:225] tunnel narrow: sha256=ae8cf7963a0c00401acf3319fc1b355060a4d1cdcdb6b5116457c230765d72ed n=10 of 11 names kept x=0 f=1
+I0918 15:30:26.484923       1 policy.go:230] tunnel narrow: applied in 587.406µs, of which the table swap was 205.967µs
+D0918 15:30:26.485096       1 urpc.go:372] urpc: RPC call for method Policy.Narrow succeeded.
+D0918 15:30:26.890265       1 urpc.go:302] urpc: handling RPC call for method Policy.Narrow
+I0918 15:30:26.892466       1 tunnel.go:304] tunnel narrow: fill09.peer-a:9002 at 100.64.1.10 is gone
+I0918 15:30:26.892668       1 tunnel.go:312] tunnel narrow: 9 of 10 names kept
+I0918 15:30:26.892791       1 policy.go:225] tunnel narrow: sha256=28110addb511da82f4c682fca0dc44e32a4214a9f42a88a31f07ca712d8cea67 n=9 of 10 names kept x=0 f=1
+I0918 15:30:26.893005       1 policy.go:230] tunnel narrow: applied in 2.558903ms, of which the table swap was 359.425µs
+D0918 15:30:26.893512       1 urpc.go:372] urpc: RPC call for method Policy.Narrow succeeded.
+D0918 15:30:27.298112       1 urpc.go:302] urpc: handling RPC call for method Policy.Narrow
+I0918 15:30:27.298952       1 tunnel.go:304] tunnel narrow: fill08.peer-a:9002 at 100.64.1.9 is gone
+I0918 15:30:27.299073       1 tunnel.go:312] tunnel narrow: 8 of 9 names kept
+I0918 15:30:27.299117       1 policy.go:225] tunnel narrow: sha256=370642596f8ac655178e6f5cb55604d55263ec05d2a2153108dd0977e8487e3c n=8 of 9 names kept x=0 f=1
+I0918 15:30:27.299174       1 policy.go:230] tunnel narrow: applied in 852.42µs, of which the table swap was 206.047µs
+D0918 15:30:27.299341       1 urpc.go:372] urpc: RPC call for method Policy.Narrow succeeded.
+D0918 15:30:27.703993       1 urpc.go:302] urpc: handling RPC call for method Policy.Narrow
+I0918 15:30:27.704386       1 tunnel.go:304] tunnel narrow: fill07.peer-a:9002 at 100.64.1.8 is gone
+I0918 15:30:27.704444       1 tunnel.go:312] tunnel narrow: 7 of 8 names kept
+I0918 15:30:27.704492       1 policy.go:225] tunnel narrow: sha256=b2ab3493900c5a150163ff11db10e8292fb30c5a0b9c4457f1124d5a48b5e61d n=7 of 8 names kept x=0 f=1
+I0918 15:30:27.704557       1 policy.go:230] tunnel narrow: applied in 473.956µs, of which the table swap was 129.633µs
+D0918 15:30:27.704688       1 urpc.go:372] urpc: RPC call for method Policy.Narrow succeeded.
+D0918 15:30:28.112117       1 urpc.go:302] urpc: handling RPC call for method Policy.Narrow
+I0918 15:30:28.112945       1 tunnel.go:304] tunnel narrow: fill06.peer-a:9002 at 100.64.1.7 is gone
+I0918 15:30:28.113021       1 tunnel.go:312] tunnel narrow: 6 of 7 names kept
+I0918 15:30:28.113065       1 policy.go:225] tunnel narrow: sha256=306d047b3d023b22ed227a923dcd5a07a4903662d33b48c4f3796f4854ac947f n=6 of 7 names kept x=0 f=1
+I0918 15:30:28.113114       1 policy.go:230] tunnel narrow: applied in 810.027µs, of which the table swap was 161.921µs
+D0918 15:30:28.113382       1 urpc.go:372] urpc: RPC call for method Policy.Narrow succeeded.
+D0918 15:30:28.519680       1 urpc.go:302] urpc: handling RPC call for method Policy.Narrow
+I0918 15:30:28.520275       1 tunnel.go:304] tunnel narrow: fill05.peer-a:9002 at 100.64.1.6 is gone
+I0918 15:30:28.520390       1 tunnel.go:312] tunnel narrow: 5 of 6 names kept
+I0918 15:30:28.520492       1 policy.go:225] tunnel narrow: sha256=e847df8a9f742351182a0aa652f6670d3fc0937ca7a48cddcd5c1e7c312286e4 n=5 of 6 names kept x=0 f=1
+I0918 15:30:28.520561       1 policy.go:230] tunnel narrow: applied in 686.844µs, of which the table swap was 249.131µs
+D0918 15:30:28.520838       1 urpc.go:372] urpc: RPC call for method Policy.Narrow succeeded.
+D0918 15:30:28.927367       1 urpc.go:302] urpc: handling RPC call for method Policy.Narrow
+I0918 15:30:28.927619       1 tunnel.go:304] tunnel narrow: fill04.peer-a:9002 at 100.64.1.5 is gone
+I0918 15:30:28.927649       1 tunnel.go:312] tunnel narrow: 4 of 5 names kept
+I0918 15:30:28.927671       1 policy.go:225] tunnel narrow: sha256=7798226221d33eb420400884d0f3c1f0533b41a326c0200ab877c39eccca551f n=4 of 5 names kept x=0 f=1
+I0918 15:30:28.927696       1 policy.go:230] tunnel narrow: applied in 270.653µs, of which the table swap was 76.094µs
+D0918 15:30:28.927872       1 urpc.go:372] urpc: RPC call for method Policy.Narrow succeeded.
+D0918 15:30:29.335655       1 urpc.go:302] urpc: handling RPC call for method Policy.Narrow
+I0918 15:30:29.336000       1 tunnel.go:304] tunnel narrow: fill03.peer-a:9002 at 100.64.1.4 is gone
+I0918 15:30:29.336083       1 tunnel.go:312] tunnel narrow: 3 of 4 names kept
+I0918 15:30:29.336116       1 policy.go:225] tunnel narrow: sha256=388165d9b99f0a934e7b6ac14ccad959a8b7c001bddfeff7a1fa9adb924280df n=3 of 4 names kept x=0 f=1
+I0918 15:30:29.336156       1 policy.go:230] tunnel narrow: applied in 381.509µs, of which the table swap was 126.188µs
+D0918 15:30:29.336284       1 urpc.go:372] urpc: RPC call for method Policy.Narrow succeeded.
+D0918 15:30:29.744094       1 urpc.go:302] urpc: handling RPC call for method Policy.Narrow
+I0918 15:30:29.744670       1 tunnel.go:304] tunnel narrow: fill02.peer-a:9002 at 100.64.1.3 is gone
+I0918 15:30:29.744831       1 tunnel.go:312] tunnel narrow: 2 of 3 names kept
+I0918 15:30:29.744951       1 policy.go:225] tunnel narrow: sha256=c7d003500e449f89ba21de6a7eadb2670ba81ae2f5411f591a3b545dbabdfced n=2 of 3 names kept x=0 f=1
+I0918 15:30:29.745055       1 policy.go:230] tunnel narrow: applied in 789.186µs, of which the table swap was 306.817µs
+D0918 15:30:29.745312       1 urpc.go:372] urpc: RPC call for method Policy.Narrow succeeded.
+D0918 15:30:30.151857       1 urpc.go:302] urpc: handling RPC call for method Policy.Narrow
+I0918 15:30:30.152333       1 tunnel.go:304] tunnel narrow: fill01.peer-a:9002 at 100.64.1.2 is gone
+I0918 15:30:30.152421       1 tunnel.go:312] tunnel narrow: 1 of 2 names kept
+I0918 15:30:30.152549       1 policy.go:225] tunnel narrow: sha256=1d58fd76365f344adb629e066e1efbe2972742afbf981792ec8b3e354773c1c2 n=1 of 2 names kept x=0 f=1
+I0918 15:30:30.152657       1 policy.go:230] tunnel narrow: applied in 663.128µs, of which the table swap was 248.53µs
+D0918 15:30:30.152935       1 urpc.go:372] urpc: RPC call for method Policy.Narrow succeeded.
+D0918 15:30:30.562820       1 urpc.go:302] urpc: handling RPC call for method Policy.Narrow
+W0918 15:30:30.564119       1 urpc.go:368] urpc: RPC call for method Policy.Narrow failed: policy refused: it widens n by [net:drop.peer-a:9001 net:fill01.peer-a:9002 net:fill02.peer-a:9002 net:fill03.peer-a:9002 net:fill04.peer-a:9002 net:fill05.peer-a:9002 net:fill06.peer-a:9002 net:fill07.peer-a:9002 net:fill08.peer-a:9002 net:fill09.peer-a:9002 net:fill10.peer-a:9002]
+D0918 15:30:35.382231       1 tunnel_endpoint.go:211] tunnel: host fd 49 closed
+D0918 15:30:38.911247       1 tunnel_endpoint.go:211] tunnel: host fd 51 closed
+I0918 15:30:39.907828       1 tunnel_dns.go:203] tunnel dns: q="drop.peer-a" type=A answer=nxdomain
+I0918 15:30:39.907937       1 tunnel.go:574] tunnel: refused dns :0 name="drop.peer-a" reason=unknown-name
+I0918 15:30:39.908472       1 tunnel_dns.go:203] tunnel dns: q="drop.peer-a" type=AAAA answer=nxdomain
+I0918 15:30:39.908548       1 tunnel.go:574] tunnel: refused dns :0 name="drop.peer-a" reason=unknown-name
+W0918 15:30:40.041579       1 tunnel_dns.go:122] tunnel resolver: read failed, the responder is going away: endpoint is closed for receive
+---- what the helper said ----
+D0918 15:30:07.761943  1719155 config.go:596] Config.CharacterDevicePolicy (--character-device-policy): emulated-only
+D0918 15:30:07.762422  1719155 config.go:596] Config.SidecarReleaseEnforcementPolicy (--sidecar-release-enforcement-policy): NEVER
+I0918 15:30:07.765333  1719155 tunnel_helper.go:104] Tunnel helper connected to tunneld at "/dev/shm/t26-e1-1719031/narrow-other.sock", control socket "/dev/shm/t26-e1-1719031/narrow-other-state/runsc-t26-e1-narrow-other-1719031.sock"
+I0918 15:30:07.985385  1719155 tunnel_helper.go:179] Tunnel helper: the sentry is enforcing a policy of 557 bytes, sha256=bf87b393abd236e24af5a38296693ece0367373dba3cfe34c45c3e9c1011f3b7, in 3.66422ms
+I0918 15:30:08.272031  1719155 tunnel_helper.go:380] Tunnel helper opened drop.peer-a:9001
+I0918 15:30:08.339330  1719155 tunnel_helper.go:380] Tunnel helper opened bulk.peer-a:9000
+I0918 15:30:22.382113  1719155 tunnel_helper.go:380] Tunnel helper opened bulk.peer-a:9000
+I0918 15:30:23.453959  1719155 tunnel_helper.go:380] Tunnel helper opened drop.peer-a:9001
+I0918 15:30:24.537518  1719155 tunnel_helper.go:380] Tunnel helper opened drop.peer-a:9001
+I0918 15:30:25.476041  1719155 tunnel_helper.go:179] Tunnel helper: the sentry is enforcing a policy of 519 bytes, sha256=3e8943258b5a10729ab029921dd09be78c61ca8d3e0abd960b0c3ee538dc80ec, in 1.874723ms
+I0918 15:30:25.921279  1719155 tunnel_helper.go:380] Tunnel helper opened bulk.peer-a:9000
+I0918 15:30:26.485829  1719155 tunnel_helper.go:179] Tunnel helper: the sentry is enforcing a policy of 479 bytes, sha256=ae8cf7963a0c00401acf3319fc1b355060a4d1cdcdb6b5116457c230765d72ed, in 2.638052ms
+I0918 15:30:26.894159  1719155 tunnel_helper.go:179] Tunnel helper: the sentry is enforcing a policy of 439 bytes, sha256=28110addb511da82f4c682fca0dc44e32a4214a9f42a88a31f07ca712d8cea67, in 4.899372ms
+I0918 15:30:27.299609  1719155 tunnel_helper.go:179] Tunnel helper: the sentry is enforcing a policy of 399 bytes, sha256=370642596f8ac655178e6f5cb55604d55263ec05d2a2153108dd0977e8487e3c, in 2.745452ms
+I0918 15:30:27.705009  1719155 tunnel_helper.go:179] Tunnel helper: the sentry is enforcing a policy of 359 bytes, sha256=b2ab3493900c5a150163ff11db10e8292fb30c5a0b9c4457f1124d5a48b5e61d, in 2.188191ms
+I0918 15:30:28.113548  1719155 tunnel_helper.go:179] Tunnel helper: the sentry is enforcing a policy of 319 bytes, sha256=306d047b3d023b22ed227a923dcd5a07a4903662d33b48c4f3796f4854ac947f, in 2.71071ms
+I0918 15:30:28.520954  1719155 tunnel_helper.go:179] Tunnel helper: the sentry is enforcing a policy of 279 bytes, sha256=e847df8a9f742351182a0aa652f6670d3fc0937ca7a48cddcd5c1e7c312286e4, in 2.533415ms
+I0918 15:30:28.928082  1719155 tunnel_helper.go:179] Tunnel helper: the sentry is enforcing a policy of 239 bytes, sha256=7798226221d33eb420400884d0f3c1f0533b41a326c0200ab877c39eccca551f, in 1.515238ms
+I0918 15:30:29.336521  1719155 tunnel_helper.go:179] Tunnel helper: the sentry is enforcing a policy of 199 bytes, sha256=388165d9b99f0a934e7b6ac14ccad959a8b7c001bddfeff7a1fa9adb924280df, in 1.870458ms
+I0918 15:30:29.745477  1719155 tunnel_helper.go:179] Tunnel helper: the sentry is enforcing a policy of 159 bytes, sha256=c7d003500e449f89ba21de6a7eadb2670ba81ae2f5411f591a3b545dbabdfced, in 2.58977ms
+I0918 15:30:30.153227  1719155 tunnel_helper.go:179] Tunnel helper: the sentry is enforcing a policy of 119 bytes, sha256=1d58fd76365f344adb629e066e1efbe2972742afbf981792ec8b3e354773c1c2, in 2.297815ms
+W0918 15:30:30.564424  1719155 tunnel_helper.go:176] Tunnel helper: the sentry refused a policy push of 557 bytes after 2.946532ms: policy refused: it widens n by [net:drop.peer-a:9001 net:fill01.peer-a:9002 net:fill02.peer-a:9002 net:fill03.peer-a:9002 net:fill04.peer-a:9002 net:fill05.peer-a:9002 net:fill06.peer-a:9002 net:fill07.peer-a:9002 net:fill08.peer-a:9002 net:fill09.peer-a:9002 net:fill10.peer-a:9002]
+D0918 15:30:40.069202  1719155 tunnel_helper.go:120] Tunnel helper: the sentry channel ended: EOF
+I0918 15:30:40.069273  1719155 tunnel_helper.go:122] Tunnel helper exiting: the sentry closed the channel
+I0918 15:30:40.069402  1719155 tunnel_helper.go:254] Tunnel helper: the tunneld socket is gone, so the sandbox stops saying it is alive
+---- sentry events ----
+listening on /dev/shm/t26-e1-1719031/narrow-other.events
+connected: the sentry speaks wire version 1
+egress_refused protocol=dns name=drop.peer-a reason=unknown-name time=2026-09-18T19:30:25.59446143Z
+egress_refused protocol=dns name=drop.peer-a reason=unknown-name time=2026-09-18T19:30:25.595283305Z
+egress_refused protocol=tcp address=100.64.1.1 port=9001 reason=not-in-table time=2026-09-18T19:30:25.691212943Z container_id=t26-e1-narrow-other-1719031 thread_id=34
+egress_refused protocol=dns name=drop.peer-a reason=unknown-name time=2026-09-18T19:30:25.841218931Z
+egress_refused protocol=dns name=drop.peer-a reason=unknown-name time=2026-09-18T19:30:25.841655491Z
+egress_refused protocol=dns name=drop.peer-a reason=unknown-name time=2026-09-18T19:30:39.907973646Z
+egress_refused protocol=dns name=drop.peer-a reason=unknown-name time=2026-09-18T19:30:39.908590105Z
+disconnected
+---- the policies pushed, with their digests ----
+p00-all.json  bf87b393abd236e24af5a38296693ece0367373dba3cfe34c45c3e9c1011f3b7
+  {"format":"policy","version":1,"n":[{"host":"bulk.peer-a","ports":[9000]},{"host":"drop.peer-a","ports":[9001]},{"host":"fill01.peer-a","ports":[9002]},{"host":"fill02.peer-a","ports":[9002]},{"host":"fill03.peer-a","ports":[9002]},{"host":"fill04.peer-a","ports":[9002]},{"host":"fill05.peer-a","ports":[9002]},{"host":"fill06.peer-a","ports":[9002]},{"host":"fill07.peer-a","ports":[9002]},{"host":"fill08.peer-a","ports":[9002]},{"host":"fill09.peer-a","ports":[9002]},{"host":"fill10.peer-a","ports":[9002]}],"f":[{"path":"/tmp","modes":["r"]}],"x":[]}
+p01-narrow.json  3e8943258b5a10729ab029921dd09be78c61ca8d3e0abd960b0c3ee538dc80ec
+  {"format":"policy","version":1,"n":[{"host":"bulk.peer-a","ports":[9000]},{"host":"fill01.peer-a","ports":[9002]},{"host":"fill02.peer-a","ports":[9002]},{"host":"fill03.peer-a","ports":[9002]},{"host":"fill04.peer-a","ports":[9002]},{"host":"fill05.peer-a","ports":[9002]},{"host":"fill06.peer-a","ports":[9002]},{"host":"fill07.peer-a","ports":[9002]},{"host":"fill08.peer-a","ports":[9002]},{"host":"fill09.peer-a","ports":[9002]},{"host":"fill10.peer-a","ports":[9002]}],"f":[{"path":"/tmp","modes":["r"]}],"x":[]}
+p02-drop-fill10.json  ae8cf7963a0c00401acf3319fc1b355060a4d1cdcdb6b5116457c230765d72ed
+  {"format":"policy","version":1,"n":[{"host":"bulk.peer-a","ports":[9000]},{"host":"fill01.peer-a","ports":[9002]},{"host":"fill02.peer-a","ports":[9002]},{"host":"fill03.peer-a","ports":[9002]},{"host":"fill04.peer-a","ports":[9002]},{"host":"fill05.peer-a","ports":[9002]},{"host":"fill06.peer-a","ports":[9002]},{"host":"fill07.peer-a","ports":[9002]},{"host":"fill08.peer-a","ports":[9002]},{"host":"fill09.peer-a","ports":[9002]}],"f":[{"path":"/tmp","modes":["r"]}],"x":[]}
+p03-drop-fill09.json  28110addb511da82f4c682fca0dc44e32a4214a9f42a88a31f07ca712d8cea67
+  {"format":"policy","version":1,"n":[{"host":"bulk.peer-a","ports":[9000]},{"host":"fill01.peer-a","ports":[9002]},{"host":"fill02.peer-a","ports":[9002]},{"host":"fill03.peer-a","ports":[9002]},{"host":"fill04.peer-a","ports":[9002]},{"host":"fill05.peer-a","ports":[9002]},{"host":"fill06.peer-a","ports":[9002]},{"host":"fill07.peer-a","ports":[9002]},{"host":"fill08.peer-a","ports":[9002]}],"f":[{"path":"/tmp","modes":["r"]}],"x":[]}
+p04-drop-fill08.json  370642596f8ac655178e6f5cb55604d55263ec05d2a2153108dd0977e8487e3c
+  {"format":"policy","version":1,"n":[{"host":"bulk.peer-a","ports":[9000]},{"host":"fill01.peer-a","ports":[9002]},{"host":"fill02.peer-a","ports":[9002]},{"host":"fill03.peer-a","ports":[9002]},{"host":"fill04.peer-a","ports":[9002]},{"host":"fill05.peer-a","ports":[9002]},{"host":"fill06.peer-a","ports":[9002]},{"host":"fill07.peer-a","ports":[9002]}],"f":[{"path":"/tmp","modes":["r"]}],"x":[]}
+p05-drop-fill07.json  b2ab3493900c5a150163ff11db10e8292fb30c5a0b9c4457f1124d5a48b5e61d
+  {"format":"policy","version":1,"n":[{"host":"bulk.peer-a","ports":[9000]},{"host":"fill01.peer-a","ports":[9002]},{"host":"fill02.peer-a","ports":[9002]},{"host":"fill03.peer-a","ports":[9002]},{"host":"fill04.peer-a","ports":[9002]},{"host":"fill05.peer-a","ports":[9002]},{"host":"fill06.peer-a","ports":[9002]}],"f":[{"path":"/tmp","modes":["r"]}],"x":[]}
+p06-drop-fill06.json  306d047b3d023b22ed227a923dcd5a07a4903662d33b48c4f3796f4854ac947f
+  {"format":"policy","version":1,"n":[{"host":"bulk.peer-a","ports":[9000]},{"host":"fill01.peer-a","ports":[9002]},{"host":"fill02.peer-a","ports":[9002]},{"host":"fill03.peer-a","ports":[9002]},{"host":"fill04.peer-a","ports":[9002]},{"host":"fill05.peer-a","ports":[9002]}],"f":[{"path":"/tmp","modes":["r"]}],"x":[]}
+p07-drop-fill05.json  e847df8a9f742351182a0aa652f6670d3fc0937ca7a48cddcd5c1e7c312286e4
+  {"format":"policy","version":1,"n":[{"host":"bulk.peer-a","ports":[9000]},{"host":"fill01.peer-a","ports":[9002]},{"host":"fill02.peer-a","ports":[9002]},{"host":"fill03.peer-a","ports":[9002]},{"host":"fill04.peer-a","ports":[9002]}],"f":[{"path":"/tmp","modes":["r"]}],"x":[]}
+p08-drop-fill04.json  7798226221d33eb420400884d0f3c1f0533b41a326c0200ab877c39eccca551f
+  {"format":"policy","version":1,"n":[{"host":"bulk.peer-a","ports":[9000]},{"host":"fill01.peer-a","ports":[9002]},{"host":"fill02.peer-a","ports":[9002]},{"host":"fill03.peer-a","ports":[9002]}],"f":[{"path":"/tmp","modes":["r"]}],"x":[]}
+p09-drop-fill03.json  388165d9b99f0a934e7b6ac14ccad959a8b7c001bddfeff7a1fa9adb924280df
+  {"format":"policy","version":1,"n":[{"host":"bulk.peer-a","ports":[9000]},{"host":"fill01.peer-a","ports":[9002]},{"host":"fill02.peer-a","ports":[9002]}],"f":[{"path":"/tmp","modes":["r"]}],"x":[]}
+p10-drop-fill02.json  c7d003500e449f89ba21de6a7eadb2670ba81ae2f5411f591a3b545dbabdfced
+  {"format":"policy","version":1,"n":[{"host":"bulk.peer-a","ports":[9000]},{"host":"fill01.peer-a","ports":[9002]}],"f":[{"path":"/tmp","modes":["r"]}],"x":[]}
+p11-drop-fill01.json  1d58fd76365f344adb629e066e1efbe2972742afbf981792ec8b3e354773c1c2
+  {"format":"policy","version":1,"n":[{"host":"bulk.peer-a","ports":[9000]}],"f":[{"path":"/tmp","modes":["r"]}],"x":[]}
+p99-widen.json  bf87b393abd236e24af5a38296693ece0367373dba3cfe34c45c3e9c1011f3b7
+  {"format":"policy","version":1,"n":[{"host":"bulk.peer-a","ports":[9000]},{"host":"drop.peer-a","ports":[9001]},{"host":"fill01.peer-a","ports":[9002]},{"host":"fill02.peer-a","ports":[9002]},{"host":"fill03.peer-a","ports":[9002]},{"host":"fill04.peer-a","ports":[9002]},{"host":"fill05.peer-a","ports":[9002]},{"host":"fill06.peer-a","ports":[9002]},{"host":"fill07.peer-a","ports":[9002]},{"host":"fill08.peer-a","ports":[9002]},{"host":"fill09.peer-a","ports":[9002]},{"host":"fill10.peer-a","ports":[9002]}],"f":[{"path":"/tmp","modes":["r"]}],"x":[]}
+
+===== narrow-self =====
+table: {"default_exit":"b","names":{"bulk.peer-a":{"port":9000},"drop.peer-a":{"port":9001},"fill01.peer-a":{"port":9002},"fill02.peer-a":{"port":9002},"fill03.peer-a":{"port":9002},"fill04.peer-a":{"port":9002},"fill05.peer-a":{"port":9002},"fill06.peer-a":{"port":9002},"fill07.peer-a":{"port":9002},"fill08.peer-a":{"port":9002},"fill09.peer-a":{"port":9002},"fill10.peer-a":{"port":9002}}} 
+$ /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/runsc --root=/dev/shm/t26-e1-1719031/narrow-self-state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new --tunnel-socket=/dev/shm/t26-e1-1719031/narrow-self.sock --tunnel-table=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-self/table.json --pod-init-config=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-self/pod-init.json --debug --debug-log=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-self/logs/ run --bundle /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-self/bundle t26-e1-narrow-self-1719031
+the adapter was installed: ready=1 after 4 tenths of a second
+the workload's long stream is running: flowing=1 after 125 tenths of a second
+RUNSC_EXIT=0
+---- what the workload said ----
+/e1-workload.sh: line 13: /bin/busybox: File name too long
+workload: start 19:30:42
+workload: BEFORE resolve bulk.peer-a: Server:		127.0.0.53 Address:	127.0.0.53:53  Name:	bulk.peer-a Address: 100.64.1.0   
+workload: BEFORE resolve drop.peer-a: Server:		127.0.0.53 Address:	127.0.0.53:53  Name:	drop.peer-a Address: 100.64.1.1   
+workload: BEFORE GET http://drop.peer-a:9001/ rc=0 out='this is drop.peer-a:9001'
+workload: LONG STARTED pid=18 at 19:30:56
+workload: LONG COMPLETE bytes=16777216 expected=16777216 at 19:31:09
+workload: NARROWED bulk.peer-a:9000 stopped resolving on attempt 2 at 19:31:11: wget: bad address 'bulk.peer-a:9000'
+workload: AFTER GET the removed name's old address http://100.64.1.0:9000/ rc=1 out='wget: can't connect to remote host (100.64.1.0): Network is unreachable'
+workload: AFTER resolve bulk.peer-a: Server:		127.0.0.53 Address:	127.0.0.53:53  ** server can't find bulk.peer-a: NXDOMAIN  ** server can't find bulk.peer-a: NXDOMAIN  
+workload: AFTER resolve drop.peer-a: Server:		127.0.0.53 Address:	127.0.0.53:53  Name:	drop.peer-a Address: 100.64.1.1   
+workload: AFTER GET http://bulk.peer-a:9000/ rc=1 out='wget: bad address 'bulk.peer-a:9000''
+workload: AFTER GET http://drop.peer-a:9001/ rc=0 out='this is drop.peer-a:9001'
+workload: waiting for the long stream (pid 18) at 19:31:12
+workload: === done 19:31:12 ===
+---- what the stand-in said ----
+faketunneld: 2026/09/18 19:30:41.488228 exit listening on 127.0.0.1:36989, allow=map[bulk.peer-a:9000:true drop.peer-a:9001:true fill01.peer-a:9002:true], slow="bulk.peer-a:9000" (16777216 bytes, 65536 per 50ms)
+faketunneld: 2026/09/18 19:30:41.489834 serving the sandbox socket at /dev/shm/t26-e1-1719031/narrow-self.sock, peer="b"
+faketunneld: 2026/09/18 19:30:41.751010 SANDBOX attached on /dev/shm/t26-e1-1719031/narrow-self.sock
+faketunneld: 2026/09/18 19:30:41.976686 SANDBOX applied format=policy version=1 bytes=557 sha256=bf87b393abd236e24af5a38296693ece0367373dba3cfe34c45c3e9c1011f3b7
+faketunneld: 2026/09/18 19:30:41.976955 APPLY /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-self/policies/p00-all.json ACK elapsed=42.656382ms bytes=557
+faketunneld: 2026/09/18 19:30:42.316307 EXIT drop.peer-a:9001 served a short page for "GET / HTTP/1.1"
+faketunneld: 2026/09/18 19:30:42.381682 EXIT bulk.peer-a:9000 serving 16777216 bytes slowly for "GET / HTTP/1.1"
+faketunneld: 2026/09/18 19:30:55.441158 EXIT bulk.peer-a:9000 finished after 16777216 of 16777216 bytes
+faketunneld: 2026/09/18 19:30:56.396568 EXIT bulk.peer-a:9000 serving 16777216 bytes slowly for "GET /big HTTP/1.1"
+faketunneld: 2026/09/18 19:30:57.470615 EXIT bulk.peer-a:9000 serving 16777216 bytes slowly for "GET / HTTP/1.1"
+faketunneld: 2026/09/18 19:30:59.449467 MARK ---- the narrowing goes in now, with the stream in flight ----
+faketunneld: 2026/09/18 19:30:59.454565 SANDBOX applied format=policy version=1 bytes=519 sha256=15d361b88f4a3e722e7c43bbdf656dbd0c28a18fa43e0c0dece1009a52b1cbc9
+faketunneld: 2026/09/18 19:30:59.454691 APPLY /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-self/policies/p01-narrow.json ACK elapsed=4.363473ms bytes=519
+faketunneld: 2026/09/18 19:31:00.461957 SANDBOX applied format=policy version=1 bytes=479 sha256=7a7a68343f6ba8714705469af9621ccbeaea25ac44fa4eb1c8b35a9a2025f911
+faketunneld: 2026/09/18 19:31:00.462013 APPLY /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-self/policies/p02-drop-fill10.json ACK elapsed=3.367159ms bytes=479
+faketunneld: 2026/09/18 19:31:00.871446 SANDBOX applied format=policy version=1 bytes=439 sha256=1bb97f72e6b3beddda4a3c63b57edc48b8bfc8bcbd1aa4cda96e13f11bf55ca6
+faketunneld: 2026/09/18 19:31:00.871577 APPLY /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-self/policies/p03-drop-fill09.json ACK elapsed=4.078108ms bytes=439
+faketunneld: 2026/09/18 19:31:01.276569 SANDBOX applied format=policy version=1 bytes=399 sha256=cb1efff0cf9c95d673e81fa6681a98cd89b78ca8f57f4f7579f5a32ae03e58d2
+faketunneld: 2026/09/18 19:31:01.276770 APPLY /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-self/policies/p04-drop-fill08.json ACK elapsed=2.588458ms bytes=399
+faketunneld: 2026/09/18 19:31:01.683087 SANDBOX applied format=policy version=1 bytes=359 sha256=e2d2b57128ae782b893c3cd1ccb4d2f97cc18f1194acc062f7780e017489c80f
+faketunneld: 2026/09/18 19:31:01.683173 APPLY /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-self/policies/p05-drop-fill07.json ACK elapsed=2.34908ms bytes=359
+faketunneld: 2026/09/18 19:31:02.090602 SANDBOX applied format=policy version=1 bytes=319 sha256=56f3b9d68a9da3244e9354ef5c5f8ea295378a220866935c7587d670afb7a84c
+faketunneld: 2026/09/18 19:31:02.090651 APPLY /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-self/policies/p06-drop-fill06.json ACK elapsed=3.966862ms bytes=319
+faketunneld: 2026/09/18 19:31:02.499954 SANDBOX applied format=policy version=1 bytes=279 sha256=24929bff4cabca4ffb21bd9954b36788c100661f58c08e145eb9281ee671f74e
+faketunneld: 2026/09/18 19:31:02.500038 APPLY /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-self/policies/p07-drop-fill05.json ACK elapsed=3.498884ms bytes=279
+faketunneld: 2026/09/18 19:31:02.907257 SANDBOX applied format=policy version=1 bytes=239 sha256=5070bc522de013aa25824a4fa87a64a1b504e4282d753021f070242404782fb4
+faketunneld: 2026/09/18 19:31:02.907336 APPLY /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-self/policies/p08-drop-fill04.json ACK elapsed=3.232047ms bytes=239
+faketunneld: 2026/09/18 19:31:03.314393 SANDBOX applied format=policy version=1 bytes=199 sha256=624ca5c9fd8bcaa8c124cc19fb26a3b9293e896d52cb5a91ace743c77fe54ce2
+faketunneld: 2026/09/18 19:31:03.314463 APPLY /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-self/policies/p09-drop-fill03.json ACK elapsed=3.248591ms bytes=199
+faketunneld: 2026/09/18 19:31:03.721266 SANDBOX applied format=policy version=1 bytes=159 sha256=433cd47673734d0d06fcc3fe086d988501e5b5ba65f4125ed4e46d92bcb42fd4
+faketunneld: 2026/09/18 19:31:03.721320 APPLY /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-self/policies/p10-drop-fill02.json ACK elapsed=3.474999ms bytes=159
+faketunneld: 2026/09/18 19:31:04.128251 SANDBOX applied format=policy version=1 bytes=119 sha256=84ba3bde8af51a6a4d003315fa5af033a57ecbcf725f0d501ac59d1d39a403d9
+faketunneld: 2026/09/18 19:31:04.128348 APPLY /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-self/policies/p11-drop-fill01.json ACK elapsed=3.513877ms bytes=119
+faketunneld: 2026/09/18 19:31:04.532498 MARK ---- and one that widens ----
+faketunneld: 2026/09/18 19:31:04.544232 APPLY /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-self/policies/p99-widen.json REFUSED elapsed=11.348423ms err=sandbox: policy refused: the sandbox refused it: policy refused: it widens n by [net:bulk.peer-a:9000 net:fill01.peer-a:9002 net:fill02.peer-a:9002 net:fill03.peer-a:9002 net:fill04.peer-a:9002 net:fill05.peer-a:9002 net:fill06.peer-a:9002 net:fill07.peer-a:9002 net:fill08.peer-a:9002 net:fill09.peer-a:9002 net:fill10.peer-a:9002]
+faketunneld: 2026/09/18 19:31:09.451364 EXIT bulk.peer-a:9000 finished after 16777216 of 16777216 bytes
+faketunneld: 2026/09/18 19:31:10.522147 EXIT bulk.peer-a:9000 finished after 16777216 of 16777216 bytes
+faketunneld: 2026/09/18 19:31:12.112768 EXIT drop.peer-a:9001 served a short page for "GET / HTTP/1.1"
+faketunneld: 2026/09/18 19:31:12.330952 exiting on command
+---- the sentry on the tunnel and the narrowings ----
+I0918 15:30:41.779422       1 cli.go:278] Args: [runsc-sandbox --platform=systrap --ignore-cgroups=true --tunnel-socket=/dev/shm/t26-e1-1719031/narrow-self.sock --debug=true --network=none --gofer-network-namespace=new --rootless=true --pod-init-config=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-self/pod-init.json --tunnel-table=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-self/table.json --root=/dev/shm/t26-e1-1719031/narrow-self-state --debug-log=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-self/logs/ --debug-log-fd=3 boot --bundle=/tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-self/bundle --gofer-mount-confs=lisafs:none --apply-caps=true --setup-root --total-host-memory 807732506624 --total-memory 807732506624 --attached --io-fds=4 --dev-io-fd=-1 --mounts-fd=5 --start-sync-fd=6 --pin-ring-fd=7 --controller-fd=8 --spec-fd=9 --pod-init-config-fd=10 --sink-fds=11 --tunnel-table-fd=12 --tunnel-fd=13 --stdio-fds=14 --stdio-fds=15 --stdio-fds=16 t26-e1-narrow-self-1719031]
+D0918 15:30:41.780300       1 config.go:596] Config.CharacterDevicePolicy (--character-device-policy): emulated-only
+D0918 15:30:41.780850       1 config.go:596] Config.SidecarReleaseEnforcementPolicy (--sidecar-release-enforcement-policy): NEVER
+D0918 15:30:41.782529       1 config.go:596] Config.TunnelSocket (--tunnel-socket): /dev/shm/t26-e1-1719031/narrow-self.sock
+D0918 15:30:41.782550       1 config.go:596] Config.TunnelTable (--tunnel-table): /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/e1work/narrow-self/table.json
+I0918 15:30:41.896718       1 tunnel.go:227] Tunnel table read: 12 names, helper channel on fd 13
+D0918 15:30:41.896843       1 timing.go:125] Timer for runsc boot: Timeline runsc boot reached midpoint tunnel table read at 15:30:41.896834558 (unix nanos: 1789759841896834558)
+I0918 15:30:41.911321       1 tunnel.go:245] tunnel: bulk.peer-a:9000 is 100.64.1.0, dialled by peer "b"
+I0918 15:30:41.911583       1 tunnel.go:245] tunnel: drop.peer-a:9001 is 100.64.1.1, dialled by peer "b"
+I0918 15:30:41.911657       1 tunnel.go:245] tunnel: fill01.peer-a:9002 is 100.64.1.2, dialled by peer "b"
+I0918 15:30:41.911731       1 tunnel.go:245] tunnel: fill02.peer-a:9002 is 100.64.1.3, dialled by peer "b"
+I0918 15:30:41.911903       1 tunnel.go:245] tunnel: fill03.peer-a:9002 is 100.64.1.4, dialled by peer "b"
+I0918 15:30:41.911974       1 tunnel.go:245] tunnel: fill04.peer-a:9002 is 100.64.1.5, dialled by peer "b"
+I0918 15:30:41.912034       1 tunnel.go:245] tunnel: fill05.peer-a:9002 is 100.64.1.6, dialled by peer "b"
+I0918 15:30:41.912100       1 tunnel.go:245] tunnel: fill06.peer-a:9002 is 100.64.1.7, dialled by peer "b"
+I0918 15:30:41.912157       1 tunnel.go:245] tunnel: fill07.peer-a:9002 is 100.64.1.8, dialled by peer "b"
+I0918 15:30:41.912217       1 tunnel.go:245] tunnel: fill08.peer-a:9002 is 100.64.1.9, dialled by peer "b"
+I0918 15:30:41.912274       1 tunnel.go:245] tunnel: fill09.peer-a:9002 is 100.64.1.10, dialled by peer "b"
+I0918 15:30:41.912336       1 tunnel.go:245] tunnel: fill10.peer-a:9002 is 100.64.1.11, dialled by peer "b"
+I0918 15:30:41.912610       1 tunnel.go:262] tunnel: installed with 12 names, resolver on 127.0.0.53:53
+I0918 15:30:41.912705       1 tunnel.go:246] Tunnel adapter installed with 12 names
+D0918 15:30:41.939805       1 urpc.go:302] urpc: handling RPC call for method Policy.Narrow
+[15:30:41.896834]	 +1 614µs ▌           	├─ tunnel table read: 1 614µs        
+I0918 15:30:41.974503       1 tunnel.go:312] tunnel narrow: 12 of 12 names kept
+I0918 15:30:41.974633       1 policy.go:225] tunnel narrow: sha256=bf87b393abd236e24af5a38296693ece0367373dba3cfe34c45c3e9c1011f3b7 n=12 of 12 names kept x=0 f=1
+I0918 15:30:41.974766       1 policy.go:230] tunnel narrow: applied in 1.685462ms, of which the table swap was 175.862µs
+D0918 15:30:41.975149       1 urpc.go:372] urpc: RPC call for method Policy.Narrow succeeded.
+D0918 15:30:41.975324       1 timing.go:875] Timer for runsc boot: time 1789759841896834558 15:30:41.896834558 mid runsc boot = tunnel table read
+I0918 15:30:42.149904       1 tunnel_dns.go:203] tunnel dns: q="bulk.peer-a" type=A answer=100.64.1.0
+I0918 15:30:42.150382       1 tunnel_dns.go:203] tunnel dns: q="bulk.peer-a" type=AAAA answer=noerror-empty
+I0918 15:30:42.239800       1 tunnel_dns.go:203] tunnel dns: q="drop.peer-a" type=A answer=100.64.1.1
+I0918 15:30:42.240193       1 tunnel_dns.go:203] tunnel dns: q="drop.peer-a" type=AAAA answer=noerror-empty
+I0918 15:30:42.306002       1 tunnel_dns.go:203] tunnel dns: q="drop.peer-a" type=A answer=100.64.1.1
+I0918 15:30:42.306323       1 tunnel_dns.go:203] tunnel dns: q="drop.peer-a" type=AAAA answer=noerror-empty
+I0918 15:30:42.314956       1 tunnel.go:467] tunnel attach: drop.peer-a:9001 -> peer "b": ok in 5.832913ms, host fd 45, local 100.64.0.1:40001
+D0918 15:30:42.317981       1 tunnel_endpoint.go:211] tunnel: host fd 45 closed
+I0918 15:30:42.373503       1 tunnel_dns.go:203] tunnel dns: q="bulk.peer-a" type=A answer=100.64.1.0
+I0918 15:30:42.373816       1 tunnel_dns.go:203] tunnel dns: q="bulk.peer-a" type=AAAA answer=noerror-empty
+I0918 15:30:42.380829       1 tunnel.go:467] tunnel attach: bulk.peer-a:9000 -> peer "b": ok in 4.047052ms, host fd 46, local 100.64.0.1:40002
+D0918 15:30:55.391533       1 tunnel_endpoint.go:211] tunnel: host fd 46 closed
+I0918 15:30:56.388815       1 tunnel_dns.go:203] tunnel dns: q="bulk.peer-a" type=A answer=100.64.1.0
+I0918 15:30:56.389105       1 tunnel_dns.go:203] tunnel dns: q="bulk.peer-a" type=AAAA answer=noerror-empty
+I0918 15:30:56.395322       1 tunnel.go:467] tunnel attach: bulk.peer-a:9000 -> peer "b": ok in 3.202092ms, host fd 48, local 100.64.0.1:40003
+I0918 15:30:57.460576       1 tunnel_dns.go:203] tunnel dns: q="bulk.peer-a" type=A answer=100.64.1.0
+I0918 15:30:57.460828       1 tunnel_dns.go:203] tunnel dns: q="bulk.peer-a" type=AAAA answer=noerror-empty
+I0918 15:30:57.468947       1 tunnel.go:467] tunnel attach: bulk.peer-a:9000 -> peer "b": ok in 3.878781ms, host fd 49, local 100.64.0.1:40004
+D0918 15:30:59.452237       1 urpc.go:302] urpc: handling RPC call for method Policy.Narrow
+I0918 15:30:59.452910       1 tunnel.go:304] tunnel narrow: bulk.peer-a:9000 at 100.64.1.0 is gone
+I0918 15:30:59.453079       1 tunnel.go:312] tunnel narrow: 11 of 12 names kept
+I0918 15:30:59.453192       1 policy.go:225] tunnel narrow: sha256=15d361b88f4a3e722e7c43bbdf656dbd0c28a18fa43e0c0dece1009a52b1cbc9 n=11 of 12 names kept x=0 f=1
+I0918 15:30:59.453333       1 policy.go:230] tunnel narrow: applied in 965.199µs, of which the table swap was 382.26µs
+D0918 15:30:59.453721       1 urpc.go:372] urpc: RPC call for method Policy.Narrow succeeded.
+D0918 15:31:00.460228       1 urpc.go:302] urpc: handling RPC call for method Policy.Narrow
+I0918 15:31:00.460854       1 tunnel.go:304] tunnel narrow: fill10.peer-a:9002 at 100.64.1.11 is gone
+I0918 15:31:00.460973       1 tunnel.go:312] tunnel narrow: 10 of 11 names kept
+I0918 15:31:00.461040       1 policy.go:225] tunnel narrow: sha256=7a7a68343f6ba8714705469af9621ccbeaea25ac44fa4eb1c8b35a9a2025f911 n=10 of 11 names kept x=0 f=1
+I0918 15:31:00.461142       1 policy.go:230] tunnel narrow: applied in 794.725µs, of which the table swap was 235.171µs
+D0918 15:31:00.461350       1 urpc.go:372] urpc: RPC call for method Policy.Narrow succeeded.
+D0918 15:31:00.869205       1 urpc.go:302] urpc: handling RPC call for method Policy.Narrow
+I0918 15:31:00.869892       1 tunnel.go:304] tunnel narrow: fill09.peer-a:9002 at 100.64.1.10 is gone
+I0918 15:31:00.869984       1 tunnel.go:312] tunnel narrow: 9 of 10 names kept
+I0918 15:31:00.870046       1 policy.go:225] tunnel narrow: sha256=1bb97f72e6b3beddda4a3c63b57edc48b8bfc8bcbd1aa4cda96e13f11bf55ca6 n=9 of 10 names kept x=0 f=1
+I0918 15:31:00.870121       1 policy.go:230] tunnel narrow: applied in 772.291µs, of which the table swap was 202.592µs
+D0918 15:31:00.870351       1 urpc.go:372] urpc: RPC call for method Policy.Narrow succeeded.
+D0918 15:31:01.275450       1 urpc.go:302] urpc: handling RPC call for method Policy.Narrow
+I0918 15:31:01.275665       1 tunnel.go:304] tunnel narrow: fill08.peer-a:9002 at 100.64.1.9 is gone
+I0918 15:31:01.275690       1 tunnel.go:312] tunnel narrow: 8 of 9 names kept
+I0918 15:31:01.275708       1 policy.go:225] tunnel narrow: sha256=cb1efff0cf9c95d673e81fa6681a98cd89b78ca8f57f4f7579f5a32ae03e58d2 n=8 of 9 names kept x=0 f=1
+I0918 15:31:01.275729       1 policy.go:230] tunnel narrow: applied in 228.931µs, of which the table swap was 56.885µs
+D0918 15:31:01.275844       1 urpc.go:372] urpc: RPC call for method Policy.Narrow succeeded.
+D0918 15:31:01.681920       1 urpc.go:302] urpc: handling RPC call for method Policy.Narrow
+I0918 15:31:01.682279       1 tunnel.go:304] tunnel narrow: fill07.peer-a:9002 at 100.64.1.8 is gone
+I0918 15:31:01.682321       1 tunnel.go:312] tunnel narrow: 7 of 8 names kept
+I0918 15:31:01.682354       1 policy.go:225] tunnel narrow: sha256=e2d2b57128ae782b893c3cd1ccb4d2f97cc18f1194acc062f7780e017489c80f n=7 of 8 names kept x=0 f=1
+I0918 15:31:01.682393       1 policy.go:230] tunnel narrow: applied in 384.493µs, of which the table swap was 100.119µs
+D0918 15:31:01.682517       1 urpc.go:372] urpc: RPC call for method Policy.Narrow succeeded.
+D0918 15:31:02.087867       1 urpc.go:302] urpc: handling RPC call for method Policy.Narrow
+I0918 15:31:02.089114       1 tunnel.go:304] tunnel narrow: fill06.peer-a:9002 at 100.64.1.7 is gone
+I0918 15:31:02.089200       1 tunnel.go:312] tunnel narrow: 6 of 7 names kept
+I0918 15:31:02.089621       1 policy.go:225] tunnel narrow: sha256=56f3b9d68a9da3244e9354ef5c5f8ea295378a220866935c7587d670afb7a84c n=6 of 7 names kept x=0 f=1
+I0918 15:31:02.089714       1 policy.go:230] tunnel narrow: applied in 1.719663ms, of which the table swap was 1.292266ms
+D0918 15:31:02.090049       1 urpc.go:372] urpc: RPC call for method Policy.Narrow succeeded.
+D0918 15:31:02.498257       1 urpc.go:302] urpc: handling RPC call for method Policy.Narrow
+I0918 15:31:02.498769       1 tunnel.go:304] tunnel narrow: fill05.peer-a:9002 at 100.64.1.6 is gone
+I0918 15:31:02.498843       1 tunnel.go:312] tunnel narrow: 5 of 6 names kept
+I0918 15:31:02.498885       1 policy.go:225] tunnel narrow: sha256=24929bff4cabca4ffb21bd9954b36788c100661f58c08e145eb9281ee671f74e n=5 of 6 names kept x=0 f=1
+I0918 15:31:02.498935       1 policy.go:230] tunnel narrow: applied in 520.897µs, of which the table swap was 177.966µs
+D0918 15:31:02.499088       1 urpc.go:372] urpc: RPC call for method Policy.Narrow succeeded.
+D0918 15:31:02.905541       1 urpc.go:302] urpc: handling RPC call for method Policy.Narrow
+I0918 15:31:02.905991       1 tunnel.go:304] tunnel narrow: fill04.peer-a:9002 at 100.64.1.5 is gone
+I0918 15:31:02.906064       1 tunnel.go:312] tunnel narrow: 4 of 5 names kept
+I0918 15:31:02.906107       1 policy.go:225] tunnel narrow: sha256=5070bc522de013aa25824a4fa87a64a1b504e4282d753021f070242404782fb4 n=4 of 5 names kept x=0 f=1
+I0918 15:31:02.906161       1 policy.go:230] tunnel narrow: applied in 509.99µs, of which the table swap was 130.614µs
+D0918 15:31:02.906322       1 urpc.go:372] urpc: RPC call for method Policy.Narrow succeeded.
+D0918 15:31:03.312936       1 urpc.go:302] urpc: handling RPC call for method Policy.Narrow
+I0918 15:31:03.313334       1 tunnel.go:304] tunnel narrow: fill03.peer-a:9002 at 100.64.1.4 is gone
+I0918 15:31:03.313391       1 tunnel.go:312] tunnel narrow: 3 of 4 names kept
+I0918 15:31:03.313432       1 policy.go:225] tunnel narrow: sha256=624ca5c9fd8bcaa8c124cc19fb26a3b9293e896d52cb5a91ace743c77fe54ce2 n=3 of 4 names kept x=0 f=1
+I0918 15:31:03.313476       1 policy.go:230] tunnel narrow: applied in 445.504µs, of which the table swap was 122.102µs
+D0918 15:31:03.313658       1 urpc.go:372] urpc: RPC call for method Policy.Narrow succeeded.
+D0918 15:31:03.719267       1 urpc.go:302] urpc: handling RPC call for method Policy.Narrow
+I0918 15:31:03.719730       1 tunnel.go:304] tunnel narrow: fill02.peer-a:9002 at 100.64.1.3 is gone
+I0918 15:31:03.719885       1 tunnel.go:312] tunnel narrow: 2 of 3 names kept
+I0918 15:31:03.719994       1 policy.go:225] tunnel narrow: sha256=433cd47673734d0d06fcc3fe086d988501e5b5ba65f4125ed4e46d92bcb42fd4 n=2 of 3 names kept x=0 f=1
+I0918 15:31:03.720069       1 policy.go:230] tunnel narrow: applied in 678.761µs, of which the table swap was 293.778µs
+D0918 15:31:03.720208       1 urpc.go:372] urpc: RPC call for method Policy.Narrow succeeded.
+D0918 15:31:04.126468       1 urpc.go:302] urpc: handling RPC call for method Policy.Narrow
+I0918 15:31:04.127070       1 tunnel.go:304] tunnel narrow: fill01.peer-a:9002 at 100.64.1.2 is gone
+I0918 15:31:04.127161       1 tunnel.go:312] tunnel narrow: 1 of 2 names kept
+I0918 15:31:04.127234       1 policy.go:225] tunnel narrow: sha256=84ba3bde8af51a6a4d003315fa5af033a57ecbcf725f0d501ac59d1d39a403d9 n=1 of 2 names kept x=0 f=1
+I0918 15:31:04.127317       1 policy.go:230] tunnel narrow: applied in 673.233µs, of which the table swap was 190.795µs
+D0918 15:31:04.127545       1 urpc.go:372] urpc: RPC call for method Policy.Narrow succeeded.
+D0918 15:31:04.534356       1 urpc.go:302] urpc: handling RPC call for method Policy.Narrow
+W0918 15:31:04.535076       1 urpc.go:368] urpc: RPC call for method Policy.Narrow failed: policy refused: it widens n by [net:bulk.peer-a:9000 net:fill01.peer-a:9002 net:fill02.peer-a:9002 net:fill03.peer-a:9002 net:fill04.peer-a:9002 net:fill05.peer-a:9002 net:fill06.peer-a:9002 net:fill07.peer-a:9002 net:fill08.peer-a:9002 net:fill09.peer-a:9002 net:fill10.peer-a:9002]
+D0918 15:31:09.402021       1 tunnel_endpoint.go:211] tunnel: host fd 48 closed
+D0918 15:31:10.472178       1 tunnel_endpoint.go:211] tunnel: host fd 49 closed
+I0918 15:31:11.765012       1 tunnel_dns.go:203] tunnel dns: q="bulk.peer-a" type=A answer=nxdomain
+I0918 15:31:11.765120       1 tunnel.go:574] tunnel: refused dns :0 name="bulk.peer-a" reason=unknown-name
+I0918 15:31:11.766423       1 tunnel_dns.go:203] tunnel dns: q="bulk.peer-a" type=AAAA answer=nxdomain
+I0918 15:31:11.766539       1 tunnel.go:574] tunnel: refused dns :0 name="bulk.peer-a" reason=unknown-name
+I0918 15:31:11.848319       1 tunnel.go:574] tunnel: refused tcp 100.64.1.0:9000 name="" reason=not-in-table
+I0918 15:31:11.909725       1 tunnel_dns.go:203] tunnel dns: q="bulk.peer-a" type=A answer=nxdomain
+I0918 15:31:11.909807       1 tunnel.go:574] tunnel: refused dns :0 name="bulk.peer-a" reason=unknown-name
+I0918 15:31:11.910141       1 tunnel_dns.go:203] tunnel dns: q="bulk.peer-a" type=AAAA answer=nxdomain
+I0918 15:31:11.910244       1 tunnel.go:574] tunnel: refused dns :0 name="bulk.peer-a" reason=unknown-name
+I0918 15:31:11.983433       1 tunnel_dns.go:203] tunnel dns: q="drop.peer-a" type=A answer=100.64.1.1
+I0918 15:31:11.983789       1 tunnel_dns.go:203] tunnel dns: q="drop.peer-a" type=AAAA answer=noerror-empty
+I0918 15:31:12.046815       1 tunnel_dns.go:203] tunnel dns: q="bulk.peer-a" type=A answer=nxdomain
+I0918 15:31:12.046936       1 tunnel.go:574] tunnel: refused dns :0 name="bulk.peer-a" reason=unknown-name
+I0918 15:31:12.047224       1 tunnel_dns.go:203] tunnel dns: q="bulk.peer-a" type=AAAA answer=nxdomain
+I0918 15:31:12.047305       1 tunnel.go:574] tunnel: refused dns :0 name="bulk.peer-a" reason=unknown-name
+I0918 15:31:12.104069       1 tunnel_dns.go:203] tunnel dns: q="drop.peer-a" type=A answer=100.64.1.1
+I0918 15:31:12.104363       1 tunnel_dns.go:203] tunnel dns: q="drop.peer-a" type=AAAA answer=noerror-empty
+I0918 15:31:12.111533       1 tunnel.go:467] tunnel attach: drop.peer-a:9001 -> peer "b": ok in 3.875776ms, host fd 48, local 100.64.0.1:40005
+D0918 15:31:12.114164       1 tunnel_endpoint.go:211] tunnel: host fd 48 closed
+W0918 15:31:12.263167       1 tunnel_dns.go:122] tunnel resolver: read failed, the responder is going away: endpoint is closed for receive
+---- what the helper said ----
+D0918 15:30:41.748015  1720498 config.go:596] Config.CharacterDevicePolicy (--character-device-policy): emulated-only
+D0918 15:30:41.748578  1720498 config.go:596] Config.SidecarReleaseEnforcementPolicy (--sidecar-release-enforcement-policy): NEVER
+I0918 15:30:41.750847  1720498 tunnel_helper.go:104] Tunnel helper connected to tunneld at "/dev/shm/t26-e1-1719031/narrow-self.sock", control socket "/dev/shm/t26-e1-1719031/narrow-self-state/runsc-t26-e1-narrow-self-1719031.sock"
+I0918 15:30:41.975692  1720498 tunnel_helper.go:179] Tunnel helper: the sentry is enforcing a policy of 557 bytes, sha256=bf87b393abd236e24af5a38296693ece0367373dba3cfe34c45c3e9c1011f3b7, in 39.658744ms
+I0918 15:30:42.314304  1720498 tunnel_helper.go:380] Tunnel helper opened drop.peer-a:9001
+I0918 15:30:42.380408  1720498 tunnel_helper.go:380] Tunnel helper opened bulk.peer-a:9000
+I0918 15:30:56.394840  1720498 tunnel_helper.go:380] Tunnel helper opened bulk.peer-a:9000
+I0918 15:30:57.468184  1720498 tunnel_helper.go:380] Tunnel helper opened bulk.peer-a:9000
+I0918 15:30:59.454064  1720498 tunnel_helper.go:179] Tunnel helper: the sentry is enforcing a policy of 519 bytes, sha256=15d361b88f4a3e722e7c43bbdf656dbd0c28a18fa43e0c0dece1009a52b1cbc9, in 3.18686ms
+I0918 15:31:00.461520  1720498 tunnel_helper.go:179] Tunnel helper: the sentry is enforcing a policy of 479 bytes, sha256=7a7a68343f6ba8714705469af9621ccbeaea25ac44fa4eb1c8b35a9a2025f911, in 2.451533ms
+I0918 15:31:00.870828  1720498 tunnel_helper.go:179] Tunnel helper: the sentry is enforcing a policy of 439 bytes, sha256=1bb97f72e6b3beddda4a3c63b57edc48b8bfc8bcbd1aa4cda96e13f11bf55ca6, in 2.695286ms
+I0918 15:31:01.276112  1720498 tunnel_helper.go:179] Tunnel helper: the sentry is enforcing a policy of 399 bytes, sha256=cb1efff0cf9c95d673e81fa6681a98cd89b78ca8f57f4f7579f5a32ae03e58d2, in 1.445313ms
+I0918 15:31:01.682607  1720498 tunnel_helper.go:179] Tunnel helper: the sentry is enforcing a policy of 359 bytes, sha256=e2d2b57128ae782b893c3cd1ccb4d2f97cc18f1194acc062f7780e017489c80f, in 1.49688ms
+I0918 15:31:02.090172  1720498 tunnel_helper.go:179] Tunnel helper: the sentry is enforcing a policy of 319 bytes, sha256=56f3b9d68a9da3244e9354ef5c5f8ea295378a220866935c7587d670afb7a84c, in 3.097596ms
+I0918 15:31:02.499384  1720498 tunnel_helper.go:179] Tunnel helper: the sentry is enforcing a policy of 279 bytes, sha256=24929bff4cabca4ffb21bd9954b36788c100661f58c08e145eb9281ee671f74e, in 2.224095ms
+I0918 15:31:02.906559  1720498 tunnel_helper.go:179] Tunnel helper: the sentry is enforcing a policy of 239 bytes, sha256=5070bc522de013aa25824a4fa87a64a1b504e4282d753021f070242404782fb4, in 2.042393ms
+I0918 15:31:03.313846  1720498 tunnel_helper.go:179] Tunnel helper: the sentry is enforcing a policy of 199 bytes, sha256=624ca5c9fd8bcaa8c124cc19fb26a3b9293e896d52cb5a91ace743c77fe54ce2, in 2.008153ms
+I0918 15:31:03.720698  1720498 tunnel_helper.go:179] Tunnel helper: the sentry is enforcing a policy of 159 bytes, sha256=433cd47673734d0d06fcc3fe086d988501e5b5ba65f4125ed4e46d92bcb42fd4, in 2.327679ms
+I0918 15:31:04.127711  1720498 tunnel_helper.go:179] Tunnel helper: the sentry is enforcing a policy of 119 bytes, sha256=84ba3bde8af51a6a4d003315fa5af033a57ecbcf725f0d501ac59d1d39a403d9, in 2.47638ms
+W0918 15:31:04.543922  1720498 tunnel_helper.go:176] Tunnel helper: the sentry refused a policy push of 557 bytes after 10.557084ms: policy refused: it widens n by [net:bulk.peer-a:9000 net:fill01.peer-a:9002 net:fill02.peer-a:9002 net:fill03.peer-a:9002 net:fill04.peer-a:9002 net:fill05.peer-a:9002 net:fill06.peer-a:9002 net:fill07.peer-a:9002 net:fill08.peer-a:9002 net:fill09.peer-a:9002 net:fill10.peer-a:9002]
+I0918 15:31:12.111007  1720498 tunnel_helper.go:380] Tunnel helper opened drop.peer-a:9001
+D0918 15:31:12.288382  1720498 tunnel_helper.go:120] Tunnel helper: the sentry channel ended: EOF
+I0918 15:31:12.288487  1720498 tunnel_helper.go:122] Tunnel helper exiting: the sentry closed the channel
+I0918 15:31:12.288667  1720498 tunnel_helper.go:254] Tunnel helper: the tunneld socket is gone, so the sandbox stops saying it is alive
+---- sentry events ----
+listening on /dev/shm/t26-e1-1719031/narrow-self.events
+connected: the sentry speaks wire version 1
+egress_refused protocol=dns name=bulk.peer-a reason=unknown-name time=2026-09-18T19:31:11.7651621Z
+egress_refused protocol=dns name=bulk.peer-a reason=unknown-name time=2026-09-18T19:31:11.766633302Z
+egress_refused protocol=tcp address=100.64.1.0 port=9000 reason=not-in-table time=2026-09-18T19:31:11.848347672Z container_id=t26-e1-narrow-self-1719031 thread_id=35
+egress_refused protocol=dns name=bulk.peer-a reason=unknown-name time=2026-09-18T19:31:11.909872426Z
+egress_refused protocol=dns name=bulk.peer-a reason=unknown-name time=2026-09-18T19:31:11.910299432Z
+egress_refused protocol=dns name=bulk.peer-a reason=unknown-name time=2026-09-18T19:31:12.046971489Z
+egress_refused protocol=dns name=bulk.peer-a reason=unknown-name time=2026-09-18T19:31:12.047343604Z
+disconnected
+---- the policies pushed, with their digests ----
+p00-all.json  bf87b393abd236e24af5a38296693ece0367373dba3cfe34c45c3e9c1011f3b7
+  {"format":"policy","version":1,"n":[{"host":"bulk.peer-a","ports":[9000]},{"host":"drop.peer-a","ports":[9001]},{"host":"fill01.peer-a","ports":[9002]},{"host":"fill02.peer-a","ports":[9002]},{"host":"fill03.peer-a","ports":[9002]},{"host":"fill04.peer-a","ports":[9002]},{"host":"fill05.peer-a","ports":[9002]},{"host":"fill06.peer-a","ports":[9002]},{"host":"fill07.peer-a","ports":[9002]},{"host":"fill08.peer-a","ports":[9002]},{"host":"fill09.peer-a","ports":[9002]},{"host":"fill10.peer-a","ports":[9002]}],"f":[{"path":"/tmp","modes":["r"]}],"x":[]}
+p01-narrow.json  15d361b88f4a3e722e7c43bbdf656dbd0c28a18fa43e0c0dece1009a52b1cbc9
+  {"format":"policy","version":1,"n":[{"host":"drop.peer-a","ports":[9001]},{"host":"fill01.peer-a","ports":[9002]},{"host":"fill02.peer-a","ports":[9002]},{"host":"fill03.peer-a","ports":[9002]},{"host":"fill04.peer-a","ports":[9002]},{"host":"fill05.peer-a","ports":[9002]},{"host":"fill06.peer-a","ports":[9002]},{"host":"fill07.peer-a","ports":[9002]},{"host":"fill08.peer-a","ports":[9002]},{"host":"fill09.peer-a","ports":[9002]},{"host":"fill10.peer-a","ports":[9002]}],"f":[{"path":"/tmp","modes":["r"]}],"x":[]}
+p02-drop-fill10.json  7a7a68343f6ba8714705469af9621ccbeaea25ac44fa4eb1c8b35a9a2025f911
+  {"format":"policy","version":1,"n":[{"host":"drop.peer-a","ports":[9001]},{"host":"fill01.peer-a","ports":[9002]},{"host":"fill02.peer-a","ports":[9002]},{"host":"fill03.peer-a","ports":[9002]},{"host":"fill04.peer-a","ports":[9002]},{"host":"fill05.peer-a","ports":[9002]},{"host":"fill06.peer-a","ports":[9002]},{"host":"fill07.peer-a","ports":[9002]},{"host":"fill08.peer-a","ports":[9002]},{"host":"fill09.peer-a","ports":[9002]}],"f":[{"path":"/tmp","modes":["r"]}],"x":[]}
+p03-drop-fill09.json  1bb97f72e6b3beddda4a3c63b57edc48b8bfc8bcbd1aa4cda96e13f11bf55ca6
+  {"format":"policy","version":1,"n":[{"host":"drop.peer-a","ports":[9001]},{"host":"fill01.peer-a","ports":[9002]},{"host":"fill02.peer-a","ports":[9002]},{"host":"fill03.peer-a","ports":[9002]},{"host":"fill04.peer-a","ports":[9002]},{"host":"fill05.peer-a","ports":[9002]},{"host":"fill06.peer-a","ports":[9002]},{"host":"fill07.peer-a","ports":[9002]},{"host":"fill08.peer-a","ports":[9002]}],"f":[{"path":"/tmp","modes":["r"]}],"x":[]}
+p04-drop-fill08.json  cb1efff0cf9c95d673e81fa6681a98cd89b78ca8f57f4f7579f5a32ae03e58d2
+  {"format":"policy","version":1,"n":[{"host":"drop.peer-a","ports":[9001]},{"host":"fill01.peer-a","ports":[9002]},{"host":"fill02.peer-a","ports":[9002]},{"host":"fill03.peer-a","ports":[9002]},{"host":"fill04.peer-a","ports":[9002]},{"host":"fill05.peer-a","ports":[9002]},{"host":"fill06.peer-a","ports":[9002]},{"host":"fill07.peer-a","ports":[9002]}],"f":[{"path":"/tmp","modes":["r"]}],"x":[]}
+p05-drop-fill07.json  e2d2b57128ae782b893c3cd1ccb4d2f97cc18f1194acc062f7780e017489c80f
+  {"format":"policy","version":1,"n":[{"host":"drop.peer-a","ports":[9001]},{"host":"fill01.peer-a","ports":[9002]},{"host":"fill02.peer-a","ports":[9002]},{"host":"fill03.peer-a","ports":[9002]},{"host":"fill04.peer-a","ports":[9002]},{"host":"fill05.peer-a","ports":[9002]},{"host":"fill06.peer-a","ports":[9002]}],"f":[{"path":"/tmp","modes":["r"]}],"x":[]}
+p06-drop-fill06.json  56f3b9d68a9da3244e9354ef5c5f8ea295378a220866935c7587d670afb7a84c
+  {"format":"policy","version":1,"n":[{"host":"drop.peer-a","ports":[9001]},{"host":"fill01.peer-a","ports":[9002]},{"host":"fill02.peer-a","ports":[9002]},{"host":"fill03.peer-a","ports":[9002]},{"host":"fill04.peer-a","ports":[9002]},{"host":"fill05.peer-a","ports":[9002]}],"f":[{"path":"/tmp","modes":["r"]}],"x":[]}
+p07-drop-fill05.json  24929bff4cabca4ffb21bd9954b36788c100661f58c08e145eb9281ee671f74e
+  {"format":"policy","version":1,"n":[{"host":"drop.peer-a","ports":[9001]},{"host":"fill01.peer-a","ports":[9002]},{"host":"fill02.peer-a","ports":[9002]},{"host":"fill03.peer-a","ports":[9002]},{"host":"fill04.peer-a","ports":[9002]}],"f":[{"path":"/tmp","modes":["r"]}],"x":[]}
+p08-drop-fill04.json  5070bc522de013aa25824a4fa87a64a1b504e4282d753021f070242404782fb4
+  {"format":"policy","version":1,"n":[{"host":"drop.peer-a","ports":[9001]},{"host":"fill01.peer-a","ports":[9002]},{"host":"fill02.peer-a","ports":[9002]},{"host":"fill03.peer-a","ports":[9002]}],"f":[{"path":"/tmp","modes":["r"]}],"x":[]}
+p09-drop-fill03.json  624ca5c9fd8bcaa8c124cc19fb26a3b9293e896d52cb5a91ace743c77fe54ce2
+  {"format":"policy","version":1,"n":[{"host":"drop.peer-a","ports":[9001]},{"host":"fill01.peer-a","ports":[9002]},{"host":"fill02.peer-a","ports":[9002]}],"f":[{"path":"/tmp","modes":["r"]}],"x":[]}
+p10-drop-fill02.json  433cd47673734d0d06fcc3fe086d988501e5b5ba65f4125ed4e46d92bcb42fd4
+  {"format":"policy","version":1,"n":[{"host":"drop.peer-a","ports":[9001]},{"host":"fill01.peer-a","ports":[9002]}],"f":[{"path":"/tmp","modes":["r"]}],"x":[]}
+p11-drop-fill01.json  84ba3bde8af51a6a4d003315fa5af033a57ecbcf725f0d501ac59d1d39a403d9
+  {"format":"policy","version":1,"n":[{"host":"drop.peer-a","ports":[9001]}],"f":[{"path":"/tmp","modes":["r"]}],"x":[]}
+p99-widen.json  bf87b393abd236e24af5a38296693ece0367373dba3cfe34c45c3e9c1011f3b7
+  {"format":"policy","version":1,"n":[{"host":"bulk.peer-a","ports":[9000]},{"host":"drop.peer-a","ports":[9001]},{"host":"fill01.peer-a","ports":[9002]},{"host":"fill02.peer-a","ports":[9002]},{"host":"fill03.peer-a","ports":[9002]},{"host":"fill04.peer-a","ports":[9002]},{"host":"fill05.peer-a","ports":[9002]},{"host":"fill06.peer-a","ports":[9002]},{"host":"fill07.peer-a","ports":[9002]},{"host":"fill08.peer-a","ports":[9002]},{"host":"fill09.peer-a","ports":[9002]},{"host":"fill10.peer-a","ports":[9002]}],"f":[{"path":"/tmp","modes":["r"]}],"x":[]}
+
+===== E1 complete =====

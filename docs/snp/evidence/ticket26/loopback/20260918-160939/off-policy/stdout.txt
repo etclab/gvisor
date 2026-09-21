@@ -1,0 +1,4 @@
+PLAIN no contract, no dialer of this program's own, net/http's default transport and the ordinary resolver; proxy variables set in this environment: none
+model=claude-sonnet-5 max_tokens=4096 endpoint=https://api.anthropic.com/v1/messages
+task=summarize
+prompt="Fetch the document at https://www.rfc-editor.org/rfc/rfc8446.txt, write a summary of it in at most five sentences, and save the summary to the file summary.txt in the current directory using write_file. Then reply with the word DONE."

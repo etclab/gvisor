@@ -1,0 +1,17 @@
+# ticket 26, policy: the registers each boot reported.
+#
+# RTMR2 is the only one that had to be PREDICTED; MRTD, RTMR0 and RTMR1 are the
+# provider's constants for this shape and are pinned from observation. This is the
+# first run of this project on a THREE-disk shape whose RTMR0 the set names.
+
+predicted rtmr2 (both guests): 7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1
+guest a
+  quoted rtmr2 : 7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1
+  quoted mrtd  : c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+  quoted rtmr0 : 8ee4fa3614e96b5c7cdacf52675c069e9de399a3688f83510a9bc3b4180e0e8f06c427eab69fcb4deff05203c0b70a3f
+  quoted rtmr1 : 02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b
+guest b
+  quoted rtmr2 : 7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1
+  quoted mrtd  : c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+  quoted rtmr0 : 8ee4fa3614e96b5c7cdacf52675c069e9de399a3688f83510a9bc3b4180e0e8f06c427eab69fcb4deff05203c0b70a3f
+  quoted rtmr1 : 02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b

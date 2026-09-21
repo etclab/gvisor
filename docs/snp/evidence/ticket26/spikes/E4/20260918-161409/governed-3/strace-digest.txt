@@ -1,0 +1,115 @@
+# what runsc.log.20260918-161348.292131.boot.txt says
+
+The sentry's debug log with --strace, read once. Counts are of exit
+lines, so an entry with no exit — a syscall the process was still in when it ended — is not here.
+
+## what the adapter said
+
+tunnel narrow: http-intake.logs.us5.datadoghq.com:443 at 100.64.1.1 is gone
+tunnel narrow: 1 of 2 names kept
+tunnel narrow: sha256=b12101796a563ae0fb48eb1657bf1441f017e84191ef3803eb5a754db8cba86d n=1 of 2 names kept x=0 f=0
+tunnel narrow: applied in 1.322892ms, of which the table swap was 530.771µs
+tunnel dns: q="api.anthropic.com" type=A answer=100.64.1.0
+tunnel dns: q="api.anthropic.com" type=AAAA answer=noerror-empty
+tunnel attach: api.anthropic.com:443 -> peer "b": ok in 15.528474ms, host fd 67, local 100.64.0.1:40001
+tunnel dns: q="api.anthropic.com" type=A answer=100.64.1.0
+tunnel dns: q="api.anthropic.com" type=AAAA answer=noerror-empty
+tunnel attach: api.anthropic.com:443 -> peer "b": ok in 16.560203ms, host fd 71, local 100.64.0.1:40002
+tunnel attach: api.anthropic.com:443 -> peer "b": ok in 15.652219ms, host fd 72, local 100.64.0.1:40003
+tunnel dns: q="api.anthropic.com" type=A answer=100.64.1.0
+tunnel dns: q="api.anthropic.com" type=AAAA answer=noerror-empty
+tunnel attach: api.anthropic.com:443 -> peer "b": ok in 15.392101ms, host fd 80, local 100.64.0.1:40004
+tunnel dns: q="api.anthropic.com" type=A answer=100.64.1.0
+tunnel dns: q="api.anthropic.com" type=AAAA answer=noerror-empty
+tunnel attach: api.anthropic.com:443 -> peer "b": ok in 15.769394ms, host fd 82, local 100.64.0.1:40005
+tunnel attach: api.anthropic.com:443 -> peer "b": ok in 15.096711ms, host fd 83, local 100.64.0.1:40006
+tunnel attach: api.anthropic.com:443 -> peer "b": ok in 14.722483ms, host fd 84, local 100.64.0.1:40007
+tunnel attach: api.anthropic.com:443 -> peer "b": ok in 15.800039ms, host fd 85, local 100.64.0.1:40008
+tunnel dns: q="http-intake.logs.us5.datadoghq.com" type=A answer=nxdomain
+tunnel: refused dns :0 name="http-intake.logs.us5.datadoghq.com" reason=unknown-name
+tunnel dns: q="http-intake.logs.us5.datadoghq.com" type=AAAA answer=nxdomain
+tunnel: refused dns :0 name="http-intake.logs.us5.datadoghq.com" reason=unknown-name
+
+## what ran
+
+    8832  claude
+    7499  HeapHelper
+    1036  mi-scavenger
+     830  2
+     684  0
+     651  1
+     540  JITWorker
+     351  3
+     321  4
+     312  JSCWarmUp
+     286  git
+     156  Client
+     112  5
+       9  fs.watch
+
+## syscalls that failed
+
+     276  openat errno=2 (no such file or directory)
+     262  statx errno=2 (no such file or directory)
+     150  futex errno=11 (try again)
+     130  futex errno=110 (connection timed out)
+      52  newfstatat errno=2 (no such file or directory)
+      43  access errno=2 (no such file or directory)
+      27  mkdir errno=17 (file exists)
+      22  ioctl errno=25 (not a typewriter)
+      21  stat errno=2 (no such file or directory)
+      14  readlink errno=22 (invalid argument)
+      14  recvfrom errno=11 (request would block)
+      14  rt_sigaction errno=22 (invalid argument)
+       9  futex errno=512 (to be restarted if SA_RESTART is set)
+       8  futex errno=516 (interrupted by signal)
+       8  rseq errno=38 (invalid system call number)
+       4  mkdir errno=2 (no such file or directory)
+       4  open errno=2 (no such file or directory)
+       4  unlink errno=2 (no such file or directory)
+       3  readlink errno=2 (no such file or directory)
+       2  connect errno=2 (no such file or directory)
+       2  madvise errno=22 (invalid argument)
+       1  copy_file_range errno=38 (invalid system call number)
+       1  epoll_pwait errno=4 (request was interrupted)
+       1  ioctl errno=95 (operation not supported on transport endpoint)
+       1  openat errno=20 (not a directory)
+       1  read errno=512 (to be restarted if SA_RESTART is set)
+       1  rename errno=2 (no such file or directory)
+       1  statx errno=14 (bad address)
+       1  unlinkat errno=21 (is a directory)
+
+## syscalls the sentry does not implement
+
+       1  copy_file_range
+       1  rseq
+
+## socket families
+
+      13  AF_INET
+       5  AF_NETLINK
+       3  AF_UNIX
+
+## datagrams and connects to 127.0.0.53:53
+
+15
+
+## every execve
+
+execve(0x336802d3870 /usr/bin/git, 0x3367ef1a1e0 ["git", "-c", "core.hooksPath=/dev/null", "-c", "core.fsmonitor=", "-C", "/work", "ls-files", "--error-unmatch", "--", ":(icase).claude/settings.local.json"] <env>)
+execve(0x336802d5c60 /usr/bin/git, 0x33674f79240 ["/usr/bin/git", "-c", "core.askPass=", "-c", "protocol.ext.allow=never", "-c", "submodule.recurse=false", "-c", "log.showSignature=false", "-c", "gc.auto=0", "-c", "maintenance.auto=false", "-c", "core.hooksPath=/dev/null", "-c", "core.fsmonitor=", "remote", "get-url", "origin"] <env>)
+execve(0x336802d8530 /usr/bin/git, 0x3367e889420 ["/usr/bin/git", "-c", "core.askPass=", "-c", "protocol.ext.allow=never", "-c", "submodule.recurse=false", "-c", "log.showSignature=false", "-c", "gc.auto=0", "-c", "maintenance.auto=false", "-c", "core.hooksPath=/dev/null", "-c", "core.fsmonitor=", "remote"] <env>)
+execve(0x3367ea47c60 /usr/local/bin/claude, 0x3367ea47c40 ["rg", "--version"] <env>)
+execve(0x3367ea48700 /usr/local/bin/claude, 0x3367b304980 ["rg", "--no-config", "--files", "--hidden", "--no-ignore", "--max-depth", "4", "--glob", ".orphaned_at", "/home/agent/.claude/plugins/cache"] <env>)
+execve(0x3367ea4ae80 /usr/local/bin/claude, 0x3367ea214c0 ["rg", "--no-config", "--files", "--hidden", "/work"] <env>)
+execve(0x336809deb00 /usr/bin/git, 0x3367f59e770 ["git", "-c", "core.hooksPath=/dev/null", "-c", "core.fsmonitor=", "-C", "/work", "ls-files", "--error-unmatch", "--", ":(icase).claude/settings.local.json"] <env>)
+
+## every bind and listen
+
+bind(0xb socket:[1], 0x7f576de48018 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (150.074µs)
+bind(0xc socket:[6], 0x7f576de47f58 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (8.984µs)
+bind(0x10 socket:[26], 0x7f576e9d0f58 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (9.154µs)
+bind(0x12 socket:[29], 0x7f07b8efcf72 {Family: AF_UNIX, Addr: "/tmp/cc-socks/1.sock"}, 0x6e) = 0 (0x0) (63.775µs)
+listen(0x12 socket:[29], 0x200) = 0 (0x0) (15.353µs)
+bind(0x11 socket:[30], 0x7f576de47f58 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (11.207µs)
+bind(0x12 socket:[50], 0x7f576d234f58 {Family: AF_NETLINK, PortID: 0, Groups: 0}, 0xc) = 0 (0x0) (13.4µs)

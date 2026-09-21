@@ -60,6 +60,17 @@ type ExecveHashCache struct {
 	opts     ExecveHashOptions
 	entries  map[ExecveKey]*list.Element
 	lru      *list.List
+
+	// hits and misses count what Lookup answered. They exist because the
+	// cost of the execve point is the cost of hashing a binary, and the
+	// hashing only happens on a miss: without these two numbers "the exec
+	// sink costs X" is a statement about a workload's exec pattern rather
+	// than about the sink. Counted under the same lock as everything else
+	// here, which Lookup already takes.
+	// +checklocks:mu
+	hits uint64
+	// +checklocks:mu
+	misses uint64
 }
 
 // NewExecveHashCache constructs a new ExecveHashCache with the specified capacity and options.
@@ -102,9 +113,19 @@ func (c *ExecveHashCache) Lookup(key ExecveKey) (ExecveHashes, bool) {
 			SHA256: append([]byte(nil), e.hashes.SHA256...),
 			SHA1:   append([]byte(nil), e.hashes.SHA1...),
 		}
+		c.hits++
 		return h, true
 	}
+	c.misses++
 	return ExecveHashes{}, false
+}
+
+// Stats returns how many lookups this cache answered from what it held and how
+// many it did not.
+func (c *ExecveHashCache) Stats() (hits, misses uint64) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.hits, c.misses
 }
 
 // Add updates or inserts digests into the cache for key, evicting the least recently used

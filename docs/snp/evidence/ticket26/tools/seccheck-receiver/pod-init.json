@@ -1,0 +1,21 @@
+{
+	"trace_session": {
+		"name": "Default",
+		"points": [
+			{
+				"name": "sentry/egress_refused",
+				"context_fields": ["time", "container_id", "thread_id"]
+			}
+		],
+		"sinks": [
+			{
+				"name": "remote",
+				"config": {
+					"endpoint": "/run/user/1000/t25-events.sock",
+					"retries": 3
+				},
+				"ignore_setup_error": true
+			}
+		]
+	}
+}

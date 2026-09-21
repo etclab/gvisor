@@ -1,0 +1,15 @@
+=== RUN   TestE3
+=== RUN   TestE3/cost
+2026/09/18 14:33:58 failed to sufficiently increase receive buffer size (was: 208 kiB, wanted: 7168 kiB, got: 416 kiB). See https://github.com/quic-go/quic-go/wiki/UDP-Buffer-Sizes for details.
+    e3_spike_test.go:100: E3-cost: idle CPU with nothing attached: 614µs over 10s
+    e3_spike_test.go:106: E3-cost: CPU with one attachment pulsing at 1 Hz: 3.167ms over 10s
+    e3_spike_test.go:107: E3-cost: receive side, 10 pulses at 1 Hz: 255.3µs of CPU each
+    e3_spike_test.go:114: E3-cost: receive side, a burst of 10000: 507.197ms of CPU over 500.54665ms wall (50.719µs of CPU each, 50.054µs of wall each)
+    e3_spike_test.go:116: E3-cost: the sandbox said:
+        === RUN   TestE3Child
+        E3-child: send side, 10000 pulses in 306.831361ms (30.683µs each on average)
+        E3-child: send side per pulse: min=5.087µs p50=17.015µs p90=35.213µs p99=84.727µs max=14.797646ms mean=30.174µs
+--- PASS: TestE3 (20.74s)
+    --- PASS: TestE3/cost (20.74s)
+PASS
+ok  	gvisor.dev/gvisor/attest/tunneld	20.802s

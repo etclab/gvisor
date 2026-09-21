@@ -32,6 +32,7 @@ const (
 	PointTaskExit
 	PointMmap
 	PointEgressRefused
+	PointExecRefused
 
 	// Add new Points above this line.
 	pointLengthBeforeSyscalls
@@ -342,6 +343,11 @@ func genericInit() {
 	registerPoint(PointDesc{
 		ID:            PointEgressRefused,
 		Name:          "sentry/egress_refused",
+		ContextFields: defaultContextFields,
+	})
+	registerPoint(PointDesc{
+		ID:            PointExecRefused,
+		Name:          "sentry/exec_refused",
 		ContextFields: defaultContextFields,
 	})
 }

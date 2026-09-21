@@ -67,6 +67,13 @@ const conventionalSandboxSocket = "/run/tunneld/sandbox.sock"
 // boundary to whatever attached and comes back as that sandbox's answer — and a
 // host with nobody attached refuses it, which is the honest reply to a peer
 // asking whether its policy landed.
+//
+// And it decides, without a third branch, which tunnels are watched for
+// liveness (contract v3). A [sandbox.Host] says whether the sandbox behind it is
+// still enforcing what it acknowledged, so a tunneld given a socket closes a
+// tunnel whose sandbox has stopped; the in-process null sandbox does not and is
+// not watched, because it is this process and there is nothing to lose. Nothing
+// here asks for either: the interface is on the sandbox, and tunneld looks.
 func attachSandbox(ctx context.Context, td *tunneld.Tunneld, socket, sandboxID string, logf func(string, ...any)) (sandbox.Sandbox, func()) {
 	null := sandbox.NewNull(td, logf)
 	box := tunneld.PolicyChecked(null)

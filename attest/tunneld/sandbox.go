@@ -118,9 +118,26 @@ func (c *Channel) OpenStream(ctx context.Context) (*tunnel.Stream, error) {
 // beside a particular tunneld happened to make of a document it could not read.
 // What tunneld does not do is read any further. `n`, `f` and `x` are the
 // sandbox's or nobody's.
-func PolicyChecked(s sandbox.Sandbox) sandbox.Sandbox { return checked{s} }
+// What it does carry across is liveness. A sandbox that says which policy it is
+// enforcing ([sandbox.Live]) is still one after it has been wrapped, because
+// the thing tunneld watches after a push is the thing it pushed to; a sandbox
+// that does not is not made to look as though it does. The two wrappers are
+// what keeps that a fact about the sandbox rather than about the wrapper — an
+// embedded interface promotes only its own methods, so a single wrapper would
+// either hide liveness from every sandbox or claim it for every sandbox.
+func PolicyChecked(s sandbox.Sandbox) sandbox.Sandbox {
+	if live, ok := s.(sandbox.Live); ok {
+		return checkedLive{checked{s}, live}
+	}
+	return checked{s}
+}
 
 type checked struct{ sandbox.Sandbox }
+
+type checkedLive struct {
+	checked
+	sandbox.Live
+}
 
 func (c checked) Apply(ctx context.Context, policy []byte) error {
 	if _, err := sandbox.ReadEnvelope(policy); err != nil {

@@ -1,0 +1,12 @@
+=== RUN   TestE3
+=== RUN   TestE3/drift
+2026/09/18 14:34:20 failed to sufficiently increase receive buffer size (was: 208 kiB, wanted: 7168 kiB, got: 416 kiB). See https://github.com/quic-go/quic-go/wiki/UDP-Buffer-Sizes for details.
+    e3_spike_test.go:134: E3-drift: 60 pulses, sent and received: 1m0.250239781s of wall (250.239781ms of drift, at most 250ms of it the watch's granularity)
+    e3_spike_test.go:136: E3-drift: the sandbox said:
+        === RUN   TestE3Child
+        E3-child: ticker, 60 ticks of 1s: 1m0.000165439s elapsed, 165.439µs of cumulative drift, worst lateness 2.865325ms
+        E3-child: ticker interval: min=997.904068ms p50=1.000028394s max=1.002242084s
+--- PASS: TestE3 (60.46s)
+    --- PASS: TestE3/drift (60.46s)
+PASS
+ok  	gvisor.dev/gvisor/attest/tunneld	60.533s

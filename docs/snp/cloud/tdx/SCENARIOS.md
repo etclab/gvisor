@@ -27,7 +27,8 @@ measurements.
 
 ```
 mrtd   c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
-rtmr0  c2fc12a52db868515eff7c657e42ce04b0b7363fa6ddf7c1cca87aa8e6a061a11f9981924a600ad6d2232f75182a850a
+rtmr0  c2fc12a52db868515eff7c657e42ce04b0b7363fa6ddf7c1cca87aa8e6a061a11f9981924a600ad6d2232f75182a850a   (two disks: boot + config)
+rtmr0  8ee4fa3614e96b5c7cdacf52675c069e9de399a3688f83510a9bc3b4180e0e8f06c427eab69fcb4deff05203c0b70a3f   (three disks: boot + config + workload, ticket 26)
 rtmr1  02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b   (first boot)
        3a446943925fef7f1682fd54e1b6697df864692e28592ec373860d1868582ac14ca3029c48282eb964868a785bafd691   (every boot after)
 ```
@@ -123,8 +124,11 @@ type=pd-balanced,device-name=attested-config,auto-delete=yes \
   --labels purpose=attested-tunnel-t19
 ```
 
-and the same for `guest-b` at `10.128.0.41` with its own config image. Two disks
-and two disks only: a third would move RTMR0 again. `--private-network-ip`
+and the same for `guest-b` at `10.128.0.41` with its own config image. A third
+disk moves RTMR0, and since ticket 26 both shapes are pinned: a two-disk guest
+reports `c2fc12a5…850a` and a three-disk guest `8ee4fa36…b70a3f`, and the sets
+these scripts emit name both. A **fourth** disk is a shape nobody has observed
+and every guest of it would be refused. `--private-network-ip`
 matters because the address has to be known before the guest boots — the guest
 runs no DHCP client, and `network.conf` names the address the instance is
 created with. Intra-VPC UDP is already open: the `default-allow-internal` rule

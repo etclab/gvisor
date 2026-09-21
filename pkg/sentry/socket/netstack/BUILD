@@ -96,6 +96,7 @@ go_test(
     size = "small",
     srcs = [
         "tunnel_dns_test.go",
+        "tunnel_narrow_test.go",
         "tunnel_test.go",
     ],
     library = ":netstack",

@@ -1,0 +1,27 @@
+bundle:
+  ./config.json  8097d6bcbb09d561…  645 bytes
+  ./rootfs/bin/busybox  dbac288c29ba5684…  2124608 bytes
+  ./rootfs/bin/cat -> busybox
+  ./rootfs/bin/echo -> busybox
+  ./rootfs/bin/head -> busybox
+  ./rootfs/bin/probe  75dfb7becbff66f9…  2124825 bytes
+  ./rootfs/bin/sh -> busybox
+  ./rootfs/bin/sleep -> busybox
+  ./rootfs/bin/uname -> busybox
+  ./rootfs/bin/wc -> busybox
+  ./rootfs/bin/wget -> busybox
+  ./rootfs/etc/hosts  5b482934e8156847…  34 bytes
+  ./rootfs/etc/nsswitch.conf  2ad90a00ddc40e29…  17 bytes
+  ./rootfs/etc/resolv.conf  192a7dd1559c24eb…  22 bytes
+  ./rootfs/policy-probe.sh  74bd53e6eb1d3f94…  12980 bytes
+
+the two identities the exec control turns on, at full width:
+  /bin/busybox  dbac288c29ba568459550a2da9e7ae0ded6b1fc728ee9fad3044c44e62d6ac14
+  /bin/probe    75dfb7becbff66f9083b1fa955bef2d0c6de178a8892bbfaff82fa26515d00b9
+
+workload: config.json
+workload: rootfs/  (14 files, 4196 KiB)
+Warning: label too long; will be truncated to 'attested-workloa'
+
+workload device written to /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/workload2.img (root-owned, ext4 without a journal)
+workload device sha256: 524087392626984847b6f97d6cf98a211adae654cc7e87d7fb3e5b698d8cfdf3  (not measured)

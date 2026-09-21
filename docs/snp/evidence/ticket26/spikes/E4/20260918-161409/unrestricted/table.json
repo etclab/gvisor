@@ -1,0 +1,11 @@
+{
+	"default_exit": "b",
+	"names": {
+		"api.anthropic.com": {
+			"port": 443
+		},
+		"http-intake.logs.us5.datadoghq.com": {
+			"port": 443
+		}
+	}
+}

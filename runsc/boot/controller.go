@@ -152,6 +152,10 @@ const (
 	ContMgrGetNetworkConfig = "containerManager.GetNetworkConfig"
 )
 
+// PolicyNarrow applies a pushed policy to a running sandbox: it replaces the
+// tunnel table in place and returns the digest of the bytes it accepted.
+const PolicyNarrow = "Policy.Narrow"
+
 const (
 	// NetworkInitPluginStack initializes third-party network stack.
 	NetworkInitPluginStack = "Network.InitPluginStack"
@@ -249,6 +253,7 @@ func (c *controller) registerHandlers() {
 
 	if l.tunnel != nil {
 		c.srv.Register(l.tunnel)
+		c.srv.Register(&Policy{l: l})
 	}
 
 	if eps, ok := l.k.RootNetworkNamespace().Stack().(*netstack.Stack); ok {

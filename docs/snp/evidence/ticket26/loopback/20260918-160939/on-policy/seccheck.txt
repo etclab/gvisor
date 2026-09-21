@@ -1,0 +1,3 @@
+listening on /dev/shm/t25-3206325160/on-policy.events
+connected: the sentry speaks wire version 1
+disconnected

@@ -385,11 +385,13 @@ func stillCarriesTraffic(t *testing.T, w refusalWiring) {
 // refusalReasons is the whole taxonomy, used to check that no handshake refusal
 // lets a caller recover which check refused its peer.
 //
-// The tenth reason is in the list for the same purpose and not for the same
+// The last two are in the list for the same purpose and not for the same
 // property: a push that was not applied is this side's own decision about a
-// document this side wrote, so its caller is told (push_test.go). What it must
-// not do is appear in the text of a refusal reached at a handshake, which is
-// what a list rather than a special case keeps true.
+// document this side wrote, so its caller is told (push_test.go), and a policy
+// that stopped being live is a decision this side reaches with no caller
+// waiting on it at all (liveness_test.go). What neither must do is appear in
+// the text of a refusal reached at a handshake, which is what a list rather
+// than a special case keeps true.
 var refusalReasons = []attest.Reason{
 	attest.ReasonNoEvidence,
 	attest.ReasonUnsupportedVendor,
@@ -401,6 +403,7 @@ var refusalReasons = []attest.Reason{
 	attest.ReasonBindingMismatch,
 	attest.ReasonUnknownBindingContext,
 	attest.ReasonPolicyNotApplied,
+	attest.ReasonPolicyNotLive,
 }
 
 // refusalLeaksNothing is the property that makes the taxonomy safe to have: an
@@ -1192,9 +1195,10 @@ func exchangeThrough(t *testing.T, listener *refusalNode, name string, acquirer 
 // ever applies, which is the failure this guards against — and the one that
 // looks like success, because every existing test still passes.
 //
-// Every entry but the last is reached inside a handshake. The last is reached
-// after one succeeded, over an established tunnel, which is the whole of what
-// makes it the tenth rather than the ninth (attest/refusal.go).
+// Every entry but the last two is reached inside a handshake. Those two are
+// reached after one succeeded, over an established tunnel, which is the whole
+// of what makes them the tenth and the eleventh rather than the ninth
+// (attest/refusal.go).
 var refusalCoverage = map[attest.Reason]string{
 	attest.ReasonNoEvidence:            "TestEveryWayEvidenceCanFailRefusesTheTunnel",
 	attest.ReasonUnsupportedVendor:     "TestEveryWayEvidenceCanFailRefusesTheTunnel",
@@ -1206,6 +1210,7 @@ var refusalCoverage = map[attest.Reason]string{
 	attest.ReasonBindingMismatch:       "TestEveryWayEvidenceCanFailRefusesTheTunnel",
 	attest.ReasonUnknownBindingContext: "TestAPeerSpeakingAnUnrecognisedBindingContextIsRefused",
 	attest.ReasonPolicyNotApplied:      "TestAPushTheSandboxRefusesClosesTheTunnel",
+	attest.ReasonPolicyNotLive:         "TestASandboxThatStopsEnforcingAPushedPolicyClosesTheTunnel",
 }
 
 func TestEveryReasonInTheTaxonomyRefusesATunnel(t *testing.T) {

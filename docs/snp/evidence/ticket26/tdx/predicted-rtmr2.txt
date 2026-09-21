@@ -1,0 +1,25 @@
+Ticket 26's TDX image: RTMR2 predicted offline, from the image bytes and from
+nothing else, BEFORE any instance of this run existed.
+
+image built   2026-09-18T20:42:38Z -> 2026-09-18T20:45:31Z (2m53s), on shs1
+predicted at  2026-09-18T20:45:30Z, inside that build (step 7 of build-tdx-image.sh,
+              predict-rtmr2.py --raw over the built disk.raw, 25 records)
+recorded here 2026-09-18T20:46:41Z
+
+disk.raw sha256   6164bca4a59f3f10e425789cbca08a5e807b24a75a744169908783bf2d3f8d55 (10737418240 bytes)
+predicted RTMR2   7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1
+author public key 5660943e0b95a93d4f0dee932e193f4635f74df1f34e5125c5df1089a73b048a
+ceiling digest    197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+policy digest     08e453bb09cc4d58cdb0733a3e824c2fa4e02815b7ab601bb2da71ef0744a319 (beside the image; pushed, not delivered)
+runsc in initrd   6019cbf49bc87c5c1ca21382ec069376661bfb56ab74eb3840d61378fbab7819, 109044910 bytes
+
+At the moment this was written the provider had seven instances, all of them the
+pre-existing TERMINATED ones this study never touches, and none of this ticket's.
+The number above is therefore a prediction and not a reading: what the hardware
+reports is compared against it afterwards, and the comparison is in notes.md.
+
+provider constants the emitted set pins (typed by an author, never read off a machine):
+  mrtd   c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5
+  rtmr0  c2fc12a52db868515eff7c657e42ce04b0b7363fa6ddf7c1cca87aa8e6a061a11f9981924a600ad6d2232f75182a850a   two disks   (ticket 19)
+  rtmr0  8ee4fa3614e96b5c7cdacf52675c069e9de399a3688f83510a9bc3b4180e0e8f06c427eab69fcb4deff05203c0b70a3f   three disks (ticket 26, RTMR0-DECISION.md)
+  rtmr1  02c7f19c… (first boot) and 3a446943…

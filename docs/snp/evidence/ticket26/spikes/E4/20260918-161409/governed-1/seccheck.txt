@@ -1,0 +1,5 @@
+listening on /dev/shm/t25-3363345203/governed-1.events
+connected: the sentry speaks wire version 1
+egress_refused protocol=dns name=http-intake.logs.us5.datadoghq.com reason=unknown-name time=2026-09-18T20:13:34.428068546Z
+egress_refused protocol=dns name=http-intake.logs.us5.datadoghq.com reason=unknown-name time=2026-09-18T20:13:34.429986404Z
+disconnected

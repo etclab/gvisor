@@ -1,0 +1,75 @@
+=== ticket 26, policy: a sandbox that honours a pushed policy, on two Google Cloud TDX guests ===
+date        : 2026-09-18T23:16:51Z
+repo        : 2665c47a76da2dfa907b751f73c397c02bba7adc on ticket-26-the-sandbox-honors-a-pushed-policy
+mode        : DRY RUN — every command is printed and none is run
+project     : nsf-2348130-428843, zone us-central1-a
+image dir   : /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket26-tdx/image
+out         : /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run
+policy input: /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/snp/config
+collateral  : /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/tdx/collateral (provisioned, never fetched)
+
+############ 0. preconditions ############
+predicted RTMR2 of the image both guests boot: 7f7c43153cab5dd6353922eec2fdd628d93f29aae4b6f862c025914e9671a513d76de26580e062a68a5a86d8af404aa1
+the ceiling digest a guest of this image presents: 197d4aae216ff9c22268fba6646edc3d976e924f4ccec4e8e5461d60f76ab973
+the image carries agent-probe, /srv/index.html and /etc/hosts, so its exit has something to serve
+the emitted set names the three-disk RTMR0 this ticket authored
+collateral valid until: 2026-10-18T07:56:25Z
+kill-after  : guest A 150s, guest B 210s (from each guest's own workload start)
+narrow-after: guest B 40s — the second tunneld that pushes the narrower policy at guest A
+tunneld hold: 360s; console deadline 1500s. Both are derived from the knobs, not chosen here.
+idle timeout: 420s on every tunnel, so that no tunnel a policy arrived on idles out
+              before the kill that is supposed to end it
+the three documents this run turns on, and what each governs:
+  A pushes at B : b23887d06a044f0752371ed8899c752ce0023a2aeaec56424e0cc3b747381268  {"format":"policy","version":1,"n":[{"host":"web.peer-a","ports":[80]}],"f":[],"x":[{"path":"/bin/busybox"}]}
+  B pushes at A : 681331c69aedad34d51e9e1f325889ff81863885d1067055bf005ca9e33b785d  {"format":"policy","version":1,"n":[{"host":"web.peer-b","ports":[80]}],"f":[],"x":[{"path":"/bin/busybox"}]}
+  B pushes at A : 92fb0e17644f61d44d0fa7c8ed10d2c5af5b9ccf75911a4d106463ba2967248e  {"format":"policy","version":1,"n":[],"f":[],"x":[{"path":"/bin/busybox"}]}   (second, narrower)
+
+    (dry run: would build attest-tool and emit-refvals into /tmp/pniroula/tmp.RxqfmlrOFO)
+############ 1. the workload disk, one bundle, attached to both guests ############
+    + bash /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/snp/make-bundle.sh /tmp/pniroula/claude-253477/-home-pniroula-Projects-gvisor-t26/0d92a836-7da1-469e-8c44-9c4da959aee8/scratchpad/workload-src-tdx /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/workload.raw -tdx
+
+############ 2. authoring the four signed documents ############
+    (dry run: would run emit-tdx-documents.sh four times (a probe pair to learn the digests, then the real pair))
+
+############ 3. the two config devices ############
+    (dry run: would write peers.json, tunneld.json, tunneld-narrow.json, network.conf and the six unmeasured files into /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/config-src/{a,b}, plus a copy of the collateral)
+
+############ 4. publishing the images ############
+    + bash /home/pniroula/Projects/gvisor-t26/docs/snp/cloud/tdx/publish-tdx-image.sh /home/pniroula/Projects/gvisor/.scratch/attested-secure-tunnel/host-stack/image-ticket26-tdx/image/disk.raw attested-tdx-7f7c43153cab
+    + bash /home/pniroula/Projects/gvisor-t26/docs/snp/cloud/tdx/publish-tdx-image.sh /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/config-a.raw attested-config-t26-a-20260918231651
+    + bash /home/pniroula/Projects/gvisor-t26/docs/snp/cloud/tdx/publish-tdx-image.sh /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/config-b.raw attested-config-t26-b-20260918231651
+    + bash /home/pniroula/Projects/gvisor-t26/docs/snp/cloud/tdx/publish-tdx-image.sh /home/pniroula/Projects/gvisor-t26/docs/snp/evidence/ticket26/tdx/run/workload.raw attested-workload-t26-20260918231651
+
+############ 5. creating both guests ############
+creating t26-policy-a and t26-policy-b at 2026-09-18T23:16Z (three disks each; both auto-delete with the instance)
+    + gcloud beta compute instances create t26-policy-a --zone us-central1-a --machine-type c3-standard-4 --confidential-compute-type TDX --maintenance-policy TERMINATE --image attested-tdx-7f7c43153cab --boot-disk-size 20GB --boot-disk-type pd-balanced --boot-disk-auto-delete --create-disk name=t26-policy-a-config,image=attested-config-t26-a-20260918231651,size=10GB,type=pd-balanced,device-name=attested-config,auto-delete=yes --create-disk name=t26-policy-a-workload,image=attested-workload-t26-20260918231651,size=10GB,type=pd-balanced,device-name=attested-workload,auto-delete=yes --private-network-ip 10.128.0.40 --labels purpose=attested-tunnel-t26 --format value(name,zone,machineType,status,networkInterfaces[0].networkIP)
+    + gcloud beta compute instances create t26-policy-b --zone us-central1-a --machine-type c3-standard-4 --confidential-compute-type TDX --maintenance-policy TERMINATE --image attested-tdx-7f7c43153cab --boot-disk-size 20GB --boot-disk-type pd-balanced --boot-disk-auto-delete --create-disk name=t26-policy-b-config,image=attested-config-t26-b-20260918231651,size=10GB,type=pd-balanced,device-name=attested-config,auto-delete=yes --create-disk name=t26-policy-b-workload,image=attested-workload-t26-20260918231651,size=10GB,type=pd-balanced,device-name=attested-workload,auto-delete=yes --private-network-ip 10.128.0.41 --labels purpose=attested-tunnel-t26 --format value(name,zone,machineType,status,networkInterfaces[0].networkIP)
+
+############ 6. watching both serial consoles ############
+    (dry run: would watch both consoles incrementally for up to 1500s and stop at '^initrd: EXIT status=')
+
+dry run complete: nothing was built, published, created or deleted.
+
+############ tearing down ############
+dry run: nothing was created, so nothing is deleted
+
+what still carries purpose=attested-tunnel-t26:
+disks:
+images:
+buckets:
+
+############ rows for docs/snp/cloud/tdx/RESOURCES.md ############
+| created | name | type | purpose | state |
+|---|---|---|---|---|
+| (never created) | t26-policy-a | c3-standard-4 TDX, us-central1-a, 20GB pd-balanced boot from `attested-tdx-7f7c43153cab` + 10GB pd-balanced config disk + 10GB pd-balanced workload disk (`device-name attested-workload`) — a THREE-disk shape, whose RTMR0 `8ee4fa36…b70a3f` this ticket authored, `--private-network-ip 10.128.0.40` | ticket 26 policy, guest A: the sandbox that is narrowed mid-fetch and killed at 150s | **deleted (dry run: never created)** |
+| (never created) | t26-policy-b | c3-standard-4 TDX, us-central1-a, 20GB pd-balanced boot from `attested-tdx-7f7c43153cab` + 10GB pd-balanced config disk + 10GB pd-balanced workload disk (`device-name attested-workload`) — a THREE-disk shape, whose RTMR0 `8ee4fa36…b70a3f` this ticket authored, `--private-network-ip 10.128.0.41` | ticket 26 policy, guest B: the second pusher (narrow-after 40s), killed at 210s | **deleted (dry run: never created)** |
+|  | attested-tdx-7f7c43153cab | custom image, label `purpose=attested-tunnel-t26` | ticket 26 policy | (dry run: never created) |
+|  | attested-config-t26-a-20260918231651 | custom image, label `purpose=attested-tunnel-t26` | ticket 26 policy | (dry run: never created) |
+|  | attested-config-t26-b-20260918231651 | custom image, label `purpose=attested-tunnel-t26` | ticket 26 policy | (dry run: never created) |
+|  | attested-workload-t26-20260918231651 | custom image, label `purpose=attested-tunnel-t26` | ticket 26 policy | (dry run: never created) |
+
+Every bucket this run used was created and deleted inside publish-tdx-image.sh, which is
+where Compute Engine takes bytes from; none survives the call that made it.
+
+=== 0 passed, 0 failed ===
+=== done 2026-09-18T23:16:53Z, exit 0 ===

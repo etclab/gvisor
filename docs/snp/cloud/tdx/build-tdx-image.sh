@@ -80,6 +80,13 @@
 #   TUNNELD       a prebuilt static tunneld; default is to build it here, after
 #                 running its guards, exactly as docs/snp/image/package-tunneld.sh
 #                 does and in the same order: check, build, then measure.
+#   AGENT_PROBE   a prebuilt static agent-probe; default is to build it here.
+#                 It is ticket 23's exit and ticket 25's workload driver, and on
+#                 the adapter path /init runs it as `-exit -network socket`: the
+#                 one thing on the guest that answers a stream a peer opened.
+#                 Unlike tunneld it is deliberately NOT guarded by an
+#                 import-graph test, for the reason package-tunneld.sh gives at
+#                 its step 2b -- it neither acquires evidence nor judges any.
 #   RUNSC         REQUIRED. The static runsc to carry as /usr/bin/runsc, which
 #                 /init launches under a user namespace with spike S1's flag set
 #                 (ticket 24). `make runsc` is the only thing that builds it on
@@ -126,6 +133,7 @@ BASE_IMAGE="${BASE_IMAGE:-}"
 BASE_SHA256="${BASE_SHA256:-d0b2b2c29a0bcc42c9dc414706b2b45af99fabf375150afaabcd59cd0785474f}"
 BUSYBOX="${BUSYBOX:-/usr/bin/busybox}"
 TUNNELD="${TUNNELD:-}"
+AGENT_PROBE="${AGENT_PROBE:-}"
 IMAGE_LABEL="${IMAGE_LABEL:-a}"
 INITRD_NAME="${INITRD_NAME:-initrd.img-attested}"
 
@@ -136,19 +144,42 @@ INITRD_NAME="${INITRD_NAME:-initrd.img-attested}"
 # a reboot, so both are pinned.
 #
 # RTMR0 IS A FUNCTION OF THE MACHINE'S SHAPE, not only of the provider's
-# firmware, and this ticket found that out the hard way. Every RTMR0 recorded
+# firmware, and ticket 19 found that out the hard way. Every RTMR0 recorded
 # before it -- five boots across four VMs -- was c0b8b19c…896d, and every one of
 # those VMs had exactly one disk. The first guest with a config device attached
 # reported c2fc12a5…850a instead, and its reference value refused it.
 # docs/snp/cloud/tdx/probe-tdx-rtmr0.sh then changed one thing on one instance,
 # attaching a second disk and rebooting, and watched RTMR0 move
-# (docs/snp/evidence/ticket19/rtmr0/). The value below is therefore the one a
-# guest of THIS shape reports -- c3-standard-4, one 20GB boot disk and one 10GB
+# (docs/snp/evidence/ticket19/rtmr0/). The first value below is therefore the one
+# a guest of THAT shape reports -- c3-standard-4, one 20GB boot disk and one 10GB
 # config disk -- and an author who changes the shape has to observe it again.
 # It is a comma separated list, because a set may legitimately admit more than
 # one observed value the way it already does for RTMR1.
+#
+# TICKET 26 AUTHORS THE SECOND VALUE, AND AUTHORS IT DELIBERATELY. 8ee4fa36…b70a3f
+# is what a THREE-disk c3-standard-4 TDX guest reports -- a 20GB boot disk, a
+# 10GB config disk and a 10GB workload disk, with all three present when the
+# instance is created. It was observed twice by ticket 24, on two instances and
+# two images, and authored nowhere at the time: boot 2
+# (docs/snp/evidence/ticket24/spikes/E4/boot-2/, console.txt and quote.txt) and
+# boot 3 (docs/snp/evidence/ticket24/spikes/E4/boot-3/, the same two files),
+# where both the guest's own self-check and this workstation judging the same
+# quote refused on RTMR0 and on nothing else. The number written here was read
+# off neither of those machines by any script: it is typed into this file by an
+# author who read the two records and decided that a three-disk guest is a shape
+# this project builds for, which is the same act ticket 19 performed for the
+# two-disk value and the same act ADR-0004 requires -- a reference value is
+# authored, never harvested. docs/snp/evidence/ticket26/tdx/RTMR0-DECISION.md is
+# the decision and the argument for it; the short form is that the workload
+# bundle has to live on a mount of its own that is read-only and exec-permitted
+# (the 2026-09-18 decision), and that mount is a third disk.
+#
+# Both values are listed and neither replaces the other: a set that named only
+# the three-disk value would refuse every two-disk guest ticket 19 and ticket 22
+# recorded, and one that named only the two-disk value refuses every guest of
+# ticket 26's. What a set may not do is name a shape nobody has observed.
 MRTD="${MRTD:-c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5}"
-RTMR0="${RTMR0:-c2fc12a52db868515eff7c657e42ce04b0b7363fa6ddf7c1cca87aa8e6a061a11f9981924a600ad6d2232f75182a850a}"
+RTMR0="${RTMR0:-c2fc12a52db868515eff7c657e42ce04b0b7363fa6ddf7c1cca87aa8e6a061a11f9981924a600ad6d2232f75182a850a,8ee4fa3614e96b5c7cdacf52675c069e9de399a3688f83510a9bc3b4180e0e8f06c427eab69fcb4deff05203c0b70a3f}"
 RTMR1_FIRST="${RTMR1_FIRST:-02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b}"
 RTMR1_LATER="${RTMR1_LATER:-3a446943925fef7f1682fd54e1b6697df864692e28592ec373860d1868582ac14ca3029c48282eb964868a785bafd691}"
 TCB_STATUS="${TCB_STATUS:-UpToDate}"
@@ -298,6 +329,27 @@ if [ -z "$TUNNELD" ]; then
     exit 1
   fi
 fi
+
+# agent-probe, built the same way and measured the same way (ticket 25 put it in
+# the SEV-SNP image; ticket 26 needs it here). It is not run through
+# `go test ./cmd/tunneld`'s guards, because those guards are about a binary that
+# acquires evidence and judges a peer's, and this one does neither: it dials what
+# a list on the config device permits and copies bytes.
+if [ -z "$AGENT_PROBE" ]; then
+  AGENT_PROBE="$B/agent-probe"
+  echo "\$ CGO_ENABLED=0 go build -trimpath -buildvcs=false -o $AGENT_PROBE ./cmd/agent-probe"
+  (cd "$REPO/attest" && GOPROXY=off CGO_ENABLED=0 go build -trimpath -buildvcs=false -o "$AGENT_PROBE" ./cmd/agent-probe)
+  if strings -a "$AGENT_PROBE" | grep -q "$REPO"; then
+    echo "REFUSING: $AGENT_PROBE embeds the checkout path $REPO, so its measurement is not reproducible elsewhere" >&2
+    exit 1
+  fi
+fi
+file "$AGENT_PROBE" | grep -q 'statically linked' || {
+  echo "REFUSING: $AGENT_PROBE is not statically linked; the initrd carries no dynamic loader" >&2
+  exit 1
+}
+AGENT_PROBE_SHA=$(sha256sum "$AGENT_PROBE" | cut -d' ' -f1)
+echo "agent-probe $AGENT_PROBE_SHA ($(stat -c %s "$AGENT_PROBE") bytes)"
 file "$TUNNELD"
 file "$TUNNELD" | grep -q 'statically linked' || {
   echo "REFUSING: $TUNNELD is not statically linked; the initrd carries no dynamic loader" >&2
@@ -336,6 +388,33 @@ install -m 755 "$BUSYBOX" "$I/busybox"
 install -m 755 "$HERE/init.tdx" "$I/init"
 install -m 755 "$TUNNELD" "$I/tunneld"
 install -m 755 "$RUNSC" "$I/runsc"
+install -m 755 "$AGENT_PROBE" "$I/agent-probe"
+# The page this guest's exit serves, and the names that reach it (ticket 25's
+# two files, copied here unchanged so that both vendors serve the same bytes).
+#
+# Both are measured and both are the same in every guest booted from this image,
+# which is the point: the image says what a peer may be served and the config
+# device says who this guest is. /srv/index.html is the body; /init appends one
+# line naming the sandbox id it read off the run configuration, into a copy on
+# /run, because one image boots both guests and a page that could not say which
+# guest served it would prove nothing about where a fetch went.
+#
+# /etc/hosts carries BOTH peer names and points both at this guest's own
+# loopback. It is not a resolver for the sandbox -- the sandbox resolves through
+# the sentry, which answers only what the tunnel table names -- it is what the
+# *exit* uses when it dials the destination a stream asked for. Both lines are in
+# both guests because the image is one image: guest A's exit is asked for
+# web.peer-a and guest B's for web.peer-b, and which of the two a guest is ever
+# asked for is decided by the other guest's table and by this guest's own
+# exit-allow list, neither of which is in here.
+install -m 444 "$REPO/docs/snp/image/index.html" "$I/index.html"
+cat > "$I/hosts" <<HOSTS
+127.0.0.1	localhost
+127.0.0.1	web.peer-a
+127.0.0.1	web.peer-b
+::1	localhost ip6-localhost ip6-loopback
+HOSTS
+chmod 444 "$I/hosts"
 # Exactly the applets init.tdx uses. A guest with more applets than its init
 # needs is a guest with more that a foothold could reach, and every byte is in
 # the measurement anyway.
@@ -345,6 +424,13 @@ install -m 755 "$RUNSC" "$I/runsc"
 # capability at all (docs/snp/evidence/spike-s1-runsc-in-guest/README.md, and
 # docs/snp/evidence/ticket24/spikes/E1/notes.md for the applet being enough).
 # The driver line's other two applets, sh and mount, were already here.
+#
+# Ticket 26 adds NONE, although its adapter order runs httpd, wget, kill, wc,
+# mkdir, tail and cp. Every one of them is reached as `busybox <applet>`, the
+# way ticket 24 reached mkdir and chroot and for the same reason: an applet
+# symlink is a cpio entry, a cpio entry is a record in RTMR2, and the initrd's
+# file list stays exactly what ticket 19 wrote. The only thing in this
+# measurement that ticket 26 moves is /init itself and the two files above.
 APPLETS="sh mount insmod cat echo printf sleep sync uname dmesg grep sed cut sort tr dd od find stat sha256sum ip poweroff unshare"
 {
   echo "# initrd of the attested tunnel guest, $KERNEL_RELEASE, label $IMAGE_LABEL"
@@ -366,6 +452,7 @@ APPLETS="sh mount insmod cat echo printf sleep sync uname dmesg grep sed cut sor
   echo "dir /usr/bin 0755 0 0"
   echo "dir /etc 0755 0 0"
   echo "dir /etc/attested-tunnel 0755 0 0"
+  echo "dir /srv 0755 0 0"
   echo "dir /lib 0755 0 0"
   echo "dir /lib/modules 0755 0 0"
   echo "file /init $I/init 0755 0 0"
@@ -373,6 +460,9 @@ APPLETS="sh mount insmod cat echo printf sleep sync uname dmesg grep sed cut sor
   for a in $APPLETS; do echo "slink /bin/$a busybox 0777 0 0"; done
   echo "file /usr/bin/tunneld $I/tunneld 0755 0 0"
   echo "file /usr/bin/runsc $I/runsc 0755 0 0"
+  echo "file /usr/bin/agent-probe $I/agent-probe 0755 0 0"
+  echo "file /srv/index.html $I/index.html 0444 0 0"
+  echo "file /etc/hosts $I/hosts 0444 0 0"
   echo "file /etc/attested-tunnel/author.pub $B/author.pub 0444 0 0"
   for m in "$B"/modules/*.ko; do
     [ -e "$m" ] || continue
@@ -606,6 +696,9 @@ fi
   echo "/bin/busybox     $(sha256sum "$I/busybox" | cut -d' ' -f1) 0755 $(stat -c %s "$I/busybox")  (busybox-static $BUSYBOX_PKG)"
   echo "/usr/bin/tunneld $TUNNELD_SHA 0755 $(stat -c %s "$TUNNELD")"
   echo "/usr/bin/runsc   $RUNSC_SHA 0755 $RUNSC_BYTES"
+  echo "/usr/bin/agent-probe $AGENT_PROBE_SHA 0755 $(stat -c %s "$AGENT_PROBE")"
+  echo "/srv/index.html  $(sha256sum "$I/index.html" | cut -d' ' -f1) 0444 $(stat -c %s "$I/index.html")"
+  echo "/etc/hosts       $(sha256sum "$I/hosts" | cut -d' ' -f1) 0444 $(stat -c %s "$I/hosts")"
   echo "/etc/attested-tunnel/author.pub $(sha256sum "$B/author.pub" | cut -d' ' -f1) 0444 $(stat -c %s "$B/author.pub")"
   for m in "$B"/modules/*.ko; do
     [ -e "$m" ] || continue

@@ -1,0 +1,50 @@
+# what runsc.log.20260918-160904.636099.boot.txt says
+
+The sentry's debug log with --strace, read once. Counts are of exit
+lines, so an entry with no exit — a syscall the process was still in when it ended — is not here.
+
+## what the adapter said
+
+tunnel narrow: 2 of 2 names kept
+tunnel narrow: sha256=db45384408fe86ffa6215655c852664115af8f8061e21f0d4158635edda5fdd7 n=2 of 2 names kept x=1 f=1
+tunnel narrow: applied in 740.203µs, of which the table swap was 87.861µs
+tunnel dns: q="api.anthropic.com" type=AAAA answer=noerror-empty
+tunnel dns: q="api.anthropic.com" type=A answer=100.64.1.0
+tunnel attach: api.anthropic.com:443 -> peer "b": ok in 70.530644ms, host fd 37, local 100.64.0.1:40001
+tunnel dns: q="www.rfc-editor.org" type=AAAA answer=noerror-empty
+tunnel dns: q="www.rfc-editor.org" type=A answer=100.64.1.1
+tunnel attach: www.rfc-editor.org:443 -> peer "b": ok in 40.222571ms, host fd 44, local 100.64.0.1:40002
+
+## what ran
+
+    3315  agent-probe
+
+## syscalls that failed
+
+      27  futex errno=11 (try again)
+      25  futex errno=512 (to be restarted if SA_RESTART is set)
+      18  futex errno=110 (connection timed out)
+      18  read errno=11 (request would block)
+       6  epoll_ctl errno=1 (operation not permitted)
+       2  openat errno=2 (no such file or directory)
+       1  epoll_pwait errno=4 (request was interrupted)
+
+## syscalls the sentry does not implement
+
+(none)
+
+## socket families
+
+       6  AF_INET
+
+## datagrams and connects to 127.0.0.53:53
+
+8
+
+## every execve
+
+
+
+## every bind and listen
+
+

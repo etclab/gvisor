@@ -59,6 +59,7 @@ go_library(
     visibility = ["//runsc:__subpackages__"],
     deps = [
         "//pkg/cleanup",
+        "//pkg/control/client",
         "//pkg/coverage",
         "//pkg/cpuid",
         "//pkg/lisafs",

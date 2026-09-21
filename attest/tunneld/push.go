@@ -16,6 +16,8 @@ package tunneld
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -202,7 +204,67 @@ func (t *Tunneld) applyOrRefuse(ctx context.Context, conn *tunnel.Conn, policy [
 	if err := box.Apply(ctx, policy); err != nil {
 		return t.refusePush(conn, ackRefused, err)
 	}
+	t.watchPolicy(conn, box, policy)
 	return ""
+}
+
+// watchPolicy starts watching whether the sandbox goes on enforcing what this
+// peer just pushed, when the sandbox is one that says (contract v3).
+//
+// A sandbox in this tunneld's own process is not watched, and there is nothing
+// to watch: [sandbox.Null] is this process, and a caller asking whether it is
+// still running has been answered by the fact that it asked. Only
+// [sandbox.Host] implements the interface, because only a process boundary
+// raises the question.
+//
+// The digest is over the bytes this side received, which is the number the
+// pusher computed over the bytes it sent and the number the sandbox pulses
+// back. Three numbers, one comparison, and no field on the wire for any of it.
+func (t *Tunneld) watchPolicy(conn *tunnel.Conn, box sandbox.Sandbox, policy []byte) {
+	live, ok := box.(sandbox.Live)
+	if !ok {
+		return
+	}
+	sum := sha256.Sum256(policy)
+	go t.watchLiveness(conn, hex.EncodeToString(sum[:]), live)
+}
+
+// watchLiveness ends the tunnel a policy arrived on when the sandbox stops
+// enforcing it, and ends itself when the tunnel goes first.
+//
+// The refusal is this side's alone. Nothing is sent to the peer for it — there
+// is no message on the wire that says "your policy lapsed", and adding one
+// would be telling a peer about the inside of this guest — so what the peer
+// sees is what it sees for every other refusal after admission: its tunnel
+// went, and its next stream fails.
+//
+// The tunnel is polled rather than subscribed to because [tunnel.Conn] has no
+// channel to wait on and a watch that outlived its tunnel would be a goroutine
+// per dead connection, counting pulses for a peer that is gone.
+func (t *Tunneld) watchLiveness(conn *tunnel.Conn, digest string, live sandbox.Live) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	lost := live.Watch(ctx, digest)
+	tick := time.NewTicker(sandbox.DefaultPulse)
+	defer tick.Stop()
+	for {
+		select {
+		case err, ok := <-lost:
+			if !ok {
+				return
+			}
+			t.refuse(attest.Refuse(attest.ReasonPolicyNotLive,
+				"a peer at %s pushed a policy this sandbox no longer enforces: %v", conn.RemoteAddr(), err))
+			conn.Close()
+			return
+		case <-t.done:
+			return
+		case <-tick.C:
+			if !conn.Live() {
+				return
+			}
+		}
+	}
 }
 
 // refusePush logs the refusal, ends the tunnel the push arrived on, and gives

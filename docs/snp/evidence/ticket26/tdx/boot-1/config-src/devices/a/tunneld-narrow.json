@@ -1,0 +1,17 @@
+{
+  "format": "gvisor.dev/gvisor/attest/tunneld-run",
+  "version": 1,
+  "sandbox_id": "guest-a-narrow",
+  "listen": "",
+  "limits": {"idle_timeout": "420s", "max_age": "15m"},
+  "exercise": {
+    "dial": ["guest-b"],
+    "wait": "2s",
+    "payload": "the-second-pusher-does-not-exchange",
+    "exchanges": 1,
+    "concurrency": 1,
+    "rounds": 1,
+    "timeout": "20s"
+  },
+  "hold": "360s"
+}

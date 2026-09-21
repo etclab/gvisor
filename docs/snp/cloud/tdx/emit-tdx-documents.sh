@@ -45,8 +45,16 @@ export PATH="/usr/local/go/bin:$PATH"
 
 OUT= KEY= ADMIT= ADMIT_POLICY="__unset__"
 FORWARD=()
+# The provider constants, and they are build-tdx-image.sh's defaults verbatim:
+# two scripts that authored two different sets for one pair of guests would be
+# two sets that refuse each other. RTMR0 carries two values because RTMR0 is a
+# function of the machine's shape and this project builds for two shapes -- the
+# two-disk guest ticket 19 pinned and the three-disk guest ticket 26 authors,
+# whose workload bundle needs a mount of its own. The argument is in
+# build-tdx-image.sh beside the same line and in
+# docs/snp/evidence/ticket26/tdx/RTMR0-DECISION.md.
 MRTD="${MRTD:-c1ee9c16e3afc506cfe042c5b846a368528f3b37618eafb27469bc114cf914e9222c91618470e7f2b28ac360968270a5}"
-RTMR0="${RTMR0:-c2fc12a52db868515eff7c657e42ce04b0b7363fa6ddf7c1cca87aa8e6a061a11f9981924a600ad6d2232f75182a850a}"
+RTMR0="${RTMR0:-c2fc12a52db868515eff7c657e42ce04b0b7363fa6ddf7c1cca87aa8e6a061a11f9981924a600ad6d2232f75182a850a,8ee4fa3614e96b5c7cdacf52675c069e9de399a3688f83510a9bc3b4180e0e8f06c427eab69fcb4deff05203c0b70a3f}"
 RTMR1_FIRST="${RTMR1_FIRST:-02c7f19c862b3dae1592c737358d9bb13f8f0a34d3b3eca67c39bf7941a12c347635b8a291d68d9cace45b16ec25913b}"
 RTMR1_LATER="${RTMR1_LATER:-3a446943925fef7f1682fd54e1b6697df864692e28592ec373860d1868582ac14ca3029c48282eb964868a785bafd691}"
 TCB_STATUS="${TCB_STATUS:-UpToDate}"

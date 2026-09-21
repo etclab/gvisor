@@ -156,7 +156,24 @@ var tunnelLocalAddr = tcpip.AddrFrom4([4]byte{100, 64, 0, 1})
 // holds: 100.64.1.0 through 100.64.255.255.
 const maxTunnelNames = 255 * 256
 
+// tunnelPorts hands out the local ports attached sockets answer getsockname
+// with. It is a thing of its own, and not a field of the adapter, because a
+// narrowing replaces the adapter and the ports must not start again: two live
+// sockets that agree on both ends is exactly what one port per connection is
+// there to prevent. The counter is shared by every adapter a sandbox ever has,
+// so it never rewinds.
+type tunnelPorts struct {
+	mu sync.Mutex
+	// +checklocks:mu
+	next uint16
+}
+
 // adapter is the installed tunnel, or nil when runsc passed no --tunnel-*.
+//
+// It is immutable once published. A narrowing does not edit one: it builds a
+// second adapter carrying the bindings that survive and swaps the pointer, so
+// that every reader either sees the whole of the old table or the whole of the
+// new one.
 type adapter struct {
 	table    *TunnelTable
 	attacher TunnelAttacher
@@ -164,11 +181,8 @@ type adapter struct {
 	byName map[string]*tunnelBinding
 	byAddr map[tcpip.Address]*tunnelBinding
 
-	// mu guards localPort only. The maps are written once, before the adapter
-	// is published, and read-only afterwards.
-	mu sync.Mutex
-	// +checklocks:mu
-	localPort uint16
+	// ports is shared with every adapter this one replaces or is replaced by.
+	ports *tunnelPorts
 }
 
 var (
@@ -212,11 +226,11 @@ func InstallTunnel(st *Stack, table *TunnelTable, attacher TunnelAttacher) error
 	sort.Strings(names)
 
 	a := &adapter{
-		table:     table,
-		attacher:  attacher,
-		byName:    make(map[string]*tunnelBinding, len(names)),
-		byAddr:    make(map[tcpip.Address]*tunnelBinding, len(names)),
-		localPort: 40000,
+		table:    table,
+		attacher: attacher,
+		byName:   make(map[string]*tunnelBinding, len(names)),
+		byAddr:   make(map[tcpip.Address]*tunnelBinding, len(names)),
+		ports:    &tunnelPorts{next: 40000},
 	}
 	for i, name := range names {
 		e := table.Names[name]
@@ -239,7 +253,7 @@ func InstallTunnel(st *Stack, table *TunnelTable, attacher TunnelAttacher) error
 	tunnel = a
 	tunnelMu.Unlock()
 
-	if err := startTunnelResolver(st, a); err != nil {
+	if err := startTunnelResolver(st); err != nil {
 		tunnelMu.Lock()
 		tunnel = nil
 		tunnelMu.Unlock()
@@ -247,6 +261,56 @@ func InstallTunnel(st *Stack, table *TunnelTable, attacher TunnelAttacher) error
 	}
 	log.Infof("tunnel: installed with %d names, resolver on %s:%d", len(names), tunnelResolverAddr.String(), tunnelResolverPort)
 	return nil
+}
+
+// NarrowTunnel replaces the installed adapter with one that carries only the
+// names in keep, and returns the table that goes with it so that the boot-side
+// second check narrows with it.
+//
+// It is a replacement and not an edit. The surviving names keep the very
+// bindings they had — the same synthetic address, the same port, the same peer
+// — so a name that survives a narrowing is reachable at the address the
+// workload already resolved, and the local-port counter is shared with the
+// adapter this one replaces, so it never rewinds. Streams already attached are
+// not touched: a descriptor handed to a socket is that socket's, and nothing
+// here revokes one. Narrowing decides what may be opened next.
+//
+// keep may be empty, which is a sandbox that may no longer reach anything.
+func NarrowTunnel(keep map[string]bool) (*TunnelTable, error) {
+	tunnelMu.Lock()
+	defer tunnelMu.Unlock()
+	old := tunnel
+	if old == nil {
+		return nil, fmt.Errorf("no tunnel adapter is installed")
+	}
+	for name := range keep {
+		if _, ok := old.byName[name]; !ok {
+			return nil, fmt.Errorf("the tunnel adapter does not carry %q, so a narrowing cannot keep it", name)
+		}
+	}
+	table := &TunnelTable{
+		DefaultExit: old.table.DefaultExit,
+		Names:       make(map[string]TunnelEntry, len(keep)),
+	}
+	a := &adapter{
+		table:    table,
+		attacher: old.attacher,
+		byName:   make(map[string]*tunnelBinding, len(keep)),
+		byAddr:   make(map[tcpip.Address]*tunnelBinding, len(keep)),
+		ports:    old.ports,
+	}
+	for name, b := range old.byName {
+		if !keep[name] {
+			log.Infof("tunnel narrow: %s:%d at %s is gone", b.name, b.port, b.addr.String())
+			continue
+		}
+		a.byName[name] = b
+		a.byAddr[b.addr] = b
+		table.Names[name] = old.table.Names[name]
+	}
+	tunnel = a
+	log.Infof("tunnel narrow: %d of %d names kept", len(a.byName), len(old.byName))
+	return table, nil
 }
 
 // tunnelSyntheticAddr is the address of the i'th name, counting from
@@ -288,14 +352,17 @@ func (a *adapter) lookupAddr(addr tcpip.Address) (*tunnelBinding, bool) {
 // nextLocal hands out the local address a newly attached socket answers
 // getsockname with. One port per connection, because two sockets that agree on
 // both ends look to Go like a socket connected to itself.
-func (a *adapter) nextLocal() tcpip.FullAddress {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	a.localPort++
-	if a.localPort == 0 {
-		a.localPort = 40000
+func (a *adapter) nextLocal() tcpip.FullAddress { return a.ports.nextLocal() }
+
+// nextLocal is the counter itself, shared across narrowings.
+func (p *tunnelPorts) nextLocal() tcpip.FullAddress {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.next++
+	if p.next == 0 {
+		p.next = 40000
 	}
-	return tcpip.FullAddress{Addr: tunnelLocalAddr, Port: a.localPort}
+	return tcpip.FullAddress{Addr: tunnelLocalAddr, Port: p.next}
 }
 
 // ===== classifying a destination =====

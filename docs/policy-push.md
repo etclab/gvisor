@@ -121,9 +121,9 @@ pusher's image learns its ceiling and not its delegation.
 ## PolicyNotApplied, and when the tunnel closes
 
 `attest.ReasonPolicyNotApplied` (`attest/refusal.go:109`) is the tenth reason in the taxonomy and
-the only one that is not a verdict on evidence. Every other reason is reached inside a
-handshake, by a verifier holding a report against a reference value set. This one is reached
-after the handshake succeeded, and no `attest.Verifier` can return it.
+was, until ticket 26, the only one that is not a verdict on evidence. Every reason before it is
+reached inside a handshake, by a verifier holding a report against a reference value set. This
+one is reached after the handshake succeeded, and no `attest.Verifier` can return it.
 
 It is reached on **both sides of the same event**:
 
@@ -149,6 +149,32 @@ its side too, which is the same outcome by the other route.
 **A refusal is not cached.** The tunnel is gone, so the next ask dials a new one, re-attests, and
 pushes again. Two peers that disagree about a policy therefore burn one handshake per attempt
 and carry nothing — visibly, on both consoles — rather than settling into a quiet half-state.
+
+## PolicyNotLive, the eleventh
+
+`attest.ReasonPolicyNotLive` is ticket 26's, and it is the second reason reached after a
+handshake succeeded. The two are answers to different questions asked at different times: the
+tenth is *did the policy land*, the eleventh is *is it still in force*. A peer refused for the
+eleventh did nothing wrong at the push, and an operator reading the two on one console should
+not have to guess which happened, which is why it is a reason of its own and not a detail on the
+tenth.
+
+It is reached on **one** side only, unlike the tenth:
+
+| side | when | what it does |
+| --- | --- | --- |
+| the receiver | the sandbox beside it — the one that acknowledged — stops pulsing, pulses another policy's digest, or closes its socket (`docs/sandbox-contract.md`, *Liveness*) | logs the refusal and closes the tunnel (`watchLiveness`, `attest/tunneld/push.go`) |
+| the delegator | — | nothing. Its push was acknowledged; all it ever learns is that its stream ended |
+
+**Nothing new crosses the wire for it.** There is no message that says "your policy lapsed", and
+adding one would be telling a peer about the inside of this guest. What the peer sees is what it
+sees for every refusal after admission: its tunnel went, and its next stream fails. The reason
+is on the receiving side's console, in the same refusal log, exactly as the tenth is.
+
+**Only a sandbox in another process is watched.** The optional interface is implemented by
+`sandbox.Host` alone, so a tunneld whose sandbox is in its own process carries its tunnels
+exactly as it did before, and every recorded scenario that runs the null sandbox in process is
+unchanged.
 
 ## The ordering guarantee
 
@@ -267,8 +293,11 @@ Every test is offline, on the loopback harness with the fake platform injected t
 | a push before admission is impossible: a refused peer yields the admission refusal, not `PolicyNotApplied`, and no push attempt at all | `TestAPushBeforeAdmissionIsImpossible` |
 | a push reaching a socket-attached sandbox goes through `Host.Apply` and comes back as that sandbox's answer | `TestAPushReachesASandboxInAnotherProcess` |
 | tunneld checks the envelope before the sandbox sees the policy | `TestTunneldChecksTheEnvelopeBeforeTheSandboxSeesThePolicy` (`sandbox_test.go`) |
-| the tenth reason has a sentence of its own and no verifier can return it | `TestEveryReasonInTheTaxonomyHasASentenceOfItsOwn`, `TestNoVerdictOnEvidenceIsAPolicyNotApplied` (`attest/taxonomy_test.go`) |
-| every reason in the taxonomy, the tenth included, has a test that refuses a tunnel for it | `TestEveryReasonInTheTaxonomyRefusesATunnel` (`attest/tunneld/refusal_test.go`) |
+| the last two reasons each have a sentence of their own and no verifier can return either | `TestEveryReasonInTheTaxonomyHasASentenceOfItsOwn`, `TestNoVerdictOnEvidenceIsAReasonReachedAfterAdmission` (`attest/taxonomy_test.go`) |
+| every reason in the taxonomy, the eleventh included, has a test that refuses a tunnel for it | `TestEveryReasonInTheTaxonomyRefusesATunnel` (`attest/tunneld/refusal_test.go`) |
+| a sandbox that stops pulsing, pulses another policy's digest, or whose workload exits closes the tunnel the policy arrived on, as `PolicyNotLive`, under a stream already open on it | `TestASandboxThatStopsEnforcingAPushedPolicyClosesTheTunnel` (`attest/tunneld/liveness_test.go`), one case each |
+| a tunneld whose sandbox is in its own process is not watched, and its tunnel stands | `TestASandboxInThisProcessIsNotWatched` (same file) |
+| the pushing side is untouched: its push was acknowledged, it refuses nothing, and all it learns is that its stream ended | asserted in every case of the first of those two |
 | the policy to push is read, refused if it is not one, and said out loud with its digest | `TestThePolicyToPushIsReadAndSaidOutLoud` (`attest/cmd/tunneld/main_test.go`) |
 
 `go test ./... -count=1` in `attest/` passes, `go vet ./...` is clean, `gofmt` is clean, and the
@@ -313,7 +342,13 @@ when it applied are the same number, on two consoles. The recorded run is
   name. Per-peer delegation is what that field becomes when something needs it; a second peer
   table with no test behind it would not be.
 - **No ordering between two pushes.** One tunnel carries one push, so the question does not
-  arise today. If a later version pushes again on a live tunnel, "which policy is in force" is a
-  question the sandbox will have to answer, and the contract does not answer it now.
+  arise today — and a live tunnel still carries exactly one. Ticket 26 did not change that: it
+  made "which policy is in force" a question the sandbox answers once a second for the one push
+  its tunnel carried, not a way to carry two. Two peers pushing two different policies at one
+  sandbox produce two watches and at most one of them can match, which is the honest answer to a
+  question the contract never promised.
+- ~~**A tunnel outlives the policy it pushed.**~~ Built, in ticket 26: the far sandbox says which
+  policy it is enforcing once a second, and a tunnel whose sandbox has stopped is closed as
+  `PolicyNotLive`. See above, and `docs/sandbox-contract.md` for the constants and what they cost.
 - **The push is not measured and does not claim to be.** See "Why the policy needs no
   signature". A verifier reading a peer's image learns the ceiling, not the delegation.

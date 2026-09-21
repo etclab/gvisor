@@ -50,6 +50,11 @@ const (
 	tunneldMsgApply   = "apply"
 	tunneldMsgAck     = "ack"
 	tunneldMsgRefusal = "refusal"
+	// tunneldMsgAlive is contract v3's one addition: a sandbox that has
+	// acknowledged a policy says, once a second and with no reply, which
+	// policy it is enforcing. It carries id 0 because it answers nothing and
+	// nothing answers it.
+	tunneldMsgAlive = "alive"
 )
 
 const (
@@ -66,6 +71,7 @@ type tunneldMessage struct {
 	Attested json.RawMessage `json:"attested,omitempty"`
 	Policy   []byte          `json:"policy,omitempty"`
 	Error    string          `json:"error,omitempty"`
+	Digest   string          `json:"digest,omitempty"`
 }
 
 // errTunneldClosed reports that the socket to tunneld has gone.

@@ -277,6 +277,12 @@ func (r *remote) EgressRefused(_ context.Context, _ seccheck.FieldSet, info *pb.
 	return nil
 }
 
+// ExecRefused implements seccheck.Sink.
+func (r *remote) ExecRefused(_ context.Context, _ seccheck.FieldSet, info *pb.ExecRefused) error {
+	r.write(info, pb.MessageType_MESSAGE_SENTRY_EXEC_REFUSED)
+	return nil
+}
+
 // ContainerStart implements seccheck.Sink.
 func (r *remote) ContainerStart(_ context.Context, _ seccheck.FieldSet, info *pb.Start) error {
 	r.write(info, pb.MessageType_MESSAGE_CONTAINER_START)

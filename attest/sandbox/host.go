@@ -25,6 +25,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -122,7 +123,7 @@ func (h *Host) Attached() int {
 	defer h.mu.Unlock()
 	var n int
 	for _, c := range h.conns {
-		if c.role != "" && !c.gone {
+		if c.role != "" && !c.isGone() {
 			n++
 		}
 	}
@@ -152,7 +153,7 @@ func (h *Host) Apply(ctx context.Context, policy []byte) error {
 	}
 	var enforcing *attached
 	for _, c := range h.conns {
-		if c.role == RoleEnforcing && !c.gone {
+		if c.role == RoleEnforcing && !c.isGone() {
 			enforcing = c
 			break
 		}
@@ -297,7 +298,7 @@ func (h *Host) DropEnforcing() {
 	h.inForce = nil
 	var toClose []*attached
 	for _, c := range h.conns {
-		if c.role == RoleEnforcing && !c.gone {
+		if c.role == RoleEnforcing && !c.isGone() {
 			toClose = append(toClose, c)
 		}
 	}
@@ -397,19 +398,35 @@ type attached struct {
 
 	once sync.Once
 
-	// role is set by the attach message (contract v4).
+	// role is what the attach message declared (contract v4). It is written
+	// once, under the host's lock, and read under it.
 	role string
 
-	// The heartbeat, under mu: whether this sandbox ever acknowledged a policy,
-	// when it last said anything about one, what it said, and whether the
-	// socket has gone. A sandbox that never acknowledged is not watched, so the
-	// clock starts at the acknowledgement rather than at the connection.
+	// gone says this attachment has given up its socket. It is one atomic and
+	// not a field under a lock because its readers cannot share one: the host
+	// reads it holding h.mu — the uniqueness check, Apply, Attached,
+	// DropEnforcing — and a watch reads it holding nothing, while close() runs
+	// on whichever goroutine gave the socket up and takes h.mu on its way out.
+	// Reading it under a.mu, as this once did, was reading it under a lock none
+	// of those writers hold.
+	gone atomic.Bool
+
+	// acked says this sandbox has acknowledged a policy at some point, which is
+	// what makes it something there is a claim to lose. It is written once and
+	// never cleared, and it is stored after the clock below so that a reader
+	// which sees it also sees the moment it started counting from. A sandbox
+	// that never acknowledged is not watched, so the clock starts at the
+	// acknowledgement rather than at the connection.
+	acked atomic.Bool
+
+	// The heartbeat, under mu: when this sandbox last said anything about a
+	// policy, and what it said.
 	mu     sync.Mutex
-	acked  bool
 	last   time.Time
 	digest string
-	gone   bool
 }
+
+func (a *attached) isGone() bool { return a.gone.Load() }
 
 func newAttached(h *Host, c *net.UnixConn) *attached {
 	ctx, stop := context.WithCancel(context.Background())
@@ -431,7 +448,7 @@ func (h *Host) recordAttach(a *attached, role string) bool {
 	}
 	if role == RoleEnforcing {
 		for _, c := range h.conns {
-			if c != a && c.role == RoleEnforcing && !c.gone {
+			if c != a && c.role == RoleEnforcing && !c.isGone() {
 				const why = "a second enforcing client is not permitted on this socket"
 				h.mu.Unlock()
 				a.w.send(message{Type: msgError, Error: why}, -1)
@@ -466,11 +483,7 @@ func (a *attached) replay(policy []byte) {
 
 // acknowledgedPolicy reports whether this sandbox has ever acknowledged one,
 // which is what makes it something there is a claim to lose.
-func (a *attached) acknowledgedPolicy() bool {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	return a.acked
-}
+func (a *attached) acknowledgedPolicy() bool { return a.acked.Load() }
 
 // pulsed records one `alive`. It is answered with nothing: the message is a
 // statement about now, and a reply would only say that it arrived.
@@ -486,19 +499,20 @@ func (a *attached) pulsed(digest string) {
 // nothing at all is a loss rather than a silence nobody is counting.
 func (a *attached) acknowledged() {
 	a.mu.Lock()
-	a.acked = true
 	a.last = time.Now()
 	a.mu.Unlock()
+	a.acked.Store(true)
 }
 
 // lost reports why this attachment is no longer live for the given digest, or
 // "" if it still is.
 func (a *attached) lost(digest string, now time.Time) string {
+	if a.isGone() {
+		return "the sandbox closed its socket"
+	}
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	switch {
-	case a.gone:
-		return "the sandbox closed its socket"
 	case a.digest != "" && a.digest != digest:
 		return fmt.Sprintf("it pulsed %s, expected %s", a.digest, digest)
 	case now.Sub(a.last) > DefaultMisses*DefaultPulse:
@@ -599,9 +613,7 @@ func (a *attached) apply(ctx context.Context, policy []byte) error {
 
 func (a *attached) close() {
 	a.once.Do(func() {
-		a.mu.Lock()
-		a.gone = true
-		a.mu.Unlock()
+		a.gone.Store(true)
 		a.stop()
 		a.w.c.Close()
 		a.h.drop(a)

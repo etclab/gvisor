@@ -208,7 +208,7 @@ func (tn *Tunnel) narrow(policy []byte) (string, error) {
 	swap := time.Since(swapStart)
 
 	paths, digests := execAllow(pushed.x)
-	if len(pushed.x) > 0 || tn.policy.xsink != nil {
+	if pushed.x != nil || tn.policy.xsink != nil {
 		if tn.policy.xsink == nil {
 			tn.policy.xsink = policyx.NewSink()
 			policyx.Install(tn.policy.xsink)
@@ -303,8 +303,15 @@ func policyAtoms(policy []byte) (*policySets, error) {
 }
 
 func sortedSet(atoms []string) []string {
+	if atoms == nil {
+		return nil
+	}
 	slices.Sort(atoms)
-	return slices.Compact(atoms)
+	compacted := slices.Compact(atoms)
+	if compacted == nil {
+		return []string{}
+	}
+	return compacted
 }
 
 // policyNetAtoms reads `n`.
@@ -385,8 +392,14 @@ func policyFileAtoms(d *policyDocument) ([]string, error) {
 // policyExecAtoms reads `x`. Unlike Deno, this sandbox can enforce a digest:
 // the hash of the binary is already computed at the execve point, so an x entry
 // may name a path, a sha256, or both.
+//
+// An absent x key returns nil, indicating unconstrained exec.
+// An empty x list returns a non-nil empty slice, indicating a grant of nothing.
 func policyExecAtoms(d *policyDocument) ([]string, error) {
-	var atoms []string
+	if d.X == nil {
+		return nil, nil
+	}
+	atoms := []string{}
 	for _, x := range d.X {
 		if x.Path == "" && x.SHA256 == "" {
 			return nil, policyRefuse("an x entry names neither a path nor a digest")
@@ -445,11 +458,16 @@ func policySubset(pushed, base *policySets) error {
 	}{
 		{"n", pushed.n, base.n},
 		{"f", pushed.f, base.f},
-		{"x", pushed.x, base.x},
 	} {
 		if extra := notIn(c.got, c.want); len(extra) > 0 {
 			return policyRefuse("it widens %s by %v", c.name, extra)
 		}
+	}
+	if base.x != nil && pushed.x == nil {
+		return policyRefuse("it widens x by unconstraining exec")
+	}
+	if extra := notIn(pushed.x, base.x); len(extra) > 0 {
+		return policyRefuse("it widens x by %v", extra)
 	}
 	return nil
 }

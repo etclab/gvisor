@@ -156,3 +156,32 @@ func TestAllowListsAreSorted(t *testing.T) {
 		t.Errorf("Digests = %v, wanted %v", got, want)
 	}
 }
+
+func TestSinkAbsentVsEmptyX(t *testing.T) {
+	s := NewSink()
+	info := &pb.ExecveInfo{BinaryPath: "/bin/busybox"}
+
+	// Before any X is in force (absent x), any exec is permitted.
+	if err := s.Execve(context.Background(), seccheckFields(), info); err != nil {
+		t.Fatalf("absent x: expected exec to be permitted, got %v", err)
+	}
+
+	// Narrowing to empty x (grant of nothing).
+	s.Narrow(NewAllow(nil, nil))
+
+	// Every exec must now be refused with EACCES.
+	if err := s.Execve(context.Background(), seccheckFields(), info); !linuxerr.Equals(linuxerr.EACCES, err) {
+		t.Errorf("empty x: exec gave %v, wanted EACCES", err)
+	}
+
+	// Another binary must also be refused.
+	if err := s.Execve(context.Background(), seccheckFields(), &pb.ExecveInfo{BinaryPath: "/bin/sh"}); !linuxerr.Equals(linuxerr.EACCES, err) {
+		t.Errorf("empty x: exec of /bin/sh gave %v, wanted EACCES", err)
+	}
+
+	// Narrowing with another empty allow continues to refuse every exec.
+	s.Narrow(NewAllow([]string{}, []string{}))
+	if err := s.Execve(context.Background(), seccheckFields(), &pb.ExecveInfo{BinaryPath: "/bin/sh"}); !linuxerr.Equals(linuxerr.EACCES, err) {
+		t.Errorf("narrowed empty x: expected EACCES, got %v", err)
+	}
+}

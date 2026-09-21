@@ -306,3 +306,46 @@ func TestFIsMountsOnly(t *testing.T) {
 		t.Errorf(`the "locked" mount option is reachable from config.json after all`)
 	}
 }
+
+// ===== X semantics: absent vs empty and widening =====
+
+func TestPolicyExecAtomsAbsentVsEmpty(t *testing.T) {
+	// Absent x key -> sets.x is nil (unconstrained exec).
+	absent := atomsOrFail(t, `{"format":"policy","version":1,"n":[{"host":"web.peer-a","ports":[8080]}]}`)
+	if absent.x != nil {
+		t.Errorf("absent x resulted in sets.x = %v; want nil", absent.x)
+	}
+
+	// Empty x list -> sets.x is non-nil empty slice (grant of nothing).
+	empty := atomsOrFail(t, `{"format":"policy","version":1,"n":[{"host":"web.peer-a","ports":[8080]}],"x":[]}`)
+	if empty.x == nil {
+		t.Fatal("empty x resulted in sets.x = nil; want non-nil empty slice")
+	}
+	if len(empty.x) != 0 {
+		t.Errorf("empty x resulted in sets.x with length %d; want 0", len(empty.x))
+	}
+}
+
+func TestPolicySubsetWideningAnEmptyX(t *testing.T) {
+	base := atomsOrFail(t, `{"format":"policy","version":1,"n":[{"host":"web.peer-a","ports":[8080]}],"x":[]}`)
+
+	// Widening with a binary grant must be refused.
+	widenedWithBin := atomsOrFail(t, `{"format":"policy","version":1,"n":[{"host":"web.peer-a","ports":[8080]}],"x":[{"path":"/bin/sh"}]}`)
+	err := policySubset(widenedWithBin, base)
+	if err == nil || !strings.Contains(err.Error(), "it widens x by [run:/bin/sh]") {
+		t.Fatalf("policySubset allowed widening empty x with binary: %v", err)
+	}
+
+	// Widening by omitting x (unconstrained) must be refused.
+	widenedAbsent := atomsOrFail(t, `{"format":"policy","version":1,"n":[{"host":"web.peer-a","ports":[8080]}]}`)
+	err = policySubset(widenedAbsent, base)
+	if err == nil || !strings.Contains(err.Error(), "it widens x by unconstraining exec") {
+		t.Fatalf("policySubset allowed widening empty x by omitting x: %v", err)
+	}
+
+	// Pushing the same empty x again is accepted.
+	same := atomsOrFail(t, `{"format":"policy","version":1,"n":[{"host":"web.peer-a","ports":[8080]}],"x":[]}`)
+	if err := policySubset(same, base); err != nil {
+		t.Fatalf("policySubset refused identical empty x: %v", err)
+	}
+}

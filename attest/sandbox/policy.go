@@ -244,8 +244,14 @@ func fileAtoms(d *policyDocument) ([]string, error) {
 // execAtoms reads `x`. An entry names an exec identity by where it is, by what
 // it contains, or by both — and both is two atoms, because either of them
 // admitting an exec makes it two grants and not one.
+//
+// An absent x key returns nil, indicating unconstrained exec.
+// An empty x list returns a non-nil empty slice, indicating a grant of nothing.
 func execAtoms(d *policyDocument) ([]string, error) {
-	var atoms []string
+	if d.X == nil {
+		return nil, nil
+	}
+	atoms := []string{}
 	for _, x := range d.X {
 		if x.Path == "" && x.SHA256 == "" {
 			return nil, refusePolicy("an x entry names neither a path nor a digest")

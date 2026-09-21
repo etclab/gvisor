@@ -17,6 +17,12 @@ for the present tense — an acknowledgement is a claim about the past, and tick
 exactly how short a past that is. Nothing else changed: the three verbs, the stream, the
 descriptor, the pump and the four `Attested` strings are what version 1 made them.
 
+**Contract version 4** is ticket 27's, and it is one message: `attach`, from the client, with no
+reply, declaring its role (`enforcing` or `network`). Exactly one enforcing sandbox client is
+permitted per socket; a second enforcing client is refused and its socket closed. `Host.Apply` pushes
+only to the enforcing attachment, waits up to the push deadline if none has attached yet, and replays
+the policy in force to a late enforcing attachment.
+
 **In one sentence:** a sandbox sees no evidence, no key and no trust decision — it gets a stream
 or an error, and a policy or nothing — and the shape of the contract is fixed by the thing that
 cannot cross a process boundary, since a QUIC stream is not a kernel object (spike E1) and what
@@ -207,9 +213,10 @@ stream, and deliberately the dullest thing that works.
 | `{"id":7,"type":"ack"}` | sandbox → tunneld | the acknowledgement |
 | `{"id":7,"type":"refusal","error":"…"}` | sandbox → tunneld | the sandbox's refusal |
 | `{"id":0,"type":"alive","digest":"<64 hex>"}` | sandbox → tunneld | the digest of the policy in force — **no reply** (v3) |
+| `{"id":0,"type":"attach","role":"enforcing"}` | sandbox → tunneld | the client's declared role (`enforcing` or `network`) — **no reply** (v4) |
 
-The last of them is the only message here that is neither a request nor a reply, and its id is 0
-because it numbers nothing: it goes nowhere near either side's reply table, and a reply table
+The last two of them are the only messages here that are neither a request nor a reply, and their id is 0
+because they number nothing: they go nowhere near either side's reply table, and a reply table
 that grew a slot per second would be the one part of this socket that leaked. See *Liveness*,
 below.
 
@@ -466,8 +473,9 @@ must. The recorded run is `docs/snp/evidence/ticket22/`.
   every tunnel it dials, once, and hands out no stream until the peer's sandbox has
   acknowledged it. The wire, the refusal reason and the ordering are `docs/policy-push.md`;
   what this contract contributes is `Apply` and the envelope, both unchanged.
-- **Nothing enforces a policy.** The null sandbox records and acknowledges. `n`, `f` and `x` are
-  unparsed by every line of code in this tree.
+- ~~**Nothing enforces a policy.**~~ Built, in ticket 26: the sentry parses `n`, `f` and `x`,
+  narrows its root filters in place, and rejects exec or connect outside the grant. See
+  `docs/policy-in-the-sentry.md`.
 - **No reset signal.** See the pump, above.
 - **A destination is not part of `Open`.** `Open` takes a peer name, and a peer is a sandbox
   rather than an exit: a name in the peer table maps to an address this tunneld dials and
@@ -496,5 +504,6 @@ must. The recorded run is `docs/snp/evidence/ticket22/`.
   were measured by: a real agent on this contract, what Deno could enforce of a pushed
   policy and what it could not, the timings per hop over two delegation hops, and whether
   `(N, F, X)` as typed is enough for the policy track.
-- **No runsc sandbox.** The socket exists and a forked test binary speaks it; the sandbox that
-  will consume these descriptors as FD-backed endpoints is Milestone 4's.
+- ~~**No runsc sandbox.**~~ Built, in ticket 25: `runsc` connects to the sandbox socket via
+  `tunnel_helper`, proxies streams to sentry FD-backed endpoints, and delivers pushed policies
+  to the sentry.

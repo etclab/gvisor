@@ -1412,10 +1412,10 @@ the next two the loopback proof's, and the last five the hardware runs'.
 15. **A second pusher's narrowing is a mismatch to the first pusher**, and closes that tunnel.
     Tunneld compares digests and cannot tell a narrowing from a different policy without parsing
     `n`, `f` and `x`, which is exactly what it is built not to do.
-16. **`attest/sandbox/live.go:47-48` understates E3.** It says the send was measured at "well under
+16. ~~**`attest/sandbox/live.go:47-48` understates E3.** It says the send was measured at "well under
     ten microseconds"; E3 measured a p50 of 17.015 µs and a mean of 30.174 µs, and only the minimum
     was under ten. `docs/sandbox-contract.md` carries the right number. The comment, not the
-    constant, is what is wrong.
+    constant, is what is wrong.~~ Closed by commit `23504fe75`, which updated the comment to quote E3's 17 µs median and 30 µs mean.
 17. **`--debug` is how every number in the spikes was read**, and it is not free. E1's and E2's
     sandboxes ran with it; a production sandbox would not, and the swap and decision costs would be
     the same or smaller. On hardware it is worse than a cost: `--debug --debug-log=/run/runsc-debug/`
@@ -1440,7 +1440,7 @@ the next two the loopback proof's, and the last five the hardware runs'.
     and 2 ms. The honest statement of what the arrangement gives is **"no wider than the boot table
     from the first instruction, and no wider than `P` from the moment `P` lands"**, and closing it
     would need a verb this design does not have: *start the workload under this policy*.
-21. **`Host.Apply` pushes only to the attachments that exist at that instant, and a sandbox that
+21. ~~**`Host.Apply` pushes only to the attachments that exist at that instant, and a sandbox that
     attaches afterwards never receives the policy.** `h.conns` is copied under the lock and iterated
     (`attest/sandbox/host.go:128-144`); SEV-SNP pair 3 is what that looks like on a console, and the
     order of four lines is the whole of it. Guest A dialled and pushed before guest B's runsc helper
@@ -1454,15 +1454,15 @@ the next two the loopback proof's, and the last five the hardware runs'.
     none of it**, and on a vendor whose only diagnostic is the console that is the difference between
     a claim and a fact. This is ticket 25's leftover 14 — two clients on one socket — in its sharpest
     form, and it is **the first thing the next ticket must close**: an acknowledgement has to mean
-    *this policy reached the sandbox that will enforce it*, which today it does not.
-22. **A liveness watch lives exactly as long as the tunnel the policy arrived on.**
+    *this policy reached the sandbox that will enforce it*, which today it does not.~~ Closed by ticket 27: contract v4 tracks roles, `Host.Apply` waits for the enforcing attachment and replays the policy in force to a late enforcing attachment. See `docs/the-ack-means-the-sandbox.md`.
+22. ~~**A liveness watch lives exactly as long as the tunnel the policy arrived on.**
     `watchLiveness` polls `conn.Live()` once a second and returns the moment it is false — silently,
     with no line and no refusal (`attest/tunneld/push.go:243-267`, the return at `:263`). An
     idle-closed tunnel therefore leaves nobody watching the sandbox it governed, which is not wrong —
     the tunnel it would have torn down is already gone — but it means a scenario must derive its idle
     timeout from its own hold. SEV-SNP pair 1 lost three assertions to a 60 s idle timeout a hundred
     seconds before its kill; the harness now uses `hold + 60` and prints it before the boot. **Worked
-    around, not fixed.**
+    around, not fixed.**~~ Closed by ticket 27: liveness watch is owned per sandbox attachment, outlives the tunnel, and marks the policy not-live on miss or close even when no tunnel is open. See `docs/the-ack-means-the-sandbox.md`.
 23. **The teardown line is lost to console contention on some boots.** Over the SEV-SNP pairs with a
     working kill, guest A reported the socket close twice and guest B once; in `run-5/` B's console
     carries neither the loss nor the refusal, and in `run-4/` both survived *interleaved with three

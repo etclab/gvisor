@@ -113,7 +113,7 @@ const (
 type Options struct {
 	// ChainDir is the directory on the config device holding the certificate
 	// chain provisioned for this platform — certificate-chain.bin and
-	// certificate-chain.json, written by cmd/provision-chain (ADR-0005). It is
+	// certificate-chain.json, written by attest-tool provision fetch (ADR-0005). It is
 	// required on AMD SEV-SNP: an acquirer with nowhere to read a chain from
 	// could only fail at its first acquisition or fetch one, and neither is
 	// acceptable. On Intel TDX it is unused and may be empty, because the

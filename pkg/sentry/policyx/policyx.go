@@ -156,10 +156,25 @@ const reportEvery = 100
 func NewSink() *Sink { return &Sink{} }
 
 // Narrow replaces the set the sink decides on.
+//
+// It does what its name says and nothing wider: a nil allow list is the state
+// a fresh sink starts in, where every exec is permitted, and once a set is in
+// force a narrowing back to that state is ignored rather than obeyed. The
+// caller already refuses a pushed policy that drops x — that refusal is
+// runsc/boot's policySubset and is where the peer is told why — but an
+// installed sink is the only thing standing between the workload and an
+// unpoliced execve, and one caller's mistake should not be able to hand it
+// back. Replacing one set with another, wider or narrower, is the caller's
+// business and is not second-guessed here; this package knows nothing about
+// policies and cannot tell which of two sets a peer was entitled to.
 func (s *Sink) Narrow(a *Allow) {
 	s.mu.Lock()
+	defer s.mu.Unlock()
+	if a == nil && s.allow != nil {
+		log.Warningf("policy x: a narrowing to no allow list at all was ignored; the sink keeps the %d paths and %d digests it is enforcing", len(s.allow.paths), len(s.allow.digests))
+		return
+	}
 	s.allow = a
-	s.mu.Unlock()
 }
 
 // Allow is the set in force.

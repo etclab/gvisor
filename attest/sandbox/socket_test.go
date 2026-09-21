@@ -706,91 +706,25 @@ func TestTheHostSaysWhatItPushedWithItsDigest(t *testing.T) {
 	}
 }
 
-func TestAPushThatArrivesBeforeTheEnforcingSandboxHasAttachedIsNotAcknowledgedUntilTheEnforcingSandboxHasIt(t *testing.T) {
+// aPushWaitingForAnEnforcingSandbox is the state the next two tests start from:
+// a host with only a network client attached — the exit client, in the measured
+// image — and a push held open on it under the caller's context. It returns the
+// host, its socket, and where the push's answer will arrive.
+func aPushWaitingForAnEnforcingSandbox(t *testing.T, ctx context.Context) (*sandbox.Host, string, chan error) {
+	t.Helper()
 	socket := filepath.Join(t.TempDir(), "sandbox.sock")
 	host, err := sandbox.Listen(socket, newFakeNetwork(), nil)
 	if err != nil {
 		t.Fatalf("listening on %s: %v", socket, err)
 	}
-	defer host.Close()
-
-	// Attach a network-only client first (simulating the exit client).
-	netClient, err := sandbox.Dial(socket, sandbox.RoleNetwork, nil)
-	if err != nil {
-		t.Fatalf("dialing network client: %v", err)
-	}
-	defer netClient.Close()
-	waitFor(t, "network client attached", func() bool { return host.Attached() > 0 })
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	appliedBytes := make(chan []byte, 1)
-	pushResult := make(chan error, 1)
-	go func() {
-		pushResult <- host.Apply(ctx, []byte(policyV1))
-	}()
-
-	// Assert that Apply does not return while only the network client is attached.
-	select {
-	case err := <-pushResult:
-		t.Fatalf("Apply returned before an enforcing sandbox attached: %v", err)
-	case <-time.After(100 * time.Millisecond):
-	}
-
-	// Attach the enforcing sandbox client.
-	enfClient, err := sandbox.Dial(socket, sandbox.RoleEnforcing, func(_ context.Context, p []byte) error {
-		appliedBytes <- p
-		return nil
-	})
-	if err != nil {
-		t.Fatalf("dialing enforcing client: %v", err)
-	}
-	defer enfClient.Close()
-
-	// Assert that the sandbox received the exact bytes pushed.
-	select {
-	case got := <-appliedBytes:
-		if string(got) != policyV1 {
-			t.Fatalf("enforcing sandbox received %q; want %q", string(got), policyV1)
-		}
-	case <-time.After(3 * time.Second):
-		t.Fatal("enforcing sandbox did not receive the policy")
-	}
-
-	// Assert that Apply now succeeds.
-	select {
-	case err := <-pushResult:
-		if err != nil {
-			t.Fatalf("Apply failed: %v", err)
-		}
-	case <-time.After(3 * time.Second):
-		t.Fatal("Apply did not return after enforcing sandbox acknowledged")
-	}
-}
-
-// TestAPushWaitingForAnEnforcingSandboxEndsWhenItsCallerGivesUp is the other
-// half of the wait above. A push held open for an enforcing sandbox that has not
-// arrived is the caller's wait and not the host's: cancelling the caller ends it,
-// and what comes back is the refusal that says what was missing.
-func TestAPushWaitingForAnEnforcingSandboxEndsWhenItsCallerGivesUp(t *testing.T) {
-	socket := filepath.Join(t.TempDir(), "sandbox.sock")
-	host, err := sandbox.Listen(socket, newFakeNetwork(), nil)
-	if err != nil {
-		t.Fatalf("listening on %s: %v", socket, err)
-	}
-	defer host.Close()
-
-	// A network client, so that what is waited for is an enforcing sandbox and
-	// not anybody at all.
+	t.Cleanup(func() { host.Close() })
 	netClient, err := sandbox.Dial(socket, sandbox.RoleNetwork, nil)
 	if err != nil {
 		t.Fatalf("dialing the network client: %v", err)
 	}
-	defer netClient.Close()
+	t.Cleanup(func() { netClient.Close() })
 	waitFor(t, "the network client to attach", func() bool { return host.Attached() > 0 })
 
-	ctx, cancel := context.WithCancel(context.Background())
 	pushed := make(chan error, 1)
 	go func() { pushed <- host.Apply(ctx, []byte(policyV1)) }()
 	select {
@@ -798,6 +732,53 @@ func TestAPushWaitingForAnEnforcingSandboxEndsWhenItsCallerGivesUp(t *testing.T)
 		t.Fatalf("Apply returned %v with only a network client attached; want it still waiting", err)
 	case <-time.After(100 * time.Millisecond):
 	}
+	return host, socket, pushed
+}
+
+// TestAPushThatArrivesBeforeTheEnforcingSandboxHasAttachedIsNotAcknowledgedUntilTheEnforcingSandboxHasIt
+// is what an acknowledgement means on this socket. The push lands while only the
+// network client is there, waits, and is answered when — and only when — the
+// enforcing sandbox has the bytes.
+func TestAPushThatArrivesBeforeTheEnforcingSandboxHasAttachedIsNotAcknowledgedUntilTheEnforcingSandboxHasIt(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_, socket, pushed := aPushWaitingForAnEnforcingSandbox(t, ctx)
+
+	applied := make(chan []byte, 1)
+	enf, err := sandbox.Dial(socket, sandbox.RoleEnforcing, func(_ context.Context, p []byte) error {
+		applied <- p
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("dialing the enforcing client: %v", err)
+	}
+	defer enf.Close()
+
+	select {
+	case got := <-applied:
+		if string(got) != policyV1 {
+			t.Fatalf("the enforcing sandbox received %q; want %q", got, policyV1)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("the enforcing sandbox did not receive the policy")
+	}
+	select {
+	case err := <-pushed:
+		if err != nil {
+			t.Fatalf("the push was refused after the enforcing sandbox took it: %v", err)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("the push was not acknowledged after the enforcing sandbox acknowledged it")
+	}
+}
+
+// TestAPushWaitingForAnEnforcingSandboxEndsWhenItsCallerGivesUp is the other
+// half of the wait. A push held open for an enforcing sandbox that has not
+// arrived is the caller's wait and not the host's: cancelling the caller ends it,
+// and what comes back is the refusal that says what was missing.
+func TestAPushWaitingForAnEnforcingSandboxEndsWhenItsCallerGivesUp(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	_, _, pushed := aPushWaitingForAnEnforcingSandbox(t, ctx)
 	cancel()
 	select {
 	case err := <-pushed:

@@ -17,15 +17,19 @@ package cmd
 import (
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
 	"golang.org/x/sys/unix"
 	"gvisor.dev/gvisor/pkg/unet"
+	"gvisor.dev/gvisor/pkg/urpc"
+	"gvisor.dev/gvisor/runsc/boot"
 )
 
 // serveWait bounds how long a test waits for serveSentry to come back. The
@@ -221,5 +225,144 @@ func TestTunnelHelperOutlivesATunneldThatSaysNothing(t *testing.T) {
 		}
 	case <-time.After(serveWait):
 		t.Fatalf("serveSentry is still waiting %v after the sentry closed the channel", serveWait)
+	}
+}
+
+// controlSocketPair binds a path the way runsc binds the sentry's control
+// socket — bound and not listening, so a connect to it is refused — and hands
+// back the path and the socket, so that a test can start listening on it later.
+func controlSocketPair(t *testing.T) (string, *unet.ServerSocket) {
+	t.Helper()
+	// Short, because a sockaddr_un holds 108 bytes and t.TempDir is already
+	// most of one on some machines.
+	dir, err := os.MkdirTemp("", "th")
+	if err != nil {
+		t.Fatalf("a directory for the control socket: %v", err)
+	}
+	t.Cleanup(func() { os.RemoveAll(dir) })
+	path := filepath.Join(dir, "runsc-c.sock")
+	ss, err := unet.Bind(path, false)
+	if err != nil {
+		t.Fatalf("binding %s: %v", path, err)
+	}
+	t.Cleanup(func() { ss.Close() })
+	return path, ss
+}
+
+// Policy is the object the fake control server registers, named for the sentry's
+// own so that urpc resolves boot.PolicyNarrow — urpc takes a method's name from
+// the type that carries it.
+type Policy struct {
+	digest string
+}
+
+// Narrow answers one push the way the sentry's does.
+func (p *Policy) Narrow(args *boot.PolicyNarrowArgs, result *boot.PolicyNarrowResult) error {
+	if len(args.Policy) == 0 {
+		return fmt.Errorf("policy refused: no document")
+	}
+	result.Digest = p.digest
+	return nil
+}
+
+// serveControl accepts one connection on a socket that is now listening and
+// answers Policy.Narrow on it, which is the sentry's control server reduced to
+// the one call this helper makes.
+func serveControl(t *testing.T, ss *unet.ServerSocket, digest string) {
+	t.Helper()
+	if err := ss.Listen(); err != nil {
+		t.Errorf("listening on the control socket: %v", err)
+		return
+	}
+	go func() {
+		conn, err := ss.Accept()
+		if err != nil {
+			return
+		}
+		server := urpc.NewServer()
+		server.Register(&Policy{digest: digest})
+		server.StartHandling(conn)
+	}()
+}
+
+// TestTunnelHelperWaitsForTheSentryToListenOnItsControlSocket is ticket 27's
+// finding 6, and the reason the loopback proof's early-push run was refused
+// before it: runsc binds the control socket and donates it before the sandbox
+// process starts, the sentry listens on it some hundreds of milliseconds later,
+// and this helper attaches to tunneld as the enforcing client at once — inside
+// that window. A push handed to it in there used to come back "reaching the
+// sentry at …: connection refused", which is a refusal that says nothing about
+// the document and leaves the workload running with no policy.
+//
+// What is asserted is both halves: that an apply made while the socket is only
+// bound does not come back refused, and that once the sentry listens the same
+// apply carries the digest the sentry named.
+func TestTunnelHelperWaitsForTheSentryToListenOnItsControlSocket(t *testing.T) {
+	path, ss := controlSocketPair(t)
+	applier := newPolicyApplier(path)
+
+	const digest = "3d1f2ab0"
+	type answer struct {
+		digest string
+		err    error
+		took   time.Duration
+	}
+	answered := make(chan answer, 1)
+	began := time.Now()
+	go func() {
+		d, err := applier.narrow([]byte(`{"format":"policy","version":1}`))
+		answered <- answer{digest: d, err: err, took: time.Since(began)}
+	}()
+
+	// Nothing is listening yet, so a helper that dialled once is already done
+	// and refused.
+	const refusedWindow = 300 * time.Millisecond
+	select {
+	case a := <-answered:
+		t.Fatalf("narrow came back after %v with digest %q and err %v, while the control socket was bound and nobody was listening on it: a push that lands in that window is refused for a reason that is nothing about the document", a.took, a.digest, a.err)
+	case <-time.After(refusedWindow):
+	}
+
+	serveControl(t, ss, digest)
+	select {
+	case a := <-answered:
+		if a.err != nil {
+			t.Fatalf("narrow said %v once the sentry was listening", a.err)
+		}
+		if a.digest != digest {
+			t.Errorf("narrow carried digest %q, wanted the one the sentry named, %q", a.digest, digest)
+		}
+		if a.took < refusedWindow {
+			t.Errorf("narrow answered in %v, which is less than the %v it spent waiting: it cannot have made the call after the sentry listened", a.took, refusedWindow)
+		}
+		if a.took > narrowConnectWait {
+			t.Errorf("narrow answered in %v, past the %v it is bounded at", a.took, narrowConnectWait)
+		}
+	case <-time.After(serveWait):
+		t.Fatalf("narrow is still waiting %v after the sentry started listening", serveWait)
+	}
+}
+
+// TestTunnelHelperGivesUpOnASentryThatNeverListens is the other end of the wait:
+// it is bounded, and what it says when it runs out names the socket and the
+// reason, so a sandbox that never came up is told apart from one that was slow.
+func TestTunnelHelperGivesUpOnASentryThatNeverListens(t *testing.T) {
+	path, _ := controlSocketPair(t)
+	applier := newPolicyApplier(path)
+
+	began := time.Now()
+	digest, err := applier.narrow([]byte(`{"format":"policy","version":1}`))
+	took := time.Since(began)
+	if err == nil {
+		t.Fatalf("narrow carried digest %q from a sentry that never listened", digest)
+	}
+	if !strings.Contains(err.Error(), path) {
+		t.Errorf("narrow said %q, which does not name the socket it could not reach", err)
+	}
+	if took < narrowConnectWait {
+		t.Errorf("narrow gave up after %v, before the %v it waits", took, narrowConnectWait)
+	}
+	if took > 2*narrowConnectWait {
+		t.Errorf("narrow took %v to give up on a %v wait", took, narrowConnectWait)
 	}
 }

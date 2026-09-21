@@ -225,6 +225,19 @@ func (a *policyApplier) apply(policy []byte) error {
 	return nil
 }
 
+// The bounds on waiting for the sentry to answer on its control socket. The
+// wait is five seconds, half of the ten tunneld gives a push
+// (sandbox.DefaultApplyWait, tunneld.DefaultPushTimeout), so that a helper still
+// waiting is a push the peer is answered about rather than one that timed out
+// with nothing said. The steps start at five milliseconds and double to fifty,
+// because the socket becomes connectable within a few hundred milliseconds of
+// the sandbox starting and a wait that long is not worth a tight spin.
+const (
+	narrowConnectWait = 5 * time.Second
+	narrowFirstStep   = 5 * time.Millisecond
+	narrowLongestStep = 50 * time.Millisecond
+)
+
 // narrow is the one call. The control socket is dialled per apply and not held:
 // the sentry's control server only listens once the sandbox is up, which is
 // long after this process starts, and a policy arrives a handful of times in a
@@ -233,9 +246,9 @@ func (a *policyApplier) narrow(policy []byte) (string, error) {
 	if a.controlSocket == "" {
 		return "", fmt.Errorf("policy refused: this sandbox's helper was given no control socket, so a policy cannot reach its sentry")
 	}
-	conn, err := controlclient.ConnectTo(a.controlSocket)
+	conn, err := a.connect()
 	if err != nil {
-		return "", fmt.Errorf("policy refused: reaching the sentry at %s: %v", a.controlSocket, err)
+		return "", err
 	}
 	defer conn.Close()
 	var result boot.PolicyNarrowResult
@@ -252,6 +265,52 @@ func (a *policyApplier) narrow(policy []byte) (string, error) {
 		return "", fmt.Errorf("policy refused: the sentry accepted the policy and named no digest")
 	}
 	return result.Digest, nil
+}
+
+// connect reaches the sentry's control socket, waiting out the window in which
+// the socket exists and nothing is listening on it yet.
+//
+// That window is the reason this retries. runsc binds the control socket and
+// donates the descriptor before it starts the sandbox process (createControlSocket
+// in runsc/sandbox/sandbox.go), and the sentry calls listen(2) on it some
+// hundreds of milliseconds later, when its control server comes up — so a
+// connect made in between is refused, not lost. This helper attaches to tunneld
+// as the enforcing client the moment it starts, which is inside that window, and
+// an enforcing attachment that cannot deliver a policy would make the whole
+// acknowledgement worthless: a push handed to it would be refused for a reason
+// that is nothing about the document.
+//
+// Waiting here rather than refusing keeps the meaning of the acknowledgement
+// intact, because the call below is made only once this has connected: the ack
+// still says the sentry has the policy, and the only thing that changed is how
+// long the peer waits to be told so. A sandbox that never listens is refused
+// when the wait runs out, with the last connect's reason.
+func (a *policyApplier) connect() (*urpc.Client, error) {
+	began := time.Now()
+	deadline := began.Add(narrowConnectWait)
+	step := narrowFirstStep
+	for attempt := 1; ; attempt++ {
+		conn, err := controlclient.ConnectTo(a.controlSocket)
+		if err == nil {
+			if attempt > 1 {
+				log.Infof("Tunnel helper: the sentry answered on %s at attempt %d, %v after the first",
+					a.controlSocket, attempt, time.Since(began))
+			}
+			return conn, nil
+		}
+		left := time.Until(deadline)
+		if left <= 0 {
+			return nil, fmt.Errorf("policy refused: reaching the sentry at %s, over %v and %d attempts: %v",
+				a.controlSocket, narrowConnectWait, attempt, err)
+		}
+		if step > left {
+			step = left
+		}
+		time.Sleep(step)
+		if step *= 2; step > narrowLongestStep {
+			step = narrowLongestStep
+		}
+	}
 }
 
 // live starts the one alive goroutine, or retargets it at a newer policy.

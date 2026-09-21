@@ -1862,7 +1862,7 @@ scenario_policy() {
         grep -qF -- "tunneld: SANDBOX liveness lost: the sandbox closed its socket" "$a"
   check "guest-b: the same on the other guest" \
         grep -qF -- "tunneld: SANDBOX liveness lost: the sandbox closed its socket" "$b"
-  check "guest-b's tunneld refused the tunnel it had applied a policy on, naming liveness" \
+  check "guest-b's tunneld named liveness when the sandbox it had applied a policy to went, whether or not a tunnel was still open to close" \
         grep -qF -- "$LIVENESS_REASON" "$b"
   check "guest-a: the workload was killed rather than running out of work" \
         not_in_file "$a" "nothing killed this workload"

@@ -820,16 +820,17 @@ func TestASecondEnforcingClientOnOneSocketIsRefusedAndANonEnforcingClientIsNot(t
 
 	// Second enforcing client tries to connect. It must be refused and its socket closed.
 	enf2, err := sandbox.Dial(socket, sandbox.RoleEnforcing, func(context.Context, []byte) error { return nil })
-	if err == nil {
-		defer enf2.Close()
-		select {
-		case <-enf2.Done():
-			if enf2.Err() == nil || !strings.Contains(enf2.Err().Error(), "a second enforcing client is not permitted on this socket") {
-				t.Fatalf("second enforcing client closed with error %v; want reason saying second enforcing client is not permitted", enf2.Err())
-			}
-		case <-time.After(3 * time.Second):
-			t.Fatal("second enforcing client was not closed")
+	if err != nil {
+		t.Fatalf("dialing second enforcing client: %v", err)
+	}
+	defer enf2.Close()
+	select {
+	case <-enf2.Done():
+		if enf2.Err() == nil || !strings.Contains(enf2.Err().Error(), "a second enforcing client is not permitted on this socket") {
+			t.Fatalf("second enforcing client closed with error %v; want reason saying second enforcing client is not permitted", enf2.Err())
 		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("second enforcing client was not closed")
 	}
 
 	// A non-enforcing (network) client connects on the same socket. It must succeed.

@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"gvisor.dev/gvisor/attest"
@@ -284,22 +285,31 @@ type livenessWatch struct {
 	live   sandbox.Live
 	digest string
 	cancel context.CancelFunc
+
+	// fired says this watch has reported its loss and answered it. A watch that
+	// has fired is spent: the tunnel it names is closed, the attachment it was
+	// over has been given up, and starting it again would ask for the loss of a
+	// claim that has already been given up — which the sandbox answers at once,
+	// and which would close whatever has taken that sandbox's place.
+	fired atomic.Bool
 }
 
 // startWatch starts one watch, retiring whatever was running first. A nil watch
-// starts nothing, which is what a retirement that found none gives back.
+// starts nothing, which is what a retirement that found none gives back, and
+// neither does one that has already fired.
 func (t *Tunneld) startWatch(w *livenessWatch) {
-	if w == nil {
+	if w == nil || w.fired.Load() {
 		return
 	}
 	ctx, cancel := context.WithCancel(context.Background())
+	started := &livenessWatch{conn: w.conn, live: w.live, digest: w.digest, cancel: cancel}
 	t.livenessMu.Lock()
 	if t.liveness != nil {
 		t.liveness.cancel()
 	}
-	t.liveness = &livenessWatch{conn: w.conn, live: w.live, digest: w.digest, cancel: cancel}
+	t.liveness = started
 	t.livenessMu.Unlock()
-	go t.watchLiveness(ctx, w.conn, w.digest, w.live)
+	go t.watchLiveness(ctx, started)
 }
 
 // retireWatch stops the watch that is running and gives it back, so that a
@@ -316,6 +326,20 @@ func (t *Tunneld) retireWatch() *livenessWatch {
 	return w
 }
 
+// endWatch takes a watch off this tunneld once it has ended on its own, so that
+// a retirement cannot hand back a watch nothing is running. It gives up that
+// watch's context whether or not it is still the one here: a watch already
+// replaced leaves the replacement alone, which is what the identity compare is
+// for.
+func (t *Tunneld) endWatch(w *livenessWatch) {
+	t.livenessMu.Lock()
+	if t.liveness == w {
+		t.liveness = nil
+	}
+	t.livenessMu.Unlock()
+	w.cancel()
+}
+
 // watchLiveness watches the policy in force on the sandbox beside this tunneld.
 // It belongs to the sandbox attachment and not to the tunnel the policy arrived
 // on, and it outlives that tunnel: ticket 26's watch returned as soon as the
@@ -330,8 +354,9 @@ func (t *Tunneld) retireWatch() *livenessWatch {
 // peer whose tunnel went, the other says that none was open. In both cases the
 // enforcing attachment is dropped and no policy is left in force, so the next
 // stream or push is answered by a sandbox that is not claiming one.
-func (t *Tunneld) watchLiveness(ctx context.Context, conn *tunnel.Conn, digest string, live sandbox.Live) {
-	lost := live.Watch(ctx, digest)
+func (t *Tunneld) watchLiveness(ctx context.Context, w *livenessWatch) {
+	defer t.endWatch(w)
+	lost := w.live.Watch(ctx, w.digest)
 	select {
 	case err, ok := <-lost:
 		// A loss that arrives from a watch already retired is a loss of a claim
@@ -341,20 +366,18 @@ func (t *Tunneld) watchLiveness(ctx context.Context, conn *tunnel.Conn, digest s
 		if !ok || ctx.Err() != nil {
 			return
 		}
-		if conn != nil && conn.Live() {
+		w.fired.Store(true)
+		if w.conn != nil && w.conn.Live() {
 			t.refuse(attest.Refuse(attest.ReasonPolicyNotLive,
-				"a peer at %s pushed a policy this sandbox no longer enforces: %v", conn.RemoteAddr(), err))
-			conn.Close()
+				"a peer at %s pushed a policy this sandbox no longer enforces: %v", w.conn.RemoteAddr(), err))
+			w.conn.Close()
 		} else {
 			t.refuse(attest.Refuse(attest.ReasonPolicyNotLive,
 				"the policy pushed to this sandbox is no longer live: %v; no tunnel was closed because none was open", err))
 		}
-		live.DropEnforcing()
-		return
+		w.live.DropEnforcing()
 	case <-ctx.Done():
-		return
 	case <-t.done:
-		return
 	}
 }
 

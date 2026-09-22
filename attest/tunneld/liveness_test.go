@@ -18,6 +18,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -278,23 +279,17 @@ func TestASecondPushOfANarrowerPolicyIsNotAMismatch(t *testing.T) {
 	}
 	console := &eventLog{}
 	var host *sandbox.Host
-	pair := startLivenessPair(t, func(b *pushNode) {
-		var err error
-		host, err = sandbox.Listen(filepath.Join(t.TempDir(), "sandbox.sock"), b.Tunneld,
-			func(format string, a ...any) { console.record(fmt.Sprintf(format, a...)) })
-		if err != nil {
-			t.Fatalf("listening for a sandbox: %v", err)
-		}
-		t.Cleanup(func() { host.Close() })
 
-		// A sandbox that says which policy it is enforcing as it installs it and
-		// only then answers, which is what a sentry handed a policy does and is
-		// the window a watch left over from the previous policy would look into.
-		// The client reaches its own callback through a channel, because the
-		// callback runs on the goroutine Dial starts and the variable would
-		// otherwise be written and read with nothing ordering the two.
-		dialed := make(chan *sandbox.Client, 1)
-		client, err := sandbox.Dial(host.Path(), sandbox.RoleEnforcing, func(_ context.Context, policy []byte) error {
+	// A sandbox that says which policy it is enforcing as it installs it and
+	// only then answers, which is what a sentry handed a policy does and is the
+	// window a watch left over from the previous policy would look into. The
+	// client reaches its own callback through a channel, because the callback
+	// runs on the goroutine Dial starts and the variable would otherwise be
+	// written and read with nothing ordering the two.
+	dialed := make(chan *sandbox.Client, 1)
+	pair := startLivenessPair(t, func(b *pushNode) {
+		var client *sandbox.Client
+		host, client = hostBeside(t, b, console, func(_ context.Context, policy []byte) error {
 			c := <-dialed
 			dialed <- c
 			sum := sha256.Sum256(policy)
@@ -304,15 +299,7 @@ func TestASecondPushOfANarrowerPolicyIsNotAMismatch(t *testing.T) {
 			time.Sleep(aSlowInstall)
 			return nil
 		})
-		if err != nil {
-			t.Fatalf("dialing %s: %v", host.Path(), err)
-		}
 		dialed <- client
-		t.Cleanup(func() { client.Close() })
-		for host.Attached() == 0 {
-			time.Sleep(time.Millisecond)
-		}
-		b.Attach(host)
 	})
 
 	// Two pulses of the first policy, so that what the narrowing interrupts is
@@ -342,6 +329,105 @@ func TestASecondPushOfANarrowerPolicyIsNotAMismatch(t *testing.T) {
 	}
 	if said := console.order(); strings.Contains(said, "liveness lost") {
 		t.Errorf("the host reported a lost claim for a policy the sandbox had just taken:\n%s", said)
+	}
+}
+
+// waitFor blocks until what it is waiting for is true, or fails the test. Every
+// wait in this file is bounded: a sandbox that never attaches is a test that
+// says so rather than a test that hangs.
+func waitFor(t *testing.T, what string, done func() bool) {
+	t.Helper()
+	deadline := time.Now().Add(20 * time.Second)
+	for !done() {
+		if time.Now().After(deadline) {
+			t.Fatalf("timed out waiting for %s", what)
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+}
+
+// hostBeside puts a sandbox host beside the receiving tunneld with one
+// in-process enforcing client attached to it, and hands back both. The console
+// it writes to is the host's, which is where the sandbox's own sentences appear.
+func hostBeside(t *testing.T, b *pushNode, console *eventLog, apply func(context.Context, []byte) error) (*sandbox.Host, *sandbox.Client) {
+	t.Helper()
+	host, err := sandbox.Listen(filepath.Join(t.TempDir(), "sandbox.sock"), b.Tunneld,
+		func(format string, a ...any) { console.record(fmt.Sprintf(format, a...)) })
+	if err != nil {
+		t.Fatalf("listening for a sandbox: %v", err)
+	}
+	t.Cleanup(func() { host.Close() })
+	client, err := sandbox.Dial(host.Path(), sandbox.RoleEnforcing, apply)
+	if err != nil {
+		t.Fatalf("dialing %s: %v", host.Path(), err)
+	}
+	t.Cleanup(func() { client.Close() })
+	waitFor(t, "the sandbox to attach", func() bool { return host.Attached() > 0 })
+	b.Attach(host)
+	return host, client
+}
+
+// TestAWatchThatHasFiredIsNotStartedAgainByAPushThatDidNotLand is the other way
+// a watch outlives what it was over. A watch that has reported its loss has had
+// that loss answered — the tunnel closed, the attachment given up — so it is
+// spent; a later push that does not land must not put it back on, because the
+// digest it names is one nothing is enforcing and the sandbox says so at once.
+func TestAWatchThatHasFiredIsNotStartedAgainByAPushThatDidNotLand(t *testing.T) {
+	if os.Getenv(livenessSocketEnv) != "" {
+		t.Skip("this process is the sandbox")
+	}
+	console := &eventLog{}
+	var (
+		host  *sandbox.Host
+		first *sandbox.Client
+	)
+	pair := startLivenessPair(t, func(b *pushNode) {
+		host, first = hostBeside(t, b, console, func(context.Context, []byte) error { return nil })
+	})
+
+	// The first sandbox goes, which is a loss the watch reports and answers.
+	first.Close()
+	if r := pair.b.refusals.next(t); r.Reason() != attest.ReasonPolicyNotLive {
+		t.Fatalf("b refused with %v; want %v (log: %s)", r.Reason(), attest.ReasonPolicyNotLive, r.LogString())
+	}
+	waitFor(t, "the first sandbox to go", func() bool { return host.Attached() == 0 })
+
+	// A second sandbox attaches and refuses what the next peer pushes, which is
+	// a push that does not land and so a watch that would be started again.
+	second, err := sandbox.Dial(host.Path(), sandbox.RoleEnforcing, func(context.Context, []byte) error {
+		return errors.New("this sandbox will not have it")
+	})
+	if err != nil {
+		t.Fatalf("dialing the second sandbox: %v", err)
+	}
+	defer second.Close()
+	waitFor(t, "the second sandbox to attach", func() bool { return host.Attached() == 1 })
+
+	c := startPushNode(t, "sandbox-c", imageA, admitting(imageB), nil, toward("b", pair.b), pushing(policyNarrower))
+	if _, err := c.Peer(ctx(t), "b"); err == nil {
+		t.Fatal("a push the sandbox refused was acknowledged")
+	}
+
+	// Past every look the spent watch would have taken had it been started
+	// again, and past the refusal it would have reported at once.
+	time.Sleep(4 * aSlowInstall)
+
+	var live int
+	for _, r := range pair.b.refusals.none() {
+		if r.Reason() == attest.ReasonPolicyNotLive {
+			live++
+		}
+	}
+	if live != 1 {
+		t.Errorf("b logged %d %v refusals; want the one for the sandbox that went, and none for the push that did not land", live, attest.ReasonPolicyNotLive)
+	}
+	if n := host.Attached(); n != 1 {
+		t.Errorf("%d sandboxes are attached; want the second one still there", n)
+	}
+	select {
+	case <-second.Done():
+		t.Error("the second sandbox was closed by a watch that had already fired")
+	default:
 	}
 }
 

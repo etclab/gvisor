@@ -834,11 +834,6 @@ func TestAnEnforcingSandboxThatAttachesAfterAPushReceivesThePolicyInForce(t *tes
 	}
 }
 
-// TestASecondAttachMessageOnOneConnectionIsRefused pins the one rule the client
-// on the other side of this socket cannot be held to by the compiler, because
-// one of them (runsc/cmd/tunnel_client.go) is written by hand: attach once. A
-// second declaration on one connection would be a second role, and — with a
-// push waiting for an enforcing sandbox — a second delivery of it.
 // TestANetworkClientIsNeverPushedAPolicy is the half of contract v4 the role
 // declaration exists for. A network attachment is a channel and nothing else, so
 // a policy goes to the enforcing sandbox and the network client is not woken for
@@ -909,6 +904,11 @@ func TestANetworkClientIsNeverPushedAPolicy(t *testing.T) {
 	}
 }
 
+// TestASecondAttachMessageOnOneConnectionIsRefused pins the one rule the client
+// on the other side of this socket cannot be held to by the compiler, because
+// one of them (runsc/cmd/tunnel_client.go) is written by hand: attach once. A
+// second declaration on one connection would be a second role, and — with a
+// push waiting for an enforcing sandbox — a second delivery of it.
 func TestASecondAttachMessageOnOneConnectionIsRefused(t *testing.T) {
 	socket := filepath.Join(t.TempDir(), "sandbox.sock")
 	host, err := sandbox.Listen(socket, newFakeNetwork(), nil)

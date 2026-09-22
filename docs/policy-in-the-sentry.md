@@ -1442,7 +1442,9 @@ the next two the loopback proof's, and the last five the hardware runs'.
     loopback runs that measured it and **2.138 s** in the seventh, on the same machine with the same
     code. Nothing in the design depends on it being fast — a one-second pulse tolerates it and did —
     but it is what sets the width of the window below it, and the run that took a second is the run
-    whose workload made its first query under the boot table alone.
+    whose workload made its first query under the boot table alone. Ticket 27's re-run of E1 did not
+    reproduce the outlier: over 25 runs the attach was 112.396–176.234 ms, p50 151.357 ms
+    (`docs/snp/evidence/ticket27/spikes/E1/output.txt:76-81`).
 20. **A policy cannot govern a workload's first instructions.** `Policy.Narrow` is refused until the
     loader has started the workload, a sandbox becomes ready for a policy in four steps, and a push
     that arrives between any two of them is refused *and takes its tunnel with it*, so a peer that

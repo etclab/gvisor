@@ -1007,6 +1007,71 @@ func TestTheHostHoldsAClientToTheAttachRules(t *testing.T) {
 	}
 }
 
+// TestADropDoesNotCloseTheSandboxThatReplacedTheOneWhoseClaimWasLost is the
+// difference between dropping a claim and dropping whatever is there. A loss
+// takes a quarter of a pulse to be seen and a moment more to be answered, and a
+// fresh sandbox can attach and be replayed the policy in force inside that
+// window; the drop that answers the first sandbox's loss must not close it.
+func TestADropDoesNotCloseTheSandboxThatReplacedTheOneWhoseClaimWasLost(t *testing.T) {
+	socket := filepath.Join(t.TempDir(), "sandbox.sock")
+	host, err := sandbox.Listen(socket, newFakeNetwork(), nil)
+	if err != nil {
+		t.Fatalf("listening on %s: %v", socket, err)
+	}
+	defer host.Close()
+
+	first, err := sandbox.Dial(socket, sandbox.RoleEnforcing, func(context.Context, []byte) error { return nil })
+	if err != nil {
+		t.Fatalf("dialing the first enforcing client: %v", err)
+	}
+	waitFor(t, "the first enforcing client to attach", func() bool { return host.Attached() == 1 })
+	if err := host.Apply(context.Background(), []byte(policyV1)); err != nil {
+		t.Fatalf("pushing the policy: %v", err)
+	}
+
+	lost := host.Watch(context.Background(), livenessDigest(policyV1))
+	first.Close()
+	if err := livenessLost(t, lost, 3*time.Second); err == nil {
+		t.Fatal("the watch reported the sandbox that went as live")
+	}
+
+	// The replacement attaches and is replayed the policy in force, all before
+	// the watcher gets round to answering the loss.
+	replayed := make(chan []byte, 1)
+	second, err := sandbox.Dial(socket, sandbox.RoleEnforcing, func(_ context.Context, p []byte) error {
+		replayed <- p
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("dialing the replacement: %v", err)
+	}
+	defer second.Close()
+	select {
+	case got := <-replayed:
+		if string(got) != policyV1 {
+			t.Fatalf("the replacement was replayed %q; want %q", got, policyV1)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("the replacement was not replayed the policy in force")
+	}
+
+	// Now the watcher answers the first sandbox's loss.
+	host.DropEnforcing()
+
+	select {
+	case <-second.Done():
+		t.Fatal("the sandbox that replaced the one that went was closed for its loss")
+	case <-time.After(300 * time.Millisecond):
+	}
+	if n := host.Attached(); n != 1 {
+		t.Errorf("%d sandboxes are attached; want the replacement still there", n)
+	}
+	// And what it took is still what is in force, so a push reaches it.
+	if err := host.Apply(context.Background(), []byte(policyV1)); err != nil {
+		t.Errorf("pushing to the replacement: %v", err)
+	}
+}
+
 // TestALateEnforcingSandboxThatRefusesThePolicyInForceIsDropped is the replay's
 // failure, which the host has to answer for itself: the sandbox that had the
 // policy is gone and the one that arrived will not have it, so there is nothing

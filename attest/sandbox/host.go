@@ -379,6 +379,9 @@ func (h *Host) watch(ctx context.Context, digest string, watched []*attached, lo
 		case now := <-tick.C:
 			for _, a := range watched {
 				if why := a.lost(digest, now); why != "" {
+					// This attachment, and not whichever one is enforcing by
+					// the time the watcher answers ([Host.DropEnforcing]).
+					a.claimLost.Store(true)
 					h.reportLost(lost, why)
 					return
 				}
@@ -387,13 +390,24 @@ func (h *Host) watch(ctx context.Context, digest string, watched []*attached, lo
 	}
 }
 
-// DropEnforcing closes the enforcing attachment, if there is one, and leaves no
+// DropEnforcing gives up the attachment whose claim was lost and leaves no
 // policy in force (live.go). It is what a watcher that has been told the claim
 // is lost calls to stop the claim being made.
+//
+// Which attachment that is, is the whole of it. A loss takes up to a quarter of
+// a pulse to be seen and a moment more to be answered, and a fresh sandbox can
+// attach and be replayed the policy in force inside that window. Closing
+// whatever is enforcing now would close that sandbox for the dead one's failure,
+// so an attachment that has not lost a claim is left alone — and so is the
+// policy in force, which is the policy it took.
 func (h *Host) DropEnforcing() {
 	h.mu.Lock()
-	h.inForce = nil
 	a := h.enforcing()
+	if a != nil && !a.claimLost.Load() {
+		h.mu.Unlock()
+		return
+	}
+	h.inForce = nil
 	h.mu.Unlock()
 	if a != nil {
 		a.close()
@@ -496,6 +510,13 @@ type attached struct {
 	// Reading it under a.mu, as this once did, was reading it under a lock none
 	// of those writers hold.
 	gone atomic.Bool
+
+	// claimLost says this attachment's claim to the policy in force has been
+	// given up on: a watch found it no longer enforcing what it acknowledged,
+	// or it refused the policy it was replayed. It is what tells the attachment
+	// a drop is about from whichever attachment is enforcing when the drop
+	// arrives ([Host.DropEnforcing]).
+	claimLost atomic.Bool
 
 	// acked says this sandbox has acknowledged a policy at some point, which is
 	// what makes it something there is a claim to lose. It is written once and
@@ -605,6 +626,7 @@ func (h *Host) replayInForce(a *attached) {
 		// Saying so is this host's business; whether a tunnel should go for it
 		// is the watcher's, and there may well be one open.
 		h.log("SANDBOX the enforcing sandbox that attached to %s refused the policy in force: %v; it has been dropped and no policy is in force", h.path, err)
+		a.claimLost.Store(true)
 		h.DropEnforcing()
 	}
 }

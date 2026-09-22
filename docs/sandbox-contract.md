@@ -369,7 +369,11 @@ watch: a push reaches the single client that declared itself enforcing, so the p
 for exactly as long as that attachment goes on pulsing its digest. The other client on the socket
 in a guest is the exit, which attaches as `network`, takes streams and is pushed nothing;
 `agent-probe`'s test is the two of them on one socket, and the loss arrives when the enforcing one
-goes.
+goes. **A tunneld whose peer is an exit must push nothing at it**, and since version 4 that is the
+only thing it can do: the exit on that socket is a network client, a network client is never pushed
+a policy, so a document sent its way would wait out the push deadline for an enforcing sandbox that
+does not exist behind an exit, come back refused, and take the tunnel with it
+(`attest/cmd/agent-probe/adapter_test.go`).
 
 **The workload's exit ends liveness, and it is the fast case.** The workload ends, the sandbox's
 client closes, the attachment goes, and the loss is reported at the next quarter-pulse — which

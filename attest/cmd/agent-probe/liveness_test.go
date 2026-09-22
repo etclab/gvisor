@@ -100,15 +100,17 @@ func TestBothSandboxesOnOneSocketPulseWhatTheyAcknowledged(t *testing.T) {
 	}
 
 	// The exit remains attached, but was never pushed to and never acknowledged
-	// a policy. A watch finds no enforcing sandbox that acknowledged.
+	// a policy. A watch finds no enforcing sandbox that acknowledged, and says
+	// that rather than that a socket closed: the exit is still sitting on this
+	// one, and the claim that was lost is a claim nothing here ever made.
 	elsewhere := host.Watch(context.Background(), strings.Repeat("00", 32))
 	select {
 	case err, ok := <-elsewhere:
 		if !ok {
 			t.Fatal("the watch over the exit ended without reporting anything")
 		}
-		if !strings.Contains(err.Error(), "closed its socket") {
-			t.Errorf("watch returned %q; want its socket closing", err)
+		if !strings.Contains(err.Error(), "no attachment has acknowledged this policy") {
+			t.Errorf("watch returned %q; want the absence of an acknowledgement", err)
 		}
 	case <-time.After(3 * time.Second):
 		t.Fatal("the watch reported nothing")

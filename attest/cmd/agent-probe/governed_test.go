@@ -584,11 +584,25 @@ func (l *loopback) tellTeardown(t *testing.T, notes *strings.Builder, r *sandbox
 		fmt.Fprintf(notes, "**Liveness was not reported lost** after %s.\n\n", why)
 		return
 	}
+	// One loss per run, which is the sandbox going. A second is a claim reported
+	// lost that nobody was making: an operator reading this console has to be
+	// able to take a loss as a sandbox that stopped enforcing, and every extra
+	// one is a refusal written against a peer for something that did not happen.
+	if all := l.console.after(r.began, livenessLost); len(all) != 1 {
+		t.Errorf("%s: liveness was reported lost %d times in one run, and the sandbox goes once:\n%s",
+			r.name, len(all), strings.Join(lines(all), "\n"))
+	}
+	// The two can land either side of `ended`: the sandbox's socket closes when
+	// the sentry goes, and runsc's own exit is accounted a few milliseconds
+	// afterwards — so a loss reported before runsc returned is the ordinary case
+	// and not a clock running backwards. Which side it fell is printed rather
+	// than a negative duration.
 	fmt.Fprintf(notes, "Liveness ends with %s, and the tunnel goes with it:\n\n```\n%s\n%s\n```\n\n"+
-		"runsc exited at %s; the loss was reported **%s** later and the tunnel was refused **%s** later. The "+
+		"runsc exited at %s; the loss was reported **%s %s** that and the tunnel was refused **%s %s** that. The "+
 		"bound is a quarter of a pulse, which is how often a watch looks (`sandbox.watchInterval`).\n\n",
 		why, lost.text, refused.text, ended.Format("15:04:05.000"),
-		lost.when.Sub(ended).Round(time.Millisecond), refused.when.Sub(ended).Round(time.Millisecond))
+		absDur(lost.when.Sub(ended)).Round(time.Millisecond), earlierLater(lost.when, ended),
+		absDur(refused.when.Sub(ended)).Round(time.Millisecond), earlierLater(refused.when, ended))
 	if !strings.Contains(lost.text, "closed its socket") {
 		t.Errorf("%s: the loss was reported as %q; the workload going is the socket closing", r.name, lost.text)
 	}

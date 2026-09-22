@@ -1,9 +1,0 @@
-PLAIN no contract, no dialer of this program's own, net/http's default transport and the ordinary resolver; proxy variables set in this environment: none
-WITHOUT-MODEL no model is called in this run and no key is read: the request to https://api.anthropic.com/v1/messages carries the body the loop builds and no x-api-key header, so the status it answers with is an authentication error and what that status proves is the reach of the path and not the model's work. There are no tokens, no cost and no summary below, and the gap before the document fetch is a fixed 5s.
-task=summarize
-prompt="Fetch the document at https://www.rfc-editor.org/rfc/rfc8446.txt, write a summary of it in at most five sentences, and save the summary to the file summary.txt in the current directory using write_file. Then reply with the word DONE."
-endpoint=https://api.anthropic.com/v1/messages tools=2
-model endpoint: POST https://api.anthropic.com/v1/messages -> HTTP 401 proto=HTTP/2.0 141 bytes in 418ms; what it answered: {"type":"error","error":{"type":"authentication_error","message":"x-api-key header is required"},"request_id":"req_011CfHYV6G5YTQ5XegXpuL2F"}
-  tool fetch_url https://www.rfc-editor.org/rfc/rfc8446.txt -> HTTP 200 proto=HTTP/2.0 20480 bytes (the 20 KiB cap fetch_url reads to) in 204ms
-  tool write_file summary.txt -> wrote 122 bytes to summary.txt, is_error=false
-NO-MODEL DONE model_status=401 model_bytes=141 doc_status=200 doc_bytes=20480 in 5.637s

@@ -1,0 +1,233 @@
+=== RUN   TestGovernedLoopback
+2026/09/21 20:49:10 failed to sufficiently increase receive buffer size (was: 208 kiB, wanted: 7168 kiB, got: 416 kiB). See https://github.com/quic-go/quic-go/wiki/UDP-Buffer-Sizes for details.
+b  SANDBOX attached on /dev/shm/t25-797149950/b.sock
+b  SANDBOX attached on /dev/shm/t25-797149950/b.sock role=network
+exit  EXIT serving, allow=api.anthropic.com:443,www.rfc-editor.org:443
+a serves the contract on /dev/shm/t25-797149950/a.sock and dials b at 127.0.0.1:37968
+the rootfs is /tmp/pniroula/TestGovernedLoopback4014281046/001/rootfs: one static agent-probe, resolv.conf/hosts/nsswitch.conf and 185259 bytes of anchors
+off-policy  the seccheck receiver is /home/pniroula/Projects/gvisor-t27/bazel-bin/seccheck-receiver on /dev/shm/t25-797149950/off-policy.events, recording sentry/egress_refused and sentry/exec_refused
+
+===== sandbox off-policy =====
+off-policy  table = {
+	"default_exit": "b",
+	"names": {
+		"api.anthropic.com": {
+			"port": 443
+		},
+		"www.rfc-editor.org": {
+			"port": 443
+		}
+	}
+}
+off-policy  $ /home/pniroula/Projects/gvisor-t27/bazel-bin/runsc/runsc_/runsc --root=/dev/shm/t25-797149950/off-policy-state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new --tunnel-socket=/dev/shm/t25-797149950/a.sock --tunnel-table=/tmp/pniroula/TestGovernedLoopback4014281046/001/off-policy/table.json --pod-init-config=/tmp/pniroula/TestGovernedLoopback4014281046/001/off-policy/pod-init.json --debug --debug-log=/tmp/pniroula/TestGovernedLoopback4014281046/001/off-policy/debug/ --strace run --bundle /dev/shm/t25-797149950/off-policy t25-off-policy-532040
+a  SANDBOX attached on /dev/shm/t25-797149950/a.sock
+a  SANDBOX attached on /dev/shm/t25-797149950/a.sock role=enforcing
+off-policy  a sandbox is on a's socket, 167ms into the run
+a  Apply returned after 80.902ms: sandbox: policy refused: the sandbox refused it: policy refused: the sandbox is created and a policy is honoured only by a started one
+a  REFUSAL verification refused: the policy pushed to the peer was not applied: a peer at 127.0.0.1:56209 pushed a policy this sandbox did not apply: sandbox: policy refused: the sandbox refused it: policy refused: the sandbox is created and a policy is honoured only by a started one
+root-off  REFUSAL verification refused: the policy pushed to the peer was not applied: "a" at 127.0.0.1:39839 did not apply the policy pushed to it: the peer refused it: the sandbox beside this tunneld did not apply it
+root-off  push 1 was too early: attest: verification failed
+a  SANDBOX applied format=policy version=1 bytes=156 sha256=8448109aea94a097e2a1566a1aef63558a2557fdfc4950a413dab35f6039966b
+a  Apply returned after 14.139ms: <nil>
+
+root-off  PUSH sha256=8448109aea94a097e2a1566a1aef63558a2557fdfc4950a413dab35f6039966b bytes=156 returned after 76ms on attempt 2 374ms into the run: err=<nil>
+off-policy  strace-digest.txt: 6 kinds of failure, 0 unsupported, 0 execs, 4 resolver datagrams, 8 adapter lines
+off-policy  runsc ended with status 1 after 579ms (err=exit status 1)
+
+off-policy  said on stdout:
+PLAIN no contract, no dialer of this program's own, net/http's default transport and the ordinary resolver; proxy variables set in this environment: none
+WITHOUT-MODEL no model is called in this run and no key is read: the request to https://api.anthropic.com/v1/messages carries the body the loop builds and no x-api-key header, so the status it answers with is an authentication error and what that status proves is the reach of the path and not the model's work. There are no tokens, no cost and no summary below, and the gap before the document fetch is a fixed 5s.
+task=summarize
+prompt="Fetch the document at https://www.rfc-editor.org/rfc/rfc8446.txt, write a summary of it in at most five sentences, and save the summary to the file summary.txt in the current directory using write_file. Then reply with the word DONE."
+endpoint=https://api.anthropic.com/v1/messages tools=2
+model endpoint https://api.anthropic.com/v1/messages: Post "https://api.anthropic.com/v1/messages": dial tcp: lookup api.anthropic.com on 127.0.0.53:53: no such host
+
+off-policy  said on stderr:
+agent-probe: requesting https://api.anthropic.com/v1/messages without a key: Post "https://api.anthropic.com/v1/messages": dial tcp: lookup api.anthropic.com on 127.0.0.53:53: no such host
+off-policy  TIMING tunnel_open=never first_connect=never first_byte=never task_end=579ms
+a  SANDBOX liveness lost: the sandbox closed its socket
+a  REFUSAL verification refused: the policy pushed to the peer is no longer live: a peer at 127.0.0.1:37435 pushed a policy this sandbox no longer enforces: the sandbox closed its socket
+on-policy  the seccheck receiver is /home/pniroula/Projects/gvisor-t27/bazel-bin/seccheck-receiver on /dev/shm/t25-797149950/on-policy.events, recording sentry/egress_refused and sentry/exec_refused
+
+===== sandbox on-policy =====
+on-policy  table = {
+	"default_exit": "b",
+	"names": {
+		"api.anthropic.com": {
+			"port": 443
+		},
+		"www.rfc-editor.org": {
+			"port": 443
+		}
+	}
+}
+on-policy  $ /home/pniroula/Projects/gvisor-t27/bazel-bin/runsc/runsc_/runsc --root=/dev/shm/t25-797149950/on-policy-state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new --tunnel-socket=/dev/shm/t25-797149950/a.sock --tunnel-table=/tmp/pniroula/TestGovernedLoopback4014281046/001/on-policy/table.json --pod-init-config=/tmp/pniroula/TestGovernedLoopback4014281046/001/on-policy/pod-init.json --debug --debug-log=/tmp/pniroula/TestGovernedLoopback4014281046/001/on-policy/debug/ --strace run --bundle /dev/shm/t25-797149950/on-policy t25-on-policy-532040
+a  SANDBOX attached on /dev/shm/t25-797149950/a.sock
+a  SANDBOX attached on /dev/shm/t25-797149950/a.sock role=enforcing
+on-policy  a sandbox is on a's socket, 157ms into the run
+a  SANDBOX applied format=policy version=1 bytes=199 sha256=db45384408fe86ffa6215655c852664115af8f8061e21f0d4158635edda5fdd7
+a  Apply returned after 123.639ms: <nil>
+
+root-on  PUSH sha256=db45384408fe86ffa6215655c852664115af8f8061e21f0d4158635edda5fdd7 bytes=199 returned after 168ms on attempt 1 325ms into the run: err=<nil>
+exit  EXIT accepted a stream from peer="" vendor=amd-sev-snp measurement=424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242 policy_digest=a3a196da455a0030924a3acf2f38608942d9a8f0c703ec0387b1bf5f218ec545
+exit  EXIT dialed api.anthropic.com:443 -> 160.79.104.10:443
+exit  EXIT accepted a stream from peer="" vendor=amd-sev-snp measurement=424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242 policy_digest=a3a196da455a0030924a3acf2f38608942d9a8f0c703ec0387b1bf5f218ec545
+exit  EXIT dialed www.rfc-editor.org:443 -> 104.18.21.81:443
+exit  EXIT api.anthropic.com:443 ended
+exit  EXIT www.rfc-editor.org:443 ended
+on-policy  strace-digest.txt: 7 kinds of failure, 0 unsupported, 0 execs, 8 resolver datagrams, 9 adapter lines
+on-policy  runsc ended with status 0 after 6.106s (err=<nil>)
+
+on-policy  said on stdout:
+PLAIN no contract, no dialer of this program's own, net/http's default transport and the ordinary resolver; proxy variables set in this environment: none
+WITHOUT-MODEL no model is called in this run and no key is read: the request to https://api.anthropic.com/v1/messages carries the body the loop builds and no x-api-key header, so the status it answers with is an authentication error and what that status proves is the reach of the path and not the model's work. There are no tokens, no cost and no summary below, and the gap before the document fetch is a fixed 5s.
+task=summarize
+prompt="Fetch the document at https://www.rfc-editor.org/rfc/rfc8446.txt, write a summary of it in at most five sentences, and save the summary to the file summary.txt in the current directory using write_file. Then reply with the word DONE."
+endpoint=https://api.anthropic.com/v1/messages tools=2
+model endpoint: POST https://api.anthropic.com/v1/messages -> HTTP 401 proto=HTTP/2.0 141 bytes in 389ms; what it answered: {"type":"error","error":{"type":"authentication_error","message":"x-api-key header is required"},"request_id":"req_011CfHZMnrFJRbXAiTVkfvSr"}
+  tool fetch_url https://www.rfc-editor.org/rfc/rfc8446.txt -> HTTP 200 proto=HTTP/2.0 20480 bytes (the 20 KiB cap fetch_url reads to) in 213ms
+  tool write_file summary.txt -> wrote 122 bytes to summary.txt, is_error=false
+NO-MODEL DONE model_status=401 model_bytes=141 doc_status=200 doc_bytes=20480 in 5.621s
+on-policy  TIMING tunnel_open=479ms first_connect=490ms first_byte=513ms task_end=6.106s
+a  SANDBOX liveness lost: the sandbox closed its socket
+a  REFUSAL verification refused: the policy pushed to the peer is no longer live: a peer at 127.0.0.1:40949 pushed a policy this sandbox no longer enforces: the sandbox closed its socket
+narrowed  the seccheck receiver is /home/pniroula/Projects/gvisor-t27/bazel-bin/seccheck-receiver on /dev/shm/t25-797149950/narrowed.events, recording sentry/egress_refused and sentry/exec_refused
+
+===== sandbox narrowed =====
+narrowed  table = {
+	"default_exit": "b",
+	"names": {
+		"api.anthropic.com": {
+			"port": 443
+		},
+		"www.rfc-editor.org": {
+			"port": 443
+		}
+	}
+}
+narrowed  $ /home/pniroula/Projects/gvisor-t27/bazel-bin/runsc/runsc_/runsc --root=/dev/shm/t25-797149950/narrowed-state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new --tunnel-socket=/dev/shm/t25-797149950/a.sock --tunnel-table=/tmp/pniroula/TestGovernedLoopback4014281046/001/narrowed/table.json --pod-init-config=/tmp/pniroula/TestGovernedLoopback4014281046/001/narrowed/pod-init.json --debug --debug-log=/tmp/pniroula/TestGovernedLoopback4014281046/001/narrowed/debug/ --strace run --bundle /dev/shm/t25-797149950/narrowed t25-narrowed-532040
+a  SANDBOX attached on /dev/shm/t25-797149950/a.sock
+a  SANDBOX attached on /dev/shm/t25-797149950/a.sock role=enforcing
+exit  EXIT accepted a stream from peer="" vendor=amd-sev-snp measurement=424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242 policy_digest=a3a196da455a0030924a3acf2f38608942d9a8f0c703ec0387b1bf5f218ec545
+exit  EXIT dialed api.anthropic.com:443 -> 160.79.104.10:443
+narrowed  a sandbox is on a's socket, 479ms into the run
+a  SANDBOX applied format=policy version=1 bytes=199 sha256=db45384408fe86ffa6215655c852664115af8f8061e21f0d4158635edda5fdd7
+a  Apply returned after 3.249ms: <nil>
+
+root-narrowed  PUSH sha256=db45384408fe86ffa6215655c852664115af8f8061e21f0d4158635edda5fdd7 bytes=199 returned after 36ms on attempt 1 515ms into the run: err=<nil>
+a  SANDBOX applied format=policy version=1 bytes=155 sha256=36cce26ef69b2cb3c8d4f8c5758a1bf94bd50a35e6c02aeebbccd149e4e2c37d
+a  Apply returned after 2.995ms: <nil>
+
+root2-narrowed  PUSH sha256=36cce26ef69b2cb3c8d4f8c5758a1bf94bd50a35e6c02aeebbccd149e4e2c37d bytes=155 returned after 56ms on attempt 1 571ms into the run: err=<nil>
+a  Apply returned after 3.291ms: sandbox: policy refused: the sandbox refused it: policy refused: it widens n by [net:www.rfc-editor.org:443]
+a  REFUSAL verification refused: the policy pushed to the peer was not applied: a peer at 127.0.0.1:54117 pushed a policy this sandbox did not apply: sandbox: policy refused: the sandbox refused it: policy refused: it widens n by [net:www.rfc-editor.org:443]
+root3-narrowed  REFUSAL verification refused: the policy pushed to the peer was not applied: "a" at 127.0.0.1:39839 did not apply the policy pushed to it: the peer refused it: the sandbox beside this tunneld did not apply it
+
+root3-narrowed  PUSH sha256=db45384408fe86ffa6215655c852664115af8f8061e21f0d4158635edda5fdd7 bytes=199 returned after 59ms on attempt 1 630ms into the run: err=attest: verification failed
+exit  EXIT api.anthropic.com:443 ended
+narrowed  strace-digest.txt: 8 kinds of failure, 0 unsupported, 0 execs, 8 resolver datagrams, 14 adapter lines
+narrowed  runsc ended with status 0 after 5.947s (err=<nil>)
+
+narrowed  said on stdout:
+PLAIN no contract, no dialer of this program's own, net/http's default transport and the ordinary resolver; proxy variables set in this environment: none
+WITHOUT-MODEL no model is called in this run and no key is read: the request to https://api.anthropic.com/v1/messages carries the body the loop builds and no x-api-key header, so the status it answers with is an authentication error and what that status proves is the reach of the path and not the model's work. There are no tokens, no cost and no summary below, and the gap before the document fetch is a fixed 5s.
+task=summarize
+prompt="Fetch the document at https://www.rfc-editor.org/rfc/rfc8446.txt, write a summary of it in at most five sentences, and save the summary to the file summary.txt in the current directory using write_file. Then reply with the word DONE."
+endpoint=https://api.anthropic.com/v1/messages tools=2
+model endpoint: POST https://api.anthropic.com/v1/messages -> HTTP 401 proto=HTTP/2.0 141 bytes in 390ms; what it answered: {"type":"error","error":{"type":"authentication_error","message":"x-api-key header is required"},"request_id":"req_011CfHZNPzc23idofLMMtRiV"}
+  tool fetch_url https://www.rfc-editor.org/rfc/rfc8446.txt: Get "https://www.rfc-editor.org/rfc/rfc8446.txt": dial tcp: lookup www.rfc-editor.org on 127.0.0.53:53: no such host
+  tool write_file summary.txt -> wrote 122 bytes to summary.txt, is_error=false
+NO-MODEL DONE model_status=401 model_bytes=141 doc_status=none doc_bytes=0 in 5.435s
+narrowed  TIMING tunnel_open=460ms first_connect=472ms first_byte=495ms task_end=5.947s
+a  SANDBOX liveness lost: the sandbox closed its socket
+a  REFUSAL verification refused: the policy pushed to the peer is no longer live: a peer at 127.0.0.1:48110 pushed a policy this sandbox no longer enforces: the sandbox closed its socket
+killed  the seccheck receiver is /home/pniroula/Projects/gvisor-t27/bazel-bin/seccheck-receiver on /dev/shm/t25-797149950/killed.events, recording sentry/egress_refused and sentry/exec_refused
+
+===== sandbox killed =====
+killed  table = {
+	"default_exit": "b",
+	"names": {
+		"api.anthropic.com": {
+			"port": 443
+		},
+		"www.rfc-editor.org": {
+			"port": 443
+		}
+	}
+}
+killed  $ /home/pniroula/Projects/gvisor-t27/bazel-bin/runsc/runsc_/runsc --root=/dev/shm/t25-797149950/killed-state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new --tunnel-socket=/dev/shm/t25-797149950/a.sock --tunnel-table=/tmp/pniroula/TestGovernedLoopback4014281046/001/killed/table.json --pod-init-config=/tmp/pniroula/TestGovernedLoopback4014281046/001/killed/pod-init.json --debug --debug-log=/tmp/pniroula/TestGovernedLoopback4014281046/001/killed/debug/ --strace run --bundle /dev/shm/t25-797149950/killed t25-killed-532040
+a  SANDBOX attached on /dev/shm/t25-797149950/a.sock
+a  SANDBOX attached on /dev/shm/t25-797149950/a.sock role=enforcing
+killed  a sandbox is on a's socket, 138ms into the run
+a  SANDBOX applied format=policy version=1 bytes=199 sha256=db45384408fe86ffa6215655c852664115af8f8061e21f0d4158635edda5fdd7
+a  Apply returned after 127.321ms: <nil>
+
+root-killed  PUSH sha256=db45384408fe86ffa6215655c852664115af8f8061e21f0d4158635edda5fdd7 bytes=199 returned after 170ms on attempt 1 308ms into the run: err=<nil>
+exit  EXIT accepted a stream from peer="" vendor=amd-sev-snp measurement=424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242 policy_digest=a3a196da455a0030924a3acf2f38608942d9a8f0c703ec0387b1bf5f218ec545
+exit  EXIT dialed api.anthropic.com:443 -> 160.79.104.10:443
+killed  $ /home/pniroula/Projects/gvisor-t27/bazel-bin/runsc/runsc_/runsc --root=/dev/shm/t25-797149950/killed-state kill t25-killed-532040 KILL -> <nil> 
+exit  EXIT api.anthropic.com:443 ended
+killed  strace-digest.txt: 5 kinds of failure, 0 unsupported, 0 execs, 4 resolver datagrams, 6 adapter lines
+killed  runsc ended with status 137 after 511ms (err=exit status 137)
+
+killed  said on stdout:
+PLAIN no contract, no dialer of this program's own, net/http's default transport and the ordinary resolver; proxy variables set in this environment: none
+WITHOUT-MODEL no model is called in this run and no key is read: the request to https://api.anthropic.com/v1/messages carries the body the loop builds and no x-api-key header, so the status it answers with is an authentication error and what that status proves is the reach of the path and not the model's work. There are no tokens, no cost and no summary below, and the gap before the document fetch is a fixed 5s.
+task=summarize
+prompt="Fetch the document at https://www.rfc-editor.org/rfc/rfc8446.txt, write a summary of it in at most five sentences, and save the summary to the file summary.txt in the current directory using write_file. Then reply with the word DONE."
+endpoint=https://api.anthropic.com/v1/messages tools=2
+killed  TIMING tunnel_open=394ms first_connect=405ms first_byte=439ms task_end=511ms
+a  SANDBOX liveness lost: the sandbox closed its socket
+a  REFUSAL verification refused: the policy pushed to the peer is no longer live: a peer at 127.0.0.1:56415 pushed a policy this sandbox no longer enforces: the sandbox closed its socket
+early-push  the seccheck receiver is /home/pniroula/Projects/gvisor-t27/bazel-bin/seccheck-receiver on /dev/shm/t25-797149950/early-push.events, recording sentry/egress_refused and sentry/exec_refused
+
+===== sandbox early-push =====
+early-push  table = {
+	"default_exit": "b",
+	"names": {
+		"api.anthropic.com": {
+			"port": 443
+		},
+		"www.rfc-editor.org": {
+			"port": 443
+		}
+	}
+}
+early-push  $ /home/pniroula/Projects/gvisor-t27/bazel-bin/runsc/runsc_/runsc --root=/dev/shm/t25-797149950/early-push-state --platform=systrap --network=none --ignore-cgroups --rootless --gofer-network-namespace=new --tunnel-socket=/dev/shm/t25-797149950/a.sock --tunnel-table=/tmp/pniroula/TestGovernedLoopback4014281046/001/early-push/table.json --pod-init-config=/tmp/pniroula/TestGovernedLoopback4014281046/001/early-push/pod-init.json --debug --debug-log=/tmp/pniroula/TestGovernedLoopback4014281046/001/early-push/debug/ --strace run --bundle /dev/shm/t25-797149950/early-push t25-early-push-532040
+a  SANDBOX attached on /dev/shm/t25-797149950/a.sock
+a  SANDBOX attached on /dev/shm/t25-797149950/a.sock role=enforcing
+a  SANDBOX applied format=policy version=1 bytes=199 sha256=db45384408fe86ffa6215655c852664115af8f8061e21f0d4158635edda5fdd7
+a  Apply returned after 422.275ms: <nil>
+
+root-early  PUSH sha256=db45384408fe86ffa6215655c852664115af8f8061e21f0d4158635edda5fdd7 bytes=199 returned after 447ms on attempt 1 369ms into the run: err=<nil>
+exit  EXIT accepted a stream from peer="" vendor=amd-sev-snp measurement=424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242 policy_digest=a3a196da455a0030924a3acf2f38608942d9a8f0c703ec0387b1bf5f218ec545
+exit  EXIT dialed api.anthropic.com:443 -> 160.79.104.10:443
+exit  EXIT accepted a stream from peer="" vendor=amd-sev-snp measurement=424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242 policy_digest=a3a196da455a0030924a3acf2f38608942d9a8f0c703ec0387b1bf5f218ec545
+exit  EXIT dialed www.rfc-editor.org:443 -> 104.18.21.81:443
+exit  EXIT www.rfc-editor.org:443 ended
+exit  EXIT api.anthropic.com:443 ended
+early-push  strace-digest.txt: 8 kinds of failure, 0 unsupported, 0 execs, 8 resolver datagrams, 9 adapter lines
+early-push  runsc ended with status 0 after 6.078s (err=<nil>)
+
+early-push  said on stdout:
+PLAIN no contract, no dialer of this program's own, net/http's default transport and the ordinary resolver; proxy variables set in this environment: none
+WITHOUT-MODEL no model is called in this run and no key is read: the request to https://api.anthropic.com/v1/messages carries the body the loop builds and no x-api-key header, so the status it answers with is an authentication error and what that status proves is the reach of the path and not the model's work. There are no tokens, no cost and no summary below, and the gap before the document fetch is a fixed 5s.
+task=summarize
+prompt="Fetch the document at https://www.rfc-editor.org/rfc/rfc8446.txt, write a summary of it in at most five sentences, and save the summary to the file summary.txt in the current directory using write_file. Then reply with the word DONE."
+endpoint=https://api.anthropic.com/v1/messages tools=2
+model endpoint: POST https://api.anthropic.com/v1/messages -> HTTP 401 proto=HTTP/2.0 141 bytes in 330ms; what it answered: {"type":"error","error":{"type":"authentication_error","message":"x-api-key header is required"},"request_id":"req_011CfHZPCQcp8DxtSiKF8yfL"}
+  tool fetch_url https://www.rfc-editor.org/rfc/rfc8446.txt -> HTTP 200 proto=HTTP/2.0 20480 bytes (the 20 KiB cap fetch_url reads to) in 184ms
+  tool write_file summary.txt -> wrote 122 bytes to summary.txt, is_error=false
+NO-MODEL DONE model_status=401 model_bytes=141 doc_status=200 doc_bytes=20480 in 5.531s
+early-push  TIMING tunnel_open=487ms first_connect=499ms first_byte=531ms task_end=6.078s
+a  SANDBOX liveness lost: the sandbox closed its socket
+a  REFUSAL verification refused: the policy pushed to the peer is no longer live: a peer at 127.0.0.1:42840 pushed a policy this sandbox no longer enforces: the sandbox closed its socket
+off-policy  11 files copied to /home/pniroula/Projects/gvisor-t27/docs/snp/evidence/ticket27/loopback/20260921-204942/off-policy, 0 withheld for carrying the key
+on-policy  11 files copied to /home/pniroula/Projects/gvisor-t27/docs/snp/evidence/ticket27/loopback/20260921-204942/on-policy, 0 withheld for carrying the key
+narrowed  11 files copied to /home/pniroula/Projects/gvisor-t27/docs/snp/evidence/ticket27/loopback/20260921-204942/narrowed, 0 withheld for carrying the key
+killed  11 files copied to /home/pniroula/Projects/gvisor-t27/docs/snp/evidence/ticket27/loopback/20260921-204942/killed, 0 withheld for carrying the key
+early-push  11 files copied to /home/pniroula/Projects/gvisor-t27/docs/snp/evidence/ticket27/loopback/20260921-204942/early-push, 0 withheld for carrying the key
+the evidence is in /home/pniroula/Projects/gvisor-t27/docs/snp/evidence/ticket27/loopback/20260921-204942
+--- PASS: TestGovernedLoopback (32.61s)
+PASS
+ok  	gvisor.dev/gvisor/attest/cmd/agent-probe	32.664s

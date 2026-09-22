@@ -1,0 +1,48 @@
+# what runsc.log.20260921-205020.794310.boot.txt says
+
+The sentry's debug log with --strace, read once. Counts are of exit
+lines, so an entry with no exit — a syscall the process was still in when it ended — is not here.
+
+## what the adapter said
+
+tunnel narrow: api.anthropic.com:443 at 100.64.1.0 is gone
+tunnel narrow: 1 of 2 names kept
+tunnel narrow: sha256=8448109aea94a097e2a1566a1aef63558a2557fdfc4950a413dab35f6039966b n=1 of 2 names kept x=1 f=1
+tunnel narrow: applied in 1.30174ms, of which the table swap was 204.315µs
+tunnel dns: q="api.anthropic.com" type=AAAA answer=nxdomain
+tunnel: refused dns :0 name="api.anthropic.com" reason=unknown-name
+tunnel dns: q="api.anthropic.com" type=A answer=nxdomain
+tunnel: refused dns :0 name="api.anthropic.com" reason=unknown-name
+
+## what ran
+
+     656  agent-probe
+
+## syscalls that failed
+
+       3  epoll_ctl errno=1 (operation not permitted)
+       3  futex errno=11 (try again)
+       2  futex errno=512 (to be restarted if SA_RESTART is set)
+       2  read errno=11 (request would block)
+       1  epoll_pwait errno=4 (request was interrupted)
+       1  openat errno=2 (no such file or directory)
+
+## syscalls the sentry does not implement
+
+(none)
+
+## socket families
+
+       2  AF_INET
+
+## datagrams and connects to 127.0.0.53:53
+
+5
+
+## every execve
+
+
+
+## every bind and listen
+
+

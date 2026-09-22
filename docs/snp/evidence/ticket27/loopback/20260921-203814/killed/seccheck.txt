@@ -1,3 +1,0 @@
-listening on /dev/shm/t25-1274519801/killed.events
-connected: the sentry speaks wire version 1
-disconnected

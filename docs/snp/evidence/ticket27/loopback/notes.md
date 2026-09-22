@@ -2,7 +2,7 @@
 
 Ticket 27's proof, run on the workstation on 2026-09-21, worktree
 `/home/pniroula/Projects/gvisor-t27`, branch
-`ticket-27-an-ack-means-the-sandbox-has-it` at `02f641219`. No sudo and no
+`ticket-27-an-ack-means-the-sandbox-has-it` at `e8701aae5`. No sudo and no
 hardware.
 
 This is ticket 26's harness — `attest/cmd/agent-probe/governed_test.go`,
@@ -23,7 +23,7 @@ Open" below is a QUIC handshake plus a fixture's arithmetic.
 
 | thing | value |
 |---|---|
-| branch tip | `02f641219` |
+| branch tip | `e8701aae5` |
 | runsc | `make runsc` `-c opt`, sha256 `49740e434b42e1c1d65546258f2bcbd16134469cf8ea72190321a353daf9823c` |
 | harness | `attest/cmd/agent-probe/governed_test.go`, `TestGovernedLoopback` |
 | seccheck receiver | `../../ticket26/tools/seccheck-receiver`, built to `bazel-bin/seccheck-receiver` |
@@ -33,9 +33,9 @@ Open" below is a QUIC handshake plus a fixture's arithmetic.
 | API key | none. None is needed and none was read |
 
 Reproduced by `./run.sh`. It was run three times against this tip and passed
-each time — `run-20260921-203707.log`, `run-20260921-203740.log` and
-`run-20260921-203814.log` — and the evidence directory kept is the last of the
-three, `20260921-203814/`, whose `README.md` the harness wrote and from which
+each time — `run-20260921-204942.log`, `run-20260921-205016.log` and
+`run-20260921-205050.log` — and the evidence directory kept is the last of the
+three, `20260921-205050/`, whose `README.md` the harness wrote and from which
 every number below is copied. The first two runs' directories were deleted to
 keep this record small; their logs say what they said.
 
@@ -62,7 +62,7 @@ The model was not called. `-without-model` (`attest/cmd/agent-probe/agent.go`,
   doc_status=… doc_bytes=…`, which is the marker the harness asserts on. It is
   deliberately not the model's `DONE`.
 
-Nothing in `20260921-203814/` is model output, there is no token count and no
+Nothing in `20260921-205050/` is model output, there is no token count and no
 cost, and the gap between the two requests is the fixed five seconds
 `withoutModelPause` names rather than a model thinking. A hardware re-run on
 SEV-SNP or TDX is not required for done and was not made.
@@ -71,11 +71,11 @@ SEV-SNP or TDX is not required for done and was not made.
 
 | run | runsc status | wall | handshakes | `Apply` at `a` | the window | what it says |
 |---|---:|---:|---:|---:|---:|---|
-| off-policy | 1 | 516 ms | 1 | 130.808 ms | 1 ms | the refusal is the pushed policy's, not the table's |
-| on-policy | 0 | 6.14 s | 2 | 15.518 ms | 3 ms | the workload gets through its steps under P0 |
-| narrowed | 0 | 5.979 s | 1, 1, 1 | 3.126 / 3.418 / 3.803 ms | 172 ms | a narrowing mid-run, and a widening refused |
-| killed | 137 | 625 ms | 1 | 128.671 ms | 2 ms | the teardown reached from outside |
-| early-push | 0 | 6.05 s | 1 | 384.342 ms | 2 ms | **an ack means the enforcing sandbox has it** |
+| off-policy | 1 | 551 ms | 1 | 161.905 ms | 2 ms | the refusal is the pushed policy's, not the table's |
+| on-policy | 0 | 6.261 s | 1 | 172.024 ms | 1 ms | the workload gets through its steps under P0 |
+| narrowed | 0 | 5.876 s | 1, 1, 1 | 3.803 / 3.713 / 2.905 ms | 188 ms | a narrowing mid-run, and a widening refused |
+| killed | 137 | 665 ms | 1 | 144.259 ms | 2 ms | the teardown reached from outside |
+| early-push | 0 | 6.069 s | 1 | 370.78 ms | 1 ms | **an ack means the enforcing sandbox has it** |
 
 "The window" is how long each run was governed by `--tunnel-table` and nothing
 else, read off the sentry's own log at both ends. It is the arrangement's and
@@ -91,19 +91,18 @@ Four moments, two clocks:
 
 | moment | clock | when |
 |---|---|---|
-| `Host.Apply` entered at `a` | a's goroutine | 20:38:06.735097 |
-| `SANDBOX attached on …/a.sock role=enforcing` | a's console | 20:38:06.926855 |
-| `SANDBOX applied … sha256=db45384408fe…fdd7` | a's console | 20:38:07.119429 |
-| `Host.Apply` acknowledged the push | a's goroutine | 20:38:07.119464 |
-| the pusher's `PUSH` line: `Peer` returned | the pusher | 20:38:07.120339 |
+| `Host.Apply` entered at `a` | a's goroutine | 20:50:42.634038 |
+| `SANDBOX attached on …/a.sock role=enforcing` | a's console | 20:50:42.825973 |
+| `SANDBOX applied … sha256=db45384408fe…fdd7` | a's console | 20:50:43.004720 |
+| `Host.Apply` acknowledged the push | a's goroutine | 20:50:43.004855 |
+| the pusher's `PUSH` line: `Peer` returned | the pusher | 20:50:43.005616 |
 
 The push was entered **192 ms before** the enforcing sandbox attached and
-acknowledged **193 ms after** it, on the first handshake, with a `cold Open` of
-425 ms of which `Apply` at `a` was 384.342 ms. The sentry's own account of the
-same document is `tunnel narrow: applied in 1.106539ms, of which the table swap
-was 92.638µs` at 20:38:07.118128 — a millisecond before the console line, which
-is the order the design requires: the helper forwards, the sentry applies, the
-helper acknowledges, and only then does `a` write `SANDBOX applied` and `Apply`
+acknowledged **179 ms after** it, on the first handshake, with a `cold Open` of
+410 ms of which `Apply` at `a` was 370.78 ms. The sentry applied the same
+document a moment before the console line was written, which is the order the
+design requires: the helper forwards, the sentry applies, the helper
+acknowledges, and only then does `a` write `SANDBOX applied` and `Apply`
 return.
 
 What the acknowledgement now means is the whole of the fifth run. On master a
@@ -114,39 +113,41 @@ afterwards and was never given the document — ticket 26's finding 2 and leftov
 helper arrived, and what is asserted is that no acknowledgement came back before
 it did: an `Apply` that returned nil before the attach fails the run.
 
-The workload then ran governed and completed — status 0 after 6.05 s,
+The workload then ran governed and completed — status 0 after 6.069 s,
 `NO-MODEL DONE model_status=401 model_bytes=141 doc_status=200 doc_bytes=20480
-in 5.566s` — with both streams crossing the exit and the seccheck receiver
+in 5.598s` — with both streams crossing the exit and the seccheck receiver
 printing no refusal.
 
 ### off-policy
 
 The table names both destinations; the pushed policy names only
 `www.rfc-editor.org:443`. The workload was refused at the resolver (`no such
-host`, which is NXDOMAIN reported by Go's resolver before any connect), the exit
-was never asked to dial `api.anthropic.com`, and the sentry emitted two
+host`, which is NXDOMAIN reported by Go's resolver before any connect), runsc
+ended with status 1 after 551 ms, the exit was never asked to dial
+`api.anthropic.com`, and the sentry emitted two
 `egress_refused protocol=dns name=api.anthropic.com reason=unknown-name` events
 — two for one name because the resolver asks A and AAAA.
 
 ### on-policy
 
-`TIMING tunnel_open=511ms first_connect=524ms first_byte=552ms task_end=6.14s`
-and `NO-MODEL DONE model_status=401 model_bytes=141 doc_status=200
-doc_bytes=20480 in 5.637s`. It took **2 handshakes**: the first push landed
-before the loader had started its workload, was refused with the sentry's own
-sentence, took its tunnel with it, and the retry landed. That is the ordinary
-shape of a push at a starting sandbox and is why the harness records the count.
-Liveness ended with the workload exiting, 189 ms after runsc exited.
+`TIMING tunnel_open=581ms first_connect=593ms first_byte=619ms
+task_end=6.261s` and `NO-MODEL DONE model_status=401 model_bytes=141
+doc_status=200 doc_bytes=20480 in 5.707s`. It took one handshake here, and the
+count is recorded per run because it need not: a push that lands before the
+loader has started its workload is refused with the sentry's own sentence, takes
+its tunnel with it, and is retried, which is the ordinary shape of a push at a
+starting sandbox. Liveness ended with the workload exiting, 134 ms after runsc
+exited.
 
 ### narrowed
 
 Two policies landed and the second removed a name:
 
-    20:37:56.267531  tunnel narrow: sha256=db45384408fe…fdd7 n=2 of 2 names kept x=1 f=1
-    20:37:56.304653  is gone
-    20:37:56.304885  tunnel narrow: sha256=36cce26ef69b…c37d n=1 of 2 names kept x=1 f=1
+    tunnel narrow: sha256=db45384408fe…fdd7 n=2 of 2 names kept x=1 f=1
+    is gone
+    tunnel narrow: sha256=36cce26ef69b…c37d n=1 of 2 names kept x=1 f=1
 
-The narrowing landed **72 ms** after the exit accepted the first stream, and the
+The narrowing landed **132 ms** after the exit accepted the first stream, and the
 workload's second request is a fixed five seconds after its first — so the
 document host was gone before it was asked for, and the workload was told `dial
 tcp: lookup www.rfc-editor.org on 127.0.0.53:53: no such host`. With the model
@@ -164,7 +165,7 @@ closed a tunnel, which was the intent, and dropped the enforcing attachment,
 which since this ticket reaps the helper would end the sandbox mid-task. So the
 watch over the old policy is retired before the new one is pushed
 (`attest/tunneld/push.go`, `applyOrRefuse`), and what is asserted here is that
-nothing was lost while the workload ran: the single loss reported came 5.58 s
+nothing was lost while the workload ran: the single loss reported came 5.309 s
 after the narrowing, when the workload exited.
 
 The consequence is a finding rather than an assertion: the first peer, whose
@@ -172,9 +173,9 @@ policy is no longer the one in force, keeps its tunnel and is told nothing.
 
 ### killed
 
-`runsc kill … KILL` was sent 495 ms into the run, while the first request was in
-flight; runsc ended with status 137 after 625 ms. The loss was reported 17 ms
-**before** runsc's own exit was accounted and the tunnel was refused 16 ms
+`runsc kill … KILL` was sent 539 ms into the run, while the first request was in
+flight; runsc ended with status 137 after 665 ms. The loss was reported 2 ms
+**before** runsc's own exit was accounted and the tunnel was refused 2 ms
 before it — the sandbox's socket closes when the sentry goes, and runsc returns
 a few milliseconds later, so a loss on that side of the line is the ordinary
 case and not a clock running backwards.
@@ -227,7 +228,7 @@ and needed a model to find. Nothing about two peers over a real network.
 | file | what |
 |---|---|
 | `run.sh` | the run, exactly as run; it writes `run.log` beside itself |
-| `run-20260921-203707.log`, `run-20260921-203740.log`, `run-20260921-203814.log` | the three runs' transcripts, untrimmed |
-| `20260921-203814/README.md` | written by the harness: every push, every refusal, every event, per run, and `a`'s whole console with a clock on it |
-| `20260921-203814/<run>/` | one directory per sandbox: stdout, stderr, table, `pod-init.json`, seccheck output, strace digest and the debug logs |
+| `run-20260921-204942.log`, `run-20260921-205016.log`, `run-20260921-205050.log` | the three runs' transcripts, untrimmed |
+| `20260921-205050/README.md` | written by the harness: every push, every refusal, every event, per run, and `a`'s whole console with a clock on it |
+| `20260921-205050/<run>/` | one directory per sandbox: stdout, stderr, table, `pod-init.json`, seccheck output, strace digest and the debug logs |
 | `../spikes/E1/` | the attach window this scenario's wait is affordable because of |

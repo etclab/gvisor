@@ -33,7 +33,7 @@ enforcing afterwards:
 | Host watch detection | `the sandbox closed its socket` |
 | Latency from kill | **250.404 ms** (detected on the first 250 ms tick of `watchInterval`) |
 | Tunneld logs | **0 new refusals** (silent) |
-| Stream attempt afterwards | Fails (socket closed) |
+| Stream attempt afterwards | Fails: `tunneld: unknown peer: "b" is not in the peer table` (`output.txt:16`) |
 
 ### 2. `stop` (Workload paused with `SIGSTOP` — socket remains open, pulses cease)
 
@@ -42,7 +42,7 @@ enforcing afterwards:
 | Host watch detection | `it missed 3 pulses` |
 | Latency from stop | **3.000 s** (`DefaultMisses * DefaultPulse` = 3 × 1 s) |
 | Tunneld logs | **0 new refusals** (silent) |
-| Stream attempt afterwards | Handled by still-open socket |
+| Stream attempt afterwards | Fails: `tunneld: unknown peer: "b" is not in the peer table` (`output.txt:30`) |
 
 ## Findings
 

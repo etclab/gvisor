@@ -13,7 +13,7 @@ E2 asks whether late-attach delivery is available, and at what cost:
 
 | thing | value |
 |---|---|
-| date | 2026-09-21T19:05:14Z |
+| date | 2026-09-21T19:05:15Z |
 | host | Linux 6.11.0-rc3-snp-host-85ef1ac03941 x86_64 |
 | commit | `cea8ae91d294b39ac468cc4676e79bf9a20e0d6b` |
 | runsc | `bazel-bin/runsc/runsc_/runsc` (opt build) |
@@ -49,5 +49,5 @@ E2 asks whether late-attach delivery is available, and at what cost:
 
 1. **Subset check behavior**: The subset check in `runsc/boot/policy.go` compares the atoms of the incoming policy against the atoms in force (`base = tn.policy.inForce`). When the incoming policy is identical to the policy in force, every atom is contained in `base`, so `policySubset` returns `nil`. The sentry accepts the replay as a non-widening narrowing of itself.
 2. **Digest consistency**: The sentry returns the exact SHA-256 digest on both initial application and replay (`e1a4ddd603e1edfba4479099c174dd815534b9174c4c74ea32a08f88ad7ce3e8`).
-3. **Delivery cost**: The marginal cost of delivering a policy replay to a running sentry is ~1.25 ms (p50), ~1.87 ms (mean). The cost of a first delivery is ~3.2–4.8 ms.
+3. **Delivery cost**: The marginal cost of delivering a policy replay to a running sentry is ~1.25 ms (p50), ~1.87 ms (mean). A first delivery took 3.181803 ms to sentry B and 4.860595 ms to sentry A.
 4. **Availability of late-attach delivery**: Late-attach delivery is completely available at low cost (~1–2 ms) and requires no sentry changes. A host can keep the policy in force and replay it to an enforcing attachment that arrives late; the sentry applies it and pulses the matching digest immediately.

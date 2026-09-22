@@ -64,6 +64,11 @@ type Host struct {
 
 	applySem chan struct{}
 
+	// applyWait is how long a push may take when its caller gave no deadline.
+	// It is [DefaultApplyWait] and is a field so that a test can shorten it; it
+	// is written before the host is used and read after, never both at once.
+	applyWait time.Duration
+
 	mu      sync.Mutex
 	closed  bool
 	conns   []*attached
@@ -89,10 +94,15 @@ var ErrHostClosed = errors.New("sandbox: host closed")
 // the text of an error would be a contract neither side declared.
 var ErrNoEnforcingSandbox = fmt.Errorf("%w: no enforcing sandbox is attached", ErrPolicyRefused)
 
-// DefaultApplyWait bounds the waits this package makes with no caller deadline
-// behind them: a push whose context can be cancelled but carries no deadline,
-// and the replay of the policy in force at an enforcing sandbox that has just
-// attached.
+// DefaultApplyWait bounds the whole of a push whose caller gave no deadline —
+// the wait for an enforcing sandbox to attach and then the wait for its answer,
+// end to end — and the replay of the policy in force at an enforcing sandbox
+// that has just attached.
+//
+// It is one bound over both halves because either of them can be the one that
+// does not end: a sandbox that never attaches and a sandbox that attaches and
+// never answers hold the same push slot, and a bound over only the first of them
+// is the bound that reads as though there were one.
 //
 // It is the ten seconds tunneld's DefaultPushTimeout is, and it is written again
 // here rather than imported because package sandbox imports nothing of tunneld —
@@ -134,7 +144,7 @@ func Listen(path string, n Network, logf func(string, ...any)) (*Host, error) {
 		ln.Close()
 		return nil, fmt.Errorf("sandbox: %s: %w", path, err)
 	}
-	h := &Host{Network: n, ln: ln, path: path, logf: logf, done: make(chan struct{}), applySem: make(chan struct{}, 1)}
+	h := &Host{Network: n, ln: ln, path: path, logf: logf, done: make(chan struct{}), applySem: make(chan struct{}, 1), applyWait: DefaultApplyWait}
 	h.wg.Add(1)
 	go h.accept()
 	return h, nil
@@ -163,20 +173,31 @@ func (h *Host) Attached() int {
 // caller's deadline: a push that lands before the enforcing sandbox attaches is
 // acknowledged only once that sandbox has it, which is the whole of what an
 // acknowledgement on this socket means. A caller that gave neither a deadline
-// nor a way to cancel is refused at once instead, because nothing could ever end
-// that wait; a caller that gave a cancellation and no deadline waits at most
-// [DefaultApplyWait], and one that gave a deadline keeps it, however long.
+// nor a way to cancel is refused at once instead, because nothing it supplied
+// could ever end that wait; a caller that gave a deadline keeps it, however
+// long; and a push with no deadline behind it is bounded end to end by
+// [DefaultApplyWait], the wait for an attachment and the wait for its answer
+// together.
 //
 // One push is in flight at a time. That is what keeps two pushes — or a push and
 // the replay a freshly attached sandbox is offered — from crossing on the socket
 // and leaving the sandbox enforcing the older of the two.
 func (h *Host) Apply(ctx context.Context, policy []byte) error {
+	// Whether this caller can be waited for at all is read before the bound
+	// below, because the bound gives every push a deadline and would answer the
+	// question the same way for all of them.
+	_, hasDeadline := ctx.Deadline()
+	canWait := hasDeadline || ctx.Done() != nil
+
+	ctx, cancel := h.bound(ctx)
+	defer cancel()
+
 	if err := h.holdPush(ctx); err != nil {
 		return err
 	}
 	defer h.releasePush()
 
-	a, waiter, err := h.enforcingOrWaiter(ctx)
+	a, waiter, err := h.enforcingOrWaiter(canWait)
 	if err != nil {
 		return err
 	}
@@ -197,6 +218,17 @@ func (h *Host) Apply(ctx context.Context, policy []byte) error {
 	return nil
 }
 
+// bound is the context the whole of a push runs under: the caller's, with
+// [DefaultApplyWait] over the top where the caller gave no deadline of its own.
+// A caller's own deadline is kept, however long it is — the ceiling is for the
+// caller that named none.
+func (h *Host) bound(ctx context.Context) (context.Context, context.CancelFunc) {
+	if _, hasDeadline := ctx.Deadline(); hasDeadline {
+		return ctx, func() {}
+	}
+	return context.WithTimeout(ctx, h.applyWait)
+}
+
 // holdPush takes the one push slot this host has, and releasePush gives it
 // back.
 func (h *Host) holdPush(ctx context.Context) error {
@@ -215,7 +247,7 @@ func (h *Host) releasePush() { <-h.applySem }
 // enforcingOrWaiter is the enforcing attachment if one is here, or the channel
 // the next one to attach will be handed down. Exactly one of the two is non-nil
 // when the error is nil.
-func (h *Host) enforcingOrWaiter(ctx context.Context) (*attached, chan *attached, error) {
+func (h *Host) enforcingOrWaiter(canWait bool) (*attached, chan *attached, error) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	if h.closed {
@@ -224,7 +256,7 @@ func (h *Host) enforcingOrWaiter(ctx context.Context) (*attached, chan *attached
 	if a := h.enforcing(); a != nil {
 		return a, nil, nil
 	}
-	if _, hasDeadline := ctx.Deadline(); !hasDeadline && ctx.Done() == nil {
+	if !canWait {
 		return nil, nil, fmt.Errorf("%w to %s", ErrNoEnforcingSandbox, h.path)
 	}
 	h.enforcingWaiter = make(chan *attached, 1)
@@ -244,18 +276,10 @@ func (h *Host) enforcing() *attached {
 }
 
 // awaitEnforcing waits for the enforcing sandbox to attach and to be handed this
-// push.
-//
-// The caller's context is the bound, with [DefaultApplyWait] over the top so
-// that a context which can be cancelled but never is cannot hold the push slot
-// for ever. A caller whose own deadline is longer keeps it: the ceiling is for
-// where there is no deadline at all.
+// push. The context is the push's own, bounded once in [Host.Apply], so the wait
+// here and the wait for the sandbox's answer share one deadline rather than each
+// having its own.
 func (h *Host) awaitEnforcing(ctx context.Context, waiter chan *attached) (*attached, error) {
-	if _, hasDeadline := ctx.Deadline(); !hasDeadline {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, DefaultApplyWait)
-		defer cancel()
-	}
 	select {
 	case a, ok := <-waiter:
 		if !ok || a == nil {
@@ -568,7 +592,7 @@ func (h *Host) replayInForce(a *attached) {
 	if policy == nil || a.isGone() || a.acknowledgedPolicy() {
 		return
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, DefaultApplyWait)
+	ctx, cancel := context.WithTimeout(a.ctx, h.applyWait)
 	defer cancel()
 	if err := a.apply(ctx, policy); err != nil {
 		// The only sandbox that had this policy has gone and the one that

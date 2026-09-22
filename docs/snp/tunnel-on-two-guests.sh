@@ -380,15 +380,12 @@ make_config() {
 # advertise, so two guests that differ there leave one of them running on a
 # number that appears nowhere in its own configuration.
 #
-# IDLE_TIMEOUT is that number and it is a variable rather than a literal for one
-# scenario's sake: a liveness watch lives exactly as long as the tunnel the
-# policy arrived on, because attest/tunneld/push.go's watchLiveness returns —
-# silently, with no line and no refusal — the moment conn.Live() is false. Sixty
-# seconds is right for every scenario whose exchanges are over in ten, and wrong
-# for the policy scenario, where the thing under test happens a hundred and fifty
-# seconds after the last stream closed. scenario_policy sets it to outlive its
-# own hold; nothing else sets it, so every other scenario's configuration is the
-# byte-for-byte one the earlier records were made with.
+# IDLE_TIMEOUT is that number, and sixty seconds is right for every scenario,
+# the policy one included: ticket 27 gave the liveness watch to the sandbox
+# attachment it watches rather than to the tunnel the policy arrived on, so a
+# tunnel that idles out before the kill no longer takes the watch with it.
+# Nothing overrides it any more, which puts the policy scenario back on the
+# number every other scenario's records were made with.
 IDLE_TIMEOUT="${IDLE_TIMEOUT:-60s}"
 answerer_json() { # SANDBOX ADDRESS HOLD
   cat <<JSON
@@ -1594,7 +1591,9 @@ scenario_adapter() {
 #   4. it ends when the workload does
 #                          init kills the sandbox after `kill-after` seconds, the
 #                          helper's socket closes, and the tunneld beside it says
-#                          so and closes the tunnel.
+#                          so — closing the tunnel the policy arrived on if one is
+#                          still open, and saying that none was if it has already
+#                          idled out.
 #
 # What each guest holds, and which half of it is measured, is ticket 25's answer
 # with two more unmeasured files: the policy this guest pushes and the narrower
@@ -1689,21 +1688,15 @@ scenario_policy() {
   # below are derived from the files a reader can open.
   hold=$((last + 150))
   boot=$((last + 330))
-  # And the third derived number, which the first run of this scenario did not
-  # have. A liveness watch is polled against the tunnel the policy arrived on and
-  # ends the moment that tunnel is not live — without a line, because a watch
-  # whose tunnel is gone has nothing left to tear down. With the sixty seconds
-  # every other scenario uses, both tunnels here idle out about a minute after
-  # the last fetch and a hundred seconds before the first kill, so a kill has
-  # nothing to say to anybody. The idle timeout is therefore set to outlive this
-  # scenario's own hold: the tunnels stay up until the guests power off, and what
-  # ends a watch is the sandbox and not the clock.
-  local IDLE_TIMEOUT="${POLICY_IDLE_TIMEOUT:-$((hold + 60))s}"
+  # What ends a liveness watch is the sandbox attachment that owns it — a missed
+  # pulse, a digest that does not match or a closed socket drops the enforcing
+  # attachment and marks the policy not-live — and not the tunnel the policy
+  # arrived on, which may idle out under it, so this scenario runs on the same
+  # sixty seconds as every other one.
   echo "    kill-after   : guest A ${kill_a}s, guest B ${kill_b}s (seconds after each guest starts its workload)"
   echo "    narrow-after : guest B ${narrow_b}s — the second tunneld that pushes the narrower policy at guest A"
   echo "    tunneld hold : ${hold}s, boot timeout ${boot}s, both derived from the knobs and not from -run-for"
-  echo "    idle timeout : $IDLE_TIMEOUT on every tunnel of this scenario, so that no tunnel a policy"
-  echo "                   arrived on idles out before the kill that is supposed to end it"
+  echo "    idle timeout : $IDLE_TIMEOUT on every tunnel of this scenario"
 
   local p0a p0b p1b
   p0a=$(sha256sum "$POLICY_INPUTS/a/push-policy.json" | cut -d' ' -f1)
@@ -1869,7 +1862,7 @@ scenario_policy() {
         grep -qF -- "tunneld: SANDBOX liveness lost: the sandbox closed its socket" "$a"
   check "guest-b: the same on the other guest" \
         grep -qF -- "tunneld: SANDBOX liveness lost: the sandbox closed its socket" "$b"
-  check "guest-b's tunneld refused the tunnel it had applied a policy on, naming liveness" \
+  check "guest-b's tunneld named liveness when the sandbox it had applied a policy to went, whether or not a tunnel was still open to close" \
         grep -qF -- "$LIVENESS_REASON" "$b"
   check "guest-a: the workload was killed rather than running out of work" \
         not_in_file "$a" "nothing killed this workload"

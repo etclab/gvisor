@@ -18,8 +18,10 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -27,17 +29,11 @@ import (
 )
 
 // Two sandboxes on one socket, both pulsing (contract v3).
-//
-// In a guest this binary is run twice against the same tunneld: once as the
-// agent (`-network socket`) and once as the exit (`-exit -network socket`).
-// Both are `socketSandbox`, so both are a [sandbox.Client] behind a
-// [sandbox.Null], and a push fans out to both — [sandbox.Host.Apply] returns
-// the first refusal and acknowledges only when every attachment has.
-//
-// Liveness is the same shape: every attachment that acknowledged must go on
-// saying so, and one of them going quiet is the policy no longer being
-// enforced. Nothing was added to agent-probe for this. The heartbeat comes from
-// the client the exit already dials, which is the point worth a test.
+// TestBothSandboxesOnOneSocketPulseWhatTheyAcknowledged tests that an enforcing
+// agent and a network exit can share a socket (contract v4): Host.Apply pushes
+// only to the enforcing sandbox, which pulses what it acknowledged, and when
+// the enforcing sandbox closes its socket liveness is lost while the network
+// exit remains attached.
 func TestBothSandboxesOnOneSocketPulseWhatTheyAcknowledged(t *testing.T) {
 	socket := filepath.Join(t.TempDir(), "sandbox.sock")
 	host, err := sandbox.Listen(socket, &localExit{logf: t.Logf}, func(format string, a ...any) { t.Logf(format, a...) })
@@ -46,12 +42,22 @@ func TestBothSandboxesOnOneSocketPulseWhatTheyAcknowledged(t *testing.T) {
 	}
 	defer host.Close()
 
-	// The agent's sandbox and the exit's, in the order the guest starts them.
-	_, agent, err := socketSandbox(socket, t.Logf)
+	// The agent's enforcing sandbox and the exit's network attachment.
+	var ready atomic.Pointer[sandbox.Null]
+	agent, err := sandbox.Dial(socket, sandbox.RoleEnforcing, func(ctx context.Context, policy []byte) error {
+		box := ready.Load()
+		if box == nil {
+			return errors.New("agent-probe: policy arrived before ready")
+		}
+		return box.Apply(ctx, policy)
+	})
 	if err != nil {
 		t.Fatalf("the agent's sandbox: %v", err)
 	}
 	defer agent.Close()
+	agentBox := sandbox.NewNull(agent, t.Logf)
+	ready.Store(agentBox)
+
 	_, exit, err := socketSandbox(socket, t.Logf)
 	if err != nil {
 		t.Fatalf("the exit's sandbox: %v", err)
@@ -66,9 +72,8 @@ func TestBothSandboxesOnOneSocketPulseWhatTheyAcknowledged(t *testing.T) {
 	}
 	pushed := digestOf(p0)
 
-	// Four seconds without a loss is the assertion that both are pulsing: an
-	// attachment that acknowledged and then said nothing is lost after three
-	// missed pulses, so either one going quiet would have shown by now.
+	// Four seconds without a loss is the assertion that the enforcing sandbox
+	// is pulsing.
 	lost := host.Watch(context.Background(), pushed)
 	select {
 	case err := <-lost:
@@ -77,37 +82,35 @@ func TestBothSandboxesOnOneSocketPulseWhatTheyAcknowledged(t *testing.T) {
 	}
 
 	// The agent's workload ends. Its attachment goes, and the policy is no
-	// longer being enforced by everything that acknowledged it — although the
-	// exit is still there and still pulsing.
+	// longer in force.
 	agent.Close()
-	select {
-	case err, ok := <-lost:
-		if !ok {
-			t.Fatal("the watch ended without reporting the agent's sandbox going")
-		}
-		if !strings.Contains(err.Error(), "closed its socket") {
-			t.Errorf("the agent's sandbox going was reported as %q; want its socket closing", err)
-		}
-	case <-time.After(3 * time.Second):
-		t.Fatal("the agent's sandbox went and the watch reported nothing")
-	}
+	expectLost(t, lost, "closed its socket")
 	for host.Attached() != 1 {
 		time.Sleep(time.Millisecond)
 	}
 
-	// And the exit is the one still pulsing, carrying the digest of the policy
-	// it acknowledged. A watch for any other policy is how that is read back.
-	elsewhere := host.Watch(context.Background(), strings.Repeat("00", 32))
+	// The exit remains attached, but was never pushed to and never acknowledged
+	// a policy. A watch finds no enforcing sandbox that acknowledged, and says
+	// that rather than that a socket closed: the exit is still sitting on this
+	// one, and the claim that was lost is a claim nothing here ever made.
+	expectLost(t, host.Watch(context.Background(), strings.Repeat("00", 32)),
+		"no attachment has acknowledged this policy")
+}
+
+// expectLost waits for a watch to report a loss and asserts the sentence it
+// reported it with, which is the only part of a loss that says what happened.
+func expectLost(t *testing.T, lost <-chan error, want string) {
+	t.Helper()
 	select {
-	case err, ok := <-elsewhere:
+	case err, ok := <-lost:
 		if !ok {
-			t.Fatal("the watch over the exit ended without reporting anything")
+			t.Fatalf("the watch ended without reporting anything; wanted %q", want)
 		}
-		if !strings.Contains(err.Error(), pushed) {
-			t.Errorf("the exit's sandbox pulses %q; want the digest of what it acknowledged, %s", err, pushed)
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("the watch reported %q; wanted %q", err, want)
 		}
 	case <-time.After(3 * time.Second):
-		t.Fatal("the exit's sandbox pulsed nothing")
+		t.Fatalf("the watch reported nothing; wanted %q", want)
 	}
 }
 

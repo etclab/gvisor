@@ -75,6 +75,16 @@ const (
 // one error when liveness is lost and is closed afterwards; it is closed
 // without an error when ctx is cancelled or the sandbox is closed, so a caller
 // that reads it as `err, ok := <-ch` is told the two apart.
+//
+// DropEnforcing is the other half and is here rather than beside it because the
+// two are one contract: whoever is told the claim is lost is the one that has to
+// stop it being made. A watcher that could only watch would leave the sandbox
+// saying a policy is in force with nothing enforcing it, and the next stream or
+// push would be answered under it.
 type Live interface {
 	Watch(ctx context.Context, digest string) <-chan error
+
+	// DropEnforcing gives up the attachment whose claim was lost and leaves no
+	// policy in force.
+	DropEnforcing()
 }

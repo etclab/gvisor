@@ -251,8 +251,9 @@ in the same commit that re-measures it.
 
 *(Ticket 22 was that ticket, for the two `cmd/tunneld` strings: they say `attest-tool verify`
 now, and the image was re-measured around them —
-`docs/snp/evidence/ticket22/ceiling-digest.txt`. `attest/tsm/tsm.go:116` is untouched and still
-frozen.)*
+`docs/snp/evidence/ticket22/ceiling-digest.txt`. Ticket 27 took the third: `attest/tsm/tsm.go`
+credits `attest-tool provision fetch`, which is a comment in a frozen package and not a measured
+string.)*
 
 **`tdxfake.Config.TeeTCBSvn` and `.CollateralNextUpdate`.** No test sets either, and no code
 outside the fake mentions them. They are read where they are declared — `tdxfake.go:283` and

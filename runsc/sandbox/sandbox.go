@@ -16,6 +16,7 @@
 package sandbox
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -232,6 +233,14 @@ type Sandbox struct {
 	// WaitStatus to one of the waiters only.
 	status unix.WaitStatus `nojson:"true"`
 
+	// tunnelHelper watches the tunnel helper process this runsc started, so
+	// that a sandbox cannot outlive the one process a pushed policy reaches it
+	// through. It is nil when runsc was given no --tunnel-socket, and nil in
+	// every process but the one that started the helper.
+	//
+	// This field isn't saved to json, for the same reason child isn't.
+	tunnelHelper *tunnelHelperWatch `nojson:"true"`
+
 	// Checkpointed will be true when the sandbox has been checkpointed.
 	Checkpointed bool `json:"checkpointed"`
 
@@ -399,6 +408,21 @@ func New(conf *config.Config, args *Args) (*Sandbox, error) {
 			}
 		}
 		return nil, fmt.Errorf("cannot read client sync file: %w", err)
+	}
+
+	// The sandbox is up, but its tunnel helper may not be: tunneld refuses a
+	// second enforcing client on its socket, and a helper whose attach was
+	// refused exits rather than serve a sandbox no policy can ever reach. That
+	// is not a sandbox to hand back as created, so the cleanup above destroys
+	// it and the reason is reported instead.
+	//
+	// The helper dials tunneld as soon as it is exec'd, which is before the
+	// sentry it serves has finished booting, so by the time the handshake above
+	// has returned a refusal has already been seen. If it has not, the watchdog
+	// kills the sandbox a moment later — the sandbox stops either way, and only
+	// the quality of the message differs.
+	if err := s.tunnelHelperFailure(); err != nil {
+		return nil, fmt.Errorf("the sandbox came up but %w", err)
 	}
 
 	if conf.MetricServer != "" {
@@ -1569,6 +1593,9 @@ func (s *Sandbox) IsRootContainer(cid string) bool {
 // is idempotent.
 func (s *Sandbox) destroy() error {
 	log.Debugf("Destroying sandbox %q", s.ID)
+	// From here on the tunnel helper is expected to go, so its exit is not the
+	// failure the watchdog would otherwise call it.
+	s.tunnelHelperTeardown()
 	// Only delete the control file if it exists.
 	controlSocketPath := s.getControlSocketPath()
 	if len(controlSocketPath) > 0 {
@@ -1953,7 +1980,17 @@ func (s *Sandbox) startTunnelHelper(conf *config.Config, donations *donation.Age
 	cmd := exec.Command(specutils.ExePath, conf.ToFlags()...)
 	cmd.Env = slices.DeleteFunc(os.Environ(), func(env string) bool { return strings.HasPrefix(env, "GOMAXPROCS=") })
 	cmd.Env = gvisorbinaries.WithEnforceRelease(cmd.Env)
-	cmd.Stdin, cmd.Stdout, cmd.Stderr = devNull, devNull, devNull
+	cmd.Stdin, cmd.Stdout = devNull, devNull
+	// Standard error is a pipe rather than /dev/null, which is the one place
+	// this differs from the checkpoint gofer's shape. The helper writes there
+	// exactly once, on the fatal that ends it, and that line is the reason the
+	// watchdog below logs beside the exit status — "the tunnel helper is gone"
+	// on its own is not a message an operator can act on. The sandbox's own
+	// streams are still untouched: this pipe belongs to runsc.
+	helperStderr, err := cmd.StderrPipe()
+	if err != nil {
+		return fmt.Errorf("the tunnel helper's standard error: %w", err)
+	}
 	cmd.SysProcAttr = &unix.SysProcAttr{
 		// Detach from this session, or the helper takes the signals meant for
 		// the foreground process.
@@ -2002,7 +2039,144 @@ func (s *Sandbox) startTunnelHelper(conf *config.Config, donations *donation.Age
 		return fmt.Errorf("execing the tunnel helper: %w", err)
 	}
 	log.Infof("Tunnel helper started, PID %d, tunneld socket %q, table %q", cmd.Process.Pid, conf.TunnelSocket, conf.TunnelTable)
+	s.tunnelHelper = &tunnelHelperWatch{
+		gone:     make(chan struct{}),
+		teardown: make(chan struct{}),
+	}
+	go s.watchTunnelHelper(cmd, helperStderr, s.tunnelHelper)
 	return nil
+}
+
+// tunnelHelperWatch is the watchdog over the one tunnel helper a sandbox has.
+//
+// It exists only in the runsc process that started the helper. A sandbox read
+// back from its state file has no child to reap, so this is nil there, and
+// tunnelHelperFailure answers nil for it.
+type tunnelHelperWatch struct {
+	// gone is closed once the helper has been reaped and the verdict recorded.
+	gone chan struct{}
+
+	// teardown is closed once the sandbox is on its way out, after which the
+	// helper's exit is expected whatever status it carries.
+	teardown chan struct{}
+	// teardownOnce guards the one close of teardown, which more than one path
+	// out of a sandbox reaches.
+	teardownOnce sync.Once
+
+	// mu protects reason.
+	mu sync.Mutex
+	// reason is why the helper is gone, and is set only for a death the
+	// sandbox must not survive.
+	reason error
+}
+
+// maxTunnelHelperReason bounds how much of the helper's standard error is kept.
+// The helper writes there once, on the fatal that ends it, so this is a whole
+// reason rather than the tail of a stream.
+const maxTunnelHelperReason = 4096
+
+// watchTunnelHelper reaps the tunnel helper and, when it died while the sandbox
+// was meant to be running, ends the sandbox.
+//
+// The helper is the only way a pushed policy reaches the sentry and the only way
+// the sandbox's egress leaves it. A sandbox that outlives its helper will never
+// be given a policy, and — if none reached it before the helper went — runs with
+// exec unconstrained, while looking to its operator exactly like a sandbox that
+// came up. tunneld refuses a second enforcing client on its socket, so this is
+// not hypothetical: it is how two sandboxes racing for one socket end, and until
+// this watchdog the loser ran on.
+//
+// The verdict is: a non-zero exit before teardown has begun is fatal, and
+// nothing else is.
+//
+//   - A zero exit is never fatal. The helper returns zero only when the sentry
+//     closed the channel, which means the sandbox is already going; a sandbox's
+//     own death is reported by the machinery that watches the sandbox, not by
+//     its helper, and treating it here would make every ordinary run end with a
+//     warning.
+//   - A non-zero exit after teardown has begun is not fatal either: a helper
+//     killed along with the sandbox it serves is not the helper's fault.
+func (s *Sandbox) watchTunnelHelper(cmd *exec.Cmd, stderr io.Reader, w *tunnelHelperWatch) {
+	// Drained before Wait, because Wait closes the pipe. Whatever the helper
+	// said on the way out is the line that explains the status.
+	var said bytes.Buffer
+	if stderr != nil {
+		if _, err := io.Copy(&said, io.LimitReader(stderr, maxTunnelHelperReason)); err != nil {
+			log.Debugf("Reading the tunnel helper's standard error: %v", err)
+		}
+		io.Copy(io.Discard, stderr)
+	}
+	s.tunnelHelperExited(cmd.Process.Pid, cmd.Wait(), said.String(), w)
+}
+
+// tunnelHelperExited is the verdict on one reaped helper, split from the reaping
+// so that the rule above can be read and tested without a child process.
+func (s *Sandbox) tunnelHelperExited(pid int, waitErr error, said string, w *tunnelHelperWatch) {
+	defer close(w.gone)
+	if waitErr == nil {
+		log.Infof("Tunnel helper (PID %d) exited cleanly, which is the sentry having closed the channel", pid)
+		return
+	}
+	reason := strings.TrimSpace(said)
+	if reason == "" {
+		reason = "it said nothing on standard error, so its own log file is the only record of why"
+	}
+	select {
+	case <-w.teardown:
+		log.Infof("Tunnel helper (PID %d) ended with the sandbox: %v (%s)", pid, waitErr, reason)
+		return
+	default:
+	}
+	err := fmt.Errorf("the tunnel helper exited while the sandbox was meant to be running (%v): %s", waitErr, reason)
+	w.mu.Lock()
+	w.reason = err
+	w.mu.Unlock()
+	log.Warningf("Tunnel helper (PID %d) is gone: %v", pid, err)
+	s.killForTunnelHelperLoss(err)
+}
+
+// killForTunnelHelperLoss ends the sandbox the way an unrecoverable startup
+// failure does: the sentry is killed, and whatever is waiting on it sees a
+// sandbox that stopped rather than one that is running unpoliced.
+//
+// When the sentry has not been started yet there is nothing to kill. That is
+// the ordinary case for a refused attach, because the helper is started while
+// the sandbox's own command line is still being built — New's check after the
+// boot handshake is what reports it there.
+func (s *Sandbox) killForTunnelHelperLoss(reason error) {
+	pid := s.Pid.Load()
+	if pid == 0 {
+		log.Warningf("The sandbox %q has not been started yet, so there is nothing to kill; its creation will fail with: %v", s.ID, reason)
+		return
+	}
+	log.Warningf("Killing sandbox %q (PID %d) because its tunnel helper is gone", s.ID, pid)
+	if err := unix.Kill(pid, unix.SIGKILL); err != nil && err != unix.ESRCH {
+		log.Warningf("Killing sandbox %q PID %d after its tunnel helper exited: %v", s.ID, pid, err)
+	}
+}
+
+// tunnelHelperTeardown says the sandbox is on its way out, so the tunnel
+// helper's exit from here on is expected. It is idempotent, because more than
+// one path out of a sandbox reaches it.
+func (s *Sandbox) tunnelHelperTeardown() {
+	w := s.tunnelHelper
+	if w == nil {
+		return
+	}
+	w.teardownOnce.Do(func() { close(w.teardown) })
+}
+
+// tunnelHelperFailure is the reason the tunnel helper is gone when that is a
+// death the sandbox must not survive, and nil when the helper is running, when
+// it ended with the sandbox, or when this sandbox has no helper to watch.
+func (s *Sandbox) tunnelHelperFailure() error {
+	w := s.tunnelHelper
+	if w == nil {
+		return nil
+	}
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	return w.reason
 }
 
 // maybeStartCheckpointGoferAndGetSocket checks if use of a checkpoint gofer is
@@ -2351,6 +2525,10 @@ func (s *Sandbox) destroyContainer(cid string) error {
 // waitForStopped waits for the sandbox to actually stop.
 // This should only be called when the sandbox is known to be shutting down.
 func (s *Sandbox) waitForStopped() error {
+	// The caller has said the sandbox is shutting down, so the helper going
+	// with it is not a failure. destroy says this too; a caller that reaches
+	// here another way says it here.
+	s.tunnelHelperTeardown()
 	const waitTimeout = 2 * time.Minute
 	if s.child {
 		s.statusMu.Lock()

@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"gvisor.dev/gvisor/attest"
@@ -130,6 +131,10 @@ type policyAck struct {
 func (t *Tunneld) Attach(box sandbox.Sandbox) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
+	// The watch belongs to the attachment it was started over, so a different
+	// sandbox is a different claim and the old watch is retired rather than
+	// re-pointed.
+	t.retireWatch()
 	if box == nil {
 		t.box = nil
 		return
@@ -201,8 +206,49 @@ func (t *Tunneld) applyOrRefuse(ctx context.Context, conn *tunnel.Conn, policy [
 	if box == nil {
 		return t.refusePush(conn, ackNoSandbox, errors.New("no sandbox is beside this tunneld"))
 	}
-	if err := box.Apply(ctx, policy); err != nil {
-		return t.refusePush(conn, ackRefused, err)
+	waitCtx := ctx
+	if _, hasDeadline := ctx.Deadline(); !hasDeadline {
+		var cancel context.CancelFunc
+		waitCtx, cancel = context.WithTimeout(ctx, t.cfg.PushTimeout)
+		defer cancel()
+	}
+	// One received push at a time, because the push and the watch it leaves
+	// behind are one step. Two peers pushing at once are two Apply calls the
+	// sandbox serialises anyway, but two watch starts in whichever order their
+	// goroutines reach this line — which can leave the watch over the older
+	// digest while the sandbox pulses the newer one, and that reads as a loss.
+	t.applyMu.Lock()
+	defer t.applyMu.Unlock()
+
+	// The watch on the policy in force is retired before the next policy is
+	// pushed, not after it has landed. A sandbox that takes a policy starts
+	// pulsing that policy's digest — which is the point of the heartbeat — so a
+	// watch still expecting the previous digest reads a lawful narrowing as a
+	// sandbox that stopped enforcing, and that reading costs the attachment. The
+	// window is as wide as the sandbox takes to answer, which for a sentry is as
+	// wide as installing a policy takes.
+	//
+	// Nothing is lost if the push does not land: the policy in force did not
+	// change, so the same watch is started again over the same digest.
+	retired := t.retireWatch()
+	if err := box.Apply(waitCtx, policy); err != nil {
+		// The watch goes back on only where there is still something to watch. A
+		// sandbox that refused this policy goes on enforcing the one it has, and
+		// its watch belongs back on it; where the push found no sandbox, or gave
+		// one up for going quiet, the claim that watch was over has already been
+		// given up and restarting it would report the loss of a claim nobody is
+		// making.
+		if !errors.Is(err, sandbox.ErrNoEnforcingSandbox) {
+			t.startWatch(retired)
+		}
+		// Which of the two sentences the peer is told is the difference between
+		// "there is nobody here to take it" and "the sandbox here would not
+		// have it", and the sandbox says which by the sentinel it wraps.
+		sentence := ackRefused
+		if errors.Is(err, sandbox.ErrNoEnforcingSandbox) {
+			sentence = ackNoSandbox
+		}
+		return t.refusePush(conn, sentence, err)
 	}
 	t.watchPolicy(conn, box, policy)
 	return ""
@@ -226,44 +272,112 @@ func (t *Tunneld) watchPolicy(conn *tunnel.Conn, box sandbox.Sandbox, policy []b
 		return
 	}
 	sum := sha256.Sum256(policy)
-	go t.watchLiveness(conn, hex.EncodeToString(sum[:]), live)
+	t.startWatch(&livenessWatch{conn: conn, live: live, digest: hex.EncodeToString(sum[:])})
 }
 
-// watchLiveness ends the tunnel a policy arrived on when the sandbox stops
-// enforcing it, and ends itself when the tunnel goes first.
-//
-// The refusal is this side's alone. Nothing is sent to the peer for it — there
-// is no message on the wire that says "your policy lapsed", and adding one
-// would be telling a peer about the inside of this guest — so what the peer
-// sees is what it sees for every other refusal after admission: its tunnel
-// went, and its next stream fails.
-//
-// The tunnel is polled rather than subscribed to because [tunnel.Conn] has no
-// channel to wait on and a watch that outlived its tunnel would be a goroutine
-// per dead connection, counting pulses for a peer that is gone.
-func (t *Tunneld) watchLiveness(conn *tunnel.Conn, digest string, live sandbox.Live) {
+// A livenessWatch is the one watch this tunneld has running on the sandbox
+// beside it: the digest it is watching for, the tunnel the policy arrived on,
+// and the sandbox that says. It is a value rather than a cancel on its own
+// because a watch that is retired before a push has to be startable again
+// afterwards, over the same three things.
+type livenessWatch struct {
+	conn   *tunnel.Conn
+	live   sandbox.Live
+	digest string
+	cancel context.CancelFunc
+
+	// fired says this watch has reported its loss and answered it. A watch that
+	// has fired is spent: the tunnel it names is closed, the attachment it was
+	// over has been given up, and starting it again would ask for the loss of a
+	// claim that has already been given up — which the sandbox answers at once,
+	// and which would close whatever has taken that sandbox's place.
+	fired atomic.Bool
+}
+
+// startWatch starts one watch, retiring whatever was running first. A nil watch
+// starts nothing, which is what a retirement that found none gives back, and
+// neither does one that has already fired.
+func (t *Tunneld) startWatch(w *livenessWatch) {
+	if w == nil || w.fired.Load() {
+		return
+	}
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	lost := live.Watch(ctx, digest)
-	tick := time.NewTicker(sandbox.DefaultPulse)
-	defer tick.Stop()
-	for {
-		select {
-		case err, ok := <-lost:
-			if !ok {
-				return
-			}
-			t.refuse(attest.Refuse(attest.ReasonPolicyNotLive,
-				"a peer at %s pushed a policy this sandbox no longer enforces: %v", conn.RemoteAddr(), err))
-			conn.Close()
+	started := &livenessWatch{conn: w.conn, live: w.live, digest: w.digest, cancel: cancel}
+	t.livenessMu.Lock()
+	if t.liveness != nil {
+		t.liveness.cancel()
+	}
+	t.liveness = started
+	t.livenessMu.Unlock()
+	go t.watchLiveness(ctx, started)
+}
+
+// retireWatch stops the watch that is running and gives it back, so that a
+// caller which retired one speculatively can start it again.
+func (t *Tunneld) retireWatch() *livenessWatch {
+	t.livenessMu.Lock()
+	w := t.liveness
+	t.liveness = nil
+	t.livenessMu.Unlock()
+	if w == nil {
+		return nil
+	}
+	w.cancel()
+	return w
+}
+
+// endWatch takes a watch off this tunneld once it has ended on its own, so that
+// a retirement cannot hand back a watch nothing is running. It gives up that
+// watch's context whether or not it is still the one here: a watch already
+// replaced leaves the replacement alone, which is what the identity compare is
+// for.
+func (t *Tunneld) endWatch(w *livenessWatch) {
+	t.livenessMu.Lock()
+	if t.liveness == w {
+		t.liveness = nil
+	}
+	t.livenessMu.Unlock()
+	w.cancel()
+}
+
+// watchLiveness watches the policy in force on the sandbox beside this tunneld.
+// It belongs to the sandbox attachment and not to the tunnel the policy arrived
+// on, and it outlives that tunnel: ticket 26's watch returned as soon as the
+// tunnel idled out, so a sandbox that stopped enforcing a minute later was
+// something nobody noticed and a later dial found a dead sandbox. It is still not
+// a goroutine per dead connection, which is what that shape was avoiding: there
+// is one watch per attachment and the previous one is cancelled before a new one
+// starts (watchPolicy).
+//
+// A loss is refused under [attest.ReasonPolicyNotLive] either way, and the two
+// sentences differ only in whether there was a tunnel to close: one names the
+// peer whose tunnel went, the other says that none was open. In both cases the
+// enforcing attachment is dropped and no policy is left in force, so the next
+// stream or push is answered by a sandbox that is not claiming one.
+func (t *Tunneld) watchLiveness(ctx context.Context, w *livenessWatch) {
+	defer t.endWatch(w)
+	lost := w.live.Watch(ctx, w.digest)
+	select {
+	case err, ok := <-lost:
+		// A loss that arrives from a watch already retired is a loss of a claim
+		// nobody makes any more: a newer policy has taken force, or the sandbox
+		// beside this tunneld has been replaced. Retirement is what decides,
+		// rather than which of two ready channels a select happened to pick.
+		if !ok || ctx.Err() != nil {
 			return
-		case <-t.done:
-			return
-		case <-tick.C:
-			if !conn.Live() {
-				return
-			}
 		}
+		w.fired.Store(true)
+		if w.conn != nil && w.conn.Live() {
+			t.refuse(attest.Refuse(attest.ReasonPolicyNotLive,
+				"a peer at %s pushed a policy this sandbox no longer enforces: %v", w.conn.RemoteAddr(), err))
+			w.conn.Close()
+		} else {
+			t.refuse(attest.Refuse(attest.ReasonPolicyNotLive,
+				"the policy pushed to this sandbox is no longer live: %v; no tunnel was closed because none was open", err))
+		}
+		w.live.DropEnforcing()
+	case <-ctx.Done():
+	case <-t.done:
 	}
 }
 

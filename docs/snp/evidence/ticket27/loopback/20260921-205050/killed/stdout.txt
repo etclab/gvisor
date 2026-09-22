@@ -1,0 +1,5 @@
+PLAIN no contract, no dialer of this program's own, net/http's default transport and the ordinary resolver; proxy variables set in this environment: none
+WITHOUT-MODEL no model is called in this run and no key is read: the request to https://api.anthropic.com/v1/messages carries the body the loop builds and no x-api-key header, so the status it answers with is an authentication error and what that status proves is the reach of the path and not the model's work. There are no tokens, no cost and no summary below, and the gap before the document fetch is a fixed 5s.
+task=summarize
+prompt="Fetch the document at https://www.rfc-editor.org/rfc/rfc8446.txt, write a summary of it in at most five sentences, and save the summary to the file summary.txt in the current directory using write_file. Then reply with the word DONE."
+endpoint=https://api.anthropic.com/v1/messages tools=2

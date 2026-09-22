@@ -1,0 +1,33 @@
+{
+	"trace_session": {
+		"name": "Default",
+		"points": [
+			{
+				"context_fields": [
+					"time",
+					"container_id",
+					"thread_id"
+				],
+				"name": "sentry/egress_refused"
+			},
+			{
+				"context_fields": [
+					"time",
+					"container_id",
+					"thread_id"
+				],
+				"name": "sentry/exec_refused"
+			}
+		],
+		"sinks": [
+			{
+				"config": {
+					"endpoint": "/dev/shm/t25-1782914161/narrowed.events",
+					"retries": 3
+				},
+				"ignore_setup_error": true,
+				"name": "remote"
+			}
+		]
+	}
+}

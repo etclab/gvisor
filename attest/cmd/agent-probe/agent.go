@@ -239,6 +239,166 @@ func Run(ctx context.Context, client *http.Client, task Task, tools Tools, out i
 	return r.res, nil
 }
 
+// The words a run made without the model is read by, and the gap it leaves
+// where the model's first answer would have been.
+const (
+	// withoutModelMarker is the last line such a run writes. It is the marker
+	// the loopback harness asserts on, and it is not the model's "DONE": a
+	// transcript that never reached a model must not end in the word a
+	// transcript that did ends in.
+	withoutModelMarker = "NO-MODEL DONE"
+
+	// withoutModelPause is how long this mode waits between the request to the
+	// model endpoint and the document fetch. A model's first answer takes
+	// seconds, and two of the governed runs are built on that: the narrowed run
+	// pushes a policy that removes the document host after the first stream has
+	// been accepted, and needs a second stream opened afterwards for the
+	// refusal to be observable at all. Five seconds is the push's round trip
+	// with room over it, and it is printed so that a reader of the transcript
+	// knows the gap is this constant and not a model thinking.
+	withoutModelPause = 5 * time.Second
+)
+
+// summarizeDoc is the document summarizePrompt names. The two are written twice
+// because the prompt is byte-identical to spike E1's and must stay so, and a run
+// made without the model has to fetch what the prompt asked for rather than what
+// a model chose: a change to one is a change to both.
+const summarizeDoc = "https://www.rfc-editor.org/rfc/rfc8446.txt"
+
+// RunWithoutModel runs the task with the one step that needs a key left out, and
+// reports what every other step really did.
+//
+// It is explicit and never a fallback. [Run] with no key in the environment
+// still stops at [ErrNoKey]; this is reached only because a caller asked for it
+// (agent-probe's -without-model), so a transcript made this way cannot be
+// mistaken for one made with a model by anybody reading how it was started.
+//
+// What it proves is each leg of the path, measured:
+//
+//   - The model endpoint is requested for real, over the same client and
+//     therefore over the same tunnel, with the request body the loop builds and
+//     with no key header. What comes back is the API's own answer to an
+//     unauthenticated request, and the status printed is the status received —
+//     which is what says the stream crossed the tunnel and the exit dialled the
+//     model's host and port.
+//   - The document is fetched the way fetch_url fetches it, over the same
+//     client, and the status and the byte count printed are the ones measured.
+//   - write_file writes a file that says what it is.
+//
+// Nothing here is presented as something a model said. There is no token count,
+// no cost, no summary and no final text, because no model was asked; the run's
+// last line is [withoutModelMarker] and every number on it was measured.
+func RunWithoutModel(ctx context.Context, client *http.Client, task Task, tools Tools, out io.Writer) (Result, error) {
+	defs, err := tools.defs()
+	if err != nil {
+		return Result{}, err
+	}
+	r := &run{client: client, tools: tools, out: out}
+	began := time.Now()
+	fmt.Fprintf(out, "WITHOUT-MODEL no model is called in this run and no key is read: the request to %s carries "+
+		"the body the loop builds and no x-api-key header, so the status it answers with is an authentication "+
+		"error and what that status proves is the reach of the path and not the model's work. There are no "+
+		"tokens, no cost and no summary below, and the gap before the document fetch is a fixed %s.\n",
+		modelEndpoint, withoutModelPause)
+	fmt.Fprintf(out, "task=%s\nprompt=%q\nendpoint=%s tools=%d\n\n", task.Name, task.Prompt, modelEndpoint, len(defs))
+
+	body, err := json.Marshal(map[string]any{
+		"model":      model,
+		"max_tokens": maxTokens,
+		"tools":      defs,
+		"messages":   []message{{Role: "user", Content: task.Prompt}},
+	})
+	if err != nil {
+		return r.res, err
+	}
+	got, err := r.reach(ctx, http.MethodPost, modelEndpoint, body)
+	if err != nil {
+		// The refusal a governed run is looking for arrives here, as the
+		// resolver's or the connect's own sentence, and it ends the run the way
+		// a failed model request ends Run's loop.
+		r.say("model endpoint %s: %v", modelEndpoint, err)
+		return r.res, fmt.Errorf("agent-probe: requesting %s without a key: %w", modelEndpoint, err)
+	}
+	r.say("model endpoint: POST %s -> HTTP %d proto=%s %d bytes in %s; what it answered: %s",
+		modelEndpoint, got.status, got.proto, got.read, got.took.Round(time.Millisecond), clip(got.body, 200))
+
+	select {
+	case <-ctx.Done():
+		return r.res, ctx.Err()
+	case <-time.After(withoutModelPause):
+	}
+
+	line := fmt.Sprintf("%s model_status=%d model_bytes=%d", withoutModelMarker, got.status, got.read)
+	if tools.FetchURL {
+		doc, err := r.reach(ctx, http.MethodGet, summarizeDoc, nil)
+		switch {
+		case err != nil:
+			// A tool that could not reach something is what the model would
+			// have been told and worked with, so it is not the end of the run.
+			r.say("  tool fetch_url %s: %v", summarizeDoc, err)
+			line += " doc_status=none doc_bytes=0"
+		default:
+			at := ""
+			if doc.read == fetchCap {
+				// The same bound fetch_url reads to, said out loud so that the
+				// count is not read as the size of the document.
+				at = fmt.Sprintf(" (the %d KiB cap fetch_url reads to)", fetchCap>>10)
+			}
+			r.say("  tool fetch_url %s -> HTTP %d proto=%s %d bytes%s in %s",
+				summarizeDoc, doc.status, doc.proto, doc.read, at, doc.took.Round(time.Millisecond))
+			line += fmt.Sprintf(" doc_status=%d doc_bytes=%d", doc.status, doc.read)
+		}
+	}
+	if tools.WriteDir != "" {
+		said, failed := r.writeFile(json.RawMessage(`{"path":"summary.txt","content":` +
+			strconv.Quote("This file was written by agent-probe -without-model. No model was called in this run, "+
+				"so it holds no summary of anything.\n") + `}`))
+		r.say("  tool write_file summary.txt -> %s, is_error=%v", said, failed)
+		r.res.ToolError = r.res.ToolError || failed
+	}
+	r.say("%s in %s", line, time.Since(began).Round(time.Millisecond))
+	r.res.Final = line
+	return r.res, nil
+}
+
+// A fetched is one request this mode made: what came back, and how much of it.
+type fetched struct {
+	status int
+	proto  string
+	read   int
+	body   string
+	took   time.Duration
+}
+
+// reach makes one request over the client the caller was given and measures it.
+// The body is read to the same cap fetch_url reads to, and the count reported is
+// the count of bytes read.
+func (r *run) reach(ctx context.Context, method, url string, body []byte) (fetched, error) {
+	var reader io.Reader
+	if body != nil {
+		reader = bytes.NewReader(body)
+	}
+	req, err := http.NewRequestWithContext(ctx, method, url, reader)
+	if err != nil {
+		return fetched{}, err
+	}
+	if body != nil {
+		req.Header.Set("anthropic-version", apiVersion)
+		req.Header.Set("content-type", "application/json")
+	}
+	started := time.Now()
+	resp, err := r.client.Do(req)
+	if err != nil {
+		return fetched{}, err
+	}
+	defer resp.Body.Close()
+	raw, err := io.ReadAll(io.LimitReader(resp.Body, fetchCap))
+	if err != nil {
+		return fetched{}, err
+	}
+	return fetched{status: resp.StatusCode, proto: resp.Proto, read: len(raw), body: string(raw), took: time.Since(started)}, nil
+}
+
 // defs is the tool definitions this Tools offers, as the API takes them.
 func (t Tools) defs() ([]json.RawMessage, error) {
 	var offered []string

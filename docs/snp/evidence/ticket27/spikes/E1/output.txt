@@ -1,0 +1,94 @@
+=== Ticket 27, spike E1 ===
+date:        2026-09-22T00:41:47Z
+branch:      ticket-27-an-ack-means-the-sandbox-has-it
+commit:      648e056dabf5914857a1e7459b48169b4ef0643d
+runsc:       /home/pniroula/Projects/gvisor-t27/bazel-bin/runsc/runsc_/runsc
+runsc sha256: 49740e434b42e1c1d65546258f2bcbd16134469cf8ea72190321a353daf9823c
+kernel:      Linux 6.11.0-rc3-snp-host-85ef1ac03941
+
+Starting E1: 25 runs of loopback attachment window measurement
+Host: 2026-09-22T00:41:48Z
+Runsc binary: /home/pniroula/Projects/gvisor-t27/bazel-bin/runsc/runsc_/runsc
+
+Run 01: exit=+1.549ms, runsc_start=+1.805ms, push=+3.291ms, enforcing_attach=+153.153ms (from runsc: 151.348ms), apply_returned=+325.317ms, waited=true, exit_offered=false, applied=true, answer=acknowledged by the enforcing sandbox
+Run 02: exit=+1.042ms, runsc_start=+1.372ms, push=+2.829ms, enforcing_attach=+153.156ms (from runsc: 151.784ms), apply_returned=+296.343ms, waited=true, exit_offered=false, applied=false, answer=sandbox: policy refused: the sandbox refused it: policy refused: the sandbox is created and a policy is honoured only by a started one
+Run 03: exit=+849µs, runsc_start=+1.045ms, push=+2.311ms, enforcing_attach=+128.301ms (from runsc: 127.256ms), apply_returned=+310.904ms, waited=true, exit_offered=false, applied=true, answer=acknowledged by the enforcing sandbox
+Run 04: exit=+950µs, runsc_start=+1.278ms, push=+2.821ms, enforcing_attach=+158.387ms (from runsc: 157.108ms), apply_returned=+323.586ms, waited=true, exit_offered=false, applied=true, answer=acknowledged by the enforcing sandbox
+Run 05: exit=+719µs, runsc_start=+919µs, push=+2.387ms, enforcing_attach=+171.764ms (from runsc: 170.845ms), apply_returned=+353.83ms, waited=true, exit_offered=false, applied=true, answer=acknowledged by the enforcing sandbox
+Run 06: exit=+704µs, runsc_start=+902µs, push=+2.414ms, enforcing_attach=+156.584ms (from runsc: 155.682ms), apply_returned=+354.726ms, waited=true, exit_offered=false, applied=true, answer=acknowledged by the enforcing sandbox
+Run 07: exit=+1.043ms, runsc_start=+1.291ms, push=+2.598ms, enforcing_attach=+144.018ms (from runsc: 142.727ms), apply_returned=+331.506ms, waited=true, exit_offered=false, applied=true, answer=acknowledged by the enforcing sandbox
+Run 08: exit=+881µs, runsc_start=+1.225ms, push=+2.609ms, enforcing_attach=+165.197ms (from runsc: 163.973ms), apply_returned=+344.153ms, waited=true, exit_offered=false, applied=true, answer=acknowledged by the enforcing sandbox
+Run 09: exit=+931µs, runsc_start=+1.287ms, push=+3.013ms, enforcing_attach=+144.048ms (from runsc: 142.761ms), apply_returned=+367.729ms, waited=true, exit_offered=false, applied=true, answer=acknowledged by the enforcing sandbox
+Run 10: exit=+758µs, runsc_start=+1.045ms, push=+2.426ms, enforcing_attach=+129.662ms (from runsc: 128.617ms), apply_returned=+261.047ms, waited=true, exit_offered=false, applied=false, answer=sandbox: policy refused: the sandbox refused it: policy refused: the sandbox is created and a policy is honoured only by a started one
+Run 11: exit=+904µs, runsc_start=+1.155ms, push=+2.713ms, enforcing_attach=+156.533ms (from runsc: 155.378ms), apply_returned=+400.307ms, waited=true, exit_offered=false, applied=true, answer=acknowledged by the enforcing sandbox
+Run 12: exit=+772µs, runsc_start=+949µs, push=+2.277ms, enforcing_attach=+120.97ms (from runsc: 120.02ms), apply_returned=+348.293ms, waited=true, exit_offered=false, applied=true, answer=acknowledged by the enforcing sandbox
+Run 13: exit=+577µs, runsc_start=+700µs, push=+2.343ms, enforcing_attach=+169.522ms (from runsc: 168.822ms), apply_returned=+385.866ms, waited=true, exit_offered=false, applied=true, answer=acknowledged by the enforcing sandbox
+Run 14: exit=+1.006ms, runsc_start=+1.262ms, push=+2.771ms, enforcing_attach=+177.496ms (from runsc: 176.234ms), apply_returned=+393.213ms, waited=true, exit_offered=false, applied=true, answer=acknowledged by the enforcing sandbox
+Run 15: exit=+903µs, runsc_start=+1.057ms, push=+2.596ms, enforcing_attach=+152.414ms (from runsc: 151.357ms), apply_returned=+334.015ms, waited=true, exit_offered=false, applied=true, answer=acknowledged by the enforcing sandbox
+Run 16: exit=+1.267ms, runsc_start=+1.573ms, push=+3.598ms, enforcing_attach=+148.039ms (from runsc: 146.466ms), apply_returned=+329.149ms, waited=true, exit_offered=false, applied=true, answer=acknowledged by the enforcing sandbox
+Run 17: exit=+835µs, runsc_start=+1.255ms, push=+3.272ms, enforcing_attach=+160.321ms (from runsc: 159.066ms), apply_returned=+353.717ms, waited=true, exit_offered=false, applied=true, answer=acknowledged by the enforcing sandbox
+Run 18: exit=+822µs, runsc_start=+1.137ms, push=+2.904ms, enforcing_attach=+138.015ms (from runsc: 136.877ms), apply_returned=+388.3ms, waited=true, exit_offered=false, applied=true, answer=acknowledged by the enforcing sandbox
+Run 19: exit=+585µs, runsc_start=+710µs, push=+1.645ms, enforcing_attach=+113.106ms (from runsc: 112.396ms), apply_returned=+329.846ms, waited=true, exit_offered=false, applied=true, answer=acknowledged by the enforcing sandbox
+Run 20: exit=+824µs, runsc_start=+1.045ms, push=+2.568ms, enforcing_attach=+151.703ms (from runsc: 150.658ms), apply_returned=+340.836ms, waited=true, exit_offered=false, applied=true, answer=acknowledged by the enforcing sandbox
+Run 21: exit=+830µs, runsc_start=+1.056ms, push=+2.671ms, enforcing_attach=+174.059ms (from runsc: 173.003ms), apply_returned=+306.631ms, waited=true, exit_offered=false, applied=false, answer=sandbox: policy refused: the sandbox refused it: policy refused: the sandbox is created and a policy is honoured only by a started one
+Run 22: exit=+638µs, runsc_start=+912µs, push=+2.275ms, enforcing_attach=+169.224ms (from runsc: 168.312ms), apply_returned=+337.926ms, waited=true, exit_offered=false, applied=true, answer=acknowledged by the enforcing sandbox
+Run 23: exit=+802µs, runsc_start=+1.017ms, push=+2.459ms, enforcing_attach=+125.006ms (from runsc: 123.989ms), apply_returned=+289.655ms, waited=true, exit_offered=false, applied=true, answer=acknowledged by the enforcing sandbox
+Run 24: exit=+718µs, runsc_start=+868µs, push=+2.141ms, enforcing_attach=+137.388ms (from runsc: 136.52ms), apply_returned=+373.615ms, waited=true, exit_offered=false, applied=true, answer=acknowledged by the enforcing sandbox
+Run 25: exit=+761µs, runsc_start=+1.017ms, push=+2.496ms, enforcing_attach=+168.715ms (from runsc: 167.698ms), apply_returned=+348.767ms, waited=true, exit_offered=false, applied=true, answer=acknowledged by the enforcing sandbox
+
+===== E1 SUMMARY (25 runs) =====
+
+| Run | Exit attach | runsc start | Push entered | Enforcing attach | From runsc start | Apply returned | Apply took | Waited for it | Exit offered the policy | Answer |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 01 | 1.549ms | 1.805ms | 3.291ms | 153.153ms | 151.348ms | 325.317ms | 322.026ms | true | false | acknowledged by the enforcing sandbox |
+| 02 | 1.042ms | 1.372ms | 2.829ms | 153.156ms | 151.784ms | 296.343ms | 293.514ms | true | false | sandbox: policy refused: the sandbox refused it: policy refused: the sandbox is created and a policy is honoured only by a started one |
+| 03 | 849µs | 1.045ms | 2.311ms | 128.301ms | 127.256ms | 310.904ms | 308.593ms | true | false | acknowledged by the enforcing sandbox |
+| 04 | 950µs | 1.278ms | 2.821ms | 158.387ms | 157.108ms | 323.586ms | 320.765ms | true | false | acknowledged by the enforcing sandbox |
+| 05 | 719µs | 919µs | 2.387ms | 171.764ms | 170.845ms | 353.83ms | 351.444ms | true | false | acknowledged by the enforcing sandbox |
+| 06 | 704µs | 902µs | 2.414ms | 156.584ms | 155.682ms | 354.726ms | 352.312ms | true | false | acknowledged by the enforcing sandbox |
+| 07 | 1.043ms | 1.291ms | 2.598ms | 144.018ms | 142.727ms | 331.506ms | 328.908ms | true | false | acknowledged by the enforcing sandbox |
+| 08 | 881µs | 1.225ms | 2.609ms | 165.197ms | 163.973ms | 344.153ms | 341.544ms | true | false | acknowledged by the enforcing sandbox |
+| 09 | 931µs | 1.287ms | 3.013ms | 144.048ms | 142.761ms | 367.729ms | 364.716ms | true | false | acknowledged by the enforcing sandbox |
+| 10 | 758µs | 1.045ms | 2.426ms | 129.662ms | 128.617ms | 261.047ms | 258.622ms | true | false | sandbox: policy refused: the sandbox refused it: policy refused: the sandbox is created and a policy is honoured only by a started one |
+| 11 | 904µs | 1.155ms | 2.713ms | 156.533ms | 155.378ms | 400.307ms | 397.594ms | true | false | acknowledged by the enforcing sandbox |
+| 12 | 772µs | 949µs | 2.277ms | 120.97ms | 120.02ms | 348.293ms | 346.017ms | true | false | acknowledged by the enforcing sandbox |
+| 13 | 577µs | 700µs | 2.343ms | 169.522ms | 168.822ms | 385.866ms | 383.524ms | true | false | acknowledged by the enforcing sandbox |
+| 14 | 1.006ms | 1.262ms | 2.771ms | 177.496ms | 176.234ms | 393.213ms | 390.443ms | true | false | acknowledged by the enforcing sandbox |
+| 15 | 903µs | 1.057ms | 2.596ms | 152.414ms | 151.357ms | 334.015ms | 331.419ms | true | false | acknowledged by the enforcing sandbox |
+| 16 | 1.267ms | 1.573ms | 3.598ms | 148.039ms | 146.466ms | 329.149ms | 325.551ms | true | false | acknowledged by the enforcing sandbox |
+| 17 | 835µs | 1.255ms | 3.272ms | 160.321ms | 159.066ms | 353.717ms | 350.445ms | true | false | acknowledged by the enforcing sandbox |
+| 18 | 822µs | 1.137ms | 2.904ms | 138.015ms | 136.877ms | 388.3ms | 385.397ms | true | false | acknowledged by the enforcing sandbox |
+| 19 | 585µs | 710µs | 1.645ms | 113.106ms | 112.396ms | 329.846ms | 328.201ms | true | false | acknowledged by the enforcing sandbox |
+| 20 | 824µs | 1.045ms | 2.568ms | 151.703ms | 150.658ms | 340.836ms | 338.267ms | true | false | acknowledged by the enforcing sandbox |
+| 21 | 830µs | 1.056ms | 2.671ms | 174.059ms | 173.003ms | 306.631ms | 303.96ms | true | false | sandbox: policy refused: the sandbox refused it: policy refused: the sandbox is created and a policy is honoured only by a started one |
+| 22 | 638µs | 912µs | 2.275ms | 169.224ms | 168.312ms | 337.926ms | 335.651ms | true | false | acknowledged by the enforcing sandbox |
+| 23 | 802µs | 1.017ms | 2.459ms | 125.006ms | 123.989ms | 289.655ms | 287.195ms | true | false | acknowledged by the enforcing sandbox |
+| 24 | 718µs | 868µs | 2.141ms | 137.388ms | 136.52ms | 373.615ms | 371.474ms | true | false | acknowledged by the enforcing sandbox |
+| 25 | 761µs | 1.017ms | 2.496ms | 168.715ms | 167.698ms | 348.767ms | 346.272ms | true | false | acknowledged by the enforcing sandbox |
+
+Exit attachment statistics (the host listening -> the exit's attach message, role network), over 25 runs:
+  Min:    577µs
+  p50:    830µs
+  Mean:   867µs
+  p90:    1.043ms
+  Max:    1.549ms
+
+Attachment statistics (runsc start -> the enforcing attachment on the socket), over 25 runs:
+  Min:    112.396ms
+  p50:    151.357ms
+  Mean:   149.556ms
+  p90:    170.845ms
+  Max:    176.234ms
+
+Apply statistics (Host.Apply entered -> Host.Apply returned), over 25 runs:
+  Min:    258.622ms
+  p50:    338.267ms
+  Mean:   338.554ms
+  p90:    385.397ms
+  Max:    397.594ms
+
+Push outcome:
+  Entered before the enforcing attachment: 25 / 25
+  Offered to the exit (a network client): 0 / 25
+  Acknowledged by the enforcing sandbox:  22 / 25
+=== Spike E1 complete ===

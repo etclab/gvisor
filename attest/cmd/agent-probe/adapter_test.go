@@ -279,6 +279,12 @@ type loopback struct {
 	// (spike E1 §7a). A run that pushes keeps its root short.
 	stateIn string
 
+	// holdStart keeps the sandbox from starting until it says yes, and is nil
+	// for every run but one. The early-push run is the one whose push has to be
+	// inside a's Apply before the sandbox exists at all, and this is where that
+	// is made so rather than hoped for.
+	holdStart func() bool
+
 	// points are the seccheck points this run's trace session names. The
 	// default is the one ticket 25 recorded; a run that pushes an x adds the
 	// point an exec refusal is emitted on.
@@ -353,11 +359,15 @@ func (l *loopback) buildTunnelds(t *testing.T) {
 	b.Attach(bHost)
 	l.serveExit(t, bSocket)
 
-	// a pushes ticket 23's policy, so that the document naming the two
-	// destinations crosses the tunnel and is recorded at the far end. Nothing
-	// enforces it here; the exit's -allow is the enforcement point and the
-	// sentry's table is the near one.
-	a := w.start(t, "a", aImage, tunneld.PeerTable{"b": b.Addr().String()}, p0, l.aRefused)
+	// a pushes nothing at b either, and under contract v4 that is not a
+	// simplification but the only thing it can do. The exit on b's socket
+	// attaches as a network client, and a network client is never pushed a
+	// policy — so a document a sent would wait out b's push deadline for an
+	// enforcing sandbox that does not exist behind an exit, come back refused,
+	// and take with it the tunnel every stream in this harness crosses. What a
+	// policy does inside a sandbox is what these runs are about, and it is
+	// pushed at a by a third peer rather than by a.
+	a := w.start(t, "a", aImage, tunneld.PeerTable{"b": b.Addr().String()}, "", l.aRefused)
 	l.socket = filepath.Join(l.shm, "a.sock")
 	aHost, err := sandbox.Listen(l.socket, a, l.aSays(w.logf("a")))
 	if err != nil {

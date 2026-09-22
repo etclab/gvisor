@@ -39,6 +39,7 @@ import (
 //
 // Messages, and who sends them:
 //
+//	{"id":0,"type":"attach","role":"enforcing"}             sandbox → tunneld
 //	{"id":1,"type":"open","peer":"b"}                       sandbox → tunneld
 //	{"id":1,"type":"stream"}                 + one fd       tunneld → sandbox
 //	{"id":2,"type":"accept"}                                sandbox → tunneld
@@ -48,6 +49,11 @@ import (
 //	{"id":7,"type":"ack"}                                   sandbox → tunneld
 //	{"id":7,"type":"refusal","error":"…"}                   sandbox → tunneld
 //	{"id":0,"type":"alive","digest":"<64 hex>"}             sandbox → tunneld
+//
+// The attach message (contract v4) is sent first by a sandbox upon connecting,
+// declaring whether it is an enforcing sandbox ("enforcing") or a network-only
+// attachment ("network"). Tunneld pushes policies only to enforcing attachments
+// and refuses a second enforcing attachment on the same socket.
 //
 // The last of them is the only message on this socket that is neither a
 // request nor a reply (contract v3). A sandbox that has acknowledged a policy
@@ -82,9 +88,10 @@ import (
 // the receiver that reads a four-byte header gets that message's descriptor
 // with it and never the next message's.
 
-// The message types. Four from the sandbox, three from tunneld, and one —
+// The message types. Six from the sandbox, three from tunneld, and one —
 // `stream` — that is a reply to either of the sandbox's two requests.
 const (
+	msgAttach  = "attach"
 	msgOpen    = "open"
 	msgAccept  = "accept"
 	msgAck     = "ack"
@@ -96,12 +103,19 @@ const (
 	msgApply  = "apply"
 )
 
-// A message is every field any of the eight messages carries. One struct
-// rather than eight keeps the decoder trivial; the type field says which fields
-// mean anything.
+// Roles declared in an attach message (contract v4).
+const (
+	RoleEnforcing = "enforcing"
+	RoleNetwork   = "network"
+)
+
+// A message is every field any of the messages carries. One struct
+// rather than separate types keeps the decoder trivial; the type field says
+// which fields mean anything.
 type message struct {
 	ID       uint64    `json:"id"`
 	Type     string    `json:"type"`
+	Role     string    `json:"role,omitempty"`
 	Peer     string    `json:"peer,omitempty"`
 	Attested *Attested `json:"attested,omitempty"`
 	Policy   []byte    `json:"policy,omitempty"`

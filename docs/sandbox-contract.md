@@ -17,6 +17,16 @@ for the present tense — an acknowledgement is a claim about the past, and tick
 exactly how short a past that is. Nothing else changed: the three verbs, the stream, the
 descriptor, the pump and the four `Attested` strings are what version 1 made them.
 
+**Contract version 4** is ticket 27's, and it is one message: `attach`, sent first by a client on
+the socket, declaring the role it attaches in (`enforcing` or `network`). It is answered only when
+it is refused — exactly one enforcing client is permitted per socket, and a second is told so in an
+`error` and has its socket closed. What the role buys is an acknowledgement that means the sandbox
+which will enforce the policy has it: `Host.Apply` pushes to the enforcing attachment and to
+nothing else, waits inside the caller's deadline when none has attached yet, and replays the policy
+in force to an enforcing client that attaches after the push. The Go half gains one argument —
+`sandbox.Dial` takes the role — and the three verbs, the stream, the descriptor, the pump and the
+four `Attested` strings are still what version 1 made them.
+
 **In one sentence:** a sandbox sees no evidence, no key and no trust decision — it gets a stream
 or an error, and a policy or nothing — and the shape of the contract is fixed by the thing that
 cannot cross a process boundary, since a QUIC stream is not a kernel object (spike E1) and what
@@ -77,8 +87,8 @@ type Sandbox interface {
 `Network` (`sandbox.go:188`) is tunneld's half and `*tunneld.Tunneld` implements it
 (`attest/tunneld/sandbox.go:62`, `:84`). `Sandbox` (`sandbox.go:206`) is the whole contract;
 `*sandbox.Null` implements it in process (`null.go:46`) and `*sandbox.Host` implements it with a
-process boundary in the middle (`host.go:46`). A `context.Context` is on each method because
-`Accept` blocks and Go has one way of saying so; nothing else was added to the three verbs.
+process boundary in the middle (`type Host` in `host.go`). A `context.Context` is on each method
+because `Accept` blocks and Go has one way of saying so; nothing else was added to the three verbs.
 
 `Apply` returns `nil` for an acknowledgement and an error for a refusal. Refusals of the
 envelope wrap `sandbox.ErrPolicyRefused` (`policy.go:54`). Its caller is a peer: a delegator
@@ -191,13 +201,14 @@ what changed is that it says so.
 ## The local socket protocol
 
 For a sandbox in another process. Tunneld listens on an `AF_UNIX SOCK_STREAM` socket
-(`sandbox.Listen`, `host.go:70`, mode 0600, the directory created if missing, a socket left by a
+(`sandbox.Listen` in `host.go`, mode 0600, the directory created if missing, a socket left by a
 previous run replaced and anything else at the path refused). Every message is a four-byte
 big-endian length and that many bytes of JSON — the same framing package tunnel uses on a
 stream, and deliberately the dullest thing that works.
 
 | message | direction | carries |
 | --- | --- | --- |
+| `{"id":0,"type":"attach","role":"enforcing"}` | sandbox → tunneld | the role this client attaches in (`enforcing` or `network`) — **answered only if refused** (v4) |
 | `{"id":1,"type":"open","peer":"b"}` | sandbox → tunneld | the peer's name |
 | `{"id":1,"type":"stream"}` | tunneld → sandbox | **one descriptor**, in `SCM_RIGHTS` |
 | `{"id":2,"type":"accept"}` | sandbox → tunneld | nothing; blocks until a peer opens a stream |
@@ -208,10 +219,11 @@ stream, and deliberately the dullest thing that works.
 | `{"id":7,"type":"refusal","error":"…"}` | sandbox → tunneld | the sandbox's refusal |
 | `{"id":0,"type":"alive","digest":"<64 hex>"}` | sandbox → tunneld | the digest of the policy in force — **no reply** (v3) |
 
-The last of them is the only message here that is neither a request nor a reply, and its id is 0
-because it numbers nothing: it goes nowhere near either side's reply table, and a reply table
-that grew a slot per second would be the one part of this socket that leaked. See *Liveness*,
-below.
+The first and the last of them are the only messages here that are neither a request nor a reply,
+and the id is 0 on both because they number nothing: they go nowhere near either side's reply
+table, and a reply table that grew a slot per second would be the one part of this socket that
+leaked. An `attach` is sent once, before anything else on the socket; an `alive` every pulse until
+the client closes. See *Liveness*, below.
 
 Requests travel in both directions — the sandbox asks for streams, tunneld pushes policy — so
 each side numbers its own requests and a reply carries the id of the request it answers. The two
@@ -220,7 +232,7 @@ sandbox sends is a type tunneld sends. Requests may be outstanding concurrently 
 as they finish; in particular an `apply` sent while an `accept` is waiting for a peer is
 answered without waiting for it, which the test asserts by pushing exactly there.
 
-A declared length over 4 MiB is refused (`socket.go:101`) for the same reason package tunnel
+A declared length over 4 MiB is refused (`socket.go:201`) for the same reason package tunnel
 bounds a frame. `error` messages carry tunneld's own text — an unknown peer, an unreachable one,
 a handshake that did not complete — which is the same text an in-process sandbox is handed; no
 refusal reason travels in it, because none reaches the contract in the first place.
@@ -230,18 +242,25 @@ socketpair in its ancillary data; tunneld keeps the other end and pumps. This re
 guarantee about unix stream sockets: the kernel never merges bytes written with descriptors
 attached into a read of bytes written without them, so a receiver that reads a four-byte header
 gets that message's descriptor with it and never the next message's (`wire.readHeader`,
-`socket.go:198`). A descriptor sent the other way is closed on arrival: descriptors travel one
+`socket.go:226`). A descriptor sent the other way is closed on arrival: descriptors travel one
 way.
 
-The client half is `sandbox.Dial` (`client.go:62`), which is a `Network`, so a sandbox written
+The client half is `sandbox.Dial` (`client.go:75`), which is a `Network`, so a sandbox written
 against the in-process contract runs unchanged over the socket. That is the property the whole
 boundary exists for, and the composition is three lines:
 
 ```go
 var null *sandbox.Null
-c, err := sandbox.Dial(path, func(ctx context.Context, p []byte) error { return null.Apply(ctx, p) })
+c, err := sandbox.Dial(path, sandbox.RoleEnforcing, func(ctx context.Context, p []byte) error { return null.Apply(ctx, p) })
 null = sandbox.NewNull(c, logf)
 ```
+
+The role is version 4's, and it is the second argument because the socket has to know which of its
+clients a push is for: `sandbox.RoleEnforcing` for the one client that will enforce what it
+acknowledges, `sandbox.RoleNetwork` for a client that wants streams and is pushed nothing, which is
+what `agent-probe` attaches as for its agent and for its exit alike
+(`socketSandbox`, `attest/cmd/agent-probe/main.go:298`). In a measured guest the enforcing client
+is `runsc tunnel-helper` (`runsc/cmd/tunnel_helper.go:98`).
 
 In the command, `-sandbox-socket` turns it on; the conventional path is
 `/run/tunneld/sandbox.sock` (`attest/cmd/tunneld/nullsandbox.go:48`). It is **off by default**,
@@ -253,7 +272,7 @@ there is one queue of incoming streams and a sandbox in another process is *the*
 
 ## The pump
 
-`sandbox.pump` (`socket.go:278`), the shape `fdhandoff.go` proved in E1: two `io.Copy`
+`sandbox.pump` (`socket.go:306`), the shape `fdhandoff.go` proved in E1: two `io.Copy`
 goroutines, and a half-close carried at the end of each.
 
 ```
@@ -310,9 +329,9 @@ An acknowledgement is a claim about the past. Ticket 23 measured how short a pas
 saying so. Version 3 is that verb.
 
 > A sandbox that has acknowledged a policy sends `alive` with that policy's digest every
-> `sandbox.DefaultPulse`, until it closes. Liveness is lost when an attachment that acknowledged
-> has sent none for `sandbox.DefaultMisses` consecutive intervals, sends one whose digest is not
-> the one that was pushed, or closes its socket.
+> `sandbox.DefaultPulse`, until it closes. Liveness is lost when the enforcing attachment that
+> acknowledged has sent none for `sandbox.DefaultMisses` consecutive intervals, sends one whose
+> digest is not the one that was pushed, or closes its socket.
 
 The constants are **1 s** and **3**, and spike E3 (`docs/snp/evidence/ticket26/spikes/E3/`) is
 why. A pulse costs 30 µs to send and 255 µs of CPU to receive at one hertz — 0.026 % of one core
@@ -335,14 +354,26 @@ with `Client.Alive(digest)`, and the last thing it said is what it pulses.
 process boundary is watched. A sandbox in tunneld's own process — the null one, and the Deno one
 — has no liveness question: it *is* the process, and a caller wondering whether it is still
 running has been answered by the fact that it asked. Tunneld starts a watch after a push it
-acknowledged and closes that tunnel when the watch fires, under the taxonomy's eleventh reason
+acknowledged and refuses under the taxonomy's eleventh reason when the watch fires
 (`docs/policy-push.md`).
 
-**Every attachment that acknowledged must be live**, for the same reason `Host.Apply` returns the
-first refusal rather than the last: two sandboxes on one socket are two things enforcing the
-policy, and one of them stopping is the policy no longer being enforced. In a guest that pair is
-the agent and the exit, which `agent-probe` runs as two clients on one socket, and the test
-watches both acknowledge and both pulse.
+**The watch is the attachment's and not the tunnel's**, which is ticket 27's half of it. Until then
+a watch was polled against the tunnel the policy arrived on and ended the moment that tunnel was
+not live, so a tunnel that idled out left a governed sandbox unwatched. It now outlives the tunnel:
+the refusal closes the tunnel the policy arrived on if one is still open, says that no tunnel was
+closed because none was open if one is not, and either way the enforcing attachment is dropped and
+nothing is in force on it again until a policy is applied to it again.
+
+**The enforcing attachment is what must be live**, and version 4 is what made that one thing to
+watch: a push reaches the single client that declared itself enforcing, so the policy is in force
+for exactly as long as that attachment goes on pulsing its digest. The other client on the socket
+in a guest is the exit, which attaches as `network`, takes streams and is pushed nothing;
+`agent-probe`'s test is the two of them on one socket, and the loss arrives when the enforcing one
+goes. **A tunneld whose peer is an exit must push nothing at it**, and since version 4 that is the
+only thing it can do: the exit on that socket is a network client, a network client is never pushed
+a policy, so a document sent its way would wait out the push deadline for an enforcing sandbox that
+does not exist behind an exit, come back refused, and take the tunnel with it
+(`attest/cmd/agent-probe/adapter_test.go`).
 
 **The workload's exit ends liveness, and it is the fast case.** The workload ends, the sandbox's
 client closes, the attachment goes, and the loss is reported at the next quarter-pulse — which
@@ -368,10 +399,10 @@ ticket 22's other half that line is written when a peer pushes, beside the deleg
 `push policy … sha256=…` (`docs/policy-push.md`); the two numbers are the claim. It parses
 nothing beyond the envelope and never looks at `n`, `f` or `x`.
 
-`sandbox.Host` writes the **same line, field for field** (ticket 26, `host.go:167`), once per
-push it acknowledged rather than once per attachment, because a push is acknowledged when every
-attachment has taken it and one line is one policy in force. It is the same line because it is
-the same claim, and on the adapter path — where the sandbox is in another process and the
+`sandbox.Host` writes the **same line, field for field** (ticket 26, `Host.said` in `host.go`),
+once per push it acknowledged rather than once per attachment, because since version 4 a push is
+acknowledged when the enforcing attachment has taken it and one line is one policy in force. It is
+the same line because it is the same claim, and on the adapter path — where the sandbox is in another process and the
 console being read is tunneld's — a transcript that had to know which sandbox was beside which
 tunneld before it could find the digest would not be a transcript of the contract.
 
@@ -436,8 +467,11 @@ only diagnostic surface a measured guest has can carry it (spec, user story 48).
 | a sandbox that is killed, that goes quiet, or that pulses another policy's digest is a policy no longer in force | same file, one test each |
 | a widening push is refused component-wise and the refusal names which of `n`, `f` and `x` widened | `attest/sandbox/policy_test.go` |
 | a tunnel whose sandbox stopped enforcing the pushed policy is closed, and one whose sandbox is in this process is not watched | `attest/tunneld/liveness_test.go` |
-| the agent's sandbox and the exit's, two clients on one socket, both acknowledge and both pulse | `attest/cmd/agent-probe/liveness_test.go` |
+| the enforcing agent's sandbox and the exit's network attachment, two clients on one socket: the enforcing one is what a push reaches and what pulses | `attest/cmd/agent-probe/liveness_test.go` |
 | a push at a tunneld with no sandbox attached is refused rather than acknowledged | same file |
+| a push that lands before the enforcing sandbox has attached is not acknowledged until that sandbox has it, and an enforcing sandbox that attaches after a push is replayed the policy in force | `attest/sandbox/socket_test.go` (v4) |
+| a second enforcing client on one socket is refused and a non-enforcing one is not | same file |
+| a liveness watch survives the pushing tunnel being closed and still reports the loss | `attest/tunneld/liveness_test.go` |
 | a policy pushed **over the tunnel** reaches this contract's `Apply`, and what that returns decides the peer's tunnel | `attest/tunneld/push_test.go`, and `docs/policy-push.md` for the whole of it |
 | a read deadline expires with `os.ErrDeadlineExceeded` on both implementations — the tunnel's raw stream, and the socketpair end a sandbox receives over the socket with tunneld's pump between it and the tunnel — the peer having sent nothing and the stream still open | `TestAReadDeadlineOnAStreamExpires` (`attest/tunneld/sandbox_test.go`), one subtest each |
 | the exercise's three figures keep their shape | `attest/cmd/tunneld/exercise_test.go` |
@@ -466,8 +500,11 @@ must. The recorded run is `docs/snp/evidence/ticket22/`.
   every tunnel it dials, once, and hands out no stream until the peer's sandbox has
   acknowledged it. The wire, the refusal reason and the ordering are `docs/policy-push.md`;
   what this contract contributes is `Apply` and the envelope, both unchanged.
-- **Nothing enforces a policy.** The null sandbox records and acknowledges. `n`, `f` and `x` are
-  unparsed by every line of code in this tree.
+- ~~**Nothing enforces a policy.**~~ Built, in ticket 26: the sentry reads `n`, `f` and `x` out of
+  a pushed document, narrows the name table it already holds to what `n` says while the workload
+  runs, and refuses an `execve` of anything `x` does not name. `f` is read for the subset check and
+  still approximated by the mount flags rather than enforced atom by atom. See
+  `docs/policy-in-the-sentry.md`.
 - **No reset signal.** See the pump, above.
 - **A destination is not part of `Open`.** `Open` takes a peer name, and a peer is a sandbox
   rather than an exit: a name in the peer table maps to an address this tunneld dials and
@@ -496,5 +533,8 @@ must. The recorded run is `docs/snp/evidence/ticket22/`.
   were measured by: a real agent on this contract, what Deno could enforce of a pushed
   policy and what it could not, the timings per hop over two delegation hops, and whether
   `(N, F, X)` as typed is enough for the policy track.
-- **No runsc sandbox.** The socket exists and a forked test binary speaks it; the sandbox that
-  will consume these descriptors as FD-backed endpoints is Milestone 4's.
+- ~~**No runsc sandbox.**~~ Built, in ticket 25: `runsc tunnel-helper` is the client on this
+  socket beside a sentry, asking for one stream per destination and handing the descriptor back for
+  the sentry to consume as an FD-backed endpoint (`docs/runsc-in-the-guest.md`). Ticket 26 gave it
+  the other half of the contract, forwarding a pushed policy to the sentry and answering with what
+  the sentry accepted, and ticket 27 made it the socket's one enforcing client.

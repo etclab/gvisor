@@ -226,6 +226,15 @@ type Tunneld struct {
 	// and nil until it is (push.go).
 	box sandbox.Sandbox
 	wg  sync.WaitGroup
+
+	// applyMu serialises received pushes, so that the watch a push starts is
+	// always the watch over the policy that ended up in force (push.go).
+	applyMu sync.Mutex
+
+	// liveness is the one watch running on the sandbox beside this tunneld, or
+	// nil while there is none (push.go).
+	livenessMu sync.Mutex
+	liveness   *livenessWatch
 }
 
 // New starts a tunneld: loads and checks the reference value set, generates the
@@ -445,6 +454,7 @@ func (t *Tunneld) Close() error {
 		close(t.done)
 	}
 	err := t.listener.Close()
+	t.retireWatch()
 	t.dialed.Close()
 	for _, c := range accepted {
 		c.Close()

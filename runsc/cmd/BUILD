@@ -120,6 +120,7 @@ go_test(
         "read_test.go",
         "sandboxexec_test.go",
         "spec_test.go",
+        "tunnel_helper_test.go",
     ],
     data = [
         "//:release",  # keep
@@ -134,6 +135,7 @@ go_test(
         "//pkg/sync",
         "//pkg/test/sandboxposture",
         "//pkg/test/testutil",
+        "//pkg/unet",
         "//runsc/boot",
         "//runsc/cmd/sandboxsetup",
         "//runsc/cmd/sentry/sentrycmd",

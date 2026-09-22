@@ -228,6 +228,42 @@ func TestAnEmptyGrantIsAGrantAndNotAnAbsence(t *testing.T) {
 	}
 }
 
+// TestAnAbsentXAndAnEmptyXAreOneGrantOfNoExec says which reading this package
+// makes of the two spellings, so that the record does not have to infer it. The
+// format tells them apart and the sentry enforces the difference (runsc/boot/
+// policy.go); a set of atoms cannot, because the absence of a run: atom is the
+// absence of the grant and there is no atom that means "unconstrained".
+func TestAnAbsentXAndAnEmptyXAreOneGrantOfNoExec(t *testing.T) {
+	const (
+		noX    = `{"format":"policy","version":1,"n":[{"host":"api.example","ports":[443]}]}`
+		emptyX = `{"format":"policy","version":1,"n":[{"host":"api.example","ports":[443]}],"x":[]}`
+	)
+	absent, err := sandbox.Atoms([]byte(noX))
+	if err != nil {
+		t.Fatalf("reading the atoms of a policy with no x: %v", err)
+	}
+	empty, err := sandbox.Atoms([]byte(emptyX))
+	if err != nil {
+		t.Fatalf("reading the atoms of a policy with an empty x: %v", err)
+	}
+	if !slices.Equal(absent, empty) {
+		t.Errorf("an absent x gives %v and an empty one %v; as atoms they are one grant", absent, empty)
+	}
+	for _, atom := range absent {
+		if strings.HasPrefix(atom, "run:") {
+			t.Errorf("a policy that names no exec granted %q", atom)
+		}
+	}
+	// And neither spelling is a licence: the first exec a later policy names
+	// widens both, which is what keeps the empty grant a grant.
+	next := []string{"net:api.example:443", "run:/bin/sh"}
+	for _, from := range [][]string{absent, empty} {
+		if extra := sandbox.Widening(from, next); len(extra["x"]) != 1 {
+			t.Errorf("naming an exec against %v widened %v; want the one x atom", from, extra)
+		}
+	}
+}
+
 // TestTheAtomGrammarIsTheOneTheDenoSandboxAlreadyJudgedBy: the check moved into
 // the contract, so the two must agree on what a grant is. They are checked
 // against each other by spelling, since the Deno sandbox's atomiser is its own

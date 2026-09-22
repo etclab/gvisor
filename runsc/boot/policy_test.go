@@ -18,6 +18,7 @@ import (
 	"strings"
 	"testing"
 
+	"gvisor.dev/gvisor/pkg/sentry/policyx"
 	"gvisor.dev/gvisor/pkg/sentry/socket/netstack"
 )
 
@@ -227,8 +228,12 @@ func TestPolicySubsetSecondPushIsAgainstTheFirst(t *testing.T) {
 // TestPolicySubsetNamesTheFirstComponentThatWidened: n is checked first, so a
 // policy that widens more than one is refused by the name of the first. The
 // point of the message is that a reader can act on it, not that it is complete.
+//
+// The base's x is an empty list and not an absent one on purpose: an absent x
+// is unconstrained exec, so nothing a push can spell would widen it and the
+// third step below would have nothing to report.
 func TestPolicySubsetNamesTheComponentThatWidened(t *testing.T) {
-	base := &policySets{n: []string{"net:a.example:443"}, f: nil, x: nil}
+	base := &policySets{n: []string{"net:a.example:443"}, f: nil, x: []string{}}
 	sets := &policySets{n: []string{"net:b.example:443"}, f: []string{"read:/etc"}, x: []string{"run:/bin/sh"}}
 	err := policySubset(sets, base)
 	if err == nil || !strings.Contains(err.Error(), "it widens n by") {
@@ -304,5 +309,149 @@ func TestFIsMountsOnly(t *testing.T) {
 	// warning, exactly like any other unknown option.
 	if locked := ParseMountOptions([]string{"locked"}); locked.Locked {
 		t.Errorf(`the "locked" mount option is reachable from config.json after all`)
+	}
+}
+
+// ===== x: absent, empty, and the one direction a push may move in =====
+
+// TestPolicyExecAtomsTellsTheThreeSpellingsApart pins the distinction every
+// other x test rests on. The parser's answer to a document is a slice, and
+// which of the three policies the document meant is carried by whether that
+// slice is nil.
+func TestPolicyExecAtomsTellsTheThreeSpellingsApart(t *testing.T) {
+	const n = `"n":[{"host":"web.peer-a","ports":[8080]}]`
+	for _, tc := range []struct {
+		name   string
+		policy string
+		nilX   bool
+		want   []string
+	}{
+		{
+			name:   "an absent x leaves exec unconstrained",
+			policy: `{"format":"policy","version":1,` + n + `}`,
+			nilX:   true,
+		},
+		{
+			// The one spelling that resolves towards the wider policy. No
+			// producer writes it; this says what happens if one ever does.
+			name:   "a null x is read as an absent one",
+			policy: `{"format":"policy","version":1,` + n + `,"x":null}`,
+			nilX:   true,
+		},
+		{
+			name:   "an empty x is a grant of nothing, which is not the same thing",
+			policy: `{"format":"policy","version":1,` + n + `,"x":[]}`,
+			want:   []string{},
+		},
+		{
+			name:   "a present x is the binaries it names",
+			policy: `{"format":"policy","version":1,` + n + `,"x":[{"path":"/bin/sh"}]}`,
+			want:   []string{"run:/bin/sh"},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			sets := atomsOrFail(t, tc.policy)
+			if tc.nilX {
+				if sets.x != nil {
+					t.Fatalf("x = %v (len %d), wanted nil", sets.x, len(sets.x))
+				}
+				return
+			}
+			if sets.x == nil {
+				t.Fatalf("x is nil, wanted the non-nil %v", tc.want)
+			}
+			if !same(sets.x, tc.want) {
+				t.Errorf("x = %v, wanted %v", sets.x, tc.want)
+			}
+		})
+	}
+}
+
+// TestPolicySubsetXDirections is the settled reading of x in one place. The
+// three states are ordered — absent (exec unconstrained) is wider than any
+// present list, and any present list is wider than the empty one, which grants
+// nothing — and a push may move down that order and never up.
+func TestPolicySubsetXDirections(t *testing.T) {
+	const n = `"n":[{"host":"web.peer-a","ports":[8080]}]`
+	var (
+		absent = `{"format":"policy","version":1,` + n + `}`
+		empty  = `{"format":"policy","version":1,` + n + `,"x":[]}`
+		one    = `{"format":"policy","version":1,` + n + `,"x":[{"path":"/bin/sh"}]}`
+		two    = `{"format":"policy","version":1,` + n + `,"x":[{"path":"/bin/sh"},{"path":"/bin/busybox"}]}`
+	)
+	for _, tc := range []struct {
+		name string
+		base string
+		push string
+		// want is the refusal expected, or "" when the push is accepted.
+		want string
+	}{
+		{"absent -> absent is the same policy twice", absent, absent, ""},
+		{"absent -> present constrains exec where nothing did", absent, one, ""},
+		{"absent -> empty constrains it completely", absent, empty, ""},
+		{"present -> the same present", one, one, ""},
+		{"present -> a subset drops a binary", two, one, ""},
+		{"present -> a superset adds one back", one, two, "it widens x by [run:/bin/busybox]"},
+		{"present -> empty drops them all", one, empty, ""},
+		{"present -> absent hands exec back", one, absent, "it widens x by unconstraining exec"},
+		{"empty -> empty is the same policy twice", empty, empty, ""},
+		{"empty -> present hands a binary back", empty, one, "it widens x by [run:/bin/sh]"},
+		{"empty -> absent hands exec back", empty, absent, "it widens x by unconstraining exec"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := policySubset(atomsOrFail(t, tc.push), atomsOrFail(t, tc.base))
+			if tc.want == "" {
+				if err != nil {
+					t.Fatalf("policySubset refused a narrowing: %v", err)
+				}
+				return
+			}
+			if err == nil {
+				t.Fatalf("policySubset accepted a widening")
+			}
+			if !strings.Contains(err.Error(), tc.want) {
+				t.Errorf("policySubset said %q, wanted something with %q in it", err, tc.want)
+			}
+		})
+	}
+}
+
+// TestPolicyNeedsSink is narrow's half of the same distinction: which of the
+// three spellings puts the exec sink in the sentry. The narrowing itself is
+// not exercised here because it replaces the process-wide tunnel adapter and
+// registers a process-wide seccheck sink; this is the decision it makes, taken
+// out where it can be read.
+func TestPolicyNeedsSink(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		x         []string
+		installed bool
+		want      bool
+	}{
+		{"an absent x on a sandbox that has no sink leaves exec unpoliced", nil, false, false},
+		{"an empty x installs the sink, because it grants nothing", []string{}, false, true},
+		{"a present x installs the sink", []string{"run:/bin/sh"}, false, true},
+		{"an empty x keeps an installed sink", []string{}, true, true},
+		{"an absent x cannot take an installed sink back", nil, true, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := policyNeedsSink(tc.x, tc.installed); got != tc.want {
+				t.Errorf("policyNeedsSink(%v, %v) = %v, wanted %v", tc.x, tc.installed, got, tc.want)
+			}
+		})
+	}
+}
+
+// TestExecAllowOfAnEmptyXPermitsNothing is the join between this file and the
+// sink: an empty x has no atoms, so execAllow returns two nil slices, and the
+// allow list built from them has to be one that refuses rather than the nil
+// one policyx reads as "no x in force".
+func TestExecAllowOfAnEmptyXPermitsNothing(t *testing.T) {
+	allow := policyx.NewAllow(execAllow([]string{}))
+	if allow == nil {
+		t.Fatal("an empty x built a nil allow list, which permits everything")
+	}
+	if allow.Permits("/bin/sh", "") {
+		t.Error("an empty x permitted /bin/sh")
 	}
 }

@@ -329,6 +329,13 @@ enforced. In a guest that pair is the agent and the exit — ticket 25's leftove
 `SANDBOX attached` lines per guest, is exactly this — and `agent-probe` runs them as two clients on
 one socket with a test that watches both acknowledge and both pulse.
 
+**Ticket 27 changed two of those sentences**, and the record for it is
+`docs/the-ack-means-the-sandbox.md`. A push now reaches only the client that attached as
+`enforcing`, so the enforcing attachment is the one thing that must be live and the exit attaches as
+`network` and is pushed nothing; and the watch belongs to that attachment rather than to the tunnel
+the policy arrived on, so it outlives a tunnel that idled out and closes a tunnel only if one is
+still open. Everything cited in this section is the line it was on when ticket 26 was recorded.
+
 **Nothing crosses the wire for it.** There is no message that says "your policy lapsed", and adding
 one would be telling a peer about the inside of this guest. The refusal is the receiver's alone; the
 peer sees what it sees for every refusal after admission, which is that its tunnel went.
@@ -1000,7 +1007,9 @@ about the harness.
    had nobody watching — three of that pair's four failures. `watchLiveness` returns silently, with no
    line and no refusal, the moment `conn.Live()` is false (`attest/tunneld/push.go:263`). Nothing is
    wrong with a watch whose tunnel is gone having nothing left to tear down; what is wrong is that a
-   scenario must now derive its idle timeout from its own hold (420 s = hold + 60), which is leftover 22.
+   scenario had to derive its idle timeout from its own hold (420 s = hold + 60), which is
+   leftover 22. Ticket 27 closed it: the watch is the sandbox attachment's and outlives the tunnel,
+   so the scenario is back on the 60 s every other one uses.
 2. **`kill_later` could not see the sandbox.** It matched `comm`, and the sentry, the gofer and the
    tunnel helper are all re-execs of `/proc/self/exe` with `Args[0]` set afterwards, so every one of
    their `comm`s is `exe` (`runsc/container/container.go:1486`). Pair 3 printed the table it was matching
@@ -1278,16 +1287,17 @@ asks for.
    line these runs assert on survived in all three pairs, but it is the same hazard leftover 23 states.
 
 **Everything that changed between pairs, on both vendors, was harness, config or `/sbin/init`.** The
-list in one place, because a reader owed a defect list is also owed the boundary of it: the tunnel idle
-timeout 60 s → 420 s, derived as `hold + 60` and printed before the boot; the exec control asking once
-before anything else; `kill_later` reading the whole process table and then matching argv[0] out of
-`/proc/PID/cmdline`; the sentry's `tunnel narrow:` lines picked onto the console for the pair that
-measures them; the TDX config device's inodes chowned to root, with a check that refuses a device
-without it; the two reference value sets authored to admit the ceiling digest a guest of this image
-presents; the `local g="$1" … d="$W/$g"` expansion bug; and one assertion's wording, `ACCEPTED` →
-`ADMITTED`. **Nothing under `pkg/`, `runsc/` or `attest/` was touched by any of them** — the enforcement
-path the first SEV-SNP pair ran is the one the fifth ran and the one all three TDX pairs ran, and the
-sentry's own numbers agree across every pair that printed them.
+list in one place, because a reader owed a defect list is also owed the boundary of it: the tunnel
+idle timeout 60 s → 420 s, derived as `hold + 60` and printed before the boot, which ticket 27 put
+back at 60 s; the exec control asking once before anything else; `kill_later` reading the whole
+process table and then matching argv[0] out of `/proc/PID/cmdline`; the sentry's `tunnel narrow:`
+lines picked onto the console for the pair that measures them; the TDX config device's inodes
+chowned to root, with a check that refuses a device without it; the two reference value sets
+authored to admit the ceiling digest a guest of this image presents; the `local g="$1" … d="$W/$g"`
+expansion bug; and one assertion's wording, `ACCEPTED` → `ADMITTED`. **Nothing under `pkg/`,
+`runsc/` or `attest/` was touched by any of them** — the enforcement path the first SEV-SNP pair ran
+is the one the fifth ran and the one all three TDX pairs ran, and the sentry's own numbers agree
+across every pair that printed them.
 
 ## What a hop costs, and the six RQ5 components
 
@@ -1412,10 +1422,11 @@ the next two the loopback proof's, and the last five the hardware runs'.
 15. **A second pusher's narrowing is a mismatch to the first pusher**, and closes that tunnel.
     Tunneld compares digests and cannot tell a narrowing from a different policy without parsing
     `n`, `f` and `x`, which is exactly what it is built not to do.
-16. **`attest/sandbox/live.go:47-48` understates E3.** It says the send was measured at "well under
+16. ~~**`attest/sandbox/live.go:47-48` understates E3.** It says the send was measured at "well under
     ten microseconds"; E3 measured a p50 of 17.015 µs and a mean of 30.174 µs, and only the minimum
     was under ten. `docs/sandbox-contract.md` carries the right number. The comment, not the
-    constant, is what is wrong.
+    constant, is what is wrong.~~ Closed by commit `23504fe75`, which put E3's 17 µs median and
+    30 µs mean in the comment.
 17. **`--debug` is how every number in the spikes was read**, and it is not free. E1's and E2's
     sandboxes ran with it; a production sandbox would not, and the swap and decision costs would be
     the same or smaller. On hardware it is worse than a cost: `--debug --debug-log=/run/runsc-debug/`
@@ -1431,7 +1442,9 @@ the next two the loopback proof's, and the last five the hardware runs'.
     loopback runs that measured it and **2.138 s** in the seventh, on the same machine with the same
     code. Nothing in the design depends on it being fast — a one-second pulse tolerates it and did —
     but it is what sets the width of the window below it, and the run that took a second is the run
-    whose workload made its first query under the boot table alone.
+    whose workload made its first query under the boot table alone. Ticket 27's re-run of E1 did not
+    reproduce the outlier: over 25 runs the attach was 112.396–176.234 ms, p50 151.357 ms
+    (`docs/snp/evidence/ticket27/spikes/E1/output.txt:76-81`).
 20. **A policy cannot govern a workload's first instructions.** `Policy.Narrow` is refused until the
     loader has started the workload, a sandbox becomes ready for a policy in four steps, and a push
     that arrives between any two of them is refused *and takes its tunnel with it*, so a peer that
@@ -1440,7 +1453,7 @@ the next two the loopback proof's, and the last five the hardware runs'.
     and 2 ms. The honest statement of what the arrangement gives is **"no wider than the boot table
     from the first instruction, and no wider than `P` from the moment `P` lands"**, and closing it
     would need a verb this design does not have: *start the workload under this policy*.
-21. **`Host.Apply` pushes only to the attachments that exist at that instant, and a sandbox that
+21. ~~**`Host.Apply` pushes only to the attachments that exist at that instant, and a sandbox that
     attaches afterwards never receives the policy.** `h.conns` is copied under the lock and iterated
     (`attest/sandbox/host.go:128-144`); SEV-SNP pair 3 is what that looks like on a console, and the
     order of four lines is the whole of it. Guest A dialled and pushed before guest B's runsc helper
@@ -1454,15 +1467,21 @@ the next two the loopback proof's, and the last five the hardware runs'.
     none of it**, and on a vendor whose only diagnostic is the console that is the difference between
     a claim and a fact. This is ticket 25's leftover 14 — two clients on one socket — in its sharpest
     form, and it is **the first thing the next ticket must close**: an acknowledgement has to mean
-    *this policy reached the sandbox that will enforce it*, which today it does not.
-22. **A liveness watch lives exactly as long as the tunnel the policy arrived on.**
+    *this policy reached the sandbox that will enforce it*, which today it does not.~~ Closed by
+    ticket 27: an attachment declares whether it is the enforcing one, `Host.Apply` pushes to that
+    one and waits for it inside the push deadline, and an enforcing sandbox that attaches after a
+    push is replayed the policy in force. The record is `docs/the-ack-means-the-sandbox.md`.
+22. ~~**A liveness watch lives exactly as long as the tunnel the policy arrived on.**
     `watchLiveness` polls `conn.Live()` once a second and returns the moment it is false — silently,
     with no line and no refusal (`attest/tunneld/push.go:243-267`, the return at `:263`). An
     idle-closed tunnel therefore leaves nobody watching the sandbox it governed, which is not wrong —
     the tunnel it would have torn down is already gone — but it means a scenario must derive its idle
     timeout from its own hold. SEV-SNP pair 1 lost three assertions to a 60 s idle timeout a hundred
     seconds before its kill; the harness now uses `hold + 60` and prints it before the boot. **Worked
-    around, not fixed.**
+    around, not fixed.**~~ Closed by ticket 27: the watch is the sandbox attachment's rather than
+    the pushing tunnel's, so it outlives a tunnel that idles out, and a miss drops the enforcing
+    attachment and marks the policy not-live whether or not there was a tunnel to close. The record
+    is `docs/the-ack-means-the-sandbox.md`, and the harness is back on the 60 s idle timeout.
 23. **The teardown line is lost to console contention on some boots.** Over the SEV-SNP pairs with a
     working kill, guest A reported the socket close twice and guest B once; in `run-5/` B's console
     carries neither the loss nor the refusal, and in `run-4/` both survived *interleaved with three
@@ -1552,7 +1571,8 @@ Deno's), and the liveness tests named in `docs/sandbox-contract.md` — `attest/
 for a sandbox in another process that pulses, is killed, goes quiet or pulses something else;
 `attest/tunneld/liveness_test.go` for the tunnel that is closed when it does; and
 `attest/cmd/agent-probe/liveness_test.go` for the agent's sandbox and the exit's, two clients on one
-socket, both acknowledging and both pulsing.
+socket, both acknowledging and both pulsing — which ticket 27 rewrote for contract v4, where the
+enforcing client is the one a push reaches and the one that pulses.
 
 `ripwire attest --quality-delta=6dfa00a1d..HEAD`, run from this worktree against the two committed
 trees:

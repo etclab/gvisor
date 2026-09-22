@@ -335,9 +335,13 @@ when it applied are the same number, on two consoles. The recorded run is
 
 ## What is not built
 
-- **Nothing enforces a pushed policy.** The null sandbox records and acknowledges; `n`, `f` and
-  `x` are unparsed by every line of code in this tree. Enforcement is the netfilter ceiling the
-  image carries and the reference value set that admits a peer at all.
+- ~~**Nothing enforces a pushed policy.**~~ Built, in ticket 26: the sentry narrows the name table
+  it already holds to what `n` says, while the workload runs, and refuses an `execve` of anything
+  `x` does not name, with `f` read for the subset check and still approximated by the read-only,
+  locked, noexec mounts rather than enforced atom by atom (`docs/policy-in-the-sentry.md`). Ticket
+  27 made the acknowledgement mean that the sandbox which will enforce the policy has it
+  (`docs/the-ack-means-the-sandbox.md`). Under all of it, the netfilter ceiling the image carries
+  and the reference value set that admits a peer at all are what they were.
 - **One policy for every peer.** `Config.PushPolicy` is one document, not a table keyed by peer
   name. Per-peer delegation is what that field becomes when something needs it; a second peer
   table with no test behind it would not be.

@@ -156,3 +156,92 @@ func TestAllowListsAreSorted(t *testing.T) {
 		t.Errorf("Digests = %v, wanted %v", got, want)
 	}
 }
+
+func TestSinkAbsentVsEmptyX(t *testing.T) {
+	s := NewSink()
+	info := &pb.ExecveInfo{BinaryPath: "/bin/busybox"}
+
+	// Before any X is in force (absent x), any exec is permitted.
+	if err := s.Execve(context.Background(), seccheckFields(), info); err != nil {
+		t.Fatalf("absent x: expected exec to be permitted, got %v", err)
+	}
+
+	// Narrowing to empty x (grant of nothing).
+	s.Narrow(NewAllow(nil, nil))
+
+	// Every exec must now be refused with EACCES.
+	if err := s.Execve(context.Background(), seccheckFields(), info); !linuxerr.Equals(linuxerr.EACCES, err) {
+		t.Errorf("empty x: exec gave %v, wanted EACCES", err)
+	}
+
+	// Another binary must also be refused.
+	if err := s.Execve(context.Background(), seccheckFields(), &pb.ExecveInfo{BinaryPath: "/bin/sh"}); !linuxerr.Equals(linuxerr.EACCES, err) {
+		t.Errorf("empty x: exec of /bin/sh gave %v, wanted EACCES", err)
+	}
+
+	// Narrowing with another empty allow continues to refuse every exec.
+	s.Narrow(NewAllow([]string{}, []string{}))
+	if err := s.Execve(context.Background(), seccheckFields(), &pb.ExecveInfo{BinaryPath: "/bin/sh"}); !linuxerr.Equals(linuxerr.EACCES, err) {
+		t.Errorf("narrowed empty x: expected EACCES, got %v", err)
+	}
+}
+
+// TestNewAllowIsNeverNil is the property runsc/boot leans on for an empty x.
+// A policy whose x is an empty list has no atoms at all, so the paths and the
+// digests handed over are both nil — and a nil *Allow* is the one that permits
+// everything. NewAllow has to turn nothing into a list that grants nothing and
+// not into no list at all.
+func TestNewAllowIsNeverNil(t *testing.T) {
+	a := NewAllow(nil, nil)
+	if a == nil {
+		t.Fatal("NewAllow(nil, nil) is nil, which permits every exec")
+	}
+	if a.Permits("/bin/sh", "") {
+		t.Error("an allow list built from nothing permitted /bin/sh")
+	}
+	if got := a.Paths(); len(got) != 0 {
+		t.Errorf("Paths = %v, wanted none", got)
+	}
+	if got := a.Digests(); len(got) != 0 {
+		t.Errorf("Digests = %v, wanted none", got)
+	}
+}
+
+// TestNarrowNeverWidensBackToNoAllowList: the sink is installed once and is
+// never taken back, so the set it decides on is the whole of the enforcement.
+// Handing it nil would return the sandbox to unconstrained exec, which is a
+// widening, and a method called Narrow does not do that.
+func TestNarrowNeverWidensBackToNoAllowList(t *testing.T) {
+	s := NewSink()
+	s.Narrow(NewAllow([]string{"/bin/sh"}, nil))
+	s.Narrow(nil)
+	if s.Allow() == nil {
+		t.Fatal("Narrow(nil) took the allow list back, so every exec is permitted again")
+	}
+	if err := s.Execve(context.Background(), seccheckFields(), &pb.ExecveInfo{BinaryPath: "/bin/busybox"}); !linuxerr.Equals(linuxerr.EACCES, err) {
+		t.Errorf("an exec outside the set in force gave %v, wanted EACCES", err)
+	}
+	if err := s.Execve(context.Background(), seccheckFields(), &pb.ExecveInfo{BinaryPath: "/bin/sh"}); err != nil {
+		t.Errorf("an exec inside the set in force gave %v, wanted nil", err)
+	}
+}
+
+// TestNarrowTakesEffectOnTheNextExec: a pushed policy is honoured by a running
+// sandbox, so the narrowing has to reach the very next execve and not only the
+// ones that start afterwards.
+func TestNarrowTakesEffectOnTheNextExec(t *testing.T) {
+	s := NewSink()
+	s.Narrow(NewAllow([]string{"/bin/sh", "/bin/busybox"}, nil))
+	for _, path := range []string{"/bin/sh", "/bin/busybox"} {
+		if err := s.Execve(context.Background(), seccheckFields(), &pb.ExecveInfo{BinaryPath: path}); err != nil {
+			t.Fatalf("%s was refused by the set that names it: %v", path, err)
+		}
+	}
+	s.Narrow(NewAllow([]string{"/bin/sh"}, nil))
+	if err := s.Execve(context.Background(), seccheckFields(), &pb.ExecveInfo{BinaryPath: "/bin/busybox"}); !linuxerr.Equals(linuxerr.EACCES, err) {
+		t.Errorf("a binary the narrowing dropped gave %v, wanted EACCES", err)
+	}
+	if err := s.Execve(context.Background(), seccheckFields(), &pb.ExecveInfo{BinaryPath: "/bin/sh"}); err != nil {
+		t.Errorf("a binary the narrowing kept gave %v, wanted nil", err)
+	}
+}

@@ -539,8 +539,14 @@ func TestASandboxThatRefusedAPolicyIsNotWatched(t *testing.T) {
 	if err := host.Apply(context.Background(), []byte(policyV1)); err == nil {
 		t.Fatal("the sandbox acknowledged a policy it was written to refuse")
 	}
-	if err := livenessLost(t, host.Watch(context.Background(), livenessDigest(policyV1)), 2*time.Second); err == nil {
-		t.Error("a watch over a sandbox that acknowledged nothing reported it live")
+	err = livenessLost(t, host.Watch(context.Background(), livenessDigest(policyV1)), 2*time.Second)
+	if err == nil {
+		t.Fatal("a watch over a sandbox that acknowledged nothing reported it live")
+	}
+	// And it says which of the two it is. The sandbox is still sitting on the
+	// socket; what it has not done is take a policy.
+	if !strings.Contains(err.Error(), "no attachment has acknowledged this policy") {
+		t.Errorf("the watch reported %q; want it to say nothing has acknowledged the policy", err)
 	}
 }
 

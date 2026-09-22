@@ -351,7 +351,12 @@ func (h *Host) Watch(ctx context.Context, digest string) <-chan error {
 	case closed:
 		close(lost)
 	case len(watched) == 0:
-		h.reportLost(lost, "the sandbox closed its socket")
+		// There is nothing here that ever claimed this policy — the sandbox
+		// that had it has gone, or the only attachment is one that was never
+		// pushed to. Either way the claim cannot be watched, and saying that a
+		// socket closed would name a sandbox that may still be sitting on this
+		// one.
+		h.reportLost(lost, "no attachment has acknowledged this policy")
 	default:
 		go h.watch(ctx, digest, watched, lost)
 	}

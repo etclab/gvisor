@@ -109,6 +109,13 @@ const (
 	livenessLost    = "SANDBOX liveness lost:"
 	noLongerLive    = "no longer live"
 	widensComponent = "it widens n by"
+
+	// enforcingAttached is the part of a's console line that says the one client
+	// which can be pushed a policy is on the socket: `SANDBOX attached on <path>
+	// role=enforcing` (attest/sandbox, contract v4). The socket path sits in the
+	// middle of it, so the role is what is matched on, and nothing else a writes
+	// carries it. The early-push run is timed against that line.
+	enforcingAttached = "role=enforcing"
 )
 
 func TestGovernedLoopback(t *testing.T) {
@@ -119,9 +126,6 @@ func TestGovernedLoopback(t *testing.T) {
 	if info, err := os.Stat(runsc); err != nil || info.IsDir() {
 		t.Skipf("%s=%q is not a runsc this test can start: %v", runscEnv, runsc, err)
 	}
-	if os.Getenv("ANTHROPIC_API_KEY") == "" {
-		t.Fatalf("%s=1 and no ANTHROPIC_API_KEY in the environment: the agent inside the sandbox needs it", liveEnv)
-	}
 
 	out := newRecord(os.Stdout)
 	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Minute)
@@ -130,22 +134,28 @@ func TestGovernedLoopback(t *testing.T) {
 		title: "A pushed policy inside the sandbox, over loopback",
 		preamble: "Five runsc sandboxes, one after the other, sharing a rootfs, a bundle shape, an exit, an " +
 			"allow list and a `--tunnel-table` that names both destinations. What differs is the policy a third " +
-			"tunneld pushes at `a` once the sandbox has attached to its socket (or before it attaches, in early-push), and when a second and a third " +
-			"peer arrive. The workload is this package built with `CGO_ENABLED=0` and run as " +
-			"`/agent-probe -network plain -task summarize -dir /tmp`: no contract, no dialer of its own, Go's own " +
-			"resolver, and nothing in it knows a policy exists.",
+			"tunneld pushes at `a` — once the sandbox has attached to its socket, or before it attaches in " +
+			"early-push — and when a second and a third peer arrive. The workload is this package built with " +
+			"`CGO_ENABLED=0` and run as `/agent-probe -network plain -task summarize -without-model -dir /tmp`: " +
+			"no contract, no dialer of its own, Go's own resolver, and nothing in it knows a policy exists.\n\n" +
+			"**The model was not called in these runs.** `-without-model` leaves out the one step that needs a " +
+			"key and nothing else: the model endpoint is requested for real over the same client and therefore " +
+			"the same tunnel, with the body the loop builds and no `x-api-key` header, so what it answers is an " +
+			"authentication error — and a status that came back at all is a stream that crossed the tunnel and " +
+			"an exit that dialled `" + modelHost + ":443`. The document host is then fetched the way the " +
+			"`fetch_url` tool fetches it. No number below is a token count, a cost or a summary, because no " +
+			"model was asked; each run ends in `" + withoutModelMarker + "`, whose figures are the statuses and " +
+			"byte counts measured.",
 		allow: modelHost + ":443," + docHost + ":443",
 		under: "ticket27/loopback",
 	})
 	l.console = &timeline{}
-	// Short, because a pushed policy is delivered over --root/runsc-<id>.sock
-	// and a sockaddr_un holds 108 bytes (spike E1 §7a).
 	l.stateIn = l.shm
 	l.points = append(l.points, "sentry/exec_refused")
 	l.buildRootfs(t)
 
 	probe := workload{
-		args: []string{"/agent-probe", "-network", "plain", "-task", "summarize", "-dir", "/tmp"},
+		args: []string{"/agent-probe", "-network", "plain", "-task", "summarize", "-without-model", "-dir", "/tmp"},
 		env:  []string{"PATH=/", "HOME=/tmp", "SSL_CERT_FILE=" + anchors},
 		cwd:  "/tmp",
 		mounts: []any{
@@ -155,93 +165,74 @@ func TestGovernedLoopback(t *testing.T) {
 		},
 	}
 	table := map[string]int{modelHost: tunnelledPort, docHost: tunnelledPort}
+	notes := l.governedNotes()
 
-	var notes strings.Builder
-	fmt.Fprintf(&notes, "## The policies\n\n| what | sha256 | bytes |\n|---|---|---|\n")
-	for _, p := range []struct{ what, doc string }{
-		{"P0, the whole table", governedP0},
-		{"P0 without the model endpoint (the control's)", governedOffPolicy},
-		{"P1, P0 without the document host (the narrowing)", governedNarrowed},
-	} {
-		fmt.Fprintf(&notes, "| %s | `%s` | %d |\n", p.what, digestOf(p.doc), len(p.doc))
-	}
-	fmt.Fprintf(&notes, "\n```\nP0 = %s\n```\n\n", governedP0)
-
-	// ===== (b) the off-policy control, first because it is the only one that
-	// spends nothing and because it says whether the push lands before the
-	// workload's first query, which every other run depends on.
+	// (b) off-policy control
 	var offRoot *pusher
 	off := l.govern(t, "off-policy", table, probe, func(stop <-chan struct{}) {
 		root := l.pusherFor(t, "root-off", governedOffPolicy)
-		if !l.waitAttached(stop) {
-			return
+		if l.waitAttached(stop) {
+			offRoot = root.push(l, stop)
 		}
-		offRoot = root.push(l, stop)
 	})
-	l.tellOff(t, &notes, off, offRoot)
+	l.tellOff(t, notes, off, offRoot)
 
-	// ===== (a) on-policy: the task completes under the pushed policy, and (d)
-	// is its tail — the workload exits, the socket goes, the tunnel goes.
+	// (a) on-policy
 	var onRoot *pusher
 	on := l.govern(t, "on-policy", table, probe, func(stop <-chan struct{}) {
 		root := l.pusherFor(t, "root-on", governedP0)
-		if !l.waitAttached(stop) {
-			return
+		if l.waitAttached(stop) {
+			onRoot = root.push(l, stop)
 		}
-		onRoot = root.push(l, stop)
 	})
-	l.tellOn(t, &notes, on, onRoot)
+	l.tellOn(t, notes, on, onRoot)
 
-	// ===== (c) a narrowing while the task runs, and a widening refused.
+	// (c) narrowing & widening refusal
 	var cRoot, cRoot2, cRoot3 *pusher
 	narrowed := l.govern(t, "narrowed", table, probe, func(stop <-chan struct{}) {
 		first := l.pusherFor(t, "root-narrowed", governedP0)
 		second := l.pusherFor(t, "root2-narrowed", governedNarrowed)
 		third := l.pusherFor(t, "root3-narrowed", governedP0)
-		if !l.waitAttached(stop) {
-			return
+		if l.waitAttached(stop) {
+			cRoot = first.push(l, stop)
+			if l.waitExit(stop, "EXIT accepted") {
+				cRoot2 = second.push(l, stop)
+				cRoot3 = third.push(l, stop)
+			}
 		}
-		cRoot = first.push(l, stop)
-		// The task is under way: the exit has accepted the stream the first
-		// model request is on, which is after the resolver answered and after
-		// the connect hook let it through.
-		if !l.waitExit(stop, "EXIT accepted") {
-			return
-		}
-		cRoot2 = second.push(l, stop)
-		cRoot3 = third.push(l, stop)
 	})
-	l.tellNarrowed(t, &notes, narrowed, cRoot, cRoot2, cRoot3)
+	l.tellNarrowed(t, notes, narrowed, cRoot, cRoot2, cRoot3)
 
-	// ===== (d) the same teardown reached from the outside: the sandbox is
-	// killed while the task is running.
+	// (d) killed mid-task
 	var kRoot *pusher
 	var killedAt time.Time
 	killed := l.govern(t, "killed", table, probe, func(stop <-chan struct{}) {
 		root := l.pusherFor(t, "root-killed", governedP0)
-		if !l.waitAttached(stop) {
-			return
+		if l.waitAttached(stop) {
+			kRoot = root.push(l, stop)
+			if l.waitExit(stop, "EXIT accepted") {
+				killedAt = l.kill(t)
+			}
 		}
-		kRoot = root.push(l, stop)
-		if !l.waitExit(stop, "EXIT accepted") {
-			return
-		}
-		killedAt = l.kill(t)
 	})
-	l.tellKilled(t, &notes, killed, kRoot, killedAt)
+	l.tellKilled(t, notes, killed, kRoot, killedAt)
 
-	// ===== (e) early-push: the push lands BEFORE the helper attaches.
-	// Host.Apply must wait inside the deadline for the enforcing attachment,
-	// deliver the policy to the sentry, and only acknowledge after the sentry
-	// applies it. The workload runs governed under P0 and completes.
+	// ===== (e) early-push: the push is inside a's Apply before the sandbox
+	// exists. The pusher is built and its first handshake made before runsc is
+	// started at all — holdStart is what keeps the two in that order rather than
+	// leaving it to a goroutine being scheduled — so the acknowledgement this
+	// run is judged on is one that could only have come from the enforcing
+	// sandbox, which did not exist when the document arrived.
 	var earlyRoot *pusher
+	earlyPusher := l.pusherFor(t, "root-early", governedP0)
+	l.holdStart = func() bool { return !earlyPusher.enteredAt().IsZero() }
 	early := l.govern(t, "early-push", table, probe, func(stop <-chan struct{}) {
-		root := l.pusherFor(t, "root-early", governedP0)
-		earlyRoot = root.push(l, stop)
+		earlyRoot = earlyPusher.push(l, stop)
 	})
-	l.tellEarly(t, &notes, early, earlyRoot)
+	l.holdStart = nil
+	l.tellEarly(t, notes, early, earlyRoot)
 
-	fmt.Fprintf(&notes, "## a's console, in full\n\nEvery line `a` wrote, with the second it was written in. "+
+	fmt.Fprintf(notes, "## a's console, in full\n\nEvery line `a` wrote, with the second it was written in. "+
 		"`SANDBOX applied` is one per acknowledged push, `PUSH` is a pusher's own account of its round trip, "+
 		"and `REFUSED` is `a`'s refusal log.\n\n```\n%s\n```\n\n", strings.Join(l.console.all(), "\n"))
 
@@ -257,7 +248,7 @@ func (l *loopback) tellOff(t *testing.T, notes *strings.Builder, r *sandboxRun, 
 	fmt.Fprintf(notes, "## off-policy — the refusal is the push and not the table\n\n")
 	if root == nil || root.err != nil {
 		t.Errorf("off-policy: the control's policy was not pushed: %v", root.errOr())
-		fmt.Fprintf(notes, "The push did not land: %v\n\n", root.errOr())
+		l.unproven(notes, r, root)
 		return
 	}
 	if r.err == nil {
@@ -271,14 +262,68 @@ func (l *loopback) tellOff(t *testing.T, notes *strings.Builder, r *sandboxRun, 
 	if dialed := r.at.matching("EXIT dialed " + modelHost); len(dialed) != 0 {
 		t.Errorf("off-policy: the exit dialed %s, and the policy in force does not name it: %v", modelHost, dialed)
 	}
-	fmt.Fprintf(notes, "The table is `%s` and the policy pushed is `n = [%s:443]`. The agent was refused at %s, "+
-		"runsc ended with status %d after %s, and the exit was never asked to dial %s — so nothing was sent to "+
-		"the model and **this run cost nothing**.\n\n", strings.Join(r.names, ", "), docHost,
-		where(refused), r.status, r.elapsed.Round(time.Millisecond), modelHost)
-	fmt.Fprintf(notes, "What the agent said, in its own words:\n\n```\n%s\n```\n\n", strings.TrimSpace(said))
+	fmt.Fprintf(notes, "The table is `%s` and the policy pushed is `n = [%s:443]`. The workload was refused at "+
+		"%s, runsc ended with status %d after %s, and the exit was never asked to dial %s — so **the refusal is "+
+		"the pushed policy's and not the table's**, which is the whole of what this control says.\n\n",
+		strings.Join(r.names, ", "), docHost, where(refused), r.status, r.elapsed.Round(time.Millisecond), modelHost)
+	fmt.Fprintf(notes, "What the workload said, in its own words:\n\n```\n%s\n```\n\n", strings.TrimSpace(said))
 	l.tellPush(notes, r, root)
 	l.tellWindow(notes, r)
 	l.tellEvents(notes, r)
+}
+
+func (l *loopback) governedNotes() *strings.Builder {
+	notes := &strings.Builder{}
+	fmt.Fprintf(notes, "## The policies\n\n| what | sha256 | bytes |\n|---|---|---|\n")
+	for _, p := range []struct{ what, doc string }{
+		{"P0, the whole table", governedP0},
+		{"P0 without the model endpoint (the control's)", governedOffPolicy},
+		{"P1, P0 without the document host (the narrowing)", governedNarrowed},
+	} {
+		fmt.Fprintf(notes, "| %s | `%s` | %d |\n", p.what, digestOf(p.doc), len(p.doc))
+	}
+	fmt.Fprintf(notes, "\n```\nP0 = %s\n```\n\n", governedP0)
+	fmt.Fprintf(notes, "## What was not run\n\nThe workload ran with `-without-model`, so the model was never "+
+		"called: the run needs no `ANTHROPIC_API_KEY` and none was read. Every leg of the path is measured "+
+		"except the model's answer. The request to `%s` is made with the body the loop builds and without the "+
+		"key header, so the status in each run's transcript is the API's answer to an unauthenticated request; "+
+		"a status that arrived is a stream that crossed the tunnel and an exit that dialled `%s:443`. The "+
+		"document fetch that follows is the `fetch_url` tool's, over the same client, and the byte count is what "+
+		"was read. Nothing in this record is model output, and the gap between the two requests is the fixed "+
+		"`withoutModelPause` rather than a model thinking.\n\n", modelEndpoint, modelHost)
+	return notes
+}
+
+// unproven is what a run's section says when its assertions did not hold: what
+// the push it needed answered, and every line `a` wrote around that sandbox —
+// because a refused push is `a`'s own account of why and not the pusher's, and a
+// reader of the record should not have to go to the transcript for it.
+func (l *loopback) unproven(notes *strings.Builder, r *sandboxRun, p *pusher) {
+	fmt.Fprintf(notes, "**This run did not prove what it is here for**, and the assertions that failed are in the "+
+		"transcript. The push it needed answered `%v`. What `a` said around this sandbox:\n\n```\n%s\n```\n\n",
+		p.errOr(), strings.Join(lines(l.console.after(r.began, "")), "\n"))
+}
+
+func (l *loopback) assertGovernedSuccess(t *testing.T, r *sandboxRun, root *pusher, runName string) bool {
+	t.Helper()
+	if root == nil || root.err != nil {
+		t.Errorf("%s: P0 was not pushed: %v", runName, root.errOr())
+		return false
+	}
+	if r.err != nil {
+		t.Errorf("%s: the sandbox ended with %v; the policy in force names both destinations", runName, r.err)
+		return false
+	}
+	if said := l.said(r.stdout); !strings.Contains(said, withoutModelMarker) {
+		t.Errorf("%s: the transcript does not end in %s, so the run did not get through its steps:\n%s",
+			runName, withoutModelMarker, said)
+		return false
+	}
+	if dialed := r.at.matching("EXIT dialed " + modelHost + ":443"); len(dialed) == 0 {
+		t.Errorf("%s: the exit never dialed %s:443, so the model request did not travel over the tunnel", runName, modelHost)
+		return false
+	}
+	return true
 }
 
 // tellOn is the proof: the whole table pushed, the task completed through the
@@ -286,23 +331,13 @@ func (l *loopback) tellOff(t *testing.T, notes *strings.Builder, r *sandboxRun, 
 func (l *loopback) tellOn(t *testing.T, notes *strings.Builder, r *sandboxRun, root *pusher) {
 	t.Helper()
 	fmt.Fprintf(notes, "## on-policy — the task completes under the policy, and its end ends the tunnel\n\n")
-	if root == nil || root.err != nil {
-		t.Errorf("on-policy: P0 was not pushed: %v", root.errOr())
-		fmt.Fprintf(notes, "The push did not land: %v\n\n", root.errOr())
+	if !l.assertGovernedSuccess(t, r, root, "on-policy") {
+		l.unproven(notes, r, root)
 		return
-	}
-	if r.err != nil {
-		t.Errorf("on-policy: the sandbox ended with %v; the policy in force names both destinations", r.err)
-	}
-	if said := l.said(r.stdout); !strings.Contains(said, "DONE") {
-		t.Errorf("on-policy: the transcript does not end in the model's last word:\n%s", said)
-	}
-	if dialed := r.at.matching("EXIT dialed " + modelHost + ":443"); len(dialed) == 0 {
-		t.Errorf("on-policy: the exit never dialed %s:443, so the model request did not travel over the tunnel", modelHost)
 	}
 	fmt.Fprintf(notes, "`%s`, and the task completed: runsc ended with status %d after %s, `%s`. Every stream the "+
 		"exit carried is in the run's section above.\n\n", r.at.timings(), r.status, r.elapsed.Round(time.Millisecond),
-		firstLineWith(l.said(r.stdout), "DONE"))
+		firstLineWith(l.said(r.stdout), withoutModelMarker))
 	l.tellPush(notes, r, root)
 	l.tellWindow(notes, r)
 	l.tellTeardown(t, notes, r, "the workload exiting")
@@ -313,13 +348,13 @@ func (l *loopback) tellOn(t *testing.T, notes *strings.Builder, r *sandboxRun, r
 func (l *loopback) tellNarrowed(t *testing.T, notes *strings.Builder, r *sandboxRun, first, second, third *pusher) {
 	t.Helper()
 	fmt.Fprintf(notes, "## narrowed — a second peer removes a destination while the task is running\n\n")
-	if first == nil || first.err != nil {
-		t.Errorf("narrowed: P0 was not pushed: %v", first.errOr())
-		fmt.Fprintf(notes, "The first push did not land: %v\n\n", first.errOr())
+	if !l.assertGovernedSuccess(t, r, first, "narrowed") {
+		l.unproven(notes, r, first)
 		return
 	}
 	if second == nil || second.err != nil {
 		t.Errorf("narrowed: the narrowing was not applied: %v", second.errOr())
+		return
 	}
 	if third == nil || third.err == nil {
 		t.Errorf("narrowed: the widening was not refused; a third peer put a name back and the sandbox took it")
@@ -337,27 +372,56 @@ func (l *loopback) tellNarrowed(t *testing.T, notes *strings.Builder, r *sandbox
 	// the name went is a race with the model's first answer, and the record
 	// says which way it fell rather than asserting one.
 	said := l.bothSaid(r)
-	fetched := len(r.at.matching("EXIT dialed "+docHost)) != 0
-	fmt.Fprintf(notes, "The narrowing landed %s after the exit accepted the first stream. The document host "+
-		"had **%s** been dialled when it landed, and what the agent saw was:\n\n```\n%s\n```\n\n",
-		l.betweenExitAndPush(r, second), map[bool]string{true: "already", false: "not"}[fetched],
-		strings.TrimSpace(keepLines(said, "fetch_url", "no such host", "unreachable", "DONE", "TOOL")))
+	if dialed := r.at.matching("EXIT dialed " + docHost); len(dialed) != 0 {
+		t.Errorf("narrowed: the exit dialled %s after the narrowing removed it: %v. The workload's two requests "+
+			"are %s apart (withoutModelPause), and the narrowing landed %s after the exit accepted the first "+
+			"stream, so the second request was made under the narrowed policy.", docHost, dialed,
+			withoutModelPause, l.betweenExitAndPush(r, second))
+	}
+	if refused := refusalIn(said); refused == "" {
+		t.Errorf("narrowed: the workload was not refused the document host the narrowing removed:\n%s", said)
+	}
+	fmt.Fprintf(notes, "The narrowing landed %s after the exit accepted the first stream, and the workload's "+
+		"second request is a fixed %s after its first — so the document host was **not** dialled after the name "+
+		"went, and what the workload saw was:\n\n```\n%s\n```\n\n",
+		l.betweenExitAndPush(r, second), withoutModelPause,
+		strings.TrimSpace(keepLines(said, "fetch_url", "no such host", "unreachable", withoutModelMarker, "TOOL")))
 	fmt.Fprintf(notes, "runsc ended with status %d after %s, `%s`, and the workload ran throughout: the "+
 		"narrowing is not a restart and the process the run started is the process that finished.\n\n",
 		r.status, r.elapsed.Round(time.Millisecond), r.at.timings())
 
-	// The first pusher's tunnel goes, because the sandbox is now pulsing a
-	// digest that is not the one it pushed.
-	if mismatch, ok := l.console.await(second.at, noLongerLive, 5*time.Second); ok {
-		fmt.Fprintf(notes, "**The first peer's tunnel is torn down as a mismatch**, %s after the narrowing was "+
-			"acknowledged, while the workload kept running:\n\n```\n%s\n```\n\n",
-			mismatch.when.Sub(second.at).Round(time.Millisecond), mismatch.text)
-		if !strings.Contains(mismatch.text, first.digest) {
-			t.Errorf("narrowed: the mismatch does not name the digest the first peer pushed:\n%s", mismatch.text)
+	// A narrowing is not a mismatch, and this is where ticket 27 differs from
+	// ticket 26 in what it asserts. A sandbox that takes a second policy starts
+	// pulsing that policy's digest, and ticket 26's watch over the first digest
+	// read that as a sandbox that had stopped enforcing: it closed the first
+	// peer's tunnel, which was the intent, and dropped the enforcing attachment,
+	// which since ticket 27's reaping of the helper would tear the sandbox down
+	// mid-task. So the watch over the old policy is retired before the new one is
+	// pushed (attest/tunneld/push.go, applyOrRefuse), and what must hold is that
+	// nothing was lost between the narrowing and the workload's own exit.
+	ended := r.began.Add(r.elapsed)
+	var lostEarly []spoken
+	for _, s := range l.console.after(second.at, livenessLost) {
+		if s.when.Before(ended) {
+			lostEarly = append(lostEarly, s)
 		}
+	}
+	if len(lostEarly) != 0 {
+		t.Errorf("narrowed: the narrowing was read as a loss of liveness while the workload was still running, which drops the enforcing attachment and ends the sandbox:\n%s",
+			strings.Join(lines(lostEarly), "\n"))
+	}
+	if lost, ok := l.console.await(second.at, livenessLost, 8*time.Second); ok {
+		fmt.Fprintf(notes, "**The narrowing is not read as a mismatch.** The sandbox pulses the new policy's "+
+			"digest from the moment it takes it, and the watch over the old one is retired before the new one is "+
+			"pushed — so nothing is lost while the workload runs, and the one loss reported is the workload's own "+
+			"exit, %s after the narrowing landed:\n\n```\n%s\n```\n\n"+
+			"This is the one place this run differs from ticket 26's, where the first peer's tunnel was torn down "+
+			"as a mismatch and the number recorded was how long that took. Reading a lawful narrowing as a loss "+
+			"now costs the sandbox rather than one tunnel, so it is not read as one — and the first peer, whose "+
+			"policy is no longer the one in force, keeps its tunnel and is told nothing. That is a finding and "+
+			"not an assertion of this run.\n\n", lost.when.Sub(second.at).Round(time.Millisecond), lost.text)
 	} else {
-		t.Error("narrowed: the first peer's tunnel was not torn down after the sandbox began enforcing another policy")
-		fmt.Fprintf(notes, "**No mismatch was reported**, and the first peer's policy is not the one in force.\n\n")
+		t.Error("narrowed: no liveness loss was reported at all, not even for the workload exiting")
 	}
 
 	// The sentence naming the component stays on this side of the tunnel. What
@@ -392,7 +456,7 @@ func (l *loopback) tellKilled(t *testing.T, notes *strings.Builder, r *sandboxRu
 	fmt.Fprintf(notes, "## killed — the same teardown, reached with `runsc kill`\n\n")
 	if root == nil || root.err != nil {
 		t.Errorf("killed: P0 was not pushed: %v", root.errOr())
-		fmt.Fprintf(notes, "The push did not land: %v\n\n", root.errOr())
+		l.unproven(notes, r, root)
 		return
 	}
 	if killedAt.IsZero() {
@@ -408,35 +472,104 @@ func (l *loopback) tellKilled(t *testing.T, notes *strings.Builder, r *sandboxRu
 	l.tellEvents(notes, r)
 }
 
-// tellEarly is ticket 27's scenario: the push arrives before the sandbox helper
-// has attached. Host.Apply waits up to the deadline for the enforcing attachment,
-// delivers the policy, and acknowledges only when the enforcing sandbox has it.
+// tellEarly is ticket 27's scenario and the thing the whole ticket is about: the
+// push arrives before the sandbox's helper has attached, and the acknowledgement
+// it eventually gets means the enforcing sandbox has the document.
+//
+// Four moments are read off two clocks and compared. `entered` is when a's Apply
+// was first entered, taken on a's own goroutine; `attached` is when a's console
+// said an enforcing client was on the socket; `applied` is the one console line a
+// push acknowledged by the enforcing sandbox writes; and the pusher's own PUSH
+// line is when Apply came back. entered before attached is what makes this the
+// early push and not the on-policy run again. applied and the ack after attached
+// is what makes the acknowledgement true — an Apply that returned nil before the
+// helper was on the socket would be an acknowledgement of a policy nothing was
+// enforcing, and is the defect this run exists to catch.
 func (l *loopback) tellEarly(t *testing.T, notes *strings.Builder, r *sandboxRun, root *pusher) {
 	t.Helper()
 	fmt.Fprintf(notes, "## early-push — the push arrives before the sandbox attaches\n\n")
-	if root == nil || root.err != nil {
-		t.Errorf("early-push: P0 was not pushed: %v", root.errOr())
-		fmt.Fprintf(notes, "The push did not land: %v\n\n", root.errOr())
+	if !l.assertGovernedSuccess(t, r, root, "early-push") {
+		l.unproven(notes, r, root)
 		return
 	}
-	if r.err != nil {
-		t.Errorf("early-push: the sandbox ended with %v; the policy in force names both destinations", r.err)
+	entered, acked := root.enteredAt(), root.ackedAt()
+	attached, haveAttached := l.console.await(r.began, enforcingAttached, 30*time.Second)
+	applied, haveApplied := l.console.await(r.began, "SANDBOX applied ", 30*time.Second)
+	switch {
+	case entered.IsZero():
+		t.Error("early-push: a's Apply was never entered, so there was no push to be early")
+	case !haveAttached:
+		t.Errorf("early-push: a's console never carried %q, so no enforcing sandbox attached", enforcingAttached)
+	case !entered.Before(attached.when):
+		t.Errorf("early-push: the push entered a's Apply at %s and the enforcing sandbox attached at %s, so this run is not the early push it is named for",
+			entered.Format("15:04:05.000000"), attached.when.Format("15:04:05.000000"))
+	case acked.Before(attached.when):
+		t.Errorf("early-push: Apply acknowledged the push at %s, before the enforcing sandbox attached at %s: the acknowledgement was a lie",
+			acked.Format("15:04:05.000000"), attached.when.Format("15:04:05.000000"))
 	}
-	if said := l.said(r.stdout); !strings.Contains(said, "DONE") {
-		t.Errorf("early-push: the transcript does not end in the model's last word:\n%s", said)
+	if !haveApplied {
+		t.Errorf("early-push: a's console carries no `SANDBOX applied` line, so no sandbox acknowledged P0 (%s)", short(root.digest))
+	} else {
+		if !strings.Contains(applied.text, root.digest) {
+			t.Errorf("early-push: the line a wrote for the acknowledged push is %q, which does not name P0's digest %s", applied.text, root.digest)
+		}
+		if haveAttached && applied.when.Before(attached.when) {
+			t.Errorf("early-push: a wrote %q at %s, before the enforcing sandbox attached at %s", applied.text,
+				applied.when.Format("15:04:05.000000"), attached.when.Format("15:04:05.000000"))
+		}
+		if root.at.Before(applied.when) {
+			t.Errorf("early-push: the push returned at %s, before a wrote %q at %s", root.at.Format("15:04:05.000000"),
+				applied.text, applied.when.Format("15:04:05.000000"))
+		}
 	}
-	if dialed := r.at.matching("EXIT dialed " + modelHost + ":443"); len(dialed) == 0 {
-		t.Errorf("early-push: the exit never dialed %s:443, so the model request did not travel over the tunnel", modelHost)
+	// The sentry's own account, which is the difference between the helper
+	// having the document and the sandbox enforcing it.
+	if narrowed := sentrySaid(r, "tunnel narrow: sha256="); len(narrowed) == 0 {
+		t.Error("early-push: the sentry's log records no policy applied, so the acknowledged document did not reach it")
 	}
-	fmt.Fprintf(notes, "The push was initiated before the sandbox's helper attached to `a.sock`. "+
-		"`Host.Apply` waited for the enforcing attachment, delivered the policy to the sentry, and only "+
-		"acknowledged after the sentry applied it. The task completed under the policy: runsc ended with "+
-		"status %d after %s, `%s`.\n\n", r.status, r.elapsed.Round(time.Millisecond),
-		firstLineWith(l.said(r.stdout), "DONE"))
+	fmt.Fprintf(notes, "The push was made at `a` before `runsc` was started: the pusher's handshake was already "+
+		"done and its document already inside `Host.Apply` when the sandbox was created, which is what the "+
+		"harness holds the two in order for. `Host.Apply` waited there for an enforcing attachment, handed it "+
+		"the document, and acknowledged only once the sentry had applied it.\n\n")
+	fmt.Fprintf(notes, "| moment | clock | when |\n|---|---|---|\n")
+	for _, m := range []struct {
+		what, whose string
+		when        time.Time
+	}{
+		{"`Host.Apply` entered at `a`", "a's goroutine", entered},
+		{quoted(attached.text), "a's console", attached.when},
+		{quoted(applied.text), "a's console", applied.when},
+		{"`Host.Apply` acknowledged the push", "a's goroutine", acked},
+		{"the pusher's `PUSH` line: `Peer` returned", "the pusher", root.at},
+	} {
+		fmt.Fprintf(notes, "| %s | %s | %s |\n", m.what, m.whose, when(m.when))
+	}
+	fmt.Fprintf(notes, "\nThe push was entered **%s** before the enforcing sandbox attached, and acknowledged "+
+		"**%s** after it, having been made %s. The workload then ran governed and completed: runsc ended with "+
+		"status %d after %s, `%s`.\n\n", attached.when.Sub(entered).Round(time.Millisecond),
+		acked.Sub(attached.when).Round(time.Millisecond), times(root.tries), r.status,
+		r.elapsed.Round(time.Millisecond), firstLineWith(l.said(r.stdout), withoutModelMarker))
 	l.tellPush(notes, r, root)
 	l.tellWindow(notes, r)
 	l.tellTeardown(t, notes, r, "the workload exiting")
 	l.tellEvents(notes, r)
+}
+
+// when is one of those moments, or the fact that it never happened.
+func when(at time.Time) string {
+	if at.IsZero() {
+		return "(never)"
+	}
+	return at.Format("15:04:05.000000")
+}
+
+// quoted is one console line for a table cell, or the fact that it was never
+// written.
+func quoted(text string) string {
+	if text == "" {
+		return "(not written)"
+	}
+	return "`" + text + "`"
 }
 
 // tellTeardown is the two lines and the one number (d) asks for: how long after
@@ -555,7 +688,7 @@ func TestClaudeGoverned(t *testing.T) {
 		t.Skipf("%s=%q is not the Claude Code binary: %v", claudeEnv, elf, err)
 	}
 	if os.Getenv("ANTHROPIC_API_KEY") == "" {
-		t.Fatalf("%s=1 and no ANTHROPIC_API_KEY in the environment: the CLI inside the sandbox needs it", liveEnv)
+		t.Skipf("%s=1 and no ANTHROPIC_API_KEY in the environment: the CLI inside the sandbox needs it", liveEnv)
 	}
 
 	out := newRecord(os.Stdout)
@@ -822,6 +955,14 @@ type pusher struct {
 	tries int           // how many handshakes it took, which is how early the first one was
 	err   error
 
+	// entered is when a's Apply was first entered for this push, and acked is
+	// when the Apply that acknowledged it came back. They are what the
+	// early-push run is judged on — a push entered before the enforcing sandbox
+	// attached and acknowledged only after it had the document — and they are
+	// unix nanoseconds in atomics for applied's reason: they are written on a's
+	// goroutine and read on the test's.
+	entered, acked atomic.Int64
+
 	// applied is a's own clock on Apply — the contract socket, the helper, urpc
 	// and the sentry — in nanoseconds. It is written on a's goroutine while the
 	// pusher's is inside Peer, so it is atomic rather than a field two
@@ -839,6 +980,27 @@ func (p *pusher) applyTook() time.Duration {
 		return 0
 	}
 	return time.Duration(p.applied.Load())
+}
+
+// enteredApply records the first moment a's Apply was entered for this push, and
+// enteredAt reads it back. Only the first is kept: a push refused for being
+// early is retried, and what the early-push run asserts is about the attempt
+// that was made before the sandbox existed.
+func (p *pusher) enteredApply(at time.Time) { p.entered.CompareAndSwap(0, at.UnixNano()) }
+
+// ackedApply records the moment the Apply that acknowledged this push returned.
+func (p *pusher) ackedApply(at time.Time) { p.acked.Store(at.UnixNano()) }
+
+func (p *pusher) enteredAt() time.Time { return stamp(p.entered.Load()) }
+func (p *pusher) ackedAt() time.Time   { return stamp(p.acked.Load()) }
+
+// stamp turns one of those nanosecond counts back into a time, and zero into the
+// zero time rather than into 1970.
+func stamp(nanos int64) time.Time {
+	if nanos == 0 {
+		return time.Time{}
+	}
+	return time.Unix(0, nanos)
 }
 
 func (p *pusher) errOr() error {
@@ -961,9 +1123,16 @@ type appliedAt struct {
 }
 
 func (h *appliedAt) Apply(ctx context.Context, policy []byte) error {
+	p := h.l.pushing.Load()
+	if p != nil {
+		p.enteredApply(time.Now())
+	}
 	took, err := timeApply(ctx, h.Host, policy, h.l.out, "a")
-	if p := h.l.pushing.Load(); p != nil {
+	if p != nil {
 		p.applied.Store(int64(took))
+		if err == nil {
+			p.ackedApply(time.Now())
+		}
 	}
 	return err
 }
@@ -986,6 +1155,9 @@ func (l *loopback) govern(t *testing.T, name string, names map[string]int, w wor
 	}
 	stop, finished := make(chan struct{}), make(chan struct{})
 	go func() { defer close(finished); during(stop) }()
+	if l.holdStart != nil && !l.until(stop, 30*time.Second, l.holdStart) {
+		t.Fatalf("%s: what this run waits for before starting the sandbox did not happen", name)
+	}
 	r := l.sandbox(t, name, names, w)
 	close(stop)
 	<-finished

@@ -231,7 +231,15 @@ func (t *Tunneld) applyOrRefuse(ctx context.Context, conn *tunnel.Conn, policy [
 	// change, so the same watch is started again over the same digest.
 	retired := t.retireWatch()
 	if err := box.Apply(waitCtx, policy); err != nil {
-		t.startWatch(retired)
+		// The watch goes back on only where there is still something to watch. A
+		// sandbox that refused this policy goes on enforcing the one it has, and
+		// its watch belongs back on it; where the push found no sandbox, or gave
+		// one up for going quiet, the claim that watch was over has already been
+		// given up and restarting it would report the loss of a claim nobody is
+		// making.
+		if !errors.Is(err, sandbox.ErrNoEnforcingSandbox) {
+			t.startWatch(retired)
+		}
 		// Which of the two sentences the peer is told is the difference between
 		// "there is nobody here to take it" and "the sandbox here would not
 		// have it", and the sandbox says which by the sentinel it wraps.

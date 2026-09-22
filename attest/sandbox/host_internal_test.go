@@ -81,15 +81,26 @@ func TestAPushIsBoundedWhenTheSandboxNeverAnswersIt(t *testing.T) {
 		if err == nil {
 			t.Fatal("a push the sandbox never answered was acknowledged")
 		}
+		// A push that was not answered is not a claim: the attachment goes, and
+		// what comes back says so, because the answer decides whether the watch
+		// over the policy that was in force goes back on.
+		if !errors.Is(err, ErrNoEnforcingSandbox) {
+			t.Errorf("the unanswered push returned %v; want it to say there is no enforcing sandbox any more", err)
+		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("a push with no caller deadline behind it never ended")
+	}
+	select {
+	case <-client.Done():
+	case <-time.After(3 * time.Second):
+		t.Error("the sandbox that did not answer the push was left attached")
 	}
 
 	// And the push slot is free rather than wedged: the next push is answered
 	// too, instead of queueing behind the one that was given up.
 	began := time.Now()
-	if err := host.Apply(context.Background(), []byte(`{"format":"policy","version":1}`)); err == nil {
-		t.Error("the push after the unanswered one was acknowledged")
+	if err := host.Apply(context.Background(), []byte(`{"format":"policy","version":1}`)); !errors.Is(err, ErrNoEnforcingSandbox) {
+		t.Errorf("the push after the unanswered one returned %v; want the refusal that says nobody is there", err)
 	}
 	if took := time.Since(began); took > 5*time.Second {
 		t.Errorf("the push after the unanswered one took %v; the slot was still held", took)

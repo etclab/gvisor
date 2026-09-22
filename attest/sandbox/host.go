@@ -85,13 +85,17 @@ type Host struct {
 var ErrHostClosed = errors.New("sandbox: host closed")
 
 // ErrNoEnforcingSandbox is what a push meets when there is no enforcing sandbox
-// to hand it to and none arrived inside the wait.
+// any more: none was attached, none arrived inside the wait, or the one that was
+// there was given up during the push because it went or would not answer.
 //
 // It wraps [ErrPolicyRefused], because that is what it is to the caller, and it
-// is its own sentinel because tunneld answers a pushing peer a different
-// sentence for it — "no sandbox is attached to this tunneld" rather than "the
-// sandbox beside this tunneld did not apply it" — and telling the two apart by
-// the text of an error would be a contract neither side declared.
+// is its own sentinel because two things turn on it that the text of an error
+// should not have to carry. Tunneld answers a pushing peer a different sentence
+// for it — "no sandbox is attached to this tunneld" rather than "the sandbox
+// beside this tunneld did not apply it" — and it says whether the policy that
+// was in force is still being enforced by anything, which is what decides
+// whether the watch over that policy goes back on after a push that did not
+// land.
 var ErrNoEnforcingSandbox = fmt.Errorf("%w: no enforcing sandbox is attached", ErrPolicyRefused)
 
 // DefaultApplyWait bounds the whole of a push whose caller gave no deadline —
@@ -207,6 +211,18 @@ func (h *Host) Apply(ctx context.Context, policy []byte) error {
 		}
 	}
 	if err := a.apply(ctx, policy); err != nil {
+		if ctx.Err() != nil {
+			// The sandbox did not answer inside the bound, so whether it has
+			// this policy is not something this side can say — and it may
+			// install it a moment from now and start pulsing that policy's
+			// digest, which is a claim nobody here made. What cannot be said
+			// cannot be claimed: the attachment is given up and nothing is left
+			// in force, which is what a heartbeat that stops gets and for the
+			// same reason.
+			a.claimLost.Store(true)
+			h.DropEnforcing()
+			return fmt.Errorf("%w to %s: it did not answer the push and has been dropped: %w", ErrNoEnforcingSandbox, h.path, err)
+		}
 		return err
 	}
 	// The policy in force is written here and nowhere else, which is what makes
@@ -774,7 +790,7 @@ func (a *attached) apply(ctx context.Context, policy []byte) error {
 	case <-ctx.Done():
 		return ctx.Err()
 	case <-a.ctx.Done():
-		return fmt.Errorf("%w: the sandbox went away before it answered", ErrPolicyRefused)
+		return fmt.Errorf("%w: it went away before it answered the push", ErrNoEnforcingSandbox)
 	}
 }
 

@@ -481,7 +481,6 @@ func (h *Host) accept() {
 		}
 		h.conns = append(h.conns, a)
 		h.mu.Unlock()
-		h.log("SANDBOX attached on %s", h.path)
 		h.wg.Add(1)
 		go func() {
 			defer h.wg.Done()

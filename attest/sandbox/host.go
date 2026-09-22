@@ -518,6 +518,12 @@ type attached struct {
 	// once, under the host's lock, and read under it.
 	role string
 
+	// declared says the attach message has been taken, which is role != "" for
+	// a reader that holds no lock: serve, which has to refuse a stream to a
+	// connection that has not attached and would otherwise take the host's lock
+	// on every request to ask one question with a yes that never changes.
+	declared atomic.Bool
+
 	// gone says this attachment has given up its socket. It is one atomic and
 	// not a field under a lock because its readers cannot share one: the host
 	// reads it holding h.mu — the uniqueness check, Apply, Attached,
@@ -601,6 +607,7 @@ func (h *Host) admit(a *attached, role string) (string, chan *attached) {
 		return "a second enforcing client is not permitted on this socket", nil
 	}
 	a.role = role
+	a.declared.Store(true)
 	if role != RoleEnforcing {
 		return "", nil
 	}
@@ -645,14 +652,6 @@ func (h *Host) replayInForce(a *attached) {
 		a.claimLost.Store(true)
 		h.DropEnforcing()
 	}
-}
-
-// hasAttached reports whether this connection has declared a role, which is the
-// first thing it has to do on this socket (contract v4).
-func (a *attached) hasAttached() bool {
-	a.h.mu.Lock()
-	defer a.h.mu.Unlock()
-	return a.role != ""
 }
 
 // acknowledgedPolicy reports whether this sandbox has ever acknowledged one,
@@ -716,7 +715,7 @@ func (a *attached) serve() {
 				return
 			}
 		case msgOpen, msgAccept:
-			if !a.hasAttached() {
+			if !a.declared.Load() {
 				// Attach comes first (contract v4). A connection that asks for
 				// a stream before it has said what it is has declared no role,
 				// is in nobody's count of what is attached, and would be a

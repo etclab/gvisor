@@ -120,6 +120,11 @@ type config struct {
 	dir     string
 	exit    bool
 	timeout time.Duration
+
+	// withoutModel leaves out the one step that needs a key. It is a flag and
+	// not a fallback, so that a run made without a model is a run somebody
+	// asked for: Run with no key in the environment still stops at ErrNoKey.
+	withoutModel bool
 }
 
 func (c *config) flags(fs *flag.FlagSet) {
@@ -137,6 +142,8 @@ func (c *config) flags(fs *flag.FlagSet) {
 		"where write_file puts a relative path, so that a run leaves nothing in the tree")
 	fs.BoolVar(&c.exit, "exit", false,
 		"be the exit instead of the agent: accept streams and dial what their first line names")
+	fs.BoolVar(&c.withoutModel, "without-model", false,
+		"run the task with the model step left out: request the model endpoint with no key and report the status it answers, fetch the document, and write no model output (RunWithoutModel)")
 	fs.DurationVar(&c.timeout, "timeout", 10*time.Minute,
 		"the whole run's deadline, which is also the deadline every dial gets")
 }
@@ -152,7 +159,11 @@ func runAgent(ctx context.Context, c config, out *record) error {
 	if err != nil {
 		return err
 	}
-	res, err := Run(ctx, w.client, task, tools, out)
+	loop := Run
+	if c.withoutModel {
+		loop = RunWithoutModel
+	}
+	res, err := loop(ctx, w.client, task, tools, out)
 	if err != nil {
 		return err
 	}

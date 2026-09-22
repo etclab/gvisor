@@ -181,12 +181,12 @@ leaving it to a goroutine (`loopback.holdStart`, `governed_test.go:228`). Five m
 | the pusher's `PUSH` line: `Peer` returned | 20:50:43.005616 |
 
 The push was entered 192 ms before the enforcing sandbox attached and acknowledged 179 ms
-after it (`README.md:421`), with a cold `Open` of 410 ms of which `Apply` at `a` was 370.78 ms
+after it (`README.md:411`), with a cold `Open` of 410 ms of which `Apply` at `a` was 370.78 ms
 (`:417`). The sentry applies, the helper acknowledges, and only then does `a` write `SANDBOX
 applied` and `Apply` return; what the harness asserts is the negative, that an `Apply`
 returning nil before the attach fails the run (`tellEarly`, `governed_test.go:509`). The
 workload then ran governed and completed, status 0 after 6.069 s with `NO-MODEL DONE
-model_status=401 model_bytes=141 doc_status=200 doc_bytes=20480 in 5.598s` (`README.md:421`).
+model_status=401 model_bytes=141 doc_status=200 doc_bytes=20480 in 5.598s` (`README.md:411`).
 
 Two assertions elsewhere changed. `tellTeardown` requires exactly one liveness loss per run
 (`governed_test.go:606-611`): the sandbox goes once, and every extra loss is a refusal written
@@ -326,5 +326,15 @@ Continuing the numbering of `docs/policy-in-the-sentry.md`, which ends at 25.
     It belongs in `attest/internal/fixture`. Acked, not fixed.
 34. **Thirteen stale ack rows are left in the ledger.** `attest/.ripwire_quality_acks` is 146
     lines, and thirteen of its rows name a finding or a target that no longer exists.
-35. **No hardware re-run.** Everything above is loopback and unit tests. The root runner and
+35. **The console in the loopback transcript shows `SANDBOX attached` twice per connection**
+    (`loopback/20260921-205050/README.md:449-450`): once when the socket was accepted and once
+    with the role once the attach message arrived. The first line was removed from
+    `attest/sandbox/host.go` after the run rather than re-running the proof; the evidence is
+    left as it was made.
+36. **The `fired` flag is read before it is stored.** `startWatch` reads `fired`
+    (`attest/tunneld/push.go:301`) and `watchLiveness` stores it (`:369`) without a lock between
+    them, so a retirement that races the loss can start the spent watch once more. It is benign
+    only because `DropEnforcing` refuses an attachment whose claim was not lost; the ordering
+    should be made explicit.
+37. **No hardware re-run.** Everything above is loopback and unit tests. The root runner and
     the ticket 26 runbooks exist if one is wanted.

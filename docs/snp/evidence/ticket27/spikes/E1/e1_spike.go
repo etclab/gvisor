@@ -14,11 +14,28 @@
 
 // Ticket 27, spike E1: the window, and who is in it.
 //
-// Measure across at least twenty runs on loopback, with tunneld and the exit's
-// client started the way the guest's init starts them and runsc started after:
-// the time from tunneld listening on the sandbox socket to the exit's client
-// attaching, to the runsc helper attaching, and the time at which a push lands
-// relative to both. Record which client answered each push and what it answered.
+// Measure across at least twenty runs on loopback, with the sandbox socket and
+// the exit's client started the way the guest's init starts them and runsc
+// started after: the time from the host listening on the sandbox socket to the
+// exit's client attaching, to the runsc helper attaching, and the time at which
+// a push lands relative to both. Record which client answered each push and what
+// it answered.
+//
+// # What contract v4 changed about the question
+//
+// The question E1 was written for was which of two clients on one socket
+// answered a push that arrived before the runsc helper had attached. On master
+// the answer was the exit, every time, because Apply pushed to whatever was
+// attached at that instant and the exit was attached in under a millisecond.
+//
+// On this branch there is no such choice to observe: a client declares a role
+// when it attaches, the exit declares network, and a network attachment is never
+// offered a policy. So the columns that recorded a choice now record that there
+// was none — whether the exit was offered the document at all, whether Apply
+// waited for the enforcing attachment, and how long that wait cost — and the
+// measurement that decides whether waiting is affordable, from runsc starting to
+// the enforcing attachment arriving, is unchanged and is the one the summary
+// reports percentiles for.
 package main
 
 import (
@@ -28,6 +45,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -35,18 +53,35 @@ import (
 	"gvisor.dev/gvisor/attest/sandbox"
 )
 
+// A runRecord is one run, measured. Every duration is from t0, the moment the
+// host began listening on the sandbox socket, except helperFromRunsc.
 type runRecord struct {
-	runNum          int
-	t0              time.Time
-	tExitAttach     time.Duration
-	tRunscStart     time.Duration
-	tPush           time.Duration
-	tPushDone       time.Duration
-	tHelperAttach   time.Duration
-	helperFromRunsc time.Duration
-	answeredBy      string
-	answer          string
-	helperGotPolicy bool
+	runNum      int
+	tExitAttach time.Duration // the exit's attach message, role network
+
+	tRunscStart time.Duration // exec of runsc run
+	tPush       time.Duration // Host.Apply entered
+	tPushDone   time.Duration // Host.Apply returned
+
+	tHelperAttach   time.Duration // the helper's attach message, role enforcing
+	helperFromRunsc time.Duration // the same, measured from runsc starting
+
+	// exitOffered says the exit's apply callback was called at all, which under
+	// contract v4 must never happen: it attaches as a network client.
+	exitOffered bool
+
+	// applied says the host wrote its SANDBOX applied line, which it writes only
+	// once the enforcing sandbox has acknowledged.
+	applied bool
+
+	// answer is "acknowledged by the enforcing sandbox" or the refusal verbatim.
+	answer string
+}
+
+// waited reports whether the push was entered before the enforcing sandbox
+// attached, which is the case the whole experiment is about.
+func (r runRecord) waited() bool {
+	return r.tHelperAttach > r.tPush
 }
 
 func main() {
@@ -69,14 +104,14 @@ func main() {
 	for i := 1; i <= totalRuns; i++ {
 		rec := doRun(i, runsc)
 		records = append(records, rec)
-		fmt.Printf("Run %02d: exit=+%v, runsc_start=+%v, push=+%v (ans by %s with %s), helper=+%v (from runsc: %v), helper_got_policy=%v\n",
+		fmt.Printf("Run %02d: exit=+%v, runsc_start=+%v, push=+%v, enforcing_attach=+%v (from runsc: %v), apply_returned=+%v, waited=%v, exit_offered=%v, applied=%v, answer=%s\n",
 			rec.runNum, rec.tExitAttach.Round(time.Microsecond),
 			rec.tRunscStart.Round(time.Microsecond),
 			rec.tPush.Round(time.Microsecond),
-			rec.answeredBy, rec.answer,
 			rec.tHelperAttach.Round(time.Microsecond),
 			rec.helperFromRunsc.Round(time.Microsecond),
-			rec.helperGotPolicy)
+			rec.tPushDone.Round(time.Microsecond),
+			rec.waited(), rec.exitOffered, rec.applied, rec.answer)
 	}
 
 	printSummary(records)
@@ -120,30 +155,49 @@ func doRun(runNum int, runsc string) runRecord {
 	os.WriteFile(filepath.Join(bundleDir, "config.json"), []byte(configJSON), 0644)
 
 	var (
-		mu           sync.Mutex
-		attachTimes  []time.Time
-		attachedConn atomic.Int32
+		mu sync.Mutex
+		// The console lines this run is timed against. The host writes two lines
+		// per attachment: one when the socket is accepted, and one when the
+		// attach message declares a role. It is the second that matters here,
+		// because a connection with no role declared is not something a policy
+		// can be pushed to.
+		attached map[string]time.Time
+		applied  bool
+		attaches atomic.Int32
 	)
+	attached = map[string]time.Time{}
 
-	// Start Host listening at T0
+	// The host begins listening at t0.
 	t0 := time.Now()
 	host, err := sandbox.Listen(sockPath, sandbox.NewNull(nil, nil), func(format string, a ...any) {
 		msg := fmt.Sprintf(format, a...)
-		if msg == "SANDBOX attached on "+sockPath {
-			mu.Lock()
-			attachTimes = append(attachTimes, time.Now())
-			mu.Unlock()
-			attachedConn.Add(1)
+		now := time.Now()
+		mu.Lock()
+		defer mu.Unlock()
+		switch {
+		case strings.Contains(msg, "SANDBOX attached on ") && strings.Contains(msg, "role="):
+			role := msg[strings.Index(msg, "role=")+len("role="):]
+			if _, seen := attached[role]; !seen {
+				attached[role] = now
+				attaches.Add(1)
+			}
+		case strings.HasPrefix(msg, "SANDBOX applied "):
+			applied = true
 		}
 	})
 	if err != nil {
 		panic(err)
 	}
 	defer host.Close()
+	at := func(role string) time.Time {
+		mu.Lock()
+		defer mu.Unlock()
+		return attached[role]
+	}
 
 	// 1. Exit attaches
 	var exitReceivedApply atomic.Bool
-	exitClient, err := sandbox.Dial(sockPath, func(ctx context.Context, p []byte) error {
+	exitClient, err := sandbox.Dial(sockPath, sandbox.RoleNetwork, func(ctx context.Context, p []byte) error {
 		exitReceivedApply.Store(true)
 		return nil
 	})
@@ -152,13 +206,11 @@ func doRun(runNum int, runsc string) runRecord {
 	}
 	defer exitClient.Close()
 
-	// Wait for exit attachment to register
-	for attachedConn.Load() < 1 {
+	// The exit's attach message, which is the first thing on the socket.
+	for at(sandbox.RoleNetwork).IsZero() {
 		time.Sleep(100 * time.Microsecond)
 	}
-	mu.Lock()
-	tExit := attachTimes[0]
-	mu.Unlock()
+	tExit := at(sandbox.RoleNetwork)
 
 	// 2. Start runsc
 	stateDir := filepath.Join(tmpdir, "state")
@@ -180,101 +232,112 @@ func doRun(runNum int, runsc string) runRecord {
 		panic(err)
 	}
 
-	// 3. Early push lands (simulating peer push arriving right after container launch)
+	// 3. The early push: entered here, a millisecond or two after runsc was
+	// started and long before its helper can have attached. The deadline is the
+	// ten seconds a pushing peer gives a push (tunneld.DefaultPushTimeout), so
+	// that what is measured is a wait inside the deadline and not an unbounded
+	// one.
 	tPush := time.Now()
 	policyDoc := []byte(`{"format":"policy","version":1,"n":[{"host":"test.example","ports":[80]}],"f":[],"x":[{"path":"/bin/busybox"}]}`)
-	applyErr := host.Apply(context.Background(), policyDoc)
+	ctx, cancel := context.WithTimeout(context.Background(), pushDeadline)
+	applyErr := host.Apply(ctx, policyDoc)
+	cancel()
 	tPushDone := time.Now()
 
-	answeredBy := "none"
-	answer := "none"
-	if applyErr == nil {
-		if exitReceivedApply.Load() {
-			answeredBy = "exit"
-			answer = "ack"
-		} else {
-			answeredBy = "helper"
-			answer = "ack"
-		}
-	} else {
+	answer := "acknowledged by the enforcing sandbox"
+	if applyErr != nil {
 		answer = applyErr.Error()
 	}
 
-	// Wait for runsc helper to attach
-	for attachedConn.Load() < 2 {
-		time.Sleep(1 * time.Millisecond)
+	// The enforcing attachment, which is the helper's. It is waited for after the
+	// push rather than before it, because a push that waited for it would not be
+	// the early push this measures.
+	for at(sandbox.RoleEnforcing).IsZero() {
+		time.Sleep(time.Millisecond)
 	}
-	mu.Lock()
-	tHelper := attachTimes[1]
-	mu.Unlock()
+	tHelper := at(sandbox.RoleEnforcing)
 
 	cmd.Wait()
+	mu.Lock()
+	wrote := applied
+	mu.Unlock()
 
 	return runRecord{
 		runNum:          runNum,
-		t0:              t0,
 		tExitAttach:     tExit.Sub(t0),
 		tRunscStart:     tRunscStart.Sub(t0),
 		tPush:           tPush.Sub(t0),
 		tPushDone:       tPushDone.Sub(t0),
 		tHelperAttach:   tHelper.Sub(t0),
 		helperFromRunsc: tHelper.Sub(tRunscStart),
-		answeredBy:      answeredBy,
+		exitOffered:     exitReceivedApply.Load(),
+		applied:         wrote,
 		answer:          answer,
-		helperGotPolicy: false, // on master, push was answered by exit before helper attached
 	}
 }
 
-func printSummary(records []runRecord) {
-	fmt.Printf("\n===== E1 SUMMARY (25 Runs) =====\n\n")
-	fmt.Printf("| Run | Exit Attach | Runsc Start | Push Time | Helper Attach | From Runsc Start | Answered By | Answer | Helper Enforcing? |\n")
-	fmt.Printf("|---|---|---|---|---|---|---|---|---|\n")
+// pushDeadline is the ten seconds a pushing peer gives a push
+// (tunneld.DefaultPushTimeout, sandbox.DefaultApplyWait), written here because
+// this spike calls Host.Apply directly and no tunneld gives it one.
+const pushDeadline = 10 * time.Second
 
-	var helperDelays []time.Duration
-	exitCount := 0
-	helperCount := 0
+func printSummary(records []runRecord) {
+	fmt.Printf("\n===== E1 SUMMARY (%d runs) =====\n\n", len(records))
+	fmt.Printf("| Run | Exit attach | runsc start | Push entered | Enforcing attach | From runsc start | Apply returned | Apply took | Waited for it | Exit offered the policy | Answer |\n")
+	fmt.Printf("|---|---|---|---|---|---|---|---|---|---|---|\n")
+
+	var exitAttach, attachDelays, applyTook []time.Duration
+	waited, offered, acknowledged := 0, 0, 0
 
 	for _, r := range records {
-		helperDelays = append(helperDelays, r.helperFromRunsc)
-		if r.answeredBy == "exit" {
-			exitCount++
-		} else if r.answeredBy == "helper" {
-			helperCount++
+		exitAttach = append(exitAttach, r.tExitAttach)
+		attachDelays = append(attachDelays, r.helperFromRunsc)
+		applyTook = append(applyTook, r.tPushDone-r.tPush)
+		if r.waited() {
+			waited++
 		}
-		fmt.Printf("| %02d | %s | %s | %s | %s | %s | %s | %s | %v |\n",
+		if r.exitOffered {
+			offered++
+		}
+		if r.applied {
+			acknowledged++
+		}
+		fmt.Printf("| %02d | %s | %s | %s | %s | %s | %s | %s | %v | %v | %s |\n",
 			r.runNum,
 			r.tExitAttach.Round(time.Microsecond),
 			r.tRunscStart.Round(time.Microsecond),
 			r.tPush.Round(time.Microsecond),
 			r.tHelperAttach.Round(time.Microsecond),
 			r.helperFromRunsc.Round(time.Microsecond),
-			r.answeredBy, r.answer, r.helperGotPolicy)
+			r.tPushDone.Round(time.Microsecond),
+			(r.tPushDone - r.tPush).Round(time.Microsecond),
+			r.waited(), r.exitOffered, r.answer)
 	}
 
-	sort.Slice(helperDelays, func(i, j int) bool { return helperDelays[i] < helperDelays[j] })
-	minD := helperDelays[0]
-	maxD := helperDelays[len(helperDelays)-1]
-	p50 := helperDelays[len(helperDelays)/2]
-	p90 := helperDelays[int(float64(len(helperDelays))*0.9)]
+	stats("Exit attachment statistics (the host listening -> the exit's attach message, role network)", exitAttach)
+	stats("Attachment statistics (runsc start -> the enforcing attachment on the socket)", attachDelays)
+	stats("Apply statistics (Host.Apply entered -> Host.Apply returned)", applyTook)
+
+	fmt.Printf("\nPush outcome:\n")
+	fmt.Printf("  Entered before the enforcing attachment: %d / %d\n", waited, len(records))
+	fmt.Printf("  Offered to the exit (a network client): %d / %d\n", offered, len(records))
+	fmt.Printf("  Acknowledged by the enforcing sandbox:  %d / %d\n", acknowledged, len(records))
+}
+
+// stats prints one set of percentiles. p50 is the middle element of the sorted
+// slice and p90 the one nine tenths along, both by index and neither
+// interpolated, which is what the notes beside this file must say they are.
+func stats(what string, of []time.Duration) {
+	d := append([]time.Duration(nil), of...)
+	sort.Slice(d, func(i, j int) bool { return d[i] < d[j] })
 	var sum time.Duration
-	for _, d := range helperDelays {
-		sum += d
+	for _, one := range d {
+		sum += one
 	}
-	mean := sum / time.Duration(len(helperDelays))
-
-	fmt.Printf("\nAttachment Statistics (Runsc Start -> Helper On Socket):\n")
-	fmt.Printf("  Min:    %v\n", minD.Round(time.Microsecond))
-	fmt.Printf("  p50:    %v\n", p50.Round(time.Microsecond))
-	fmt.Printf("  Mean:   %v\n", mean.Round(time.Microsecond))
-	fmt.Printf("  p90:    %v\n", p90.Round(time.Microsecond))
-	fmt.Printf("  Max:    %v\n", maxD.Round(time.Microsecond))
-	fmt.Printf("\nPush Outcome:\n")
-	fmt.Printf("  Answered by Exit:   %d / %d (%.1f%%)\n", exitCount, len(records), float64(exitCount)/float64(len(records))*100)
-	fmt.Printf("  Answered by Helper: %d / %d (%.1f%%)\n", helperCount, len(records), float64(helperCount)/float64(len(records))*100)
-	fmt.Printf("  Enforced by Helper: 0 / %d (0.0%%)\n", len(records))
-	fmt.Printf("\nKey Findings:\n")
-	fmt.Printf("1. The exit attaches almost instantaneously (~200-500µs after tunneld starts).\n")
-	fmt.Printf("2. An early push landing before runsc finishes starting (within ~1-5ms) is answered immediately by the exit client with 'ack'.\n")
-	fmt.Printf("3. The runsc helper attaches ~100-250ms later (well within DefaultPushTimeout=10s, but after Host.Apply has completed).\n")
-	fmt.Printf("4. As a result, in 100%% of runs where push arrives early, the policy is acknowledged by the non-enforcing exit, and the enforcing sandbox NEVER receives the policy.\n")
+	fmt.Printf("\n%s, over %d runs:\n", what, len(d))
+	fmt.Printf("  Min:    %v\n", d[0].Round(time.Microsecond))
+	fmt.Printf("  p50:    %v\n", d[len(d)/2].Round(time.Microsecond))
+	fmt.Printf("  Mean:   %v\n", (sum / time.Duration(len(d))).Round(time.Microsecond))
+	fmt.Printf("  p90:    %v\n", d[int(float64(len(d))*0.9)].Round(time.Microsecond))
+	fmt.Printf("  Max:    %v\n", d[len(d)-1].Round(time.Microsecond))
 }

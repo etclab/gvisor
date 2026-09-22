@@ -84,17 +84,7 @@ func TestBothSandboxesOnOneSocketPulseWhatTheyAcknowledged(t *testing.T) {
 	// The agent's workload ends. Its attachment goes, and the policy is no
 	// longer in force.
 	agent.Close()
-	select {
-	case err, ok := <-lost:
-		if !ok {
-			t.Fatal("the watch ended without reporting the agent's sandbox going")
-		}
-		if !strings.Contains(err.Error(), "closed its socket") {
-			t.Errorf("the agent's sandbox going was reported as %q; want its socket closing", err)
-		}
-	case <-time.After(3 * time.Second):
-		t.Fatal("the agent's sandbox went and the watch reported nothing")
-	}
+	expectLost(t, lost, "closed its socket")
 	for host.Attached() != 1 {
 		time.Sleep(time.Millisecond)
 	}
@@ -103,17 +93,24 @@ func TestBothSandboxesOnOneSocketPulseWhatTheyAcknowledged(t *testing.T) {
 	// a policy. A watch finds no enforcing sandbox that acknowledged, and says
 	// that rather than that a socket closed: the exit is still sitting on this
 	// one, and the claim that was lost is a claim nothing here ever made.
-	elsewhere := host.Watch(context.Background(), strings.Repeat("00", 32))
+	expectLost(t, host.Watch(context.Background(), strings.Repeat("00", 32)),
+		"no attachment has acknowledged this policy")
+}
+
+// expectLost waits for a watch to report a loss and asserts the sentence it
+// reported it with, which is the only part of a loss that says what happened.
+func expectLost(t *testing.T, lost <-chan error, want string) {
+	t.Helper()
 	select {
-	case err, ok := <-elsewhere:
+	case err, ok := <-lost:
 		if !ok {
-			t.Fatal("the watch over the exit ended without reporting anything")
+			t.Fatalf("the watch ended without reporting anything; wanted %q", want)
 		}
-		if !strings.Contains(err.Error(), "no attachment has acknowledged this policy") {
-			t.Errorf("watch returned %q; want the absence of an acknowledgement", err)
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("the watch reported %q; wanted %q", err, want)
 		}
 	case <-time.After(3 * time.Second):
-		t.Fatal("the watch reported nothing")
+		t.Fatalf("the watch reported nothing; wanted %q", want)
 	}
 }
 

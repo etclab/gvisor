@@ -267,9 +267,7 @@ func (l *loopback) tellOff(t *testing.T, notes *strings.Builder, r *sandboxRun, 
 		"the pushed policy's and not the table's**, which is the whole of what this control says.\n\n",
 		strings.Join(r.names, ", "), docHost, where(refused), r.status, r.elapsed.Round(time.Millisecond), modelHost)
 	fmt.Fprintf(notes, "What the workload said, in its own words:\n\n```\n%s\n```\n\n", strings.TrimSpace(said))
-	l.tellPush(notes, r, root)
-	l.tellWindow(notes, r)
-	l.tellEvents(notes, r)
+	l.tellTail(t, notes, r, "", root)
 }
 
 func (l *loopback) governedNotes() *strings.Builder {
@@ -326,6 +324,25 @@ func (l *loopback) assertGovernedSuccess(t *testing.T, r *sandboxRun, root *push
 	return true
 }
 
+// tellTail is the part every run's section ends with: the push from both ends,
+// the window before it landed, the teardown when there is one to report, and
+// whatever the seccheck receiver printed. It is one function because it is one
+// list, and a run that differs in its tail differs by naming a different `why`
+// or by naming none.
+func (l *loopback) tellTail(t *testing.T, notes *strings.Builder, r *sandboxRun, why string, pushers ...*pusher) {
+	t.Helper()
+	l.tellPush(notes, r, pushers...)
+	l.tellWindow(notes, r)
+	if why != "" {
+		l.tellTeardown(t, notes, r, why)
+	}
+	l.tellEvents(notes, r)
+}
+
+// workloadExited is what ended liveness in the runs the workload was left to
+// finish, and is the `why` tellTail prints.
+const workloadExited = "the workload exiting"
+
 // tellOn is the proof: the whole table pushed, the task completed through the
 // tunnel, and the workload's exit ending liveness.
 func (l *loopback) tellOn(t *testing.T, notes *strings.Builder, r *sandboxRun, root *pusher) {
@@ -338,10 +355,7 @@ func (l *loopback) tellOn(t *testing.T, notes *strings.Builder, r *sandboxRun, r
 	fmt.Fprintf(notes, "`%s`, and the task completed: runsc ended with status %d after %s, `%s`. Every stream the "+
 		"exit carried is in the run's section above.\n\n", r.at.timings(), r.status, r.elapsed.Round(time.Millisecond),
 		firstLineWith(l.said(r.stdout), withoutModelMarker))
-	l.tellPush(notes, r, root)
-	l.tellWindow(notes, r)
-	l.tellTeardown(t, notes, r, "the workload exiting")
-	l.tellEvents(notes, r)
+	l.tellTail(t, notes, r, workloadExited, root)
 }
 
 // tellNarrowed is the narrowing under the task and the widening after it.
@@ -360,6 +374,16 @@ func (l *loopback) tellNarrowed(t *testing.T, notes *strings.Builder, r *sandbox
 		t.Errorf("narrowed: the widening was not refused; a third peer put a name back and the sandbox took it")
 	}
 
+	l.tellNarrowing(t, notes, r, second)
+	l.tellWidening(t, notes, second, third)
+	l.tellTail(t, notes, r, "", first, second, third)
+}
+
+// tellNarrowing is what the second peer's document did: the sentry's account of
+// it, the refusal the workload met afterwards, and the liveness that was not
+// lost for it.
+func (l *loopback) tellNarrowing(t *testing.T, notes *strings.Builder, r *sandboxRun, second *pusher) {
+	t.Helper()
 	narrow := sentrySaid(r, "tunnel narrow: sha256=")
 	gone := sentrySaid(r, "is gone")
 	fmt.Fprintf(notes, "The sentry's own account of the two policies that landed, and of the name the second one "+
@@ -368,9 +392,10 @@ func (l *loopback) tellNarrowed(t *testing.T, notes *strings.Builder, r *sandbox
 		t.Errorf("narrowed: the sentry recorded %d policies applied; want two", len(narrow))
 	}
 
-	// What the agent observed. Whether the document was already fetched when
-	// the name went is a race with the model's first answer, and the record
-	// says which way it fell rather than asserting one.
+	// What the workload met. With the model step left out, the gap between its
+	// two requests is a constant, so the second is certain to be made after the
+	// narrowing landed and the refusal is asserted rather than recorded either
+	// way — which is the one thing this run gained by not calling a model.
 	said := l.bothSaid(r)
 	if dialed := r.at.matching("EXIT dialed " + docHost); len(dialed) != 0 {
 		t.Errorf("narrowed: the exit dialled %s after the narrowing removed it: %v. The workload's two requests "+
@@ -386,10 +411,6 @@ func (l *loopback) tellNarrowed(t *testing.T, notes *strings.Builder, r *sandbox
 		"went, and what the workload saw was:\n\n```\n%s\n```\n\n",
 		l.betweenExitAndPush(r, second), withoutModelPause,
 		strings.TrimSpace(keepLines(said, "fetch_url", "no such host", "unreachable", withoutModelMarker, "TOOL")))
-	fmt.Fprintf(notes, "runsc ended with status %d after %s, `%s`, and the workload ran throughout: the "+
-		"narrowing is not a restart and the process the run started is the process that finished.\n\n",
-		r.status, r.elapsed.Round(time.Millisecond), r.at.timings())
-
 	// A narrowing is not a mismatch, and this is where ticket 27 differs from
 	// ticket 26 in what it asserts. A sandbox that takes a second policy starts
 	// pulsing that policy's digest, and ticket 26's watch over the first digest
@@ -423,13 +444,19 @@ func (l *loopback) tellNarrowed(t *testing.T, notes *strings.Builder, r *sandbox
 	} else {
 		t.Error("narrowed: no liveness loss was reported at all, not even for the workload exiting")
 	}
+}
 
-	// The sentence naming the component stays on this side of the tunnel. What
-	// the peer is told is that its policy did not land, in a fixed sentence
-	// (attest/tunneld/push.go, `ackRefused`), because which component widened
-	// is a fact about this guest and the peer supplied the document rather than
-	// the machine. Both halves are recorded, because a reader looking for the
-	// sentence in the wrong place would conclude it was not written.
+// tellWidening is the third peer's push at a sandbox that has already narrowed,
+// and the two halves of the refusal it gets.
+//
+// The sentence naming the component stays on this side of the tunnel. What the
+// peer is told is that its policy did not land, in a fixed sentence
+// (attest/tunneld/push.go, `ackRefused`), because which component widened is a
+// fact about this guest and the peer supplied the document rather than the
+// machine. Both halves are recorded, because a reader looking for the sentence
+// in the wrong place would conclude it was not written.
+func (l *loopback) tellWidening(t *testing.T, notes *strings.Builder, second, third *pusher) {
+	t.Helper()
 	widened := l.console.after(second.at, widensComponent)
 	if len(widened) == 0 {
 		t.Error("narrowed: a's refusal log does not carry the sentence naming the component that widened")
@@ -445,9 +472,6 @@ func (l *loopback) tellNarrowed(t *testing.T, notes *strings.Builder, r *sandbox
 			fmt.Fprintf(notes, "The third peer's own refusal log: `%s`\n\n", r)
 		}
 	}
-	l.tellPush(notes, r, first, second, third)
-	l.tellWindow(notes, r)
-	l.tellEvents(notes, r)
 }
 
 // tellKilled is the teardown reached from outside, which is the same one.
@@ -466,10 +490,7 @@ func (l *loopback) tellKilled(t *testing.T, notes *strings.Builder, r *sandboxRu
 	fmt.Fprintf(notes, "`runsc kill %s KILL` was sent %s into the run, while the first model request was in "+
 		"flight. runsc ended with status %d after %s.\n\n", r.id, killedAt.Sub(r.began).Round(time.Millisecond),
 		r.status, r.elapsed.Round(time.Millisecond))
-	l.tellPush(notes, r, root)
-	l.tellWindow(notes, r)
-	l.tellTeardown(t, notes, r, "`runsc kill`")
-	l.tellEvents(notes, r)
+	l.tellTail(t, notes, r, "`runsc kill`", root)
 }
 
 // tellEarly is ticket 27's scenario and the thing the whole ticket is about: the
@@ -549,10 +570,7 @@ func (l *loopback) tellEarly(t *testing.T, notes *strings.Builder, r *sandboxRun
 		"status %d after %s, `%s`.\n\n", attached.when.Sub(entered).Round(time.Millisecond),
 		acked.Sub(attached.when).Round(time.Millisecond), times(root.tries), r.status,
 		r.elapsed.Round(time.Millisecond), firstLineWith(l.said(r.stdout), withoutModelMarker))
-	l.tellPush(notes, r, root)
-	l.tellWindow(notes, r)
-	l.tellTeardown(t, notes, r, "the workload exiting")
-	l.tellEvents(notes, r)
+	l.tellTail(t, notes, r, workloadExited, root)
 }
 
 // when is one of those moments, or the fact that it never happened.

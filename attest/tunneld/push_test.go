@@ -623,9 +623,7 @@ func TestAPushReachesASandboxInAnotherProcess(t *testing.T) {
 		t.Fatalf("attaching a sandbox: %v", err)
 	}
 	defer client.Close()
-	for host.Attached() == 0 {
-		time.Sleep(time.Millisecond)
-	}
+	waitFor(t, "the sandbox to attach", func() bool { return host.Attached() > 0 })
 
 	a := startPushNode(t, "sandbox-a", imageA, admitting(imageB), nil, toward("b", b), pushing(policyV1))
 	stream, err := a.Open(ctx(t), "b")

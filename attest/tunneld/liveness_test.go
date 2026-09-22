@@ -111,9 +111,7 @@ func runLivenessCase(t *testing.T, c livenessCase) {
 		}
 		t.Cleanup(func() { host.Close() })
 		child = startLivenessSandbox(t, host.Path())
-		for host.Attached() == 0 {
-			time.Sleep(time.Millisecond)
-		}
+		waitFor(t, "the sandbox to attach", func() bool { return host.Attached() > 0 })
 		b.Attach(host)
 	})
 
@@ -208,9 +206,7 @@ func TestALivenessWatchSurvivesThePushingTunnelBeingClosedAndStillReportsTheLoss
 				}
 				t.Cleanup(func() { host.Close() })
 				child = startLivenessSandbox(t, host.Path())
-				for host.Attached() == 0 {
-					time.Sleep(time.Millisecond)
-				}
+				waitFor(t, "the sandbox to attach", func() bool { return host.Attached() > 0 })
 				b.Attach(host)
 			})
 
@@ -239,13 +235,7 @@ func TestALivenessWatchSurvivesThePushingTunnelBeingClosedAndStillReportsTheLoss
 			}
 
 			// The enforcing attachment must have been dropped.
-			deadline := time.Now().Add(5 * time.Second)
-			for host.Attached() != 0 {
-				if time.Now().After(deadline) {
-					t.Fatalf("timed out waiting for enforcing attachment to drop")
-				}
-				time.Sleep(5 * time.Millisecond)
-			}
+			waitFor(t, "the enforcing attachment to be dropped", func() bool { return host.Attached() == 0 })
 		})
 	}
 }
@@ -385,12 +375,18 @@ func TestAWatchThatHasFiredIsNotStartedAgainByAPushThatDidNotLand(t *testing.T) 
 		host, first = hostBeside(t, b, console, func(context.Context, []byte) error { return nil })
 	})
 
-	// The first sandbox goes, which is a loss the watch reports and answers.
-	first.Close()
+	// The first sandbox says it is enforcing something else, which is a loss the
+	// watch reports and then answers by dropping it. The drop is what leaves no
+	// policy in force, and it does that before the attachment goes — so a
+	// sandbox that attaches once nothing is attached is offered nothing, and this
+	// test does not turn on which of the two happened first.
+	if err := first.Alive(anotherPolicysDigest); err != nil {
+		t.Fatalf("saying it enforces something else: %v", err)
+	}
 	if r := pair.b.refusals.next(t); r.Reason() != attest.ReasonPolicyNotLive {
 		t.Fatalf("b refused with %v; want %v (log: %s)", r.Reason(), attest.ReasonPolicyNotLive, r.LogString())
 	}
-	waitFor(t, "the first sandbox to go", func() bool { return host.Attached() == 0 })
+	waitFor(t, "the first sandbox to be dropped", func() bool { return host.Attached() == 0 })
 
 	// A second sandbox attaches and refuses what the next peer pushes, which is
 	// a push that does not land and so a watch that would be started again.
@@ -419,14 +415,14 @@ func TestAWatchThatHasFiredIsNotStartedAgainByAPushThatDidNotLand(t *testing.T) 
 		}
 	}
 	if live != 1 {
-		t.Errorf("b logged %d %v refusals; want the one for the sandbox that went, and none for the push that did not land", live, attest.ReasonPolicyNotLive)
+		t.Errorf("b logged %d %v refusals; want the one for the sandbox that stopped enforcing, and none for the push that did not land", live, attest.ReasonPolicyNotLive)
 	}
 	if n := host.Attached(); n != 1 {
 		t.Errorf("%d sandboxes are attached; want the second one still there", n)
 	}
 	select {
 	case <-second.Done():
-		t.Error("the second sandbox was closed by a watch that had already fired")
+		t.Errorf("the second sandbox was closed by a watch that had already fired: %v", second.Err())
 	default:
 	}
 }

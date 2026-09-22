@@ -604,6 +604,14 @@ func (h *Host) replayInForce(a *attached) {
 	}
 }
 
+// hasAttached reports whether this connection has declared a role, which is the
+// first thing it has to do on this socket (contract v4).
+func (a *attached) hasAttached() bool {
+	a.h.mu.Lock()
+	defer a.h.mu.Unlock()
+	return a.role != ""
+}
+
 // acknowledgedPolicy reports whether this sandbox has ever acknowledged one,
 // which is what makes it something there is a claim to lose.
 func (a *attached) acknowledgedPolicy() bool { return a.acked.Load() }
@@ -665,6 +673,15 @@ func (a *attached) serve() {
 				return
 			}
 		case msgOpen, msgAccept:
+			if !a.hasAttached() {
+				// Attach comes first (contract v4). A connection that asks for
+				// a stream before it has said what it is has declared no role,
+				// is in nobody's count of what is attached, and would be a
+				// channel this host cannot name — so it is answered rather than
+				// served, and may still attach.
+				a.w.send(message{ID: m.ID, Type: msgError, Error: "this client has not attached"}, -1)
+				continue
+			}
 			go a.stream(m)
 		case msgAck, msgRefusal:
 			a.p.deliver(reply{m: m})

@@ -904,44 +904,100 @@ func TestANetworkClientIsNeverPushedAPolicy(t *testing.T) {
 	}
 }
 
-// TestASecondAttachMessageOnOneConnectionIsRefused pins the one rule the client
-// on the other side of this socket cannot be held to by the compiler, because
-// one of them (runsc/cmd/tunnel_client.go) is written by hand: attach once. A
-// second declaration on one connection would be a second role, and — with a
-// push waiting for an enforcing sandbox — a second delivery of it.
-func TestASecondAttachMessageOnOneConnectionIsRefused(t *testing.T) {
-	socket := filepath.Join(t.TempDir(), "sandbox.sock")
-	host, err := sandbox.Listen(socket, newFakeNetwork(), nil)
-	if err != nil {
-		t.Fatalf("listening on %s: %v", socket, err)
-	}
-	defer host.Close()
+// a rawClient is this socket with no [sandbox.Client] on it: the four-byte length
+// and the JSON, written by hand.
+//
+// It is how the rules no compiler can hold a client to are driven — attach once,
+// attach before anything else, name a role this host knows — because the one
+// hand-written client of this contract is in runsc (runsc/cmd/tunnel_client.go),
+// mirrors this wire by hand, and cannot be imported here.
+type rawClient struct{ c *net.UnixConn }
 
+func dialRaw(t *testing.T, socket string) *rawClient {
+	t.Helper()
 	c, err := net.DialUnix("unix", nil, &net.UnixAddr{Name: socket, Net: "unix"})
 	if err != nil {
 		t.Fatalf("dialing %s: %v", socket, err)
 	}
-	defer c.Close()
-	msg := []byte(`{"id":0,"type":"attach","role":"enforcing"}`)
-	frame := make([]byte, 4+len(msg))
-	binary.BigEndian.PutUint32(frame[:4], uint32(len(msg)))
-	copy(frame[4:], msg)
-	for i := range 2 {
-		if _, err := c.Write(frame); err != nil {
-			t.Fatalf("sending attach message %d: %v", i+1, err)
-		}
+	t.Cleanup(func() { c.Close() })
+	return &rawClient{c: c}
+}
+
+// send writes one message, exactly the bytes given.
+func (r *rawClient) send(t *testing.T, message string) {
+	t.Helper()
+	frame := make([]byte, 4+len(message))
+	binary.BigEndian.PutUint32(frame[:4], uint32(len(message)))
+	copy(frame[4:], message)
+	if _, err := r.c.Write(frame); err != nil {
+		t.Fatalf("sending %s: %v", message, err)
 	}
-	c.SetReadDeadline(time.Now().Add(5 * time.Second))
+}
+
+// next is the next message the host sends back.
+func (r *rawClient) next(t *testing.T) string {
+	t.Helper()
+	r.c.SetReadDeadline(time.Now().Add(5 * time.Second))
 	var header [4]byte
-	if _, err := io.ReadFull(c, header[:]); err != nil {
-		t.Fatalf("reading the answer to the second attach: %v", err)
+	if _, err := io.ReadFull(r.c, header[:]); err != nil {
+		t.Fatalf("reading the answer's length: %v", err)
 	}
 	body := make([]byte, binary.BigEndian.Uint32(header[:]))
-	if _, err := io.ReadFull(c, body); err != nil {
-		t.Fatalf("reading the answer to the second attach: %v", err)
+	if _, err := io.ReadFull(r.c, body); err != nil {
+		t.Fatalf("reading the answer: %v", err)
 	}
-	if !strings.Contains(string(body), "already attached") {
-		t.Errorf("the host answered a second attach with %s; want a refusal saying this client has already attached", body)
+	return string(body)
+}
+
+// TestTheHostHoldsAClientToTheAttachRules drives the three rules on the attach
+// message, each of which only a client written by hand can break: attach once,
+// attach before asking for anything, and name a role this host knows. Every one
+// of them is refused with a sentence, and none of them leaves something the host
+// would count as attached.
+func TestTheHostHoldsAClientToTheAttachRules(t *testing.T) {
+	const attachEnforcing = `{"id":0,"type":"attach","role":"enforcing"}`
+	for _, c := range []struct {
+		name string
+		sent []string
+		says string
+	}{
+		{
+			name: "a second attach on one connection",
+			sent: []string{attachEnforcing, attachEnforcing},
+			says: "this client has already attached",
+		},
+		{
+			name: "a stream asked for before attaching",
+			sent: []string{`{"id":1,"type":"open","peer":"b"}`},
+			says: "this client has not attached",
+		},
+		{
+			name: "a role this host does not know",
+			sent: []string{`{"id":0,"type":"attach","role":"bystander"}`},
+			// The sentence travels as JSON, so the quotes around the role it
+			// did not know arrive escaped.
+			says: `unknown role \"bystander\"`,
+		},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			socket := filepath.Join(t.TempDir(), "sandbox.sock")
+			host, err := sandbox.Listen(socket, newFakeNetwork(), nil)
+			if err != nil {
+				t.Fatalf("listening on %s: %v", socket, err)
+			}
+			defer host.Close()
+
+			raw := dialRaw(t, socket)
+			for _, m := range c.sent {
+				raw.send(t, m)
+			}
+			if got := raw.next(t); !strings.Contains(got, c.says) {
+				t.Errorf("the host answered %s; want it to say %q", got, c.says)
+			}
+			// A connection that never attached is a connection this host counts
+			// as nothing, and the one that attached twice was closed for it.
+			waitFor(t, "the host to count nothing attached", func() bool { return host.Attached() == 0 })
+		})
 	}
 }
 
